@@ -28,6 +28,8 @@ namespace System.Net.Http
         private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
             new ConcurrentDictionary<string, MethodInfo?>();
 
+        private ClientCertificateOption _clientCertificateOptions;
+
         private volatile bool _disposed;
 
         public HttpClientHandler()
@@ -43,6 +45,7 @@ namespace System.Net.Http
             {
                 _socketHandler = new SocketsHttpHandler();
                 handler = _socketHandler;
+                ClientCertificateOptions = ClientCertificateOption.Manual;
             }
 
             if (DiagnosticsHandler.IsGloballyEnabled())
@@ -129,14 +132,31 @@ namespace System.Net.Http
             }
         }
 
-        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public ICredentials? DefaultProxyCredentials
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetDefaultProxyCredentials();
+                }
+                else
+                {
+                    return _socketHandler!.DefaultProxyCredentials;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetDefaultProxyCredentials(value);
+                }
+                else
+                {
+                    _socketHandler!.DefaultProxyCredentials = value;
+                }
+            }
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -248,14 +268,31 @@ namespace System.Net.Http
             }
         }
 
-        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public int MaxConnectionsPerServer
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetMaxConnectionsPerServer();
+                }
+                else
+                {
+                    return _socketHandler!.MaxConnectionsPerServer;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetMaxConnectionsPerServer(value);
+                }
+                else
+                {
+                    _socketHandler!.MaxConnectionsPerServer = value;
+                }
+            }
         }
 
         public long MaxRequestContentBufferSize
@@ -291,71 +328,377 @@ namespace System.Net.Http
             }
         }
 
-        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public int MaxResponseHeadersLength
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetMaxResponseHeadersLength();
+                }
+                else
+                {
+                    return _socketHandler!.MaxResponseHeadersLength;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetMaxResponseHeadersLength(value);
+                }
+                else
+                {
+                    _socketHandler!.MaxResponseHeadersLength = value;
+                }
+            }
         }
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public ClientCertificateOption ClientCertificateOptions
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetClientCertificateOptions();
+                }
+                else
+                {
+                    return _clientCertificateOptions;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetClientCertificateOptions(value);
+                }
+                else
+                {
+                    switch (value)
+                    {
+                        case ClientCertificateOption.Manual:
+                            ThrowForModifiedManagedSslOptionsIfStarted();
+                            _clientCertificateOptions = value;
+                            _socketHandler!.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(ClientCertificates)!;
+                            break;
+
+                        case ClientCertificateOption.Automatic:
+                            ThrowForModifiedManagedSslOptionsIfStarted();
+                            _clientCertificateOptions = value;
+                            _socketHandler!.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+                }
+            }
         }
 
-        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509CertificateCollection ClientCertificates
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetClientCertificates();
+                }
+                else
+                {
+                    if (ClientCertificateOptions != ClientCertificateOption.Manual)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
+                    }
+
+                    return _socketHandler!.SslOptions.ClientCertificates ??
+                        (_socketHandler!.SslOptions.ClientCertificates = new X509CertificateCollection());
+                }
             }
         }
 
-        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+                else
+                {
+                    return (_socketHandler!.SslOptions.RemoteCertificateValidationCallback?.Target as ConnectHelper.CertificateCallbackMapper)?.FromHttpClientHandler;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+                else
+                {
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _socketHandler!.SslOptions.RemoteCertificateValidationCallback = value != null ?
+                        new ConnectHelper.CertificateCallbackMapper(value).ForSocketsHttpHandler :
+                        null;
+                }
+            }
         }
 
-        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public bool CheckCertificateRevocationList
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetCheckCertificateRevocationList();
+                }
+                else
+                {
+                    return _socketHandler!.SslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetCheckCertificateRevocationList(value);
+                }
+                else
+                {
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _socketHandler!.SslOptions.CertificateRevocationCheckMode = value ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
+                }
+            }
         }
 
-        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public SslProtocols SslProtocols
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetSslProtocols();
+                }
+                else
+                {
+                    return _socketHandler!.SslOptions.EnabledSslProtocols;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetSslProtocols(value);
+                }
+                else
+                {
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _socketHandler!.SslOptions.EnabledSslProtocols = value;
+                }
+            }
         }
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
+        public IDictionary<string, object?> Properties
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetProperties();
+                }
+                else
+                {
+                    return _socketHandler!.Properties;
+                }
+            }
+        }
+
+        public virtual bool SupportsAutomaticDecompression
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetSupportsAutomaticDecompression();
+                }
+                else
+                {
+                    return SocketsHttpHandler.SupportsAutomaticDecompression;
+                }
+            }
+        }
+
+        public virtual bool SupportsProxy
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetSupportsProxy();
+                }
+                else
+                {
+                    return SocketsHttpHandler.SupportsProxy;
+                }
+            }
+        }
+
+        public virtual bool SupportsRedirectConfiguration
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetSupportsRedirectConfiguration();
+                }
+                else
+                {
+                    return SocketsHttpHandler.SupportsRedirectConfiguration;
+                }
+            }
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public DecompressionMethods AutomaticDecompression
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetAutomaticDecompression();
+                }
+                else
+                {
+                    return _socketHandler!.AutomaticDecompression;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetAutomaticDecompression(value);
+                }
+                else
+                {
+                    _socketHandler!.AutomaticDecompression = value;
+                }
+            }
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public bool UseProxy
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetUseProxy();
+                }
+                else
+                {
+                    return _socketHandler!.UseProxy;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetUseProxy(value);
+                }
+                else
+                {
+                    _socketHandler!.UseProxy = value;
+                }
+            }
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public IWebProxy? Proxy
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetProxy();
+                }
+                else
+                {
+                    return _socketHandler!.Proxy;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetProxy(value!);
+                }
+                else
+                {
+                    _socketHandler!.Proxy = value;
+                }
+            }
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public bool PreAuthenticate
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetPreAuthenticate();
+                }
+                else
+                {
+                    return _socketHandler!.PreAuthenticate;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetPreAuthenticate(value);
+                }
+                else
+                {
+                    _socketHandler!.PreAuthenticate = value;
+                }
+            }
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public int MaxAutomaticRedirections
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return GetMaxAutomaticRedirections();
+                }
+                else
+                {
+                    return _socketHandler!.MaxAutomaticRedirections;
+                }
+            }
+            set
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    SetMaxAutomaticRedirections(value);
+                }
+                else
+                {
+                    _socketHandler!.MaxAutomaticRedirections = value;
+                }
+            }
+        }
 
         //
         // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
@@ -389,12 +732,32 @@ namespace System.Net.Http
             }
         }
 
-        [UnsupportedOSPlatform("android")]
+        // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
+        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
-            throw new PlatformNotSupportedException();
+        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    throw new PlatformNotSupportedException();
+                }
+                else
+                {
+                    return Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
+                    Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
+                    s_dangerousAcceptAnyServerCertificateValidator;
+                }
+            }
+        }
+
+        private void ThrowForModifiedManagedSslOptionsIfStarted()
+        {
+            // Hack to trigger an InvalidOperationException if a property that's stored on
+            // SslOptions is changed, since SslOptions itself does not do any such checks.
+            _socketHandler!.SslOptions = _socketHandler!.SslOptions;
+        }
 
         private void CheckDisposed()
         {

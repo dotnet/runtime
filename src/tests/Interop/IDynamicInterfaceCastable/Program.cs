@@ -96,6 +96,18 @@ namespace IDynamicInterfaceCastableTests
         }
     }
 
+    [DynamicInterfaceCastableImplementation]
+    public interface ITestReabstracted : ITest
+    {
+        abstract Type ITest.GetMyType();
+        abstract ITest ITest.ReturnThis();
+        abstract int ITest.GetNumber();
+        abstract int ITest.CallImplemented(ImplementationToCall toCall);
+    }
+
+    [DynamicInterfaceCastableImplementation]
+    public interface IDiamondTest : ITestImpl, ITestReabstracted { }
+
     public interface IOverrideTest : ITestImpl { }
 
     [DynamicInterfaceCastableImplementation]
@@ -201,7 +213,9 @@ namespace IDynamicInterfaceCastableTests
             NoDefaultImplementation,
             CallNotImplemented,
             UseOtherInterface,
-            ThrowException
+            ThrowException,
+            DiamondImplementation,
+            ReabstractedImplementation,
         }
 
         public InvalidReturn InvalidImplementation { get; set; }
@@ -235,6 +249,10 @@ namespace IDynamicInterfaceCastableTests
                     return typeof(ITestOtherImpl).TypeHandle;
                 case InvalidReturn.ThrowException:
                     throw new DynamicInterfaceCastableException(interfaceType);
+                case InvalidReturn.ReabstractedImplementation:
+                    return typeof(ITestReabstracted).TypeHandle;
+                case InvalidReturn.DiamondImplementation:
+                    return typeof(IDiamondTest).TypeHandle;
                 case InvalidReturn.DefaultHandle:
                 default:
                     return default(RuntimeTypeHandle);
@@ -462,6 +480,16 @@ namespace IDynamicInterfaceCastableTests
             castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.ThrowException;
             ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITest)castableObj; });
             Assert.AreEqual(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITest)), ex.Message);
+            Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
+
+            Console.WriteLine(" -- Validate reabstracted implementation");
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.ReabstractedImplementation;
+            ex = Assert.Throws<EntryPointNotFoundException>(() => { testObj.ReturnThis(); });
+            Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
+
+            Console.WriteLine(" -- Validate diamond inheritance case");
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.DiamondImplementation;
+            ex = Assert.Throws<System.Runtime.AmbiguousImplementationException>(() => { testObj.ReturnThis(); });
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate return default handle");

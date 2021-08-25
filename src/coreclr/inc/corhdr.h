@@ -235,12 +235,12 @@ typedef struct IMAGE_COR20_HEADER
 	// here if this feature is used.
     IMAGE_DATA_DIRECTORY    StrongNameSignature;
 
-    IMAGE_DATA_DIRECTORY    CodeManagerTable;			// Depricated, not used
-	// Used for manged codee that has unmaanaged code inside it (or exports methods as unmanaged entry points)
+    IMAGE_DATA_DIRECTORY    CodeManagerTable;			// Deprecated, not used
+	// Used for manged code that has unmanaged code inside it (or exports methods as unmanaged entry points)
     IMAGE_DATA_DIRECTORY    VTableFixups;
     IMAGE_DATA_DIRECTORY    ExportAddressTableJumps;
 
-	// null for ordinary IL images. In NGEN images it points at a code:CORCOMPILE_HEADER structure.
+	// null for ordinary IL images.
 	// In Ready2Run images it points to a READYTORUN_HEADER.
     IMAGE_DATA_DIRECTORY    ManagedNativeHeader;
 

@@ -2418,7 +2418,7 @@ public:
     OBJECTREF GetInnerException()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return _innerException;
+        return VolatileLoadWithoutBarrierOBJECTREF(&_innerException);
     }
 
     // Returns the innermost exception object - equivalent of the
@@ -2431,7 +2431,7 @@ public:
         OBJECTREF oInnerMostException = NULL;
         OBJECTREF oCurrent = NULL;
 
-        oCurrent = _innerException;
+        oCurrent = GetInnerException();
         while(oCurrent != NULL)
         {
             oInnerMostException = oCurrent;
@@ -2469,7 +2469,7 @@ public:
     STRINGREF GetRemoteStackTraceString()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return _remoteStackTraceString;
+        return (STRINGREF)VolatileLoadWithoutBarrierOBJECTREF(&_remoteStackTraceString);
     }
 
     void SetHelpURL(STRINGREF helpURL)
@@ -2512,7 +2512,7 @@ public:
     U1ARRAYREF GetWatsonBucketReference()
     {
         LIMITED_METHOD_CONTRACT;
-        return _watsonBuckets;
+        return (U1ARRAYREF)VolatileLoadWithoutBarrierOBJECTREF(&_watsonBuckets);
     }
 
     // This method will return a BOOL to indicate if the
@@ -2520,7 +2520,7 @@ public:
     BOOL AreWatsonBucketsPresent()
     {
         LIMITED_METHOD_CONTRACT;
-        return (_watsonBuckets != NULL)?TRUE:FALSE;
+        return (GetWatsonBucketReference() != NULL)?TRUE:FALSE;
     }
 
     // This method will save the IP to be used for watson bucketing.
@@ -2545,7 +2545,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return _ipForWatsonBuckets;
+        return VolatileLoadWithoutBarrier(&_ipForWatsonBuckets);
     }
 
     // README:

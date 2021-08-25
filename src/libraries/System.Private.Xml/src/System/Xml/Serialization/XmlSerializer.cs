@@ -835,7 +835,7 @@ namespace System.Xml.Serialization
         {
             XmlSerializationPrimitiveWriter writer = new XmlSerializationPrimitiveWriter();
             writer.Init(xmlWriter, namespaces, null, null, null);
-            switch (_primitiveType!.GetTypeCode())
+            switch (Type.GetTypeCode(_primitiveType))
             {
                 case TypeCode.String:
                     writer.Write_string(o);
@@ -917,7 +917,7 @@ namespace System.Xml.Serialization
             XmlSerializationPrimitiveReader reader = new XmlSerializationPrimitiveReader();
             reader.Init(xmlReader, events, null, null);
             object? o;
-            switch (_primitiveType!.GetTypeCode())
+            switch (Type.GetTypeCode(_primitiveType))
             {
                 case TypeCode.String:
                     o = reader.Read_string();

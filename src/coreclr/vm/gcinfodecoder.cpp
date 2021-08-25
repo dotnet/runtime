@@ -21,9 +21,9 @@
 #endif // !GET_CALLER_SP
 
 #ifndef VALIDATE_OBJECTREF
-#if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
+#if defined(DACCESS_COMPILE)
 #define VALIDATE_OBJECTREF(objref, fDeep)
-#else // DACCESS_COMPILE || CROSSGEN_COMPILE
+#else // DACCESS_COMPILE
 #define VALIDATE_OBJECTREF(objref, fDeep)                          \
     do {                                                           \
         Object* objPtr = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref); \
@@ -32,7 +32,7 @@
             objPtr->Validate(fDeep);                               \
         }                                                          \
     } while(0)
-#endif // DACCESS_COMPILE || CROSSGEN_COMPILE
+#endif // DACCESS_COMPILE
 #endif // !VALIDATE_OBJECTREF
 
 #ifndef VALIDATE_ROOT
@@ -1776,10 +1776,6 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
                         PREGDISPLAY     pRD
                         )
 {
-#ifdef CROSSGEN_COMPILE
-    _ASSERTE(!"GcInfoDecoder::GetStackSlot not supported in this build configuration");
-    return NULL;
-#else // CROSSGEN_COMPILE
     OBJECTREF* pObjRef;
 
     if( GC_SP_REL == spBase )
@@ -1811,7 +1807,6 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
     }
 
     return pObjRef;
-#endif // CROSSGEN_COMPILE
 }
 
 #ifdef DACCESS_COMPILE

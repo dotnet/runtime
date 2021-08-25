@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -203,6 +204,30 @@ internal static class Utils
         sw.WriteLine(command);
 
         return file;
+    }
+
+    public static bool CopyIfDifferent(string src, string dst, bool useHash)
+    {
+        if (!File.Exists(src))
+            throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
+
+        bool areDifferent = !File.Exists(dst) ||
+                                (useHash && Utils.ComputeHash(src) != Utils.ComputeHash(dst)) ||
+                                (File.ReadAllText(src) != File.ReadAllText(dst));
+
+        if (areDifferent)
+            File.Copy(src, dst, true);
+
+        return areDifferent;
+    }
+
+    public static string ComputeHash(string filepath)
+    {
+        using var stream = File.OpenRead(filepath);
+        using HashAlgorithm hashAlgorithm = SHA512.Create();
+
+        byte[] hash = hashAlgorithm.ComputeHash(stream);
+        return Convert.ToBase64String(hash);
     }
 
 #if NETCOREAPP

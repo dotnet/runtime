@@ -40,7 +40,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>$(MajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>$(PreviousReleaseMajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
     <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
     <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
@@ -270,6 +270,8 @@
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Warnings to always disable -->
+    <NoWarn>$(NoWarn),CS8969</NoWarn>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>

@@ -26,7 +26,10 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
-            => ReadUsingOptions<TValue>(utf8Json, typeof(TValue), options);
+        {
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+        }
 
         /// <summary>
         /// Parses the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
@@ -55,7 +58,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            return ReadUsingOptions<object>(utf8Json, returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadFromSpan<object>(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -80,7 +84,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -118,14 +122,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return ReadUsingMetadata<object?>(utf8Json, GetTypeInfo(context, returnType));
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static TValue? ReadUsingOptions<TValue>(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
-            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<object?>(utf8Json, GetTypeInfo(context, returnType));
         }
     }
 }

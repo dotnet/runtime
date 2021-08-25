@@ -20,7 +20,6 @@
 #include "stubgen.h"
 #include "appdomain.inl"
 
-#ifndef CROSSGEN_COMPILE
 
 struct UM2MThunk_Args
 {
@@ -343,7 +342,6 @@ VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
     p->Terminate();
 }
 
-#endif // CROSSGEN_COMPILE
 
 //-------------------------------------------------------------------------
 // This function is used to report error when we call collected delegate.
@@ -449,7 +447,6 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
     m_sig = sig;
 }
 
-#ifndef CROSSGEN_COMPILE
 //----------------------------------------------------------
 // This initializer finishes the init started by LoadTimeInit.
 // It does stub creation and can throw an exception.
@@ -466,7 +463,6 @@ VOID UMThunkMarshInfo::RunTimeInit()
         return;
 
     PCODE pFinalILStub = NULL;
-    MethodDesc* pStubMD = NULL;
 
     MethodDesc * pMD = GetMethod();
 
@@ -484,7 +480,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         }
 #endif // DEBUGGING_SUPPORTED
 
-        pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags, &pStubMD);
+        pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags);
     }
 
     if (pFinalILStub == NULL)
@@ -501,7 +497,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         if (sigInfo.IsDelegateInterop())
             dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
-        pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
+        MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
         pFinalILStub = JitILStub(pStubMD);
     }
 
@@ -543,4 +539,3 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
     }
 #endif // _DEBUG
 
-#endif // CROSSGEN_COMPILE

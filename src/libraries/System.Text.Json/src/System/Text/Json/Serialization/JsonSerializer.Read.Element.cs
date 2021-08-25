@@ -23,8 +23,11 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static TValue? Deserialize<TValue>(this JsonElement element, JsonSerializerOptions? options = null) =>
-            ReadUsingOptions<TValue>(element, typeof(TValue), options);
+        public static TValue? Deserialize<TValue>(this JsonElement element, JsonSerializerOptions? options = null)
+        {
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
+        }
 
         /// <summary>
         /// Converts the <see cref="JsonElement"/> representing a single JSON value into a <paramref name="returnType"/>.
@@ -51,7 +54,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            return ReadUsingOptions<object?>(element, returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadUsingMetadata<object?>(element, jsonTypeInfo);
         }
 
         /// <summary>
@@ -124,17 +128,14 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return ReadUsingMetadata<object?>(element, GetTypeInfo(context, returnType));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
+            return ReadUsingMetadata<object?>(element, jsonTypeInfo);
         }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static TValue? ReadUsingOptions<TValue>(JsonElement element, Type returnType, JsonSerializerOptions? options) =>
-            ReadUsingMetadata<TValue>(element, GetTypeInfo(returnType, options));
 
         private static TValue? ReadUsingMetadata<TValue>(JsonElement element, JsonTypeInfo jsonTypeInfo)
         {
             ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
-            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
     }
 }

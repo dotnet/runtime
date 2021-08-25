@@ -722,7 +722,7 @@ class EEFileLoadException : public EEException
 // We're not actually running in the CLR, but we may need access to some CLR-exception
 // related data structures elsewhere in this header file in order to analyze CLR
 // exceptions that occurred in the target.
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 #define GET_THROWABLE() CLRException::GetThrowableFromException(GET_EXCEPTION())
 
@@ -857,7 +857,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     }                                                                           \
     EX_END_CATCH(SwallowAllExceptions)
 
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 // When collecting dumps, we need to ignore errors unless the user cancels.
 #define EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED                          \

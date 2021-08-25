@@ -271,6 +271,9 @@
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
         <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
       </Compile>
+      <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.iOS.cs">
+        <Link>Common\Interop\OSX\Interop.SearchPath.iOS.cs</Link>
+      </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />

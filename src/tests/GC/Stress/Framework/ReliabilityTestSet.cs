@@ -14,6 +14,7 @@ public class ReliabilityTestSet
 {
     private int _maximumTestLoops = 0;									// default run based on time.
     private int _maximumExecutionTime = 60;	                        // 60 minute run by default.
+    private int _maximumWaitTime = 10;	                            // 10 minute wait by default.
     private int _percentPassIsPass = System.Environment.GetEnvironmentVariable("PERCENTPASSISPASS") == null ? -1 : Convert.ToInt32(System.Environment.GetEnvironmentVariable("PERCENTPASSISPASS"));
     private int[] _minPercentCPUStaggered_times = null;
     private int[] _minPercentCPUStaggered_usage = null;
@@ -91,6 +92,21 @@ public class ReliabilityTestSet
         set
         {
             _maximumExecutionTime = value;
+        }
+    }
+
+    /// <summary>
+    /// Maximum wait time, in minutes.
+    /// </summary>
+    public int MaximumWaitTime
+    {
+        get
+        {
+            return (_maximumWaitTime);
+        }
+        set
+        {
+            _maximumWaitTime = value;
         }
     }
 
