@@ -986,12 +986,10 @@ PEAssembly::PEAssembly(
                 PEFile *creator,
                 BOOL system,
                 PEImage * pPEImageIL /*= NULL*/,
-                PEImage * pPEImageNI /*= NULL*/,
                 BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 
-  : PEFile(pBindResultInfo ? (pBindResultInfo->GetPEImage() ? pBindResultInfo->GetPEImage() :
-                                                              (pBindResultInfo->HasNativeImage() ? pBindResultInfo->GetNativeImage() : NULL)
-                              ): pPEImageIL? pPEImageIL:(pPEImageNI? pPEImageNI:NULL)),
+  : PEFile(pBindResultInfo ? pBindResultInfo->GetPEImage()
+                           : pPEImageIL),
     m_creator(clr::SafeAddRef(creator))
 {
     CONTRACTL
@@ -999,7 +997,7 @@ PEAssembly::PEAssembly(
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
         PRECONDITION(CheckPointer(creator, NULL_OK));
-        PRECONDITION(pBindResultInfo == NULL || (pPEImageIL == NULL && pPEImageNI == NULL));
+        PRECONDITION(pBindResultInfo == NULL || pPEImageIL == NULL);
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -1066,7 +1064,6 @@ PEAssembly::PEAssembly(
 PEAssembly *PEAssembly::Open(
     PEAssembly *       pParent,
     PEImage *          pPEImageIL,
-    PEImage *          pPEImageNI,
     BINDER_SPACE::Assembly * pHostAssembly)
 {
     STANDARD_VM_CONTRACT;
@@ -1077,7 +1074,6 @@ PEAssembly *PEAssembly::Open(
         pParent,        // PEFile creator
         FALSE,          // isSystem
         pPEImageIL,
-        pPEImageNI,
         pHostAssembly);
 
     return pPEAssembly;
@@ -1102,7 +1098,7 @@ PEAssembly::~PEAssembly()
 }
 
 /* static */
-PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
+PEAssembly *PEAssembly::OpenSystem()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1110,7 +1106,7 @@ PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
 
     EX_TRY
     {
-        result = DoOpenSystem(pAppCtx);
+        result = DoOpenSystem();
     }
     EX_HOOK
     {
@@ -1127,7 +1123,7 @@ PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
 }
 
 /* static */
-PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
+PEAssembly *PEAssembly::DoOpenSystem()
 {
     CONTRACT(PEAssembly *)
     {
@@ -1139,13 +1135,13 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     CoreBindResult bindResult;
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
-    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm, true));
+    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm));
     if(pPrivAsm != NULL)
     {
         bindResult.Init(pPrivAsm);
     }
 
-    RETURN new PEAssembly(&bindResult, NULL, NULL, TRUE, FALSE);
+    RETURN new PEAssembly(&bindResult, NULL, NULL, TRUE);
 }
 
 PEAssembly* PEAssembly::Open(CoreBindResult* pBindResult,

@@ -19,7 +19,6 @@ public:
     //-------------------------------------------------------------------------
 
     HRESULT BindUsingPEImage(PEImage* pPEImage,
-        BOOL fIsNativeImage,
         BINDER_SPACE::Assembly** ppAssembly);
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
@@ -39,8 +38,6 @@ public:
 
     HRESULT Bind(LPCWSTR      wszCodeBase,
                  PEAssembly  *pParentAssembly,
-                 BOOL         fNgenExplicitBind,
-                 BOOL         fExplicitBindToNativeImage,
                  BINDER_SPACE::Assembly **ppAssembly);
 
 private:
