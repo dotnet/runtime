@@ -726,7 +726,7 @@ public:
     void AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved);
     void AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved);
     void Refresh();
-    void GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges);
+    HRESULT GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges);
 private:
     Crst mutex;
     ULONG count;
@@ -776,14 +776,16 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
         PRECONDITION(CheckPointer(rangeEndReserved));
     } CONTRACT_END;
 
-    assert (mutex.OwnedByCurrentThread());
+    _ASSERTE (mutex.OwnedByCurrentThread());
     if (count >= capacity)
     {
         ULONG newCapacity = capacity == 0 ? GenerationTable::defaultCapacity : capacity * 2;
         GenerationDesc *newGenDescTable = new (nothrow) GenerationDesc[newCapacity];
         if (newGenDescTable == NULL)
         {
-            // if we can't allocate a bigger table, we'll have to ignore this call
+            count = capacity = 0;
+            delete[] genDescTable;
+            genDescTable = nullptr;
             RETURN;
         }
         memcpy(newGenDescTable, genDescTable, sizeof(genDescTable[0]) * count);
@@ -802,9 +804,13 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
     RETURN;
 }
 
-void GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges)
+HRESULT GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges)
 {
     CrstHolder holder(&mutex);
+    if (genDescTable == nullptr)
+    {
+        return E_FAIL;
+    }
     ULONG copy = min(count, cObjectRanges);
     for (ULONG i = 0; i < copy; i++)
     {
@@ -814,6 +820,7 @@ void GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRa
         ranges[i].rangeLengthReserved = genDescTable[i].rangeEndReserved - genDescTable[i].rangeStart;
     }
     *pcObjectRanges = count;
+    return S_OK;
 }
 
 //---------------------------------------------------------------------------------------
@@ -8882,9 +8889,7 @@ HRESULT ProfToEEInterfaceImpl::GetGenerationBounds(ULONG cObjectRanges,
         return E_FAIL;
     }
 
-    s_currentGenerationTable->GetGenerationBounds(cObjectRanges, pcObjectRanges, ranges);
-
-    return S_OK;
+    return s_currentGenerationTable->GetGenerationBounds(cObjectRanges, pcObjectRanges, ranges);
 }
 
 

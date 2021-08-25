@@ -44811,9 +44811,6 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
         else
         {
             gc_heap::update_collection_counts_for_no_gc();
-#ifdef USE_REGIONS
-            GCToEEInterface::DiagUpdateGenerationBounds();
-#endif //USE_REGIONS
         }
 
 #endif //!MULTIPLE_HEAPS
