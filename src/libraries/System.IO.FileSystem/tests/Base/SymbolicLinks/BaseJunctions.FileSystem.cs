@@ -21,8 +21,10 @@ namespace System.IO.Tests
 
         protected abstract FileSystemInfo ResolveLinkTarget(string junctionPath, bool returnFinalTarget);
 
-        [Fact]
-        public void Junction_ResolveLinkTarget()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Junction_ResolveLinkTarget(bool returnFinalTarget)
         {
             string junctionPath = GetRandomLinkPath();
             string targetPath = GetRandomDirPath();
@@ -30,7 +32,7 @@ namespace System.IO.Tests
             CreateDirectory(targetPath);
             DirectoryInfo junctionInfo = CreateJunction(junctionPath, targetPath);
 
-            FileSystemInfo? actualTargetInfo = ResolveLinkTarget(junctionPath, returnFinalTarget: false);
+            FileSystemInfo? actualTargetInfo = ResolveLinkTarget(junctionPath, returnFinalTarget);
             Assert.True(actualTargetInfo is DirectoryInfo);
             Assert.Equal(targetPath, actualTargetInfo.FullName);
             Assert.Equal(targetPath, junctionInfo.LinkTarget);
