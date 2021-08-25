@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     {
         public PatternContextLinear(ILinearPattern pattern)
         {
-            Pattern = pattern;
+            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
         }
 
         public override PatternTestResult Test(FileInfoBase file)
