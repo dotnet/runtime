@@ -96,6 +96,7 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
 
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output))
             {
+                await SendAndReceive(cws, "test");
                 using (var timer = new Timers.Timer(100))
                 {
                     DateTime last = DateTime.Now;
@@ -133,7 +134,7 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
                     };
 
                     // test it for 10 minutes
-                    try { await Task.Delay(1 * 60 * 1000, cts.Token); } catch (Exception) { }
+                    try { await Task.Delay(10 * 60 * 1000, cts.Token); } catch (Exception) { }
                     timer.Close();
                 }
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "WebSocketKeepsDotnetTimersOnlyLightlyThrottled", CancellationToken.None);
