@@ -176,15 +176,15 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                 {
                     if (segment is RecursiveWildcardSegment)
                     {
-                        if (segmentsPatternStartsWith == null || segmentsPatternEndsWith == null || segmentsPatternContains == null)
+                        if (segmentsPatternStartsWith == null)
                         {
                             segmentsPatternStartsWith = new List<IPathSegment>(allSegments);
                             segmentsPatternEndsWith = new List<IPathSegment>();
                             segmentsPatternContains = new List<IList<IPathSegment>>();
                         }
-                        else if (segmentsPatternEndsWith.Count != 0)
+                        else if (segmentsPatternEndsWith!.Count != 0)
                         {
-                            segmentsPatternContains.Add(segmentsPatternEndsWith);
+                            segmentsPatternContains!.Add(segmentsPatternEndsWith);
                             segmentsPatternEndsWith = new List<IPathSegment>();
                         }
                     }
@@ -199,13 +199,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                 scanPattern = endSegment + 1;
             }
 
-            if (segmentsPatternStartsWith == null || segmentsPatternEndsWith == null || segmentsPatternContains == null)
+            if (segmentsPatternStartsWith == null)
             {
                 return new LinearPattern(allSegments);
             }
             else
             {
-                return new RaggedPattern(allSegments, segmentsPatternStartsWith, segmentsPatternEndsWith, segmentsPatternContains);
+                return new RaggedPattern(allSegments, segmentsPatternStartsWith, segmentsPatternEndsWith!, segmentsPatternContains!);
             }
         }
 
