@@ -33,7 +33,7 @@
       </Component>
 
       <Component Id="cmdPath" Guid="*">
-        <?if $(var.MockPlatform) = x64 ?>
+        <?if $(var.Platform) = x64 ?>
         <!-- For x64 installer, only add to PATH when actually on native platform -->
         <Condition>NOT INSTALLING_IN_EMULATION</Condition>
         <?endif?>
