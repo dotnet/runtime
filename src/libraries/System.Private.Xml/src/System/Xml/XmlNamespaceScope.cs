@@ -21,6 +21,6 @@ namespace System.Xml
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        Local,
+        Local
     }
 }

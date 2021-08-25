@@ -51,7 +51,7 @@ namespace System.Xml.Xsl.Qil
                     0 => _left,
                     1 => _center,
                     2 => _right,
-                    _ => throw new IndexOutOfRangeException(),
+                    _ => throw new IndexOutOfRangeException()
                 };
             }
             set

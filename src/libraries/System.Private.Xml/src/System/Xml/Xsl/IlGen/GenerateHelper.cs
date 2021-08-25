@@ -449,7 +449,7 @@ namespace System.Xml.Xsl.IlGen
             { typeof(XmlQualifiedName), new XmlILStorageMethods(typeof(XmlQualifiedName)) },
             { typeof(TimeSpan), new XmlILStorageMethods(typeof(TimeSpan)) },
             { typeof(XPathItem), new XmlILStorageMethods(typeof(XPathItem)) },
-            { typeof(XPathNavigator), new XmlILStorageMethods(typeof(XPathNavigator)) },
+            { typeof(XPathNavigator), new XmlILStorageMethods(typeof(XPathNavigator)) }
         };
     }
 
@@ -465,7 +465,7 @@ namespace System.Xml.Xsl.IlGen
         TagNameAndMappings,     // Tagname contains prefix:localName and prefix is mapped to a namespace
         TagNameAndNamespace,    // Tagname contains prefix:localName and namespace is provided
         QName,                  // Name is computed QName (no prefix available)
-        StackName,              // Element name has already been pushed onto XmlQueryOutput stack
+        StackName // Element name has already been pushed onto XmlQueryOutput stack
     }
 
     /// <summary>

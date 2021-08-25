@@ -9,20 +9,20 @@ namespace System.Xml.XPath
     public enum XmlSortOrder
     {
         Ascending = 1,
-        Descending = 2,
+        Descending = 2
     }
 
     public enum XmlCaseOrder
     {
         None = 0,
         UpperFirst = 1,
-        LowerFirst = 2,
+        LowerFirst = 2
     }
 
     public enum XmlDataType
     {
         Text = 1,
-        Number = 2,
+        Number = 2
     }
 
     public enum XPathResultType

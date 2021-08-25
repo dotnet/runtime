@@ -177,7 +177,7 @@ namespace System.Xml.Schema
                 XmlTypeCode.UnsignedByte => "UnsignedByte",
                 XmlTypeCode.PositiveInteger => "PositiveInteger",
 
-                _ => typeCode.ToString(),
+                _ => typeCode.ToString()
             };
 
         internal static string ConcatenatedToString(object value)

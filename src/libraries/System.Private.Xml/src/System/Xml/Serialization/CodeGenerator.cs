@@ -336,7 +336,7 @@ namespace System.Xml.Serialization
             OpCodes.Bgt,
             OpCodes.Ble,
             OpCodes.Beq,
-            OpCodes.Blt,
+            OpCodes.Blt
         };
 
         private OpCode GetBranchCode(Cmp cmp)
@@ -708,7 +708,7 @@ namespace System.Xml.Serialization
             OpCodes.Nop, //Decimal = 15,
             OpCodes.Nop, //DateTime = 16,
             OpCodes.Nop, //17
-            OpCodes.Ldind_Ref, //String = 18,
+            OpCodes.Ldind_Ref //String = 18,
         };
 
 
@@ -1021,7 +1021,7 @@ namespace System.Xml.Serialization
             OpCodes.Nop, //Decimal = 15,
             OpCodes.Nop, //DateTime = 16,
             OpCodes.Nop, //17
-            OpCodes.Ldelem_Ref, //String = 18,
+            OpCodes.Ldelem_Ref //String = 18,
         };
 
         private OpCode GetLdelemOpCode(TypeCode typeCode)
@@ -1069,7 +1069,7 @@ namespace System.Xml.Serialization
             OpCodes.Nop, //Decimal = 15,
             OpCodes.Nop, //DateTime = 16,
             OpCodes.Nop, //17
-            OpCodes.Stelem_Ref, //String = 18,
+            OpCodes.Stelem_Ref //String = 18,
         };
 
         private OpCode GetStelemOpCode(TypeCode typeCode)
@@ -1181,7 +1181,7 @@ namespace System.Xml.Serialization
             OpCodes.Nop, //Decimal = 15,
             OpCodes.Nop, //DateTime = 16,
             OpCodes.Nop, //17
-            OpCodes.Nop, //String = 18,
+            OpCodes.Nop //String = 18,
         };
 
         private OpCode GetConvOpCode(TypeCode typeCode)

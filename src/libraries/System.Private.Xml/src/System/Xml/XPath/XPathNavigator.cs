@@ -1809,7 +1809,7 @@ namespace System.Xml.XPath
             'W',    // Whitespace
             'P',    // ProcessingInstruction
             'C',    // Comment
-            'X',    // All
+            'X' // All
         };
 
         internal static readonly char[] UniqueIdTbl = new char[] {
@@ -1979,7 +1979,7 @@ namespace System.Xml.XPath
             (1 << (int) XPathNodeType.Whitespace),                  // Whitespace
             (1 << (int) XPathNodeType.ProcessingInstruction),       // ProcessingInstruction
             (1 << (int) XPathNodeType.Comment),                     // Comment
-            NoAttrNmspMask,                                         // All
+            NoAttrNmspMask // All
         };
 
         internal static int GetContentKindMask(XPathNodeType type)

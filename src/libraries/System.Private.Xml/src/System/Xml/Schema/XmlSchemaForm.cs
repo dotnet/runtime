@@ -25,6 +25,6 @@ namespace System.Xml.Schema
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [XmlEnum("unqualified")]
-        Unqualified,
+        Unqualified
     }
 }

@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.Qil
                     0 => _arguments,
                     1 => _definition,
                     2 => _sideEffects,
-                    _ => throw new IndexOutOfRangeException(),
+                    _ => throw new IndexOutOfRangeException()
                 };
             }
             set

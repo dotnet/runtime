@@ -57,7 +57,7 @@ namespace System.Xml
             ReadElementContentAsBase64,
             ReadElementContentAsBinHex,
             ReadContentAsBase64,
-            ReadContentAsBinHex,
+            ReadContentAsBinHex
         }
 
         private const int AttributeActiveStates = 0x62; // 00001100010 bin

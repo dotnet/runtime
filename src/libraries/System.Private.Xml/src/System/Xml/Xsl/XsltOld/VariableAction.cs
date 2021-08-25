@@ -12,7 +12,7 @@ namespace System.Xml.Xsl.XsltOld
         GlobalParameter,
         LocalVariable,
         LocalParameter,
-        WithParameter,
+        WithParameter
     }
 
     internal class VariableAction : ContainerAction, IXsltContextVariable

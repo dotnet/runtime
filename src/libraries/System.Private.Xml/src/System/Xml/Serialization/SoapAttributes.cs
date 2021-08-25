@@ -11,7 +11,7 @@ namespace System.Xml.Serialization
         Enum = 0x1,
         Type = 0x2,
         Element = 0x4,
-        Attribute = 0x8,
+        Attribute = 0x8
     }
 
     public class SoapAttributes

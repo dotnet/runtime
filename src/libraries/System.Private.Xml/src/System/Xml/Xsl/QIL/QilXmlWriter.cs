@@ -50,7 +50,7 @@ namespace System.Xml.Xsl.Qil
             RoundTripTypeInfo = 4,  // Print type information using "S" option
             LineInfo = 8,           // Print source line information
             NodeIdentity = 16,      // Print node identity (only works if QIL_TRACE_NODE_CREATION is defined)
-            NodeLocation = 32,      // Print node creation location (only works if QIL_TRACE_NODE_CREATION is defined)
+            NodeLocation = 32 // Print node creation location (only works if QIL_TRACE_NODE_CREATION is defined)
         };
 
         /// <summary>

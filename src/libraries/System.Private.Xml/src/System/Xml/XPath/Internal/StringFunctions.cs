@@ -56,7 +56,7 @@ namespace MS.Internal.Xml.XPath
                 Function.FunctionType.FuncStringLength => StringLength(nodeIterator),
                 Function.FunctionType.FuncNormalize => Normalize(nodeIterator),
                 Function.FunctionType.FuncTranslate => Translate(nodeIterator),
-                _ => string.Empty,
+                _ => string.Empty
             };
 
         internal static string toString(double num)

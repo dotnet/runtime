@@ -25,7 +25,7 @@ namespace MS.Internal.Xml.Cache
         None = 0,
         Text = XPathNodeType.Text,
         SignificantWhitespace = XPathNodeType.SignificantWhitespace,
-        Whitespace = XPathNodeType.Whitespace,
+        Whitespace = XPathNodeType.Whitespace
     };
 
 

@@ -46,7 +46,7 @@ namespace System.Xml
                 11 => 2,
                 15 => 3,
                 19 => 4,
-                _ => throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[]?)null),
+                _ => throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[]?)null)
             };
             m_bPrec = data[offset + 1];
             m_bScale = data[offset + 2];
@@ -316,7 +316,7 @@ namespace System.Xml
             1000,
             100,
             10,
-            1,
+            1
         };
 
         private static void Write2Dig(StringBuilder sb, int val)

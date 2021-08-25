@@ -134,7 +134,7 @@ namespace System.Xml.Xsl.IlGen
                     0 => _constrInfo,
                     1 => _optPatt,
 
-                    _ => throw new IndexOutOfRangeException(),
+                    _ => throw new IndexOutOfRangeException()
                 };
             }
             set

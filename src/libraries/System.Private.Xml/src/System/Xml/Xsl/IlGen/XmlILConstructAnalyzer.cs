@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.IlGen
         WithinAttr,
         WithinComment,
         WithinPI,
-        Any,
+        Any
     };
 
 
@@ -40,7 +40,7 @@ namespace System.Xml.Xsl.IlGen
         Iterator,               // Construct iterator over expression's results
         Writer,                 // Construct expression through calls to Writer
         WriterThenIterator,     // Construct expression through calls to caching Writer; then construct iterator over cached results
-        IteratorThenWriter,     // Iterate over expression's results and send each item to Writer
+        IteratorThenWriter // Iterate over expression's results and send each item to Writer
     };
 
 

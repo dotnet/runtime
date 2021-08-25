@@ -1330,7 +1330,7 @@ namespace System.Xml.Schema
                 XmlTypeCode.GMonthDay => StringToGMonthDay((string)value),
                 XmlTypeCode.GYear => StringToGYear((string)value),
                 XmlTypeCode.GYearMonth => StringToGYearMonth((string)value),
-                _ => StringToDateTime((string)value),
+                _ => StringToDateTime((string)value)
             };
         }
         public override DateTime ToDateTime(object value)
@@ -1369,7 +1369,7 @@ namespace System.Xml.Schema
                 XmlTypeCode.GMonthDay => StringToGMonthDayOffset((string)value),
                 XmlTypeCode.GYear => StringToGYearOffset((string)value),
                 XmlTypeCode.GYearMonth => StringToGYearMonthOffset((string)value),
-                _ => StringToDateTimeOffset((string)value),
+                _ => StringToDateTimeOffset((string)value)
             };
         }
 
@@ -1436,7 +1436,7 @@ namespace System.Xml.Schema
                 XmlTypeCode.GMonthDay => GMonthDayToString((DateTime)value),
                 XmlTypeCode.GYear => GYearToString((DateTime)value),
                 XmlTypeCode.GYearMonth => GYearMonthToString((DateTime)value),
-                _ => DateTimeToString((DateTime)value),
+                _ => DateTimeToString((DateTime)value)
             };
 
         public override string ToString(DateTimeOffset value) =>
@@ -1449,7 +1449,7 @@ namespace System.Xml.Schema
                 XmlTypeCode.GMonthDay => GMonthDayOffsetToString((DateTimeOffset)value),
                 XmlTypeCode.GYear => GYearOffsetToString((DateTimeOffset)value),
                 XmlTypeCode.GYearMonth => GYearMonthOffsetToString((DateTimeOffset)value),
-                _ => DateTimeOffsetToString((DateTimeOffset)value),
+                _ => DateTimeOffsetToString((DateTimeOffset)value)
             };
 
         public override string ToString(object value, IXmlNamespaceResolver? nsResolver)

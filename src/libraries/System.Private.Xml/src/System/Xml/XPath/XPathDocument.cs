@@ -30,7 +30,7 @@ namespace System.Xml.XPath
         {
             None = 0,
             AtomizeNames = 1,       // Do not assume that names passed to XPathDocumentBuilder have been pre-atomized, and atomize them
-            Fragment = 2,           // Create a document with no document node
+            Fragment = 2 // Create a document with no document node
         }
 
 

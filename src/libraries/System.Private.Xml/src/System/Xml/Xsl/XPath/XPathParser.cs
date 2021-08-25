@@ -403,7 +403,7 @@ namespace System.Xml.Xsl.XPath
             /*Divide     */ 6,
             /*Modulo     */ 6,
             /*UnaryMinus */ 7,
-            /*Union      */ 8,  // Not used
+            /*Union      */ 8 // Not used
         };
 
         /*

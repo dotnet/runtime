@@ -17,7 +17,7 @@ namespace System.Xml.Xsl.IlGen
     {
         None = 0,
         NonUser = 1,    // Non-user method which should debugger should step through
-        Raw = 2,        // Raw method which should not add an implicit first argument of type XmlQueryRuntime
+        Raw = 2 // Raw method which should not add an implicit first argument of type XmlQueryRuntime
     }
 
     internal sealed class XmlILModule

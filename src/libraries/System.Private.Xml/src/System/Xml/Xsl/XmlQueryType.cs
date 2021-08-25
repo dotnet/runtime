@@ -667,7 +667,7 @@ namespace System.Xml.Xsl
             None = 0,
             IsNode = 1,
             IsAtomicValue = 2,
-            IsNumeric = 4,
+            IsNumeric = 4
         }
         #endregion
 
@@ -727,7 +727,7 @@ namespace System.Xml.Xsl
                 /* XmlTypeCode.UnsignedByte          */ TypeFlags.IsAtomicValue | TypeFlags.IsNumeric,
                 /* XmlTypeCode.PositiveInteger       */ TypeFlags.IsAtomicValue | TypeFlags.IsNumeric,
                 /* XmlTypeCode.YearMonthDuration     */ TypeFlags.IsAtomicValue,
-                /* XmlTypeCode.DayTimeDuration       */ TypeFlags.IsAtomicValue,
+                /* XmlTypeCode.DayTimeDuration       */ TypeFlags.IsAtomicValue
         };
 
         private static readonly XmlTypeCode[] s_baseTypeCodes = {
@@ -785,7 +785,7 @@ namespace System.Xml.Xsl
             /* UnsignedByte                */ XmlTypeCode.UnsignedShort,
             /* PositiveInteger             */ XmlTypeCode.NonNegativeInteger,
             /* YearMonthDuration           */ XmlTypeCode.Duration,
-            /* DayTimeDuration             */ XmlTypeCode.Duration,
+            /* DayTimeDuration             */ XmlTypeCode.Duration
         };
 
         private static readonly string[] s_typeNames = {
@@ -843,7 +843,7 @@ namespace System.Xml.Xsl
             /* UnsignedByte                */ "xs:unsignedByte",
             /* PositiveInteger             */ "xs:positiveInteger",
             /* YearMonthDuration           */ "xdt:yearMonthDuration",
-            /* DayTimeDuration             */ "xdt:dayTimeDuration",
+            /* DayTimeDuration             */ "xdt:dayTimeDuration"
         };
 
         private static readonly BitMatrix s_typeCodeDerivation = CreateTypeCodeDerivation();

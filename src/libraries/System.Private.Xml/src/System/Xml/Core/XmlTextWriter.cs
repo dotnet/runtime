@@ -23,7 +23,7 @@ namespace System.Xml
         // It only indents Element Content (http://www.w3.org/TR/1998/REC-xml-19980210#sec-element-content)
         // and not Mixed Content (http://www.w3.org/TR/1998/REC-xml-19980210#sec-mixed-content)
         // according to the XML 1.0 definitions of these terms.
-        Indented,
+        Indented
     }
 
     // Represents a writer that provides fast non-cached forward-only way of generating XML streams
@@ -105,7 +105,7 @@ namespace System.Xml
             AttrOnly,
             Epilog,
             Error,
-            Closed,
+            Closed
         }
 
         private enum Token
@@ -196,7 +196,7 @@ namespace System.Xml
             "AttrOnly",
             "Epilog",
             "Error",
-            "Closed",
+            "Closed"
         };
 
         private static readonly string[] s_tokenName = {
@@ -231,7 +231,7 @@ namespace System.Xml
             /* Token.Content        */ State.Content,   State.Content,   State.Error,     State.Content,   State.Attribute, State.Content,  State.Attribute, State.Epilog,
             /* Token.Base64         */ State.Content,   State.Content,   State.Error,     State.Content,   State.Attribute, State.Content,  State.Attribute, State.Epilog,
             /* Token.RawData        */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Attribute, State.Epilog,
-            /* Token.Whitespace     */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Attribute, State.Epilog,
+            /* Token.Whitespace     */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Attribute, State.Epilog
         };
 
         private static readonly State[] s_stateTableDocument = {
@@ -249,7 +249,7 @@ namespace System.Xml
             /* Token.Content        */ State.Error,     State.Error,     State.Error,     State.Content,   State.Attribute, State.Content,  State.Error,     State.Error,
             /* Token.Base64         */ State.Error,     State.Error,     State.Error,     State.Content,   State.Attribute, State.Content,  State.Error,     State.Error,
             /* Token.RawData        */ State.Error,     State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Error,     State.Epilog,
-            /* Token.Whitespace     */ State.Error,     State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Error,     State.Epilog,
+            /* Token.Whitespace     */ State.Error,     State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Error,     State.Epilog
         };
 
         //

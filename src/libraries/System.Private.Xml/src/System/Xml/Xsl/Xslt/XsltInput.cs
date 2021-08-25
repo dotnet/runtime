@@ -1045,7 +1045,7 @@ namespace System.Xml.Xsl.Xslt
                 XmlNodeType.Comment => 4,               // "<!--"
                 XmlNodeType.EndElement => 2,            // "</"
                 XmlNodeType.EntityReference => 1,       // "&"
-                _ => 0,
+                _ => 0
             };
 
         public ISourceLineInfo BuildLineInfo()

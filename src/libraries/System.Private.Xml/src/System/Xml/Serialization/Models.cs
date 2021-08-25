@@ -263,7 +263,7 @@ namespace System.Xml.Serialization
     {
         None,
         ReadOnly,
-        ReadWrite,
+        ReadWrite
     }
 
     internal sealed class FieldModel

@@ -60,7 +60,7 @@ namespace System.Xml.Schema
             WhiteSpace,
             AppInfo,
             Documentation,
-            Redefine,
+            Redefine
         }
 
         private const int STACK_INCREMENT = 10;
@@ -256,7 +256,7 @@ namespace System.Xml.Schema
         };
 
         private static readonly XsdAttributeEntry[] s_simpleContentAttributes = {
-            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) )
         };
 
         private static readonly XsdAttributeEntry[] s_simpleContentExtensionAttributes = {
@@ -266,22 +266,22 @@ namespace System.Xml.Schema
 
         private static readonly XsdAttributeEntry[] s_simpleContentRestrictionAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaBase,                    new XsdBuildFunction(BuildSimpleContentRestriction_Base) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) )
         };
 
         private static readonly XsdAttributeEntry[] s_complexContentAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaMixed,                   new XsdBuildFunction(BuildComplexContent_Mixed) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaMixed,                   new XsdBuildFunction(BuildComplexContent_Mixed) )
         };
 
         private static readonly XsdAttributeEntry[] s_complexContentExtensionAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaBase,                    new XsdBuildFunction(BuildComplexContentExtension_Base) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) )
         };
 
         private static readonly XsdAttributeEntry[] s_complexContentRestrictionAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaBase,                    new XsdBuildFunction(BuildComplexContentRestriction_Base) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) )
         };
 
         private static readonly XsdAttributeEntry[] s_simpleTypeAttributes = {
@@ -292,22 +292,22 @@ namespace System.Xml.Schema
 
         private static readonly XsdAttributeEntry[] s_simpleTypeRestrictionAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaBase,                    new XsdBuildFunction(BuildSimpleTypeRestriction_Base) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) )
         };
 
         private static readonly XsdAttributeEntry[] s_simpleTypeUnionAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaMemberTypes,             new XsdBuildFunction(BuildSimpleTypeUnion_MemberTypes) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaMemberTypes,             new XsdBuildFunction(BuildSimpleTypeUnion_MemberTypes) )
         };
 
         private static readonly XsdAttributeEntry[] s_simpleTypeListAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaItemType,                new XsdBuildFunction(BuildSimpleTypeList_ItemType) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaItemType,                new XsdBuildFunction(BuildSimpleTypeList_ItemType) )
         };
 
         private static readonly XsdAttributeEntry[] s_attributeGroupAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaName,                    new XsdBuildFunction(BuildAttributeGroup_Name) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaName,                    new XsdBuildFunction(BuildAttributeGroup_Name) )
         };
 
         private static readonly XsdAttributeEntry[] s_attributeGroupRefAttributes = {
@@ -317,7 +317,7 @@ namespace System.Xml.Schema
 
         private static readonly XsdAttributeEntry[] s_groupAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaName,                    new XsdBuildFunction(BuildGroup_Name) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaName,                    new XsdBuildFunction(BuildGroup_Name) )
         };
 
         private static readonly XsdAttributeEntry[] s_groupRefAttributes = {
@@ -330,7 +330,7 @@ namespace System.Xml.Schema
         private static readonly XsdAttributeEntry[] s_particleAttributes = {
             new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
             new XsdAttributeEntry(SchemaNames.Token.SchemaMaxOccurs,               new XsdBuildFunction(BuildParticle_MaxOccurs) ),
-            new XsdAttributeEntry(SchemaNames.Token.SchemaMinOccurs,               new XsdBuildFunction(BuildParticle_MinOccurs) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaMinOccurs,               new XsdBuildFunction(BuildParticle_MinOccurs) )
         };
 
 
@@ -403,7 +403,7 @@ namespace System.Xml.Schema
         };
 
         private static readonly XsdAttributeEntry[] s_annotationAttributes = {
-            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) ),
+            new XsdAttributeEntry(SchemaNames.Token.SchemaId,                      new XsdBuildFunction(BuildAnnotated_Id) )
         };
         //
         // XSD Schema entries
@@ -613,7 +613,7 @@ namespace System.Xml.Schema
             (int)XmlSchemaDerivationMethod.Restriction,
             (int)XmlSchemaDerivationMethod.List,
             (int)XmlSchemaDerivationMethod.Union,
-            (int)XmlSchemaDerivationMethod.All,
+            (int)XmlSchemaDerivationMethod.All
         };
         private static readonly string[] s_derivationMethodStrings = {
             "substitution",
@@ -621,7 +621,7 @@ namespace System.Xml.Schema
             "restriction",
             "list",
             "union",
-            "#all",
+            "#all"
         };
 
         private static readonly string[] s_formStringValues = { "qualified", "unqualified" };

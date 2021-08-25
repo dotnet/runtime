@@ -30,7 +30,7 @@ namespace System.Xml
             4, // 4
             5, // 5
             5, // 6
-            5, // 7
+            5 // 7
         };
 
         private enum ScanState
@@ -423,7 +423,7 @@ namespace System.Xml
                 {
                     0 => ConformanceLevel.Auto,
                     9 => ConformanceLevel.Fragment,
-                    _ => ConformanceLevel.Document,
+                    _ => ConformanceLevel.Document
                 };
                 settings.CheckCharacters = _checkCharacters;
                 settings.IgnoreWhitespace = _ignoreWhitespace;
@@ -3866,7 +3866,7 @@ namespace System.Xml
                 BinXmlToken.XSD_KATMAI_DATEOFFSET => BinXmlDateTime.XsdKatmaiDateOffsetToDateTimeOffset(_data, _tokDataPos),
                 BinXmlToken.XSD_KATMAI_DATETIMEOFFSET => BinXmlDateTime.XsdKatmaiDateTimeOffsetToDateTimeOffset(_data, _tokDataPos),
                 BinXmlToken.XSD_KATMAI_TIMEOFFSET => BinXmlDateTime.XsdKatmaiTimeOffsetToDateTimeOffset(_data, _tokDataPos),
-                _ => throw ThrowUnexpectedToken(_token),
+                _ => throw ThrowUnexpectedToken(_token)
             };
         }
 

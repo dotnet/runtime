@@ -27,7 +27,7 @@ namespace System.Xml.Xsl.Xslt
 
         // Context node is specified by iterator
         // Used while compiling keys
-        Iterator,
+        Iterator
     }
 
     internal struct SingletonFocus : IFocus

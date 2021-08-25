@@ -334,7 +334,7 @@ namespace System.Xml.Xsl.Runtime
             /*Equality  */
             Eq, Ne,
             /*Relational*/
-            Lt, Le, Gt, Ge,
+            Lt, Le, Gt, Ge
         }
 
         // Returns TypeCode of the given atomic value
@@ -373,7 +373,7 @@ namespace System.Xml.Xsl.Runtime
                 ComparisonOperator.Lt => left < right,
                 ComparisonOperator.Le => left <= right,
                 ComparisonOperator.Gt => left > right,
-                _ => left >= right,
+                _ => left >= right
             };
 
         private static bool CompareValues(ComparisonOperator op, XPathItem left, XPathItem right, TypeCode compType)
@@ -481,7 +481,7 @@ namespace System.Xml.Xsl.Runtime
                 ComparisonOperator.Le => ComparisonOperator.Ge,
                 ComparisonOperator.Gt => ComparisonOperator.Lt,
                 ComparisonOperator.Ge => ComparisonOperator.Le,
-                _ => op,
+                _ => op
             };
 
         public bool RelationalOperator(double opCode, IList<XPathItem> left, IList<XPathItem> right)

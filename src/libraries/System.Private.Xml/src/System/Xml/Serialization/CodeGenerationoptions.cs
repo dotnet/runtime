@@ -48,6 +48,6 @@ namespace System.Xml.Serialization
         /// Generate OM INotifyPropertyChanged interface to enable data binding.
         /// </summary>
         [XmlEnum("enableDataBinding")]
-        EnableDataBinding = 0x10,
+        EnableDataBinding = 0x10
     }
 }

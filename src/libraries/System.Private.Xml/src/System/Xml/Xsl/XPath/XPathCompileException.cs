@@ -45,7 +45,7 @@ namespace System.Xml.Xsl.XPath
         {
             Left,
             Right,
-            Middle,
+            Middle
         }
 
         // This function is used to prevent long quotations in error messages, SQLBUDT 222626

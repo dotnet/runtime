@@ -19,7 +19,7 @@ namespace System.Xml.Xsl.Runtime
         WithinAttr,             // Adding text to an attribute
         WithinNmsp,             // Adding text to an namespace
         WithinComment,          // Adding text to a comment
-        WithinPI,               // Adding text to a processing instruction
+        WithinPI // Adding text to a processing instruction
     };
 
 

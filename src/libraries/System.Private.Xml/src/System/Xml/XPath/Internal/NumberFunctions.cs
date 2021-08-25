@@ -51,7 +51,7 @@ namespace MS.Internal.Xml.XPath
                 FT.FuncFloor => Floor(nodeIterator),
                 FT.FuncCeiling => Ceiling(nodeIterator),
                 FT.FuncRound => Round(nodeIterator),
-                _ => throw new InvalidOperationException(),
+                _ => throw new InvalidOperationException()
             };
 
         private double Number(XPathNodeIterator nodeIterator)

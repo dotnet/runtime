@@ -485,7 +485,7 @@ namespace System.Xml
                 XmlNodeType.Attribute => GetAttributeFromElement((XmlElement)_elemNode!, name),
                 XmlNodeType.XmlDeclaration => GetDeclarationAttr((XmlDeclaration)_curNode, name),
                 XmlNodeType.DocumentType => GetDocumentTypeAttr((XmlDocumentType)_curNode, name),
-                _ => null,
+                _ => null
             };
         }
 
@@ -507,7 +507,7 @@ namespace System.Xml
                 XmlNodeType.Attribute => GetAttributeFromElement((XmlElement)_elemNode!, name, ns),
                 XmlNodeType.XmlDeclaration => (ns.Length == 0) ? GetDeclarationAttr((XmlDeclaration)_curNode, name) : null,
                 XmlNodeType.DocumentType => (ns.Length == 0) ? GetDocumentTypeAttr((XmlDocumentType)_curNode, name) : null,
-                _ => null,
+                _ => null
             };
         }
 

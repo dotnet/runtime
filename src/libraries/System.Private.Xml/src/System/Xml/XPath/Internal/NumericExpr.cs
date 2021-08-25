@@ -64,7 +64,7 @@ namespace MS.Internal.Xml.XPath
                 Operator.Op.MOD => n1 % n2,
                 Operator.Op.DIV => n1 / n2,
                 Operator.Op.MUL => n1 * n2,
-                _ => 0,
+                _ => 0
             };
         }
 

@@ -18,6 +18,6 @@ namespace System.Xml
         //
         // Duplicate namespace declarations will be removed
         //
-        OmitDuplicates = 0x1,
+        OmitDuplicates = 0x1
     }
 }

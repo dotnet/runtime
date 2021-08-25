@@ -53,7 +53,7 @@ namespace System.Xml
             OnReadBinaryContent = 7,
             ReaderClosed = 8,
             EOF = 9,
-            Error = 10,
+            Error = 10
         }
 
         // Validation

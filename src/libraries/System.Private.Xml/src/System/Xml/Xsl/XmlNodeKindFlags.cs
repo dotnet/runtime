@@ -61,6 +61,6 @@ namespace System.Xml.Xsl
         /// <summary>
         /// shortcut for any node kind
         /// </summary>
-        Any = 0x7F,
+        Any = 0x7F
     }
 }

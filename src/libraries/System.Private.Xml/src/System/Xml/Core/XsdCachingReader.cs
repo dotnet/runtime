@@ -21,7 +21,7 @@ namespace System.Xml
             Record = 2,
             Replay = 3,
             ReaderClosed = 4,
-            Error = 5,
+            Error = 5
         }
 
         private XmlReader _coreReader;

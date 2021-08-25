@@ -67,7 +67,7 @@ namespace System.Xml
             ANY,
             EMPTY,
             IGNORE,
-            INCLUDE,
+            INCLUDE
         }
 
         private enum ScanningFunction
@@ -105,7 +105,7 @@ namespace System.Xml
             PublicId2,
             ClosingTag,
             ParamEntitySpace,
-            None,
+            None
         }
 
         private enum LiteralType

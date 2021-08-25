@@ -114,7 +114,7 @@ namespace System.Xml
             StartFragEle = 115,
             StartFragCont = 116,
             StartFragB64 = 117,
-            StartRootLevelAttr = 118,
+            StartRootLevelAttr = 118
         }
 
         private enum Token
@@ -133,7 +133,7 @@ namespace System.Xml
             AtomicValue,
             Base64,
             RawData,
-            Whitespace,
+            Whitespace
         }
 
         internal static readonly string[] stateName = {
@@ -153,7 +153,7 @@ namespace System.Xml
             "Root Level Base64 Attribute Value",    // State.RootLevelB64Attr
             "After Root Level Attribute",           // State.AfterRootLevelAttr
             "Closed",                    // State.Closed
-            "Error",                     // State.Error
+            "Error" // State.Error
         };
 
         internal static readonly string[] tokenName = {
@@ -171,7 +171,7 @@ namespace System.Xml
             "Atomic value",             // Token.AtomicValue
             "Base64",                   // Token.Base64
             "RawData",                  // Token.RawData
-            "Whitespace",               // Token.Whitespace
+            "Whitespace" // Token.Whitespace
         };
 
         private static readonly WriteState[] s_state2WriteState = {
@@ -191,7 +191,7 @@ namespace System.Xml
             WriteState.Attribute,   // State.RootLevelB64Attr
             WriteState.Attribute,   // State.AfterRootLevelAttr
             WriteState.Closed,      // State.Closed
-            WriteState.Error,       // State.Error
+            WriteState.Error // State.Error
         };
 
         private static readonly State[] s_stateTableDocument = {
@@ -229,7 +229,7 @@ namespace System.Xml
     /* Token.AtomicValue    */ State.StartFragCont,  State.StartFragCont, State.Error,       State.StartContent,    State.Content,    State.PostB64Cont,    State.PostB64Attr,   State.Content,        State.Attribute,      State.Error,         State.Error,        State.RootLevelAttr,      State.Error,              State.PostB64RootAttr,   State.Error,              State.Error, /* Token.AtomicValue    */
     /* Token.Base64         */ State.StartFragB64,   State.StartFragB64,  State.Error,       State.StartContentB64, State.B64Content, State.B64Content,     State.B64Attribute,  State.B64Content,     State.B64Attribute,   State.Error,         State.Error,        State.RootLevelB64Attr,   State.Error,              State.RootLevelB64Attr,  State.Error,              State.Error, /* Token.Base64         */
     /* Token.RawData        */ State.StartFragCont,  State.TopLevel,      State.Error,       State.StartContent,    State.Content,    State.PostB64Cont,    State.PostB64Attr,   State.Content,        State.Attribute,      State.SpecialAttr,   State.Error,        State.RootLevelAttr,      State.RootLevelSpecAttr,  State.PostB64RootAttr,   State.AfterRootLevelAttr, State.Error, /* Token.RawData        */
-    /* Token.Whitespace     */ State.TopLevel,       State.TopLevel,      State.Error,       State.StartContent,    State.Content,    State.PostB64Cont,    State.PostB64Attr,   State.AfterRootEle,   State.Attribute,      State.SpecialAttr,   State.Error,        State.RootLevelAttr,      State.RootLevelSpecAttr,  State.PostB64RootAttr,   State.AfterRootLevelAttr, State.Error, /* Token.Whitespace     */
+    /* Token.Whitespace     */ State.TopLevel,       State.TopLevel,      State.Error,       State.StartContent,    State.Content,    State.PostB64Cont,    State.PostB64Attr,   State.AfterRootEle,   State.Attribute,      State.SpecialAttr,   State.Error,        State.RootLevelAttr,      State.RootLevelSpecAttr,  State.PostB64RootAttr,   State.AfterRootLevelAttr, State.Error /* Token.Whitespace     */
         };
 
         //

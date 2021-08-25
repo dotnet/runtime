@@ -74,7 +74,7 @@ namespace System.Xml.Xsl.Runtime
                 2 => string.Concat(_s1, _s2),
                 3 => string.Concat(_s1, _s2, _s3),
                 4 => string.Concat(_s1, _s2, _s3, _s4),
-                _ => string.Concat(_strList!.ToArray()),
+                _ => string.Concat(_strList!.ToArray())
             };
 
         /// <summary>

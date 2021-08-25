@@ -26,7 +26,7 @@ namespace System.Xml.Schema
         ProcessSchemaLocation = 0x0002,
         ReportValidationWarnings = 0x0004,
         ProcessIdentityConstraints = 0x0008,
-        AllowXmlAttributes = 0x0010,
+        AllowXmlAttributes = 0x0010
     }
 
     internal enum ValidatorState
@@ -42,7 +42,7 @@ namespace System.Xml.Schema
         Whitespace,
         EndElement,
         SkipToEndElement,
-        Finish,
+        Finish
     }
     internal sealed class IdRefNode
     {
@@ -154,7 +154,7 @@ namespace System.Xml.Schema
         /*ValidatorState.Whitespace*/       {  false,                       false,                    false,                                 false,                           true,                           false,                          false,                              true,                       true,                       true,                           true,                                       false},
         /*ValidatorState.EndElement*/       {  false,                       false,                    false,                                 true,                            true,                           false,                          false,                              true,                       true,                       true,                           true /*?*/,                                 true },
         /*ValidatorState.SkipToEndElement*/ {  false,                       false,                    false,                                 true,                            true,                           false,                          false,                              true,                       true,                       true,                           true,                                       true },
-        /*ValidatorState.Finish*/           {  false,                       true,                     false,                                 false,                           false,                          false,                          false,                              false,                      false,                      false,                          false,                                      false},
+        /*ValidatorState.Finish*/           {  false,                       true,                     false,                                 false,                           false,                          false,                          false,                              false,                      false,                      false,                          false,                                      false}
         };
 
         private static readonly string[] s_methodNames = new string[12] { "None", "Initialize", "top-level ValidateAttribute", "top-level ValidateText or ValidateWhitespace", "ValidateElement", "ValidateAttribute", "ValidateEndOfAttributes", "ValidateText", "ValidateWhitespace", "ValidateEndElement", "SkipToEndElement", "EndValidation" };

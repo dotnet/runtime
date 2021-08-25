@@ -13,7 +13,7 @@ namespace System.Xml.Xsl.Xslt
     {
         Version10 = 0,
         ForwardsCompatible = 1,
-        Current = Version10,
+        Current = Version10
     }
 
     // RootLevel is underdeveloped consept currently. I plane to move here more collections from Compiler.

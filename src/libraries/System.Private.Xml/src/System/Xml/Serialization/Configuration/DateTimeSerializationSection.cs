@@ -15,7 +15,7 @@ namespace System.Xml.Serialization.Configuration
         {
             Default = 0,
             Roundtrip = 1,
-            Local = 2,
+            Local = 2
         }
 
         public DateTimeSerializationSection()

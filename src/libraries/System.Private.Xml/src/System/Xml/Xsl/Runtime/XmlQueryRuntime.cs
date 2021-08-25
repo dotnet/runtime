@@ -717,7 +717,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 0 => XmlQueryCardinality.Zero,
                 1 => XmlQueryCardinality.One,
-                _ => XmlQueryCardinality.More,
+                _ => XmlQueryCardinality.More
             };
 
             if (!(card <= typBase.Cardinality))

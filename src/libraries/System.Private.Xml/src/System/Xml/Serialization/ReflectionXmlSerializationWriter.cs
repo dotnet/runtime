@@ -1207,7 +1207,7 @@ namespace System.Xml.Serialization
                 "Char" => XmlConvert.ToString((char)o),
                 "TimeSpan" => XmlConvert.ToString((TimeSpan)o),
                 "DateTimeOffset" => XmlConvert.ToString((DateTimeOffset)o),
-                _ => o.ToString()!,
+                _ => o.ToString()!
             };
             return stringValue;
         }

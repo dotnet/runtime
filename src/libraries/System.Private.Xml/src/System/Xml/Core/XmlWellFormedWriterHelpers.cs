@@ -73,7 +73,7 @@ namespace System.Xml
             Written,
             NeedToWrite,
             Implied,
-            Special,
+            Special
         }
 
         private partial struct Namespace
@@ -158,7 +158,7 @@ namespace System.Xml
                 StringChars,
                 Raw,
                 RawChars,
-                ValueString,
+                ValueString
             }
 
             private sealed class Item

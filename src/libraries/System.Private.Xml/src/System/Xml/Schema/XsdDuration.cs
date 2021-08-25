@@ -31,14 +31,14 @@ namespace System.Xml.Schema
             HasDays = 4,
             HasHours = 8,
             HasMinutes = 16,
-            HasSeconds = 32,
+            HasSeconds = 32
         }
 
         public enum DurationType
         {
             Duration,
             YearMonthDuration,
-            DayTimeDuration,
+            DayTimeDuration
         }
 
         /// <summary>

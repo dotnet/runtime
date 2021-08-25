@@ -65,14 +65,14 @@ namespace System.Xml.Schema
         MinInclusive = 0x0100,
         MinExclusive = 0x0200,
         TotalDigits = 0x0400,
-        FractionDigits = 0x0800,
+        FractionDigits = 0x0800
     }
 
     internal enum XmlSchemaWhiteSpace
     {
         Preserve,
         Replace,
-        Collapse,
+        Collapse
     }
 
     internal sealed class RestrictionFacets
@@ -882,7 +882,7 @@ namespace System.Xml.Schema
             new SchemaDatatypeMap("unsignedByte",       s_unsignedByte, 44),
             new SchemaDatatypeMap("unsignedInt",        s_unsignedInt, 43),
             new SchemaDatatypeMap("unsignedLong",       s_unsignedLong, 33),
-            new SchemaDatatypeMap("unsignedShort",      s_unsignedShort, 42),
+            new SchemaDatatypeMap("unsignedShort",      s_unsignedShort, 42)
         };
 
         protected int Compare(byte[] value1, byte[] value2)

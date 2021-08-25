@@ -20,7 +20,7 @@ namespace System.Xml.Schema
         MaxExclusive,
         MaxInclusive,
         TotalDigits,
-        FractionDigits,
+        FractionDigits
     }
 
     public abstract class XmlSchemaFacet : XmlSchemaAnnotated

@@ -17,7 +17,7 @@ namespace System.Xml.Xsl.Runtime
     {
         NoMoreNodes,                // Iteration is complete; there are no more nodes
         NeedInputNode,              // The next node needs to be fetched from the contained iterator before iteration can continue
-        HaveCurrentNode,            // This iterator's Current property is set to the next node in the iteration
+        HaveCurrentNode // This iterator's Current property is set to the next node in the iteration
     };
 
 

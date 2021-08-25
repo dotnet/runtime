@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.Runtime
         {
             NoPrevious = 0,
             NeedCurrent,
-            NeedDescendant,
+            NeedDescendant
         }
 
         /// <summary>
@@ -404,7 +404,7 @@ namespace System.Xml.Xsl.Runtime
             HaveCandidateCurrent,
             HaveCurrentNeedNext,
             HaveCurrentHaveNext,
-            HaveCurrentNoNext,
+            HaveCurrentNoNext
         };
 
         /// <summary>
@@ -726,7 +726,7 @@ namespace System.Xml.Xsl.Runtime
             NeedCandidateCurrent = 0,
             HaveCandidateCurrent,
             HaveCurrentHaveNext,
-            HaveCurrentNoNext,
+            HaveCurrentNoNext
         }
 
         /// <summary>
@@ -869,7 +869,7 @@ namespace System.Xml.Xsl.Runtime
             HaveCurrent,
             NeedCurrent,
             HaveCurrentNoNext,
-            NoNext,
+            NoNext
         }
 
         /// <summary>

@@ -23,7 +23,7 @@ namespace System.Xml.Xsl.Runtime
         InitRightIterator,          // Initialize right nested iterator
         NeedLeftNode,               // The next node needs to be fetched from the left nested iterator
         NeedRightNode,              // The next node needs to be fetched from the right nested iterator
-        HaveCurrentNode,            // This iterator's Current property is set to the next node in the iteration
+        HaveCurrentNode // This iterator's Current property is set to the next node in the iteration
     };
 
 
@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.Runtime
             NeedLeft,
             NeedRight,
             LeftIsCurrent,
-            RightIsCurrent,
+            RightIsCurrent
         };
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace System.Xml.Xsl.Runtime
             NeedLeft,
             NeedRight,
             NeedLeftAndRight,
-            HaveCurrent,
+            HaveCurrent
         };
 
         /// <summary>
@@ -270,7 +270,7 @@ namespace System.Xml.Xsl.Runtime
             NeedLeft,
             NeedRight,
             NeedLeftAndRight,
-            HaveCurrent,
+            HaveCurrent
         };
 
         /// <summary>

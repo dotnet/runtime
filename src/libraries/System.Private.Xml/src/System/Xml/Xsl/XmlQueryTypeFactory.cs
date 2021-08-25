@@ -309,7 +309,7 @@ namespace System.Xml.Xsl
             /* XPathNodeType.Whitespace */              XmlTypeCode.Text,
             /* XPathNodeType.ProcessingInstruction */   XmlTypeCode.ProcessingInstruction,
             /* XPathNodeType.Comment */                 XmlTypeCode.Comment,
-            /* XPathNodeType.All */                     XmlTypeCode.Node,
+            /* XPathNodeType.All */                     XmlTypeCode.Node
         };
         #endregion
 
@@ -523,7 +523,7 @@ namespace System.Xml.Xsl
                     XmlTypeCode.ProcessingInstruction => XmlNodeKindFlags.PI,
                     XmlTypeCode.Comment => XmlNodeKindFlags.Comment,
                     XmlTypeCode.Text => XmlNodeKindFlags.Text,
-                    _ => XmlNodeKindFlags.None,
+                    _ => XmlNodeKindFlags.None
                 };
             }
 
@@ -795,7 +795,7 @@ namespace System.Xml.Xsl
                 /* Text */          XmlTypeCode.Text,
                 /* Comment */       XmlTypeCode.Comment,
                 /* PI */            XmlTypeCode.ProcessingInstruction,
-                /* Namespace */     XmlTypeCode.Namespace,
+                /* Namespace */     XmlTypeCode.Namespace
             };
 
             //-----------------------------------------------

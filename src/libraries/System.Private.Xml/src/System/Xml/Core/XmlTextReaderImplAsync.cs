@@ -3234,7 +3234,7 @@ namespace System.Xml
             Surrogate,
             ReadData,
             NoValue,
-            PartialValue,
+            PartialValue
         }
 
         private ParseTextFunction _parseText_NextFunction;
