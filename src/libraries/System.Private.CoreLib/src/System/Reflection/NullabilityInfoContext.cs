@@ -348,7 +348,6 @@ namespace System.Reflection
         {
             NullabilityState state = NullabilityState.Unknown;
             NullabilityInfo? elementState = null;
-            NullabilityInfo nullability;
             NullabilityInfo[] genericArgumentsState = Array.Empty<NullabilityInfo>();
             Type? underlyingType = type;
 
@@ -395,7 +394,7 @@ namespace System.Reflection
                 }
             }
 
-            nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState);
+            NullabilityInfo nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState);
 
             if (!type.IsValueType && state != NullabilityState.Unknown)
             {
