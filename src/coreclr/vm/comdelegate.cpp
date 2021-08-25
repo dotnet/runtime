@@ -1380,7 +1380,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     {
         GCX_PREEMP();
 
-        pMarshalStub = GetStubForInteropMethod(pMD, 0, &(pClass->m_pForwardStubMD));
+        pMarshalStub = GetStubForInteropMethod(pMD);
 
         // Save this new stub on the DelegateEEClass.
         InterlockedCompareExchangeT<PCODE>(&pClass->m_pMarshalStub, pMarshalStub, NULL);

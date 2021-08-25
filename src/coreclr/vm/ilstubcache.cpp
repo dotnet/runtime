@@ -157,7 +157,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->SetMemberDef(0);
     pMD->SetSlot(MethodTable::NO_SLOT);       // we can't ever use the slot for dynamic methods
     // the no metadata part of the method desc
-    pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB");
+    pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->m_dwExtendedFlags = mdPublic | DynamicMethodDesc::nomdILStub;
 
     pMD->SetTemporaryEntryPoint(pMT->GetLoaderAllocator(), pamTracker);
@@ -296,11 +296,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     {
         switch(dwStubFlags)
         {
-            case ILSTUB_ARRAYOP_GET: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Get");
+            case ILSTUB_ARRAYOP_GET: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Get";
                                              break;
-            case ILSTUB_ARRAYOP_SET: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Set");
+            case ILSTUB_ARRAYOP_SET: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Set";
                                              break;
-            case ILSTUB_ARRAYOP_ADDRESS: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Address");
+            case ILSTUB_ARRAYOP_ADDRESS: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Address";
                                              break;
             default: _ASSERTE(!"Unknown array il stub");
         }
@@ -308,15 +308,15 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     else
 #endif
     {
-        pMD->m_pszMethodName.SetValue(pMD->GetILStubResolver()->GetStubMethodName());
+        pMD->m_pszMethodName = pMD->GetILStubResolver()->GetStubMethodName();
     }
 
 
 #ifdef _DEBUG
-    pMD->m_pszDebugMethodName = RelativePointer<PTR_CUTF8>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(DynamicMethodDesc, pMD, m_pszMethodName));
+    pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
     pMD->m_pszDebugClassName  = ILStubResolver::GetStubClassName(pMD);  // must be called after type is set
     pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
-    pMD->m_pDebugMethodTable.SetValue(pMT);
+    pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 
     RETURN pMD;

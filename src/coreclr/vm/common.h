@@ -296,7 +296,6 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "fixuppointer.h"
 #include "stgpool.h"
 
 // src/vm

@@ -463,7 +463,6 @@ VOID UMThunkMarshInfo::RunTimeInit()
         return;
 
     PCODE pFinalILStub = NULL;
-    MethodDesc* pStubMD = NULL;
 
     MethodDesc * pMD = GetMethod();
 
@@ -481,7 +480,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         }
 #endif // DEBUGGING_SUPPORTED
 
-        pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags, &pStubMD);
+        pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags);
     }
 
     if (pFinalILStub == NULL)
@@ -498,7 +497,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         if (sigInfo.IsDelegateInterop())
             dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
-        pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
+        MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
         pFinalILStub = JitILStub(pStubMD);
     }
 

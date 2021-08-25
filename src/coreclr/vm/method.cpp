@@ -523,7 +523,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     return GetMethodTable_NoLogging()->GetSlot(GetSlot());
 }
 
-TADDR MethodDesc::GetAddrOfSlot()
+PTR_PCODE MethodDesc::GetAddrOfSlot()
 {
     CONTRACTL
     {
@@ -540,7 +540,7 @@ TADDR MethodDesc::GetAddrOfSlot()
     {
         SIZE_T size = GetBaseSize();
 
-        return dac_cast<TADDR>(this) + size;
+        return PTR_PCODE(dac_cast<TADDR>(this) + size);
     }
 
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
@@ -935,9 +935,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #endif // !DACCESS_COMPILE
 
 //*******************************************************************************
-// Returns the address of the native code. The native code can be one of:
-// - jitted code if !IsPreImplemented()
-// - ngened code if IsPreImplemented()
+// Returns the address of the native code.
 //
 // Methods which have no native code are either implemented by stubs or not jitted yet.
 // For example, NDirectMethodDesc's have no native code.  They are treated as
@@ -956,9 +954,9 @@ PCODE MethodDesc::GetNativeCode()
     {
         // When profiler is enabled, profiler may ask to rejit a code even though we
         // we have ngen code for this MethodDesc.  (See MethodDesc::DoPrestub).
-        // This means that NativeCodeSlot::GetValueMaybeNullAtPtr(GetAddrOfNativeCodeSlot())
+        // This means that *GetAddrOfNativeCodeSlot()
         // is not stable. It can turn from non-zero to zero.
-        PCODE pCode = PCODE(NativeCodeSlot::GetValueMaybeNullAtPtr(GetAddrOfNativeCodeSlot()) & ~FIXUP_LIST_MASK);
+        PCODE pCode = *GetAddrOfNativeCodeSlot();
 #ifdef TARGET_ARM
         if (pCode != NULL)
             pCode |= THUMB_CODE;
@@ -973,7 +971,7 @@ PCODE MethodDesc::GetNativeCode()
 }
 
 //*******************************************************************************
-TADDR MethodDesc::GetAddrOfNativeCodeSlot()
+PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -981,22 +979,7 @@ TADDR MethodDesc::GetAddrOfNativeCodeSlot()
 
     SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl)];
 
-    return dac_cast<TADDR>(this) + size;
-}
-
-//*******************************************************************************
-PCODE MethodDesc::GetPreImplementedCode()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return NULL;
+    return (PTR_PCODE)(dac_cast<TADDR>(this) + size);
 }
 
 //*******************************************************************************
@@ -1784,7 +1767,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
             pMD = (MethodDesc *)((BYTE *)pMD + oneSize);
         }
 
-        pChunk->m_next.SetValueMaybeNull(pFirstChunk);
+        pChunk->m_next = pFirstChunk;
         pFirstChunk = pChunk;
 
         methodDescCount -= count;
@@ -2257,21 +2240,12 @@ void MethodDesc::Reset()
 
         InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint | enum_flag2_HasPrecode, FALSE);
 
-        TADDR slot = GetAddrOfSlot();
-        if (IsVtableSlot())
-        {
-            ((MethodTable::VTableIndir2_t *) slot)->SetValue(GetTemporaryEntryPoint());
-        }
-        else
-        {
-            *((PCODE *) slot) = GetTemporaryEntryPoint();
-        }
+        *GetAddrOfSlot() = GetTemporaryEntryPoint();
     }
 
     if (HasNativeCodeSlot())
     {
-        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
-        pRelPtr->SetValueMaybeNull(NULL);
+        *GetAddrOfNativeCodeSlot() = NULL;
     }
     _ASSERTE(!HasNativeCode());
 }
@@ -2998,19 +2972,9 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
 
     GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
 
-    TADDR slot = GetAddrOfSlot();
-    if (IsVtableSlot())
-    {
-        MethodTable::VTableIndir2_t *slotPtr = ((MethodTable::VTableIndir2_t *) slot);
-        _ASSERTE(slotPtr->IsNull());
-        slotPtr->SetValue(GetTemporaryEntryPoint());
-    }
-    else
-    {
-        PCODE *slotPtr = (PCODE *) slot;
-        _ASSERTE(*slotPtr == NULL);
-        *slotPtr = GetTemporaryEntryPoint();
-    }
+    PTR_PCODE pSlot = GetAddrOfSlot();
+    _ASSERTE(*pSlot == NULL);
+    *pSlot = GetTemporaryEntryPoint();
 
     if (RequiresStableEntryPoint())
     {
@@ -3074,7 +3038,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
         return GetPrecode();
     }
 
-    TADDR pSlot = GetAddrOfSlot();
+    PTR_PCODE pSlot = GetAddrOfSlot();
     PCODE tempEntry = GetTemporaryEntryPoint();
 
     PrecodeType requiredType = GetPrecodeType();
@@ -3094,40 +3058,16 @@ Precode* MethodDesc::GetOrCreatePrecode()
 
         AllocMemTracker amt;
         Precode* pPrecode = Precode::Allocate(requiredType, this, GetLoaderAllocator(), &amt);
-        PCODE newVal;
-        PCODE oldVal;
-        TADDR *slotAddr;
 
-        if (IsVtableSlot())
-        {
-            newVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, pPrecode->GetEntryPoint());
-            oldVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, tempEntry);
-            slotAddr = (TADDR *) (MethodTable::VTableIndir2_t *) pSlot;
-        }
-        else
-        {
-            newVal = pPrecode->GetEntryPoint();
-            oldVal = tempEntry;
-            slotAddr = (TADDR *) (PCODE *) pSlot;
-        }
 
-        if (FastInterlockCompareExchangePointer(slotAddr, (TADDR) newVal, (TADDR) oldVal) == oldVal)
+        if (FastInterlockCompareExchangePointer(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
             amt.SuppressRelease();
     }
 
     // Set the flags atomically
     InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint | enum_flag2_HasPrecode, TRUE);
 
-    PCODE addr;
-    if (IsVtableSlot())
-    {
-        addr = ((MethodTable::VTableIndir2_t *)pSlot)->GetValue();
-    }
-    else
-    {
-        addr = *((PCODE *)pSlot);
-    }
-    return Precode::GetPrecodeFromEntryPoint(addr);
+    return Precode::GetPrecodeFromEntryPoint(*pSlot);
 }
 
 bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
@@ -3378,8 +3318,7 @@ void MethodDesc::ResetCodeEntryPointForEnC()
 
     if (HasNativeCodeSlot())
     {
-        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
-        pRelPtr->SetValueMaybeNull(NULL);
+        *GetAddrOfNativeCodeSlot() = NULL;
     }
 }
 
@@ -3407,14 +3346,13 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         }
 #endif
 
-        TADDR pSlot = GetAddrOfNativeCodeSlot();
-        NativeCodeSlot value, expected;
+        PTR_PCODE pSlot = GetAddrOfNativeCodeSlot();
+        NativeCodeSlot expected;
 
-        value.SetValueMaybeNull(pSlot, addr | (*dac_cast<PTR_TADDR>(pSlot) & FIXUP_LIST_MASK));
-        expected.SetValueMaybeNull(pSlot, pExpected | (*dac_cast<PTR_TADDR>(pSlot) & FIXUP_LIST_MASK));
+        expected = *pSlot;
 
         return FastInterlockCompareExchangePointer(reinterpret_cast<TADDR*>(pSlot),
-            (TADDR&)value, (TADDR&)expected) == (TADDR&)expected;
+            (TADDR&)addr, (TADDR&)expected) == (TADDR&)expected;
     }
 
     _ASSERTE(pExpected == NULL);
@@ -3432,23 +3370,7 @@ void MethodDesc::SetMethodEntryPoint(PCODE addr)
     // synchronized. Currently, the only caller synchronizes with the following lock.
     _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
 
-    TADDR pSlot = GetAddrOfSlot();
-
-    TADDR *slotAddr;
-    PCODE newVal;
-
-    if (IsVtableSlot())
-    {
-        newVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, addr);
-        slotAddr = (TADDR *) (MethodTable::VTableIndir2_t *) pSlot;
-    }
-    else
-    {
-        newVal = addr;
-        slotAddr = (TADDR *) (PCODE *) pSlot;
-    }
-
-    *(TADDR *)slotAddr = newVal;
+    *GetAddrOfSlot() = addr;
 }
 
 
@@ -3464,28 +3386,9 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     _ASSERTE(!IsVersionable());
 
     PCODE pExpected = GetTemporaryEntryPoint();
-    TADDR pSlot = GetAddrOfSlot();
+    PTR_PCODE pSlot = GetAddrOfSlot();
 
-    BOOL fResult;
-
-    TADDR *slotAddr;
-    PCODE newVal;
-    PCODE oldVal;
-
-    if (IsVtableSlot())
-    {
-        newVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, addr);
-        oldVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, pExpected);
-        slotAddr = (TADDR *) (MethodTable::VTableIndir2_t *) pSlot;
-    }
-    else
-    {
-        newVal = addr;
-        oldVal = pExpected;
-        slotAddr = (TADDR *) (PCODE *) pSlot;
-    }
-
-    fResult = FastInterlockCompareExchangePointer(slotAddr, (TADDR) newVal, (TADDR) oldVal) == oldVal;
+    BOOL fResult = FastInterlockCompareExchangePointer(pSlot, addr, pExpected) == pExpected;
 
     InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint, TRUE);
 
@@ -3697,8 +3600,7 @@ void NDirectMethodDesc::EnsureStackArgumentSize()
         if (MarshalingRequired())
         {
             // Generating interop stub sets the stack size as side-effect in all cases
-            MethodDesc* pStubMD;
-            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
+            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES);
         }
     }
 }
