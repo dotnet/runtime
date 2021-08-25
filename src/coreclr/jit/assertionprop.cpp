@@ -15,6 +15,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+//------------------------------------------------------------------------
+// Contains: Whether the range contains a given integral value, inclusive.
+//
+// Arguments:
+//    value - the integral value in question
+//
+// Return Value:
+//    "true" if the value is within the range's bounds, "false" otherwise.
+//
 bool IntegralRange::Contains(int64_t value) const
 {
     int64_t lowerBound = SymbolicToRealValue(m_lowerBound);
@@ -23,11 +32,20 @@ bool IntegralRange::Contains(int64_t value) const
     return (lowerBound <= value) && (value <= upperBound);
 }
 
+//------------------------------------------------------------------------
+// SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
+//
+// Arguments:
+//    value - the symbolic value in question
+//
+// Return Value:
+//    Integer correspoding to the symbolic value.
+//
 /* static */ int64_t IntegralRange::SymbolicToRealValue(SymbolicIntegerValue value)
 {
-    static const int64_t SymbolicToRealMap[13] = {INT64_MIN, INT32_MIN,  INT16_MIN, INT8_MIN,  0,
-                                                  1,         INT8_MAX,   UINT8_MAX, INT16_MAX, UINT16_MAX,
-                                                  INT32_MAX, UINT32_MAX, INT64_MAX};
+    static const int64_t SymbolicToRealMap[]{INT64_MIN, INT32_MIN,  INT16_MIN, INT8_MIN,  0,
+                                             1,         INT8_MAX,   UINT8_MAX, INT16_MAX, UINT16_MAX,
+                                             INT32_MAX, UINT32_MAX, INT64_MAX};
 
     assert(sizeof(SymbolicIntegerValue) == sizeof(int32_t));
     assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::LongMin)] == INT64_MIN);
@@ -37,6 +55,15 @@ bool IntegralRange::Contains(int64_t value) const
     return SymbolicToRealMap[static_cast<int32_t>(value)];
 }
 
+//------------------------------------------------------------------------
+// LowerBoundForType: Get the symbolic lower bound for a type.
+//
+// Arguments:
+//    type - the integral type in question
+//
+// Return Value:
+//    Symbolic value representing the smallest possible value "type" can represent.
+//
 /* static */ SymbolicIntegerValue IntegralRange::LowerBoundForType(var_types type)
 {
     switch (type)
@@ -58,6 +85,15 @@ bool IntegralRange::Contains(int64_t value) const
     }
 }
 
+//------------------------------------------------------------------------
+// UpperBoundForType: Get the symbolic upper bound for a type.
+//
+// Arguments:
+//    type - the integral type in question
+//
+// Return Value:
+//    Symbolic value representing the largest possible value "type" can represent.
+//
 /* static */ SymbolicIntegerValue IntegralRange::UpperBoundForType(var_types type)
 {
     switch (type)
@@ -83,7 +119,7 @@ bool IntegralRange::Contains(int64_t value) const
 }
 
 //------------------------------------------------------------------------
-// IntegralRange::ForCastInput: Get the non-overflowing input range for a cast.
+// ForCastInput: Get the non-overflowing input range for a cast.
 //
 // This routine computes the input range for a cast from
 // an integer to an integer for which it will not overflow.
@@ -195,7 +231,7 @@ bool IntegralRange::Contains(int64_t value) const
 }
 
 //------------------------------------------------------------------------
-// IntegralRange::ForCastOutput: Get the output range for a cast.
+// ForCastOutput: Get the output range for a cast.
 //
 // This method is the "output" counterpart to ForCastInput, it returns
 // a range produced by a cast (by definition, non-overflowing one).
@@ -4049,10 +4085,10 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
 }
 
 /*****************************************************************************
-*
-*  Given a tree with an array bounds check node, eliminate it because it was
-*  checked already in the program.
-*/
+ *
+ *  Given a tree with an array bounds check node, eliminate it because it was
+ *  checked already in the program.
+ */
 GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     // Remove the bounds check as part of the GT_COMMA node since we need parent pointer to remove nodes.
