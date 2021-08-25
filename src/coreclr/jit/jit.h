@@ -440,6 +440,7 @@ public:
 #define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
 #define LOOP_HOIST_STATS 1  // Collect loop hoisting stats.
 #define TRACK_LSRA_STATS 1  // Collect LSRA stats
+#define TRACK_ENREG_STATS 1 // Collect enregistration stats
 #else
 #define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
 #define LOOP_HOIST_STATS 0  // You can set this to 1 to get loop hoist stats in retail, as well
