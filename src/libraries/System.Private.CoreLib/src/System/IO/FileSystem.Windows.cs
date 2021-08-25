@@ -514,16 +514,16 @@ namespace System.IO
                     int printNameOffset = sizeof(Interop.Kernel32.SymbolicLinkReparseBuffer) + rbSymlink.PrintNameOffset;
                     int printNameLength = rbSymlink.PrintNameLength;
 
-                    Span<char> targetPathSymlink = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameOffset, printNameLength));
-                    Debug.Assert((rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 || !PathInternal.IsExtended(targetPathSymlink));
+                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameOffset, printNameLength));
+                    Debug.Assert((rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 || !PathInternal.IsExtended(targetPath));
 
                     if (returnFullPath && (rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
                     {
                         // Target path is relative and is for ResolveLinkTarget(), we need to append the link directory.
-                        return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPathSymlink);
+                        return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
                     }
 
-                    return targetPathSymlink.ToString();
+                    return targetPath.ToString();
                 }
                 else if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                 {
@@ -533,11 +533,11 @@ namespace System.IO
                     int printNameOffset = sizeof(Interop.Kernel32.MountPointReparseBuffer) + rbMountPoint.PrintNameOffset;
                     int printNameLength = rbMountPoint.PrintNameLength;
 
-                    Span<char> targetPathMountPoint = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameOffset, printNameLength));
+                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameOffset, printNameLength));
 
-                    // Unlink symlinks, mount point paths cannot be relative
-                    Debug.Assert(!PathInternal.IsExtended(targetPathMountPoint));
-                    return targetPathMountPoint.ToString();
+                    // Unlike symlinks, mount point paths cannot be relative
+                    Debug.Assert(!PathInternal.IsPartiallyQualified(targetPath));
+                    return targetPath.ToString();
                 }
 
                 return null;
