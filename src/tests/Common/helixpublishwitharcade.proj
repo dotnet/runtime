@@ -119,7 +119,6 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-    <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.20322.1</MicrosoftDotNetXHarnessCLIVersion>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
@@ -317,32 +316,10 @@
     <XUnitRunnerDll>%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
+  <PropertyGroup>
     <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
     <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
   </PropertyGroup>
-
-  <ItemGroup Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
-      <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))">
-        <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-        <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
-        <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
-        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
-      </HelixWorkItem>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'Android'">
-    <XHarnessApkToTest Include="@(Payloads->Metadata('RuntimeTestApks'))">
-        <TestTarget Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</TestTarget>
-        <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</TestTarget>
-        <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">x86_64</TestTarget>
-        <TestTarget Condition="'$(TargetArchitecture)' == 'x86'">x86</TestTarget>
-        <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-        <LaunchTimeout>00:05:00</LaunchTimeout>
-        <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-        <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
-      </XHarnessApkToTest>
-  </ItemGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
     <XUnitRunnerDll>$CORE_ROOT/xunit/xunit.console.dll</XUnitRunnerDll>
@@ -365,6 +342,23 @@
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
     </Payloads>
 
+    <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
+      <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
+      <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
+      <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
+      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+    </HelixWorkItem>
+
+    <XHarnessApkToTest Include="@(Payloads->Metadata('RuntimeTestApks'))" Condition="'$(TargetOS)' == 'Android'">
+      <TestTarget Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">x86_64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'x86'">x86</TestTarget>
+      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+      <LaunchTimeout>00:05:00</LaunchTimeout>
+      <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
+      <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
+    </XHarnessApkToTest>
 
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" Include="PALTests">
       <PayloadArchive>$(PayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
