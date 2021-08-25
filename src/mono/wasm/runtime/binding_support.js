@@ -160,7 +160,7 @@ var BindingSupportLib = {
 				return Promise.resolve(js_obj) === js_obj ||
 						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
 			};
-			this.isChromium = navigator && navigator.userAgent && navigator.userAgent.includes("Chrome");
+			this.isChromium = globalThis.navigator && globalThis.navigator.userAgent && globalThis.navigator.userAgent.includes("Chrome");
 
 			this._empty_string = "";
 			this._empty_string_ptr = 0;
