@@ -53,7 +53,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        //[OuterLoop]
+        [OuterLoop]
         [Fact]
         public void Socket_ConnectDnsEndPoint_Failure()
         {
