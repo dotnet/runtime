@@ -148,9 +148,6 @@ typedef struct
 //*******************************************************************************
 struct InterfaceInfo_t
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
     enum {
         interface_declared_on_class = 0x1,
         interface_implemented_on_parent = 0x2,

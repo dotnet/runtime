@@ -285,9 +285,6 @@ public:
 class SparseVTableMap
 {
 public:
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     SparseVTableMap();
     ~SparseVTableMap();
@@ -359,9 +356,6 @@ class EEClassLayoutInfo
     friend class ClassLoader;
     friend class EEClass;
     friend class MethodTableBuilder;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
         UINT32      m_cbManagedSize;
 
     public:
@@ -536,9 +530,6 @@ class EEClassOptionalFields
     // for MethodTableBuilder and NativeImageDumper, which need raw field-level access.
     friend class EEClass;
     friend class MethodTableBuilder;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     //
     // GENERICS RELATED FIELDS.
@@ -699,9 +690,6 @@ class EEClass // DO NOT CREATE A NEW EEClass USING NEW!
     friend class FieldDesc;
     friend class CheckAsmOffsets;
     friend class ClrDataAccess;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     /************************************
      *  PUBLIC INSTANCE METHODS

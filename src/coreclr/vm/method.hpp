@@ -203,9 +203,6 @@ class MethodDesc
     friend class ClrDataAccess;
 
     friend class MethodDescCallSite;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 
@@ -2163,9 +2160,6 @@ class MethodDescChunk
 {
     friend class MethodDesc;
     friend class CheckAsmOffsets;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif // DACCESS_COMPILE
 
     enum {
         enum_flag_TokenRangeMask                           = 0x03FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
@@ -2438,9 +2432,6 @@ class StoredSigMethodDesc : public MethodDesc
 
 class FCallMethodDesc : public MethodDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     DWORD   m_dwECallID;
 #ifdef TARGET_64BIT
@@ -2475,9 +2466,6 @@ class DynamicMethodDesc : public StoredSigMethodDesc
     friend class ILStubState;
     friend class DynamicMethodTable;
     friend class MethodDesc;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 protected:
     PTR_CUTF8           m_pszMethodName;
@@ -3278,9 +3266,6 @@ public:
 
 class InstantiatedMethodDesc : public MethodDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 

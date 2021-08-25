@@ -60,9 +60,6 @@ typedef struct InstMethodHashEntry
 
 private:
     friend class InstMethodHashTable;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     PTR_MethodDesc      data;
 } InstMethodHashEntry_t;
@@ -72,9 +69,6 @@ private:
 typedef DPTR(class InstMethodHashTable) PTR_InstMethodHashTable;
 class InstMethodHashTable : public NgenHashTable<InstMethodHashTable, InstMethodHashEntry, 4>
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     // This is the allocator

@@ -122,9 +122,6 @@ private:
 
     friend class DomainFile;
     friend class PEModule;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
