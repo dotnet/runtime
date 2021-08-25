@@ -667,7 +667,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     if( newFrameSize > oldFrameSize)
     {
         DWORD frameIncrement = newFrameSize - oldFrameSize;
-        (void)alloca(frameIncrement);
+        (void)!alloca(frameIncrement);
     }
 
     // Ask the EECodeManager to actually fill in the context and stack for the new frame so that

@@ -12,15 +12,7 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/time.h>
-
-#if defined(TARGET_OSX)
-// So we can use the declaration of pthread_cond_timedwait_relative_np
-#undef _XOPEN_SOURCE
-#endif
 #include <pthread.h>
-#if defined(TARGET_OSX)
-#define _XOPEN_SOURCE
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
