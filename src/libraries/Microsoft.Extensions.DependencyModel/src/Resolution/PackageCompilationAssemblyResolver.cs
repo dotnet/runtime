@@ -31,8 +31,8 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal PackageCompilationAssemblyResolver(IFileSystem fileSystem, string[] nugetPackageDirectories)
         {
-            _fileSystem = fileSystem;
-            _nugetPackageDirectories = nugetPackageDirectories;
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+            _nugetPackageDirectories = nugetPackageDirectories ?? throw new ArgumentNullException(nameof(nugetPackageDirectories));
         }
 
         internal static string[] GetDefaultProbeDirectories(IEnvironment environment)
@@ -73,6 +73,16 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
+            if (library is null)
+            {
+                throw new ArgumentNullException(nameof(library));
+            }
+
+            if (assemblies is null)
+            {
+                throw new ArgumentNullException(nameof(assemblies));
+            }
+
             if (_nugetPackageDirectories == null || _nugetPackageDirectories.Length == 0 ||
                 !string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase))
             {

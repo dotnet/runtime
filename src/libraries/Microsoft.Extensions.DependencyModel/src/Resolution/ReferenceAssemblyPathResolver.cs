@@ -33,13 +33,23 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal ReferenceAssemblyPathResolver(IFileSystem fileSystem, string? defaultReferenceAssembliesPath, string[] fallbackSearchPaths)
         {
-            _fileSystem = fileSystem;
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             _defaultReferenceAssembliesPath = defaultReferenceAssembliesPath;
-            _fallbackSearchPaths = fallbackSearchPaths;
+            _fallbackSearchPaths = fallbackSearchPaths ?? throw new ArgumentNullException(nameof(fallbackSearchPaths));
         }
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
+            if (library is null)
+            {
+                throw new ArgumentNullException(nameof(library));
+            }
+
+            if (assemblies is null)
+            {
+                throw new ArgumentNullException(nameof(assemblies));
+            }
+
             if (!string.Equals(library.Type, "referenceassembly", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
