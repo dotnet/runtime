@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             public bool IsNotApplicable;
             public int SegmentIndex;
             public bool InStem;
-            private IList<string> _stemItems;
+            private IList<string>? _stemItems;
 
             public IList<string> StemItems => _stemItems ??= new List<string>();
 

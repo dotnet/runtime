@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     {
         public PatternContextRagged(IRaggedPattern pattern)
         {
-            Pattern = pattern;
+            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
         }
 
         public override PatternTestResult Test(FileInfoBase file)
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             return Frame.SegmentGroup[Frame.SegmentIndex].Match(value);
         }
 
-        protected bool TestMatchingGroup(FileSystemInfoBase value)
+        protected bool TestMatchingGroup(FileSystemInfoBase? value)
         {
             int groupLength = Frame.SegmentGroup.Count;
             int backtrackLength = Frame.BacktrackAvailable + 1;
