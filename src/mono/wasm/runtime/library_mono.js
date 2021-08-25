@@ -1472,7 +1472,8 @@ var MonoSupportLib = {
 			let now = new Date().valueOf();
 			const desired_reach_time = now + (1000 * 60 * 6);
 			const next_reach_time = Math.max(now + 1000, this.spread_timers_maximum);
-			for (var schedule = next_reach_time; schedule < desired_reach_time; schedule += 1000) {
+			const light_throttling_frequency = 1000;
+			for (var schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
 				const delay = schedule - now;
 				setTimeout(() => {
 					this.mono_wasm_set_timeout_exec(0);
