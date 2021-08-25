@@ -372,8 +372,7 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
           - normal
-          - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-            - no_tiered_compilation
+          - no_tiered_compilation
 
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:
