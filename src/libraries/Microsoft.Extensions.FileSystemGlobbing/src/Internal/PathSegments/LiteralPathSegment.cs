@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.FileSystemGlobbing.Util;
 
 namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
@@ -10,7 +11,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
     {
         private readonly StringComparison _comparisonType;
 
-        public bool CanProduceStem { get { return false; } }
+        public bool CanProduceStem => false;
 
         public LiteralPathSegment(string value, StringComparison comparisonType)
         {
@@ -26,7 +27,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
             return string.Equals(Value, value, _comparisonType);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is LiteralPathSegment other &&
                 _comparisonType == other._comparisonType &&
