@@ -139,11 +139,11 @@ namespace Microsoft.Extensions.DependencyModel
     }
     public partial class RuntimeAssetGroup
     {
-        public RuntimeAssetGroup(string runtime, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyModel.RuntimeFile> runtimeFiles) { }
-        public RuntimeAssetGroup(string runtime, System.Collections.Generic.IEnumerable<string> assetPaths) { }
-        public RuntimeAssetGroup(string runtime, params string[] assetPaths) { }
+        public RuntimeAssetGroup(string? runtime, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyModel.RuntimeFile> runtimeFiles) { }
+        public RuntimeAssetGroup(string? runtime, System.Collections.Generic.IEnumerable<string> assetPaths) { }
+        public RuntimeAssetGroup(string? runtime, params string[] assetPaths) { }
         public System.Collections.Generic.IReadOnlyList<string> AssetPaths { get { throw null; } }
-        public string Runtime { get { throw null; } }
+        public string? Runtime { get { throw null; } }
         public System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.DependencyModel.RuntimeFile> RuntimeFiles { get { throw null; } }
     }
     public partial class RuntimeFallbacks

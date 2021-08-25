@@ -11,15 +11,15 @@ namespace Microsoft.Extensions.DependencyModel
         private IReadOnlyList<string>? _assetPaths;
         private IReadOnlyList<RuntimeFile>? _runtimeFiles;
 
-        public RuntimeAssetGroup(string runtime, params string[] assetPaths) : this(runtime, (IEnumerable<string>)assetPaths) { }
+        public RuntimeAssetGroup(string? runtime, params string[] assetPaths) : this(runtime, (IEnumerable<string>)assetPaths) { }
 
-        public RuntimeAssetGroup(string runtime, IEnumerable<string> assetPaths)
+        public RuntimeAssetGroup(string? runtime, IEnumerable<string> assetPaths)
         {
             Runtime = runtime;
             _assetPaths = assetPaths.ToArray();
         }
 
-        public RuntimeAssetGroup(string runtime, IEnumerable<RuntimeFile> runtimeFiles)
+        public RuntimeAssetGroup(string? runtime, IEnumerable<RuntimeFile> runtimeFiles)
         {
             Runtime = runtime;
             _runtimeFiles = runtimeFiles.ToArray();
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyModel
         /// <summary>
         /// The runtime ID associated with this group (may be empty if the group is runtime-agnostic)
         /// </summary>
-        public string Runtime { get; }
+        public string? Runtime { get; }
 
         /// <summary>
         /// Gets a list of asset paths provided in this runtime group
