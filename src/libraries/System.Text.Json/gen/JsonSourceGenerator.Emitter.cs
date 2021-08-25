@@ -84,6 +84,8 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly SourceGenerationSpec _generationSpec = null!;
 
+            private readonly HashSet<string> _emittedPropertyFileNames = new();
+
             public Emitter(in SourceProductionContext sourceProductionContext, SourceGenerationSpec generationSpec)
             {
                 _sourceProductionContext = sourceProductionContext;
@@ -252,11 +254,14 @@ namespace {@namespace}
                         }
                 }
 
-                try
+                // Don't add a duplicate file, but instead raise a diagnostic to say the duplicate has been skipped.
+                // Workaround https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
+                string propertyFileName = $"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs";
+                if (_emittedPropertyFileNames.Add(propertyFileName))
                 {
-                    AddSource($"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs", source);
+                    AddSource(propertyFileName, source);
                 }
-                catch (ArgumentException)
+                else
                 {
                     _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
                 }
