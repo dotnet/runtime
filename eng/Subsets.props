@@ -216,6 +216,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.tools+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\runincontext\runincontext.csproj;
+                             $(CoreClrProjectRoot)tools\tieringtest\tieringtest.csproj;
                              $(CoreClrProjectRoot)tools\r2rdump\R2RDump.csproj;
                              $(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;
                              $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
