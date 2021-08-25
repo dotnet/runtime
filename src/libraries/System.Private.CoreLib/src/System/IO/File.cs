@@ -300,18 +300,7 @@ namespace System.IO
                 return sr.ReadToEnd();
         }
 
-        public static void WriteAllText(string path, string? contents)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            using (StreamWriter sw = new StreamWriter(path))
-            {
-                sw.Write(contents);
-            }
-        }
+        public static void WriteAllText(string path, string? contents) => WriteAllText(path, contents, UTF8NoBOM);
 
         public static void WriteAllText(string path, string? contents, Encoding encoding)
         {
@@ -322,10 +311,7 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
-            using (StreamWriter sw = new StreamWriter(path, false, encoding))
-            {
-                sw.Write(contents);
-            }
+            WriteToFile(path, append: false, contents, encoding);
         }
 
         public static byte[] ReadAllBytes(string path)
@@ -492,18 +478,7 @@ namespace System.IO
             }
         }
 
-        public static void AppendAllText(string path, string? contents)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            using (StreamWriter sw = new StreamWriter(path, append: true))
-            {
-                sw.Write(contents);
-            }
-        }
+        public static void AppendAllText(string path, string? contents) => AppendAllText(path, contents, UTF8NoBOM);
 
         public static void AppendAllText(string path, string? contents, Encoding encoding)
         {
@@ -514,23 +489,10 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
-            using (StreamWriter sw = new StreamWriter(path, true, encoding))
-            {
-                sw.Write(contents);
-            }
+            WriteToFile(path, append: true, contents, encoding);
         }
 
-        public static void AppendAllLines(string path, IEnumerable<string> contents)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            InternalWriteAllLines(new StreamWriter(path, append: true), contents);
-        }
+        public static void AppendAllLines(string path, IEnumerable<string> contents) => AppendAllLines(path, contents, UTF8NoBOM);
 
         public static void AppendAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
@@ -706,13 +668,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (string.IsNullOrEmpty(contents))
-            {
-                new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read).Dispose();
-                return Task.CompletedTask;
-            }
-
-            return InternalWriteAllTextAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
+            return WriteToFileAsync(path, append: false, contents, encoding, cancellationToken);
         }
 
         public static Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
@@ -922,43 +878,6 @@ namespace System.IO
             }
         }
 
-        private static async Task InternalWriteAllTextAsync(StreamWriter sw, string contents, CancellationToken cancellationToken)
-        {
-#if MS_IO_REDIST
-            char[]? buffer = null;
-            try
-            {
-                buffer = ArrayPool<char>.Shared.Rent(DefaultBufferSize);
-                int count = contents.Length;
-                int index = 0;
-                while (index < count)
-                {
-                    int batchSize = Math.Min(DefaultBufferSize, count - index);
-                    contents.CopyTo(index, buffer, 0, batchSize);
-                    await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
-                    index += batchSize;
-                }
-
-                cancellationToken.ThrowIfCancellationRequested();
-                await sw.FlushAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                sw.Dispose();
-                if (buffer != null)
-                {
-                    ArrayPool<char>.Shared.Return(buffer);
-                }
-            }
-#else
-            using (sw)
-            {
-                await sw.WriteAsync(contents.AsMemory(), cancellationToken).ConfigureAwait(false);
-                await sw.FlushAsync().ConfigureAwait(false);
-            }
-#endif
-        }
-
         public static Task AppendAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
             => AppendAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
 
@@ -976,14 +895,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (string.IsNullOrEmpty(contents))
-            {
-                // Just to throw exception if there is a problem opening the file.
-                new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read).Dispose();
-                return Task.CompletedTask;
-            }
-
-            return InternalWriteAllTextAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
+            return WriteToFileAsync(path, append: true, contents, encoding, cancellationToken);
         }
 
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
@@ -1044,5 +956,51 @@ namespace System.IO
             FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
             return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: false);
         }
+
+#if MS_IO_REDIST
+        private static void WriteToFile(string path, bool append, string? contents, Encoding encoding)
+        {
+            using (StreamWriter sw = new StreamWriter(path, append, encoding))
+            {
+                sw.Write(contents);
+            }
+        }
+
+        private static async Task WriteToFileAsync(string path, bool append, string? contents, Encoding encoding, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(contents))
+            {
+                new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read).Dispose();
+                return;
+            }
+
+            StreamWriter sw = AsyncStreamWriter(path, encoding, append);
+            char[]? buffer = null;
+            try
+            {
+                buffer = ArrayPool<char>.Shared.Rent(DefaultBufferSize);
+                int count = contents!.Length;
+                int index = 0;
+                while (index < count)
+                {
+                    int batchSize = Math.Min(DefaultBufferSize, count - index);
+                    contents!.CopyTo(index, buffer, 0, batchSize);
+                    await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
+                    index += batchSize;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                await sw.FlushAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                sw.Dispose();
+                if (buffer != null)
+                {
+                    ArrayPool<char>.Shared.Return(buffer);
+                }
+            }
+        }
+#endif
     }
 }

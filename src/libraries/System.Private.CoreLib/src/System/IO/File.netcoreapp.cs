@@ -3,12 +3,22 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
     public static partial class File
     {
+        private const int ChunkSize =
+#if DEBUG
+            100;
+#else
+            8192;
+#endif
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
         /// </summary>
@@ -95,6 +105,91 @@ namespace System.IO
                 {
                     ArrayPool<byte>.Shared.Return(rentedArray);
                 }
+            }
+        }
+
+        private static void WriteToFile(string path, bool append, string? contents, Encoding encoding)
+        {
+            int preambleSize = encoding.Preamble.Length;
+            int maxFileSize = string.IsNullOrEmpty(contents) ? 0 : preambleSize + encoding.GetMaxByteCount(contents.Length);
+            long preallocationSize = maxFileSize < ChunkSize ? 0 : maxFileSize; // for small files setting preallocationSize has no perf benefit, as it requires an additional sys-call
+            using SafeFileHandle fileHandle = OpenHandle(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.None, preallocationSize);
+            if (string.IsNullOrEmpty(contents))
+            {
+                return; // even if the content is empty, we want to create an empty file
+            }
+
+            long fileOffset = append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
+
+            int bytesNeeded = Math.Min(maxFileSize, preambleSize + encoding.GetMaxByteCount(ChunkSize));
+            byte[]? rentedBytes = null;
+            Span<byte> bytes = bytesNeeded <= 1024 ? stackalloc byte[1024] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
+
+            try
+            {
+                encoding.Preamble.CopyTo(bytes);
+
+                Encoder encoder = encoding.GetEncoder();
+                ReadOnlySpan<char> remaining = contents;
+                while (!remaining.IsEmpty)
+                {
+                    ReadOnlySpan<char> toEncode = remaining.Slice(0, Math.Min(remaining.Length, ChunkSize));
+                    int encoded = encoder.GetBytes(toEncode, bytes.Slice(preambleSize), flush: false);
+                    Span<byte> toStore = bytes.Slice(0, preambleSize + encoded);
+
+                    RandomAccess.WriteAtOffset(fileHandle, toStore, fileOffset);
+
+                    fileOffset += toStore.Length;
+                    remaining = remaining.Slice(toEncode.Length);
+                    preambleSize = 0;
+                }
+            }
+            finally
+            {
+                if (rentedBytes is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBytes);
+                }
+            }
+        }
+
+        private static async Task WriteToFileAsync(string path, bool append, string? contents, Encoding encoding, CancellationToken cancellationToken)
+        {
+            int preambleSize = encoding.Preamble.Length;
+            int maxFileSize = string.IsNullOrEmpty(contents) ? 0 : preambleSize + encoding.GetMaxByteCount(contents.Length);
+            long preallocationSize = maxFileSize < ChunkSize ? 0 : maxFileSize; // for small files setting preallocationSize has no perf benefit, as it requires an additional sys-call
+            using SafeFileHandle fileHandle = OpenHandle(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, preallocationSize);
+            if (string.IsNullOrEmpty(contents))
+            {
+                return; // even if the content is empty, we want to create an empty file
+            }
+
+            long fileOffset = append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
+
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(Math.Min(maxFileSize, preambleSize + encoding.GetMaxByteCount(ChunkSize)));
+
+            try
+            {
+                encoding.Preamble.CopyTo(bytes);
+
+                Encoder encoder = encoding.GetEncoder();
+                ReadOnlyMemory<char> remaining = contents.AsMemory();
+                while (!remaining.IsEmpty)
+                {
+                    ReadOnlyMemory<char> toEncode = remaining.Slice(0, Math.Min(remaining.Length, ChunkSize));
+                    int encoded = encoder.GetBytes(toEncode.Span, bytes.AsSpan(preambleSize), flush: false);
+                    ReadOnlyMemory<byte> toStore = new ReadOnlyMemory<byte>(bytes, 0, preambleSize + encoded);
+
+                    await RandomAccess.WriteAtOffsetAsync(fileHandle, toStore, fileOffset, cancellationToken).ConfigureAwait(false);
+
+                    fileOffset += toStore.Length;
+                    remaining = remaining.Slice(toEncode.Length);
+                    preambleSize = 0;
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
             }
         }
     }
