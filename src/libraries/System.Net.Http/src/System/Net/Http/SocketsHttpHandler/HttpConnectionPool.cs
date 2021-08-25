@@ -969,51 +969,60 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<HttpResponseMessage> DetermineVersionAndSendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        private ValueTask<HttpResponseMessage> DetermineVersionAndSendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            HttpResponseMessage? response;
-
-            if (IsHttp3Supported())
+            // The default configuration of SocketsHttpHandler and HttpRequestMessage has requests use HTTP/1.1.
+            // Special-case it to prioritize it and avoid an extra layer of async state machine for this common case.
+            if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrHigher &&
+                request.Version.Major == 1)
             {
-                response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                return SendUsingHttp11Async(request, async, doRequestAuth, cancellationToken);
+            }
+
+            return Core(request, async, doRequestAuth, cancellationToken);
+
+            async ValueTask<HttpResponseMessage> Core(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+            {
+                HttpResponseMessage? response;
+
+                if (IsHttp3Supported())
+                {
+                    response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                    if (response is not null)
+                    {
+                        return response;
+                    }
+                }
+
+                // We cannot use HTTP/3. Do not continue if downgrade is not allowed.
+                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    throw GetVersionException(request, 3);
+                }
+
+                response = await TrySendUsingHttp2Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
                 if (response is not null)
                 {
                     return response;
                 }
-            }
 
-            // We cannot use HTTP/3. Do not continue if downgrade is not allowed.
-            if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
-            {
-                throw GetVersionException(request, 3);
-            }
+                // We cannot use HTTP/2. Do not continue if downgrade is not allowed.
+                if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    throw GetVersionException(request, 2);
+                }
 
-            response = await TrySendUsingHttp2Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            if (response is not null)
-            {
-                return response;
+                return await SendUsingHttp11Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
             }
-
-            // We cannot use HTTP/2. Do not continue if downgrade is not allowed.
-            if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
-            {
-                throw GetVersionException(request, 2);
-            }
-
-            return await SendUsingHttp11Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
         }
 
-        private async ValueTask<HttpResponseMessage> SendAndProcessAltSvcAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        /// <summary>Check for the Alt-Svc header, to upgrade to HTTP/3.</summary>
+        private void ProcessAltSvc(HttpResponseMessage response)
         {
-            HttpResponseMessage response = await DetermineVersionAndSendAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-
-            // Check for the Alt-Svc header, to upgrade to HTTP/3.
             if (_altSvcEnabled && response.Headers.TryGetValues(KnownHeaders.AltSvc.Descriptor, out IEnumerable<string>? altSvcHeaderValues))
             {
                 HandleAltSvc(altSvcHeaderValues, response.Headers.Age);
             }
-
-            return response;
         }
 
         public async ValueTask<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
@@ -1024,7 +1033,9 @@ namespace System.Net.Http
                 // Loop on connection failures (or other problems like version downgrade) and retry if possible.
                 try
                 {
-                    return await SendAndProcessAltSvcAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage response = await DetermineVersionAndSendAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                    ProcessAltSvc(response);
+                    return response;
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnConnectionFailure)
                 {
