@@ -887,7 +887,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
             {
@@ -933,7 +933,7 @@ namespace System.Net.Http
         }
 
         // Returns null if HTTP2 cannot be used.
-        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp2Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp2Async(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // Send using HTTP/2 if we can.
             if (_http2Enabled && (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
@@ -987,7 +987,7 @@ namespace System.Net.Http
 
                 if (IsHttp3Supported())
                 {
-                    response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                    response = await TrySendUsingHttp3Async(request, async, cancellationToken).ConfigureAwait(false);
                     if (response is not null)
                     {
                         return response;
@@ -1000,7 +1000,7 @@ namespace System.Net.Http
                     throw GetVersionException(request, 3);
                 }
 
-                response = await TrySendUsingHttp2Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                response = await TrySendUsingHttp2Async(request, async, cancellationToken).ConfigureAwait(false);
                 if (response is not null)
                 {
                     return response;
