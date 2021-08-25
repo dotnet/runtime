@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -79,6 +80,7 @@ namespace System.Media
             }
         }
 
+        [AllowNull]
         public string SoundLocation
         {
             get => _soundLocation;

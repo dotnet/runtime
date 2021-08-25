@@ -12,9 +12,10 @@ namespace System.Media
         public SoundPlayer() { }
         public SoundPlayer(System.IO.Stream stream) { }
         protected SoundPlayer(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext context) { }
-        public SoundPlayer(string soundLocation) { }
+        public SoundPlayer(string? soundLocation) { }
         public bool IsLoadCompleted { get { throw null; } }
         public int LoadTimeout { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string SoundLocation { get { throw null; } set { } }
         public System.IO.Stream? Stream { get { throw null; } set { } }
         public object? Tag { get { throw null; } set { } }
