@@ -175,62 +175,21 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMD->IsComPlusCall() || pMD->IsGenericComPlusCall());
+    _ASSERTE(*ppStubMD == NULL);
 
-    ComPlusCallInfo *pComInfo = NULL;
+    DWORD dwStubFlags;
+    ComPlusCallInfo* pComInfo = ComPlusCall::PopulateComPlusCallMethodDesc(pMD, &dwStubFlags);
+
+    *ppStubMD = ComPlusCall::GetILStubMethodDesc(pMD, dwStubFlags);
 
     if (*ppStubMD != NULL)
     {
-        // pStubMD, if provided, must be preimplemented.
-        _ASSERTE((*ppStubMD)->IsPreImplemented());
-
-        pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-        _ASSERTE(pComInfo != NULL);
-
-        _ASSERTE((*ppStubMD) ==  pComInfo->m_pStubMD);
-
-        if (pComInfo->m_pInterfaceMT == NULL)
-        {
-            ComPlusCall::PopulateComPlusCallMethodDesc(pMD, NULL);
-        }
-        else
-        {
-            pComInfo->m_pInterfaceMT->CheckRestore();
-        }
-
-        if (pComInfo->m_pILStub == NULL)
-        {
-            PCODE pCode = JitILStub(*ppStubMD);
-            InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
-        }
-        else
-        {
-            // Pointer to pre-implemented code initialized at NGen-time
-            _ASSERTE((*ppStubMD)->GetNativeCode() == pComInfo->m_pILStub);
-        }
+        PCODE pCode = JitILStub(*ppStubMD);
+        InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
     }
     else
     {
-        DWORD dwStubFlags;
-        pComInfo = ComPlusCall::PopulateComPlusCallMethodDesc(pMD, &dwStubFlags);
-
-        if (pComInfo->m_pStubMD != NULL)
-        {
-            // Discard pre-implemented code
-            PCODE pPreImplementedCode = pComInfo->m_pStubMD->GetNativeCode();
-            InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), NULL, pPreImplementedCode);
-        }
-
-        *ppStubMD = ComPlusCall::GetILStubMethodDesc(pMD, dwStubFlags);
-
-        if (*ppStubMD != NULL)
-        {
-            PCODE pCode = JitILStub(*ppStubMD);
-            InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
-        }
-        else
-        {
-            CreateCLRToDispatchCOMStub(pMD, dwStubFlags);
-        }
+        CreateCLRToDispatchCOMStub(pMD, dwStubFlags);
     }
 
     PCODE pStub = NULL;

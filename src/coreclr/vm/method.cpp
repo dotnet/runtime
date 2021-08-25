@@ -935,9 +935,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #endif // !DACCESS_COMPILE
 
 //*******************************************************************************
-// Returns the address of the native code. The native code can be one of:
-// - jitted code if !IsPreImplemented()
-// - ngened code if IsPreImplemented()
+// Returns the address of the native code.
 //
 // Methods which have no native code are either implemented by stubs or not jitted yet.
 // For example, NDirectMethodDesc's have no native code.  They are treated as
@@ -982,21 +980,6 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
     SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl)];
 
     return (PTR_PCODE)(dac_cast<TADDR>(this) + size);
-}
-
-//*******************************************************************************
-PCODE MethodDesc::GetPreImplementedCode()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return NULL;
 }
 
 //*******************************************************************************
@@ -3617,8 +3600,7 @@ void NDirectMethodDesc::EnsureStackArgumentSize()
         if (MarshalingRequired())
         {
             // Generating interop stub sets the stack size as side-effect in all cases
-            MethodDesc* pStubMD;
-            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
+            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES);
         }
     }
 }

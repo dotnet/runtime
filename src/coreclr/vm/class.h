@@ -1942,13 +1942,6 @@ public:
     ComPlusCallInfo *m_pComPlusCallInfo;
 #endif // FEATURE_COMINTEROP
 
-    //
-    // Ngened IL stub MethodDescs. Fixed up, wrapped with code:Stub, and installed to
-    // m_pMarshalStub (forward) or m_pUMThunkMarshInfo (reverse) when first needed.
-    //
-    MethodDesc*         m_pForwardStubMD; // marshaling stub for calls to unmanaged code
-    MethodDesc*         m_pReverseStubMD; // marshaling stub for calls from unmanaged code
-
     PTR_MethodDesc GetInvokeMethod()
     {
         return m_pInvokeMethod;

@@ -939,17 +939,6 @@ public:
         return (m_wFlags & mdcSynchronized) != 0;
     }
 
-    // Be careful about races with profiler when using this method. The profiler can
-    // replace preimplemented code of the method with jitted code.
-    // Avoid code patterns like if(IsPreImplemented()) { PCODE pCode = GetPreImplementedCode(); ... }.
-    // Use PCODE pCode = GetPreImplementedCode(); if (pCode != NULL) { ... } instead.
-    BOOL IsPreImplemented()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return GetPreImplementedCode() != NULL;
-    }
-
     //==================================================================
     // The MethodDesc in relation to the VTable it is associated with.
     // WARNING: Not all MethodDescs have slots, nor do they all have
@@ -1463,13 +1452,6 @@ public:
     ULONG GetRVA();
 
 public:
-
-    // Returns preimplemented code of the method if method has one.
-    // Returns NULL if method has no preimplemented code.
-    // Be careful about races with profiler when using this method. The profiler can
-    // replace preimplemented code of the method with jitted code.
-    PCODE GetPreImplementedCode();
-
     // Returns address of code to call. The address is good for one immediate invocation only.
     // Use GetMultiCallableAddrOfCode() to get address that can be invoked multiple times.
     //
@@ -1514,9 +1496,7 @@ public:
     PCODE GetMethodEntryPoint();
 
     //*******************************************************************************
-    // Returns the address of the native code. The native code can be one of:
-    // - jitted code if !IsPreImplemented()
-    // - ngened code if IsPreImplemented()
+    // Returns the address of the native code.
     PCODE GetNativeCode();
 
 #if defined(FEATURE_JIT_PITCHING)
@@ -2788,9 +2768,6 @@ public:
         WORD        m_cbStackArgumentSize;
 #endif // defined(TARGET_X86)
 
-        // This field gets set only when this MethodDesc is marked as PreImplemented
-        PTR_MethodDesc m_pStubMD;
-
     } ndirect;
 
     enum Flags
@@ -3206,9 +3183,6 @@ struct ComPlusCallInfo
         LIMITED_METHOD_CONTRACT;
     }
 #endif // TARGET_X86
-
-    // This field gets set only when this MethodDesc is marked as PreImplemented
-    PTR_MethodDesc m_pStubMD;
 };
 
 
