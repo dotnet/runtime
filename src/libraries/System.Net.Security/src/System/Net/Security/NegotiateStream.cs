@@ -460,11 +460,7 @@ namespace System.Net.Security
             WriteAsync(new SyncReadWriteAdapter(InnerStream), new ReadOnlyMemory<byte>(buffer, offset, count)).GetAwaiter().GetResult();
         }
 
-        ///<param name="buffer">The region of memory to write data from.</param>
-        ///<param name="offset">The zero-based byte offset in buffer from which to begin copying bytes to the stream.</param>
-        ///<param name="count">The maximum number of bytes to write.</param>
         ///<param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        ///<returns>An empty <see cref="Task"/></returns>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
