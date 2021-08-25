@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Reflection;
+using System.Text;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -397,9 +398,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ReadString()
         {
             var valueLen = ReadInt32();
-            char[] value = new char[valueLen];
+            byte[] value = new byte[valueLen];
             Read(value, 0, valueLen);
-            return new string(value);
+
+            return new string(Encoding.UTF8.GetChars(value, 0, valueLen));
         }
         public unsafe long ReadLong()
         {
