@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             Type t = typeof(FieldAlignmentTest_Decimal);
 
-            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86 && RuntimeInformation.ProcessArchitecture != Architecture.Wasm))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
             {
                 Assert.Equal(96, Marshal.SizeOf(t));
             }
@@ -126,7 +126,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(new IntPtr(0), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.b)));
             Assert.Equal(OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86 ? new IntPtr(4) : new IntPtr(8), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.p)));
 
-            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86 && RuntimeInformation.ProcessArchitecture != Architecture.Wasm))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
             {
                 Assert.Equal(new IntPtr(88), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.s)));
             }
