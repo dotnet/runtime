@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
                 {
-                    foreach (var attributeSyntax in attributeListSyntax.Attributes)
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
                     {
                         IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
                         if (attributeSymbol == null)
@@ -55,7 +55,6 @@ namespace Microsoft.Extensions.Logging.Generators
                             return methodDeclarationSyntax.Parent as ClassDeclarationSyntax;
                         }
                     }
-
                 }
 
                 return null;
