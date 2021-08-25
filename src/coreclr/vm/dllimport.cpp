@@ -2142,17 +2142,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #endif // _DEBUG
                 pcsEmit->EmitADD();
 
-                if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
-                {
-                    pcsEmit->EmitDUP();
-                }
-
                 pcsEmit->EmitLDIND_I();
-
-                if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
-                {
-                    pcsEmit->EmitADD();
-                }
 
                 pcsEmit->EmitLDIND_I();
             }
@@ -4393,8 +4383,8 @@ namespace
         }
         else
         {
-            pNMD->ndirect.m_pszLibName.SetValueMaybeNull(libName);
-            pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(entryPointName);
+            pNMD->ndirect.m_pszLibName = libName;
+            pNMD->ndirect.m_pszEntrypointName = entryPointName;
         }
 
         // Do not publish incomplete prestub flags or you will introduce a race condition.
@@ -4869,9 +4859,6 @@ namespace
             // Call EnsureActive before make the call
             // This cannot be done during NGEN/PEVerify (in PASSIVE_DOMAIN) so I've moved it here
             pStubMD->EnsureActive();
-
-            if (pStubMD->IsPreImplemented())
-                RestoreNGENedStub(pStubMD);
 
             RETURN pStubMD;
         }
@@ -5441,53 +5428,6 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
     return pStubMD;
 }
 
-MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsReverseCOMStub(dwStubFlags))
-    {
-        return NULL;
-    }
-    else
-#endif // FEATURE_COMINTEROP
-    if (pMD->IsNDirect())
-    {
-        NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-        return pNMD->ndirect.m_pStubMD.GetValueMaybeNull();
-    }
-#ifdef FEATURE_COMINTEROP
-    else if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
-    {
-        ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-        return (pComInfo == NULL ? NULL : pComInfo->m_pStubMD.GetValueMaybeNull());
-    }
-#endif // FEATURE_COMINTEROP
-    else if (pMD->IsEEImpl())
-    {
-        DelegateEEClass *pClass = (DelegateEEClass *)pMD->GetClass();
-        if (SF_IsReverseStub(dwStubFlags))
-        {
-            return pClass->m_pReverseStubMD;
-        }
-        else
-        {
-            return pClass->m_pForwardStubMD;
-        }
-    }
-    else if (pMD->IsIL())
-    {
-        // these are currently only created at runtime, not at NGEN time
-        return NULL;
-    }
-    else
-    {
-        UNREACHABLE_MSG("unexpected type of MethodDesc");
-    }
-}
-
-
 namespace
 {
     LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod)
@@ -5595,14 +5535,10 @@ PCODE NDirect::GetStubForILStub(MethodDesc* pManagedMD, MethodDesc** ppStubMD, D
     }
     CONTRACT_END;
 
-    // pStubMD, if provided, must be preimplemented.
-    CONSISTENCY_CHECK( (*ppStubMD == NULL) || (*ppStubMD)->IsPreImplemented() );
+    CONSISTENCY_CHECK(*ppStubMD == NULL);
 
-    if (NULL == *ppStubMD)
-    {
-        PInvokeStaticSigInfo sigInfo(pManagedMD);
-        *ppStubMD = NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pManagedMD);
-    }
+    PInvokeStaticSigInfo sigInfo(pManagedMD);
+    *ppStubMD = NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pManagedMD);
 
     RETURN JitILStub(*ppStubMD);
 }
@@ -5613,16 +5549,12 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
 
     PCODE pStub = NULL;
 
-    // pStubMD, if provided, must be preimplemented.
-    CONSISTENCY_CHECK( (*ppStubMD == NULL) || (*ppStubMD)->IsPreImplemented() );
+    CONSISTENCY_CHECK(*ppStubMD == NULL);
 
-    if (NULL == *ppStubMD)
-    {
-        PInvokeStaticSigInfo sigInfo;
-        NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
+    PInvokeStaticSigInfo sigInfo;
+    NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
 
-        *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
-    }
+    *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
 
     if (SF_IsForNumParamBytes(dwStubFlags))
         return NULL;
@@ -5714,19 +5646,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
     return pCode;
 }
 
-MethodDesc* RestoreNGENedStub(MethodDesc* pStubMD)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pStubMD));
-    }
-    CONTRACTL_END;
-
-    return pStubMD;
-}
-
-PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **ppStubMD)
+PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
 {
     CONTRACT(PCODE)
     {
@@ -5740,17 +5660,11 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **p
     PCODE                   pStub = NULL;
     MethodDesc*             pStubMD = NULL;
 
-    pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
-    if (pStubMD != NULL)
-    {
-        pStubMD = RestoreNGENedStub(pStubMD);
-    }
-
-    if ((NULL == pStubMD) && (SF_IsNGENedStub(dwStubFlags)))
+    if (SF_IsNGENedStub(dwStubFlags))
     {
         // Return NULL -- the caller asked only for an ngened stub and
         // one does not exist, so don't do any more work.
-        CONSISTENCY_CHECK(pStub == NULL);
+        return NULL;
     }
     else
     if (pMD->IsNDirect())
@@ -5788,9 +5702,6 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **p
         // the stub uses COM so make sure that it is started
         EnsureComStarted();
     }
-
-    if (ppStubMD != NULL)
-        *ppStubMD = pStubMD;
 
     RETURN pStub;
 }

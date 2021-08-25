@@ -41,8 +41,7 @@ DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile)
     m_loading(TRUE),
     m_pDynamicMethodTable(NULL),
     m_pUMThunkHash(NULL),
-    m_bDisableActivationCheck(FALSE),
-    m_dwReasonForRejectingNativeImage(0)
+    m_bDisableActivationCheck(FALSE)
 {
     CONTRACTL
     {

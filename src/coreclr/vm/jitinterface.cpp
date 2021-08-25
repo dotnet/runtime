@@ -395,23 +395,6 @@ inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *cl
     return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
 }
 
-void CheckForEquivalenceAndLoadTypeBeforeCodeIsRun(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (IsTypeDefEquivalent(defToken, pDefModule))
-    {
-        SigPointer sigPtr(*ptr);
-        TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext);
-        ((ICorDynamicInfo *)pData)->classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(th.AsPtr()));
-    }
-}
-
 inline static void TypeEquivalenceFixupSpecificationHelper(ICorDynamicInfo * pCorInfo, MethodDesc *pMD)
 {
     STANDARD_VM_CONTRACT;
@@ -422,15 +405,7 @@ inline static void TypeEquivalenceFixupSpecificationHelper(ICorDynamicInfo * pCo
     // match that those in the actual function. (They must be equivalent, but not necessarily the same.)
     // In non-ngen scenarios this code here will force the types to be loaded directly by the call to
     // HasTypeEquivalentStructParameters.
-    if (!pMD->IsVirtual())
-    {
-        if (pMD->HasTypeEquivalentStructParameters())
-        {
-            if (IsCompilationProcess())
-                pMD->WalkValueTypeParameters(pMD->GetMethodTable(), CheckForEquivalenceAndLoadTypeBeforeCodeIsRun, pCorInfo);
-        }
-    }
-    else
+    if (pMD->IsVirtual())
     {
         if (pMD->GetMethodTable()->DependsOnEquivalentOrForwardedStructs())
         {
@@ -3018,11 +2993,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                 pResult->testForFixup = 0;
                 pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
 
-                if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-                {
-                    pResult->indirectFirstOffset = 1;
-                }
-
                 uint32_t data;
                 IfFailThrow(sigptr.GetData(&data));
                 pResult->offsets[1] = sizeof(TypeHandle) * data;
@@ -3103,12 +3073,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                 uint32_t data;
                 IfFailThrow(sigptr.GetData(&data));
                 pResult->offsets[2] = sizeof(TypeHandle) * data;
-
-                if (MethodTable::IsPerInstInfoRelative())
-                {
-                    pResult->indirectFirstOffset = 1;
-                    pResult->indirectSecondOffset = 1;
-                }
 
                 return;
             }
@@ -3316,7 +3280,7 @@ NoSpecialCase:
         _ASSERTE(false);
     }
 
-    DictionaryEntrySignatureSource signatureSource = (IsCompilationProcess() ? FromZapImage : FromJIT);
+    DictionaryEntrySignatureSource signatureSource = FromJIT;
 
     WORD slot;
 
@@ -3339,11 +3303,6 @@ NoSpecialCase:
 
             // Indirect through dictionary table pointer in InstantiatedMethodDesc
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
-
-            if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-            {
-                pResult->indirectFirstOffset = 1;
-            }
         }
     }
 
@@ -3366,12 +3325,6 @@ NoSpecialCase:
 
             // Next indirect through the dictionary appropriate to this instantiated type
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
-
-            if (MethodTable::IsPerInstInfoRelative())
-            {
-                pResult->indirectFirstOffset = 1;
-                pResult->indirectSecondOffset = 1;
-            }
         }
     }
 }
@@ -8498,7 +8451,7 @@ bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetOfIndirection,
                                      unsigned * pOffsetAfterIndirection,
-                                     bool * isRelative)
+                                     bool * isRelative) 
 {
     CONTRACTL {
         NOTHROW;
@@ -8520,8 +8473,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 
     *pOffsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir_t) */;
     *pOffsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir2_t) */;
-    *isRelative = MethodTable::VTableIndir_t::isRelative ? 1 : 0;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == MethodTable::VTableIndir2_t::isRelative);
+    *isRelative = false;
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -9021,15 +8973,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
         ret = (void *)ftn->GetAddrOfSlot();
 
-        if (MethodTable::VTableIndir2_t::isRelative
-            && ftn->IsVtableSlot())
-        {
-            accessType = IAT_RELPVALUE;
-        }
-        else
-        {
-            accessType = IAT_PVALUE;
-        }
+        accessType = IAT_PVALUE;
     }
 
 
@@ -9327,7 +9271,7 @@ void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
     JIT_TO_EE_TRANSITION();
 
 #ifdef DEBUGGING_SUPPORTED
-    if (g_pDebugInterface && !IsCompilationProcess())
+    if (g_pDebugInterface)
     {
         g_pDebugInterface->getBoundaries(GetMethod(ftn), cILOffsets, (DWORD**)pILOffsets,
                                      implicitBoundaries);
@@ -9355,7 +9299,7 @@ void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::
     JIT_TO_EE_TRANSITION();
 
 #ifdef DEBUGGING_SUPPORTED
-    if (g_pDebugInterface && !IsCompilationProcess())
+    if (g_pDebugInterface)
     {
         g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers);
     }
@@ -11476,6 +11420,50 @@ uint32_t CEEJitInfo::getExpectedTargetArchitecture()
     return IMAGE_FILE_MACHINE_NATIVE;
 }
 
+bool CEEJitInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*) fldHnd;
+    TypeHandle th(cls);
+
+    _ASSERTE(!field->IsStatic());
+
+    // doesFieldBelongToClass implements the predicate of...
+    // if field is not associated with the class in any way, return false.
+    // if field is the only FieldDesc that the JIT might see for a given class handle
+    // and logical field pair then return true. This is needed as the field handle here
+    // is used as a key into a hashtable mapping writes to fields to value numbers.
+    //
+    // In the CoreCLR VM implementation, verifying that the canonical MethodTable of
+    // the field matches the type found via GetExactDeclaringType, as all instance fields
+    // are only held on the canonical MethodTable.
+    // This yields a truth table such as
+
+    // BaseType._field, BaseType -> true
+    // BaseType._field, DerivedType -> true
+    // BaseType<__Canon>._field, BaseType<__Canon> -> true
+    // BaseType<__Canon>._field, BaseType<string> -> true
+    // BaseType<__Canon>._field, BaseType<object> -> true
+    // BaseType<sbyte>._field, BaseType<sbyte> -> true
+    // BaseType<sbyte>._field, BaseType<byte> -> false
+
+    MethodTable* pMT = field->GetExactDeclaringType(th.GetMethodTable());
+    result = (pMT != nullptr) && (pMT->GetCanonicalMethodTable() == field->GetApproxEnclosingMethodTable()->GetCanonicalMethodTable());
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 void CEEInfo::JitProcessShutdownWork()
 {
     LIMITED_METHOD_CONTRACT;
@@ -11538,12 +11526,6 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     } CONTRACTL_END;
 
     InfoAccessType result = IAT_PVALUE;
-
-    if(NingenEnabled())
-    {
-        *ppValue = NULL;
-        return result;
-    }
 
     JIT_TO_EE_TRANSITION();
     *ppValue = StringObject::GetEmptyStringRefPtr();
@@ -14163,6 +14145,12 @@ uint32_t CEEInfo::getExpectedTargetArchitecture()
     LIMITED_METHOD_CONTRACT;
 
     return IMAGE_FILE_MACHINE_NATIVE;
+}
+
+bool CEEInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_RET();      // only called on derived class.
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,

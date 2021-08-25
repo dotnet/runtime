@@ -397,7 +397,7 @@ struct ModuleCtorInfo
     DWORD                   numElements;
     DWORD                   numLastAllocated;
     DWORD                   numElementsHot;
-    DPTR(RelativePointer<PTR_MethodTable>) ppMT; // size is numElements
+    DPTR(PTR_MethodTable)   ppMT; // size is numElements
     PTR_ClassCtorInfoEntry  cctorInfoHot;   // size is numElementsHot
     PTR_ClassCtorInfoEntry  cctorInfoCold;  // size is numElements-numElementsHot
 
@@ -406,8 +406,8 @@ struct ModuleCtorInfo
     DWORD                   numHotHashes;
     DWORD                   numColdHashes;
 
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppHotGCStaticsMTs;            // hot table
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppColdGCStaticsMTs;           // cold table
+    ArrayDPTR(PTR_MethodTable) ppHotGCStaticsMTs;            // hot table
+    ArrayDPTR(PTR_MethodTable) ppColdGCStaticsMTs;           // cold table
 
     DWORD                   numHotGCStaticsMTs;
     DWORD                   numColdGCStaticsMTs;
@@ -443,12 +443,12 @@ struct ModuleCtorInfo
         return hashVal;
     };
 
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) GetGCStaticMTs(DWORD index);
+    ArrayDPTR(PTR_MethodTable) GetGCStaticMTs(DWORD index);
 
     PTR_MethodTable GetMT(DWORD i)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ppMT[i].GetValue(dac_cast<TADDR>(ppMT) + i * sizeof(RelativePointer<PTR_MethodTable>));
+        return ppMT[i];
     }
 
 };
@@ -1046,8 +1046,7 @@ private:
     // For protecting additions to the heap
     CrstExplicitInit        m_LookupTableCrst;
 
-    #define TYPE_DEF_MAP_ALL_FLAGS                    ((TADDR)0x00000001)
-        #define ZAPPED_TYPE_NEEDS_NO_RESTORE          ((TADDR)0x00000001)
+    #define TYPE_DEF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
 
     #define TYPE_REF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
         // For type ref map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
@@ -1063,8 +1062,7 @@ private:
 
     #define GENERIC_PARAM_MAP_ALL_FLAGS               NO_MAP_FLAGS
 
-    #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            ((TADDR)0x00000001)
-        #define ZAPPED_GENERIC_TYPE_NEEDS_NO_RESTORE  ((TADDR)0x00000001)
+    #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            NO_MAP_FLAGS
 
     #define FILE_REF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
         // For file ref map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
@@ -1694,18 +1692,7 @@ public:
 
         if (pLoadLevel && !th.IsNull())
         {
-            if (!IsCompilationProcess() && (flags & ZAPPED_TYPE_NEEDS_NO_RESTORE))
-            {
-                // Make sure the flag is consistent with the target data and implies the load level we think it does
-                _ASSERTE(th.AsMethodTable()->IsPreRestored());
-                _ASSERTE(th.GetLoadLevel() == CLASS_LOADED);
-
-                *pLoadLevel = CLASS_LOADED;
-            }
-            else
-            {
-                *pLoadLevel = th.GetLoadLevel();
-            }
+            *pLoadLevel = th.GetLoadLevel();
         }
 
         return th;
@@ -1724,18 +1711,7 @@ public:
 
         if (pLoadLevel && !th.IsNull())
         {
-            if (!IsCompilationProcess() && (flags & ZAPPED_GENERIC_TYPE_NEEDS_NO_RESTORE))
-            {
-                // Make sure the flag is consistent with the target data and implies the load level we think it does
-                _ASSERTE(th.AsMethodTable()->IsPreRestored());
-                _ASSERTE(th.GetLoadLevel() == CLASS_LOADED);
-
-                *pLoadLevel = CLASS_LOADED;
-            }
-            else
-            {
-                *pLoadLevel = th.GetLoadLevel();
-            }
+            *pLoadLevel = th.GetLoadLevel();
         }
 
         return th;
@@ -1976,7 +1952,6 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
-    void PopulatePropertyInfoMap();
     HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
 
 public:

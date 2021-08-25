@@ -267,15 +267,7 @@ BEGIN_TYPE(CGuidPoolHash, sizeof(CChainedHash<GUIDHASH>))
 FIELD(CGuidPoolHash, m_Pool, sizeof(void*))
 END_TYPE(CGuidPoolHash, sizeof(void*))
 
-
-USING_ALIAS(MetaData__HotHeap, MetaData::HotHeap)
-BEGIN_TYPE(MetaData__HotHeap, 0)
-FIELD(MetaData__HotHeap, m_pHotHeapHeader, sizeof(void*))
-END_TYPE(MetaData__HotHeap, sizeof(void*))
-
-
 BEGIN_TYPE(StgPoolReadOnly, sizeof(StgPoolSeg) + sizeof(void*))                   //vtable pointer
-ALIGN_FIELD(StgPoolReadOnly, m_HotHeap, sizeof(MetaData::HotHeap), sizeof(void*))
 END_TYPE(StgPoolReadOnly, sizeof(void*))
 
 USING_ALIAS(MapSHash__ULONG__ULONG, MapSHash<ULONG, ULONG>) // Create a using alias to avoid commas in the type name

@@ -16,7 +16,6 @@ public:
         BINDER_SPACE::Assembly** ppAssembly);
 
     virtual HRESULT BindUsingPEImage(PEImage* pPEImage,
-        BOOL fIsNativeImage,
         BINDER_SPACE::Assembly** ppAssembly) = 0;
 
     virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,

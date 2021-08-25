@@ -296,12 +296,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _debugLocInfos = DebugInfoTableNode.CreateBoundsBlobForMethod(debugLocInfos);
         }
 
-        public void InitializeDebugVarInfos(NativeVarInfo[] debugVarInfos)
+        public void InitializeDebugVarInfos(NativeVarInfo[] debugVarInfos, TargetDetails target)
         {
             Debug.Assert(_debugVarInfos == null);
             // Process the debug info from JIT format to R2R format immediately as it is large
             // and not used in the rest of the process except to emit.
-            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos);
+            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos, target);
         }
 
         public void InitializeDebugEHClauseInfos(DebugEHClauseInfo[] debugEHClauseInfos)

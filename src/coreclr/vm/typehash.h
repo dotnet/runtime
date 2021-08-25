@@ -37,7 +37,7 @@ typedef struct EETypeHashEntry
 #ifndef DACCESS_COMPILE
     EETypeHashEntry& operator=(const EETypeHashEntry& src)
     {
-        m_data.SetValueMaybeNull(src.m_data.GetValueMaybeNull());
+        m_data = src.m_data;
 
         return *this;
     }
@@ -45,16 +45,13 @@ typedef struct EETypeHashEntry
 
     PTR_VOID GetData()
     {
-        return ReadPointerMaybeNull(this, &EETypeHashEntry::m_data);
+        return m_data;
     }
 
 private:
     friend class EETypeHashTable;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
-    RelativePointer<PTR_VOID> m_data;
+    PTR_VOID m_data;
 } EETypeHashEntry_t;
 
 
@@ -62,9 +59,6 @@ private:
 typedef DPTR(class EETypeHashTable) PTR_EETypeHashTable;
 class EETypeHashTable : public NgenHashTable<EETypeHashTable, EETypeHashEntry, 2>
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     // This is the domain in which the hash table is allocated
