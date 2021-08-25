@@ -29,7 +29,15 @@ namespace Wasm.Build.Tests
             CreateTemplateProject(id);
 
             BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
-            BlazorPublish(id, config, NativeFilesType.FromRuntimePack);
+            if (config == "Release")
+            {
+                // relinking in publish for Release config
+                BlazorPublish(id, config, NativeFilesType.Relinked);
+            }
+            else
+            {
+                BlazorPublish(id, config, NativeFilesType.FromRuntimePack);
+            }
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
