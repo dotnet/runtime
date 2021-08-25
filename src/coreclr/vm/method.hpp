@@ -2502,7 +2502,7 @@ protected:
         nomdStructMarshalStub        = 0x0080,
         nomdUnbreakable              = 0x0100,
         //unused                     = 0x0200,
-        nomdSignatureNeedsRestore    = 0x0400,
+        //unused                     = 0x0400,
         nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
         nomdMulticastStub            = 0x1000,
         nomdUnboxingILStub           = 0x2000,
@@ -2566,15 +2566,6 @@ public:
         }
     }
 
-    void SetSignatureNeedsRestore(bool value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-        {
-            m_dwExtendedFlags |= nomdSignatureNeedsRestore;
-        }
-    }
-
     void SetStubNeedsCOMStarted(bool value)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2588,17 +2579,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (IsSignatureNeedsRestore())
-        {
-            // Since we don't update the signatreNeedsRestore bit when we actually
-            // restore the signature, the bit will have a stall value.  The signature
-            // bit in the metadata will always contain the correct, up-to-date
-            // information.
-            Volatile<BYTE> *pVolatileSig = (Volatile<BYTE> *)GetStoredMethodSig();
-            if ((*pVolatileSig & IMAGE_CEE_CS_CALLCONV_NEEDSRESTORE) != 0)
-                return false;
-        }
-
         return true;
     }
 
@@ -2610,7 +2590,6 @@ public:
     bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
     bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub() && !IsStructMarshalStub()); }
     bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
-    bool IsSignatureNeedsRestore() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdSignatureNeedsRestore)); }
     bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
     bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
@@ -2640,7 +2619,6 @@ public:
         return IsCLRToCOMStub() || IsPInvokeStub();
     }
 
-    void Restore();
     //
     // following implementations defined in DynamicMethod.cpp
     //

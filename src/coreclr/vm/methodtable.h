@@ -877,8 +877,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !IsPreRestored() &&
-            (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey) != 0;
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey) != 0;
     }
 
     // Actually do the restore actions on the method table
@@ -890,11 +889,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // If we are prerestored then we are considered a restored methodtable.
-        // Note that IsPreRestored is always false for jitted code.
-        if (IsPreRestored())
-            return TRUE;
-
         return !(GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
     }
     inline BOOL IsRestored()
@@ -902,11 +896,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         g_IBCLogger.LogMethodTableAccess(this);
-
-        // If we are prerestored then we are considered a restored methodtable.
-        // Note that IsPreRestored is always false for jitted code.
-        if (IsPreRestored())
-            return TRUE;
 
         return !(GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
     }
@@ -944,8 +933,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (IsPreRestored())
-            || (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded) == 0;
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
@@ -1004,10 +992,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         g_IBCLogger.LogMethodTableAccess(this);
-
-        // Fast path for zapped images
-        if (IsPreRestored())
-            return CLASS_LOADED;
 
         DWORD dwFlags = GetWriteableData()->m_dwFlags;
 
@@ -2770,13 +2754,6 @@ public:
     inline DWORD GetAttrClass();
 
     inline BOOL HasFieldsWhichMustBeInited();
-
-    inline BOOL IsPreRestored() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return FALSE;
-    }
 
     //-------------------------------------------------------------------
     // THE EXPOSED CLASS OBJECT
