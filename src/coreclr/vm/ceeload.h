@@ -90,7 +90,6 @@ class JITInlineTrackingMap;
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #endif
 
-typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
 //
@@ -2005,8 +2004,8 @@ public:
     void NotifyProfilerLoadFinished(HRESULT hr);
 #endif // PROFILING_SUPPORTED
 
-    BOOL HasNativeOrReadyToRunInlineTrackingMap();
-    COUNT_T GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+    BOOL HasReadyToRunInlineTrackingMap();
+    COUNT_T GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
@@ -2413,9 +2412,6 @@ private:
     };
 
     DebuggerSpecificData  m_debuggerSpecificData;
-
-    // This is a compressed read only copy of m_inlineTrackingMap, which is being saved to NGEN image.
-    PTR_PersistentInlineTrackingMapNGen m_pPersistentInlineTrackingMapNGen;
 
 #if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;

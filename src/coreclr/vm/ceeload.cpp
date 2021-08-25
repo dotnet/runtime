@@ -81,7 +81,7 @@
 
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
-BOOL Module::HasNativeOrReadyToRunInlineTrackingMap()
+BOOL Module::HasReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_READYTORUN
@@ -90,10 +90,10 @@ BOOL Module::HasNativeOrReadyToRunInlineTrackingMap()
         return TRUE;
     }
 #endif
-    return (m_pPersistentInlineTrackingMapNGen != NULL);
+    return FALSE;
 }
 
-COUNT_T Module::GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
+COUNT_T Module::GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
 {
     WRAPPER_NO_CONTRACT;
 #ifdef FEATURE_READYTORUN
@@ -102,10 +102,6 @@ COUNT_T Module::GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMeth
         return GetReadyToRunInfo()->GetInlineTrackingMap()->GetInliners(inlineeOwnerMod, inlineeTkn, inlinersSize, inliners, incompleteData);
     }
 #endif
-    if(m_pPersistentInlineTrackingMapNGen != NULL)
-    {
-        return m_pPersistentInlineTrackingMapNGen->GetInliners(inlineeOwnerMod, inlineeTkn, inlinersSize, inliners, incompleteData);
-    }
     return 0;
 }
 

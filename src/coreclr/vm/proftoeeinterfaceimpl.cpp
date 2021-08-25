@@ -10217,7 +10217,7 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    if (!inlinersModule->HasNativeOrReadyToRunInlineTrackingMap())
+    if (!inlinersModule->HasReadyToRunInlineTrackingMap())
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -10230,14 +10230,14 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
     EX_TRY
     {
         // Trying to use static buffer
-        COUNT_T methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
+        COUNT_T methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
 
         // If static buffer is not enough, allocate an array.
         if (methodsAvailable > staticBufferSize)
         {
             DWORD dynamicBufferSize = methodsAvailable;
             dynamicBuffer = methodsBuffer = new MethodInModule[dynamicBufferSize];
-            methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
+            methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
             if (methodsAvailable > dynamicBufferSize)
             {
                 _ASSERTE(!"Ngen image inlining info changed, this shouldn't be possible.");
