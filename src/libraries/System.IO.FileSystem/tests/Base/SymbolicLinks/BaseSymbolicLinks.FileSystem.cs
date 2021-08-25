@@ -463,7 +463,7 @@ namespace System.IO.Tests
         // Must call inside a remote executor
         protected void CreateSymbolicLink_PathToTarget_RelativeToLinkPath_Internal(bool createOpposite)
         {
-            string tempCwd = GetNewCwdPath();
+            string tempCwd = ChangeCurrentDirectory();
 
             // Create a dummy file or directory in cwd.
             string fileOrDirectoryInCwd = GetRandomFileName();
