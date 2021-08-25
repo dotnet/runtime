@@ -929,6 +929,12 @@ namespace System.Net.Http
                 }
             }
 
+            // We cannot use HTTP/3. Do not continue if downgrade is not allowed.
+            if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                throw GetVersionException(request, 3);
+            }
+
             return null;
         }
 
@@ -941,79 +947,21 @@ namespace System.Net.Http
                (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure))
             {
                 Http2Connection? connection = await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-                if (connection is null)
+                if (connection is not null)
                 {
-                    Debug.Assert(!_http2Enabled);
-                    return null;
+                    return await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
                 }
 
-                return await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+                Debug.Assert(!_http2Enabled);
+            }
+
+            // We cannot use HTTP/2. Do not continue if downgrade is not allowed.
+            if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                throw GetVersionException(request, 2);
             }
 
             return null;
-        }
-
-        private async ValueTask<HttpResponseMessage> SendUsingHttp11Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            HttpConnection connection = await GetHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-
-            // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
-            connection.Acquire();
-            try
-            {
-                return await SendWithNtConnectionAuthAsync(connection, request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                connection.Release();
-            }
-        }
-
-        private ValueTask<HttpResponseMessage> DetermineVersionAndSendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            // The default configuration of SocketsHttpHandler and HttpRequestMessage has requests use HTTP/1.1.
-            // Special-case it to prioritize it and avoid an extra layer of async state machine for this common case.
-            if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrHigher &&
-                request.Version.Major == 1)
-            {
-                return SendUsingHttp11Async(request, async, doRequestAuth, cancellationToken);
-            }
-
-            return Core(request, async, doRequestAuth, cancellationToken);
-
-            async ValueTask<HttpResponseMessage> Core(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-            {
-                HttpResponseMessage? response;
-
-                if (IsHttp3Supported())
-                {
-                    response = await TrySendUsingHttp3Async(request, async, cancellationToken).ConfigureAwait(false);
-                    if (response is not null)
-                    {
-                        return response;
-                    }
-                }
-
-                // We cannot use HTTP/3. Do not continue if downgrade is not allowed.
-                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
-                {
-                    throw GetVersionException(request, 3);
-                }
-
-                response = await TrySendUsingHttp2Async(request, async, cancellationToken).ConfigureAwait(false);
-                if (response is not null)
-                {
-                    return response;
-                }
-
-                // We cannot use HTTP/2. Do not continue if downgrade is not allowed.
-                if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
-                {
-                    throw GetVersionException(request, 2);
-                }
-
-                return await SendUsingHttp11Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            }
         }
 
         /// <summary>Check for the Alt-Svc header, to upgrade to HTTP/3.</summary>
@@ -1033,7 +981,35 @@ namespace System.Net.Http
                 // Loop on connection failures (or other problems like version downgrade) and retry if possible.
                 try
                 {
-                    HttpResponseMessage response = await DetermineVersionAndSendAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage? response = null;
+
+                    // HTTP/3
+                    if (IsHttp3Supported())
+                    {
+                        response = await TrySendUsingHttp3Async(request, async, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (response is null)
+                    {
+                        // HTTP/2
+                        response = await TrySendUsingHttp2Async(request, async, cancellationToken).ConfigureAwait(false);
+
+                        if (response is null)
+                        {
+                            // HTTP/1.x
+                            HttpConnection connection = await GetHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+                            connection.Acquire(); // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
+                            try
+                            {
+                                response = await SendWithNtConnectionAuthAsync(connection, request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                            }
+                            finally
+                            {
+                                connection.Release();
+                            }
+                        }
+                    }
+
                     ProcessAltSvc(response);
                     return response;
                 }
