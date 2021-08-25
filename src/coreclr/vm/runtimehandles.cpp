@@ -379,19 +379,6 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-NOINLINE static MethodDesc * RestoreMethodHelper(MethodDesc * pMethod, LPVOID __me)
-{
-    FC_INNER_PROLOG_NO_ME_SETUP();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    pMethod->CheckRestore();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return pMethod;
-}
-
 FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
@@ -414,13 +401,6 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
         return NULL;
 
     MethodDesc* pMethod = MethodTable::IntroducedMethodIterator::GetFirst(pMT);
-
-    // The only method that can show up here unrestored is instantiated methods. Check for it before performing the expensive IsRestored() check.
-    if (pMethod != NULL && pMethod->GetClassification() == mcInstantiated && !pMethod->IsRestored()) {
-        FC_INNER_RETURN(MethodDesc *, RestoreMethodHelper(pMethod, __me));
-    }
-
-    _ASSERTE(pMethod == NULL || pMethod->IsRestored());
     return pMethod;
 }
 FCIMPLEND
@@ -437,12 +417,6 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
     MethodDesc *pMethod = MethodTable::IntroducedMethodIterator::GetNext(*ppMethod);
 
     *ppMethod = pMethod;
-
-    if (pMethod != NULL && pMethod->GetClassification() == mcInstantiated && !pMethod->IsRestored()) {
-        FC_INNER_RETURN_VOID(RestoreMethodHelper(pMethod, __me));
-    }
-
-    _ASSERTE(pMethod == NULL || pMethod->IsRestored());
 }
 FCIMPLEND
 #include <optdefault.h>
