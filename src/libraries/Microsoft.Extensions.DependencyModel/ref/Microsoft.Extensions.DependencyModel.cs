@@ -210,7 +210,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     public partial class ReferenceAssemblyPathResolver : Microsoft.Extensions.DependencyModel.Resolution.ICompilationAssemblyResolver
     {
         public ReferenceAssemblyPathResolver() { }
-        public ReferenceAssemblyPathResolver(string defaultReferenceAssembliesPath, string[] fallbackSearchPaths) { }
+        public ReferenceAssemblyPathResolver(string? defaultReferenceAssembliesPath, string[] fallbackSearchPaths) { }
         public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string> assemblies) { throw null; }
     }
 }
