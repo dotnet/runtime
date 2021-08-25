@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics.Hashing;
 
 namespace Microsoft.Extensions.FileSystemGlobbing
@@ -56,7 +57,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="obj">The object to be compared</param>
         /// <returns>True when <see cref="Equals(FilePatternMatch)" /></returns>
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is FilePatternMatch match && Equals(match);
 
         /// <summary>

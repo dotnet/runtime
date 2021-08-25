@@ -7,25 +7,15 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Util
 {
     internal static class StringComparisonHelper
     {
-        public static StringComparer GetStringComparer(StringComparison comparisonType)
+        public static StringComparer GetStringComparer(StringComparison comparisonType) => comparisonType switch
         {
-            switch (comparisonType)
-            {
-                case StringComparison.CurrentCulture:
-                    return StringComparer.CurrentCulture;
-                case StringComparison.CurrentCultureIgnoreCase:
-                    return StringComparer.CurrentCultureIgnoreCase;
-                case StringComparison.Ordinal:
-                    return StringComparer.Ordinal;
-                case StringComparison.OrdinalIgnoreCase:
-                    return StringComparer.OrdinalIgnoreCase;
-                case StringComparison.InvariantCulture:
-                    return StringComparer.InvariantCulture;
-                case StringComparison.InvariantCultureIgnoreCase:
-                    return StringComparer.InvariantCultureIgnoreCase;
-                default:
-                    throw new InvalidOperationException(SR.Format(SR.UnexpectedStringComparisonType, comparisonType));
-            }
-        }
+            StringComparison.CurrentCulture => StringComparer.CurrentCulture,
+            StringComparison.CurrentCultureIgnoreCase => StringComparer.CurrentCultureIgnoreCase,
+            StringComparison.Ordinal => StringComparer.Ordinal,
+            StringComparison.OrdinalIgnoreCase => StringComparer.OrdinalIgnoreCase,
+            StringComparison.InvariantCulture => StringComparer.InvariantCulture,
+            StringComparison.InvariantCultureIgnoreCase => StringComparer.InvariantCultureIgnoreCase,
+            _ => throw new InvalidOperationException(SR.Format(SR.UnexpectedStringComparisonType, comparisonType))
+        };
     }
 }

@@ -23,12 +23,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="rootDir">The root directory that this FileSystem will use.</param>
         /// <param name="files">Collection of file names. If relative paths <paramref name="rootDir"/> will be prepended to the paths.</param>
-        public InMemoryDirectoryInfo(string rootDir, IEnumerable<string> files)
+        public InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files)
             : this(rootDir, files, false)
         {
         }
 
-        private InMemoryDirectoryInfo(string? rootDir, IEnumerable<string>? files, bool normalized)
+        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, bool normalized)
         {
             if (string.IsNullOrEmpty(rootDir))
             {
@@ -66,13 +66,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override string Name { get; }
 
         /// <inheritdoc />
-        public override DirectoryInfoBase ParentDirectory
-        {
-            get
-            {
-                return new InMemoryDirectoryInfo(Path.GetDirectoryName(FullName), _files, true);
-            }
-        }
+        public override DirectoryInfoBase ParentDirectory =>
+            new InMemoryDirectoryInfo(Path.GetDirectoryName(FullName)!, _files, true);
 
         /// <inheritdoc />
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
