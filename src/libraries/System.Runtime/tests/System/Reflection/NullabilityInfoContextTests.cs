@@ -480,8 +480,8 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.Nullable, nullability.WriteState);
             Assert.Equal(typeof(string), nullability.Type);
 
-            Type lisNontNull = typeof(List<string>);
-            MethodInfo addNotNull = lisNontNull.GetMethod("Add")!;
+            Type listNotNull = typeof(List<string>);
+            MethodInfo addNotNull = listNotNull.GetMethod("Add")!;
             nullability = nullabilityContext.Create(addNotNull.GetParameters()[0]);
             Assert.Equal(NullabilityState.Nullable, nullability.ReadState);
             Assert.Equal(typeof(string), nullability.Type);
