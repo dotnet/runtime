@@ -50,9 +50,6 @@ typedef struct EETypeHashEntry
 
 private:
     friend class EETypeHashTable;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     PTR_VOID m_data;
 } EETypeHashEntry_t;
@@ -62,9 +59,6 @@ private:
 typedef DPTR(class EETypeHashTable) PTR_EETypeHashTable;
 class EETypeHashTable : public NgenHashTable<EETypeHashTable, EETypeHashEntry, 2>
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     // This is the domain in which the hash table is allocated

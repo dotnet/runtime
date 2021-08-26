@@ -203,9 +203,6 @@ class MethodDesc
     friend class ClrDataAccess;
 
     friend class MethodDescCallSite;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 
@@ -1622,8 +1619,6 @@ public:
 
     TADDR GetFixupList();
 
-    BOOL IsRestored_NoLogging();
-    BOOL IsRestored();
     void CheckRestore(ClassLoadLevel level = CLASS_LOADED);
 
     //================================================================
@@ -2163,9 +2158,6 @@ class MethodDescChunk
 {
     friend class MethodDesc;
     friend class CheckAsmOffsets;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif // DACCESS_COMPILE
 
     enum {
         enum_flag_TokenRangeMask                           = 0x03FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
@@ -2438,9 +2430,6 @@ class StoredSigMethodDesc : public MethodDesc
 
 class FCallMethodDesc : public MethodDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     DWORD   m_dwECallID;
 #ifdef TARGET_64BIT
@@ -2475,9 +2464,6 @@ class DynamicMethodDesc : public StoredSigMethodDesc
     friend class ILStubState;
     friend class DynamicMethodTable;
     friend class MethodDesc;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 protected:
     PTR_CUTF8           m_pszMethodName;
@@ -2502,7 +2488,7 @@ protected:
         nomdStructMarshalStub        = 0x0080,
         nomdUnbreakable              = 0x0100,
         //unused                     = 0x0200,
-        nomdSignatureNeedsRestore    = 0x0400,
+        //unused                     = 0x0400,
         nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
         nomdMulticastStub            = 0x1000,
         nomdUnboxingILStub           = 0x2000,
@@ -2566,15 +2552,6 @@ public:
         }
     }
 
-    void SetSignatureNeedsRestore(bool value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-        {
-            m_dwExtendedFlags |= nomdSignatureNeedsRestore;
-        }
-    }
-
     void SetStubNeedsCOMStarted(bool value)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2582,24 +2559,6 @@ public:
         {
             m_dwExtendedFlags |= nomdStubNeedsCOMStarted;
         }
-    }
-
-    bool IsRestored()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (IsSignatureNeedsRestore())
-        {
-            // Since we don't update the signatreNeedsRestore bit when we actually
-            // restore the signature, the bit will have a stall value.  The signature
-            // bit in the metadata will always contain the correct, up-to-date
-            // information.
-            Volatile<BYTE> *pVolatileSig = (Volatile<BYTE> *)GetStoredMethodSig();
-            if ((*pVolatileSig & IMAGE_CEE_CS_CALLCONV_NEEDSRESTORE) != 0)
-                return false;
-        }
-
-        return true;
     }
 
     bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
@@ -2610,7 +2569,6 @@ public:
     bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
     bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub() && !IsStructMarshalStub()); }
     bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
-    bool IsSignatureNeedsRestore() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdSignatureNeedsRestore)); }
     bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
     bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
@@ -2640,7 +2598,6 @@ public:
         return IsCLRToCOMStub() || IsPInvokeStub();
     }
 
-    void Restore();
     //
     // following implementations defined in DynamicMethod.cpp
     //
@@ -3300,9 +3257,6 @@ public:
 
 class InstantiatedMethodDesc : public MethodDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 
@@ -3634,16 +3588,8 @@ inline BOOL MethodDesc::SanityCheck()
     }
     CONTRACTL_END;
 
-
-    // Do a simple sanity test
-    if (IsRestored())
-    {
-        // If it looks good, do a more intensive sanity test. We don't care about the result,
-        // we just want it to not AV.
-        return GetMethodTable() == m_pDebugMethodTable && this->GetModule() != NULL;
-    }
-
-    return TRUE;
+    // Sanity test - we don't care about the result we just want it to not AV.
+    return GetMethodTable() == m_pDebugMethodTable && this->GetModule() != NULL;
 }
 
 #endif // _DEBUG

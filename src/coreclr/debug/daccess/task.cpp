@@ -2585,13 +2585,6 @@ ClrDataModule::StartEnumExtents(
                 extent->type = CLRDATA_MODULE_PE_FILE;
                 extent++;
             }
-            if (file->HasNativeImage())
-            {
-                extent->base = TO_CDADDR(PTR_TO_TADDR(file->GetLoadedNative()->GetBase()));
-                extent->length = file->GetLoadedNative()->GetVirtualSize();
-                extent->type = CLRDATA_MODULE_PREJIT_FILE;
-                extent++;
-            }
 
             m_setExtents = true;
             m_extentsEnd = extent;
