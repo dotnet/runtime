@@ -806,6 +806,10 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
 
 HRESULT GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges)
 {
+    if ((cObjectRanges > 0) && (ranges == nullptr))
+    {
+        return E_INVALIDARG;
+    }
     CrstHolder holder(&mutex);
     if (genDescTable == nullptr)
     {
@@ -819,7 +823,10 @@ HRESULT GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjec
         ranges[i].rangeLength         = genDescTable[i].rangeEnd         - genDescTable[i].rangeStart;
         ranges[i].rangeLengthReserved = genDescTable[i].rangeEndReserved - genDescTable[i].rangeStart;
     }
-    *pcObjectRanges = count;
+    if (pcObjectRanges != nullptr)
+    {
+        *pcObjectRanges = count;
+    }
     return S_OK;
 }
 
