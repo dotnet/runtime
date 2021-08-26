@@ -969,6 +969,7 @@ namespace System.Net.Http
                             (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure)) // prefer HTTP/1.1 if connection is not secured and downgrade is possible
                         {
                             Http2Connection? connection = await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+                            Debug.Assert(connection is not null || !_http2Enabled);
                             if (connection is not null)
                             {
                                 response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
