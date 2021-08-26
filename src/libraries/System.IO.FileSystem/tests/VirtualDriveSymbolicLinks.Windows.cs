@@ -24,227 +24,207 @@ namespace System.IO.Tests
             base.Dispose(disposing);
         }
 
-        // When the immediate target is requested (via LinkTarget or using returnFinalTarget: false),
-        // the returned path will point to the target using the virtual drive path
-        // The only case of returnFinalTarget: true that will return a target using the virtual drive, is when both
-        // the link and the target reside in the virtual drive
         [Theory]
-        [InlineData(true, true, false)]
-        [InlineData(false, true, false)]
-        [InlineData(true, false, false)]
-        [InlineData(true, false, true)]
-        public void CreateSymbolicLinkVD_VirtualPathReturned(bool linkInVD, bool targetInVD, bool returnFinalTarget)
+        //[InlineData(false, false, false, false)] // Target is not in virtual drive
+        // [InlineData(false, false, true, false)] // Target is not in virtual drive
+        [InlineData(false, true, false, true)]     // Immediate target expected, target is in virtual drive
+        [InlineData(false, true, true, false)]     // Final target expected, target is in virtual drive
+        // [InlineData(true, false, false, false)] // Target is not in virtual drive
+        // [InlineData(true, false, true, false)]  // Target is not in virtual drive
+        [InlineData(true, true, false, true)]      // Immediate target expected, target is in virtual drive
+        [InlineData(true, true, true, false)]      // Final target expected, target is in virtual drive
+        public void SymlinkInVirtualDrive(bool isLinkInVirtualDrive, bool isTargetInVirtualDrive, bool returnFinalTarget, bool isExpectedTargetPathVirtual)
         {
-            // File
-            CreateSymbolicLinkVD_VirtualPathReturned_Internal(
-                linkInVD,
-                targetInVD,
-                returnFinalTarget,
-                isDirectoryTest: false,
-                CreateFile,
-                CreateFileSymbolicLink,
-                AssertFileIsCorrectTypeAndDirectoryAttribute);
+            // File link
+            string fileLinkName = GetRandomLinkName();
+            string fileLinkPath = Path.Join(
+                isLinkInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                fileLinkName);
 
-            // Directory
-            CreateSymbolicLinkVD_VirtualPathReturned_Internal(
-                linkInVD,
-                targetInVD,
-                returnFinalTarget,
-                isDirectoryTest: true,
-                CreateDirectory,
-                CreateDirectorySymbolicLink,
-                AssertDirectoryIsCorrectTypeAndDirectoryAttribute);
+            // Directory link
+            string dirLinkName = GetRandomLinkName();
+            string dirLinkPath = Path.Join(
+                isLinkInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                dirLinkName);
 
-            // FileInfo
-            CreateSymbolicLinkVD_VirtualPathReturned_Internal(
-                linkInVD,
-                targetInVD,
-                returnFinalTarget,
-                isDirectoryTest: false,
-                CreateFile,
-                CreateFileInfoSymbolicLink,
-                AssertFileIsCorrectTypeAndDirectoryAttribute);
+            // File target
+            string fileTargetFileName = GetRandomFileName();
+            string fileTargetPath = Path.Join(
+                isTargetInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                fileTargetFileName);
 
-            // DirectoryInfo
-            CreateSymbolicLinkVD_VirtualPathReturned_Internal(
-                linkInVD,
-                targetInVD,
-                returnFinalTarget,
-                isDirectoryTest: true,
-                CreateDirectory,
-                CreateDirectoryInfoSymbolicLink,
-                AssertDirectoryIsCorrectTypeAndDirectoryAttribute);
+            // Directory target
+            string dirTargetFileName = GetRandomDirName();
+            string dirTargetPath = Path.Join(
+                isTargetInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                dirTargetFileName);
+
+            // Create targets
+            File.Create(fileTargetPath).Dispose();
+            Directory.CreateDirectory(dirTargetPath);
+
+            // Create links
+            FileInfo fileLinkInfo = new FileInfo(fileLinkPath);
+            fileLinkInfo.CreateAsSymbolicLink(fileTargetPath);
+            DirectoryInfo dirLinkInfo = new DirectoryInfo(dirLinkPath);
+            dirLinkInfo.CreateAsSymbolicLink(dirTargetPath);
+
+            // The expected results depend on the target location and the value of returnFinalTarget
+
+            // LinkTarget always retrieves the immediate target, so the expected value
+            // is always the path that was provided by the user for the target
+            string expectedFileTargetPath = fileTargetPath;
+            string expectedDirTargetPath = dirTargetPath;
+
+            // Verify the LinkTarget values of the link infos
+            Assert.Equal(expectedFileTargetPath, fileLinkInfo.LinkTarget);
+            Assert.Equal(expectedDirTargetPath, dirLinkInfo.LinkTarget);
+
+            // When the target is in a virtual drive, and returnFinalTarget is true,
+            // the expected target path is the real path, not the virtual path
+            string expectedTargetFileInfoFullName = Path.Join(
+                isExpectedTargetPathVirtual ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                fileTargetFileName);
+
+            string expectedTargetDirectoryInfoFullName = Path.Join(
+                isExpectedTargetPathVirtual ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                dirTargetFileName);
+
+            // Verify target infos from link info instances
+            FileSystemInfo? targetFileInfoFromFileInfoLink = fileLinkInfo.ResolveLinkTarget(returnFinalTarget);
+            FileSystemInfo? targetDirInfoFromDirInfoLink = dirLinkInfo.ResolveLinkTarget(returnFinalTarget);
+
+            Assert.True(targetFileInfoFromFileInfoLink is FileInfo);
+            Assert.True(targetDirInfoFromDirInfoLink is DirectoryInfo);
+
+            Assert.Equal(expectedTargetFileInfoFullName, targetFileInfoFromFileInfoLink.FullName);
+            Assert.Equal(expectedTargetDirectoryInfoFullName, targetDirInfoFromDirInfoLink.FullName);
+
+            // Verify targets infos via static methods
+            FileSystemInfo? targetFileInfoFromFile = File.ResolveLinkTarget(fileLinkPath, returnFinalTarget);
+            FileSystemInfo? targetFileInfoFromDirectory = Directory.ResolveLinkTarget(dirLinkPath, returnFinalTarget);
+
+            Assert.True(targetFileInfoFromFile is FileInfo);
+            Assert.True(targetFileInfoFromDirectory is DirectoryInfo);
+
+            Assert.Equal(expectedTargetFileInfoFullName, targetFileInfoFromFile.FullName);
+            Assert.Equal(expectedTargetDirectoryInfoFullName, targetFileInfoFromDirectory.FullName);
         }
 
-        // When the link target resides in a virtual drive, and returnFinalTarget: true is used,
-        // All segments of the target path get resolved, including mount points, to their real path
+
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void CreateSymbolicLinkVD_ResolvedPathReturned(bool linkInVD)
+        //[InlineData(false, false, false, false, false)] // Target is not in virtual drive
+        // [InlineData(false, false, false, true, false)] // Target is not in virtual drive
+        [InlineData(false, false, true, false, false)]     // Immediate target expected, middle link is NOT in virtual drive
+        [InlineData(false, false, true, true, false)]     // Final target expected, target is in virtual drive
+        //[InlineData(false, true, false, false, false)]  // Target is not in virtual drive
+        // [InlineData(false, true, false, true, false)]  // Target is not in virtual drive
+        [InlineData(false, true, true, false, true)]      // Immediate target expected, target is in virtual drive
+        [InlineData(false, true, true, true, false)]      // Final target expected, target is in virtual drive
+        // [InlineData(true, false, false, false, false)] // Target is not in virtual drive
+        // [InlineData(true, false, false, true, false)]  // Target is not in virtual drive
+        [InlineData(true, false, true, false, false)]     // Immediate target expected, middle link is NOT in virtual drive
+        [InlineData(true, false, true, true, false)]      // Final target expected, target is in virtual drive
+        // [InlineData(true, true, false, false, false)]  // Target is not in virtual drive
+        // [InlineData(true, true, false, true, false)]   // Target is not in virtual drive
+        [InlineData(true, true, true, false, true)]       // Immediate target expected, target is in virtual drive
+        [InlineData(true, true, true, true, false)]       // Final target expected, target is in virtual drive
+        public void SymlinkInVirtualDrive_WithIndirection(bool isFirstLinkInVirtualDrive, bool isMiddleLinkInVirtualDrive, bool isTargetInVirtualDrive, bool returnFinalTarget, bool isExpectedTargetPathVirtual)
         {
-            // File
-            CreateSymbolicLinkVD_ResolvedPathReturned_Internal(
-                linkInVD,
-                targetInVD: true,
-                returnFinalTarget: true,
-                isDirectoryTest: false,
-                CreateFile,
-                CreateFileSymbolicLink,
-                AssertFileIsCorrectTypeAndDirectoryAttribute);
+            // File link
+            string fileLinkName = GetRandomLinkName();
+            string fileLinkPath = Path.Join(
+                isFirstLinkInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                fileLinkName);
 
-            //.Directory
-            CreateSymbolicLinkVD_ResolvedPathReturned_Internal(
-                linkInVD,
-                targetInVD: true,
-                returnFinalTarget: true,
-                isDirectoryTest: true,
-                CreateDirectory,
-                CreateDirectorySymbolicLink,
-                AssertDirectoryIsCorrectTypeAndDirectoryAttribute);
+            // Directory link
+            string dirLinkName = GetRandomLinkName();
+            string dirLinkPath = Path.Join(
+                isFirstLinkInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                dirLinkName);
 
-            // FileInfo
-            CreateSymbolicLinkVD_ResolvedPathReturned_Internal(
-                linkInVD,
-                targetInVD: true,
-                returnFinalTarget: true,
-                isDirectoryTest: false,
-                CreateFile,
-                CreateFileInfoSymbolicLink,
-                AssertFileIsCorrectTypeAndDirectoryAttribute);
+            // File middle link
+            string fileMiddleLinkFileName = GetRandomLinkName();
+            string fileMiddleLinkPath = Path.Join(
+                isMiddleLinkInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                fileMiddleLinkFileName);
 
-            //.DirectoryInfo
-            CreateSymbolicLinkVD_ResolvedPathReturned_Internal(
-                linkInVD,
-                targetInVD: true,
-                returnFinalTarget: true,
-                isDirectoryTest: true,
-                CreateDirectory,
-                CreateDirectoryInfoSymbolicLink,
-                AssertDirectoryIsCorrectTypeAndDirectoryAttribute);
-        }
+            // Directory middle link
+            string dirMiddleLinkFileName = GetRandomLinkName();
+            string dirMiddleLinkPath = Path.Join(
+                isMiddleLinkInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                dirMiddleLinkFileName);
 
-        private void CreateSymbolicLinkVD_VirtualPathReturned_Internal(
-            bool linkInVD,
-            bool targetInVD,
-            bool returnFinalTarget,
-            bool isDirectoryTest,
-            TargetCreationMethod targetCreationMethod,
-            SymbolicLinkCreationMethod symbolicLinkCreationMethod,
-            AssertIsCorrectTypeAndDirectoryAttributeMethod assertIsCorrectTypeAndDirectoryAttributeMethod)
-        {
-            (string targetPath, FileSystemInfo linkInfo, FileSystemInfo targetInfo) =
-                   CreateSymbolicLinkVD_Internal(
-                       linkInVD,
-                       targetInVD,
-                       returnFinalTarget,
-                       isDirectoryTest,
-                       targetCreationMethod,
-                       symbolicLinkCreationMethod,
-                       assertIsCorrectTypeAndDirectoryAttributeMethod);
+            // File final target
+            string fileFinalTargetFileName = GetRandomFileName();
+            string fileFinalTargetPath = Path.Join(
+                isTargetInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                fileFinalTargetFileName);
 
-            Assert.Equal(targetPath, linkInfo.LinkTarget);
-            Assert.Equal(targetPath, targetInfo.FullName);
-        }
+            // Directory final target
+            string dirFinalTargetFileName = GetRandomDirName();
+            string dirFinalTargetPath = Path.Join(
+                isTargetInVirtualDrive ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                dirFinalTargetFileName);
 
-        private void CreateSymbolicLinkVD_ResolvedPathReturned_Internal(
-            bool linkInVD,
-            bool targetInVD,
-            bool returnFinalTarget,
-            bool isDirectoryTest,
-            TargetCreationMethod targetCreationMethod,
-            SymbolicLinkCreationMethod symbolicLinkCreationMethod,
-            AssertIsCorrectTypeAndDirectoryAttributeMethod assertIsCorrectTypeAndDirectoryAttributeMethod)
-        {
-            (string targetPath, FileSystemInfo linkInfo, FileSystemInfo targetInfo) =
-                  CreateSymbolicLinkVD_Internal(
-                      linkInVD,
-                      targetInVD,
-                      returnFinalTarget,
-                      isDirectoryTest,
-                      targetCreationMethod,
-                      symbolicLinkCreationMethod,
-                      assertIsCorrectTypeAndDirectoryAttributeMethod);
+            // Create targets
+            File.Create(fileFinalTargetPath).Dispose();
+            Directory.CreateDirectory(dirFinalTargetPath);
 
-            Assert.Equal(targetPath, linkInfo.LinkTarget);
-            string resolvedTargetPath = Path.Join(VirtualDriveTargetDir, Path.GetFileName(targetPath));
-            Assert.Equal(resolvedTargetPath, targetInfo.FullName);
-        }
+            // Create initial links
+            FileInfo fileLinkInfo = new FileInfo(fileLinkPath);
+            fileLinkInfo.CreateAsSymbolicLink(fileMiddleLinkPath);
+            DirectoryInfo dirLinkInfo = new DirectoryInfo(dirLinkPath);
+            dirLinkInfo.CreateAsSymbolicLink(dirMiddleLinkPath);
 
-        private (string, FileSystemInfo, FileSystemInfo) CreateSymbolicLinkVD_Internal(
-            bool linkInVD,
-            bool targetInVD,
-            bool returnFinalTarget,
-            bool isDirectoryTest,
-            TargetCreationMethod createFileOrDirectory,
-            SymbolicLinkCreationMethod createSymbolicLink,
-            AssertIsCorrectTypeAndDirectoryAttributeMethod assertIsCorrectTypeAndDirectoryAttribute)
-        {
-            string targetFileName = isDirectoryTest ? GetRandomDirName() : GetRandomFileName();
-            string pathToTarget = Path.Join(
-                targetInVD ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
-                targetFileName);
+            // Create middle links
+            FileInfo fileMiddleLinkInfo = new FileInfo(fileMiddleLinkPath);
+            fileMiddleLinkInfo.CreateAsSymbolicLink(fileFinalTargetPath);
+            DirectoryInfo dirMiddleLinkInfo = new DirectoryInfo(dirMiddleLinkPath);
+            dirMiddleLinkInfo.CreateAsSymbolicLink(dirFinalTargetPath);
 
-            string linkFileName = GetRandomLinkName();
-            string linkPath = Path.Join(
-                linkInVD ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
-                linkFileName);
+            // The expected results depend on the target location and the value of returnFinalTarget
 
-            createFileOrDirectory(pathToTarget);
+            // LinkTarget always retrieves the immediate target, so the expected value
+            // is always the path that was provided by the user for the middle link
+            string expectedFileTargetPath = fileMiddleLinkPath;
+            string expectedDirTargetPath = dirMiddleLinkPath;
 
-            FileSystemInfo? link = createSymbolicLink(linkPath, pathToTarget);
-            assertIsCorrectTypeAndDirectoryAttribute(link);
+            // Verify the LinkTarget values of the link infos
+            Assert.Equal(expectedFileTargetPath, fileLinkInfo.LinkTarget);
+            Assert.Equal(expectedDirTargetPath, dirLinkInfo.LinkTarget);
 
-            FileSystemInfo? target = link.ResolveLinkTarget(returnFinalTarget);
-            assertIsCorrectTypeAndDirectoryAttribute(target);
+            // When the target is in a virtual drive,
+            // the expected target path is the real path, not the virtual path
+            // When returnFinalTarget is true, the expected target path is the
+            // resolved path from the final target in the chain of links
+            string expectedTargetFileInfoFullName = Path.Join(
+                isExpectedTargetPathVirtual ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                returnFinalTarget ? fileFinalTargetFileName : fileMiddleLinkFileName);
 
-            return (pathToTarget, link, target);
-        }
+            string expectedTargetDirectoryInfoFullName = Path.Join(
+                isExpectedTargetPathVirtual ? $"{VirtualDriveLetter}:" : VirtualDriveTargetDir,
+                returnFinalTarget ? dirFinalTargetFileName : dirMiddleLinkFileName);
 
-        private delegate void TargetCreationMethod(string targetPath);
+            // Verify target infos from link info instances
+            FileSystemInfo? targetFileInfoFromFileInfoLink = fileLinkInfo.ResolveLinkTarget(returnFinalTarget);
+            FileSystemInfo? targetDirInfoFromDirInfoLink = dirLinkInfo.ResolveLinkTarget(returnFinalTarget);
 
-        private void CreateFile(string targetPath) => File.Create(targetPath).Dispose();
+            Assert.True(targetFileInfoFromFileInfoLink is FileInfo);
+            Assert.True(targetDirInfoFromDirInfoLink is DirectoryInfo);
 
-        private void CreateDirectory(string targetPath) => Directory.CreateDirectory(targetPath);
+            Assert.Equal(expectedTargetFileInfoFullName, targetFileInfoFromFileInfoLink.FullName);
+            Assert.Equal(expectedTargetDirectoryInfoFullName, targetDirInfoFromDirInfoLink.FullName);
 
-        private delegate FileSystemInfo SymbolicLinkCreationMethod(string path, string pathToTarget);
+            // Verify targets infos via static methods
+            FileSystemInfo? targetFileInfoFromFile = File.ResolveLinkTarget(fileLinkPath, returnFinalTarget);
+            FileSystemInfo? targetFileInfoFromDirectory = Directory.ResolveLinkTarget(dirLinkPath, returnFinalTarget);
 
-        private FileSystemInfo CreateFileSymbolicLink(string path, string pathToTarget) => File.CreateSymbolicLink(path, pathToTarget);
+            Assert.True(targetFileInfoFromFile is FileInfo);
+            Assert.True(targetFileInfoFromDirectory is DirectoryInfo);
 
-        private FileSystemInfo CreateDirectorySymbolicLink(string path, string pathToTarget) => Directory.CreateSymbolicLink(path, pathToTarget);
-
-        private FileSystemInfo CreateFileInfoSymbolicLink(string path, string pathToTarget)
-        {
-            FileInfo link = new(path);
-            link.CreateAsSymbolicLink(pathToTarget);
-            return link;
-        }
-
-        private FileSystemInfo CreateDirectoryInfoSymbolicLink(string path, string pathToTarget)
-        {
-            DirectoryInfo link = new(path);
-            link.CreateAsSymbolicLink(pathToTarget);
-            return link;
-        }
-
-        private delegate void AssertIsCorrectTypeAndDirectoryAttributeMethod(FileSystemInfo link);
-
-        private void AssertFileIsCorrectTypeAndDirectoryAttribute(FileSystemInfo link)
-        {
-            if (link.Exists)
-            {
-                Assert.False(link.Attributes.HasFlag(FileAttributes.Directory));
-            }
-            Assert.True(link is FileInfo);
-        }
-
-        private void AssertDirectoryIsCorrectTypeAndDirectoryAttribute(FileSystemInfo link)
-        {
-            if (link.Exists)
-            {
-                Assert.True(link.Attributes.HasFlag(FileAttributes.Directory));
-            }
-            Assert.True(link is DirectoryInfo);
+            Assert.Equal(expectedTargetFileInfoFullName, targetFileInfoFromFile.FullName);
+            Assert.Equal(expectedTargetDirectoryInfoFullName, targetFileInfoFromDirectory.FullName);
         }
 
         // Temporary Windows directory that can be mounted to a drive letter using the subst command
