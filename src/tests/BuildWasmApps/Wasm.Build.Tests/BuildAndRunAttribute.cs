@@ -20,21 +20,28 @@ namespace Wasm.Build.Tests
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
     public class BuildAndRunAttribute : DataAttribute
     {
-        private bool _aot;
-        private RunHost _host;
-        private object?[] _parameters;
+        private readonly IEnumerable<object?[]> _data;
+
+        public BuildAndRunAttribute(BuildArgs buildArgs, RunHost host = RunHost.All, params object?[] parameters)
+        {
+            _data = new IEnumerable<object?>[]
+                    {
+                        new object?[] { buildArgs }.AsEnumerable(),
+                    }
+                    .AsEnumerable()
+                    .Multiply(parameters)
+                    .WithRunHosts(host)
+                    .UnwrapItemsAsArrays().ToList().Dump();
+        }
 
         public BuildAndRunAttribute(bool aot=false, RunHost host = RunHost.All, params object?[] parameters)
         {
-            this._aot = aot;
-            this._host = host;
-            this._parameters = parameters;
+            _data = BuildTestBase.ConfigWithAOTData(aot)
+                    .Multiply(parameters)
+                    .WithRunHosts(host)
+                    .UnwrapItemsAsArrays().ToList().Dump();
         }
 
-        public override IEnumerable<object?[]> GetData(MethodInfo testMethod)
-            => BuildTestBase.ConfigWithAOTData(_aot)
-                    .Multiply(_parameters)
-                    .WithRunHosts(_host)
-                    .UnwrapItemsAsArrays().ToList().Dump();
+        public override IEnumerable<object?[]> GetData(MethodInfo testMethod) => _data;
     }
 }

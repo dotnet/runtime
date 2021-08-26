@@ -21,6 +21,12 @@ namespace System.IO.Tests
             return testDirectory;
         }
 
+        protected DirectoryInfo CreateSelfReferencingSymbolicLink()
+        {
+            string path = GetRandomDirPath();
+            return (DirectoryInfo)Directory.CreateSymbolicLink(path, path);
+        }
+
         protected string GetRandomFileName() => GetTestFileName() + ".txt";
         protected string GetRandomLinkName() => GetTestFileName() + ".link";
         protected string GetRandomDirName()  => GetTestFileName() + "_dir";

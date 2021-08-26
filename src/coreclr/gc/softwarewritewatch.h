@@ -266,11 +266,6 @@ inline size_t SoftwareWriteWatch::GetTableByteSize(void *heapStartAddress, void 
     return tableByteSize;
 }
 
-inline size_t SoftwareWriteWatch::GetTableStartByteOffset(size_t byteSizeBeforeTable)
-{
-    return ALIGN_UP(byteSizeBeforeTable, sizeof(size_t)); // start of the table needs to be aligned to size_t
-}
-
 inline uint8_t *SoftwareWriteWatch::TranslateTableToExcludeHeapStartAddress(uint8_t *table, void *heapStartAddress)
 {
     assert(table != nullptr);

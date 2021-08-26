@@ -34,17 +34,10 @@ typedef struct EETypeHashEntry
     TypeHandle GetTypeHandle();
     void SetTypeHandle(TypeHandle handle);
 
-#ifdef FEATURE_PREJIT
-    // To make ngen saving much more efficient we support marking individual entries as hot (as determined by
-    // profile data).
-    bool IsHot();
-    void MarkAsHot();
-#endif // FEATURE_PREJIT
-
 #ifndef DACCESS_COMPILE
     EETypeHashEntry& operator=(const EETypeHashEntry& src)
     {
-        m_data.SetValueMaybeNull(src.m_data.GetValueMaybeNull());
+        m_data = src.m_data;
 
         return *this;
     }
@@ -52,16 +45,13 @@ typedef struct EETypeHashEntry
 
     PTR_VOID GetData()
     {
-        return ReadPointerMaybeNull(this, &EETypeHashEntry::m_data);
+        return m_data;
     }
 
 private:
     friend class EETypeHashTable;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
-    RelativePointer<PTR_VOID> m_data;
+    PTR_VOID m_data;
 } EETypeHashEntry_t;
 
 
@@ -69,9 +59,6 @@ private:
 typedef DPTR(class EETypeHashTable) PTR_EETypeHashTable;
 class EETypeHashTable : public NgenHashTable<EETypeHashTable, EETypeHashEntry, 2>
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     // This is the domain in which the hash table is allocated
@@ -140,21 +127,6 @@ public:
     BOOL FindNext(Iterator *it, EETypeHashEntry **ppEntry);
 
     DWORD GetCount();
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    // Save the hash table and any type descriptors referenced by it
-    // Template method tables (for arrays) must be saved separately
-    void Save(DataImage *image, Module *module, CorProfileData *profileData);
-
-    // Record fixups required on the hash table
-    // Recurse into type descriptors and template method tables referenced by it
-    void Fixup(DataImage *image);
-
-    bool ShouldSave(DataImage *pImage, EETypeHashEntry_t *pEntry);
-    bool IsHotEntry(EETypeHashEntry_t *pEntry, CorProfileData *pProfileData);
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, EETypeHashEntry_t *pOldEntry, EETypeHashEntry_t *pNewEntry, EntryMappingTable *pMap);
-    void FixupEntry(DataImage *pImage, EETypeHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset);
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

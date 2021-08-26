@@ -48,18 +48,22 @@ namespace System.Text.Json.Serialization.Converters
             IAsyncEnumerator<TElement> enumerator;
             ValueTask<bool> moveNextTask;
 
-            if (state.Current.AsyncEnumerator is null)
+            if (state.Current.AsyncDisposable is null)
             {
                 enumerator = value.GetAsyncEnumerator(state.CancellationToken);
+                // async enumerators can only be disposed asynchronously;
+                // store in the WriteStack for future disposal
+                // by the root async serialization context.
+                state.Current.AsyncDisposable = enumerator;
+                // enumerator.MoveNextAsync() calls can throw,
+                // ensure the enumerator already is stored
+                // in the WriteStack for proper disposal.
                 moveNextTask = enumerator.MoveNextAsync();
-                // we always need to attach the enumerator to the stack
-                // since it will need to be disposed asynchronously.
-                state.Current.AsyncEnumerator = enumerator;
             }
             else
             {
-                Debug.Assert(state.Current.AsyncEnumerator is IAsyncEnumerator<TElement>);
-                enumerator = (IAsyncEnumerator<TElement>)state.Current.AsyncEnumerator;
+                Debug.Assert(state.Current.AsyncDisposable is IAsyncEnumerator<TElement>);
+                enumerator = (IAsyncEnumerator<TElement>)state.Current.AsyncDisposable;
 
                 if (state.Current.AsyncEnumeratorIsPendingCompletion)
                 {
@@ -84,6 +88,10 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!moveNextTask.Result)
                 {
+                    // we have completed serialization for the enumerator,
+                    // clear from the stack and schedule for async disposal.
+                    state.Current.AsyncDisposable = null;
+                    state.AddCompletedAsyncDisposable(enumerator);
                     return true;
                 }
 

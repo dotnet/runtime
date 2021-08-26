@@ -218,6 +218,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetOSArchitecture)
     DllImportEntry(SystemNative_GetProcessArchitecture)
     DllImportEntry(SystemNative_SearchPath)
+    DllImportEntry(SystemNative_SearchPath_TempDirectory)
     DllImportEntry(SystemNative_RegisterForSigChld)
     DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)

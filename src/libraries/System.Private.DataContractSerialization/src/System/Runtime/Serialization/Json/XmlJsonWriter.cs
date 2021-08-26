@@ -193,7 +193,7 @@ namespace System.Runtime.Serialization.Json
 
         private bool WrittenNameWithMapping => (_nameState & NameState.WrittenNameWithMapping) == NameState.WrittenNameWithMapping;
 
-        protected override void Dispose(bool disposing)
+        public override void Close()
         {
             if (!IsClosed)
             {
@@ -219,7 +219,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
-            base.Dispose(disposing);
+            base.Close();
         }
 
         public override void Flush()
@@ -262,21 +262,20 @@ namespace System.Runtime.Serialization.Json
             {
                 throw new ArgumentNullException(nameof(encoding));
             }
-            Encoding? tempEncoding = encoding;
-            if (tempEncoding.WebName != Encoding.UTF8.WebName)
+            if (encoding.WebName != Encoding.UTF8.WebName)
             {
-                stream = new JsonEncodingStreamWrapper(stream, tempEncoding, false);
+                stream = new JsonEncodingStreamWrapper(stream, encoding, false);
             }
             else
             {
-                tempEncoding = null;
+                encoding = null!;
             }
             if (_nodeWriter == null)
             {
                 _nodeWriter = new JsonNodeWriter();
             }
 
-            _nodeWriter.SetOutput(stream, ownsStream, tempEncoding);
+            _nodeWriter.SetOutput(stream, ownsStream, encoding);
             InitializeWriter();
         }
 

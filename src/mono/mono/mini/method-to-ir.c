@@ -57,9 +57,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/monitor.h>
@@ -5324,20 +5322,20 @@ handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_re
 			MonoClass *gcomparer = mono_class_get_geqcomparer_class ();
 			g_assert (gcomparer);
 			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
-			mono_error_assert_ok (error);
+			if (is_ok (error)) {
+				MONO_INST_NEW (cfg, typed_objref, OP_TYPED_OBJREF);
+				typed_objref->type = STACK_OBJ;
+				typed_objref->dreg = alloc_ireg_ref (cfg);
+				typed_objref->sreg1 = call_res->dreg;
+				typed_objref->klass = gcomparer_inst;
+				MONO_ADD_INS (cfg->cbb, typed_objref);
 
-			MONO_INST_NEW (cfg, typed_objref, OP_TYPED_OBJREF);
-			typed_objref->type = STACK_OBJ;
-			typed_objref->dreg = alloc_ireg_ref (cfg);
-			typed_objref->sreg1 = call_res->dreg;
-			typed_objref->klass = gcomparer_inst;
-			MONO_ADD_INS (cfg->cbb, typed_objref);
+				call_res = typed_objref;
 
-			call_res = typed_objref;
-
-			/* Force decompose */
-			cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
-			cfg->cbb->needs_decompose = TRUE;
+				/* Force decompose */
+				cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+				cfg->cbb->needs_decompose = TRUE;
+			}
 		}
 	}
 
@@ -7314,7 +7312,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			sp -= n;
 
-			if (virtual_ && cmethod && sp [0]->opcode == OP_TYPED_OBJREF) {
+			if (virtual_ && cmethod && sp [0] && sp [0]->opcode == OP_TYPED_OBJREF) {
 				ERROR_DECL (error);
 
 				MonoMethod *new_cmethod = mono_class_get_virtual_method (sp [0]->klass, cmethod, error);

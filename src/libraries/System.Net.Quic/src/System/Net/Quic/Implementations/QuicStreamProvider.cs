@@ -15,6 +15,8 @@ namespace System.Net.Quic.Implementations
 
         internal abstract bool CanRead { get; }
 
+        internal abstract bool ReadsCompleted { get; }
+
         internal abstract int ReadTimeout { get; set; }
 
         internal abstract int Read(Span<byte> buffer);

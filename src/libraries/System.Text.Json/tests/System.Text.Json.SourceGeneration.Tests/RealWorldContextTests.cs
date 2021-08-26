@@ -110,6 +110,64 @@ namespace System.Text.Json.SourceGeneration.Tests
             VerifyRepeatedLocation(expected, obj);
         }
 
+        [Fact]
+        public virtual void RoundTripWithCustomConverter_Class()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            ClassWithCustomConverter obj = new ClassWithCustomConverter()
+            {
+                MyInt = 42
+            };
+
+            string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverter);
+            Assert.Equal(Json, json);
+
+            obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverter);
+            Assert.Equal(42, obj.MyInt);
+        }
+
+        [Fact]
+        public virtual void RoundTripWithCustomConverter_Struct()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            StructWithCustomConverter obj = new StructWithCustomConverter()
+            {
+                MyInt = 42
+            };
+
+            string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverter);
+            Assert.Equal(Json, json);
+
+            obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverter);
+            Assert.Equal(42, obj.MyInt);
+        }
+
+        [Fact]
+        public virtual void BadCustomConverter_Class()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Serialize(new ClassWithBadCustomConverter(), DefaultContext.ClassWithBadCustomConverter));
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Deserialize(Json, DefaultContext.ClassWithBadCustomConverter));
+        }
+
+        [Fact]
+        public virtual void BadCustomConverter_Struct()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Serialize(new StructWithBadCustomConverter(), DefaultContext.StructWithBadCustomConverter));
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Deserialize(Json, DefaultContext.StructWithBadCustomConverter));
+        }
+
         protected static Location CreateLocation()
         {
             return new Location
