@@ -526,7 +526,8 @@ static bool parse_args(
                 break;
             }
 
-            config.dotenv_configuration = { argv[i], std::ifstream{ argv[i] } };
+            std::ifstream dotenvFile{ pal::convert_to_utf8(argv[i]) };
+            config.dotenv_configuration = dotenv{ pal::string_t{ argv[i] }, dotenvFile};
         }
         else if ((pal::strcmp(option, W("?")) == 0 || (pal::strcmp(option, W("h")) == 0 || (pal::strcmp(option, W("help")) == 0))))
         {

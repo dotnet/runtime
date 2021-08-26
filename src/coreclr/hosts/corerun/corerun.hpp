@@ -578,7 +578,6 @@ namespace pal
     }
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
-    inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {
         pal::string_t coreclr_path = core_root;
         pal::ensure_trailing_delimiter(coreclr_path);
