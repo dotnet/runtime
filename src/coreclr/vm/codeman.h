@@ -608,6 +608,25 @@ private:
 // address range to track the code heaps.
 
 typedef DPTR(struct RangeSection) PTR_RangeSection;
+typedef DPTR(struct RangeSectionHandle) PTR_RangeSectionHandle;
+
+struct RangeSectionHandle
+{
+    TADDR LowAddress;
+    TADDR  HighAddress;
+#ifndef DACCESS_COMPILE
+    Volatile<RangeSection *> pRS;
+#else
+    PTR_RangeSection pRS;
+#endif
+
+    RangeSectionHandle()
+    {
+        LowAddress = 0;
+        HighAddress = 0;
+        pRS = NULL;
+    }
+};
 
 struct RangeSection
 {
@@ -615,15 +634,6 @@ struct RangeSection
     TADDR               HighAddress;
 
     PTR_IJitManager     pjit;           // The owner of this address range
-
-#ifndef DACCESS_COMPILE
-    // Volatile because of the list can be walked lock-free
-    Volatile<RangeSection *> pnext;  // link rangesections in a sorted list
-#else
-    PTR_RangeSection    pnext;
-#endif
-
-    PTR_RangeSection    pLastUsed;      // for the head node only:  a link to rangesections that was used most recently
 
     enum RangeSectionFlags
     {
@@ -1167,6 +1177,22 @@ class ExecutionManager
     friend class ClrDataAccess;
 #endif
 
+    enum
+    {
+        RangeSectionHandleArrayInitialSize = 100,
+        RangeSectionHandleArrayExpansionFactor = 2
+    };
+
+    static int EncodeRangeSectionIndex(int index)
+    {
+        return -(index+1);
+    }
+
+    static int DecodeRangeSectionIndex(int codedIndex)
+    {
+        return -codedIndex - 1;
+    }
+
 public:
     static void Init();
 
@@ -1264,6 +1290,14 @@ public:
                                               SIZE_T Size,
                                               Module * pModule);
 
+    static int            FindRangeSectionHandleHelper(TADDR addr);
+
+#ifndef DACCESS_COMPILE
+    static void            AddRangeSection(RangeSection *pRS);
+
+    static void           DeleteRangeSection(int index);
+#endif //DACCESS_COMPILE
+
     static void           DeleteRange(TADDR StartRange);
 
     static void           CleanupCodeHeaps();
@@ -1280,11 +1314,8 @@ public:
     // FindZapModule flavor to be used during GC to find GCRefMap
     static PTR_Module FindModuleForGCRefMap(TADDR currentData);
 
-    static RangeSection*  GetRangeSectionAndPrev(RangeSection *pRS, TADDR addr, RangeSection **ppPrev);
-
 #ifdef DACCESS_COMPILE
-    static void EnumRangeList(RangeSection* list,
-                              CLRDataEnumMemoryFlags flags);
+    static void EnumRangeSectionArray(CLRDataEnumMemoryFlags flags);
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
@@ -1318,11 +1349,16 @@ private:
     // infrastructure to manage readers so we can lock them out and delete domain data
     // make ReaderCount volatile because we have order dependency in READER_INCREMENT
 #ifndef DACCESS_COMPILE
-    static Volatile<RangeSection *> m_CodeRangeList;
+    static Volatile<RangeSectionHandle *> m_RangeSectionHandleArray;
+    static Volatile<int> m_LastUsedRSIndex;
+    static Volatile<SIZE_T> m_RangeSectionArraySize;
+    static Volatile<SIZE_T> m_RangeSectionArrayCapacity;
     static Volatile<LONG>   m_dwReaderCount;
     static Volatile<LONG>   m_dwWriterLock;
 #else
-    SPTR_DECL(RangeSection,  m_CodeRangeList);
+    SPTR_DECL(RangeSectionHandle,  m_RangeSectionHandleArray);
+    SVAL_DECL(SIZE_T, m_RangeSectionArraySize);
+    SVAL_DECL(SIZE_T, m_RangeSectionArrayCapacity);
     SVAL_DECL(LONG, m_dwReaderCount);
     SVAL_DECL(LONG, m_dwWriterLock);
 #endif
@@ -1357,8 +1393,6 @@ private:
                                IJitManager* pJit,
                                RangeSection::RangeSectionFlags flags,
                                TADDR pHeapListOrZapModule);
-    static void DeleteRangeHelper(RangeSection** ppRangeList,
-                                  TADDR StartRange);
 
 #ifndef DACCESS_COMPILE
     static PCODE getNextJumpStub(MethodDesc* pMD,

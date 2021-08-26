@@ -51,11 +51,16 @@ SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 #endif
 
 #ifndef DACCESS_COMPILE
-Volatile<RangeSection *> ExecutionManager::m_CodeRangeList = NULL;
+Volatile<RangeSectionHandle *> ExecutionManager::m_RangeSectionHandleArray = nullptr;
+Volatile<int> ExecutionManager::m_LastUsedRSIndex = -1;
+Volatile<SIZE_T> ExecutionManager::m_RangeSectionArraySize = 0;
+Volatile<SIZE_T> ExecutionManager::m_RangeSectionArrayCapacity = 0;
 Volatile<LONG> ExecutionManager::m_dwReaderCount = 0;
 Volatile<LONG> ExecutionManager::m_dwWriterLock = 0;
 #else
-SPTR_IMPL(RangeSection, ExecutionManager, m_CodeRangeList);
+SPTR_IMPL(RangeSectionHandle, ExecutionManager, m_RangeSectionHandleArray);
+SVAL_IMPL(SIZE_T, ExecutionManager, m_RangeSectionArraySize);
+SVAL_IMPL(SIZE_T, ExecutionManager, m_RangeSectionArrayCapacity);
 SVAL_IMPL(LONG, ExecutionManager, m_dwReaderCount);
 SVAL_IMPL(LONG, ExecutionManager, m_dwWriterLock);
 #endif
@@ -4433,118 +4438,46 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    RangeSection * pHead = m_CodeRangeList;
-
-    if (pHead == NULL)
+    if (m_RangeSectionHandleArray == nullptr)
     {
         return NULL;
     }
 
-    RangeSection *pCurr = pHead;
-    RangeSection *pLast = NULL;
-
 #ifndef DACCESS_COMPILE
-    RangeSection *pLastUsedRS = (pCurr != NULL) ? pCurr->pLastUsed : NULL;
-
-    if (pLastUsedRS != NULL)
+    int LastUsedRSIndex = (int)m_LastUsedRSIndex;
+    if (LastUsedRSIndex != -1)
     {
-        // positive case
-        if ((addr >= pLastUsedRS->LowAddress) &&
-            (addr <  pLastUsedRS->HighAddress)   )
-        {
-            return pLastUsedRS;
-        }
+        TADDR LowAddress = m_RangeSectionHandleArray[LastUsedRSIndex].LowAddress;
+        TADDR HighAddress = m_RangeSectionHandleArray[LastUsedRSIndex].HighAddress;
 
-        RangeSection * pNextAfterLastUsedRS = pLastUsedRS->pnext;
+        //positive case
+        if ((addr >= LowAddress) && (addr < HighAddress))
+        return m_RangeSectionHandleArray[LastUsedRSIndex].pRS;
 
-        // negative case
-        if ((addr <  pLastUsedRS->LowAddress) &&
-            (pNextAfterLastUsedRS == NULL || addr >= pNextAfterLastUsedRS->HighAddress))
-        {
+        //negative case
+        if ((addr < LowAddress) && ((LastUsedRSIndex == 0)
+            || (addr >= m_RangeSectionHandleArray[LastUsedRSIndex - 1].HighAddress)))
             return NULL;
-        }
     }
 #endif
 
-    while (pCurr != NULL)
-    {
-        // See if addr is in [pCurr->LowAddress .. pCurr->HighAddress)
-        if (pCurr->LowAddress <= addr)
-        {
-            // Since we are sorted, once pCurr->HighAddress is less than addr
-            // then all subsequence ones will also be lower, so we are done.
-            if (addr >= pCurr->HighAddress)
-            {
-                // we'll return NULL and put pLast into pLastUsed
-                pCurr = NULL;
-            }
-            else
-            {
-                // addr must be in [pCurr->LowAddress .. pCurr->HighAddress)
-                _ASSERTE((pCurr->LowAddress <= addr) && (addr < pCurr->HighAddress));
-
-                // Found the matching RangeSection
-                // we'll return pCurr and put it into pLastUsed
-                pLast = pCurr;
-            }
-
-            break;
-        }
-        pLast = pCurr;
-        pCurr = pCurr->pnext;
-    }
+    int foundIndex = FindRangeSectionHandleHelper(addr);
 
 #ifndef DACCESS_COMPILE
-    // Cache pCurr as pLastUsed in the head node
-    // Unless we are on an MP system with many cpus
-    // where this sort of caching actually diminishes scaling during server GC
-    // due to many processors writing to a common location
+    if (foundIndex >= 0)
+    {
+        LastUsedRSIndex = foundIndex;
+    }
+    else
+    {
+        LastUsedRSIndex = (int)m_RangeSectionArraySize - 1;
+    }
+
     if (g_SystemInfo.dwNumberOfProcessors < 4 || !GCHeapUtilities::IsServerHeap() || !GCHeapUtilities::IsGCInProgress())
-        pHead->pLastUsed = pLast;
+	    m_LastUsedRSIndex = LastUsedRSIndex;
 #endif
 
-    return pCurr;
-}
-
-RangeSection* ExecutionManager::GetRangeSectionAndPrev(RangeSection *pHead, TADDR addr, RangeSection** ppPrev)
-{
-    WRAPPER_NO_CONTRACT;
-
-    RangeSection *pCurr;
-    RangeSection *pPrev;
-    RangeSection *result = NULL;
-
-    for (pPrev = NULL,  pCurr = pHead;
-         pCurr != NULL;
-         pPrev = pCurr, pCurr = pCurr->pnext)
-    {
-        // See if addr is in [pCurr->LowAddress .. pCurr->HighAddress)
-        if (pCurr->LowAddress > addr)
-            continue;
-
-        if (addr >= pCurr->HighAddress)
-            break;
-
-        // addr must be in [pCurr->LowAddress .. pCurr->HighAddress)
-        _ASSERTE((pCurr->LowAddress <= addr) && (addr < pCurr->HighAddress));
-
-        // Found the matching RangeSection
-        result = pCurr;
-
-        // Write back pPrev to ppPrev if it is non-null
-        if (ppPrev != NULL)
-            *ppPrev = pPrev;
-
-        break;
-    }
-
-    // If we failed to find a match write NULL to ppPrev if it is non-null
-    if ((ppPrev != NULL) && (result == NULL))
-    {
-        *ppPrev = NULL;
-    }
-
-    return result;
+    return (foundIndex>=0)?m_RangeSectionHandleArray[foundIndex].pRS:NULL;
 }
 
 /* static */
@@ -4635,6 +4568,55 @@ PTR_Module ExecutionManager::FindModuleForGCRefMap(TADDR currentData)
     return dac_cast<PTR_Module>(pRS->pHeapListOrZapModule);
 }
 
+int ExecutionManager::FindRangeSectionHandleHelper(TADDR addr)
+{
+    CONTRACTL {
+        NOTHROW;
+        HOST_NOCALLS;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    _ASSERTE(m_RangeSectionHandleArray != nullptr);
+    _ASSERTE(m_RangeSectionArrayCapacity != (SIZE_T)0);
+
+    if ((int)m_RangeSectionArraySize == 0)
+    {
+        return EncodeRangeSectionIndex(0);
+    }
+
+    int iLow = 0;
+    int iHigh = (int)m_RangeSectionArraySize - 1;
+    int iMid = (iHigh + iLow)/2;
+
+    do
+    {
+        if (addr < m_RangeSectionHandleArray[iMid].LowAddress)
+        {
+            iHigh = iMid - 1;
+        }
+        else //addr >= iMid.LowAddress
+        {
+            if (addr < m_RangeSectionHandleArray[iMid].HighAddress)
+            {
+                return iMid;
+            }
+
+            iLow = iMid + 1;
+        }
+        iMid = (iHigh + iLow)/2;
+
+    } while(iHigh >= iLow);
+
+    if (iHigh == -1)
+    {
+        return EncodeRangeSectionIndex(0);
+    }
+    else
+    {
+        return EncodeRangeSectionIndex(iMid+1);
+    }
+}
 #ifndef DACCESS_COMPILE
 
 /* NGenMem depends on this entrypoint */
@@ -4659,6 +4641,82 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
                    dac_cast<TADDR>(pHp));
 }
 
+void ExecutionManager::AddRangeSection(RangeSection *pRS)
+{
+    CONTRACTL {
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (m_RangeSectionHandleArray == nullptr)
+    {
+        m_RangeSectionHandleArray = new RangeSectionHandle[RangeSectionHandleArrayInitialSize];
+        m_RangeSectionArrayCapacity = RangeSectionHandleArrayInitialSize;
+        m_RangeSectionArraySize = 0;
+    }
+
+    if (m_RangeSectionArraySize == m_RangeSectionArrayCapacity)
+    {
+        //reallocate array
+        m_RangeSectionArrayCapacity = (SIZE_T)m_RangeSectionArrayCapacity * RangeSectionHandleArrayExpansionFactor;
+        RangeSectionHandle *tmp = new RangeSectionHandle[m_RangeSectionArrayCapacity];
+        memcpy(tmp, m_RangeSectionHandleArray, m_RangeSectionArraySize*sizeof(RangeSectionHandle));
+        delete[] m_RangeSectionHandleArray;
+        m_RangeSectionHandleArray = tmp;
+    }
+
+    //where to add?
+    SIZE_T size = m_RangeSectionArraySize;
+    if (pRS->LowAddress >= m_RangeSectionHandleArray[size - 1].HighAddress)
+    {
+        m_RangeSectionHandleArray[size].LowAddress = pRS->LowAddress;
+        m_RangeSectionHandleArray[size].HighAddress = pRS->HighAddress;
+        m_RangeSectionHandleArray[size].pRS = pRS;
+        m_RangeSectionArraySize = size + 1;
+        return;
+    }
+
+    int index = FindRangeSectionHandleHelper(pRS->LowAddress);
+    if (index < 0)
+    {
+        index = DecodeRangeSectionIndex(index);
+        //push and shift
+        memmove(m_RangeSectionHandleArray+index+1, m_RangeSectionHandleArray+index, (m_RangeSectionArraySize-index)*sizeof(RangeSectionHandle));
+        m_RangeSectionHandleArray[index].LowAddress = pRS->LowAddress;
+        m_RangeSectionHandleArray[index].HighAddress = pRS->HighAddress;
+        m_RangeSectionHandleArray[index].pRS = pRS;
+        m_RangeSectionArraySize = size + 1;
+#ifndef DACCESS_COMPILE
+        if (m_LastUsedRSIndex >= index)
+            m_LastUsedRSIndex = m_LastUsedRSIndex + 1;
+#endif
+        return;
+    }
+    return;
+}
+
+void ExecutionManager::DeleteRangeSection(int index)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (m_RangeSectionHandleArray == nullptr)
+        return;
+
+    if (index < 0)
+        return;
+
+    memmove(m_RangeSectionHandleArray+index, m_RangeSectionHandleArray+index+1, (m_RangeSectionArraySize-index-1)*sizeof(RangeSectionHandle));
+    m_RangeSectionArraySize--;
+#ifndef DACCESS_COMPILE
+    if (m_LastUsedRSIndex > index)
+        m_LastUsedRSIndex = m_LastUsedRSIndex - 1;
+    else if (m_LastUsedRSIndex == index)
+        m_LastUsedRSIndex = (int)m_RangeSectionArraySize - 1;
+#endif
+}
+
 void ExecutionManager::AddRangeHelper(TADDR          pStartRange,
                                       TADDR          pEndRange,
                                       IJitManager *  pJit,
@@ -4680,9 +4738,7 @@ void ExecutionManager::AddRangeHelper(TADDR          pStartRange,
     pnewrange->LowAddress  = pStartRange;
     pnewrange->HighAddress = pEndRange;
     pnewrange->pjit        = pJit;
-    pnewrange->pnext       = NULL;
     pnewrange->flags       = flags;
-    pnewrange->pLastUsed   = NULL;
     pnewrange->pHeapListOrZapModule = pHeapListOrZapModule;
 #if defined(TARGET_AMD64)
     pnewrange->pUnwindInfoTable = NULL;
@@ -4690,48 +4746,9 @@ void ExecutionManager::AddRangeHelper(TADDR          pStartRange,
     {
         CrstHolder ch(&m_RangeCrst); // Acquire the Crst before linking in a new RangeList
 
-        RangeSection * current  = m_CodeRangeList;
-        RangeSection * previous = NULL;
+        WriterLockHolder wlh;
 
-        if (current != NULL)
-        {
-            while (true)
-            {
-                // Sort addresses top down so that more recently created ranges
-                // will populate the top of the list
-                if (pnewrange->LowAddress > current->LowAddress)
-                {
-                    // Asserts if ranges are overlapping
-                    _ASSERTE(pnewrange->LowAddress >= current->HighAddress);
-                    pnewrange->pnext = current;
-
-                    if (previous == NULL) // insert new head
-                    {
-                        m_CodeRangeList = pnewrange;
-                    }
-                    else
-                    { // insert in the middle
-                        previous->pnext  = pnewrange;
-                    }
-                    break;
-                }
-
-                RangeSection * next = current->pnext;
-                if (next == NULL) // insert at end of list
-                {
-                    current->pnext = pnewrange;
-                    break;
-                }
-
-                // Continue walking the RangeSection list
-                previous = current;
-                current  = next;
-            }
-        }
-        else
-        {
-            m_CodeRangeList = pnewrange;
-        }
+        AddRangeSection(pnewrange);
     }
 }
 
@@ -4743,7 +4760,7 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    RangeSection *pCurr = NULL;
+    RangeSection *deleted = NULL;
     {
         // Acquire the Crst before unlinking a RangeList.
         // NOTE: The Crst must be acquired BEFORE we grab the writer lock, as the
@@ -4757,51 +4774,21 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
         // require the reader lock, which would cause a deadlock).
         WriterLockHolder wlh;
 
-        RangeSection *pPrev = NULL;
-
-        pCurr = GetRangeSectionAndPrev(m_CodeRangeList, pStartRange, &pPrev);
-
-        // pCurr points at the Range that needs to be unlinked from the RangeList
-        if (pCurr != NULL)
-        {
-
-            // If pPrev is NULL the the head of this list is to be deleted
-            if (pPrev == NULL)
-            {
-                m_CodeRangeList = pCurr->pnext;
-            }
-            else
-            {
-                _ASSERT(pPrev->pnext == pCurr);
-
-                pPrev->pnext = pCurr->pnext;
-            }
-
-            // Clear the cache pLastUsed in the head node (if any)
-            RangeSection * head = m_CodeRangeList;
-            if (head != NULL)
-            {
-                head->pLastUsed = NULL;
-            }
-
-            //
-            // Cannot delete pCurr here because we own the WriterLock and if this is
-            // a hosted scenario then the hosting api callback cannot occur in a forbid
-            // suspend region, which the writer lock is.
-            //
-        }
+        int index = FindRangeSectionHandleHelper(pStartRange);
+        if (index >= 0)
+            deleted = m_RangeSectionHandleArray[index].pRS;
+        DeleteRangeSection(index);
     }
-
     //
     // Now delete the node
     //
-    if (pCurr != NULL)
+    if (deleted != NULL)
     {
 #if defined(TARGET_AMD64)
-        if (pCurr->pUnwindInfoTable != 0)
-            delete pCurr->pUnwindInfoTable;
+        if (deleted->pUnwindInfoTable != 0)
+            delete deleted->pUnwindInfoTable;
 #endif // defined(TARGET_AMD64)
-        delete pCurr;
+        delete deleted;
     }
 }
 
@@ -4809,24 +4796,27 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
 
 #ifdef DACCESS_COMPILE
 
-void ExecutionManager::EnumRangeList(RangeSection* list,
-                                     CLRDataEnumMemoryFlags flags)
+void ExecutionManager::EnumRangeSectionArray(CLRDataEnumMemoryFlags flags)
 {
-    while (list != NULL)
+    for (int i = 0; i < (int)m_RangeSectionArraySize; ++i)
     {
         // If we can't read the target memory, stop immediately so we don't work
         // with broken data.
-        if (!DacEnumMemoryRegion(dac_cast<TADDR>(list), sizeof(*list)))
+        RangeSection *pRS = m_RangeSectionHandleArray[i].pRS;
+#if defined (_DEBUG)
+EnumRangeArray_REDO:
+#endif // (_DEBUG)
+        if (!DacEnumMemoryRegion(dac_cast<TADDR>(pRS), sizeof(*pRS)))
             break;
 
-        if (list->pjit.IsValid())
+        if (pRS->pjit.IsValid())
         {
-            list->pjit->EnumMemoryRegions(flags);
+            pRS->pjit->EnumMemoryRegions(flags);
         }
 
-        if (!(list->flags & RangeSection::RANGE_SECTION_CODEHEAP))
+        if (!(pRS->flags & RangeSection::RANGE_SECTION_CODEHEAP))
         {
-            PTR_Module pModule = dac_cast<PTR_Module>(list->pHeapListOrZapModule);
+            PTR_Module pModule = dac_cast<PTR_Module>(pRS->pHeapListOrZapModule);
 
             if (pModule.IsValid())
             {
@@ -4834,20 +4824,20 @@ void ExecutionManager::EnumRangeList(RangeSection* list,
             }
         }
 
-        list = list->pnext;
 #if defined (_DEBUG)
-        // Test hook: when testing on debug builds, we want an easy way to test that the while
+        // Test hook: when testing on debug builds, we want an easy way to test that the for loop
         // correctly terminates in the face of ridiculous stuff from the target.
         if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpGeneration_IntentionallyCorruptDataFromTarget) == 1)
         {
             // Force us to struggle on with something bad.
-            if (list == NULL)
+            if (i == (int)m_RangeSectionArraySize - 1)
             {
-                list = (RangeSection *)&flags;
+		i++;
+                pRS = (RangeSection *)&flags;
+                goto EnumRangeArray_REDO;
             }
         }
 #endif // (_DEBUG)
-
     }
 }
 
@@ -4861,16 +4851,16 @@ void ExecutionManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // Report the global data portions.
     //
 
-    m_CodeRangeList.EnumMem();
+    m_RangeSectionHandleArray.EnumMem();
     m_pDefaultCodeMan.EnumMem();
 
     //
     // Walk structures and report.
     //
 
-    if (m_CodeRangeList.IsValid())
+    if (m_RangeSectionHandleArray.IsValid())
     {
-        EnumRangeList(m_CodeRangeList, flags);
+        EnumRangeSectionArray(flags);
     }
 }
 #endif // #ifdef DACCESS_COMPILE

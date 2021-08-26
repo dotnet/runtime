@@ -70,7 +70,9 @@
 
 #define UNKNOWN_POINTER_TYPE SIZE_T
 
-DEFINE_DACVAR(ULONG, PTR_RangeSection, ExecutionManager__m_CodeRangeList, ExecutionManager::m_CodeRangeList)
+DEFINE_DACVAR(ULONG, PTR_RangeSectionHandle, ExecutionManager__m_RangeSectionHandleArray, ExecutionManager::m_RangeSectionHandleArray)
+DEFINE_DACVAR(ULONG, LONG, ExecutionManager__m_RangeSectionArraySize, ExecutionManager::m_RangeSectionArraySize)
+DEFINE_DACVAR(ULONG, LONG, ExecutionManager__m_RangeSectionArrayCapacity, ExecutionManager::m_RangeSectionArrayCapacity)
 DEFINE_DACVAR(ULONG, PTR_EECodeManager, ExecutionManager__m_pDefaultCodeMan, ExecutionManager::m_pDefaultCodeMan)
 DEFINE_DACVAR(ULONG, LONG, ExecutionManager__m_dwReaderCount, ExecutionManager::m_dwReaderCount)
 DEFINE_DACVAR(ULONG, LONG, ExecutionManager__m_dwWriterLock, ExecutionManager::m_dwWriterLock)
