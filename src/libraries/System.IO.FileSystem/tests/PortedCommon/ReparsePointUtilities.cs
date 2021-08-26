@@ -28,30 +28,26 @@ public static class MountHelper
     [DllImport("kernel32.dll", EntryPoint = "DeleteVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
     private static extern bool DeleteVolumeMountPoint(string mountPoint);
 
-    /// <summary>Creates a symbolic link using command line tools</summary>
-    /// <param name="linkPath">The existing file</param>
-    /// <param name="targetPath"></param>
+    /// <summary>Creates a symbolic link using command line tools.</summary>
     public static bool CreateSymbolicLink(string linkPath, string targetPath, bool isDirectory)
     {
-        Process symLinkProcess = new Process();
+        string fileName;
+        string[] arguments;
         if (OperatingSystem.IsWindows())
         {
-            symLinkProcess.StartInfo.FileName = "cmd";
-            string option = isDirectory ? "/D " : "";
-            symLinkProcess.StartInfo.Arguments = $"/c mklink {option}\"{linkPath}\" \"{targetPath}\"";
+            fileName = "cmd";
+            arguments = new[] { "/c", "mklink", isDirectory ? "/D" : "", linkPath, targetPath };
         }
         else
         {
-            symLinkProcess.StartInfo.FileName = "/bin/ln";
-            symLinkProcess.StartInfo.Arguments = $"-s \"{targetPath}\" \"{linkPath}\"";
+            fileName = "/bin/ln";
+            arguments = new[] { "-s", targetPath, linkPath };
         }
-        symLinkProcess.StartInfo.UseShellExecute = false;
-        symLinkProcess.StartInfo.RedirectStandardOutput = true;
-        symLinkProcess.Start();
-        symLinkProcess.WaitForExit();
-        return (0 == symLinkProcess.ExitCode);
+
+        return RunProcess(CreateStartInfo(fileName, arguments));
     }
 
+    /// <summary>On Windows, creates a junction using command line tools.</summary>
     public static bool CreateJunction(string junctionPath, string targetPath)
     {
         if (!OperatingSystem.IsWindows())
@@ -59,16 +55,13 @@ public static class MountHelper
             throw new PlatformNotSupportedException();
         }
 
-        Process junctionProcess = new Process();
-        junctionProcess.StartInfo.FileName = "cmd";
-        junctionProcess.StartInfo.Arguments = $"/c mklink /J \"{junctionPath}\" \"{targetPath}\"";
-        junctionProcess.StartInfo.UseShellExecute = false;
-        junctionProcess.StartInfo.RedirectStandardOutput = true;
-        junctionProcess.Start();
-        junctionProcess.WaitForExit();
-        return (0 == junctionProcess.ExitCode);
+        return RunProcess(CreateStartInfo("cmd", "/c", "mklink", "/J", junctionPath, targetPath));
     }
 
+    ///<summary>
+    /// On Windows, mounts a folder to an assigned virtual drive letter using the subst command.
+    /// subst is not available in Windows Nano.
+    /// </summary>
     public static char CreateVirtualDrive(string targetDir)
     {
         if (!OperatingSystem.IsWindows())
@@ -76,22 +69,16 @@ public static class MountHelper
             throw new PlatformNotSupportedException();
         }
 
-        char driveLetter = GetRandomDriveLetter();
-
-        Process substProcess = new Process();
-        substProcess.StartInfo.FileName = "subst";
-        substProcess.StartInfo.Arguments = $"{driveLetter}: {targetDir}";
-        substProcess.StartInfo.UseShellExecute = false;
-        substProcess.StartInfo.RedirectStandardOutput = true;
-        substProcess.Start();
-        substProcess.WaitForExit();
-        if (!DriveInfo.GetDrives().Any(x => x.Name[0] == driveLetter))
+        char driveLetter = GetNextAvailableDriveLetter();
+        bool success = RunProcess(CreateStartInfo("subst", $"{driveLetter}:", targetDir));
+        if (!success || !DriveInfo.GetDrives().Any(x => x.Name[0] == driveLetter))
         {
             throw new InvalidOperationException($"Could not create virtual drive {driveLetter}: with subst");
         }
         return driveLetter;
 
-        char GetRandomDriveLetter()
+        // Finds the next unused drive letter and returns it.
+        char GetNextAvailableDriveLetter()
         {
             List<char> existingDrives = DriveInfo.GetDrives().Select(x => x.Name[0]).ToList();
 
@@ -109,6 +96,9 @@ public static class MountHelper
         }
     }
 
+    /// <summary>
+    /// On Windows, unassigns the specified virtual drive letter from its mounted folder.
+    /// </summary>
     public static void DeleteVirtualDrive(char driveLetter)
     {
         if (!OperatingSystem.IsWindows())
@@ -116,14 +106,8 @@ public static class MountHelper
             throw new PlatformNotSupportedException();
         }
 
-        Process substProcess = new Process();
-        substProcess.StartInfo.FileName = "subst";
-        substProcess.StartInfo.Arguments = $"/d {driveLetter}:";
-        substProcess.StartInfo.UseShellExecute = false;
-        substProcess.StartInfo.RedirectStandardOutput = true;
-        substProcess.Start();
-        substProcess.WaitForExit();
-        if (DriveInfo.GetDrives().Any(x => x.Name[0] == driveLetter))
+        bool success = RunProcess(CreateStartInfo("subst", "/d", $"{driveLetter}:"));
+        if (!success || DriveInfo.GetDrives().Any(x => x.Name[0] == driveLetter))
         {
             throw new InvalidOperationException($"Could not delete virtual drive {driveLetter}: with subst");
         }
@@ -131,7 +115,6 @@ public static class MountHelper
 
     public static void Mount(string volumeName, string mountPoint)
     {
-
         if (volumeName[volumeName.Length - 1] != Path.DirectorySeparatorChar)
             volumeName += Path.DirectorySeparatorChar;
         if (mountPoint[mountPoint.Length - 1] != Path.DirectorySeparatorChar)
@@ -161,6 +144,30 @@ public static class MountHelper
         bool r = DeleteVolumeMountPoint(mountPoint);
         if (!r)
             throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
+    }
+
+    private static ProcessStartInfo CreateStartInfo(string fileName, params string[] arguments)
+    {
+        var info = new ProcessStartInfo
+        {
+            FileName = fileName,
+            UseShellExecute = false,
+            RedirectStandardOutput = true
+        };
+
+        foreach (var argument in arguments)
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        return info;
+    }
+
+    private static bool RunProcess(ProcessStartInfo startInfo)
+    {
+        var process = Process.Start(startInfo);
+        process.WaitForExit();
+        return process.ExitCode == 0;
     }
 
     /// For standalone debugging help. Change Main0 to Main

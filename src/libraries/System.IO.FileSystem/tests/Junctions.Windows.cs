@@ -28,12 +28,17 @@ namespace System.IO.Tests
             Directory.CreateDirectory(targetPath);
             DirectoryInfo junctionInfo = CreateJunction(junctionPath, targetPath);
 
-            FileSystemInfo? actualTargetInfo = junctionInfo.ResolveLinkTarget(returnFinalTarget);
-            Assert.True(actualTargetInfo is DirectoryInfo);
-            Assert.Equal(targetPath, actualTargetInfo.FullName);
-            Assert.Equal(targetPath, junctionInfo.LinkTarget);
-        }
+            FileSystemInfo? targetFromDirectoryInfo = junctionInfo.ResolveLinkTarget(returnFinalTarget);
+            FileSystemInfo? targetFromDirectory = Directory.ResolveLinkTarget(junctionPath, returnFinalTarget);
 
+            Assert.True(targetFromDirectoryInfo is DirectoryInfo);
+            Assert.True(targetFromDirectory is DirectoryInfo);
+
+            Assert.Equal(targetPath, junctionInfo.LinkTarget);
+
+            Assert.Equal(targetPath, targetFromDirectoryInfo.FullName);
+            Assert.Equal(targetPath, targetFromDirectory.FullName);
+        }
 
         [Theory]
         [InlineData(false)]
@@ -45,18 +50,22 @@ namespace System.IO.Tests
             string targetPath = GetRandomDirPath();
 
             Directory.CreateDirectory(targetPath);
-            _ = CreateJunction(middleJunctionPath, targetPath);
+            CreateJunction(middleJunctionPath, targetPath);
             DirectoryInfo firstJunctionInfo = CreateJunction(firstJunctionPath, middleJunctionPath);
 
             string expectedTargetPath = returnFinalTarget ? targetPath : middleJunctionPath;
 
-            FileSystemInfo? actualTargetInfo = firstJunctionInfo.ResolveLinkTarget(returnFinalTarget);
+            FileSystemInfo? targetFromDirectoryInfo = firstJunctionInfo.ResolveLinkTarget(returnFinalTarget);
+            FileSystemInfo? targetFromDirectory = Directory.ResolveLinkTarget(firstJunctionPath, returnFinalTarget);
 
-            Assert.True(actualTargetInfo is DirectoryInfo);
-            Assert.Equal(expectedTargetPath, actualTargetInfo.FullName);
+            Assert.True(targetFromDirectoryInfo is DirectoryInfo);
+            Assert.True(targetFromDirectory is DirectoryInfo);
 
             // Always the immediate target
             Assert.Equal(middleJunctionPath, firstJunctionInfo.LinkTarget);
+
+            Assert.Equal(expectedTargetPath, targetFromDirectoryInfo.FullName);
+            Assert.Equal(expectedTargetPath, targetFromDirectory.FullName);
         }
     }
 }
