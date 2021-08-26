@@ -9,6 +9,11 @@
 #include <objc/runtime.h>
 #include <objc/message.h>
 
+char* SystemNative_GetEnv(const char* variable)
+{
+    return getenv(variable);
+}
+
 static void get_environ_helper(const void *key, const void *value, void *context)
 {
     char ***temp_environ_ptr = (char***)context;
@@ -30,7 +35,7 @@ static void get_environ_helper(const void *key, const void *value, void *context
     (*temp_environ_ptr)++;
 }
 
-char** GetEnvironApple()
+char** SystemNative_GetEnviron()
 {
     static char **environ;
 
