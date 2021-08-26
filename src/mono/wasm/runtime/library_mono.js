@@ -495,7 +495,7 @@ var MonoSupportLib = {
 			}
 		},
 
-		string_decoder: {			
+		string_decoder: {
 			copy: function (mono_string) {
 				if (mono_string === 0)
 					return null;
@@ -1496,6 +1496,7 @@ var MonoSupportLib = {
 	},
 
 	mono_set_timeout: function (timeout, id) {
+
 		if (typeof globalThis.setTimeout === 'function') {
 			globalThis.setTimeout (function () {
 				MONO.mono_wasm_set_timeout_exec (id);
