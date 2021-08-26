@@ -22,7 +22,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			Type[] reflectionMethodParameters,
 			string[] message = null,
 			string messageCode = null,
-			Type returnType = null)
+			Type returnType = null,
+			string genericParameter = null)
 		{
 		}
 
@@ -32,7 +33,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			string[] reflectionMethodParameters = null,
 			string[] message = null,
 			string messageCode = null,
-			Type returnType = null)
+			Type returnType = null,
+			string genericParameter = null)
 		{
 		}
 	}

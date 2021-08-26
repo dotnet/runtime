@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -34,6 +34,6 @@ namespace Mono.Linker.Dataflow
 				genericParameter.DeclaringType.GetDisplayName ();
 
 		internal static string GetMethodSignatureDisplayName (IMethodSignature methodSignature) =>
-			(methodSignature is MethodDefinition method) ? method.GetDisplayName () : methodSignature.ToString ();
+			(methodSignature is MethodReference method) ? method.GetDisplayName () : methodSignature.ToString ();
 	}
 }

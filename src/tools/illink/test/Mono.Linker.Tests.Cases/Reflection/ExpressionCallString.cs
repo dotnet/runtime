@@ -245,7 +245,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2060", "Expression::Call")]
+			[ExpectedWarning ("IL2060", "Expression.Call")]
 			static void TestMethodWithRequirementsUnknownTypeArray (Type[] types)
 			{
 				// The passed in types array cannot be analyzed, so a warning is produced.
@@ -253,7 +253,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2060", "Expression::Call")]
+			[ExpectedWarning ("IL2060", "Expression.Call")]
 			static void TestMethodWithRequirementsButNoTypeArguments ()
 			{
 				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithRequirementsNoArguments), Type.EmptyTypes);

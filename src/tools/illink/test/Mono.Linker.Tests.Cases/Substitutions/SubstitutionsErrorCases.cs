@@ -11,9 +11,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 	[ExpectedWarning ("IL2010", "TestMethod_1", "stub", FileName = "SubstitutionsErrorCases.xml", SourceLine = 5, SourceColumn = 8)]
 	[ExpectedWarning ("IL2011", "TestMethod_2", "noaction", FileName = "SubstitutionsErrorCases.xml", SourceLine = 6, SourceColumn = 8)]
-	[ExpectedWarning ("IL2013", "SubstitutionsErrorCases::InstanceField", FileName = "SubstitutionsErrorCases.xml", SourceLine = 8, SourceColumn = 8)]
-	[ExpectedWarning ("IL2014", "SubstitutionsErrorCases::IntField", FileName = "SubstitutionsErrorCases.xml", SourceLine = 9, SourceColumn = 8)]
-	[ExpectedWarning ("IL2015", "SubstitutionsErrorCases::IntField", "NonNumber", FileName = "SubstitutionsErrorCases.xml", SourceLine = 10, SourceColumn = 8)]
+	[ExpectedWarning ("IL2013", "SubstitutionsErrorCases.InstanceField", FileName = "SubstitutionsErrorCases.xml", SourceLine = 8, SourceColumn = 8)]
+	[ExpectedWarning ("IL2014", "SubstitutionsErrorCases.IntField", FileName = "SubstitutionsErrorCases.xml", SourceLine = 9, SourceColumn = 8)]
+	[ExpectedWarning ("IL2015", "SubstitutionsErrorCases.IntField", "NonNumber", FileName = "SubstitutionsErrorCases.xml", SourceLine = 10, SourceColumn = 8)]
 	[ExpectedWarning ("IL2007", "NonExistentAssembly", FileName = "SubstitutionsErrorCases.xml", SourceLine = 13, SourceColumn = 4)]
 	[ExpectedWarning ("IL2100", FileName = "SubstitutionsErrorCases.xml", SourceLine = 15, SourceColumn = 4)]
 	[ExpectedWarning ("IL2101", "library", "test", FileName = "ILLink.Substitutions.xml", SourceLine = 3, SourceColumn = 4)]

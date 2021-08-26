@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -82,7 +82,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicConstructors (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "type", messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", "'type'", "argument", nameof (WriteToParameterOnInstanceMethod) + "(Type)", nameof (ReturnThingsWithPublicParameterlessConstructor))]
 		private void WriteToParameterOnInstanceMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
@@ -90,7 +90,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithPublicParameterlessConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "type", messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", "'type'", "argument", nameof (WriteToParameterOnStaticMethod) + "(Type)", nameof (ReturnThingsWithPublicParameterlessConstructor))]
 		private static void WriteToParameterOnStaticMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			Type type)
@@ -98,7 +98,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithPublicParameterlessConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "type", messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", "'type'", "argument", nameof (LongWriteToParameterOnInstanceMethod) + "(Int32,Int32,Int32,Int32,Type)", nameof (ReturnThingsWithPublicParameterlessConstructor))]
 		private void LongWriteToParameterOnInstanceMethod (
 			int a, int b, int c, int d,
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -107,7 +107,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithPublicParameterlessConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), "type", messageCode: "IL2072")]
+		[ExpectedWarning ("IL2072", "'type'", "argument", nameof (LongWriteToParameterOnStaticMethod) + "(Int32,Int32,Int32,Int32,Type)", nameof (ReturnThingsWithPublicParameterlessConstructor))]
 		private static void LongWriteToParameterOnStaticMethod (
 			int a, int b, int c, int d,
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
