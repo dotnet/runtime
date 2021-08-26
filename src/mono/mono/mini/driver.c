@@ -42,8 +42,6 @@
 #include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/security-manager.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/w32process.h>

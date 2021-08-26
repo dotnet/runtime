@@ -267,6 +267,38 @@ namespace System.Diagnostics
       public static DistributedContextPropagator CreatePassThroughPropagator() { throw null; }
       public static DistributedContextPropagator CreateNoOutputPropagator() { throw null; }
     }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct TagList : System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>
+    {
+        public TagList(System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tagList) : this() { throw null; }
+        public readonly int Count => throw null;
+        public readonly bool IsReadOnly => throw null;
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index]
+        {
+            readonly get { { throw null; } }
+            set { { throw null; } }
+        }
+        public void Add(string key, object? value) { throw null; }
+        public void Add(System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
+        public readonly void CopyTo(System.Span<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Insert(int index, System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public void RemoveAt(int index) { throw null; }
+        public void Clear() { throw null; }
+        public readonly bool Contains(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public readonly void CopyTo(System.Collections.Generic.KeyValuePair<string, object?>[] array, int arrayIndex) { throw null; }
+        public bool Remove(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public readonly System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        readonly System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public readonly int IndexOf(System.Collections.Generic.KeyValuePair<string, object?> item) { throw null; }
+        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerator
+        {
+            public System.Collections.Generic.KeyValuePair<string, object?> Current => throw null;
+            object System.Collections.IEnumerator.Current => throw null;
+            public void Dispose() { throw null; }
+            public bool MoveNext() { throw null; }
+            public void Reset() { throw null; }
+        }
+    }
 }
 
 namespace System.Diagnostics.Metrics
@@ -279,6 +311,7 @@ namespace System.Diagnostics.Metrics
         public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  {  throw null; }
         public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) {  throw null; }
         public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) {  throw null; }
+        public void Add(T delta, in TagList tagList) { throw null; }
         internal Counter(Meter meter, string name, string? unit, string? description) :
                         base(meter, name, unit, description) {  throw null; }
     }
@@ -289,6 +322,7 @@ namespace System.Diagnostics.Metrics
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2) { throw null; }
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3) { throw null; }
+        public void Record(T value, in TagList tagList) { throw null; }
         public void Record(T value, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
     }
@@ -310,6 +344,7 @@ namespace System.Diagnostics.Metrics
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
+        protected void RecordMeasurement(T measurement, in TagList tagList) { throw null; }
         protected void RecordMeasurement(T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
     }
     public readonly struct Measurement<T> where T : struct

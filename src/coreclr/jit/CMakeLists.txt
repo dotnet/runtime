@@ -4,8 +4,7 @@ include_directories("./jitstd")
 include_directories("../inc")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fpermissive>)
-  add_compile_options(-Wno-error)
+  add_compile_options(-Wno-error) # tracked by https://github.com/dotnet/runtime/issues/33541
 endif()
 
 function(create_standalone_jit)
@@ -48,9 +47,6 @@ function(create_standalone_jit)
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
-  if(FEATURE_READYTORUN)
-    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_READYTORUN_COMPILER)
-  endif(FEATURE_READYTORUN)
 
   if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR ((TARGETDETAILS_ARCH STREQUAL "x86") AND NOT (TARGETDETAILS_OS STREQUAL "unix")))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
@@ -481,10 +477,6 @@ function(add_jit jitName)
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
-if (FEATURE_MERGE_JIT_AND_ENGINE)
-  add_subdirectory(crossgen)
-endif (FEATURE_MERGE_JIT_AND_ENGINE)
 
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)

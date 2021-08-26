@@ -256,6 +256,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.AsymmetricAlgorithm? PrivateKey { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.PublicKey PublicKey { get { throw null; } }
         public byte[] RawData { get { throw null; } }
+        public System.ReadOnlyMemory<byte> RawDataMemory { get { throw null; } }
         public string SerialNumber { get { throw null; } }
         public System.Security.Cryptography.Oid SignatureAlgorithm { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X500DistinguishedName SubjectName { get { throw null; } }

@@ -58,7 +58,7 @@ const ULONG WRITEWAITERS_INCR = 0x00400000;    // amount to add to increment num
 // Copy of definition from file:..\VM\spinlock.h
 #define CALLER_LIMITS_SPINNING 0
 
-#if (defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)) || (defined(TARGET_UNIX) && defined(DACCESS_COMPILE))
+#if (defined(SELF_NO_HOST)) || (defined(TARGET_UNIX) && defined(DACCESS_COMPILE))
 
 // When we do not have host, we just call OS - see file:..\VM\hosting.cpp#__SwitchToThread
 BOOL __SwitchToThread(DWORD dwSleepMSec, DWORD dwSwitchCount)
@@ -87,14 +87,14 @@ inline void InitializeSpinConstants_NoHost()
     g_SpinConstants.dwMaximumDuration = max(2, g_SystemInfo.dwNumberOfProcessors) * 20000;
 }
 
-#else //!SELF_NO_HOST || CROSSGEN_COMPILE
+#else //!SELF_NO_HOST
 
 // Use VM/CrossGen functions and variables
 BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount);
 extern SYSTEM_INFO g_SystemInfo;
 extern SpinConstants g_SpinConstants;
 
-#endif //!SELF_NO_HOST || CROSSGEN_COMPILE
+#endif //!SELF_NO_HOST
 
 /******************************************************************************
 Function : UTSemReadWrite::UTSemReadWrite
@@ -110,7 +110,7 @@ UTSemReadWrite::UTSemReadWrite()
     }
     CONTRACTL_END;
 
-#if defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)
+#if defined(SELF_NO_HOST)
     if (!g_fInitializedGlobalSystemInfo)
     {
         GetSystemInfo(&g_SystemInfo);
@@ -118,7 +118,7 @@ UTSemReadWrite::UTSemReadWrite()
 
         g_fInitializedGlobalSystemInfo = TRUE;
     }
-#endif //SELF_NO_HOST && !CROSSGEN_COMPILE
+#endif //SELF_NO_HOST
 
     m_dwFlag = 0;
     m_hReadWaiterSemaphore = NULL;

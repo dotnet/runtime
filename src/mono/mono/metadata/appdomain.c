@@ -970,3 +970,15 @@ runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, g
 
 	*endp = ptr;
 }
+
+void
+mono_security_enable_core_clr ()
+{
+	// no-op
+}
+
+void
+mono_security_set_core_clr_platform_callback (MonoCoreClrPlatformCB callback)
+{
+	// no-op
+}

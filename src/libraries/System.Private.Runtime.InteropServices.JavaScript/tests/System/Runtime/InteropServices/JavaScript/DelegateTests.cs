@@ -246,6 +246,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var temp = new bool[attempts];
             Action<JSObject> cb = (JSObject envt) =>
             {
+#if DEBUG
+                envt.AssertNotDisposed();
+                envt.AssertInFlight(0);
+#endif
                 var data = (int)envt.GetObjectProperty("data");
                 temp[data] = true;
             };
@@ -445,7 +449,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     dummy:dummy,
                 }");
 
-            var obj = (JSObject)factory.Call(tcs.Task);
+            var obj = (JSObject)factory.Call(null, tcs.Task);
             var dummy = obj.GetObjectProperty("dummy");
             Assert.IsType<Task<int>>(dummy);
         }
