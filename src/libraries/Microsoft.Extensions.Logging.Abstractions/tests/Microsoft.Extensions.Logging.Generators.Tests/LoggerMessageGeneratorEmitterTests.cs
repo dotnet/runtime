@@ -3,10 +3,7 @@
 
 using System;
 using System.IO;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators.Tests;
 using Xunit;
