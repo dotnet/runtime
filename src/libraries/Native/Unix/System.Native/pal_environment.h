@@ -8,6 +8,6 @@
 
 PALEXPORT char* SystemNative_GetEnv(const char* variable);
 
-PALEXPORT char** SystemNative_GetEnviron(int32_t *releaseMemory);
+PALEXPORT char** SystemNative_GetEnviron();
 
 PALEXPORT void SystemNative_FreeEnviron(char** environ);
