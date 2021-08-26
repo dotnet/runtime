@@ -11,6 +11,7 @@ endif ()
 include_directories("${CLR_SRC_NATIVE_DIR}/common")
 
 set(NATIVE_SOURCES
+    pal_environment.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
@@ -36,8 +37,11 @@ set(NATIVE_SOURCES
 if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     list (APPEND NATIVE_SOURCES pal_autoreleasepool.m)
     set_source_files_properties(pal_autoreleasepool.m PROPERTIES COMPILE_FLAGS -fno-objc-arc)
+    list (APPEND NATIVE_SOURCES pal_environment.m)
+    add_definitions(-DUSE_APPLE_GETENVIRON=1)
 else()
     list (APPEND NATIVE_SOURCES pal_autoreleasepool.c)
+    add_definitions(-DUSE_APPLE_GETENVIRON=0)
 endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
