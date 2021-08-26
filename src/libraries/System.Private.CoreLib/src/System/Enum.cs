@@ -369,10 +369,11 @@ namespace System
             // This threshold can be tweaked over time as optimizations evolve.
             const int NumberOfValuesThreshold = 32;
 
+            int ulValuesLength = ulValues.Length;
             ref ulong start = ref MemoryMarshal.GetArrayDataReference(ulValues);
-            return ulValues.Length <= NumberOfValuesThreshold ?
-                SpanHelpers.IndexOf(ref start, ulValue, ulValues.Length) :
-                SpanHelpers.BinarySearch(ref start, ulValues.Length, ulValue);
+            return ulValuesLength <= NumberOfValuesThreshold ?
+                SpanHelpers.IndexOf(ref start, ulValue, ulValuesLength) :
+                SpanHelpers.BinarySearch(ref start, ulValuesLength, ulValue);
         }
 
         public static bool IsDefined(Type enumType, object value)
