@@ -186,30 +186,21 @@ namespace System.Threading.ThreadPools.Tests
 
                 // Verify that SetMinThreads() and SetMaxThreads() return false when trying to set a different value from what
                 // is configured through config
-                try
+                var options = new RemoteInvokeOptions();
+                options.StartInfo.EnvironmentVariables.Add("COMPlus_ThreadPool_ForceMinWorkerThreads", "1");
+                options.StartInfo.EnvironmentVariables.Add("COMPlus_ThreadPool_ForceMaxWorkerThreads", "2");
+                RemoteExecutor.Invoke(() =>
                 {
-                    // The actual test process below will inherit the environment variables
-                    Environment.SetEnvironmentVariable("COMPlus_ThreadPool_ForceMinWorkerThreads", "1");
-                    Environment.SetEnvironmentVariable("COMPlus_ThreadPool_ForceMaxWorkerThreads", "2");
-
-                    RemoteExecutor.Invoke(() =>
-                    {
-                        int w, c;
-                        ThreadPool.GetMinThreads(out w, out c);
-                        Assert.Equal(1, w);
-                        ThreadPool.GetMaxThreads(out w, out c);
-                        Assert.Equal(2, w);
-                        Assert.True(ThreadPool.SetMinThreads(1, 1));
-                        Assert.True(ThreadPool.SetMaxThreads(2, 1));
-                        Assert.False(ThreadPool.SetMinThreads(2, 1));
-                        Assert.False(ThreadPool.SetMinThreads(1, 1));
-                    }).Dispose();
-                }
-                finally
-                {
-                    Environment.SetEnvironmentVariable("COMPlus_ThreadPool_ForceMinWorkerThreads", null);
-                    Environment.SetEnvironmentVariable("COMPlus_ThreadPool_ForceMaxWorkerThreads", null);
-                }
+                    int w, c;
+                    ThreadPool.GetMinThreads(out w, out c);
+                    Assert.Equal(1, w);
+                    ThreadPool.GetMaxThreads(out w, out c);
+                    Assert.Equal(2, w);
+                    Assert.True(ThreadPool.SetMinThreads(1, 1));
+                    Assert.True(ThreadPool.SetMaxThreads(2, 1));
+                    Assert.False(ThreadPool.SetMinThreads(2, 1));
+                    Assert.False(ThreadPool.SetMinThreads(1, 1));
+                }, options).Dispose();
             }).Dispose();
         }
 
