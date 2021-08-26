@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -151,7 +152,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
-            string[] expectedLines = await File.ReadAllLinesAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false);
+            string baseline = await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false);
+            string[] expectedLines = ReplaceBaselineTokens(baseline).Split(Environment.NewLine);
 
             var (d, r) = await RoslynTestUtils.RunGenerator(
                 new LoggerMessageGenerator(),
@@ -163,6 +165,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
             Assert.True(CompareLines(expectedLines, r[0].SourceText,
                 out string errorMessage), errorMessage);
+        }
+
+        private string ReplaceBaselineTokens(string baselineCode){
+            return new StringBuilder(baselineCode)
+                        .Replace("%ASSEMBLY_VERSION%", typeof(LoggerMessageGenerator).Assembly.GetName().Version?.ToString())
+                        .ToString();
         }
 
         private bool CompareLines(string[] expectedLines, SourceText sourceText, out string message)
