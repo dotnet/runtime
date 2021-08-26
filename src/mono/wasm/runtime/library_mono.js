@@ -52,6 +52,7 @@ var MonoSupportLib = {
 	$MONO: {
 		pump_count: 0,
 		timeout_queue: [],
+		spread_timers_maximum:0,
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
@@ -74,6 +75,8 @@ var MonoSupportLib = {
 
 		export_functions: function (module) {
 			module ["pump_message"] = MONO.pump_message.bind(MONO);
+			module ["prevent_timer_throttling"] = MONO.prevent_timer_throttling.bind(MONO);
+			module ["mono_wasm_set_timeout_exec"] = MONO.mono_wasm_set_timeout_exec.bind(MONO);
 			module ["mono_load_runtime_and_bcl"] = MONO.mono_load_runtime_and_bcl.bind(MONO);
 			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args.bind(MONO);
 			module ["mono_wasm_load_bytes_into_heap"] = MONO.mono_wasm_load_bytes_into_heap.bind(MONO);
@@ -1457,6 +1460,28 @@ var MonoSupportLib = {
 			} finally {
 				Module.removeRunDependency(configFilePath);
 			}
+		},
+		mono_wasm_set_timeout_exec: function(id){
+			if (!this.mono_set_timeout_exec)
+				this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
+			this.mono_set_timeout_exec (id);
+		},
+		prevent_timer_throttling: function () {
+			// this will schedule timers every second for next 6 minutes, it should be called from WebSocket event, to make it work
+			// on next call, it would only extend the timers to cover yet uncovered future
+			let now = new Date().valueOf();
+			const desired_reach_time = now + (1000 * 60 * 6);
+			const next_reach_time = Math.max(now + 1000, this.spread_timers_maximum);
+			const light_throttling_frequency = 1000;
+			for (var schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
+				const delay = schedule - now;
+				setTimeout(() => {
+					this.mono_wasm_set_timeout_exec(0);
+					MONO.pump_count++;
+					MONO.pump_message();
+				}, delay);
+			}
+			this.spread_timers_maximum = desired_reach_time;
 		}
 	},
 	schedule_background_exec: function () {
@@ -1467,17 +1492,15 @@ var MonoSupportLib = {
 	},
 
 	mono_set_timeout: function (timeout, id) {
-		if (!this.mono_set_timeout_exec)
-			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
 		if (typeof globalThis.setTimeout === 'function') {
 			globalThis.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_wasm_set_timeout_exec (id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;
 			MONO.timeout_queue.push(function() {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_wasm_set_timeout_exec (id);
 			})
 		}
 	},
