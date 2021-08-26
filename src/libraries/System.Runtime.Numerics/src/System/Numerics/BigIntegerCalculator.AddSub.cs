@@ -73,7 +73,6 @@ namespace System.Numerics
             // Switching to managed references helps eliminating
             // index bounds check...
             ref uint leftPtr = ref MemoryMarshal.GetReference(left);
-            ref uint rightPtr = ref MemoryMarshal.GetReference(right);
 
             // Executes the "grammar-school" algorithm for computing z = a + b.
             // Same as above, but we're writing the result directly to a and
