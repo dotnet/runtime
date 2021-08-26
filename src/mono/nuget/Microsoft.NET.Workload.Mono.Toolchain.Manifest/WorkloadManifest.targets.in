@@ -8,8 +8,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(BrowserWorkloadDisabled)' == 'true'">
-        <_NativeBuildNeeded Condition="'$(RunAOTCompilation)' == 'true'">true</_NativeBuildNeeded>
-        <WorkloadDisabledWithReason Condition="'$(_NativeBuildNeeded)' == 'true'">WebAssembly workloads (required for AOT) are only supported for projects targeting net6.0+</WorkloadDisabledWithReason>
+        <_MissingNativeBuildNeededFor Condition="'$(RunAOTCompilation)' == 'true'">required for AOT</_MissingNativeBuildNeededFor>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
@@ -128,7 +127,30 @@
                         />
     </ItemGroup>
 
-    <Target Name="ErrorDisabledWorkload" Condition="'$(WorkloadDisabledWithReason)' != ''" BeforeTargets="Publish">
-      <Error Text="$(WorkloadDisabledWithReason)" />
+    <Target Name="_CheckNativeBuildNeededButMissingWorkload"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(_MissingNativeBuildNeededFor)' == '' and '$(WasmNativeWorkload)' != 'true'"
+            BeforeTargets="Build">
+
+      <PropertyGroup Condition="@(NativeFileReference->Count()) > 0">
+        <_MissingNativeBuildNeededFor>(required for linking native libraries)</_MissingNativeBuildNeededFor>
+
+        <!-- fail with missing workload, only if it isn't *disabled* (eg. for net5.0 projects) -->
+        <_WorkloadNeeded Condition="'$(_MissingNativeBuildNeededFor)' != '' and '$(BrowserWorkloadDisabled)' != 'true'">true</_WorkloadNeeded>
+      </PropertyGroup>
+
+      <ItemGroup Condition="'$(_WorkloadNeeded)' == 'true'">
+        <MissingWorkloadPack Include="Microsoft.NET.Runtime.WebAssembly.Sdk" Version="$(RuntimePackInWorkloadVersion)" />
+      </ItemGroup>
+
+      <!-- based on Microsoft.NET.Sdk/targets/Microsoft.NET.Sdk.ImportWorkloads.targets -->
+      <ShowMissingWorkloads MissingWorkloadPacks="@(MissingWorkloadPack)"
+                            NetCoreRoot="$(NetCoreRoot)"
+                            NETCoreSdkVersion="$(NETCoreSdkVersion)"
+                            GenerateErrorsForMissingWorkloads="true"
+                            Condition="'$(_WorkloadNeeded)' == 'true'" />
+    </Target>
+
+    <Target Name="_ErrorDisabledWorkload" Condition="'$(_MissingNativeBuildNeededFor)' != ''" BeforeTargets="Build">
+      <Error Text="WebAssembly workloads, $(_MissingNativeBuildNeededFor), are only supported for projects targeting net6.0+" />
     </Target>
 </Project>
