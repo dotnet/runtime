@@ -101,7 +101,16 @@ namespace System
                     while (ParseEntry(blockIterator, out string? key, out string? value))
                     {
                         if (key != null && value != null)
-                            results.Add(key, value);
+                        {
+                            try
+                            {
+                                // Add may throw if the environment block was corrupted leading to duplicate entries.
+                                // We allow such throws and eat them (rather than proactively checking for duplication)
+                                // to provide a non-fatal notification about the corruption.
+                                results.Add(key, value);
+                            }
+                            catch (ArgumentException) { }
+                        }
 
                         // Increment to next environment variable entry
                         blockIterator += IntPtr.Size;
