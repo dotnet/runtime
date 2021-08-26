@@ -5472,44 +5472,28 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			double val_r8 = val;
-			const double two64  = 4294967296.0 * 4294967296.0;
-			if (val_r8 > -1.0 && val_r8 < two64)
-				LOCAL_VAR (ip [1], guint64) = (guint64)val;
-			else
+			if (!mono_try_trunc_u64 (val, (guint64*)(locals + ip [1])))
 				THROW_EX (mono_get_exception_overflow (), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			const double two64  = 4294967296.0 * 4294967296.0;
-			if (val > -1.0 && val < two64)
-				LOCAL_VAR (ip [1], guint64) = (guint64)val;
-			else
+			if (!mono_try_trunc_u64 (val, (guint64*)(locals + ip [1])))
 				THROW_EX (mono_get_exception_overflow (), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			double val_r8 = val;
-			const double two63  = 2147483648.0 * 4294967296.0;
-			// 0x402 is epsilon used to get us to the next value
-			if (val_r8 > (-two63 - 0x402) && val_r8 < two63)
-				LOCAL_VAR (ip [1], gint64) = (gint64)val;
-			else
+			if (!mono_try_trunc_i64 (val, (gint64*)(locals + ip [1])))
 				THROW_EX (mono_get_exception_overflow (), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			const double two63  = 2147483648.0 * 4294967296.0;
-			// 0x402 is epsilon used to get us to the next value
-			if (val > (-two63 - 0x402) && val < two63)
-				LOCAL_VAR (ip [1], gint64) = (gint64)val;
-			else
+			if (!mono_try_trunc_i64 (val, (gint64*)(locals + ip [1])))
 				THROW_EX (mono_get_exception_overflow (), ip);
 			ip += 3;
 			MINT_IN_BREAK;
