@@ -373,7 +373,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     private bool PrecompileLibrary(ITaskItem assemblyItem, string? monoPaths)
     {
-        string assembly = assemblyItem.ItemSpec;
+        string assembly = assemblyItem.GetMetadata("FullPath");
         string assemblyDir = Path.GetDirectoryName(assembly)!;
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
@@ -836,7 +836,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         List<ITaskItem> outItems = new(items.Length);
         foreach (ITaskItem item in items)
         {
-            if (!dict.TryGetValue(item.ItemSpec, out ITaskItem? dictItem))
+            if (!dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
                 throw new LogAsErrorException($"Bug: Could not find item in the dict with key {item.ItemSpec}");
 
             outItems.Add(dictItem);
