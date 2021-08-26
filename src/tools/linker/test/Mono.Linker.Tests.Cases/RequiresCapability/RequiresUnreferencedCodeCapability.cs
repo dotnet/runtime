@@ -924,13 +924,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess::field", "Message for --StaticCtorTriggeredByFieldAccess--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", GlobalAnalysisOnly = true)]
 			static void TestStaticCtorMarkingIsTriggeredByFieldAccessWrite ()
 			{
 				StaticCtorTriggeredByFieldAccess.field = 1;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess::field", "Message for --StaticCtorTriggeredByFieldAccess--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", GlobalAnalysisOnly = true)]
 			static void TestStaticCtorMarkingTriggeredOnSecondAccessWrite ()
 			{
 				StaticCtorTriggeredByFieldAccess.field = 2;
@@ -954,7 +954,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field = 42;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCCtorTriggeredByFieldAccessRead::field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", GlobalAnalysisOnly = true)]
 			static void TestStaticCtorMarkingIsTriggeredByFieldAccessRead ()
 			{
 				var _ = StaticCCtorTriggeredByFieldAccessRead.field;
@@ -1104,7 +1104,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
 			// Although we suppress the warning from RequiresOnMethod.MethodWithRUC () we still get a warning because we call CallRUCMethod() which is an static method on a type with RUC
 			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.CallRUCMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "ClassWithRequiresUnreferencedCode::Instance", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "ClassWithRequiresUnreferencedCode.Instance", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
 			static void TestRequiresOnBaseButNotOnDerived ()
 			{
 				DerivedWithoutRequires.StaticMethodInInheritedClass ();
@@ -1180,7 +1180,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static event EventHandler Event;
 			}
 
-			[ExpectedWarning ("IL2026", "MemberTypesWithRUC::field", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.field", GlobalAnalysisOnly = true)]
 			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.Property.set", GlobalAnalysisOnly = true)]
 			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.remove_Event", GlobalAnalysisOnly = true)]
 			static void TestOtherMemberTypesWithRUC ()
@@ -1338,9 +1338,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					public static int DerivedStaticField;
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC::StaticField", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC::PrivateStaticField", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC::DerivedStaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", GlobalAnalysisOnly = true)]
 				static void TestDAMAccess ()
 				{
 					typeof (WithRUC).RequiresPublicFields ();
@@ -1350,9 +1350,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					typeof (DerivedWithRUC).RequiresPublicFields ();
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC::StaticField", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC::PrivateStaticField", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC::DerivedStaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", GlobalAnalysisOnly = true)]
 				static void TestDirectReflectionAccess ()
 				{
 					typeof (WithRUC).GetField (nameof (WithRUC.StaticField));
@@ -1363,11 +1363,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					typeof (DerivedWithRUC).GetField (nameof (DerivedWithRUC.DerivedStaticField));
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC::StaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticField", GlobalAnalysisOnly = true)]
 				[DynamicDependency (nameof (WithRUC.StaticField), typeof (WithRUC))]
 				[DynamicDependency (nameof (WithRUC.InstanceField), typeof (WithRUC))] // Doesn't warn
 				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithoutRUC))] // Doesn't warn
-				[ExpectedWarning ("IL2026", "DerivedWithRUC::DerivedStaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", GlobalAnalysisOnly = true)]
 				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithRUC))]
 				static void TestDynamicDependencyAccess ()
 				{
@@ -1381,13 +1381,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 				[RequiresUnreferencedCode ("This class is dangerous")]
-				[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass::baseField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField", GlobalAnalysisOnly = true)]
 				class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 				{
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass::publicField", GlobalAnalysisOnly = true)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField", GlobalAnalysisOnly = true)]
 					public static int publicField;
 
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass::privatefield", GlobalAnalysisOnly = true)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield", GlobalAnalysisOnly = true)]
 					static int privatefield;
 				}
 

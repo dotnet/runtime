@@ -1,4 +1,7 @@
-﻿using Mono.Cecil;
+﻿using System;
+using System.Diagnostics;
+using System.Text;
+using Mono.Cecil;
 
 namespace Mono.Linker
 {
@@ -13,7 +16,15 @@ namespace Mono.Linker
 			case MethodReference method:
 				return method.GetDisplayName ();
 
+			case IMemberDefinition memberDef:
+				var sb = new StringBuilder ();
+				if (memberDef.DeclaringType != null)
+					sb.Append (memberDef.DeclaringType.GetDisplayName ()).Append ('.');
+				sb.Append (memberDef.Name);
+				return sb.ToString ();
+
 			default:
+				Debug.Assert (false, "The display name should not use cecil's signature format.");
 				return member.FullName;
 			}
 		}

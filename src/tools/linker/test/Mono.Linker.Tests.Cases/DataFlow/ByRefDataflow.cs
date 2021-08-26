@@ -41,14 +41,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static Type s_typeWithPublicParameterlessConstructor;
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string[] { "System.Type&" }, messageCode: "IL2077")]
+		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string[] { "Type&" }, messageCode: "IL2077")]
 		public static void PassRefToField ()
 		{
 			MethodWithRefParameter (ref s_typeWithPublicParameterlessConstructor);
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string[] { "System.Type&" }, messageCode: "IL2067")]
+		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string[] { "Type&" }, messageCode: "IL2067")]
 		public static void PassRefToParameter (Type parameter)
 		{
 			MethodWithRefParameter (ref parameter);

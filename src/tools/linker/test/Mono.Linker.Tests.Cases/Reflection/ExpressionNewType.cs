@@ -27,9 +27,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		#region RecognizedReflectionAccessPatterns
 		[RecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, typeof (A), ".ctor", new Type[0])]
+			typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, typeof (A), "A", new Type[0])]
 		[RecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, typeof (B), ".ctor", new Type[0])]
+			typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, typeof (B), "B", new Type[0])]
 		[Kept]
 		static void Branch_SystemTypeValueNode (int i)
 		{
