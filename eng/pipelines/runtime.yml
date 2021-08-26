@@ -535,7 +535,7 @@ jobs:
 #     buildConfig: Release
 #     runtimeFlavor: mono
 #     platforms:
-#     - OSX_x64
+#     - OSX_x64.
 #     jobParameters:
 #       testGroup: innerloop
 #       nameSuffix: AllSubsets_Mono_LLVMJIT
@@ -694,48 +694,48 @@ jobs:
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
 #           eq(variables['isFullMatrix'], true))
 
-# #
-# # Build Mono release
-# # Only when libraries or mono changed
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-#     runtimeFlavor: mono
-#     buildConfig: release
-#     platforms:
-#     - Linux_x64
-#     # - Linux_musl_arm64
-#     - windows_x64
-#     - windows_x86
-#     # - windows_arm
-#     # - windows_arm64
-#     jobParameters:
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Build Mono release
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    # - Linux_musl_arm64
+    - windows_x64
+    - windows_x86
+    # - windows_arm
+    # - windows_arm64
+    jobParameters:
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Build Mono release
-# # Only when libraries, mono, or the runtime tests changed
-# # Currently only these architectures are needed for the runtime tests.
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-#     runtimeFlavor: mono
-#     buildConfig: release
-#     platforms:
-#     - OSX_x64
-#     - Linux_arm64
-#     jobParameters:
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Build Mono release
+# Only when libraries, mono, or the runtime tests changed
+# Currently only these architectures are needed for the runtime tests.
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+    - OSX_x64
+    - Linux_arm64
+    jobParameters:
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 # #
 # # Build Mono release with LLVM AOT
@@ -757,97 +757,97 @@ jobs:
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
 #           eq(variables['isFullMatrix'], true))
 
-# #
-# # Build libraries using live CoreLib
-# # These set of libraries are built always no matter what changed
-# # The reason for that is because Corelib and Installer needs it and
-# # These are part of the test matrix for Libraries changes.
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/build-job.yml
-#     buildConfig: Release
-#     platforms:
-#     - Linux_arm
-#     - Linux_musl_arm
-#     - Linux_musl_arm64
-#     - windows_arm
-#     - windows_arm64
-#     - windows_x86
-#     jobParameters:
-#       liveRuntimeBuildConfig: release
+#
+# Build libraries using live CoreLib
+# These set of libraries are built always no matter what changed
+# The reason for that is because Corelib and Installer needs it and
+# These are part of the test matrix for Libraries changes.
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_arm
+    - Linux_musl_arm
+    - Linux_musl_arm64
+    - windows_arm
+    - windows_arm64
+    - windows_x86
+    jobParameters:
+      liveRuntimeBuildConfig: release
 
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/build-job.yml
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#     - Linux_arm64
-#     - Linux_musl_x64
-#     - Linux_x64
-#     - OSX_arm64
-#     - OSX_x64
-#     - windows_x64
-#     - FreeBSD_x64
-#     jobParameters:
-#       testScope: innerloop
-#       testBuildPlatforms:
-#       - Linux_x64
-#       - windows_x64
-#       - OSX_x64
-#       liveRuntimeBuildConfig: release
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - Linux_arm64
+    - Linux_musl_x64
+    - Linux_x64
+    - OSX_arm64
+    - OSX_x64
+    - windows_x64
+    - FreeBSD_x64
+    jobParameters:
+      testScope: innerloop
+      testBuildPlatforms:
+      - Linux_x64
+      - windows_x64
+      - OSX_x64
+      liveRuntimeBuildConfig: release
 
-# #
-# # Libraries Build that only run when libraries is changed
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/build-job.yml
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#     - ${{ if eq(variables['isFullMatrix'], false) }}:
-#       - windows_x86
-#     jobParameters:
-#       liveRuntimeBuildConfig: release
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Libraries Build that only run when libraries is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - ${{ if eq(variables['isFullMatrix'], false) }}:
+      - windows_x86
+    jobParameters:
+      liveRuntimeBuildConfig: release
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/build-job.yml
-#     buildConfig: Release
-#     platforms:
-#     - windows_x86
-#     - ${{ if eq(variables['isFullMatrix'], true) }}:
-#       - windows_x64
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     jobParameters:
-#       isFullMatrix: ${{ variables.isFullMatrix }}
-#       framework: net48
-#       runTests: true
-#       testScope: innerloop
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platforms:
+    - windows_x86
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - windows_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      framework: net48
+      runTests: true
+      testScope: innerloop
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/build-job.yml
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#     - windows_x64
-#     jobParameters:
-#       isFullMatrix: ${{ variables.isFullMatrix }}
-#       framework: allConfigurations
-#       runTests: true
-#       useHelix: false
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - windows_x64
+    jobParameters:
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      framework: allConfigurations
+      runTests: true
+      useHelix: false
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 # #
 # # Installer Build and Test
