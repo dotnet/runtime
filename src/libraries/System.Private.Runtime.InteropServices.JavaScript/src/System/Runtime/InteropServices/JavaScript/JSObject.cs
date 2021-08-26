@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
-using Console = System.Diagnostics.Debug;
-
 namespace System.Runtime.InteropServices.JavaScript
 {
     public interface IJSObject
@@ -16,25 +13,8 @@ namespace System.Runtime.InteropServices.JavaScript
     ///   JSObjects are wrappers for a native JavaScript object, and
     ///   they retain a reference to the JavaScript object for the lifetime of this C# object.
     /// </summary>
-    public class JSObject : AnyRef, IJSObject, IDisposable
+    public partial class JSObject : IJSObject, IDisposable
     {
-        // to detect redundant calls
-        public bool IsDisposed { get; private set; }
-
-        public JSObject() : this(Interop.Runtime.New<object>(), true)
-        {
-            object result = Interop.Runtime.BindCoreObject(JSHandle, GCHandleValue, out int exception);
-            if (exception != 0)
-                throw new JSException(SR.Format(SR.JSObjectErrorBinding, result));
-
-        }
-
-        internal JSObject(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
-        { }
-
-        internal JSObject(int jsHandle, bool ownsHandle) : base((IntPtr)jsHandle, ownsHandle)
-        { }
-
         /// <summary>
         ///   Invoke a named method of the object, or throws a JSException on error.
         /// </summary>
@@ -56,6 +36,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </returns>
         public object Invoke(string method, params object?[] args)
         {
+            AssertNotDisposed();
+
             object res = Interop.Runtime.InvokeJSWithArgs(JSHandle, method, args, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
@@ -72,6 +54,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public int AddEventListener(string name, Action<JSObject> listener, EventListenerOptions? options = null)
         {
+            AssertNotDisposed();
+
             var optionsDict = options.HasValue
                 ? new JSObject()
                 : null;
@@ -105,6 +89,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public void RemoveEventListener(string name, Action<JSObject>? listener, EventListenerOptions? options = null)
         {
+            AssertNotDisposed();
+
             if (listener == null)
                 return;
             var jsfunc = Runtime.GetJSOwnedObjectGCHandle(listener);
@@ -113,6 +99,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public void RemoveEventListener(string name, int listenerGCHandle, EventListenerOptions? options = null)
         {
+            AssertNotDisposed();
+
             var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerGCHandle, options?.Capture ?? false);
             if (ret != null)
                 throw new JSException(ret);
@@ -142,6 +130,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </returns>
         public object GetObjectProperty(string name)
         {
+            AssertNotDisposed();
+
             object propertyValue = Interop.Runtime.GetObjectProperty(JSHandle, name, out int exception);
             if (exception != 0)
                 throw new JSException((string)propertyValue);
@@ -162,9 +152,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="hasOwnProperty"></param>
         public void SetObjectProperty(string name, object value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
+            AssertNotDisposed();
+
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{GCHandleValue})");
+                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}')");
         }
 
         /// <summary>
@@ -190,53 +182,5 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns><c>true</c>, if the specified property is enumerable, <c>false</c> otherwise.</returns>
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
-
-        internal void FreeHandle()
-        {
-            Runtime.ReleaseJSObject(this);
-            SetHandleAsInvalid();
-            IsDisposed = true;
-            FreeGCHandle();
-        }
-
-        public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
-
-        public override int GetHashCode() => JSHandle;
-
-        protected override bool ReleaseHandle()
-        {
-            bool ret = false;
-
-#if DEBUG_HANDLE
-            Console.WriteLine($"Release Handle handle:{handle}");
-            try
-            {
-#endif
-            FreeHandle();
-            ret = true;
-
-#if DEBUG_HANDLE
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine($"ReleaseHandle: {exception.Message}");
-                ret = true;  // Avoid a second assert.
-                throw;
-            }
-            finally
-            {
-                if (!ret)
-                {
-                    Console.WriteLine($"ReleaseHandle failed. handle:{handle}");
-                }
-            }
-#endif
-            return ret;
-        }
-
-        public override string ToString()
-        {
-            return $"(js-obj js '{GCHandleValue}')";
-        }
     }
 }

@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
 using JSException = System.Runtime.InteropServices.JavaScript.JSException;
@@ -34,11 +30,9 @@ internal static partial class Interop
         internal static extern object GetGlobalObject(string? globalName, out int exceptionalResult);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object ReleaseHandle(int jsHandle, out int exceptionalResult);
+        internal static extern object ReleaseCSOwnedObject(int jsHandle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object BindCoreObject(int jsHandle, int gcHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object New(string className, object[] parms, out int exceptionalResult);
+        internal static extern object CreateCSOwnedObject(string className, object[] parms, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object TypedArrayToArray(int jsHandle, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -75,32 +69,16 @@ internal static partial class Interop
             return res as System.Runtime.InteropServices.JavaScript.Function;
         }
 
-        public static int New<T>(params object[] parms)
-        {
-            object res = New(typeof(T).Name, parms, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-            return (int)res;
-        }
-
-        public static int New(string hostClassName, params object[] parms)
-        {
-            object res = New(hostClassName, parms, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-            return (int)res;
-        }
-
         public static object GetGlobalObject(string? str = null)
         {
             int exception;
-            object globalHandle = Runtime.GetGlobalObject(str, out exception);
+            object jsObj = GetGlobalObject(str, out exception);
 
             if (exception != 0)
                 throw new JSException($"Error obtaining a handle to global {str}");
 
-            ReleaseInFlight(globalHandle);
-            return globalHandle;
+            ReleaseInFlight(jsObj);
+            return jsObj;
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -125,7 +103,7 @@ internal static partial class Interop
             }
         }
 
-        public static void ReleaseInFlight(object? obj)
+        internal static void ReleaseInFlight(object? obj)
         {
             JSObject? jsObj = obj as JSObject;
             jsObj?.ReleaseInFlight();

@@ -14,15 +14,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the Array class.
         /// </summary>
         /// <param name="_params">Parameters.</param>
-        public Array(params object[] _params) : base(Interop.Runtime.New<Array>(_params))
+        public Array(params object[] _params) : base(nameof(Array), _params)
         { }
 
         /// <summary>
         /// Initializes a new instance of the Array/> class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        /// <param name="ownsHandle">Whether or not the handle is owned by the clr or not.</param>
-        internal Array(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal Array(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>
@@ -82,6 +81,8 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
+                AssertNotDisposed();
+
                 object indexValue = Interop.Runtime.GetByIndex(JSHandle, i, out int exception);
 
                 if (exception != 0)
@@ -91,6 +92,8 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             set
             {
+                AssertNotDisposed();
+
                 object res = Interop.Runtime.SetByIndex(JSHandle, i, value, out int exception);
 
                 if (exception != 0)

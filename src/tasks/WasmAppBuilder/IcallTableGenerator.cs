@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,7 +20,7 @@ public class IcallTableGenerator : Task
     public string? RuntimeIcallTableFile { get; set; }
     [Required]
     public ITaskItem[]? Assemblies { get; set; }
-    [Required]
+    [Required, NotNull]
     public string? OutputPath { get; set; }
 
     private List<Icall> _icalls = new List<Icall> ();
@@ -27,7 +28,6 @@ public class IcallTableGenerator : Task
 
     public override bool Execute()
     {
-        Log.LogMessage(MessageImportance.Normal, $"Generating icall table to '{OutputPath}'.");
         GenIcallTable(RuntimeIcallTableFile!, Assemblies!.Select(item => item.ItemSpec).ToArray());
         return true;
     }
@@ -50,8 +50,16 @@ public class IcallTableGenerator : Task
                 ProcessType(type);
         }
 
-        using (var w = File.CreateText(OutputPath!))
+        string tmpFileName = Path.GetTempFileName();
+        using (var w = File.CreateText(tmpFileName))
             EmitTable (w);
+
+        if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
+            Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{OutputPath}'.");
+        else
+            Log.LogMessage(MessageImportance.Low, $"Icall table in {OutputPath} is unchanged.");
+
+        File.Delete(tmpFileName);
     }
 
     private void EmitTable (StreamWriter w)

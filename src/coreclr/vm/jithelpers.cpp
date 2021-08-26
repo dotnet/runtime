@@ -44,10 +44,6 @@
 #include "safemath.h"
 #include "threadstatics.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
@@ -2445,25 +2441,6 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-
-
-    // If our module is ngenned and we're calling this API, it means that we're not going through
-    // the fixup mechanism for strings. This can happen 2 ways:
-    //
-    //      a) Lazy string object construction: This happens when JIT decides that initizalizing a
-    //         string via fixup on method entry is very expensive. This is normally done for strings
-    //         that appear in rarely executed blocks, such as throw blocks.
-    //
-    //      b) The ngen image isn't complete (it's missing classes), therefore we're jitting methods.
-    //
-    //  If we went ahead and called ResolveStringRef directly, we would be breaking the per module
-    //  interning we're guaranteeing, so we will have to detect the case and handle it appropriately.
-#ifdef FEATURE_PREJIT
-    if (module->HasNativeImage() && module->IsNoStringInterning())
-    {
-        return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent(), true);
-    }
-#endif
     return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent(), false);
 }
 
@@ -3135,10 +3112,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
         {
             const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
             BaseDomain* pKeyDomain = key->GetDomain();
-            if (pKeyDomain == pDomain || pKeyDomain == NULL
-                // We compute fake domain for types during NGen (see code:ClassLoader::ComputeLoaderModule).
-                // To avoid stale handles, we need to clear the cache unconditionally during NGen.
-                || IsCompilationProcess())
+            if (pKeyDomain == pDomain || pKeyDomain == NULL)
             {
                 // Advance the iterator before we delete!!  See notes in EEHash.h
                 keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
@@ -3245,11 +3219,11 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         // If the dictionary on the base type got expanded, update the current type's base type dictionary
         // pointer to use the new one on the base type.
 
-        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex].GetValue();
-        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex];
+        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex];
         if (pMTDictionary != pDeclaringMTDictionary)
         {
-            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo();
             FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
@@ -3300,7 +3274,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethod, CORINFO_METHOD_HANDLE  
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3320,7 +3293,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINF
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3342,7 +3314,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 

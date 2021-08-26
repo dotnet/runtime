@@ -7624,7 +7624,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                         // An absolute indir address that doesn't need reloc should fit within 32-bits
                         // to be encoded as offset relative to zero.  This addr mode requires an extra
                         // SIB byte
-                        noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+                        noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                         sz++;
                     }
 #endif // TARGET_AMD64
@@ -7660,7 +7660,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             // An absolute indir address that doesn't need reloc should fit within 32-bits
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
-            noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+            noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
 #endif // TARGET_AMD64

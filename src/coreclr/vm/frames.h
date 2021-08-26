@@ -304,7 +304,7 @@ class ComCallMethodDesc;
 
 #ifndef DACCESS_COMPILE
 
-#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX)
 
 #define DEFINE_DTOR(klass)                      \
     public:                                     \
@@ -314,7 +314,7 @@ class ComCallMethodDesc;
 
 #define DEFINE_DTOR(klass)
 
-#endif // TARGET_UNIX && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX
 
 #define DEFINE_VTABLE_GETTER(klass)             \
     public:                                     \
@@ -771,11 +771,11 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
     virtual ~Frame() { LIMITED_METHOD_CONTRACT; }
 
     void PopIfChained();
-#endif // TARGET_UNIX && !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !DACCESS_COMPILE
 };
 
 
@@ -1403,7 +1403,7 @@ class HelperMethodFrame_1OBJ : public HelperMethodFrame
     VPTR_VTABLE_CLASS(HelperMethodFrame_1OBJ, HelperMethodFrame)
 
 public:
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     HelperMethodFrame_1OBJ(void* fCallFtnEntry, unsigned attribs, OBJECTREF* aGCPtr1)
         : HelperMethodFrame(fCallFtnEntry, attribs)
     {
@@ -1463,7 +1463,7 @@ class HelperMethodFrame_2OBJ : public HelperMethodFrame
     VPTR_VTABLE_CLASS(HelperMethodFrame_2OBJ, HelperMethodFrame)
 
 public:
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     HelperMethodFrame_2OBJ(
             void* fCallFtnEntry,
             unsigned attribs,
@@ -1523,7 +1523,7 @@ class HelperMethodFrame_3OBJ : public HelperMethodFrame
     VPTR_VTABLE_CLASS(HelperMethodFrame_3OBJ, HelperMethodFrame)
 
 public:
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     HelperMethodFrame_3OBJ(
             void* fCallFtnEntry,
             unsigned attribs,
@@ -1590,7 +1590,7 @@ class HelperMethodFrame_PROTECTOBJ : public HelperMethodFrame
     VPTR_VTABLE_CLASS(HelperMethodFrame_PROTECTOBJ, HelperMethodFrame)
 
 public:
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     HelperMethodFrame_PROTECTOBJ(void* fCallFtnEntry, unsigned attribs, OBJECTREF* pObjRefs, int numObjRefs)
         : HelperMethodFrame(fCallFtnEntry, attribs)
     {
@@ -2437,9 +2437,7 @@ public:
     }
 
     GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
-#ifndef CROSSGEN_COMPILE
     ~GCFrame();
-#endif // CROSSGEN_COMPILE
 
 #endif // DACCESS_COMPILE
 
@@ -3067,7 +3065,6 @@ class TailCallFrame : public Frame
     TADDR           m_ReturnAddress;    // the return address of the tailcall
 
 public:
-#ifndef CROSSGEN_COMPILE
     static TailCallFrame* FindTailCallFrame(Frame* pFrame)
     {
         LIMITED_METHOD_CONTRACT;
@@ -3096,7 +3093,6 @@ public:
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
-#endif // !CROSSGEN_COMPILE
 
 private:
     // Keep as last entry in class

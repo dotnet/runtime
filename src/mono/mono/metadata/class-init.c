@@ -17,10 +17,10 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/security-core-clr.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
+#include <mono/metadata/marshal.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>

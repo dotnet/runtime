@@ -281,22 +281,26 @@ namespace System.Runtime.Serialization
                     if (rootTypeDataContract.StableName == qname)
                         dataContract = rootTypeDataContract;
                     else
-                    {
-                        CollectionDataContract? collectionContract = rootTypeDataContract as CollectionDataContract;
-                        while (collectionContract != null)
-                        {
-                            DataContract itemContract = GetDataContract(GetSurrogatedType(collectionContract.ItemType));
-                            if (itemContract.StableName == qname)
-                            {
-                                dataContract = itemContract;
-                                break;
-                            }
-                            collectionContract = itemContract as CollectionDataContract;
-                        }
-                    }
+                        dataContract = ResolveDataContractFromRootDataContract(qname);
                 }
             }
             return dataContract;
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected virtual DataContract? ResolveDataContractFromRootDataContract(XmlQualifiedName typeQName)
+        {
+            CollectionDataContract? collectionContract = rootTypeDataContract as CollectionDataContract;
+            while (collectionContract != null)
+            {
+                DataContract itemContract = GetDataContract(GetSurrogatedType(collectionContract.ItemType));
+                if (itemContract.StableName == typeQName)
+                {
+                    return itemContract;
+                }
+                collectionContract = itemContract as CollectionDataContract;
+            }
+            return null;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

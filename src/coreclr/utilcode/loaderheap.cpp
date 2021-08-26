@@ -954,10 +954,8 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
 
     m_Options                    = 0;
 
-#ifndef CROSSGEN_COMPILE
     if (fMakeExecutable)
         m_Options                |= LHF_EXECUTABLE;
-#endif // CROSSGEN_COMPILE
 
     m_pFirstFreeBlock            = NULL;
 
