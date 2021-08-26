@@ -28,7 +28,7 @@
   <Target Name="CopyDependencyToCoreRoot">
     <MSBuild Projects="@(CoreRootProjectFiles)"
              Targets="CopyDependencyToCoreRoot"
-             Properties="Language=C#;RuntimeIdentifier=$(PackageRID)" />
+             Properties="Language=C#;RuntimeIdentifier=$(OutputRid)" />
 
   </Target>
 </Project>
