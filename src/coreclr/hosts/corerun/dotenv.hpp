@@ -20,7 +20,7 @@ private:
 public:
     dotenv() = default;
     dotenv(pal::string_t dotEnvFilePath, std::istream& contents);
-    void load_into_current_process();
+    void load_into_current_process() const;
 
     static void self_test();
 };

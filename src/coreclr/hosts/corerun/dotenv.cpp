@@ -6,6 +6,7 @@
 #include <locale>
 #include <codecvt>
 #include <sstream>
+#include <algorithm>
 
 namespace
 {
@@ -27,13 +28,20 @@ namespace
 
         file.get(next);
 
-        while(!file.eof() && isspace(next))
+        while (!file.eof() && isspace(next))
         {
             file.get(next);
         }
         if (file.eof())
         {
             return true;
+        }
+
+        if (next == '#')
+        {
+            // This is a comment, skip the line
+            std::string comment;
+            std::getline(file, comment);
         }
 
         bool key_quoted = next == '\'';
@@ -64,6 +72,11 @@ namespace
             if (isspace(next))
             {
                 continue;
+            }
+            if (next == '#')
+            {
+                // Comments in names are unsupported
+                return false;
             }
             if (!isalnum(next) && next != '_')
             {
@@ -98,6 +111,12 @@ namespace
     bool check_endline(char current_char, int next_char)
     {
         return current_char == '\n' || (current_char == '\r' && next_char == '\n');
+    }
+
+    void trim_from_end(std::string &s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](char ch) {
+            return !isspace(ch);
+        }).base(), s.end());
     }
 
     std::string read_substitution(std::istream& file, std::function<std::string(std::string)> substitution_lookup)
@@ -155,6 +174,12 @@ namespace
         {
             var_value.append(read_substitution(file, substitution_lookup));
         }
+        else if (next == '#')
+        {
+            // The rest of the line is a comment. Therefore, the value of the environment variable is empty.
+            var_value_out = var_value;
+            return true;
+        }
         else if (!is_quoted)
         {
             var_value.push_back(next);
@@ -166,6 +191,16 @@ namespace
             if (file.eof())
             {
                 break;
+            }
+            else if (!is_quoted && next == '#')
+            {
+                // This is a comment, skip the rest of the line
+                // and trim any whitespace from the end.
+                std::string comment;
+                std::getline(file, comment);
+                trim_from_end(var_value);
+                var_value_out = var_value;
+                return true;
             }
             else if (!is_quoted && check_endline(next, file.eof() ? '\0' : file.peek()))
             {
@@ -298,7 +333,7 @@ dotenv::dotenv(pal::string_t dotEnvFilePath, std::istream& contents)
     }
 }
 
-void dotenv::load_into_current_process()
+void dotenv::load_into_current_process() const
 {
     for (std::pair<std::string, std::string>&& env_vars : _environmentVariables)
     {
@@ -309,7 +344,6 @@ void dotenv::load_into_current_process()
 }
 
 #define THROW_IF_FALSE(stmt) if (!(stmt)) throw W(#stmt);
-#define THROW_IF_TRUE(stmt) if (stmt) throw W(#stmt);
 
 void dotenv::self_test()
 {
@@ -320,6 +354,31 @@ void dotenv::self_test()
     }
     {
         std::istringstream contents{"Foo=Bar"};
+        dotenv env{ W("empty.env"), contents };
+        THROW_IF_FALSE(env._environmentVariables["Foo"] == "Bar");
+    }
+    {
+        std::istringstream contents{"Foo=Bar # Comment"};
+        dotenv env{ W("empty.env"), contents };
+        THROW_IF_FALSE(env._environmentVariables["Foo"] == "Bar");
+    }
+    {
+        std::istringstream contents{"Foo=\"Bar # Not a comment\""};
+        dotenv env{ W("empty.env"), contents };
+        THROW_IF_FALSE(env._environmentVariables["Foo"] == "Bar # Not a comment");
+    }
+    {
+        std::istringstream contents{"Foo=# Comment"};
+        dotenv env{ W("empty.env"), contents };
+        THROW_IF_FALSE(env._environmentVariables["Foo"] == "");
+    }
+    {
+        std::istringstream contents{"Foo# Comment"};
+        dotenv env{ W("empty.env"), contents };
+        THROW_IF_FALSE(env._environmentVariables.size() == 0);
+    }
+    {
+        std::istringstream contents{"Foo=Bar#Comment"};
         dotenv env{ W("empty.env"), contents };
         THROW_IF_FALSE(env._environmentVariables["Foo"] == "Bar");
     }
@@ -418,6 +477,18 @@ void dotenv::self_test()
         dotenv env{ W("empty.env"), contents };
         THROW_IF_FALSE(env._environmentVariables["Foo"] == "Bar");
         THROW_IF_FALSE(env._environmentVariables["Foo2"] == "Baz42");
+    }
+    {
+        std::istringstream contents{"Foo=Bar#Comment\r\nFoo2=Baz"};
+        dotenv env{ W("empty.env"), contents };
+        THROW_IF_FALSE(env._environmentVariables["Foo"] == "Bar");
+        THROW_IF_FALSE(env._environmentVariables["Foo2"] == "Baz");
+    }
+    {
+        std::istringstream contents{"Foo=Bar#Comment\nFoo2=Baz"};
+        dotenv env{ W("empty.env"), contents };
+        THROW_IF_FALSE(env._environmentVariables["Foo"] == "Bar");
+        THROW_IF_FALSE(env._environmentVariables["Foo2"] == "Baz");
     }
     {
         std::istringstream contents{"Foo=Bar\nFoo2=Baz42"};
