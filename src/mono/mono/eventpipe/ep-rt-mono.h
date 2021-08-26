@@ -1859,7 +1859,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 	if (!main_assembly || !main_assembly->image)
 		return "";
 
-	const char *assembly_name = m_image_get_assembly_name (mono_assembly_get_main ()->image);
+	const char *assembly_name = m_image_get_assembly_name (main_assembly->image);
 	if (!assembly_name)
 		return "";
 
