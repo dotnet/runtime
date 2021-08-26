@@ -433,12 +433,10 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(_WasmAssembliesInternal)" Exclude="@(_AOT_AssembliesForceToInterpret)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
-
-      <_AOT_InternalForceInterpretAssemblies Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
 
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
 
@@ -452,8 +450,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <_AOTCompilerCacheFile>$(_WasmIntermediateOutputPath)aot_compiler_cache.json</_AOTCompilerCacheFile>
     </PropertyGroup>
 
-    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_InternalForceInterpretAssemblies->Count()) > 0"
-           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as _InternalForceInterpret: @(_AOT_InternalForceInterpretAssemblies)" />
+    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_AssembliesForceToInterpret) > 0"
+           Text="Builing in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. %40(_AOT_AssembliesForceToInterpret): @(_AOT_AssembliesForceToInterpret)" />
 
     <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
 
@@ -501,12 +499,11 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </MonoAOTCompiler>
 
     <ItemGroup>
-      <!-- Add back the interpreter-only assemblies -->
-      <_WasmAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
-
-      <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
       <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
       <_BitcodeFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
+
+      <!-- Add back the interpreter-only assemblies -->
+      <_WasmAssembliesInternal Include="@(_AOT_AssembliesForceToInterpret)" />
     </ItemGroup>
   </Target>
 
@@ -517,11 +514,11 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </PropertyGroup>
 
     <ItemGroup>
+      <_AOTedAssemblies Include="@(_WasmAssembliesInternal)" Exclude="@(_AOT_AssembliesForceToInterpret)" />
       <_WasmStrippedAssemblies
-              Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'"
-              Include="@(_WasmAssembliesInternal->'$(_WasmStrippedAssembliesPath)%(FileName)%(Extension)')"
+              Include="@(_AOTedAssemblies)"
               OriginalPath="%(_WasmAssembliesInternal.Identity)" />
-      <_WasmInterpOnlyAssembly Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+      <_WasmInterpOnlyAssembly Include="@(_AOT_AssembliesForceToInterpret)" />
     </ItemGroup>
 
     <!-- Run mono-cil-strip on the assemblies -->
