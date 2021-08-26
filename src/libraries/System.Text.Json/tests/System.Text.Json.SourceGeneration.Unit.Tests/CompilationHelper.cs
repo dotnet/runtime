@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -272,7 +273,15 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Array.Sort(actualMessages);
             Array.Sort(expectedMessages);
 
-            Assert.Equal(expectedMessages, actualMessages);
+            if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Equal(expectedMessages, actualMessages);
+            }
+            else
+            {
+                // for non-English runs, just compare the number of messages are the same
+                Assert.Equal(expectedMessages.Length, actualMessages.Length);
+            }
         }
     }
 }
