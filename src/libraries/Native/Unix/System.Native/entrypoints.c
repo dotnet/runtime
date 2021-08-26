@@ -261,6 +261,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetGroups)
     DllImportEntry(SystemNative_GetEnv)
     DllImportEntry(SystemNative_GetEnviron)
+    DllImportEntry(SystemNative_FreeEnviron)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

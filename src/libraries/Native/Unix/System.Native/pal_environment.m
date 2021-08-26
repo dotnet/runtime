@@ -14,6 +14,8 @@ char* SystemNative_GetEnv(const char* variable)
     return getenv(variable);
 }
 
+static char *empty_key_value_pair = "=";
+
 static void get_environ_helper(const void *key, const void *value, void *context)
 {
     char ***temp_environ_ptr = (char***)context;
@@ -30,6 +32,12 @@ static void get_environ_helper(const void *key, const void *value, void *context
         key_value_pair[utf8_key_length] = '=';
         strcpy(key_value_pair + utf8_key_length + 1, utf8_value);
     }
+    else
+    {
+        // In case of failed allocation add pointer to preallocated entry. This is
+        // ignored on the managed side and skipped over in SystemNative_FreeEnviron.
+        key_value_pair = empty_key_value_pair;
+    }
 
     **temp_environ_ptr = key_value_pair;
     (*temp_environ_ptr)++;
@@ -37,28 +45,34 @@ static void get_environ_helper(const void *key, const void *value, void *context
 
 char** SystemNative_GetEnviron()
 {
-    static char **environ;
+    char **temp_environ;
+    char **temp_environ_ptr;
 
-    // NOTE: This function is not thread-safe and it leaks one array per process. This is
-    // intentional behavior and the managed code is expected to take additional guards
-    // around this call.
-    if (environ == NULL)
+    CFDictionaryRef environment = (CFDictionaryRef)[[NSProcessInfo processInfo] environment];
+    int count = CFDictionaryGetCount(environment);
+    temp_environ = (char **)malloc((count + 1) * sizeof(char *));
+    if (temp_environ != NULL)
     {
-        int environ_size = 1;
-        char **temp_environ;
-        char **temp_environ_ptr;
-
-        CFDictionaryRef environment = (CFDictionaryRef)[[NSProcessInfo processInfo] environment];
-        int count = CFDictionaryGetCount(environment);
-        temp_environ = (char **)malloc((count + 1) * sizeof(char *));
-        if (temp_environ != NULL)
-        {
-            temp_environ_ptr = temp_environ;
-            CFDictionaryApplyFunction(environment, get_environ_helper, &temp_environ_ptr);
-            *temp_environ_ptr = NULL;
-            environ = temp_environ;
-        }
+        temp_environ_ptr = temp_environ;
+        CFDictionaryApplyFunction(environment, get_environ_helper, &temp_environ_ptr);
+        *temp_environ_ptr = NULL;
     }
 
-    return environ;
+    return temp_environ;
+}
+
+void SystemNative_FreeEnviron(char** environ)
+{
+    if (environ != NULL)
+    {
+        for (char** environ_ptr = environ; *environ_ptr != NULL; environ_ptr++)
+        {
+            if (*environ_ptr != empty_key_value_pair)
+            {
+                free(*environ_ptr);
+            }
+        }
+
+        free(environ);
+    }
 }

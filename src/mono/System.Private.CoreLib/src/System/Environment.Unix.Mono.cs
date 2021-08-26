@@ -92,16 +92,20 @@ namespace System
             IntPtr block = Interop.Sys.GetEnviron();
             if (block != IntPtr.Zero)
             {
+                IntPtr blockIterator = block;
+
                 // Per man page, environment variables come back as an array of pointers to strings
                 // Parse each pointer of strings individually
-                while (ParseEntry(block, out string? key, out string? value))
+                while (ParseEntry(blockIterator, out string? key, out string? value))
                 {
                     if (key != null && value != null)
                         results.Add(key, value);
 
                     // Increment to next environment variable entry
-                    block += IntPtr.Size;
+                    blockIterator += IntPtr.Size;
                 }
+
+                Interop.Sys.FreeEnviron(block);
             }
 
             return results;
