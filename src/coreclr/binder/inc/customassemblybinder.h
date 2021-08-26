@@ -21,7 +21,6 @@ public:
     // AssemblyBinder functions
     //-------------------------------------------------------------------------
     HRESULT BindUsingPEImage(PEImage* pPEImage,
-        BOOL fIsNativeImage,
         BINDER_SPACE::Assembly** ppAssembly);
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,

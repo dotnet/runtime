@@ -63,9 +63,6 @@ typedef DPTR(class TypeEquivalenceHashTable) PTR_TypeEquivalenceHashTable;
 class TypeEquivalenceHashTable : public NgenHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>
 {
     friend class NgenHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     enum EquivalenceMatch

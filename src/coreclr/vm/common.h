@@ -116,7 +116,6 @@ typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
 typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;
 typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
-typedef VPTR(class CompilationDomain)   PTR_CompilationDomain;
 typedef DPTR(class ComPlusCallMethodDesc) PTR_ComPlusCallMethodDesc;
 typedef VPTR(class DebugInterface)      PTR_DebugInterface;
 typedef DPTR(class Dictionary)          PTR_Dictionary;
@@ -297,7 +296,6 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "fixuppointer.h"
 #include "stgpool.h"
 
 // src/vm

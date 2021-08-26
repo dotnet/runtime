@@ -295,40 +295,6 @@ struct ZapInlineeRecord
 
 typedef DPTR(ZapInlineeRecord) PTR_ZapInlineeRecord;
 
-
-// This type knows how to serialize and deserialize the inline tracking map format within an NGEN image. See
-// above for a description of the format.
-class PersistentInlineTrackingMapNGen
-{
-private:
-    PTR_Module m_module;
-
-    PTR_ZapInlineeRecord m_inlineeIndex;
-    DWORD m_inlineeIndexSize;
-
-    PTR_BYTE m_inlinersBuffer;
-    DWORD m_inlinersBufferSize;
-
-public:
-
-    PersistentInlineTrackingMapNGen(Module *module)
-        : m_module(dac_cast<PTR_Module>(module))
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(module != NULL);
-    }
-
-    // runtime deserialization
-    COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
-
-private:
-    Module *GetModuleByIndex(DWORD index);
-
-};
-
-typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
-
-
 // This type knows how to serialize and deserialize the inline tracking map format within an R2R image. See
 // above for a description of the format.
 #ifdef FEATURE_READYTORUN

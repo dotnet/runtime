@@ -34,7 +34,7 @@ BOOL ParamTypeDesc::Verify() {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    _ASSERTE(m_TemplateMT.IsNull() || GetTemplateMethodTableInternal()->SanityCheck());
+    _ASSERTE((m_TemplateMT == NULL) || GetTemplateMethodTableInternal()->SanityCheck());
     _ASSERTE(!GetTypeParam().IsNull());
     _ASSERTE(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
                               GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
@@ -90,14 +90,6 @@ PTR_Module TypeDesc::GetLoaderModule()
         }
         return retVal;
     }
-}
-
-
-PTR_Module TypeDesc::GetZapModule()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return ExecutionManager::FindZapModule(dac_cast<TADDR>(this));
 }
 
 PTR_BaseDomain TypeDesc::GetDomain()
@@ -711,7 +703,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
         ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
 
         // Fully load the template method table
-        if (!pPTD->m_TemplateMT.IsNull())
+        if (pPTD->m_TemplateMT != NULL)
         {
             pPTD->GetTemplateMethodTableInternal()->DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
         }

@@ -24,7 +24,6 @@
 #include "eehash.h"
 #include "contractimpl.h"
 #include "generics.h"
-#include "fixuppointer.h"
 #include "gcinfotypes.h"
 
 /*
@@ -100,9 +99,6 @@ enum class WellKnownAttribute : DWORD;
 //
 struct InterfaceInfo_t
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     // Method table of the interface
     PTR_MethodTable m_pMethodTable;
@@ -252,7 +248,7 @@ typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 struct GenericsStaticsInfo
 {
     // Pointer to field descs for statics
-    RelativePointer<PTR_FieldDesc> m_pFieldDescs;
+    PTR_FieldDesc       m_pFieldDescs;
 
     // Method table ID for statics
     SIZE_T              m_DynamicTypeID;
@@ -592,13 +588,6 @@ public:
     // then they will all belong to the same domain.
     PTR_BaseDomain GetDomain();
 
-    // Does this immediate item live in an NGEN module?
-    BOOL IsZapped();
-
-    // For types that are part of an ngen-ed assembly this gets the
-    // Module* that contains this methodtable.
-    PTR_Module GetZapModule();
-
     // For regular, non-constructed types, GetLoaderModule() == GetModule()
     // For constructed types (e.g. int[], Dict<int[], C>) the hash table through which a type
     // is accessed lives in a "loader module". The rule for determining the loader module must ensure
@@ -885,8 +874,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !IsPreRestored() &&
-            (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey) != 0;
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey) != 0;
     }
 
     // Actually do the restore actions on the method table
@@ -898,11 +886,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // If we are prerestored then we are considered a restored methodtable.
-        // Note that IsPreRestored is always false for jitted code.
-        if (IsPreRestored())
-            return TRUE;
-
         return !(GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
     }
     inline BOOL IsRestored()
@@ -910,11 +893,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         g_IBCLogger.LogMethodTableAccess(this);
-
-        // If we are prerestored then we are considered a restored methodtable.
-        // Note that IsPreRestored is always false for jitted code.
-        if (IsPreRestored())
-            return TRUE;
 
         return !(GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
     }
@@ -952,8 +930,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (IsPreRestored())
-            || (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded) == 0;
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
@@ -1012,10 +989,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         g_IBCLogger.LogMethodTableAccess(this);
-
-        // Fast path for zapped images
-        if (IsPreRestored())
-            return CLASS_LOADED;
 
         DWORD dwFlags = GetWriteableData()->m_dwFlags;
 
@@ -1233,9 +1206,6 @@ public:
     // code with the given MT because of generics.
     PTR_MethodTable GetCanonicalMethodTable();
 
-    // Returns fixup if canonical method table needs fixing up, NULL otherwise
-    TADDR GetCanonicalMethodTableFixup();
-
     //-------------------------------------------------------------------
     // Accessing methods by slot number
     //
@@ -1254,17 +1224,7 @@ public:
         WRAPPER_NO_CONTRACT;
         CONSISTENCY_CHECK(slotNumber < GetNumVtableSlots());
 
-        TADDR pSlot = GetSlotPtrRaw(slotNumber);
-        if (slotNumber < GetNumVirtuals())
-        {
-            return VTableIndir2_t::GetValueMaybeNullAtPtr(pSlot);
-        }
-        else if (IsZapped() && slotNumber >= GetNumVirtuals())
-        {
-            // Non-virtual slots in NGened images are relative pointers
-            return RelativePointer<PCODE>::GetValueAtPtr(pSlot);
-        }
-        return *dac_cast<PTR_PCODE>(pSlot);
+        return *GetSlotPtrRaw(slotNumber);
     }
 
     // Special-case for when we know that the slot number corresponds
@@ -1275,49 +1235,38 @@ public:
 
         CONSISTENCY_CHECK(slotNum < GetNumVirtuals());
         // Virtual slots live in chunks pointed to by vtable indirections
-
-        DWORD index = GetIndexOfVtableIndirection(slotNum);
-        TADDR base = dac_cast<TADDR>(&(GetVtableIndirections()[index]));
-        DPTR(VTableIndir2_t) baseAfterInd = VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum);
-        return VTableIndir2_t::GetValueMaybeNullAtPtr(dac_cast<TADDR>(baseAfterInd));
+        return *(GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum));
     }
 
-    TADDR GetSlotPtrRaw(UINT32 slotNum)
+    PTR_PCODE GetSlotPtrRaw(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
         CONSISTENCY_CHECK(slotNum < GetNumVtableSlots());
 
         if (slotNum < GetNumVirtuals())
         {
-            // Virtual slots live in chunks pointed to by vtable indirections
-            DWORD index = GetIndexOfVtableIndirection(slotNum);
-            TADDR base = dac_cast<TADDR>(&(GetVtableIndirections()[index]));
-            DPTR(VTableIndir2_t) baseAfterInd = VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum);
-            return dac_cast<TADDR>(baseAfterInd);
+             // Virtual slots live in chunks pointed to by vtable indirections
+            return GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum);
         }
         else if (HasSingleNonVirtualSlot())
         {
             // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member,
             // except when there is only one in which case it lives in the optional member itself
             _ASSERTE(slotNum == GetNumVirtuals());
-            return GetNonVirtualSlotsPtr();
+            return dac_cast<PTR_PCODE>(GetNonVirtualSlotsPtr());
         }
         else
         {
             // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member
             _ASSERTE(HasNonVirtualSlotsArray());
             g_IBCLogger.LogMethodTableNonVirtualSlotsAccess(this);
-            return dac_cast<TADDR>(GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals()));
+            return GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals());
         }
     }
 
-    TADDR GetSlotPtr(UINT32 slotNum)
+    PTR_PCODE GetSlotPtr(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
-
-        // Slots in NGened images are relative pointers
-        CONSISTENCY_CHECK(!IsZapped());
-
         return GetSlotPtrRaw(slotNum);
     }
 
@@ -1376,8 +1325,8 @@ public:
     #define VTABLE_SLOTS_PER_CHUNK 8
     #define VTABLE_SLOTS_PER_CHUNK_LOG2 3
 
-    typedef PlainPointer<PCODE> VTableIndir2_t;
-    typedef PlainPointer<DPTR(VTableIndir2_t)> VTableIndir_t;
+    typedef PCODE VTableIndir2_t;
+    typedef DPTR(VTableIndir2_t) VTableIndir_t;
 
     static DWORD GetIndexOfVtableIndirection(DWORD slotNum);
     static DWORD GetStartSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
@@ -1446,7 +1395,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(HasNonVirtualSlotsArray());
-        return RelativePointer<PTR_PCODE>::GetValueAtPtr(GetNonVirtualSlotsPtr());
+        return *dac_cast<PTR_PTR_PCODE>(GetNonVirtualSlotsPtr());
     }
 
 #ifndef DACCESS_COMPILE
@@ -1455,8 +1404,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasNonVirtualSlotsArray());
 
-        RelativePointer<PCODE *> *pRelPtr = (RelativePointer<PCODE *> *)GetNonVirtualSlotsPtr();
-        pRelPtr->SetValue(slots);
+        *(PCODE **)GetNonVirtualSlotsPtr() = slots;
     }
 
     inline void SetHasSingleNonVirtualSlot()
@@ -1845,9 +1793,6 @@ public:
     //-------------------------------------------------------------------
     // THE METHOD TABLE PARENT (SUPERCLASS/BASE CLASS)
     //
-#define PARENT_MT_FIXUP_OFFSET ((SSIZE_T)offsetof(MethodTable, m_pParentMethodTable))
-    typedef IndirectPointer<PTR_MethodTable> ParentMT_t;
-
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1866,50 +1811,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         PRECONDITION(IsParentMethodTablePointerValid());
-        return ReadPointerMaybeNull(this, &MethodTable::m_pParentMethodTable, GetFlagHasIndirectParent());
-    }
-
-    inline static PTR_VOID GetParentMethodTableOrIndirection(PTR_VOID pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        return PTR_VOID(*PTR_TADDR(dac_cast<TADDR>(pMT) + offsetof(MethodTable, m_pParentMethodTable)));
-    }
-
-    inline static BOOL IsParentMethodTableTagged(PTR_MethodTable pMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-        TADDR base = dac_cast<TADDR>(pMT) + offsetof(MethodTable, m_pParentMethodTable);
-        return pMT->m_pParentMethodTable.IsTaggedIndirect(base, pMT->GetFlagHasIndirectParent(), PARENT_MT_FIXUP_OFFSET);
-    }
-
-    bool GetFlagHasIndirectParent()
-    {
-        return false;
+        return m_pParentMethodTable;
     }
 
 #ifndef DACCESS_COMPILE
-    inline ParentMT_t * GetParentMethodTablePointerPtr()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pParentMethodTable;
-    }
-
-    inline bool IsParentMethodTableIndirectPointerMaybeNull()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pParentMethodTable.IsIndirectPtrMaybeNullIndirect(GetFlagHasIndirectParent(), PARENT_MT_FIXUP_OFFSET);
-    }
-
-    inline bool IsParentMethodTableIndirectPointer()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pParentMethodTable.IsIndirectPtrIndirect(GetFlagHasIndirectParent(), PARENT_MT_FIXUP_OFFSET);
-    }
-
     inline MethodTable ** GetParentMethodTableValuePtr()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pParentMethodTable.GetValuePtrIndirect(GetFlagHasIndirectParent(), PARENT_MT_FIXUP_OFFSET);
+        return &m_pParentMethodTable;
     }
 #endif // !DACCESS_COMPILE
 
@@ -1930,8 +1839,7 @@ public:
     void SetParentMethodTable (MethodTable *pParentMethodTable)
     {
         LIMITED_METHOD_CONTRACT;
-        PRECONDITION(!IsParentMethodTableIndirectPointerMaybeNull());
-        m_pParentMethodTable.SetValueMaybeNull(pParentMethodTable);
+        m_pParentMethodTable = pParentMethodTable;
 #ifdef _DEBUG
         GetWriteableDataForWrite_NoLogging()->SetParentMethodTablePointerValid();
 #endif
@@ -1977,12 +1885,12 @@ public:
     inline void SetClass(EEClass *pClass)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pEEClass.SetValue(pClass);
+        m_pEEClass = pClass;
     }
 
     inline void SetCanonicalMethodTable(MethodTable * pMT)
     {
-        m_pCanonMT.SetValue((TADDR)pMT | MethodTable::UNION_METHODTABLE);
+        m_pCanonMT = (TADDR)pMT | MethodTable::UNION_METHODTABLE;
     }
 #endif
 
@@ -2283,9 +2191,7 @@ public:
         _ASSERTE(HasDispatchMapSlot());
 
         TADDR pSlot = GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-
-        RelativePointer<DispatchMap *> *pRelPtr = (RelativePointer<DispatchMap *> *)pSlot;
-        pRelPtr->SetValue(pDispatchMap);
+        *(DispatchMap **)pSlot = pDispatchMap;
     }
 #endif // !DACCESS_COMPILE
 
@@ -2462,7 +2368,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasGenericsStaticsInfo());
-        return ReadPointerMaybeNull((GenericsStaticsInfo *)GetGenericsStaticsInfo(), &GenericsStaticsInfo::m_pFieldDescs);
+        return GetGenericsStaticsInfo()->m_pFieldDescs;
     }
 
     BOOL HasCrossModuleGenericStaticsInfo()
@@ -2778,15 +2684,15 @@ public:
     // must have a dictionary entry. On the other hand, for instantiations shared with Dict<string,double> the opposite holds.
     //
 
-    typedef PlainPointer<PTR_Dictionary> PerInstInfoElem_t;
-    typedef PlainPointer<DPTR(PerInstInfoElem_t)> PerInstInfo_t;
+    typedef PTR_Dictionary PerInstInfoElem_t;
+    typedef DPTR(PerInstInfoElem_t) PerInstInfo_t;
 
     // Return a pointer to the per-instantiation information. See field itself for comments.
     DPTR(PerInstInfoElem_t) GetPerInstInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(HasPerInstInfo());
-        return ReadPointer(this, &MethodTable::m_pPerInstInfo);
+        return m_pPerInstInfo;
     }
     BOOL HasPerInstInfo()
     {
@@ -2794,11 +2700,6 @@ public:
         return GetFlag(enum_flag_HasPerInstInfo) && !IsArray();
     }
 #ifndef DACCESS_COMPILE
-    static inline bool IsPerInstInfoRelative()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return decltype(m_pPerInstInfo)::isRelative;
-    }
     static inline DWORD GetOffsetOfPerInstInfo()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2807,7 +2708,7 @@ public:
     void SetPerInstInfo(PerInstInfoElem_t *pPerInstInfo)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pPerInstInfo.SetValue(pPerInstInfo);
+        m_pPerInstInfo = pPerInstInfo;
     }
     void SetDictInfo(WORD numDicts, WORD numTyPars)
     {
@@ -2851,13 +2752,6 @@ public:
 
     inline BOOL HasFieldsWhichMustBeInited();
 
-    inline BOOL IsPreRestored() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return FALSE;
-    }
-
     //-------------------------------------------------------------------
     // THE EXPOSED CLASS OBJECT
     //
@@ -2883,7 +2777,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pMTWriteableData);
-        m_pWriteableData.SetValue(pMTWriteableData);
+        m_pWriteableData = pMTWriteableData;
     }
 #endif
 
@@ -2897,7 +2791,7 @@ public:
     inline PTR_Const_MethodTableWriteableData GetWriteableData_NoLogging() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ReadPointer(this, &MethodTable::m_pWriteableData);
+        return MethodTable::m_pWriteableData;
     }
 
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
@@ -2910,7 +2804,7 @@ public:
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ReadPointer(this, &MethodTable::m_pWriteableData);
+        return MethodTable::m_pWriteableData;
     }
 
     //-------------------------------------------------------------------
@@ -3571,7 +3465,7 @@ private:
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
-        enum_flag_HasIndirectParent           = 0x00800000, // m_pParentMethodTable has double indirection
+        enum_flag_Unused_1                    = 0x00800000,
 
         enum_flag_ContainsPointers            = 0x01000000,
 
@@ -3619,10 +3513,8 @@ private:
         enum_flag_HasNonVirtualSlots        = 0x0008,
         enum_flag_HasModuleOverride         = 0x0010,
 
-        enum_flag_IsZapped                  = 0x0020, // This could be fetched from m_pLoaderModule if we run out of flags
-
-        enum_flag_IsPreRestored             = 0x0040, // Class does not need restore
-                                                      // This flag is set only for NGENed classes (IsZapped is true)
+        // unused                           = 0x0020,
+        // unused                           = 0x0040,
 
         enum_flag_HasModuleDependencies     = 0x0080,
 
@@ -3732,29 +3624,22 @@ private:
     LPCUTF8         debug_m_szClassName;
 #endif //_DEBUG
 
-    // On Linux ARM is a RelativeFixupPointer. Otherwise,
-    // Parent PTR_MethodTable if enum_flag_HasIndirectParent is not set. Pointer to indirection cell
-    // if enum_flag_enum_flag_HasIndirectParent is set. The indirection is offset by offsetof(MethodTable, m_pParentMethodTable).
-    // It allows casting helpers to go through parent chain natually. Casting helper do not need need the explicit check
-    // for enum_flag_HasIndirectParentMethodTable.
-    ParentMT_t m_pParentMethodTable;
+    PTR_MethodTable m_pParentMethodTable;
 
-    RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
+    PTR_Module      m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
 
-    PlainPointer<PTR_MethodTableWriteableData> m_pWriteableData;
+    PTR_MethodTableWriteableData m_pWriteableData;
 
     // The value of lowest two bits describe what the union contains
     enum LowBits {
         UNION_EECLASS      = 0,    //  0 - pointer to EEClass. This MethodTable is the canonical method table.
-        UNION_INVALID      = 1,    //  1 - not used
-        UNION_METHODTABLE  = 2,    //  2 - pointer to canonical MethodTable.
-        UNION_INDIRECTION  = 3     //  3 - pointer to indirection cell that points to canonical MethodTable.
-    };                             //      (used only if FEATURE_PREJIT is defined)
-    static const TADDR UNION_MASK = 3;
+        UNION_METHODTABLE  = 1,    //  1 - pointer to canonical MethodTable.
+    };
+    static const TADDR UNION_MASK = 1;
 
     union {
-        PlainPointer<DPTR(EEClass)> m_pEEClass;
-        PlainPointer<TADDR> m_pCanonMT;
+        DPTR(EEClass) m_pEEClass;
+        TADDR m_pCanonMT;
     };
 
     __forceinline static LowBits union_getLowBits(TADDR pCanonMT)
@@ -3783,7 +3668,7 @@ private:
     public:
     union
     {
-        PlainPointer<PTR_InterfaceInfo>   m_pInterfaceMap;
+        PTR_InterfaceInfo   m_pInterfaceMap;
         TADDR               m_pMultipurposeSlot2;
     };
 
@@ -3923,10 +3808,10 @@ private:
         return GetFlag(enum_flag_HasModuleOverride);
     }
 
-    DPTR(RelativeFixupPointer<PTR_Module>) GetModuleOverridePtr()
+    DPTR(PTR_Module) GetModuleOverridePtr()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<DPTR(RelativeFixupPointer<PTR_Module>)>(GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets));
+        return dac_cast<DPTR(PTR_Module)>(GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets));
     }
 
     void SetModule(Module * pModule);
