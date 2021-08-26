@@ -216,6 +216,8 @@ internal static partial class Interop
             SafeSslContextHandle? newCtxHandle = null;
             SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
             bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption &&
+                    sslAuthenticationOptions.CertificateContext != null &&
+                    sslAuthenticationOptions.CertificateContext.SslContexts != null &&
                     sslAuthenticationOptions.CipherSuitesPolicy == null &&
                     (!sslAuthenticationOptions.IsServer ||
                     (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0));
@@ -258,88 +260,79 @@ internal static partial class Interop
                 protocols = SslProtocols.Tls13;
             }
 
-            if (sslAuthenticationOptions.CertificateContext != null && cacheSslContext)
+            if (cacheSslContext)
             {
-               sslAuthenticationOptions.CertificateContext.SslContexts.TryGetValue(sslAuthenticationOptions.EnabledSslProtocols, out sslCtxHandle);
+               sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(sslAuthenticationOptions.EnabledSslProtocols, out sslCtxHandle);
             }
 
             if (sslCtxHandle == null)
             {
                 // We did not get SslContext from cache
                 sslCtxHandle = newCtxHandle = AllocateSslContext(credential, sslAuthenticationOptions);
+
+                if (cacheSslContext && sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(sslAuthenticationOptions.EnabledSslProtocols, newCtxHandle))
+                {
+                    newCtxHandle = null;
+                }
             }
 
+            GCHandle alpnHandle = default;
             try
             {
-                GCHandle alpnHandle = default;
-                try
+                sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions.IsServer);
+                Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.Create");
+                if (sslHandle.IsInvalid)
                 {
-                    sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions.IsServer);
-                    Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.Create");
-                    if (sslHandle.IsInvalid)
+                    sslHandle.Dispose();
+                    throw CreateSslException(SR.net_allocate_ssl_context_failed);
+                }
+
+                if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+                {
+                    if (sslAuthenticationOptions.IsServer)
                     {
-                        sslHandle.Dispose();
-                        throw CreateSslException(SR.net_allocate_ssl_context_failed);
+                        alpnHandle = GCHandle.Alloc(sslAuthenticationOptions.ApplicationProtocols);
+                        Interop.Ssl.SslSetData(sslHandle, GCHandle.ToIntPtr(alpnHandle));
+                        sslHandle.AlpnHandle = alpnHandle;
                     }
-
-                    if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+                    else
                     {
-                        if (sslAuthenticationOptions.IsServer)
+                        if (Interop.Ssl.SslSetAlpnProtos(sslHandle, sslAuthenticationOptions.ApplicationProtocols) != 0)
                         {
-                            alpnHandle = GCHandle.Alloc(sslAuthenticationOptions.ApplicationProtocols);
-                            Interop.Ssl.SslSetData(sslHandle, GCHandle.ToIntPtr(alpnHandle));
-                            sslHandle.AlpnHandle = alpnHandle;
-                        }
-                        else
-                        {
-                            if (Interop.Ssl.SslSetAlpnProtos(sslHandle, sslAuthenticationOptions.ApplicationProtocols) != 0)
-                            {
-                                throw CreateSslException(SR.net_alpn_config_failed);
-                            }
-                        }
-                    }
-
-                    if (!sslAuthenticationOptions.IsServer)
-                    {
-                        // The IdnMapping converts unicode input into the IDNA punycode sequence.
-                        string punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
-
-                        // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
-                        if (!Ssl.SslSetTlsExtHostName(sslHandle, punyCode))
-                        {
-                            Crypto.ErrClearError();
-                        }
-                    }
-
-                    if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
-                    {
-                        unsafe
-                        {
-                            Ssl.SslSetVerifyPeer(sslHandle);
+                            throw CreateSslException(SR.net_alpn_config_failed);
                         }
                     }
                 }
-                catch
-                {
-                    if (alpnHandle.IsAllocated)
-                    {
-                        alpnHandle.Free();
-                    }
 
-                    throw;
+                if (!sslAuthenticationOptions.IsServer)
+                {
+                    // The IdnMapping converts unicode input into the IDNA punycode sequence.
+                    string punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
+
+                    // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
+                    if (!Ssl.SslSetTlsExtHostName(sslHandle, punyCode))
+                    {
+                        Crypto.ErrClearError();
+                    }
                 }
+
+                if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
+                {
+                    Ssl.SslSetVerifyPeer(sslHandle);
+                }
+            }
+            catch
+            {
+                if (alpnHandle.IsAllocated)
+                {
+                    alpnHandle.Free();
+                }
+
+                throw;
             }
             finally
             {
-                if (newCtxHandle != null)
-                {
-                    // We allocated new context and we want to cache
-                    if (!cacheSslContext || sslAuthenticationOptions.CertificateContext?.SslContexts == null ||
-                        !sslAuthenticationOptions.CertificateContext.SslContexts.TryAdd(sslAuthenticationOptions.EnabledSslProtocols, newCtxHandle))
-                    {
-                        newCtxHandle.Dispose();
-                    }
-                }
+                newCtxHandle?.Dispose();
             }
 
             return sslHandle;
