@@ -6,6 +6,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#if HAVE_NSGETENVIRON
+#include <crt_externs.h>
+#endif
 
 char* SystemNative_GetEnv(const char* variable)
 {
@@ -14,6 +17,10 @@ char* SystemNative_GetEnv(const char* variable)
 
 char** SystemNative_GetEnviron()
 {
+#if HAVE_NSGETENVIRON
+    return *(_NSGetEnviron());
+#else
     extern char **environ;
     return environ;
+#endif
 }

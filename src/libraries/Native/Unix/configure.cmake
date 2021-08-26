@@ -1047,6 +1047,15 @@ endif ()
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 
+if (HAVE_CRT_EXTERNS_H)
+    check_c_source_compiles(
+    "
+    #include <crt_externs.h>
+    int main(void) { char** e = *(_NSGetEnviron()); return 0; }
+    "
+    HAVE_NSGETENVIRON)
+endif()
+
 set (CMAKE_REQUIRED_LIBRARIES)
 
 check_c_source_compiles(
