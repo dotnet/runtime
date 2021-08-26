@@ -72,15 +72,60 @@ internal static partial class Interop
                  }
 
                  return s_disableTlsResume != 0;
-             }
-         }
+            }
+        }
+
+        // This is helper function to adjust requested protocols based on CipherSuitePolicy and system capability.
+        private static SslProtocols CalculateEffectiveProtocols(SslAuthenticationOptions sslAuthenticationOptions)
+        {
+            SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
+
+            if (!Interop.Ssl.Tls13Supported)
+            {
+                if (protocols != SslProtocols.None &&
+                    CipherSuitesPolicyPal.WantsTls13(protocols))
+                {
+                    protocols = protocols & (~SslProtocols.Tls13);
+                }
+            }
+            else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
+                CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+            {
+                if (protocols == SslProtocols.None)
+                {
+                    // we are using default settings but cipher suites policy says that TLS 1.3
+                    // is not compatible with our settings (i.e. we requested no encryption or disabled
+                    // all TLS 1.3 cipher suites)
+                    protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+                }
+                else
+                {
+                    // user explicitly asks for TLS 1.3 but their policy is not compatible with TLS 1.3
+                    throw new SslException(
+                        SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                }
+            }
+
+            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+            {
+                if (!CipherSuitesPolicyPal.WantsTls13(protocols))
+                {
+                    // We cannot provide neither TLS 1.3 or non TLS 1.3, user disabled all cipher suites
+                    throw new SslException(
+                        SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                }
+
+                protocols = SslProtocols.Tls13;
+            }
+
+            return protocols;
+        }
 
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
-        internal static SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
+        internal static SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols)
         {
             SafeX509Handle? certHandle = credential.CertHandle;
             SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
-            SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
 
             // Always use SSLv23_method, regardless of protocols.  It supports negotiating to the highest
             // mutually supported version and can thus handle any of the set protocols, and we then use
@@ -91,44 +136,6 @@ internal static partial class Interop
                 if (sslCtx.IsInvalid)
                 {
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
-                }
-
-                if (!Interop.Ssl.Tls13Supported)
-                {
-                    if (protocols != SslProtocols.None &&
-                        CipherSuitesPolicyPal.WantsTls13(protocols))
-                    {
-                        protocols = protocols & (~SslProtocols.Tls13);
-                    }
-                }
-                else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
-                    CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
-                {
-                    if (protocols == SslProtocols.None)
-                    {
-                        // we are using default settings but cipher suites policy says that TLS 1.3
-                        // is not compatible with our settings (i.e. we requested no encryption or disabled
-                        // all TLS 1.3 cipher suites)
-                        protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
-                    }
-                    else
-                    {
-                        // user explicitly asks for TLS 1.3 but their policy is not compatible with TLS 1.3
-                        throw new SslException(
-                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-                    }
-                }
-
-                if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
-                {
-                    if (!CipherSuitesPolicyPal.WantsTls13(protocols))
-                    {
-                        // We cannot provide neither TLS 1.3 or non TLS 1.3, user disabled all cipher suites
-                        throw new SslException(
-                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-                    }
-
-                    protocols = SslProtocols.Tls13;
                 }
 
                 Ssl.SslCtxSetProtocolOptions(sslCtx, protocols);
@@ -214,7 +221,7 @@ internal static partial class Interop
             SafeSslHandle? sslHandle = null;
             SafeSslContextHandle? sslCtxHandle = null;
             SafeSslContextHandle? newCtxHandle = null;
-            SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
+            SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
             bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption &&
                     sslAuthenticationOptions.CertificateContext != null &&
                     sslAuthenticationOptions.CertificateContext.SslContexts != null &&
@@ -222,55 +229,17 @@ internal static partial class Interop
                     (!sslAuthenticationOptions.IsServer ||
                     (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0));
 
-            if (!Interop.Ssl.Tls13Supported)
-            {
-                if (protocols != SslProtocols.None &&
-                    CipherSuitesPolicyPal.WantsTls13(protocols))
-                {
-                    protocols &= ~SslProtocols.Tls13;
-                }
-            }
-            else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
-                CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
-            {
-                if (protocols == SslProtocols.None)
-                {
-                    // we are using default settings but cipher suites policy says that TLS 1.3
-                    // is not compatible with our settings (i.e. we requested no encryption or disabled
-                    // all TLS 1.3 cipher suites)
-                    protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
-                }
-                else
-                {
-                    // user explicitly asks for TLS 1.3 but their policy is not compatible with TLS 1.3
-                    throw new SslException(
-                        SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-                }
-            }
-
-            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
-            {
-                if (!CipherSuitesPolicyPal.WantsTls13(protocols))
-                {
-                    // We cannot provide neither TLS 1.3 or non TLS 1.3, user disabled all cipher suites
-                    throw new SslException(
-                        SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-                }
-
-                protocols = SslProtocols.Tls13;
-            }
-
             if (cacheSslContext)
             {
-               sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(sslAuthenticationOptions.EnabledSslProtocols, out sslCtxHandle);
+               sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols, out sslCtxHandle);
             }
 
             if (sslCtxHandle == null)
             {
                 // We did not get SslContext from cache
-                sslCtxHandle = newCtxHandle = AllocateSslContext(credential, sslAuthenticationOptions);
+                sslCtxHandle = newCtxHandle = AllocateSslContext(credential, sslAuthenticationOptions, protocols);
 
-                if (cacheSslContext && sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(sslAuthenticationOptions.EnabledSslProtocols, newCtxHandle))
+                if (cacheSslContext && sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols, newCtxHandle))
                 {
                     newCtxHandle = null;
                 }
