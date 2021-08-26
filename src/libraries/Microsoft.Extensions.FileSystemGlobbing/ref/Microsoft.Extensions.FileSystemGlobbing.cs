@@ -220,7 +220,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         public override void PopDirectory() { }
         public sealed override void PushDirectory(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directory) { }
         public override Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase file) { throw null; }
-        protected bool TestMatchingGroup(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase? value) { throw null; }
+        protected bool TestMatchingGroup(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase value) { throw null; }
         protected bool TestMatchingSegment(string value) { throw null; }
         public partial struct FrameData
         {
