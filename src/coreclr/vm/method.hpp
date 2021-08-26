@@ -1619,8 +1619,6 @@ public:
 
     TADDR GetFixupList();
 
-    BOOL IsRestored_NoLogging();
-    BOOL IsRestored();
     void CheckRestore(ClassLoadLevel level = CLASS_LOADED);
 
     //================================================================
@@ -2561,13 +2559,6 @@ public:
         {
             m_dwExtendedFlags |= nomdStubNeedsCOMStarted;
         }
-    }
-
-    bool IsRestored()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return true;
     }
 
     bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
@@ -3597,16 +3588,8 @@ inline BOOL MethodDesc::SanityCheck()
     }
     CONTRACTL_END;
 
-
-    // Do a simple sanity test
-    if (IsRestored())
-    {
-        // If it looks good, do a more intensive sanity test. We don't care about the result,
-        // we just want it to not AV.
-        return GetMethodTable() == m_pDebugMethodTable && this->GetModule() != NULL;
-    }
-
-    return TRUE;
+    // Sanity test - we don't care about the result we just want it to not AV.
+    return GetMethodTable() == m_pDebugMethodTable && this->GetModule() != NULL;
 }
 
 #endif // _DEBUG

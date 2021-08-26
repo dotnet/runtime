@@ -2088,10 +2088,6 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
 
     MethodDesc *pMD = FunctionIdToMethodDesc(functionId);
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMD->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     if (pToken)
     {
         *pToken = pMD->GetMemberDef();
@@ -2135,10 +2131,6 @@ HRESULT ValidateParametersForGetCodeInfo(
     {
         return E_INVALIDARG;
     }
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethodDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
 
     if (pMethodDesc->HasClassOrMethodInstantiation() && pMethodDesc->IsTypicalMethodDefinition())
     {
@@ -4529,12 +4521,6 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
 
 #ifdef DEBUGGING_SUPPORTED
 
-    MethodDesc *pMethodDesc = FunctionIdToMethodDesc(functionId);
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethodDesc ->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     if (g_pDebugInterface == NULL)
     {
         return CORPROF_E_DEBUGGING_DISABLED;
@@ -4547,6 +4533,7 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
 
     memcpy_s(rgNewILMapEntries, sizeof(COR_IL_MAP) * cILMapEntries, rgILMapEntries, sizeof(COR_IL_MAP) * cILMapEntries);
 
+    MethodDesc *pMethodDesc = FunctionIdToMethodDesc(functionId);
     return g_pDebugInterface->SetILInstrumentedCodeMap(pMethodDesc,
                                                        fStartJit,
                                                        cILMapEntries,
@@ -4834,11 +4821,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
     }
 
     MethodDesc *pMDesc = (MethodDesc *) functionId;
-    if (!pMDesc->IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
     MethodTable *pMT = pMDesc->GetMethodTable();
     if (!pMT->IsRestored())
     {
@@ -5451,7 +5433,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
     MethodTable* pMethodTable = typeHandle.GetMethodTable();
 
     if (pMethodTable == NULL || !pMethodTable->IsRestored() ||
-        pMethodDesc == NULL || !pMethodDesc->IsRestored())
+        pMethodDesc == NULL)
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -6052,10 +6034,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
         return E_INVALIDARG;
     }
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc ->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     //
     // Find the exact instantiation of this function.
     //
@@ -6260,10 +6238,6 @@ HRESULT ProfToEEInterfaceImpl::IsFunctionDynamic(FunctionID functionId, BOOL *is
         return E_INVALIDARG;
     }
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     //
     // Fill in the pHasNoMetadata, if desired.
     //
@@ -6418,11 +6392,6 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
     {
         return E_INVALIDARG;
     }
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
 
     if (!pMethDesc->IsNoMetadata())
         return E_INVALIDARG;

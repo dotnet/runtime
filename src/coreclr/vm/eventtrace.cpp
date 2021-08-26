@@ -5659,7 +5659,7 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
                 for (; iter.IsValid(); iter.Next())
                 {
                     MethodDesc *pMD = (MethodDesc *)(iter.GetMethodDesc());
-                    if(pMD && pMD->IsRestored() && pMD->GetMethodTable_NoLogging() == pMethodTable)
+                    if(pMD && pMD->GetMethodTable_NoLogging() == pMethodTable)
                         ETW::MethodLog::SendMethodEvent(pMD, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
                 }
             }
@@ -6506,10 +6506,6 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
     if(pMethodDesc) {
         pModule = pMethodDesc->GetModule_NoLogging();
 
-        if(!pMethodDesc->IsRestored()) {
-                return;
-        }
-
         SendMethodDetailsEvent(pMethodDesc);
 
         bool bIsDynamicMethod = pMethodDesc->IsDynamicMethod();
@@ -6594,24 +6590,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
 
     if (pMethodDesc == NULL)
         return;
-
-    if(!pMethodDesc->IsRestored())
-    {
-        // Forcibly restoring ngen methods can cause all sorts of deadlocks and contract violations
-        // These events are therefore put under the private provider
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context,
-                                        TRACE_LEVEL_INFORMATION,
-                                        CLR_PRIVATENGENFORCERESTORE_KEYWORD))
-        {
-            PERMANENT_CONTRACT_VIOLATION(GCViolation, ReasonNonShippingCode);
-            pMethodDesc->CheckRestore();
-        }
-        else
-        {
-            return;
-        }
-    }
-
 
     if(bIsRundownProvider)
     {

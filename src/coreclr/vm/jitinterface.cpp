@@ -3957,7 +3957,7 @@ void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
     MethodDesc *pMD = (MethodDesc*) methHnd;
 
     // MethodDescs returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(pMD->IsRestored() && pMD->GetMethodTable()->IsFullyLoaded());
+    _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -8498,7 +8498,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
 
     // Method better be from a fully loaded class
-    _ASSERTE(pBaseMD->IsRestored() && pBaseMT->IsFullyLoaded());
+    _ASSERTE(pBaseMT->IsFullyLoaded());
 
     //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
     _ASSERTE(!pBaseMD->HasMethodInstantiation());
@@ -8647,8 +8647,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             return false;
         }
     }
-
-    _ASSERTE(pDevirtMD->IsRestored());
 
     // Determine the exact class.
     //

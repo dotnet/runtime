@@ -712,7 +712,6 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
 BOOL MethodDesc::IsTypicalSharedInstantiation()
 {
     WRAPPER_NO_CONTRACT;
-    PRECONDITION(IsRestored_NoLogging());
 
     Instantiation classInst = GetMethodTable()->GetInstantiation();
     if (!ClassLoader::IsTypicalSharedInstantiation(classInst))
@@ -789,7 +788,6 @@ BOOL MethodDesc::ContainsGenericVariables()
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
 
@@ -1281,7 +1279,6 @@ WORD MethodDesc::GetComSlot()
         THROWS;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
 
@@ -1800,7 +1797,6 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
         GC_TRIGGERS;
 
         PRECONDITION(IsVtableMethod());
-        PRECONDITION(IsRestored_NoLogging());
         PRECONDITION(HasMethodInstantiation());
         PRECONDITION(!ContainsGenericVariables());
         POSTCONDITION(CheckPointer(RETVAL));
@@ -1898,7 +1894,6 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
         THROWS;
         GC_TRIGGERS;
 
-        PRECONDITION(IsRestored_NoLogging());
         PRECONDITION(IsVtableMethod());
         POSTCONDITION(RETVAL != NULL);
     }
@@ -2199,16 +2194,13 @@ BOOL MethodDesc::IsPointingToPrestub()
     {
         if (IsVersionableWithVtableSlotBackpatch())
         {
-            return !IsRestored() || GetMethodEntryPoint() == GetTemporaryEntryPoint();
+            return GetMethodEntryPoint() == GetTemporaryEntryPoint();
         }
         return TRUE;
     }
 
     if (!HasPrecode())
         return FALSE;
-
-    if (!IsRestored())
-        return TRUE;
 
     return GetPrecode()->IsPointingToPrestub();
 }
@@ -2354,7 +2346,6 @@ BOOL MethodDesc::MayHaveNativeCode()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
 
@@ -2401,7 +2392,7 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FAULT;
 
-    if (!IsRestored() || !GetMethodTable()->IsFullyLoaded())
+    if (!GetMethodTable()->IsFullyLoaded())
     {
         g_IBCLogger.LogMethodDescAccess(this);
 
@@ -2478,20 +2469,6 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     }
 
     RETURN(NULL); // Not found
-}
-
-//*******************************************************************************
-BOOL MethodDesc::IsRestored_NoLogging()
-{
-    LIMITED_METHOD_CONTRACT;
-    return TRUE;
-}
-//*******************************************************************************
-BOOL MethodDesc::IsRestored()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-    return TRUE;
 }
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
