@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//define LAUNCH_DEBUGGER
+//#define LAUNCH_DEBUGGER
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -20,20 +20,16 @@ namespace System.Text.Json.SourceGeneration
     [Generator]
     public sealed partial class JsonSourceGenerator : IIncrementalGenerator
     {
-        private const string SystemTextJsonSourceGenerationName = "System.Text.Json.SourceGeneration";
-        private const string IJsonOnSerializedFullName = "System.Text.Json.Serialization.IJsonOnSerialized";
-        private const string IJsonOnSerializingFullName = "System.Text.Json.Serialization.IJsonOnSerializing";
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-
-            var classDeclarations = context.SyntaxProvider
+            IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
                 .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (s, _) => Parser.GetSemanticTargetForGeneration(s))
                 .Where(static c => c is not null);
 
-            var compilationAndClasses = context.CompilationProvider.Combine(classDeclarations.Collect());
+            IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
+                context.CompilationProvider.Combine(classDeclarations.Collect());
 
-            context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Left, source.Right, spc));
+            context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
         private void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> contextClasses, SourceProductionContext context)
