@@ -722,7 +722,7 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                children = new[] { config as IConfigurationSection };
+                children = new[] { (config as IConfigurationSection)! };
             }
 
             return children;
