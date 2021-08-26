@@ -44805,13 +44805,9 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
         gc_heap::proceed_with_gc_p = gc_heap::should_proceed_with_gc();
         gc_heap::disable_preemptive (cooperative_mode);
         if (gc_heap::proceed_with_gc_p)
-        {
             pGenGCHeap->settings.init_mechanisms();
-        }
         else
-        {
             gc_heap::update_collection_counts_for_no_gc();
-        }
 
 #endif //!MULTIPLE_HEAPS
     }

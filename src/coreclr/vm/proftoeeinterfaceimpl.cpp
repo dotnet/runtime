@@ -758,7 +758,23 @@ void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
     } CONTRACT_END;
+
     CrstHolder holder(&mutex);
+
+    // Because the segment/region are added to the heap before they are reported to the profiler,
+    // it is possible that the region is added to the heap, a racing GenerationTable refresh happened,
+    // that refresh would contain the new region, and then it get reported again here. 
+    // This check will make sure we never add duplicated record to the table.
+    for (ULONG i = 0; i < count; i++)
+    {
+        if (genDescTable[i].rangeStart == rangeStart)
+        {
+            _ASSERTE (genDescTable[i].generation == generation);
+            _ASSERTE (genDescTable[i].rangeEnd == rangeEnd);
+            _ASSERTE (genDescTable[i].rangeEndReserved == rangeEndReserved);
+            RETURN;
+        }
+    }
     AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
     RETURN;
 }
@@ -875,6 +891,7 @@ void GenerationTable::Refresh()
     // the ranges by calling GenWalkFunc for each one
     CrstHolder holder(&mutex);    
     IGCHeap *hp = GCHeapUtilities::GetGCHeap();
+    this->count = 0;
     hp->DiagDescrGenerations(GenWalkFunc, this);
 }
 
