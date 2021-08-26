@@ -129,14 +129,14 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_CONVSIGASVARARG          = 0x00000001,
     NDIRECTSTUB_FL_BESTFIT                  = 0x00000002,
     NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR    = 0x00000004,
-    NDIRECTSTUB_FL_NGENEDSTUB               = 0x00000008,
+    // unused                               = 0x00000008,
     NDIRECTSTUB_FL_DELEGATE                 = 0x00000010,
     NDIRECTSTUB_FL_DOHRESULTSWAPPING        = 0x00000020,
     NDIRECTSTUB_FL_REVERSE_INTEROP          = 0x00000040,
 #ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_COM                      = 0x00000080,
 #endif // FEATURE_COMINTEROP
-    NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING   = 0x00000100,
+    // unused                               = 0x00000100,
     NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL     = 0x00000200,
     NDIRECTSTUB_FL_STRUCT_MARSHAL           = 0x00000400,
     NDIRECTSTUB_FL_UNMANAGED_CALLI          = 0x00000800,
@@ -197,11 +197,9 @@ enum ILStubTypes
 inline bool SF_IsVarArgStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CONVSIGASVARARG)); }
 inline bool SF_IsBestFit               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_BESTFIT)); }
 inline bool SF_IsThrowOnUnmappableChar (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR)); }
-inline bool SF_IsNGENedStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_NGENEDSTUB)); }
 inline bool SF_IsDelegateStub          (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_DELEGATE)); }
 inline bool SF_IsHRESULTSwapping       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_DOHRESULTSWAPPING)); }
 inline bool SF_IsReverseStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)); }
-inline bool SF_IsNGENedStubForProfiling(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING)); }
 inline bool SF_IsDebuggableStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL)); }
 inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_UNMANAGED_CALLI)); }
 inline bool SF_IsStubWithCctorTrigger  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_TRIGGERCCTOR)); }
