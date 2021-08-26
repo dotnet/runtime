@@ -90,7 +90,6 @@ class JITInlineTrackingMap;
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #endif
 
-typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
 //
@@ -1112,13 +1111,6 @@ private:
     ILStubCache                *m_pILStubCache;
 
     ULONG m_DefaultDllImportSearchPathsAttributeValue;
-
-#ifdef PROFILING_SUPPORTED_DATA
-     // a wrapper for the underlying PEFile metadata emitter which validates that the metadata edits being
-     // made are supported modifications to the type system
-     VolatilePtr<IMetaDataEmit> m_pValidatedEmitter;
-#endif
-
 public:
     LookupMap<PTR_MethodTable>::Iterator EnumerateTypeDefs()
     {
@@ -1469,10 +1461,6 @@ protected:
 
         return m_file->GetEmitter();
     }
-
-#if defined(PROFILING_SUPPORTED)
-    IMetaDataEmit *GetValidatedEmitter();
-#endif
 
     IMetaDataImport2 *GetRWImporter()
     {
@@ -1966,13 +1954,6 @@ public:
 
     HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
 
-    #define NUM_PROPERTY_SET_HASHES 4
-    BOOL MightContainMatchingProperty(mdProperty tkProperty, ULONG nameHash);
-
-private:
-    ArrayDPTR(BYTE)    m_propertyNameSet;
-    DWORD              m_nPropertyNameSet;
-
 public:
 
     // Debugger stuff
@@ -1998,8 +1979,8 @@ public:
     void NotifyProfilerLoadFinished(HRESULT hr);
 #endif // PROFILING_SUPPORTED
 
-    BOOL HasNativeOrReadyToRunInlineTrackingMap();
-    COUNT_T GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+    BOOL HasReadyToRunInlineTrackingMap();
+    COUNT_T GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
@@ -2032,21 +2013,7 @@ public:
     LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_file->GetDebugName(); }
 #endif
 
-    BOOL HasNativeImage()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
-
-    PEImageLayout * GetNativeImage()
-    {
-        // Should never get here
-        PRECONDITION(HasNativeImage());
-        return NULL;
-    }
-
-    BOOL            HasNativeOrReadyToRunImage();
-    PEImageLayout * GetNativeOrReadyToRunImage();
+    PEImageLayout * GetReadyToRunImage();
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
@@ -2420,9 +2387,6 @@ private:
     };
 
     DebuggerSpecificData  m_debuggerSpecificData;
-
-    // This is a compressed read only copy of m_inlineTrackingMap, which is being saved to NGEN image.
-    PTR_PersistentInlineTrackingMapNGen m_pPersistentInlineTrackingMapNGen;
 
 #if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;

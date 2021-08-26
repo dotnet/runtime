@@ -149,9 +149,6 @@ static void ValidatePEFileMachineType(PEFile *peFile)
     if (peFile->IsResource())
         return;    // PEFiles for resource assemblies don't cache the machine type.
 
-    if (peFile->HasNativeImage())
-        return;    // If it passed the native binder, no need to do the check again esp. at the risk of inviting an IL page-in.
-
     DWORD peKind;
     DWORD actualMachineType;
     peFile->GetPEKindAndMachine(&peKind, &actualMachineType);
@@ -213,7 +210,7 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
     }
 
 #if !defined(TARGET_64BIT)
-    if (!HasNativeImage() && !GetILimage()->Has32BitNTHeaders())
+    if (!GetILimage()->Has32BitNTHeaders())
     {
         // Tried to load 64-bit assembly on 32-bit platform.
         EEFileLoadException::Throw(this, COR_E_BADIMAGEFORMAT, NULL);
@@ -221,10 +218,7 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
 #endif
 
     // We need contents now
-    if (!HasNativeImage())
-    {
-        EnsureImageOpened();
-    }
+    EnsureImageOpened();
 
     // Since we couldn't call LoadLibrary, we must be an IL only image
     // or the image may still contain unfixed up stuff
@@ -449,9 +443,7 @@ CHECK PEFile::CheckLoaded(BOOL bAllowNativeSkip/*=TRUE*/)
     }
     CONTRACT_CHECK_END;
 
-    CHECK(IsLoaded(bAllowNativeSkip)
-          // We are allowed to skip LoadLibrary in most cases for ngen'ed IL only images
-          || (bAllowNativeSkip && HasNativeImage() && IsILOnly()));
+    CHECK(IsLoaded(bAllowNativeSkip));
 
     CHECK_OK;
 }
@@ -702,7 +694,7 @@ void PEFile::OpenEmitter()
 }
 
 
-void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=FALSE*/)
+void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor)
 {
     CONTRACTL
     {
@@ -726,7 +718,7 @@ void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=
         m_pEmitter = NULL;
     }
 
-    if (m_pMDImport != NULL && (!bKeepNativeData || !HasNativeImage()))
+    if (m_pMDImport != NULL)
     {
         m_pMDImport->Release();
         m_pMDImport=NULL;
@@ -1006,9 +998,8 @@ PEAssembly::PEAssembly(
     if (system)
         m_flags |= PEFILE_SYSTEM;
 
-    // If we have no native image, we require a mapping for the file.
-    if (!HasNativeImage() || !IsILOnly())
-        EnsureImageOpened();
+    // We require a mapping for the file.
+    EnsureImageOpened();
 
     // Open metadata eagerly to minimize failure windows
     if (pEmit == NULL)

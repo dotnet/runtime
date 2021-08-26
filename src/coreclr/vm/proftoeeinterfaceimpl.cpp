@@ -3932,38 +3932,25 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     DWORD dwRet = 0;
 
     // First, set the flags that are dependent on which PEImage / layout we look at
-    // inside the Module (disk/ngen/flat)
-
-    if (pModule->HasNativeImage())
-    {
-        // NGEN
-        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-
-        // Intentionally not checking for flat, since NGEN PEImages never have flat
-        // layouts.
-    }
-    else
-    {
+    // inside the Module (disk/flat)
 #ifdef FEATURE_READYTORUN
-        // pModule->HasNativeImage() returns false for ReadyToRun images
-        if (pModule->IsReadyToRun())
-        {
-            // Ready To Run
-            dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-        }
+    if (pModule->IsReadyToRun())
+    {
+        // Ready To Run
+        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
+    }
 #endif
-        // Not NGEN or ReadyToRun.
-        if (pPEFile->HasOpenedILimage())
+    // Not NGEN or ReadyToRun.
+    if (pPEFile->HasOpenedILimage())
+    {
+        PEImage * pILImage = pPEFile->GetOpenedILimage();
+        if (pILImage->IsFile())
         {
-            PEImage * pILImage = pPEFile->GetOpenedILimage();
-            if (pILImage->IsFile())
-            {
-                dwRet |= COR_PRF_MODULE_DISK;
-            }
-            if (pPEFile->GetLoadedIL()->IsFlat())
-            {
-                dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
-            }
+            dwRet |= COR_PRF_MODULE_DISK;
+        }
+        if (pPEFile->GetLoadedIL()->IsFlat())
+        {
+            dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
         }
     }
 
@@ -4220,7 +4207,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     IUnknown *pObj = NULL;
     EX_TRY
     {
-        pObj = pModule->GetValidatedEmitter();
+        pObj = pModule->GetEmitter();
     }
     EX_CATCH_HRESULT_NO_ERRORINFO(hr);
 
@@ -9020,9 +9007,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        "**PROF: GetObjectGeneration 0x%p.\n",
                                        objectId));
 
-    
+
     _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
-    
+
 
     // Announce we are using the generation table now
     CounterHolder genTableLock(&s_generationTableLock);
@@ -10220,7 +10207,7 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    if (!inlinersModule->HasNativeOrReadyToRunInlineTrackingMap())
+    if (!inlinersModule->HasReadyToRunInlineTrackingMap())
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -10233,14 +10220,14 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
     EX_TRY
     {
         // Trying to use static buffer
-        COUNT_T methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
+        COUNT_T methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
 
         // If static buffer is not enough, allocate an array.
         if (methodsAvailable > staticBufferSize)
         {
             DWORD dynamicBufferSize = methodsAvailable;
             dynamicBuffer = methodsBuffer = new MethodInModule[dynamicBufferSize];
-            methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
+            methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
             if (methodsAvailable > dynamicBufferSize)
             {
                 _ASSERTE(!"Ngen image inlining info changed, this shouldn't be possible.");

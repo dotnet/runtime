@@ -2932,21 +2932,6 @@ FCIMPL1(IMDInternalImport*, ModuleHandle::GetMetadataImport, ReflectModuleBaseOb
 }
 FCIMPLEND
 
-BOOL QCALLTYPE ModuleHandle::ContainsPropertyMatchingHash(QCall::ModuleHandle pModule, INT32 tkProperty, ULONG hash)
-{
-    QCALL_CONTRACT;
-
-    BOOL fContains = TRUE;
-
-    BEGIN_QCALL;
-
-    fContains = pModule->MightContainMatchingProperty(tkProperty, hash);
-
-    END_QCALL;
-
-    return fContains;
-}
-
 void QCALLTYPE ModuleHandle::ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;

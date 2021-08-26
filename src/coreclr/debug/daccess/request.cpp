@@ -1507,7 +1507,7 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
         PEFile *pPEFile = mt->GetModule()->GetFile();
-        if (pPEFile->GetNativeImage() == NULL && pPEFile->GetILimage() == NULL)
+        if (pPEFile->GetILimage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -1647,11 +1647,6 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Address = addr;
     ModuleData->File = HOST_CDADDR(pModule->GetFile());
     COUNT_T metadataSize = 0;
-    if (pModule->GetFile()->HasNativeImage())
-    {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)PTR_TO_TADDR(pModule->GetFile()->GetLoadedNative()->GetBase());
-    }
-    else
     if (!pModule->GetFile()->IsDynamic())
     {
         ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetFile()->GetIJWBase();
@@ -1776,7 +1771,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
         PEFile *pPEFile = pMT->GetModule()->GetFile();
-        if (pPEFile->GetNativeImage() == NULL && pPEFile->GetILimage() == NULL)
+        if (pPEFile->GetILimage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -2120,9 +2115,7 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base)
     PEFile* pPEFile = PTR_PEFile(TO_TADDR(addr));
 
     // More fields later?
-    if (pPEFile->HasNativeImage())
-        *base = TO_CDADDR(PTR_TO_TADDR(pPEFile->GetLoadedNative()->GetBase()));
-    else if (!pPEFile->IsDynamic())
+    if (!pPEFile->IsDynamic())
         *base = TO_CDADDR(pPEFile->GetIJWBase());
     else
         *base = NULL;

@@ -243,7 +243,7 @@ public:
     // ------------------------------------------------------------
 
     BOOL IsIbcOptimized();
-    BOOL IsILImageReadyToRun();
+    BOOL IsReadyToRun();
     WORD GetSubsystem();
     mdToken GetEntryPointToken(
 #ifdef _DEBUG
@@ -317,24 +317,13 @@ public:
     // Does the loader support using a native image for this file?
     // Some implementation restrictions prevent native images from being used
     // in some cases.
-    BOOL HasNativeOrReadyToRunImage();
-    BOOL HasNativeImage();
     PTR_PEImageLayout GetLoaded();
-    PTR_PEImageLayout GetLoadedNative();
     PTR_PEImageLayout GetLoadedIL();
     PTR_PEImageLayout GetAnyILWithRef();        //AddRefs!
     IStream * GetPdbStream();
     void ClearPdbStream();
     BOOL IsLoaded(BOOL bAllowNativeSkip=TRUE) ;
     BOOL IsPtrInILImage(PTR_CVOID data);
-
-#ifdef DACCESS_COMPILE
-    PEImage *GetNativeImage()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return NULL;
-    }
-#endif
 
     // ------------------------------------------------------------
     // Resource access
@@ -379,7 +368,7 @@ protected:
     void OpenImporter();
     void OpenEmitter();
 
-    void ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData=FALSE);
+    void ReleaseMetadataInterfaces(BOOL bDestructor);
 
 
     friend class Module;
@@ -389,7 +378,6 @@ protected:
 #endif // DACCESS_COMPILE
 
     friend class ClrDataAccess;
-    BOOL HasNativeImageMetadata();
 
     // ------------------------------------------------------------
     // Instance fields

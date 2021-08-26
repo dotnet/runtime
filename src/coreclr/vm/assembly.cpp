@@ -1824,7 +1824,7 @@ BOOL Assembly::IsInstrumentedHelper()
         return false;
 
     // We must have a native image in order to perform IBC instrumentation
-    if (!GetManifestFile()->HasNativeOrReadyToRunImage())
+    if (!GetManifestFile()->IsReadyToRun())
         return false;
 
     // @Consider using the full name instead of the short form
