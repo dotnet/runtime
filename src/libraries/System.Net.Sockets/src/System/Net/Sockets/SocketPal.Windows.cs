@@ -857,8 +857,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    socketCount =
-                        Interop.Winsock.select(
+                    socketCount = Interop.Winsock.select(
                             0,
                             mode == SelectMode.SelectRead ? fileDescriptorSet : null,
                             mode == SelectMode.SelectWrite ? fileDescriptorSet : null,
@@ -936,21 +935,19 @@ namespace System.Net.Sockets
                 {
                     if (microseconds != -1)
                     {
-                        Interop.Winsock.TimeValue IOwait = default;
-                        MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
+                        Interop.Winsock.TimeValue timeout = default;
+                        MicrosecondsToTimeValue((long)(uint)microseconds, ref timeout);
 
-                        socketCount =
-                            Interop.Winsock.select(
+                        socketCount = Interop.Winsock.select(
                                 0, // ignored value
                                 readPtr,
                                 writePtr,
                                 errPtr,
-                                ref IOwait);
+                                ref timeout);
                     }
                     else
                     {
-                        socketCount =
-                            Interop.Winsock.select(
+                        socketCount = Interop.Winsock.select(
                                 0, // ignored value
                                 readPtr,
                                 writePtr,
@@ -1097,16 +1094,15 @@ namespace System.Net.Sockets
                 IntPtr rawHandle = handle.DangerousGetHandle();
                 IntPtr* writefds = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
                 IntPtr* exceptfds = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
-                Interop.Winsock.TimeValue IOwait = default;
-                MicrosecondsToTimeValue(0, ref IOwait);
+                Interop.Winsock.TimeValue timeout = default;
+                MicrosecondsToTimeValue(0, ref timeout);
 
-                int socketCount=
-                        Interop.Winsock.select(
+                int socketCount = Interop.Winsock.select(
                             0,
                             null,
                             writefds,
                             exceptfds,
-                            ref IOwait);
+                            ref timeout);
 
                 if ((SocketError)socketCount == SocketError.SocketError)
                 {
