@@ -11,35 +11,35 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders.Physical.Tests
 {
-    public class ExclusionFilterTests : IDisposable
+    public class ExclusionFilterTests : FileCleanupTestBase
     {
-        private readonly DisposableFileSystem _fileSystem = new DisposableFileSystem();
-
-        public void Dispose()
-        {
-            _fileSystem.Dispose();
-        }
-
         [Theory]
         [MemberData(nameof(Combinations))]
         public void FiltersExcludedFiles(string filename, FileAttributes attributes, ExclusionFilters filters, bool excluded)
         {
-            var fileInfo = new FileInfo(Path.Combine(_fileSystem.RootPath, filename));
-            _fileSystem.CreateFile(fileInfo);
+            using var fileSystem = new TempDirectory(GetTestFilePath());
+            var fileInfo = new FileInfo(Path.Combine(fileSystem.Path, filename));
+
+            using (var stream = fileInfo.Create())
+            using (var writer = new StreamWriter(stream))
+            {
+                writer.Write("temp");
+            }
+
             fileInfo.Attributes = attributes;
 
-            Assert.Equal(excluded, FileSystemInfoHelper.IsExcluded(_fileSystem.GetFile(filename), filters));
+            Assert.Equal(excluded, FileSystemInfoHelper.IsExcluded(fileInfo, filters));
         }
 
         [Theory]
         [MemberData(nameof(Combinations))]
         public void FiltersExcludedDirectories(string dirname, FileAttributes attributes, ExclusionFilters filters, bool excluded)
         {
-            var dirInfo = new DirectoryInfo(Path.Combine(_fileSystem.RootPath, dirname));
+            var dirInfo = new DirectoryInfo(Path.Combine(GetTestFilePath(), dirname));
             dirInfo.Create();
             dirInfo.Attributes = attributes;
 
-            Assert.Equal(excluded, FileSystemInfoHelper.IsExcluded(_fileSystem.GetDirectory(dirname), filters));
+            Assert.Equal(excluded, FileSystemInfoHelper.IsExcluded(dirInfo, filters));
         }
 
         public static TheoryData Combinations
