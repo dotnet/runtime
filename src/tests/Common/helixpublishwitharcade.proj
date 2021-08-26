@@ -333,7 +333,7 @@
       <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
       <PayloadDirectory>%(FullPath)</PayloadDirectory>
       <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
-      <RuntimeTestApks>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.apk', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</RuntimeTestApks>
+      <RuntimeTestApks>$([System.String]::Join($(PayloadsRootDirectory), $([System.IO.Directory]::GetFiles(%(FullPath), '*.apk', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</RuntimeTestApks>
     </Payloads>
 
     <Payloads Update="@(Payloads)">
