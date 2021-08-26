@@ -11,6 +11,9 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxAddExtraChainCert")]
+        internal static extern bool SslCtxAddExtraChainCert(SafeSslContextHandle ctx, SafeX509Handle x509);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxUseCertificate")]
         internal static extern int SslCtxUseCertificate(SafeSslContextHandle ctx, SafeX509Handle certPtr);
 

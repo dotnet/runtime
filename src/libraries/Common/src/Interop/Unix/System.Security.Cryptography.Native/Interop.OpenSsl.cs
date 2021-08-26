@@ -85,10 +85,10 @@ internal static partial class Interop
             // Always use SSLv23_method, regardless of protocols.  It supports negotiating to the highest
             // mutually supported version and can thus handle any of the set protocols, and we then use
             // SetProtocolOptions to ensure we only allow the ones requested.
-            SafeSslContextHandle innerContext = Ssl.SslCtxCreate(Ssl.SslMethods.SSLv23_method);
+            SafeSslContextHandle sslCtx = Ssl.SslCtxCreate(Ssl.SslMethods.SSLv23_method);
             try
             {
-                if (innerContext.IsInvalid)
+                if (sslCtx.IsInvalid)
                 {
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
@@ -102,7 +102,7 @@ internal static partial class Interop
                     }
                 }
                 else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
-                            CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+                    CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
                 {
                     if (protocols == SslProtocols.None)
                     {
@@ -131,14 +131,12 @@ internal static partial class Interop
                     protocols = SslProtocols.Tls13;
                 }
 
-                // Configure allowed protocols. It's ok to use DangerousGetHandle here without AddRef/Release as we just
-                // create the handle, it's rooted by the using, no one else has a reference to it, etc.
-                Ssl.SslCtxSetProtocolOptions(innerContext, protocols);
+                Ssl.SslCtxSetProtocolOptions(sslCtx, protocols);
 
                 if (sslAuthenticationOptions.EncryptionPolicy != EncryptionPolicy.RequireEncryption)
                 {
                     // Sets policy and security level
-                    if (!Ssl.SetEncryptionPolicy(innerContext, sslAuthenticationOptions.EncryptionPolicy))
+                    if (!Ssl.SetEncryptionPolicy(sslCtx, sslAuthenticationOptions.EncryptionPolicy))
                     {
                         throw new SslException( SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
                     }
@@ -159,7 +157,7 @@ internal static partial class Interop
                     fixed (byte* cipherListStr = cipherList)
                     fixed (byte* cipherSuitesStr = cipherSuites)
                     {
-                        if (!Ssl.SslCtxSetCiphers(innerContext, cipherListStr, cipherSuitesStr))
+                        if (!Ssl.SslCtxSetCiphers(sslCtx, cipherListStr, cipherSuitesStr))
                         {
                             Crypto.ErrClearError();
                             throw new PlatformNotSupportedException(SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
@@ -174,13 +172,13 @@ internal static partial class Interop
                 // If you find yourself wanting to remove this line to enable bidirectional
                 // close-notify, you'll probably need to rewrite SafeSslHandle.Disconnect().
                 // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
-                Ssl.SslCtxSetQuietShutdown(innerContext);
+                Ssl.SslCtxSetQuietShutdown(sslCtx);
 
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
                     unsafe
                     {
-                        Interop.Ssl.SslCtxSetAlpnSelectCb(innerContext, &AlpnServerSelectCallback, IntPtr.Zero);
+                        Interop.Ssl.SslCtxSetAlpnSelectCb(sslCtx, &AlpnServerSelectCallback, IntPtr.Zero);
                     }
                 }
 
@@ -190,28 +188,35 @@ internal static partial class Interop
 
                 if (hasCertificateAndKey)
                 {
-                    SetSslCertificate(innerContext, certHandle!, certKeyHandle!);
+                    SetSslCertificate(sslCtx, certHandle!, certKeyHandle!);
                 }
 
+                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
+                {
+                    if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
+                    {
+                        throw CreateSslException(SR.net_ssl_use_cert_failed);
+                    }
+                }
             }
             catch
             {
-                innerContext.Dispose();
+                sslCtx.Dispose();
                 throw;
             }
 
-            return innerContext;
+            return sslCtx;
         }
 
         // This essentially wraps SSL* SSL_new()
         internal static SafeSslHandle AllocateSslHandle(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            SafeSslHandle? context = null;
-            SafeSslContextHandle? sslCtx = null;
-            SafeSslContextHandle? innerContext = null;
+            SafeSslHandle? sslHandle = null;
+            SafeSslContextHandle? sslCtxHandle = null;
+            SafeSslContextHandle? newCtxHandle = null;
             SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
             bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption &&
-                     sslAuthenticationOptions.CipherSuitesPolicy == null &&
+                    sslAuthenticationOptions.CipherSuitesPolicy == null &&
                     (!sslAuthenticationOptions.IsServer ||
                     (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0));
 
@@ -220,11 +225,11 @@ internal static partial class Interop
                 if (protocols != SslProtocols.None &&
                     CipherSuitesPolicyPal.WantsTls13(protocols))
                 {
-                    protocols = protocols & (~SslProtocols.Tls13);
+                    protocols &= ~SslProtocols.Tls13;
                 }
             }
             else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
-                        CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+                CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
             {
                 if (protocols == SslProtocols.None)
                 {
@@ -255,13 +260,13 @@ internal static partial class Interop
 
             if (sslAuthenticationOptions.CertificateContext != null && cacheSslContext)
             {
-               sslAuthenticationOptions.CertificateContext.SslContexts.TryGetValue(sslAuthenticationOptions.EnabledSslProtocols, out sslCtx);
+               sslAuthenticationOptions.CertificateContext.SslContexts.TryGetValue(sslAuthenticationOptions.EnabledSslProtocols, out sslCtxHandle);
             }
 
-            if (sslCtx == null)
+            if (sslCtxHandle == null)
             {
                 // We did not get SslContext from cache
-                sslCtx = innerContext = AllocateSslContext(credential, sslAuthenticationOptions);
+                sslCtxHandle = newCtxHandle = AllocateSslContext(credential, sslAuthenticationOptions);
             }
 
             try
@@ -269,21 +274,12 @@ internal static partial class Interop
                 GCHandle alpnHandle = default;
                 try
                 {
-                    context = SafeSslHandle.Create(sslCtx, sslAuthenticationOptions.IsServer);
-                    Debug.Assert(context != null, "Expected non-null return value from SafeSslHandle.Create");
-                    if (context.IsInvalid)
+                    sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions.IsServer);
+                    Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.Create");
+                    if (sslHandle.IsInvalid)
                     {
-                        context.Dispose();
+                        sslHandle.Dispose();
                         throw CreateSslException(SR.net_allocate_ssl_context_failed);
-                    }
-
-                    if (sslAuthenticationOptions.EncryptionPolicy != EncryptionPolicy.RequireEncryption)
-                    {
-                        // Sets policy and security level
-                        if (!Ssl.SetEncryptionPolicy(sslCtx, sslAuthenticationOptions.EncryptionPolicy))
-                        {
-                            throw new SslException( SR.Format(SR.net_ssl_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-                        }
                     }
 
                     if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
@@ -291,12 +287,12 @@ internal static partial class Interop
                         if (sslAuthenticationOptions.IsServer)
                         {
                             alpnHandle = GCHandle.Alloc(sslAuthenticationOptions.ApplicationProtocols);
-                            Interop.Ssl.SslSetData(context, GCHandle.ToIntPtr(alpnHandle));
-                            context.AlpnHandle = alpnHandle;
+                            Interop.Ssl.SslSetData(sslHandle, GCHandle.ToIntPtr(alpnHandle));
+                            sslHandle.AlpnHandle = alpnHandle;
                         }
                         else
                         {
-                            if (Interop.Ssl.SslSetAlpnProtos(context, sslAuthenticationOptions.ApplicationProtocols) != 0)
+                            if (Interop.Ssl.SslSetAlpnProtos(sslHandle, sslAuthenticationOptions.ApplicationProtocols) != 0)
                             {
                                 throw CreateSslException(SR.net_alpn_config_failed);
                             }
@@ -309,17 +305,9 @@ internal static partial class Interop
                         string punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
 
                         // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
-                        if (!Ssl.SslSetTlsExtHostName(context, punyCode))
+                        if (!Ssl.SslSetTlsExtHostName(sslHandle, punyCode))
                         {
                             Crypto.ErrClearError();
-                        }
-                    }
-
-                    if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
-                    {
-                        if (!Ssl.AddExtraChainCertificates(context, sslAuthenticationOptions.CertificateContext!.IntermediateCertificates))
-                        {
-                            throw CreateSslException(SR.net_ssl_use_cert_failed);
                         }
                     }
 
@@ -327,7 +315,7 @@ internal static partial class Interop
                     {
                         unsafe
                         {
-                            Ssl.SslSetVerifyPeer(context);
+                            Ssl.SslSetVerifyPeer(sslHandle);
                         }
                     }
                 }
@@ -343,18 +331,18 @@ internal static partial class Interop
             }
             finally
             {
-                if (innerContext != null)
+                if (newCtxHandle != null)
                 {
                     // We allocated new context and we want to cache
                     if (!cacheSslContext || sslAuthenticationOptions.CertificateContext?.SslContexts == null ||
-                        !sslAuthenticationOptions.CertificateContext.SslContexts.TryAdd(sslAuthenticationOptions.EnabledSslProtocols, innerContext))
+                        !sslAuthenticationOptions.CertificateContext.SslContexts.TryAdd(sslAuthenticationOptions.EnabledSslProtocols, newCtxHandle))
                     {
-                        innerContext.Dispose();
+                        newCtxHandle.Dispose();
                     }
                 }
             }
 
-            return context;
+            return sslHandle;
         }
 
         internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)

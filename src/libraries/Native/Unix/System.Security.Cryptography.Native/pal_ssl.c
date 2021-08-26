@@ -39,7 +39,7 @@ static void EnsureLibSsl10Initialized()
 #endif
 
 static int32_t g_config_specified_ciphersuites = 0;
-static char* emptyAlpn = "";
+static char* g_emptyAlpn = "";
 
 static void DetectCiphersuiteConfiguration()
 {
@@ -615,15 +615,14 @@ int32_t CryptoNative_Tls13Supported()
 #endif
 }
 
-int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
+int32_t CryptoNative_SslCtxAddExtraChainCert(SSL_CTX* ctx, X509* x509)
 {
-    if (!x509 || !ssl)
+    if (!x509 || !ctx)
     {
         return 0;
     }
 
-    SSL_CTX* ssl_ctx = SSL_get_SSL_CTX(ssl);
-    if (SSL_CTX_add_extra_chain_cert(ssl_ctx, x509) == 1)
+    if (SSL_CTX_add_extra_chain_cert(ctx, x509) == 1)
     {
         return 1;
     }
@@ -637,7 +636,7 @@ void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, 
     if (API_EXISTS(SSL_CTX_set_alpn_select_cb))
     {
         (void)arg;
-        SSL_CTX_set_alpn_select_cb(ctx, cb, emptyAlpn);
+        SSL_CTX_set_alpn_select_cb(ctx, cb, g_emptyAlpn);
     }
 #else
     (void)ctx;
@@ -655,24 +654,6 @@ void* CryptoNative_SslGetData(SSL* ssl)
 {
 //    void* data = SSL_get_ex_data(ssl, 0, ptr);
     return SSL_get_ex_data(ssl, 0);
-}
-
-int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t* protos, uint32_t protos_len)
-{
-#if HAVE_OPENSSL_ALPN
-    if (API_EXISTS(SSL_CTX_set_alpn_protos))
-    {
-        return SSL_CTX_set_alpn_protos(ctx, protos, protos_len);
-    }
-    else
-#else
-    (void)ctx;
-    (void)protos;
-    (void)protos_len;
-#endif
-    {
-        return 0;
-    }
 }
 
 int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t protos_len)
