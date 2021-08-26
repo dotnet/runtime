@@ -268,6 +268,8 @@ static int run(const configuration& config)
         }
     }
 
+    config.dotenv_configuration.load_into_current_process();
+
     actions.before_coreclr_load();
 
     // Attempt to load CoreCLR.
