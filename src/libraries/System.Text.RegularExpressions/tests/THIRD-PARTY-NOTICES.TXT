@@ -8,7 +8,7 @@ bring it to our attention. Post an issue or email us:
 
 The attached notices are provided for information only.
 
-License notice for rust-lang/regex
+License notice for https://github.com/rust-lang/regex
 -------------------------------
 
 Copyright (c) 2014 The Rust Project Developers
