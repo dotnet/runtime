@@ -8,6 +8,7 @@ namespace System.IO.Tests
     // Need to reuse the same virtual drive for all the test methods.
     // Creating and disposing one virtual drive per class achieves this.
     [PlatformSpecific(TestPlatforms.Windows)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public class VirtualDrive_SymbolicLinks : BaseSymbolicLinks
     {
         protected override void Dispose(bool disposing)
@@ -33,7 +34,7 @@ namespace System.IO.Tests
         // [InlineData(true, false, true, false)]  // Target is not in virtual drive
         [InlineData(true, true, false, true)]      // Immediate target expected, target is in virtual drive
         [InlineData(true, true, true, false)]      // Final target expected, target is in virtual drive
-        public void SymlinkInVirtualDrive(bool isLinkInVirtualDrive, bool isTargetInVirtualDrive, bool returnFinalTarget, bool isExpectedTargetPathVirtual)
+        public void VirtualDrive_SymbolicLinks_LinkAndTarget(bool isLinkInVirtualDrive, bool isTargetInVirtualDrive, bool returnFinalTarget, bool isExpectedTargetPathVirtual)
         {
             // File link
             string fileLinkName = GetRandomLinkName();
@@ -129,7 +130,7 @@ namespace System.IO.Tests
         // [InlineData(true, true, false, true, false)]   // Target is not in virtual drive
         [InlineData(true, true, true, false, true)]       // Immediate target expected, target is in virtual drive
         [InlineData(true, true, true, true, false)]       // Final target expected, target is in virtual drive
-        public void SymlinkInVirtualDrive_WithIndirection(bool isFirstLinkInVirtualDrive, bool isMiddleLinkInVirtualDrive, bool isTargetInVirtualDrive, bool returnFinalTarget, bool isExpectedTargetPathVirtual)
+        public void VirtualDrive_SymbolicLinks_WithIndirection(bool isFirstLinkInVirtualDrive, bool isMiddleLinkInVirtualDrive, bool isTargetInVirtualDrive, bool returnFinalTarget, bool isExpectedTargetPathVirtual)
         {
             // File link
             string fileLinkName = GetRandomLinkName();
