@@ -1,10 +1,10 @@
 # Investigating JIT and GC stress
 
-There are two stressing related features for the JIT and JIT generated GC info &ndash; JIT Stress and GC Stress. These features provide a way for the development to discover edge cases and more "real world" scenarios without having to develop complex applications.
+There are two stressing related features for the JIT and JIT generated GC info &ndash; JIT Stress and GC Stress. These features provide a way during development to discover edge cases and more "real world" scenarios without having to develop complex applications.
 
 ## JIT Stress (Debug builds only)
 
-Enabling JIT Stress can be done in several ways. Setting `DOTNET_JitStress` to a non-zero integer value that will generate varying levels of JIT optimizations based on a hash of the methods name or set to a value of two (for example, `DOTNET_JitStress=2`) that will apply all optimizations. Another way to enable enable JIT Stress is by setting `DOTNET_JitStressModeNamesOnly=1` and then requesting the stress modes, space delimited, in the `DOTNET_JitStressModeNames` variable (for example, `DOTNET_JitStressModeNames=STRESS_USE_CMOV STRESS_64RSLT_MUL STRESS_LCL_FLDS`).
+Enabling JIT Stress can be done in several ways. Setting `DOTNET_JitStress` to a non-zero integer value that will generate varying levels of JIT optimizations based on a hash of the method's name or set to a value of two (for example, `DOTNET_JitStress=2`) that will apply all optimizations. Another way to enable JIT Stress is by setting `DOTNET_JitStressModeNamesOnly=1` and then requesting the stress modes, space delimited, in the `DOTNET_JitStressModeNames` variable (for example, `DOTNET_JitStressModeNames=STRESS_USE_CMOV STRESS_64RSLT_MUL STRESS_LCL_FLDS`).
 
 It is often useful to use [JIT Dump](./viewing-jit-dumps.md) in tandem with JIT Stress.
 
