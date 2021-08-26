@@ -1302,6 +1302,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void NoExceptionThrownWhenProcessingStaticActivityProperties()
         {
             // Ensures that no exception is thrown when static properties on the Activity type are passed to EventListener.

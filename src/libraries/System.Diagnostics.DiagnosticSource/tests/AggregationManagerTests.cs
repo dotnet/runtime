@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Diagnostics.Metrics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57003", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
     public class AggregationStoreTests
     {
         [Fact]
@@ -691,6 +692,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57003", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void AggregatorLimitReached_WithLabels()
         {
             AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() => null);
@@ -703,6 +705,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57003", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void AggregatorLimitReached_Multisize_NoLabel()
         {
             int count = 1;
@@ -728,6 +731,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57003", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void AggregatorLimitReached_Multisize_TwoLabel()
         {
             int count = 1;
