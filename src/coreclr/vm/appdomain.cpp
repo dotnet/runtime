@@ -111,8 +111,6 @@ static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 
-ULONG               SystemDomain::s_dNumAppDomains = 0;
-
 DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
 
 // Constructor for the PinnedHeapHandleBucket class.
@@ -1461,22 +1459,6 @@ void SystemDomain::LoadBaseSystemClasses()
 #endif
 }
 
-/*static*/
-void SystemDomain::LoadDomain(AppDomain *pDomain)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(System()));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    SystemDomain::System()->AddDomain(pDomain);
-}
-
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -1888,35 +1870,6 @@ void SystemDomain::PublishAppDomainAndInformDebugger (AppDomain *pDomain)
 }
 
 #endif // DEBUGGING_SUPPORTED
-
-void SystemDomain::AddDomain(AppDomain* pDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer((pDomain)));
-    }
-    CONTRACTL_END;
-
-    {
-        LockHolder lh;
-
-        _ASSERTE (pDomain->m_Stage != AppDomain::STAGE_CREATING);
-        if (pDomain->m_Stage == AppDomain::STAGE_READYFORMANAGEDCODE ||
-            pDomain->m_Stage == AppDomain::STAGE_ACTIVE)
-        {
-            pDomain->SetStage(AppDomain::STAGE_OPEN);
-        }
-    }
-
-    // Note that if you add another path that can reach here without calling
-    // PublishAppDomainAndInformDebugger, then you should go back & make sure
-    // that PADAID gets called.  Right after this call, if not sooner.
-    LOG((LF_CORDB, LL_INFO1000, "SD::AD:Would have added domain here! 0x%x\n",
-        pDomain));
-}
 
 #ifdef PROFILING_SUPPORTED
 void SystemDomain::NotifyProfilerStartup()
