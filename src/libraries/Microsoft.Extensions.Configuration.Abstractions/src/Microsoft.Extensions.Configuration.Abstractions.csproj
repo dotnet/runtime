@@ -4,6 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- Use targeting pack references instead of granular ones in the project file. -->
+    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <PackageDescription>Abstractions of key-value pair based configuration.
 
 Commonly Used Types:
@@ -20,12 +22,6 @@ Microsoft.Extensions.Configuration.IConfigurationSection</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Collections" />
   </ItemGroup>
   
 </Project>
