@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -555,7 +556,19 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static string GetTempAssemblyName(AssemblyName parent, string ns)
         {
-            return parent.Name + ".XmlSerializers" + (ns == null || ns.Length == 0 ? "" : "." + ns.GetHashCode());
+            return parent.Name + ".XmlSerializers" + (string.IsNullOrEmpty(ns) ? "" : $".{GetPersistentHashCode(ns)}");
+        }
+
+        private static uint GetPersistentHashCode(string value)
+        {
+            byte[] valueBytes = Encoding.UTF8.GetBytes(value);
+            byte[] hash = SHA512.Create().ComputeHash(valueBytes);
+            return ReadUInt32BigEndian(hash);
+        }
+
+        private static uint ReadUInt32BigEndian(byte[] value)
+        {
+            return (uint)(value[0] << 24 | value[1] << 16 | value[2] << 8 | value[3]);
         }
 
         private static void ParseReferences()

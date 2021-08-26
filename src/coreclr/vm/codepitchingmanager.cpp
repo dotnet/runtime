@@ -206,10 +206,6 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
     if (pMD == nullptr || !pMD->IsPitchable())
         return;
 
-    PCODE prCode = pMD->GetPreImplementedCode();
-    if (prCode)
-        return;
-
     if (!pMD->HasPrecode())
         return;
 
@@ -259,11 +255,6 @@ EXTERN_C void DeleteFromPitchingCandidate(MethodDesc* pMD)
 
     if (pMD != nullptr && pMD->IsPitchable())
     {
-        PCODE pCode = pMD->GetPreImplementedCode();
-
-        if (pCode)
-           return;
-
         _ASSERTE(s_pPitchingCandidateMethodsLock != nullptr && s_pPitchingCandidateMethods != nullptr);
         _ASSERTE(s_pPitchingCandidateSizes != nullptr);
 
@@ -394,8 +385,7 @@ void MethodDesc::PitchNativeCode()
 
     if (HasNativeCodeSlot())
     {
-        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
-        pRelPtr->SetValueMaybeNull(NULL);
+        *GetAddrOfNativeCodeSlot() = NULL;
     }
     else
     {

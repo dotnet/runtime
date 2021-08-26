@@ -1855,7 +1855,15 @@ inline
 const ep_char8_t *
 ep_rt_entrypoint_assembly_name_get_utf8 (void)
 {
-	return (const ep_char8_t *)m_image_get_assembly_name (mono_assembly_get_main ()->image);
+	MonoAssembly *main_assembly = mono_assembly_get_main ();
+	if (!main_assembly || !main_assembly->image)
+		return "";
+
+	const char *assembly_name = m_image_get_assembly_name (mono_assembly_get_main ()->image);
+	if (!assembly_name)
+		return "";
+
+	return (const ep_char8_t*)assembly_name;
 }
 
 static

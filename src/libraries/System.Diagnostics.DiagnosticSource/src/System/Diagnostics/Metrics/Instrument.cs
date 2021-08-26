@@ -13,11 +13,7 @@ namespace System.Diagnostics.Metrics
 #endif
     public abstract class Instrument
     {
-#if NO_ARRAY_EMPTY_SUPPORT
-        internal static KeyValuePair<string, object?>[] EmptyTags { get; } = new KeyValuePair<string, object?>[0];
-#else
         internal static KeyValuePair<string, object?>[] EmptyTags => Array.Empty<KeyValuePair<string, object?>>();
-#endif // NO_ARRAY_EMPTY_SUPPORT
 
         // The SyncObject is used to synchronize the following operations:
         //  - Instrument.Publish()

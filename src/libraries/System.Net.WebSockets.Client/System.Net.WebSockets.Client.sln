@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{A0314AC5-E49
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6F9A42A0-A04B-4CD0-B8C9-9A728274C851}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.Client.Wasm.Tests", "tests\wasm\System.Net.WebSockets.Client.Wasm.Tests.csproj", "{CA20532A-33B3-4DC0-92D2-EA6D7987D59F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{6B9721B2-00D0-41EC-96B9-6428CF1830CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B9721B2-00D0-41EC-96B9-6428CF1830CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B9721B2-00D0-41EC-96B9-6428CF1830CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA20532A-33B3-4DC0-92D2-EA6D7987D59F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA20532A-33B3-4DC0-92D2-EA6D7987D59F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA20532A-33B3-4DC0-92D2-EA6D7987D59F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA20532A-33B3-4DC0-92D2-EA6D7987D59F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -65,6 +71,7 @@ Global
 		{0CD4C24D-7746-46F0-8D47-A396882B5468} = {6F9A42A0-A04B-4CD0-B8C9-9A728274C851}
 		{8CD4D190-F656-4970-9AE9-4A9F8B30A2F8} = {6F9A42A0-A04B-4CD0-B8C9-9A728274C851}
 		{59A23CAB-D098-495F-A467-74C7553FF5BB} = {6F9A42A0-A04B-4CD0-B8C9-9A728274C851}
+		{CA20532A-33B3-4DC0-92D2-EA6D7987D59F} = {BEE2F256-0489-4809-AB20-27ADB2D0E10C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D91D7DC5-24CC-4716-A357-8170C4EB1C32}

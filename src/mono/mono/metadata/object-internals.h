@@ -637,7 +637,6 @@ typedef struct {
 	void     (*free_method) (MonoMethod *method);
 	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
-	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
 	void (*free_mem_manager)(MonoMemoryManager*);
@@ -664,11 +663,6 @@ typedef struct {
 	gboolean (*mono_above_abort_threshold) (void);
 	void (*mono_clear_abort_threshold) (void);
 	void (*mono_reraise_exception) (MonoException *ex);
-	void (*mono_summarize_managed_stack) (MonoThreadSummary *out);
-	void (*mono_summarize_unmanaged_stack) (MonoThreadSummary *out);
-	void (*mono_summarize_exception) (MonoException *exc, MonoThreadSummary *out);
-	void (*mono_register_native_library) (const char *module_path, const char *module_name);
-	void (*mono_allow_all_native_libraries) (void);
 } MonoRuntimeExceptionHandlingCallbacks;
 
 MONO_COLD void mono_set_pending_exception (MonoException *exc);

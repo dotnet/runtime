@@ -9,7 +9,6 @@
 #ifndef _COMDYNAMIC_H_
 #define _COMDYNAMIC_H_
 
-#include "iceefilegen.h"
 #include "dbginterface.h"
 
 typedef enum PEFileKinds {

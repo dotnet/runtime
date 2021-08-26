@@ -1,4 +1,5 @@
-﻿<Project>
+<Project>
+
   <ItemGroup>
     <RuntimeGroup Include="unix">
       <Parent>any</Parent>
@@ -71,7 +72,7 @@
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35</Versions>
+      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35;36</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -262,22 +263,4 @@
     </RuntimeGroupWithQualifiers>
   </ItemGroup>
 
-  <PropertyGroup>
-    <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' == 'core'">$(NetCoreAppToolCurrent)</_generateRuntimeGraphTargetFramework>
-    <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">net472</_generateRuntimeGraphTargetFramework>
-    <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', '$(_generateRuntimeGraphTargetFramework)-$(Configuration)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
-  </PropertyGroup>
-  <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
-
-  <Target Name="UpdateRuntimeJson" BeforeTargets="Pack">
-    <!-- Generates a Runtime graph using RuntimeGroups and diffs it with the graph described by runtime.json and runtime.compatibility.json
-         Specifying UpdateRuntimeFiles=true skips the diff and updates those files.
-         The graph can be visualized using the generated dmgl -->
-    <MakeDir Directories="$(OutputPath)" />
-    <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
-                          RuntimeJson="runtime.json"
-                          CompatibilityMap="runtime.compatibility.json"
-                          RuntimeDirectedGraph="$(OutputPath)runtime.json.dgml"
-                          UpdateRuntimeFiles="$(UpdateRuntimeFiles)" />
-  </Target>
 </Project>
