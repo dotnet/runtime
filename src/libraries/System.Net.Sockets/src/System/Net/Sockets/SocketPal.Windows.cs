@@ -841,20 +841,19 @@ namespace System.Net.Sockets
 
                 IntPtr rawHandle = handle.DangerousGetHandle();
                 IntPtr* fileDescriptorSet = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
-                Interop.Winsock.TimeValue IOwait = default;
+                Interop.Winsock.TimeValue timeout = default;
 
                 // A negative timeout value implies an indefinite wait.
                 int socketCount;
                 if (microseconds != -1)
                 {
-                    MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
-                    socketCount =
-                        Interop.Winsock.select(
+                    MicrosecondsToTimeValue((long)(uint)microseconds, ref timeout);
+                    socketCount = Interop.Winsock.select(
                             0,
                             mode == SelectMode.SelectRead ? fileDescriptorSet : null,
                             mode == SelectMode.SelectWrite ? fileDescriptorSet : null,
                             mode == SelectMode.SelectError ? fileDescriptorSet : null,
-                            ref IOwait);
+                            ref timeout);
                 }
                 else
                 {

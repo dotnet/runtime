@@ -3856,16 +3856,13 @@ namespace System.Net.Sockets
 
         private void CheckNonBlockingConnectCompleted()
         {
-            if (_nonBlockingConnectInProgress)
+            if (_nonBlockingConnectInProgress && SocketPal.HasNonBlockingConnectCompleted(_handle, out bool success))
             {
-                if (SocketPal.HasNonBlockingConnectCompleted(_handle, out bool success))
-                {
-                    _nonBlockingConnectInProgress = false;
+                _nonBlockingConnectInProgress = false;
 
-                    if (success)
-                    {
-                        SetToConnected();
-                    }
+                if (success)
+                {
+                    SetToConnected();
                 }
             }
         }
