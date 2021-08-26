@@ -36,6 +36,14 @@
 #if defined (HAVE_WCHAR_H)
 #include <wchar.h>
 #endif
+#if defined (HOST_DARWIN)
+#define BOOL OBJC_BOOL
+#include <objc/runtime.h>
+#include <objc/message.h>
+#include <CoreFoundation/CoreFoundation.h>
+#undef BOOL
+#undef bool
+#endif
 
 #include "mono/metadata/icall-internals.h"
 #include "mono/utils/mono-membar.h"
@@ -346,7 +354,7 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 	if (mono_class_is_nullable (ec)) {
 		if (vc && m_class_is_primitive (vc) && vc != m_class_get_nullable_elem_class (ec)) {
-            // T -> Nullable<T>  T must be exact
+			// T -> Nullable<T>  T must be exact
 			set_invalid_cast (error, vc, ec);
 			goto leave;
 		}
@@ -3069,11 +3077,11 @@ ves_icall_RuntimeType_GetCorrespondingInflatedMethod (MonoReflectionTypeHandle r
 	MonoMethod *method;
 	gpointer iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-                if (method->token == generic_method->token) {
+		if (method->token == generic_method->token) {
 			ret = mono_method_get_object_handle (method, klass, error);
 			return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
 		}
-        }
+	}
 
 	return ret;
 }
@@ -4638,7 +4646,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 	g_return_val_if_fail (dir != NULL, NULL);
 	g_return_val_if_fail (file != NULL, NULL);
 
-        /*
+	/*
 	 * If the directory name doesn't have a / on the end, we need
 	 * to add one so we get a proper path to the file
 	 */
@@ -5553,11 +5561,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	g_assert (image_base);
 
 #ifndef HOST_WASM
-        if (mono_is_debugger_attached ()) {
-                mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
-                mono_error_set_pending_exception (error);
-                return;
-        }
+	if (mono_is_debugger_attached ()) {
+		mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
+		mono_error_set_pending_exception (error);
+		return;
+	}
 #endif
 
 	mono_image_load_enc_delta (MONO_ENC_DELTA_API, image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
@@ -6268,21 +6276,7 @@ ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_na
  */
 #ifndef _MSC_VER
 #ifndef __MINGW32_VERSION
-#if defined(__APPLE__)
-#if defined (TARGET_OSX)
-/* Apple defines this in crt_externs.h but doesn't provide that header for 
- * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
- * in fact exist on all implementations (so far) 
- */
-G_BEGIN_DECLS
-gchar ***_NSGetEnviron(void);
-G_END_DECLS
-#define environ (*_NSGetEnviron())
-#else
-static char *mono_environ[1] = { NULL };
-#define environ mono_environ
-#endif /* defined (TARGET_OSX) */
-#else
+#ifndef __APPLE__
 G_BEGIN_DECLS
 extern
 char **environ;
@@ -6298,7 +6292,55 @@ ves_icall_System_Environment_GetCommandLineArgs (MonoError *error)
 	return result;
 }
 
-#ifdef HOST_WIN32
+#if defined(HOST_DARWIN)
+
+static MonoArrayHandle
+mono_icall_get_environment_variable_names (MonoError *error)
+{
+	MonoArrayHandle names;
+	MonoStringHandle str;
+	int n, i;
+	id *keys;
+	CFDictionaryRef environ;
+	char *name;
+
+	id id_NSProcessInfo = (id) objc_getClass ("NSProcessInfo");
+	SEL sel_processInfo = sel_registerName ("processInfo");
+	SEL sel_environment = sel_registerName ("environment");
+	SEL sel_UTF8String = sel_registerName ("UTF8String");
+
+	id (*id_objc_msgSend)(id, SEL) = (id (*)(id, SEL)) objc_msgSend;
+	CFDictionaryRef (*dict_objc_msgSend)(id, SEL) = (CFDictionaryRef (*)(id, SEL)) objc_msgSend;
+	char* (*charptr_objc_msgSend)(id, SEL) = (char* (*)(id, SEL)) objc_msgSend;
+
+	environ = dict_objc_msgSend (id_objc_msgSend (id_NSProcessInfo, sel_processInfo), sel_environment);
+
+	n = CFDictionaryGetCount (environ);
+	keys = g_malloc (n * sizeof(id));
+	CFDictionaryGetKeysAndValues (environ, (const void **) keys, NULL);
+
+	names = mono_array_new_handle (mono_defaults.string_class, n, error);
+	return_val_if_nok (error, NULL_HANDLE_ARRAY);
+
+	str = MONO_HANDLE_NEW (MonoString, NULL);
+	for (i = 0; i < n; i++) {
+		name = (char *) charptr_objc_msgSend (keys[i], sel_UTF8String);
+		MonoString *s = mono_string_new_checked (name, error);
+		MONO_HANDLE_ASSIGN_RAW (str, s);
+		if (!is_ok (error)) {
+			g_free (keys);
+			return NULL_HANDLE_ARRAY;
+		}
+		mono_array_handle_setref (names, n, str);
+	}
+
+	g_free (keys);
+
+	return names;
+}
+
+#elif defined (HOST_WIN32)
+
 static MonoArrayHandle
 mono_icall_get_environment_variable_names (MonoError *error)
 {
@@ -6395,7 +6437,8 @@ mono_icall_get_environment_variable_names (MonoError *error)
 
 	return names;
 }
-#endif /* !HOST_WIN32 */
+
+#endif /* !HOST_WIN32 && !HOST_DARWIN */
 
 MonoArrayHandle
 ves_icall_System_Environment_GetEnvironmentVariableNames (MonoError *error)
