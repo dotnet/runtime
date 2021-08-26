@@ -50,7 +50,7 @@ inline PEImage* CoreBindResult::GetPEImage()
 {
     WRAPPER_NO_CONTRACT;
     return m_pAssembly ?
-        m_pAssembly->GetNativeOrILPEImage() :
+        m_pAssembly->GetPEImage() :
         NULL;
 };
 

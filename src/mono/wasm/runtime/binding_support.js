@@ -160,6 +160,16 @@ var BindingSupportLib = {
 				return Promise.resolve(js_obj) === js_obj ||
 						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
 			};
+			this.isChromium = false;
+			if (globalThis.navigator) {
+				var nav = globalThis.navigator;
+				if (nav.userAgentData && nav.userAgentData.brands) {
+					this.isChromium = nav.userAgentData.brands.some((i) => i.brand == 'Chromium');
+				}
+				else if (globalThis.navigator.userAgent) {
+					this.isChromium = nav.userAgent.includes("Chrome");
+				}
+			}
 
 			this._empty_string = "";
 			this._empty_string_ptr = 0;
@@ -372,7 +382,7 @@ var BindingSupportLib = {
 			return this._wrap_delegate_gc_handle_as_function(gc_handle);
 		},
 
-		_wrap_delegate_gc_handle_as_function: function (gc_handle) {
+		_wrap_delegate_gc_handle_as_function: function (gc_handle, after_listener_callback) {
 			this.bindings_lazy_init ();
 
 			// see if we have js owned instance for this gc_handle already
@@ -384,7 +394,11 @@ var BindingSupportLib = {
 				result = function() {
 					const delegateRoot = MONO.mono_wasm_new_root (BINDING.get_js_owned_object_by_gc_handle(gc_handle));
 					try {
-						return BINDING.call_method (result[BINDING.delegate_invoke_symbol], delegateRoot.value, result[BINDING.delegate_invoke_signature_symbol], arguments);
+						const res = BINDING.call_method(result[BINDING.delegate_invoke_symbol], delegateRoot.value, result[BINDING.delegate_invoke_signature_symbol], arguments);
+						if (after_listener_callback) { 
+							after_listener_callback(); 
+						}
+						return res;
 					} finally {
 						delegateRoot.release();
 					}
@@ -2042,7 +2056,12 @@ var BindingSupportLib = {
 			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle(objHandle);
 			if (!obj)
 				throw new Error("ERR09: Invalid JS object handle for '"+sName+"'");
-			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle);
+
+			const prevent_timer_throttling = !BINDING.isChromium || obj.constructor.name !== 'WebSocket'
+				? null
+				: () => MONO.prevent_timer_throttling(0);
+
+			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle, prevent_timer_throttling);
 			if (!listener)
 				throw new Error("ERR10: Invalid listener gc_handle");
 

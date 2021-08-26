@@ -4089,16 +4089,6 @@ ClrDataAccess::GetModuleByAddress(
                     break;
                 }
             }
-            if (file->HasNativeImage())
-            {
-                base = PTR_TO_TADDR(file->GetLoadedNative()->GetBase());
-                length = file->GetLoadedNative()->GetVirtualSize();
-                if (TO_CDADDR(base) <= address &&
-                    TO_CDADDR(base + length) > address)
-                {
-                    break;
-                }
-            }
         }
 
         if (modDef)
@@ -5267,21 +5257,7 @@ ClrDataAccess::FollowStubStep(
         // so that the real native address can
         // be picked up once the JIT is done.
 
-        // One special case is ngen'ed code that
-        // needs the prestub run.  This results in
-        // an unjitted trace but no jitting will actually
-        // occur since the code is ngen'ed.  Detect
-        // this and redirect to the actual code.
         methodDesc = trace.GetMethodDesc();
-        if (methodDesc->IsPreImplemented() &&
-            !methodDesc->IsPointingToStableNativeCode() &&
-            !methodDesc->IsGenericMethodDefinition() &&
-            methodDesc->HasNativeCode())
-        {
-            *outAddr = methodDesc->GetNativeCode();
-            *outFlags = CLRDATA_FOLLOW_STUB_EXIT;
-            break;
-        }
 
         *outAddr = GFN_TADDR(DACNotifyCompilationFinished);
         outBuffer->u.flags = STUB_BUF_METHOD_JITTED;
@@ -6485,24 +6461,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
     COUNT_T uniPathChars = 0;
 
     isNGEN = false;
-
-    if (pPEFile->HasNativeImage())
-    {
-        mdImage = pPEFile->GetNativeImage();
-        _ASSERTE(mdImage != NULL);
-        layout = mdImage->GetLoadedLayout();
-        pDir = &(layout->GetCorHeader()->MetaData);
-        // For ngen image, the IL metadata is stored for private use. So we need to pass
-        // the RVA hint to find it to debuggers.
-        //
-        if (pDir->Size != 0)
-        {
-            isNGEN = true;
-            dwRvaHint = pDir->VirtualAddress;
-            dwDataSize = pDir->Size;
-        }
-
-    }
     if (pDir == NULL || pDir->Size == 0)
     {
         mdImage = pPEFile->GetILimage();

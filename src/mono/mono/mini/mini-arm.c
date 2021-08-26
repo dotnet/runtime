@@ -3467,7 +3467,7 @@ loop_start:
 				ins->inst_c0 = 0;
 				break;
 			}
-			imm8 = mono_is_power_of_two (ins->inst_imm);
+			imm8 = (ins->inst_imm > 0) ? mono_is_power_of_two (ins->inst_imm) : -1;
 			if (imm8 > 0) {
 				ins->opcode = OP_SHL_IMM;
 				ins->inst_imm = imm8;

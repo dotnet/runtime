@@ -61,33 +61,7 @@
 
 #ifndef DACCESS_COMPILE
 
-// This value is to make it easier to diagnose Assembly Loader "grant set" crashes.
-// See Dev11 bug 358184 for more details.
-
-// This value is not thread safe and is not intended to be. It is just a best
-// effort to collect more data on the problem. Is is possible, though unlikely,
-// that thread A would record a reason for an upcoming crash,
-// thread B would then record a different reason, and we would then
-// crash on thread A, thus ending up with the recorded reason not matching
-// the thread we crash in. Be aware of this when using this value
-// to help your debugging.
-DWORD g_dwLoaderReasonForNotSharing = 0; // See code:DomainFile::m_dwReasonForRejectingNativeImage for a similar variable.
-
 volatile uint32_t g_cAssemblies = 0;
-
-// These will sometimes result in a crash with error code 0x80131401 SECURITY_E_INCOMPATIBLE_SHARE
-// "Loading this assembly would produce a different grant set from other instances."
-enum ReasonForNotSharing
-{
-    ReasonForNotSharing_NoInfoRecorded = 0x1,
-    ReasonForNotSharing_NullDomainassembly = 0x2,
-    ReasonForNotSharing_DebuggerFlagMismatch = 0x3,
-    ReasonForNotSharing_NullPeassembly = 0x4,
-    ReasonForNotSharing_MissingAssemblyClosure1 = 0x5,
-    ReasonForNotSharing_MissingAssemblyClosure2 = 0x6,
-    ReasonForNotSharing_MissingDependenciesResolved = 0x7,
-    ReasonForNotSharing_ClosureComparisonFailed = 0x8,
-};
 
 static CrstStatic g_friendAssembliesCrst;
 
@@ -1850,7 +1824,7 @@ BOOL Assembly::IsInstrumentedHelper()
         return false;
 
     // We must have a native image in order to perform IBC instrumentation
-    if (!GetManifestFile()->HasNativeOrReadyToRunImage())
+    if (!GetManifestFile()->IsReadyToRun())
         return false;
 
     // @Consider using the full name instead of the short form

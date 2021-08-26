@@ -42,8 +42,6 @@ public:
     PEImage* GetPEImage();
     BOOL IsCoreLib();
     void GetBindAssembly(BINDER_SPACE::Assembly** ppAssembly);
-    BOOL HasNativeImage() { return FALSE; }
-    PEImage* GetNativeImage() { return NULL; }
 
     void SetHRBindResult(HRESULT hrBindResult);
     HRESULT GetHRBindResult();

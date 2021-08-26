@@ -120,9 +120,6 @@ struct CoreLibFieldDescription
 class CoreLibBinder
 {
   public:
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     //
     // Note that the frequently called methods are intentionally static to reduce code bloat.
