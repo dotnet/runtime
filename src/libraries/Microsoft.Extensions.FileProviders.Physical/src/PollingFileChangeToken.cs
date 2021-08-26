@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
@@ -28,8 +29,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private DateTime _previousWriteTimeUtc;
         private DateTime _lastCheckedTimeUtc;
         private bool _hasChanged;
-        private CancellationTokenSource _tokenSource;
-        private CancellationChangeToken _changeToken;
+        private CancellationTokenSource? _tokenSource;
+        private CancellationChangeToken? _changeToken;
 
         /// <summary>
         /// Initializes a new instance of <see cref="PollingFileChangeToken" /> that polls the specified file for changes as
@@ -54,18 +55,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return DateTime.MinValue;
             }
 
-            DateTime? lastWriteTimeUtc = FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo);
-
-            if (lastWriteTimeUtc == null)
-            {
-                try
-                {
-                    lastWriteTimeUtc = _fileInfo.LastWriteTimeUtc;
-                }
-                catch (IOException) { } // https://github.com/dotnet/runtime/issues/57221
-            }
-
-            return lastWriteTimeUtc ?? DateTime.MinValue;
+            return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
         }
 
         /// <summary>
@@ -73,7 +63,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// </summary>
         public bool ActiveChangeCallbacks { get; internal set; }
 
-        internal CancellationTokenSource CancellationTokenSource
+        [DisallowNull]
+        internal CancellationTokenSource? CancellationTokenSource
         {
             get => _tokenSource;
             set
@@ -85,7 +76,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        CancellationTokenSource IPollingChangeToken.CancellationTokenSource => CancellationTokenSource;
+        CancellationTokenSource? IPollingChangeToken.CancellationTokenSource => CancellationTokenSource;
 
         /// <summary>
         /// True when the file has changed since the change token was created. Once the file changes, this value is always true
@@ -127,14 +118,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="callback">This parameter is ignored</param>
         /// <param name="state">This parameter is ignored</param>
         /// <returns>A disposable object that noops when disposed</returns>
-        public IDisposable RegisterChangeCallback(Action<object> callback, object state)
+        public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
             if (!ActiveChangeCallbacks)
             {
                 return EmptyDisposable.Instance;
             }
 
-            return _changeToken.RegisterChangeCallback(callback, state);
+            return _changeToken!.RegisterChangeCallback(callback, state);
         }
     }
 }

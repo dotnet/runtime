@@ -8,6 +8,8 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.CS.Owned.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.JS.Owned.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataView.cs" />
@@ -28,7 +30,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\CoreObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\HostObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Function.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\AnyRef.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.References.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

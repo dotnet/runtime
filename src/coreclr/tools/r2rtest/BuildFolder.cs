@@ -41,7 +41,7 @@ namespace R2RTest
 
         private string _outputFolder;
 
-        private readonly List<ProcessInfo[]> _executions;
+        private readonly List<ProcessInfo[][]> _executions;
 
         public string IssueID;
 
@@ -61,7 +61,7 @@ namespace R2RTest
             _outputFolder = outputFolder;
 
             _compilations = new List<ProcessInfo[]>();
-            _executions = new List<ProcessInfo[]>();
+            _executions = new List<ProcessInfo[][]>();
 
             if (options.Composite)
             {
@@ -93,7 +93,7 @@ namespace R2RTest
             {
                 foreach (string script in _executionScripts ?? Enumerable.Empty<string>())
                 {
-                    ProcessInfo[] scriptExecutions = new ProcessInfo[(int)CompilerIndex.Count];
+                    ProcessInfo[][] scriptExecutions = new ProcessInfo[(int)CompilerIndex.Count][];
                     _executions.Add(scriptExecutions);
 
                     foreach (CompilerRunner runner in compilerRunners)
@@ -107,7 +107,14 @@ namespace R2RTest
                         folders.Add(Path.GetDirectoryName(script));
                         folders.UnionWith(runner.ReferenceFolders);
 
-                        scriptExecutions[(int)runner.Index] = new ProcessInfo(new ScriptExecutionProcessConstructor(runner, _outputFolder, script, modules, folders));
+                        ProcessConstructor constructor = new ScriptExecutionProcessConstructor(runner, _outputFolder, script, modules, folders);
+                        ProcessInfo[] iterations = new ProcessInfo[options.Iterations];
+                        for (int iterationIndex = 0; iterationIndex < options.Iterations; iterationIndex++)
+                        {
+                            iterations[iterationIndex] = new ProcessInfo(constructor);
+                        }
+
+                        scriptExecutions[(int)runner.Index] = iterations;
                     }
                 }
             }
@@ -200,18 +207,21 @@ namespace R2RTest
 
         public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, int executionIndex, CompilerIndex compilerIndex)
         {
-            ProcessInfo executionProcess = _executions[executionIndex][(int)compilerIndex];
-            if (executionProcess != null && executionProcess.JittedMethods != null)
+            ProcessInfo[] executionProcesses = _executions[executionIndex][(int)compilerIndex];
+            if (executionProcesses != null)
             {
-                foreach (KeyValuePair<string, HashSet<string>> moduleMethodKvp in executionProcess.JittedMethods)
+                foreach (ProcessInfo executionProcess in executionProcesses.Where(ep => ep.JittedMethods != null))
                 {
-                    HashSet<string> jittedMethodsPerModule;
-                    if (!moduleToJittedMethods.TryGetValue(moduleMethodKvp.Key, out jittedMethodsPerModule))
+                    foreach (KeyValuePair<string, HashSet<string>> moduleMethodKvp in executionProcess.JittedMethods)
                     {
-                        jittedMethodsPerModule = new HashSet<string>();
-                        moduleToJittedMethods.Add(moduleMethodKvp.Key, jittedMethodsPerModule);
+                        HashSet<string> jittedMethodsPerModule;
+                        if (!moduleToJittedMethods.TryGetValue(moduleMethodKvp.Key, out jittedMethodsPerModule))
+                        {
+                            jittedMethodsPerModule = new HashSet<string>();
+                            moduleToJittedMethods.Add(moduleMethodKvp.Key, jittedMethodsPerModule);
+                        }
+                        jittedMethodsPerModule.UnionWith(moduleMethodKvp.Value);
                     }
-                    jittedMethodsPerModule.UnionWith(moduleMethodKvp.Value);
                 }
             }
         }
@@ -281,6 +291,6 @@ namespace R2RTest
 
         public IList<ProcessInfo[]> Compilations => _compilations;
 
-        public IList<ProcessInfo[]> Executions => _executions;
+        public IList<ProcessInfo[][]> Executions => _executions;
     }
 }

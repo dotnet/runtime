@@ -190,7 +190,7 @@ namespace System.Net.Http
                 return connectionBuffer.Slice(0, bytesToConsume);
             }
 
-            public override bool NeedsDrain => (_connection != null);
+            public override bool NeedsDrain => CanReadFromConnection;
 
             public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {

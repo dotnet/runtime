@@ -181,7 +181,6 @@
       Microsoft.Extensions.Primitives;
       System.Diagnostics.EventLog;
       System.IO.Pipelines;
-      System.Net.Quic;
       System.Security.Cryptography.Xml;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>

@@ -1,17 +1,33 @@
-<Project>
+<Project TreatAsLocalProperty="UsingBrowserRuntimeWorkload;WasmNativeWorkload">
     <PropertyGroup>
         <RuntimePackInWorkloadVersion>${PackageVersion}</RuntimePackInWorkloadVersion>
+        <BrowserWorkloadDisabled Condition="'$(BrowserWorkloadDisabled)' == '' and
+                                            '$(RuntimeIdentifier)' == 'browser-wasm' and
+                                            '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                            !$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '6.0'))">true</BrowserWorkloadDisabled>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(BrowserWorkloadDisabled)' == 'true'">
+        <_NativeBuildNeeded Condition="'$(RunAOTCompilation)' == 'true'">true</_NativeBuildNeeded>
+        <WorkloadDisabledWithReason Condition="'$(_NativeBuildNeeded)' == 'true'">WebAssembly workloads (required for AOT) are only supported for projects targeting net6.0+</WorkloadDisabledWithReason>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
         <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
         <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''" >$(WasmNativeWorkload)</UsingBrowserRuntimeWorkload>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(BrowserWorkloadDisabled)' == 'true'">
+        <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+        <WasmNativeWorkload>false</WasmNativeWorkload>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
       <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
       <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
     </PropertyGroup>
 
-    <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
+    <Import Condition="'$(RunAOTCompilation)' == 'true' and '$(BrowserWorkloadDisabled)' != 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
@@ -112,4 +128,7 @@
                         />
     </ItemGroup>
 
+    <Target Name="ErrorDisabledWorkload" Condition="'$(WorkloadDisabledWithReason)' != ''" BeforeTargets="Publish">
+      <Error Text="$(WorkloadDisabledWithReason)" />
+    </Target>
 </Project>

@@ -2088,10 +2088,6 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
 
     MethodDesc *pMD = FunctionIdToMethodDesc(functionId);
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMD->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     if (pToken)
     {
         *pToken = pMD->GetMemberDef();
@@ -2135,10 +2131,6 @@ HRESULT ValidateParametersForGetCodeInfo(
     {
         return E_INVALIDARG;
     }
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethodDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
 
     if (pMethodDesc->HasClassOrMethodInstantiation() && pMethodDesc->IsTypicalMethodDefinition())
     {
@@ -3932,38 +3924,25 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     DWORD dwRet = 0;
 
     // First, set the flags that are dependent on which PEImage / layout we look at
-    // inside the Module (disk/ngen/flat)
-
-    if (pModule->HasNativeImage())
-    {
-        // NGEN
-        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-
-        // Intentionally not checking for flat, since NGEN PEImages never have flat
-        // layouts.
-    }
-    else
-    {
+    // inside the Module (disk/flat)
 #ifdef FEATURE_READYTORUN
-        // pModule->HasNativeImage() returns false for ReadyToRun images
-        if (pModule->IsReadyToRun())
-        {
-            // Ready To Run
-            dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-        }
+    if (pModule->IsReadyToRun())
+    {
+        // Ready To Run
+        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
+    }
 #endif
-        // Not NGEN or ReadyToRun.
-        if (pPEFile->HasOpenedILimage())
+    // Not NGEN or ReadyToRun.
+    if (pPEFile->HasOpenedILimage())
+    {
+        PEImage * pILImage = pPEFile->GetOpenedILimage();
+        if (pILImage->IsFile())
         {
-            PEImage * pILImage = pPEFile->GetOpenedILimage();
-            if (pILImage->IsFile())
-            {
-                dwRet |= COR_PRF_MODULE_DISK;
-            }
-            if (pPEFile->GetLoadedIL()->IsFlat())
-            {
-                dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
-            }
+            dwRet |= COR_PRF_MODULE_DISK;
+        }
+        if (pPEFile->GetLoadedIL()->IsFlat())
+        {
+            dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
         }
     }
 
@@ -4220,7 +4199,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     IUnknown *pObj = NULL;
     EX_TRY
     {
-        pObj = pModule->GetValidatedEmitter();
+        pObj = pModule->GetEmitter();
     }
     EX_CATCH_HRESULT_NO_ERRORINFO(hr);
 
@@ -4542,12 +4521,6 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
 
 #ifdef DEBUGGING_SUPPORTED
 
-    MethodDesc *pMethodDesc = FunctionIdToMethodDesc(functionId);
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethodDesc ->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     if (g_pDebugInterface == NULL)
     {
         return CORPROF_E_DEBUGGING_DISABLED;
@@ -4560,6 +4533,7 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
 
     memcpy_s(rgNewILMapEntries, sizeof(COR_IL_MAP) * cILMapEntries, rgILMapEntries, sizeof(COR_IL_MAP) * cILMapEntries);
 
+    MethodDesc *pMethodDesc = FunctionIdToMethodDesc(functionId);
     return g_pDebugInterface->SetILInstrumentedCodeMap(pMethodDesc,
                                                        fStartJit,
                                                        cILMapEntries,
@@ -4847,11 +4821,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
     }
 
     MethodDesc *pMDesc = (MethodDesc *) functionId;
-    if (!pMDesc->IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
     MethodTable *pMT = pMDesc->GetMethodTable();
     if (!pMT->IsRestored())
     {
@@ -5464,7 +5433,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
     MethodTable* pMethodTable = typeHandle.GetMethodTable();
 
     if (pMethodTable == NULL || !pMethodTable->IsRestored() ||
-        pMethodDesc == NULL || !pMethodDesc->IsRestored())
+        pMethodDesc == NULL)
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -6065,10 +6034,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
         return E_INVALIDARG;
     }
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc ->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     //
     // Find the exact instantiation of this function.
     //
@@ -6273,10 +6238,6 @@ HRESULT ProfToEEInterfaceImpl::IsFunctionDynamic(FunctionID functionId, BOOL *is
         return E_INVALIDARG;
     }
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     //
     // Fill in the pHasNoMetadata, if desired.
     //
@@ -6431,11 +6392,6 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
     {
         return E_INVALIDARG;
     }
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
 
     if (!pMethDesc->IsNoMetadata())
         return E_INVALIDARG;
@@ -7697,16 +7653,6 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
     // If this class is not fully restored, that is all the information we can get at this time.
     //
     if (!typeHandle.IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
-    // Types can be pre-restored, but they still aren't expected to handle queries before
-    // eager fixups have run. This is a targetted band-aid for a bug intellitrace was
-    // running into - attempting to get the class layout for all types at module load time.
-    // If we don't detect this the runtime will AV during the field iteration below. Feel
-    // free to eliminate this check when a more complete solution is available.
-    if (MethodTable::IsParentMethodTableTagged(typeHandle.AsMethodTable()))
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -9030,9 +8976,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        "**PROF: GetObjectGeneration 0x%p.\n",
                                        objectId));
 
-    
+
     _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
-    
+
 
     // Announce we are using the generation table now
     CounterHolder genTableLock(&s_generationTableLock);
@@ -9545,14 +9491,16 @@ HRESULT ProfToEEInterfaceImpl::RequestProfilerDetach(DWORD dwExpectedCompletionM
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(
         kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: RequestProfilerDetach.\n"));
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    return ProfilingAPIDetach::RequestProfilerDetach(g_profControlBlock.GetProfilerInfo(this), dwExpectedCompletionMilliseconds);
+    ProfilerInfo *pProfilerInfo = g_profControlBlock.GetProfilerInfo(this);
+    _ASSERTE(pProfilerInfo != NULL);
+    return ProfilingAPIDetach::RequestProfilerDetach(pProfilerInfo, dwExpectedCompletionMilliseconds);
 #else // FEATURE_PROFAPI_ATTACH_DETACH
     return E_NOTIMPL;
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
@@ -10228,7 +10176,7 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    if (!inlinersModule->HasNativeOrReadyToRunInlineTrackingMap())
+    if (!inlinersModule->HasReadyToRunInlineTrackingMap())
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -10241,14 +10189,14 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
     EX_TRY
     {
         // Trying to use static buffer
-        COUNT_T methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
+        COUNT_T methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
 
         // If static buffer is not enough, allocate an array.
         if (methodsAvailable > staticBufferSize)
         {
             DWORD dynamicBufferSize = methodsAvailable;
             dynamicBuffer = methodsBuffer = new MethodInModule[dynamicBufferSize];
-            methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
+            methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
             if (methodsAvailable > dynamicBufferSize)
             {
                 _ASSERTE(!"Ngen image inlining info changed, this shouldn't be possible.");
