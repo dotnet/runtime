@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <remarks>
         /// Equals the value of <see cref="System.IO.FileInfo.Directory" />.
         /// </remarks>
-        public override DirectoryInfoBase ParentDirectory
+        public override DirectoryInfoBase? ParentDirectory
             => new DirectoryInfoWrapper(_fileInfo.Directory!);
     }
 }

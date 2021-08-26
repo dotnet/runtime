@@ -8,9 +8,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 {
     internal sealed class InMemoryFileInfo : FileInfoBase
     {
-        private InMemoryDirectoryInfo _parent;
+        private InMemoryDirectoryInfo? _parent;
 
-        public InMemoryFileInfo(string file, InMemoryDirectoryInfo parent)
+        public InMemoryFileInfo(string file, InMemoryDirectoryInfo? parent)
         {
             FullName = file;
             Name = Path.GetFileName(file);
@@ -21,6 +21,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
         public override string Name { get; }
 
-        public override DirectoryInfoBase ParentDirectory => _parent;
+        public override DirectoryInfoBase? ParentDirectory => _parent;
     }
 }

@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <remarks>
         /// Equals the value of <seealso cref="System.IO.DirectoryInfo.Parent" />.
         /// </remarks>
-        public override DirectoryInfoBase ParentDirectory
+        public override DirectoryInfoBase? ParentDirectory
             => new DirectoryInfoWrapper(_directoryInfo.Parent!);
     }
 }

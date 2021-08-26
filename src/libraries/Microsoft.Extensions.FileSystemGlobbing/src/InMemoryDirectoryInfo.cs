@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override string Name { get; }
 
         /// <inheritdoc />
-        public override DirectoryInfoBase ParentDirectory =>
+        public override DirectoryInfoBase? ParentDirectory =>
             new InMemoryDirectoryInfo(Path.GetDirectoryName(FullName)!, _files, true);
 
         /// <inheritdoc />
