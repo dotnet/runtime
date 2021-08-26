@@ -22,38 +22,19 @@ FORCEINLINE PTR_EEClass MethodTable::GetClass_NoLogging()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    TADDR addr = ReadPointer(this, &MethodTable::m_pCanonMT);
+    TADDR addr = m_pCanonMT;
 
-#ifdef _DEBUG
     LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_EECLASS)
     {
         return PTR_EEClass(addr);
     }
-    else if (lowBits == UNION_METHODTABLE)
+    else
     {
         // pointer to canonical MethodTable.
         TADDR canonicalMethodTable = union_getPointer(addr);
-        return PTR_EEClass(ReadPointer((MethodTable *) PTR_MethodTable(canonicalMethodTable), &MethodTable::m_pCanonMT));
+        return PTR_EEClass(PTR_MethodTable(canonicalMethodTable)->m_pCanonMT);
     }
-#ifdef DACCESS_COMPILE
-    // Minidumps don't guarantee that every member of every class will be able to work here.
-#else
-    _ASSERTE(!"Malformed m_pEEClass in MethodTable");
-#endif
-    return NULL;
-
-#else
-
-    if ((addr & 2) == 0)
-    {
-        // pointer to EEClass
-        return PTR_EEClass(addr);
-    }
-
-    // pointer to canonical MethodTable.
-    return PTR_EEClass(ReadPointer((MethodTable *) PTR_MethodTable(addr - 2), &MethodTable::m_pCanonMT));
-#endif
 }
 
 //==========================================================================================
@@ -94,53 +75,24 @@ inline BOOL MethodTable::IsClassPointerValid()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    TADDR addr = ReadPointer(this, &MethodTable::m_pCanonMT);
-
-    LowBits lowBits = union_getLowBits(addr);
+    LowBits lowBits = union_getLowBits(m_pCanonMT);
     if (lowBits == UNION_EECLASS)
     {
-        return !m_pEEClass.IsNull();
+        return (m_pEEClass != NULL);
     }
-    else if (lowBits == UNION_METHODTABLE)
+    else
     {
         // pointer to canonical MethodTable.
-        TADDR canonicalMethodTable = union_getPointer(addr);
-        return !PTR_MethodTable(canonicalMethodTable)->m_pEEClass.IsNull();
+        TADDR canonicalMethodTable = union_getPointer(m_pCanonMT);
+        return (PTR_MethodTable(canonicalMethodTable)->m_pEEClass != NULL);
     }
-    _ASSERTE(!"Malformed m_pEEClass in MethodTable");
-    return FALSE;
-}
-
-//==========================================================================================
-// Does this immediate item live in an NGEN module?
-inline BOOL MethodTable::IsZapped()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return FALSE;
-}
-
-//==========================================================================================
-// For types that are part of an ngen-ed assembly this gets the
-// Module* that contains this methodtable.
-inline PTR_Module MethodTable::GetZapModule()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    PTR_Module zapModule = NULL;
-    if (IsZapped())
-    {
-        zapModule = ReadPointer(this, &MethodTable::m_pLoaderModule);
-    }
-
-    return zapModule;
 }
 
 //==========================================================================================
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return ReadPointer(this, &MethodTable::m_pLoaderModule);
+    return m_pLoaderModule;
 }
 
 inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
@@ -156,7 +108,7 @@ inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
 inline void MethodTable::SetLoaderModule(Module* pModule)
 {
     WRAPPER_NO_CONTRACT;
-    m_pLoaderModule.SetValue(pModule);
+    m_pLoaderModule = pModule;
 }
 
 inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)
@@ -811,15 +763,14 @@ inline DPTR(MethodTable::VTableIndir2_t) MethodTable::VtableIndirectionSlotItera
     LIMITED_METHOD_DAC_CONTRACT;
     PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
 
-    return m_pSlot->GetValueMaybeNull(dac_cast<TADDR>(m_pSlot));
+    return *m_pSlot;
 }
-
 //==========================================================================================
 #ifndef DACCESS_COMPILE
 inline void MethodTable::VtableIndirectionSlotIterator::SetIndirectionSlot(DPTR(MethodTable::VTableIndir2_t) pChunk)
 {
     LIMITED_METHOD_CONTRACT;
-    m_pSlot->SetValueMaybeNull(pChunk);
+    (*m_pSlot) = pChunk;
 }
 #endif
 
@@ -930,36 +881,18 @@ inline PTR_MethodTable MethodTable::GetCanonicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    TADDR addr = ReadPointer(this, &MethodTable::m_pCanonMT);
+    TADDR addr = m_pCanonMT;
 
-#ifdef _DEBUG
     LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_EECLASS)
     {
         return dac_cast<PTR_MethodTable>(this);
     }
-    else if (lowBits == UNION_METHODTABLE)
+    else
     {
         // pointer to canonical MethodTable.
         return PTR_MethodTable(union_getPointer(addr));
     }
-    _ASSERTE(!"Malformed m_pCanonMT in MethodTable");
-    return NULL;
-#else
-
-    if ((addr & 2) == 0)
-        return dac_cast<PTR_MethodTable>(this);
-
-    return PTR_MethodTable(addr - 2);
-#endif
-}
-
-//==========================================================================================
-inline TADDR MethodTable::GetCanonicalMethodTableFixup()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return NULL;
 }
 
 //==========================================================================================
@@ -1077,7 +1010,7 @@ inline BOOL MethodTable::IsCanonicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (union_getLowBits(ReadPointer(this, &MethodTable::m_pCanonMT)) == UNION_EECLASS);
+    return (union_getLowBits(m_pCanonMT) == UNION_EECLASS);
 }
 
 //==========================================================================================
@@ -1111,7 +1044,7 @@ inline PTR_InterfaceInfo MethodTable::GetInterfaceMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return ReadPointer(this, &MethodTable::m_pInterfaceMap);
+    return m_pInterfaceMap;
 }
 
 //==========================================================================================

@@ -63,7 +63,7 @@ namespace System.Text.Json.SourceGeneration
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
-                if (syntaxNode is ClassDeclarationSyntax cds)
+                if (syntaxNode is ClassDeclarationSyntax { AttributeLists.Count: > 0, BaseList.Types.Count: > 0 } cds)
                 {
                     (ClassDeclarationSyntaxList ??= new List<ClassDeclarationSyntax>()).Add(cds);
                 }

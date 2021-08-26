@@ -20,7 +20,6 @@ inline PEDecoder::PEDecoder()
     m_flags(0),
     m_pNTHeaders(nullptr),
     m_pCorHeader(nullptr),
-    m_pNativeHeader(nullptr),
     m_pReadyToRunHeader(nullptr)
 {
     CONTRACTL
@@ -95,7 +94,6 @@ inline PEDecoder::PEDecoder(PTR_VOID mappedBase, bool fixedUp /*= FALSE*/)
     m_flags(FLAG_MAPPED | FLAG_CONTENTS | FLAG_NT_CHECKED | (fixedUp ? FLAG_RELOCATED : 0)),
     m_pNTHeaders(nullptr),
     m_pCorHeader(nullptr),
-    m_pNativeHeader(nullptr),
     m_pReadyToRunHeader(nullptr)
 {
     CONTRACTL
@@ -134,7 +132,6 @@ inline PEDecoder::PEDecoder(void *flatBase, COUNT_T size)
     m_flags(FLAG_CONTENTS),
     m_pNTHeaders(NULL),
     m_pCorHeader(NULL),
-    m_pNativeHeader(NULL),
     m_pReadyToRunHeader(NULL)
 {
     CONTRACTL
@@ -210,7 +207,6 @@ inline void PEDecoder::Reset()
     m_size=NULL;
     m_pNTHeaders=NULL;
     m_pCorHeader=NULL;
-    m_pNativeHeader=NULL;
     m_pReadyToRunHeader=NULL;
 }
 #endif // #ifndef DACCESS_COMPILE
@@ -962,29 +958,6 @@ inline BOOL PEDecoder::IsI386() const
     return m_pNTHeaders->FileHeader.Machine==IMAGE_FILE_MACHINE_I386;
 }
 
-inline CORCOMPILE_HEADER *PEDecoder::GetNativeHeader() const
-{
-    CONTRACT(CORCOMPILE_HEADER *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        PRECONDITION(HasCorHeader());
-        PRECONDITION(HasNativeHeader());
-        NOTHROW;
-        GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
-        SUPPORTS_DAC;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACT_END;
-
-    if (m_pNativeHeader == NULL)
-        const_cast<PEDecoder *>(this)->m_pNativeHeader =
-            dac_cast<PTR_CORCOMPILE_HEADER>(FindNativeHeader());
-
-    RETURN m_pNativeHeader;
-}
-
 // static
 inline PTR_IMAGE_SECTION_HEADER PEDecoder::FindFirstSection(IMAGE_NT_HEADERS * pNTHeaders)
 {
@@ -1068,23 +1041,6 @@ inline IMAGE_COR20_HEADER *PEDecoder::FindCorHeader() const
 
     const IMAGE_COR20_HEADER * pCor=PTR_IMAGE_COR20_HEADER(GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_COMHEADER));
     RETURN ((IMAGE_COR20_HEADER*)pCor);
-}
-
-inline CORCOMPILE_HEADER *PEDecoder::FindNativeHeader() const
-{
-    CONTRACT(CORCOMPILE_HEADER *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasNativeHeader());
-        NOTHROW;
-        GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
-        CANNOT_TAKE_LOCK;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    RETURN PTR_CORCOMPILE_HEADER(GetDirectoryData(&GetCorHeader()->ManagedNativeHeader));
 }
 
 inline CHECK PEDecoder::CheckBounds(RVA rangeBase, COUNT_T rangeSize, RVA rva)

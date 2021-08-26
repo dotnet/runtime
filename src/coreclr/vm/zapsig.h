@@ -6,9 +6,10 @@
 // ---------------------------------------------------------------------------
 //
 // This module contains helper functions used to encode and manipulate
-// signatures for the zapper (ngen).
+// signatures for scenarios where runtime-specific signatures
+// including specific generic instantiations are persisted,
+// like Ready-To-Run decoding, IBC, and Multi-core JIT recording/playback
 //
-
 // ---------------------------------------------------------------------------
 
 
@@ -191,16 +192,6 @@ public:
         CORINFO_RESOLVED_TOKEN *pResolvedToken = NULL,
         CORINFO_RESOLVED_TOKEN *pConstrainedResolvedToken = NULL,
         BOOL                   fEncodeUsingResolvedTokenSpecStreams = FALSE);
-
-    static void EncodeField(
-        FieldDesc              *pField,
-        Module                 *pInfoModule,
-        SigBuilder             *pSigBuilder,
-        LPVOID                 pReferencingModule,
-        ENCODEMODULE_CALLBACK  pfnEncodeModule,
-        CORINFO_RESOLVED_TOKEN *pResolvedToken = NULL,
-        BOOL                   fEncodeUsingResolvedTokenSpecStreams = FALSE);
-
 };
 
 #endif // ZAPGSIG_H

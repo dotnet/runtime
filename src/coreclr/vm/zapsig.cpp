@@ -3,9 +3,12 @@
 // ===========================================================================
 // File: zapsig.cpp
 //
-// Signature encoding for zapper (ngen)
 //
-
+// This module contains helper functions used to encode and manipulate
+// signatures for scenarios where runtime-specific signatures
+// including specific generic instantiations are persisted,
+// like Ready-To-Run decoding, IBC, and Multi-core JIT recording/playback
+//
 // ===========================================================================
 
 
@@ -1057,7 +1060,7 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
 // Passing moduleIndex set to MODULE_INDEX_NONE results in pure copy of the signature.
 //
 // NOTE: This function is meant to process only generic signatures that occur as owner type,
-// constraint types and method instantiation in the EncodeMethod and EncodeField methods below.
+// constraint types and method instantiation in the EncodeMethod method below.
 //
 void ZapSig::CopyTypeSignature(SigParser* pSigParser, SigBuilder* pSigBuilder, DWORD moduleIndex)
 {
@@ -1378,76 +1381,4 @@ BOOL ZapSig::EncodeMethod(
 
     return TRUE;
 }
-
-void ZapSig::EncodeField(
-        FieldDesc              *pField,
-        Module                 *pInfoModule,
-        SigBuilder             *pSigBuilder,
-        LPVOID                 pEncodeModuleContext,
-        ENCODEMODULE_CALLBACK  pfnEncodeModule,
-        CORINFO_RESOLVED_TOKEN *pResolvedToken,
-        BOOL                   fEncodeUsingResolvedTokenSpecStreams)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable * pMT = pField->GetApproxEnclosingMethodTable();
-
-    mdMethodDef fieldToken = pField->GetMemberDef();
-    DWORD fieldFlags = ENCODE_FIELD_SIG_OwnerType | ENCODE_FIELD_SIG_IndexInsteadOfToken;
-
-    //
-    // output the flags
-    //
-    pSigBuilder->AppendData(fieldFlags);
-
-    if (fieldFlags & ENCODE_FIELD_SIG_OwnerType)
-    {
-        if (fEncodeUsingResolvedTokenSpecStreams && pResolvedToken != NULL && pResolvedToken->pTypeSpec != NULL)
-        {
-            _ASSERTE(pResolvedToken->cbTypeSpec > 0);
-
-            DWORD moduleIndex = MODULE_INDEX_NONE;
-
-            SigParser sigParser(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-            CopyTypeSignature(&sigParser, pSigBuilder, moduleIndex);
-        }
-        else
-        {
-            ZapSig zapSig(pInfoModule, pEncodeModuleContext, ZapSig::NormalTokens,
-                (EncodeModuleCallback)pfnEncodeModule, NULL);
-
-            //
-            // Write class
-            //
-            BOOL fSuccess;
-            fSuccess = zapSig.GetSignatureForTypeHandle(pMT, pSigBuilder);
-            _ASSERTE(fSuccess);
-        }
-    }
-
-    if ((fieldFlags & ENCODE_FIELD_SIG_IndexInsteadOfToken) == 0)
-    {
-        // emit the rid
-        pSigBuilder->AppendData(RidFromToken(fieldToken));
-    }
-    else
-    {
-        //
-        // Write field index
-        //
-
-        DWORD fieldIndex = pMT->GetIndexForFieldDesc(pField);
-        _ASSERTE(fieldIndex < DWORD(pMT->GetNumStaticFields() + pMT->GetNumIntroducedInstanceFields()));
-
-        // have no token (e.g. it could be an array), encode slot number
-        pSigBuilder->AppendData(fieldIndex);
-    }
-}
-
 #endif // DACCESS_COMPILE

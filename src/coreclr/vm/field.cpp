@@ -94,35 +94,6 @@ BOOL FieldDesc::IsObjRef()
     return CorTypeInfo::IsObjRef_NoThrow(GetFieldType());
 }
 
-#ifndef DACCESS_COMPILE
-void FieldDesc::PrecomputeNameHash()
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-    // We only have space for the name hash when we can use the packed mb layout
-    if (m_requiresFullMbValue)
-    {
-        return;
-    }
-
-    // Store a case-insensitive hash so that we can use this value for
-    // both case-sensitive and case-insensitive name lookups
-    SString name(SString::Utf8Literal, GetName());
-    ULONG nameHashValue = name.HashCaseInsensitive() & enum_packedMbLayout_NameHashMask;
-
-    // We should never overwrite any other bits
-    _ASSERTE((m_mb & enum_packedMbLayout_NameHashMask) == 0 ||
-               (m_mb & enum_packedMbLayout_NameHashMask) == nameHashValue);
-
-    m_mb |= nameHashValue;
-}
-#endif
-
 BOOL FieldDesc::MightHaveName(ULONG nameHashValue)
 {
     LIMITED_METHOD_CONTRACT;
@@ -306,7 +277,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
     if (IsRVA())
     {
         Module* pModule = GetModule();
-        PTR_VOID ret = pModule->GetRvaField(GetOffset(), IsZapped());
+        PTR_VOID ret = pModule->GetRvaField(GetOffset());
 
         _ASSERTE(!pModule->IsPEFile() || !pModule->IsRvaFieldTls(GetOffset()));
 

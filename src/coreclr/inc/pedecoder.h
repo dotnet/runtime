@@ -285,7 +285,6 @@ class PEDecoder
     // Native header access
     BOOL HasNativeHeader() const;
     CHECK CheckNativeHeader() const;
-    CORCOMPILE_HEADER *GetNativeHeader() const;
     BOOL IsNativeMachineFormat() const;
     BOOL IsI386() const;
 
@@ -371,7 +370,6 @@ class PEDecoder
 
     IMAGE_NT_HEADERS *FindNTHeaders() const;
     IMAGE_COR20_HEADER *FindCorHeader() const;
-    CORCOMPILE_HEADER *FindNativeHeader() const;
     READYTORUN_HEADER *FindReadyToRunHeader() const;
 
     // Flat mapping utilities
@@ -410,7 +408,6 @@ class PEDecoder
 
     PTR_IMAGE_NT_HEADERS   m_pNTHeaders;
     PTR_IMAGE_COR20_HEADER m_pCorHeader;
-    PTR_CORCOMPILE_HEADER  m_pNativeHeader;
     PTR_READYTORUN_HEADER  m_pReadyToRunHeader;
 };
 

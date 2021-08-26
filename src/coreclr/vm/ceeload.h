@@ -90,7 +90,6 @@ class JITInlineTrackingMap;
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #endif
 
-typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
 //
@@ -398,7 +397,7 @@ struct ModuleCtorInfo
     DWORD                   numElements;
     DWORD                   numLastAllocated;
     DWORD                   numElementsHot;
-    DPTR(RelativePointer<PTR_MethodTable>) ppMT; // size is numElements
+    DPTR(PTR_MethodTable)   ppMT; // size is numElements
     PTR_ClassCtorInfoEntry  cctorInfoHot;   // size is numElementsHot
     PTR_ClassCtorInfoEntry  cctorInfoCold;  // size is numElements-numElementsHot
 
@@ -407,8 +406,8 @@ struct ModuleCtorInfo
     DWORD                   numHotHashes;
     DWORD                   numColdHashes;
 
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppHotGCStaticsMTs;            // hot table
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppColdGCStaticsMTs;           // cold table
+    ArrayDPTR(PTR_MethodTable) ppHotGCStaticsMTs;            // hot table
+    ArrayDPTR(PTR_MethodTable) ppColdGCStaticsMTs;           // cold table
 
     DWORD                   numHotGCStaticsMTs;
     DWORD                   numColdGCStaticsMTs;
@@ -444,12 +443,12 @@ struct ModuleCtorInfo
         return hashVal;
     };
 
-    ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) GetGCStaticMTs(DWORD index);
+    ArrayDPTR(PTR_MethodTable) GetGCStaticMTs(DWORD index);
 
     PTR_MethodTable GetMT(DWORD i)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ppMT[i].GetValue(dac_cast<TADDR>(ppMT) + i * sizeof(RelativePointer<PTR_MethodTable>));
+        return ppMT[i];
     }
 
 };
@@ -1047,8 +1046,7 @@ private:
     // For protecting additions to the heap
     CrstExplicitInit        m_LookupTableCrst;
 
-    #define TYPE_DEF_MAP_ALL_FLAGS                    ((TADDR)0x00000001)
-        #define ZAPPED_TYPE_NEEDS_NO_RESTORE          ((TADDR)0x00000001)
+    #define TYPE_DEF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
 
     #define TYPE_REF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
         // For type ref map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
@@ -1064,8 +1062,7 @@ private:
 
     #define GENERIC_PARAM_MAP_ALL_FLAGS               NO_MAP_FLAGS
 
-    #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            ((TADDR)0x00000001)
-        #define ZAPPED_GENERIC_TYPE_NEEDS_NO_RESTORE  ((TADDR)0x00000001)
+    #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            NO_MAP_FLAGS
 
     #define FILE_REF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
         // For file ref map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
@@ -1114,13 +1111,6 @@ private:
     ILStubCache                *m_pILStubCache;
 
     ULONG m_DefaultDllImportSearchPathsAttributeValue;
-
-#ifdef PROFILING_SUPPORTED_DATA
-     // a wrapper for the underlying PEFile metadata emitter which validates that the metadata edits being
-     // made are supported modifications to the type system
-     VolatilePtr<IMetaDataEmit> m_pValidatedEmitter;
-#endif
-
 public:
     LookupMap<PTR_MethodTable>::Iterator EnumerateTypeDefs()
     {
@@ -1472,10 +1462,6 @@ protected:
         return m_file->GetEmitter();
     }
 
-#if defined(PROFILING_SUPPORTED)
-    IMetaDataEmit *GetValidatedEmitter();
-#endif
-
     IMetaDataImport2 *GetRWImporter()
     {
         WRAPPER_NO_CONTRACT;
@@ -1706,18 +1692,7 @@ public:
 
         if (pLoadLevel && !th.IsNull())
         {
-            if (!IsCompilationProcess() && (flags & ZAPPED_TYPE_NEEDS_NO_RESTORE))
-            {
-                // Make sure the flag is consistent with the target data and implies the load level we think it does
-                _ASSERTE(th.AsMethodTable()->IsPreRestored());
-                _ASSERTE(th.GetLoadLevel() == CLASS_LOADED);
-
-                *pLoadLevel = CLASS_LOADED;
-            }
-            else
-            {
-                *pLoadLevel = th.GetLoadLevel();
-            }
+            *pLoadLevel = th.GetLoadLevel();
         }
 
         return th;
@@ -1736,18 +1711,7 @@ public:
 
         if (pLoadLevel && !th.IsNull())
         {
-            if (!IsCompilationProcess() && (flags & ZAPPED_GENERIC_TYPE_NEEDS_NO_RESTORE))
-            {
-                // Make sure the flag is consistent with the target data and implies the load level we think it does
-                _ASSERTE(th.AsMethodTable()->IsPreRestored());
-                _ASSERTE(th.GetLoadLevel() == CLASS_LOADED);
-
-                *pLoadLevel = CLASS_LOADED;
-            }
-            else
-            {
-                *pLoadLevel = th.GetLoadLevel();
-            }
+            *pLoadLevel = th.GetLoadLevel();
         }
 
         return th;
@@ -1988,15 +1952,7 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
-    void PopulatePropertyInfoMap();
     HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
-
-    #define NUM_PROPERTY_SET_HASHES 4
-    BOOL MightContainMatchingProperty(mdProperty tkProperty, ULONG nameHash);
-
-private:
-    ArrayDPTR(BYTE)    m_propertyNameSet;
-    DWORD              m_nPropertyNameSet;
 
 public:
 
@@ -2023,8 +1979,8 @@ public:
     void NotifyProfilerLoadFinished(HRESULT hr);
 #endif // PROFILING_SUPPORTED
 
-    BOOL HasNativeOrReadyToRunInlineTrackingMap();
-    COUNT_T GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+    BOOL HasReadyToRunInlineTrackingMap();
+    COUNT_T GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
@@ -2057,21 +2013,7 @@ public:
     LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_file->GetDebugName(); }
 #endif
 
-    BOOL HasNativeImage()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
-
-    PEImageLayout * GetNativeImage()
-    {
-        // Should never get here
-        PRECONDITION(HasNativeImage());
-        return NULL;
-    }
-
-    BOOL            HasNativeOrReadyToRunImage();
-    PEImageLayout * GetNativeOrReadyToRunImage();
+    PEImageLayout * GetReadyToRunImage();
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
@@ -2079,7 +2021,7 @@ public:
     // These are overridden by reflection modules
     virtual TADDR GetIL(RVA il);
 
-    virtual PTR_VOID GetRvaField(RVA field, BOOL fZapped);
+    virtual PTR_VOID GetRvaField(RVA field);
     CHECK CheckRvaField(RVA field);
     CHECK CheckRvaField(RVA field, COUNT_T size);
 
@@ -2446,9 +2388,6 @@ private:
 
     DebuggerSpecificData  m_debuggerSpecificData;
 
-    // This is a compressed read only copy of m_inlineTrackingMap, which is being saved to NGEN image.
-    PTR_PersistentInlineTrackingMapNGen m_pPersistentInlineTrackingMapNGen;
-
 #if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
@@ -2538,7 +2477,7 @@ public:
 
     // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);
-    virtual PTR_VOID GetRvaField(RVA rva, BOOL fZapped);
+    virtual PTR_VOID GetRvaField(RVA rva);
 
     Assembly* GetCreatingAssembly( void )
     {

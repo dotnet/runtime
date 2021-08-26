@@ -205,7 +205,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
             retval = FALSE;
         }
 
-        if (retval && pMD->HasTemporaryEntryPoint())
+        if (retval)
         {
             MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
 
@@ -918,7 +918,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
             methodDescData->bHasNativeCode = FALSE;
             methodDescData->NativeCodeAddr = (CLRDATA_ADDRESS)-1;
         }
-        methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ? TO_CDADDR(pMD->GetAddrOfNativeCodeSlot()) : NULL;
+        methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ? TO_CDADDR(dac_cast<TADDR>(pMD->GetAddrOfNativeCodeSlot())) : NULL;
         methodDescData->MDToken = pMD->GetMemberDef();
         methodDescData->MethodDescPtr = methodDesc;
         methodDescData->MethodTablePtr = HOST_CDADDR(pMD->GetMethodTable());
@@ -1507,7 +1507,7 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
         PEFile *pPEFile = mt->GetModule()->GetFile();
-        if (pPEFile->GetNativeImage() == NULL && pPEFile->GetILimage() == NULL)
+        if (pPEFile->GetILimage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -1647,11 +1647,6 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Address = addr;
     ModuleData->File = HOST_CDADDR(pModule->GetFile());
     COUNT_T metadataSize = 0;
-    if (pModule->GetFile()->HasNativeImage())
-    {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)PTR_TO_TADDR(pModule->GetFile()->GetLoadedNative()->GetBase());
-    }
-    else
     if (!pModule->GetFile()->IsDynamic())
     {
         ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetFile()->GetIJWBase();
@@ -1776,7 +1771,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
         PEFile *pPEFile = pMT->GetModule()->GetFile();
-        if (pPEFile->GetNativeImage() == NULL && pPEFile->GetILimage() == NULL)
+        if (pPEFile->GetILimage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -2120,9 +2115,7 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base)
     PEFile* pPEFile = PTR_PEFile(TO_TADDR(addr));
 
     // More fields later?
-    if (pPEFile->HasNativeImage())
-        *base = TO_CDADDR(PTR_TO_TADDR(pPEFile->GetLoadedNative()->GetBase()));
-    else if (!pPEFile->IsDynamic())
+    if (!pPEFile->IsDynamic())
         *base = TO_CDADDR(pPEFile->GetIJWBase());
     else
         *base = NULL;
@@ -3768,24 +3761,24 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
     Dereference(g_gcDacGlobals->finalize_queue).EnumMem();
 
     // Enumerate the entire generation table, which has variable size
-    size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
-    DacEnumMemoryRegion(dac_cast<TADDR>(g_gcDacGlobals->generation_table), gen_table_size);
+    EnumGenerationTable(dac_cast<TADDR>(g_gcDacGlobals->generation_table));
 
     if (g_gcDacGlobals->generation_table.IsValid())
     {
-            // enumerating the generations from max (which is normally gen2) to max+1 gives you
-            // the segment list for all the normal segements plus the large heap segment (max+1)
-            // this is the convention in the GC so it is repeated here
-            for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
+        ULONG first = IsRegion() ? 0 : (*g_gcDacGlobals->max_gen);
+        // enumerating the first to max + 2 gives you
+        // the segment list for all the normal segments plus the pinned heap segment (max + 2)
+        // this is the convention in the GC so it is repeated here
+        for (ULONG i = first; i <= *g_gcDacGlobals->max_gen + 2; i++)
+        {
+            dac_generation gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+            __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
+            while (seg)
             {
-                dac_generation gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-                __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
-                while (seg)
-                {
-                    DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
-                    seg = seg->next;
-                }
+                DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
+                seg = seg->next;
             }
+        }
     }
 }
 

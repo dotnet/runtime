@@ -317,9 +317,6 @@ DWORD ECall::GetIDForMethod(MethodDesc *pMD)
     }
     CONTRACTL_END;
 
-    // We should not go here for NGened methods
-    _ASSERTE(!pMD->IsZapped());
-
     INT ImplsIndex = FindImplsIndexForClass(pMD->GetMethodTable());
     if (ImplsIndex < 0)
         return 0;

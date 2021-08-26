@@ -81,7 +81,7 @@ PTR_LoaderAllocator InstMethodHashTable::GetLoaderAllocator()
     }
     else
     {
-        _ASSERTE(!m_pModule.IsNull());
+        _ASSERTE(m_pModule != NULL);
         return GetModule()->GetLoaderAllocator();
     }
 }

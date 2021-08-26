@@ -380,7 +380,7 @@ PTR_Module MethodTable::GetModule()
         return pMTForModule->GetLoaderModule();
 
     TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return RelativeFixupPointer<PTR_Module>::GetValueAtPtr(pSlot);
+    return *dac_cast<DPTR(PTR_Module)>(pSlot);
 }
 
 //==========================================================================================
@@ -397,7 +397,7 @@ PTR_Module MethodTable::GetModule_NoLogging()
         return pMTForModule->GetLoaderModule();
 
     TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return RelativeFixupPointer<PTR_Module>::GetValueAtPtr(pSlot);
+    return *dac_cast<DPTR(PTR_Module)>(pSlot);
 }
 
 //==========================================================================================
@@ -417,7 +417,7 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
     g_IBCLogger.LogDispatchMapAccess(pMT);
 
     TADDR pSlot = pMT->GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-    return RelativePointer<PTR_DispatchMap>::GetValueAtPtr(pSlot);
+    return *dac_cast<DPTR(PTR_DispatchMap)>(pSlot);
 }
 
 //==========================================================================================
@@ -456,7 +456,7 @@ void MethodTable::SetModule(Module * pModule)
 
     if (HasModuleOverride())
     {
-        GetModuleOverridePtr()->SetValue(pModule);
+        *GetModuleOverridePtr() = pModule;
     }
 
     _ASSERTE(GetModule() == pModule);
@@ -957,7 +957,7 @@ void MethodTable::SetInterfaceMap(WORD wNumInterfaces, InterfaceInfo_t* iMap)
     m_wNumInterfaces = wNumInterfaces;
 
     CONSISTENCY_CHECK(IS_ALIGNED(iMap, sizeof(void*)));
-    m_pInterfaceMap.SetValue(iMap);
+    m_pInterfaceMap = iMap;
 }
 
 //==========================================================================================
@@ -1166,7 +1166,7 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     *(((DWORD_PTR *)pNewItfMap) - 1) = NumDynAddedInterfaces + 1;
 
     // Switch the old interface map with the new one.
-    m_pInterfaceMap.SetValueVolatile(pNewItfMap);
+    VolatileStore(&m_pInterfaceMap, pNewItfMap);
 
     // Log the fact that we leaked the interface vtable map.
 #ifdef _DEBUG
@@ -1207,7 +1207,7 @@ void MethodTable::SetupGenericsStaticsInfo(FieldDesc* pStaticFieldDescs)
         pInfo->m_DynamicTypeID = (SIZE_T)-1;
     }
 
-    pInfo->m_pFieldDescs.SetValueMaybeNull(pStaticFieldDescs);
+    pInfo->m_pFieldDescs = pStaticFieldDescs;
 }
 
 #endif // !DACCESS_COMPILE
@@ -2922,9 +2922,6 @@ void MethodTable::AllocateRegularStaticBoxes()
     GCPROTECT_BEGININTERIOR(pStaticBase);
 
     {
-        // We should never take this codepath in zapped images.
-        _ASSERTE(!IsZapped());
-
         FieldDesc *pField = HasGenericsStaticsInfo() ?
             GetGenericsStaticFieldDescs() : (GetApproxFieldDescListRaw() + GetNumIntroducedInstanceFields());
         FieldDesc *pFieldEnd = pField + GetNumStaticFields();
@@ -3210,79 +3207,76 @@ void MethodTable::DoRunClassInitThrowing()
         {
             if (pEntry->m_hrResultCode == S_FALSE)
             {
-                if (!NingenEnabled())
+                if (HasBoxedRegularStatics())
                 {
-                    if (HasBoxedRegularStatics())
-                    {
-                        // First, instantiate any objects needed for value type statics
-                        AllocateRegularStaticBoxes();
-                    }
+                    // First, instantiate any objects needed for value type statics
+                    AllocateRegularStaticBoxes();
+                }
 
-                    // Nobody has run the .cctor yet
-                    if (HasClassConstructor())
-                    {
-                        struct _gc {
-                            OBJECTREF pInnerException;
-                            OBJECTREF pInitException;
-                            OBJECTREF pThrowable;
-                        } gc;
-                        gc.pInnerException = NULL;
-                        gc.pInitException = NULL;
-                        gc.pThrowable = NULL;
-                        GCPROTECT_BEGIN(gc);
+                // Nobody has run the .cctor yet
+                if (HasClassConstructor())
+                {
+                    struct _gc {
+                        OBJECTREF pInnerException;
+                        OBJECTREF pInitException;
+                        OBJECTREF pThrowable;
+                    } gc;
+                    gc.pInnerException = NULL;
+                    gc.pInitException = NULL;
+                    gc.pThrowable = NULL;
+                    GCPROTECT_BEGIN(gc);
 
-                        if (!RunClassInitEx(&gc.pInnerException))
+                    if (!RunClassInitEx(&gc.pInnerException))
+                    {
+                        // The .cctor failed and we want to store the exception that resulted
+                        // in the entry. Increment the ref count to keep the entry alive for
+                        // subsequent attempts to run the .cctor.
+                        pEntry->AddRef();
+                        // For collectible types, register the entry for cleanup.
+                        if (GetLoaderAllocator()->IsCollectible())
                         {
-                            // The .cctor failed and we want to store the exception that resulted
-                            // in the entry. Increment the ref count to keep the entry alive for
-                            // subsequent attempts to run the .cctor.
-                            pEntry->AddRef();
-                            // For collectible types, register the entry for cleanup.
-                            if (GetLoaderAllocator()->IsCollectible())
-                            {
-                                GetLoaderAllocator()->RegisterFailedTypeInitForCleanup(pEntry);
-                            }
-
-                            _ASSERTE(g_pThreadAbortExceptionClass == CoreLibBinder::GetException(kThreadAbortException));
-
-                            if(gc.pInnerException->GetMethodTable() == g_pThreadAbortExceptionClass)
-                            {
-                                gc.pThrowable = gc.pInnerException;
-                                gc.pInitException = gc.pInnerException;
-                                gc.pInnerException = NULL;
-                            }
-                            else
-                            {
-                                DefineFullyQualifiedNameForClassWOnStack();
-                                LPCWSTR wszName = GetFullyQualifiedNameForClassW(this);
-
-                                // Note that this may not succeed due to problems creating the exception
-                                // object. On failure, it will first try to
-                                CreateTypeInitializationExceptionObject(
-                                    wszName, &gc.pInnerException, &gc.pInitException, &gc.pThrowable);
-                            }
-
-                            pEntry->m_pLoaderAllocator = GetLoaderAllocator();
-
-                            // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
-                            // init error. Whatever exception was thrown will be rethrown below, so no worries.
-                            EX_TRY {
-                                // Save the exception object, and return to caller as well.
-                                pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(gc.pInitException);
-                            } EX_CATCH {
-                                // If we failed to create the handle (due to OOM), we'll just store the preallocated OOM
-                                // handle here instead.
-                                pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(CLRException::GetPreallocatedOutOfMemoryException());
-                            } EX_END_CATCH(SwallowAllExceptions);
-
-                            pEntry->m_hrResultCode = E_FAIL;
-                            SetClassInitError();
-
-                            COMPlusThrow(gc.pThrowable);
+                            GetLoaderAllocator()->RegisterFailedTypeInitForCleanup(pEntry);
                         }
 
-                        GCPROTECT_END();
+                        _ASSERTE(g_pThreadAbortExceptionClass == CoreLibBinder::GetException(kThreadAbortException));
+
+                        if(gc.pInnerException->GetMethodTable() == g_pThreadAbortExceptionClass)
+                        {
+                            gc.pThrowable = gc.pInnerException;
+                            gc.pInitException = gc.pInnerException;
+                            gc.pInnerException = NULL;
+                        }
+                        else
+                        {
+                            DefineFullyQualifiedNameForClassWOnStack();
+                            LPCWSTR wszName = GetFullyQualifiedNameForClassW(this);
+
+                            // Note that this may not succeed due to problems creating the exception
+                            // object. On failure, it will first try to
+                            CreateTypeInitializationExceptionObject(
+                                wszName, &gc.pInnerException, &gc.pInitException, &gc.pThrowable);
+                        }
+
+                        pEntry->m_pLoaderAllocator = GetLoaderAllocator();
+
+                        // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
+                        // init error. Whatever exception was thrown will be rethrown below, so no worries.
+                        EX_TRY {
+                            // Save the exception object, and return to caller as well.
+                            pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(gc.pInitException);
+                        } EX_CATCH {
+                            // If we failed to create the handle (due to OOM), we'll just store the preallocated OOM
+                            // handle here instead.
+                            pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(CLRException::GetPreallocatedOutOfMemoryException());
+                        } EX_END_CATCH(SwallowAllExceptions);
+
+                        pEntry->m_hrResultCode = E_FAIL;
+                        SetClassInitError();
+
+                        COMPlusThrow(gc.pThrowable);
                     }
+
+                    GCPROTECT_END();
                 }
 
                 pEntry->m_hrResultCode = S_OK;
@@ -3550,14 +3544,7 @@ void MethodTable::CallFinalizer(Object *obj)
     }
     CONTRACTL_END;
 
-    // Never call any finalizers under ngen for determinism
-    if (IsCompilationProcess())
-    {
-        return;
-    }
-
     MethodTable *pMT = obj->GetMethodTable();
-
 
     // Check for precise init class constructors that have failed, if any have failed, then we didn't run the
     // constructor for the object, and running the finalizer for the object would violate the CLI spec by running
@@ -3889,7 +3876,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
         , fHasEquivalentStructParameter(FALSE)
 #endif
-        , fHasTypeForwarderDependentStructParameter(FALSE)
         , fDependsOnEquivalentOrForwardedStructs(FALSE)
     {
         LIMITED_METHOD_CONTRACT;
@@ -3902,7 +3888,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
     BOOL fHasEquivalentStructParameter;
 #endif
-    BOOL fHasTypeForwarderDependentStructParameter;
     BOOL fDependsOnEquivalentOrForwardedStructs;
 };
 
@@ -3932,131 +3917,6 @@ static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, 
 }
 
 #endif // defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
-
-struct CheckForTypeForwardedTypeRefParameterLocals
-{
-    Module * pModule;
-    BOOL *   pfTypeForwarderFound;
-};
-
-// Callback for code:WalkValueTypeTypeDefOrRefs of type code:PFN_WalkValueTypeTypeDefOrRefs
-static void CheckForTypeForwardedTypeRef(
-    mdToken tkTypeDefOrRef,
-    void *  pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    CheckForTypeForwardedTypeRefParameterLocals * pLocals = (CheckForTypeForwardedTypeRefParameterLocals *)pData;
-
-    // If a type forwarder was found, return - we're done
-    if ((pLocals->pfTypeForwarderFound != NULL) && (*(pLocals->pfTypeForwarderFound)))
-        return;
-
-    // Only type ref's are interesting
-    if (TypeFromToken(tkTypeDefOrRef) == mdtTypeRef)
-    {
-        Module * pDummyModule;
-        mdToken  tkDummy;
-        ClassLoader::ResolveTokenToTypeDefThrowing(
-            pLocals->pModule,
-            tkTypeDefOrRef,
-            &pDummyModule,
-            &tkDummy,
-            Loader::Load,
-            pLocals->pfTypeForwarderFound);
-    }
-}
-
-typedef void (* PFN_WalkValueTypeTypeDefOrRefs)(mdToken tkTypeDefOrRef, void * pData);
-
-// Call 'function' for ValueType in the signature.
-void WalkValueTypeTypeDefOrRefs(
-    const SigParser *              pSig,
-    PFN_WalkValueTypeTypeDefOrRefs function,
-    void *                         pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    SigParser sig(*pSig);
-
-    CorElementType typ;
-    IfFailThrow(sig.GetElemType(&typ));
-
-    switch (typ)
-    {
-        case ELEMENT_TYPE_VALUETYPE:
-            mdToken token;
-            IfFailThrow(sig.GetToken(&token));
-            function(token, pData);
-            break;
-
-        case ELEMENT_TYPE_GENERICINST:
-            // Process and skip generic type
-            WalkValueTypeTypeDefOrRefs(&sig, function, pData);
-            IfFailThrow(sig.SkipExactlyOne());
-
-            // Get number of parameters
-            uint32_t argCnt;
-            IfFailThrow(sig.GetData(&argCnt));
-            while (argCnt-- != 0)
-            {   // Process and skip generic parameter
-                WalkValueTypeTypeDefOrRefs(&sig, function, pData);
-                IfFailThrow(sig.SkipExactlyOne());
-            }
-            break;
-        default:
-            break;
-    }
-}
-
-// Callback for code:MethodDesc::WalkValueTypeParameters (of type code:WalkValueTypeParameterFnPtr)
-static void CheckForTypeForwardedTypeRefParameter(
-    Module *         pModule,
-    mdToken          token,
-    Module *         pDefModule,
-    mdToken          defToken,
-    const SigParser *ptr,
-    SigTypeContext * pTypeContext,
-    void *           pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    DoFullyLoadLocals * pLocals = (DoFullyLoadLocals *)pData;
-
-    // If a type forwarder was found, return - we're done
-    if (pLocals->fHasTypeForwarderDependentStructParameter)
-        return;
-
-    CheckForTypeForwardedTypeRefParameterLocals locals;
-    locals.pModule = pModule;
-    locals.pfTypeForwarderFound = &pLocals->fHasTypeForwarderDependentStructParameter; // By not passing NULL here, we determine if there is a type forwarder involved.
-
-    WalkValueTypeTypeDefOrRefs(ptr, CheckForTypeForwardedTypeRef, &locals);
-
-    if (pLocals->fHasTypeForwarderDependentStructParameter)
-        pLocals->fDependsOnEquivalentOrForwardedStructs = TRUE;
-}
-
-// Callback for code:MethodDesc::WalkValueTypeParameters (of type code:WalkValueTypeParameterFnPtr)
-static void LoadTypeDefOrRefAssembly(
-    Module *         pModule,
-    mdToken          token,
-    Module *         pDefModule,
-    mdToken          defToken,
-    const SigParser *ptr,
-    SigTypeContext * pTypeContext,
-    void *           pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    DoFullyLoadLocals * pLocals = (DoFullyLoadLocals *)pData;
-
-    CheckForTypeForwardedTypeRefParameterLocals locals;
-    locals.pModule = pModule;
-    locals.pfTypeForwarderFound = NULL; // By passing NULL here, we simply resolve the token to TypeDef.
-
-    WalkValueTypeTypeDefOrRefs(ptr, CheckForTypeForwardedTypeRef, &locals);
-}
 
 #endif //!DACCESS_COMPILE
 
@@ -4120,17 +3980,14 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     DoFullyLoadLocals locals(pPending, level, this, pVisited);
 
-    bool fNeedsSanityChecks = !IsZapped(); // Validation has been performed for NGened classes already
+    bool fNeedsSanityChecks = true;
 
 #ifdef FEATURE_READYTORUN
-    if (fNeedsSanityChecks)
-    {
-        Module * pModule = GetModule();
+    Module * pModule = GetModule();
 
-        // No sanity checks for ready-to-run compiled images if possible
-        if (pModule->IsSystem() || (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()))
-            fNeedsSanityChecks = false;
-    }
+    // No sanity checks for ready-to-run compiled images if possible
+    if (pModule->IsSystem() || (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()))
+        fNeedsSanityChecks = false;
 #endif
 
     bool fNeedAccessChecks = (level == CLASS_LOADED) &&
@@ -4139,42 +3996,39 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     TypeHandle typicalTypeHnd;
 
-    if (!IsZapped()) // Validation has been performed for NGened classes already
+    // Fully load the typical instantiation. Make sure that this is done before loading other dependencies
+    // as the recursive generics detection algorithm needs to examine typical instantiations of the types
+    // in the closure.
+    if (!IsTypicalTypeDefinition())
     {
-        // Fully load the typical instantiation. Make sure that this is done before loading other dependencies
-        // as the recursive generics detection algorithm needs to examine typical instantiations of the types
-        // in the closure.
-        if (!IsTypicalTypeDefinition())
-        {
-            typicalTypeHnd = ClassLoader::LoadTypeDefThrowing(GetModule(), GetCl(),
-                ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes,
-                (ClassLoadLevel) (level - 1));
-            CONSISTENCY_CHECK(!typicalTypeHnd.IsNull());
-            typicalTypeHnd.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
-        }
-        else if (level == CLASS_DEPENDENCIES_LOADED && HasInstantiation())
-        {
-            // This is a typical instantiation of a generic type. When attaining CLASS_DEPENDENCIES_LOADED, the
-            // recursive inheritance graph (ECMA part.II Section 9.2) will be constructed and checked for "expanding
-            // cycles" to detect infinite recursion, e.g. A<T> : B<A<A<T>>>.
-            //
-            // The dependencies loaded by this method (parent type, implemented interfaces, generic arguments)
-            // ensure that we will generate the finite instantiation closure as defined in ECMA. This load level
-            // is not being attained under lock so it's not possible to use TypeVarTypeDesc to represent graph
-            // nodes because multiple threads trying to fully load types from the closure at the same time would
-            // interfere with each other. In addition, the graph is only used for loading and can be discarded
-            // when the closure is fully loaded (TypeVarTypeDesc need to stay).
-            //
-            // The graph is represented by Generics::RecursionGraph instances organized in a linked list with
-            // each of them holding part of the graph. They live on the stack and are cleaned up automatically
-            // before returning from DoFullyLoad.
+        typicalTypeHnd = ClassLoader::LoadTypeDefThrowing(GetModule(), GetCl(),
+            ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes,
+            (ClassLoadLevel) (level - 1));
+        CONSISTENCY_CHECK(!typicalTypeHnd.IsNull());
+        typicalTypeHnd.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
+    }
+    else if (level == CLASS_DEPENDENCIES_LOADED && HasInstantiation())
+    {
+        // This is a typical instantiation of a generic type. When attaining CLASS_DEPENDENCIES_LOADED, the
+        // recursive inheritance graph (ECMA part.II Section 9.2) will be constructed and checked for "expanding
+        // cycles" to detect infinite recursion, e.g. A<T> : B<A<A<T>>>.
+        //
+        // The dependencies loaded by this method (parent type, implemented interfaces, generic arguments)
+        // ensure that we will generate the finite instantiation closure as defined in ECMA. This load level
+        // is not being attained under lock so it's not possible to use TypeVarTypeDesc to represent graph
+        // nodes because multiple threads trying to fully load types from the closure at the same time would
+        // interfere with each other. In addition, the graph is only used for loading and can be discarded
+        // when the closure is fully loaded (TypeVarTypeDesc need to stay).
+        //
+        // The graph is represented by Generics::RecursionGraph instances organized in a linked list with
+        // each of them holding part of the graph. They live on the stack and are cleaned up automatically
+        // before returning from DoFullyLoad.
 
-            if (locals.newVisited.CheckForIllegalRecursion())
-            {
-                // An expanding cycle was detected, this type is part of a closure that is defined recursively.
-                IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
-                GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), IDS_CLASSLOAD_GENERICTYPE_RECURSIVE);
-            }
+        if (locals.newVisited.CheckForIllegalRecursion())
+        {
+            // An expanding cycle was detected, this type is part of a closure that is defined recursively.
+            IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
+            GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), IDS_CLASSLOAD_GENERICTYPE_RECURSIVE);
         }
     }
 
@@ -4291,71 +4145,33 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     // structures that marked as type equivalent. In the no-PIA world
     // these structures are called "local types" and are usually generated automatically by the compiler. Note that there
     // is a related logic in code:CompareTypeDefsForEquivalence that declares two tokens corresponding to structures as
-    // equivalent based on an extensive set of equivalency checks..
-    //
-    // To address this situation for NGENed types and methods, we prevent pre-restoring them - see code:ComputeNeedsRestoreWorker
-    // for details. That forces them to go through the final stages of loading at run-time and hit the same code below.
+    // equivalent based on an extensive set of equivalency checks.
 
+#ifdef FEATURE_TYPEEQUIVALENCE
     if ((level == CLASS_LOADED)
         && (GetCl() != mdTypeDefNil)
-        && !ContainsGenericVariables()
-        && (!IsZapped()
-            || DependsOnEquivalentOrForwardedStructs()
-#ifdef DEBUG
-            || TRUE // Always load types in debug builds so that we calculate fDependsOnEquivalentOrForwardedStructs all of the time
-#endif
-           )
-       )
+        && !ContainsGenericVariables())
     {
         MethodTable::IntroducedMethodIterator itMethods(this, FALSE);
         for (; itMethods.IsValid(); itMethods.Next())
         {
             MethodDesc * pMD = itMethods.GetMethodDesc();
-
-            if (IsCompilationProcess())
-            {
-                locals.fHasTypeForwarderDependentStructParameter = FALSE;
-                EX_TRY
-                {
-                    pMD->WalkValueTypeParameters(this, CheckForTypeForwardedTypeRefParameter, &locals);
-                }
-                EX_CATCH
-                {
-                }
-                EX_END_CATCH(RethrowTerminalExceptions);
-
-                // This marks the class as needing restore.
-                if (locals.fHasTypeForwarderDependentStructParameter && !pMD->IsZapped())
-                    pMD->SetHasForwardedValuetypeParameter();
-            }
-            else if (pMD->IsZapped() && pMD->HasForwardedValuetypeParameter())
-            {
-                pMD->WalkValueTypeParameters(this, LoadTypeDefOrRefAssembly, NULL);
-                locals.fDependsOnEquivalentOrForwardedStructs = TRUE;
-            }
-
-#ifdef FEATURE_TYPEEQUIVALENCE
             if (!pMD->DoesNotHaveEquivalentValuetypeParameters() && pMD->IsVirtual())
             {
                 locals.fHasEquivalentStructParameter = FALSE;
                 pMD->WalkValueTypeParameters(this, CheckForEquivalenceAndFullyLoadType, &locals);
-                if (!locals.fHasEquivalentStructParameter && !IsZapped())
+                if (!locals.fHasEquivalentStructParameter)
                     pMD->SetDoesNotHaveEquivalentValuetypeParameters();
             }
-#else
-#endif //FEATURE_TYPEEQUIVALENCE
         }
     }
+#endif //FEATURE_TYPEEQUIVALENCE
 
-    _ASSERTE(!IsZapped() || !IsCanonicalMethodTable() || (level != CLASS_LOADED) || ((!!locals.fDependsOnEquivalentOrForwardedStructs) == (!!DependsOnEquivalentOrForwardedStructs())));
     if (locals.fDependsOnEquivalentOrForwardedStructs)
     {
-        if (!IsZapped())
-        {
-            // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
-            // make sure we come here and pre-load these structure types in NGENed cases as well
-            SetDependsOnEquivalentOrForwardedStructs();
-        }
+        // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
+        // make sure we come here and pre-load these structure types in NGENed cases as well
+        SetDependsOnEquivalentOrForwardedStructs();
     }
 
     // The rules for constraint cycles are same as rules for access checks
@@ -4428,8 +4244,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             break;
 
         case CLASS_LOADED:
-            if (!IsZapped() && // Constraint checks have been performed for NGened classes already
-                !IsTypicalTypeDefinition() &&
+            if (!IsTypicalTypeDefinition() &&
                 !IsSharedByGenericInstantiations())
             {
                 TypeHandle thThis = TypeHandle(this);
@@ -4558,8 +4373,7 @@ PTR_Dictionary MethodTable::GetDictionary()
     {
         // The instantiation for this class is stored in the type slots table
         // *after* any inherited slots
-        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[GetNumDicts()-1]));
-        return PerInstInfoElem_t::GetValueMaybeNullAtPtr(base);
+        return GetPerInstInfo()[GetNumDicts()-1];
     }
     else
     {
@@ -4576,8 +4390,7 @@ Instantiation MethodTable::GetInstantiation()
     if (HasInstantiation())
     {
         PTR_GenericsDictInfo  pDictInfo = GetGenericsDictInfo();
-        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]));
-        return Instantiation(PerInstInfoElem_t::GetValueMaybeNullAtPtr(base)->GetInstantiation(), pDictInfo->m_wNumTyPars);
+        return Instantiation(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]->GetInstantiation(), pDictInfo->m_wNumTyPars);
     }
     else
     {
@@ -6090,7 +5903,7 @@ MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculati
         GC_NOTRIGGER;
         NOTHROW;
         POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
-        POSTCONDITION(RETVAL->m_pDebugMethodTable.IsNull() || // We must be in BuildMethdTableThrowing()
+        POSTCONDITION(RETVAL->m_pDebugMethodTable == NULL || // We must be in BuildMethdTableThrowing()
                       RETVAL->SanityCheck());
     }
     CONTRACT_END;
@@ -6171,7 +5984,7 @@ BOOL MethodTable::SanityCheck()
     // strings have component size2, all other non-arrays should have 0
     _ASSERTE((GetComponentSize() <= 2) || IsArray());
 
-    if (m_pEEClass.IsNull())
+    if (m_pEEClass == NULL)
     {
         return FALSE;
     }
@@ -6319,7 +6132,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
     if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
         return FALSE;
 
-    return !IsParentMethodTableTagged(dac_cast<PTR_MethodTable>(this));
+    return TRUE;
 }
 #endif
 
@@ -7534,7 +7347,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    PTR_MethodTableWriteableData pWriteableData = ReadPointer(this, &MethodTable::m_pWriteableData);
+    PTR_MethodTableWriteableData pWriteableData = m_pWriteableData;
     if (pWriteableData.IsValid())
     {
         pWriteableData.EnumMem();
@@ -7714,13 +7527,13 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
         if (!IsCanonicalMethodTable())
         {
-            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
+            if (GetVtableIndirections()[indirectionIndex] == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex])
                 fSharedVtableChunk = TRUE;
         }
 
         if (slotNumber < GetNumParentVirtuals())
         {
-            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
+            if (GetVtableIndirections()[indirectionIndex] == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex])
                 fSharedVtableChunk = TRUE;
         }
 
@@ -7739,15 +7552,7 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
     _ASSERTE(IsThumbCode(slotCode));
 #endif
 
-    TADDR slot = GetSlotPtrRaw(slotNumber);
-    if (slotNumber < GetNumVirtuals())
-    {
-        ((MethodTable::VTableIndir2_t *) slot)->SetValueMaybeNull(slotCode);
-    }
-    else
-    {
-        *((PCODE *)slot) = slotCode;
-    }
+    *GetSlotPtrRaw(slotNumber) = slotCode;
 }
 
 //==========================================================================================
@@ -8276,9 +8081,9 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
 
 #ifdef _DEBUG
-    ASSERT_AND_CHECK(!m_pWriteableData.IsNull());
+    ASSERT_AND_CHECK(m_pWriteableData != NULL);
 
-    MethodTableWriteableData *pWriteableData = m_pWriteableData.GetValue();
+    MethodTableWriteableData *pWriteableData = m_pWriteableData;
     DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but
     // this is no longer true because with background gc. Since the purpose of having
