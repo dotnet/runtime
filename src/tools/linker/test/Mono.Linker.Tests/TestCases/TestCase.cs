@@ -9,6 +9,7 @@ namespace Mono.Linker.Tests.TestCases
 		public TestCase (NPath sourceFile, NPath rootCasesDirectory, NPath originalTestCaseAssemblyPath)
 		{
 			SourceFile = sourceFile;
+			RootCasesDirectory = rootCasesDirectory;
 			OriginalTestCaseAssemblyPath = originalTestCaseAssemblyPath;
 			Name = sourceFile.FileNameWithoutExtension;
 			DisplayName = $"{sourceFile.RelativeTo (rootCasesDirectory).Parent.ToString (SlashMode.Forward).Replace ('/', '.')}.{sourceFile.FileNameWithoutExtension}";
@@ -20,6 +21,8 @@ namespace Mono.Linker.Tests.TestCases
 			var firstParentRelativeToRoot = SourceFile.RelativeTo (rootCasesDirectory).Elements.First ();
 			TestSuiteDirectory = rootCasesDirectory.Combine (firstParentRelativeToRoot);
 		}
+
+		public NPath RootCasesDirectory { get; }
 
 		public string Name { get; }
 
