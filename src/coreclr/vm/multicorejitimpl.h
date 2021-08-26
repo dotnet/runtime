@@ -148,8 +148,7 @@ public:
     unsigned short build;
     unsigned short revision;
 
-    unsigned       versionFlags         :31;
-    unsigned       hasNativeImage:1;
+    unsigned       versionFlags;
 
     GUID           mvid;
 
@@ -176,13 +175,6 @@ public:
         }
 
         return false;
-    }
-
-    bool NativeImageFlagDiff(const ModuleVersion & other) const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return hasNativeImage != other.hasNativeImage;
     }
 };
 
@@ -212,7 +204,7 @@ public:
 
     ModuleRecord(unsigned lenName = 0, unsigned lenAssemblyName = 0);
 
-    bool MatchWithModule(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shouldAbort) const;
+    bool MatchWithModule(ModuleVersion & version, bool & gotVersion, Module * pModule) const;
 
     unsigned ModuleNameLen() const
     {
@@ -274,14 +266,13 @@ class MulticoreJitProfilePlayer
 friend class MulticoreJitRecorder;
 
 private:
-    ICLRPrivBinder * m_pBinderContext;
+    AssemblyBinder * m_pBinderContext;
     LONG                               m_nMySession;
     unsigned                           m_nStartTime;
     BYTE                             * m_pFileBuffer;
     unsigned                           m_nFileSize;
     MulticoreJitPlayerStat           & m_stats;
     MulticoreJitCounter              & m_appdomainSession;
-    bool                               m_shouldAbort;
 
     Thread                           * m_pThread;
 
@@ -319,7 +310,7 @@ private:
 
 public:
 
-    MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderContext, LONG nSession);
+    MulticoreJitProfilePlayer(AssemblyBinder * pBinderContext, LONG nSession);
 
     ~MulticoreJitProfilePlayer();
 
@@ -614,7 +605,7 @@ class MulticoreJitRecorder
 {
 private:
     AppDomain               * m_pDomain;            // AutoStartProfile could be called from SystemDomain
-    ICLRPrivBinder * m_pBinderContext;
+    AssemblyBinder * m_pBinderContext;
     SString                   m_fullFileName;
     MulticoreJitPlayerStat  & m_stats;
 
@@ -655,7 +646,7 @@ private:
 
 public:
 
-    MulticoreJitRecorder(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, bool fRecorderActive)
+    MulticoreJitRecorder(AppDomain * pDomain, AssemblyBinder * pBinderContext, bool fRecorderActive)
         : m_stats(pDomain->GetMulticoreJitManager().GetStats())
         , m_ModuleList(nullptr)
         , m_JitInfoArray(nullptr)

@@ -28,7 +28,14 @@ namespace System.Text.Json
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            Serialize(writer, value, GetRuntimeType(value), options);
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            WriteUsingSerializer(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -55,11 +62,14 @@ namespace System.Text.Json
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            Serialize<object?>(
-                writer,
-                value,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            WriteUsingSerializer(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -87,7 +97,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            WriteUsingMetadata(writer, value, jsonTypeInfo);
+            WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -124,19 +134,7 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            WriteUsingMetadata(writer, value, GetTypeInfo(context, runtimeType));
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
-            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
-            WriteUsingMetadata(writer, value, typeInfo);
+            WriteUsingGeneratedSerializer(writer, value, GetTypeInfo(context, runtimeType));
         }
     }
 }

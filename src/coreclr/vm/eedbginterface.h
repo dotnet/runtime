@@ -345,14 +345,6 @@ public:
 
     virtual CorDebugUserState GetPartialUserState( Thread *pThread ) = 0;
 
-#ifdef FEATURE_PREJIT
-#ifndef DACCESS_COMPILE
-    virtual void SetNGENDebugFlags(BOOL fAllowOpt) = 0;
-
-    virtual void GetNGENDebugFlags(BOOL *fAllowOpt) = 0;
-#endif
-#endif // FEATURE_PREJIT
-
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

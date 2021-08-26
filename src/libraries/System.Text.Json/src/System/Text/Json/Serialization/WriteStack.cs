@@ -47,9 +47,9 @@ namespace System.Text.Json
         public Task? PendingTask;
 
         /// <summary>
-        /// List of IAsyncDisposables that have been scheduled for disposal by converters.
+        /// List of completed IAsyncDisposables that have been scheduled for disposal by converters.
         /// </summary>
-        public List<IAsyncDisposable>? PendingAsyncDisposables;
+        public List<IAsyncDisposable>? CompletedAsyncDisposables;
 
         /// <summary>
         /// The amount of bytes to write before the underlying Stream should be flushed and the
@@ -196,14 +196,6 @@ namespace System.Text.Json
             {
                 Debug.Assert(_continuationCount == 0);
 
-                if (Current.AsyncEnumerator is not null)
-                {
-                    // we have completed serialization of an AsyncEnumerator,
-                    // pop from the stack and schedule for async disposal.
-                    PendingAsyncDisposables ??= new List<IAsyncDisposable>();
-                    PendingAsyncDisposables.Add(Current.AsyncEnumerator);
-                }
-
                 if (--_count > 0)
                 {
                     Current = _stack[_count - 1];
@@ -211,13 +203,16 @@ namespace System.Text.Json
             }
         }
 
+        public void AddCompletedAsyncDisposable(IAsyncDisposable asyncDisposable)
+            => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
+
         // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
-        public async ValueTask DisposePendingAsyncDisposables()
+        public async ValueTask DisposeCompletedAsyncDisposables()
         {
-            Debug.Assert(PendingAsyncDisposables?.Count > 0);
+            Debug.Assert(CompletedAsyncDisposables?.Count > 0);
             Exception? exception = null;
 
-            foreach (IAsyncDisposable asyncDisposable in PendingAsyncDisposables)
+            foreach (IAsyncDisposable asyncDisposable in CompletedAsyncDisposables)
             {
                 try
                 {
@@ -234,7 +229,7 @@ namespace System.Text.Json
                 ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
-            PendingAsyncDisposables.Clear();
+            CompletedAsyncDisposables.Clear();
         }
 
         /// <summary>
@@ -245,13 +240,13 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            Debug.Assert(Current.AsyncEnumerator is null);
+            Debug.Assert(Current.AsyncDisposable is null);
             DisposeFrame(Current.CollectionEnumerator, ref exception);
 
             int stackSize = Math.Max(_count, _continuationCount);
             for (int i = 0; i < stackSize - 1; i++)
             {
-                Debug.Assert(_stack[i].AsyncEnumerator is null);
+                Debug.Assert(_stack[i].AsyncDisposable is null);
                 DisposeFrame(_stack[i].CollectionEnumerator, ref exception);
             }
 
@@ -284,12 +279,12 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exception).ConfigureAwait(false);
+            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncDisposable, exception).ConfigureAwait(false);
 
             int stackSize = Math.Max(_count, _continuationCount);
             for (int i = 0; i < stackSize - 1; i++)
             {
-                exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncEnumerator, exception).ConfigureAwait(false);
+                exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(false);
             }
 
             if (exception is not null)
@@ -328,8 +323,8 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            // If a continuation, always report back full stack.
-            int count = Math.Max(_count, _continuationCount);
+            // If a continuation, always report back full stack which does not use Current for the last frame.
+            int count = Math.Max(_count, _continuationCount + 1);
 
             for (int i = 0; i < count - 1; i++)
             {

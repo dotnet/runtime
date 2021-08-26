@@ -169,7 +169,6 @@ DEFINE_CLASS(ATTRIBUTE,             System,                 Attribute)
 
 
 DEFINE_CLASS(BINDER,                Reflection,             Binder)
-DEFINE_METHOD(BINDER,               CHANGE_TYPE,            ChangeType,                 IM_Obj_Type_CultureInfo_RetObj)
 
 DEFINE_CLASS(BINDING_FLAGS,         Reflection,             BindingFlags)
 
@@ -516,9 +515,7 @@ DEFINE_CLASS(VECTOR64T,             Intrinsics,             Vector64`1)
 DEFINE_CLASS(VECTOR128T,            Intrinsics,             Vector128`1)
 DEFINE_CLASS(VECTOR256T,            Intrinsics,             Vector256`1)
 
-#ifndef CROSSGEN_COMPILE
 DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
-#endif // !CROSSGEN_COMPILE
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 

@@ -6,7 +6,7 @@ using System.Numerics.Hashing;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    public struct Dependency
+    public readonly struct Dependency : IEquatable<Dependency>
     {
         public Dependency(string name, string version)
         {
@@ -30,11 +30,7 @@ namespace Microsoft.Extensions.DependencyModel
             return string.Equals(Name, other.Name) && string.Equals(Version, other.Version);
         }
 
-        public override bool Equals(object obj)
-        {
-            if (obj is null) return false;
-            return obj is Dependency && Equals((Dependency) obj);
-        }
+        public override bool Equals(object obj) => obj is Dependency dependency && Equals(dependency);
 
         public override int GetHashCode() =>
             HashHelpers.Combine(Name.GetHashCode(), Version.GetHashCode());

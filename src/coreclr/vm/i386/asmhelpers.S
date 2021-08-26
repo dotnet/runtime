@@ -707,38 +707,6 @@ LOCAL_LABEL(GoCallCalliWorker):
     jmp C_FUNC(GenericPInvokeCalliHelper)
 LEAF_END GenericPInvokeCalliHelper, _TEXT
 
-#ifdef FEATURE_PREJIT
-// =========================================================================
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-    STUB_PROLOG
-
-    mov         esi, esp
-
-.att_syntax
-    pushl       $0
-    pushl       $0
-    pushl       $0
-.intel_syntax noprefix
-
-    push        eax             // siteAddrForRegisterIndirect (for tailcalls)
-    push        esi             // pTransitionBlock
-
-    CHECK_STACK_ALIGNMENT
-    call        C_FUNC(StubDispatchFixupWorker)
-
-    mov         esp, esi
-    STUB_EPILOG
-
-PATCH_LABEL StubDispatchFixupPatchLabel
-    // Tailcall target
-    jmp eax
-
-    // This will never be executed. It is just to help out stack-walking logic
-    // which disassembles the epilog to unwind the stack.
-    ret
-NESTED_END StubDispatchFixupStub, _TEXT
-#endif // FEATURE_PREJIT
-
 // ==========================================================================
 NESTED_ENTRY ExternalMethodFixupStub, _TEXT_ NoHandler
     // pop off the return address to the stub
@@ -824,58 +792,6 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 NESTED_END DelayLoad_MethodCall, _TEXT
 
 #endif // FEATURE_READYTORUN
-
-#ifdef FEATURE_PREJIT
-// =======================================================================================
-//  The call in softbound vtable slots initially points to this function.
-//  The pupose of this function is to transfer the control to right target and
-//  to optionally patch the target of the jump so that we do not take this slow path again.
-//
-NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-    // Get the return address. It points right after the call instruction in the thunk.
-    mov     eax, [esp]
-    // Calculate the address of the thunk
-    sub     eax, 5
-
-    // Push ebp frame to get good callstack under debugger
-    PROLOG_BEG
-
-    // Preserve argument registers
-    PROLOG_PUSH ecx
-    PROLOG_PUSH edx
-
-    // Set frame pointer
-    PROLOG_END
-
-    sub     esp, 8
-    push    eax         // address of the thunk
-    push    ecx         // this ptr
-    CHECK_STACK_ALIGNMENT
-    call    C_FUNC(VirtualMethodFixupWorker)
-    add     esp, 8
-
-    // Restore stack pointer
-    EPILOG_BEG
-
-    // Restore argument registers
-    EPILOG_POP edx
-    EPILOG_POP ecx
-
-    // Pop ebp frame
-    EPILOG_END
-
-    // Pop return address
-    add   esp, 4
-
-PATCH_LABEL VirtualMethodFixupPatchLabel
-    // Proceed to execute the actual method.
-    jmp     eax
-
-    // This will never be executed. It is just to help out stack-walking logic
-    // which disassembles the epilog to unwind the stack.
-    ret
-NESTED_END VirtualMethodFixupStub, _TEXT
-#endif // FEATURE_PREJIT
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     STUB_PROLOG
@@ -1052,7 +968,6 @@ LOCAL_LABEL(NullObject):
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
 #endif // FEATURE_STUBS_AS_IL
 
-#ifndef CROSSGEN_COMPILE
 // =======================================================================================
 // void ResolveWorkerChainLookupAsmStub();
 //
@@ -1146,7 +1061,6 @@ LOCAL_LABEL(fail):
     jmp     ResolveWorkerAsmStub
 
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
-#endif // CROSSGEN_COMPILE
 
 // backpatch a call site to point to a different stub
 NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler

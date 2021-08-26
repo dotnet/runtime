@@ -26,7 +26,7 @@ namespace BINDER_SPACE
         {
             RESULT_FLAG_NONE             = 0x00,
             //RESULT_FLAG_IS_DYNAMIC_BIND  = 0x01,
-            RESULT_FLAG_IS_IN_GAC        = 0x02,
+            RESULT_FLAG_IS_IN_TPA        = 0x02,
             //RESULT_FLAG_FROM_MANIFEST    = 0x04,
             RESULT_FLAG_CONTEXT_BOUND    = 0x08,
             RESULT_FLAG_FIRST_REQUEST    = 0x10,
@@ -35,28 +35,28 @@ namespace BINDER_SPACE
         ContextEntry() : AssemblyEntry()
         {
             m_dwResultFlags = RESULT_FLAG_NONE;
-            m_pIUnknownAssembly = NULL;
+            m_pAssembly = NULL;
         }
 
         ~ContextEntry()
         {
-            SAFE_RELEASE(m_pIUnknownAssembly);
+            SAFE_RELEASE(m_pAssembly);
         }
 
-        BOOL GetIsInGAC()
+        BOOL GetIsInTPA()
         {
-            return ((m_dwResultFlags & RESULT_FLAG_IS_IN_GAC) != 0);
+            return ((m_dwResultFlags & RESULT_FLAG_IS_IN_TPA) != 0);
         }
 
-        void SetIsInGAC(BOOL fIsInGAC)
+        void SetIsInTPA(BOOL fIsInTPA)
         {
-            if (fIsInGAC)
+            if (fIsInTPA)
             {
-                m_dwResultFlags |= RESULT_FLAG_IS_IN_GAC;
+                m_dwResultFlags |= RESULT_FLAG_IS_IN_TPA;
             }
             else
             {
-                m_dwResultFlags &= ~RESULT_FLAG_IS_IN_GAC;
+                m_dwResultFlags &= ~RESULT_FLAG_IS_IN_TPA;
             }
         }
 
@@ -77,33 +77,33 @@ namespace BINDER_SPACE
             }
         }
 
-        IUnknown *GetAssembly(BOOL fAddRef = FALSE)
+        Assembly *GetAssembly(BOOL fAddRef = FALSE)
         {
-            IUnknown *pIUnknownAssembly = m_pIUnknownAssembly;
+            Assembly *pAssembly = m_pAssembly;
 
-            if (fAddRef && (pIUnknownAssembly != NULL))
+            if (fAddRef && (pAssembly != NULL))
             {
-                pIUnknownAssembly->AddRef();
+                pAssembly->AddRef();
             }
 
-            return pIUnknownAssembly;
+            return pAssembly;
         }
 
-        void SetAssembly(IUnknown *pIUnknownAssembly)
+        void SetAssembly(Assembly *pAssembly)
         {
-            SAFE_RELEASE(m_pIUnknownAssembly);
+            SAFE_RELEASE(m_pAssembly);
 
-            if (pIUnknownAssembly != NULL)
+            if (pAssembly != NULL)
             {
-                pIUnknownAssembly->AddRef();
+                pAssembly->AddRef();
             }
 
-            m_pIUnknownAssembly = pIUnknownAssembly;
+            m_pAssembly = pAssembly;
         }
 
     protected:
         DWORD m_dwResultFlags;
-        IUnknown *m_pIUnknownAssembly;
+        Assembly *m_pAssembly;
     };
 };
 

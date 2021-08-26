@@ -203,7 +203,6 @@ typedef VPTR(class StubManager) PTR_StubManager;
 
 class StubManager
 {
-#ifndef CROSSGEN_COMPILE
     friend class StubManagerIterator;
 
     VPTR_BASE_VTABLE_CLASS(StubManager)
@@ -337,10 +336,8 @@ private:
     PTR_StubManager m_pNextManager;
 
     static CrstStatic s_StubManagerListCrst;
-#endif // !CROSSGEN_COMPILE
 };
 
-#ifndef CROSSGEN_COMPILE
 
 //-----------------------------------------------------------
 // Stub manager for the prestub.  Although there is just one, it has
@@ -920,7 +917,6 @@ public:
 #endif
     }
 
-#ifndef CROSSGEN_COMPILE
     static PCODE GetRetAddrFromMulticastILStubFrame(T_CONTEXT * pContext)
     {
         /*
@@ -950,7 +946,6 @@ public:
         return NULL;
 #endif
     }
-#endif // !CROSSGEN_COMPILE
 
     static TADDR GetSecondArg(T_CONTEXT * pContext)
     {
@@ -974,5 +969,4 @@ public:
 
 };
 
-#endif // !CROSSGEN_COMPILE
 #endif // !__stubmgr_h__

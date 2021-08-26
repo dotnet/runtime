@@ -295,47 +295,6 @@ struct ZapInlineeRecord
 
 typedef DPTR(ZapInlineeRecord) PTR_ZapInlineeRecord;
 
-
-// This type knows how to serialize and deserialize the inline tracking map format within an NGEN image. See
-// above for a description of the format.
-class PersistentInlineTrackingMapNGen
-{
-private:
-    PTR_Module m_module;
-
-    PTR_ZapInlineeRecord m_inlineeIndex;
-    DWORD m_inlineeIndexSize;
-
-    PTR_BYTE m_inlinersBuffer;
-    DWORD m_inlinersBufferSize;
-
-public:
-
-    PersistentInlineTrackingMapNGen(Module *module)
-        : m_module(dac_cast<PTR_Module>(module))
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(module != NULL);
-    }
-
-    // runtime deserialization
-    COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
-
-    // compile-time serialization
-#ifndef DACCESS_COMPILE
-    void Save(DataImage *image, InlineTrackingMap* runtimeMap);
-    void Fixup(DataImage *image);
-
-private:
-#endif
-
-    Module *GetModuleByIndex(DWORD index);
-
-};
-
-typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
-
-
 // This type knows how to serialize and deserialize the inline tracking map format within an R2R image. See
 // above for a description of the format.
 #ifdef FEATURE_READYTORUN
@@ -357,13 +316,6 @@ public:
     static BOOL TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer, AllocMemTracker *pamTracker, PersistentInlineTrackingMapR2R** ppLoadedMap);
 #endif
     virtual COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
-
-
-    // compile time serialization
-#ifndef DACCESS_COMPILE
-    static void Save(ZapHeap* pHeap, SBuffer *saveTarget, InlineTrackingMap* runtimeMap);
-#endif
-
 };
 
 typedef DPTR(PersistentInlineTrackingMapR2R) PTR_PersistentInlineTrackingMapR2R;
@@ -392,7 +344,7 @@ typedef DPTR(PersistentInlineTrackingMapR2R2) PTR_PersistentInlineTrackingMapR2R
 
 #endif //FEATURE_READYTORUN
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 // For inline tracking of JIT methods at runtime we use the CrossLoaderAllocatorHash
 class InliningInfoTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodDesc *, MethodDesc *>
 {
@@ -442,6 +394,6 @@ private:
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 #endif //INLINETRACKING_H_
