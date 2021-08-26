@@ -34,7 +34,7 @@ BOOL ParamTypeDesc::Verify() {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    _ASSERTE(m_TemplateMT.IsNull() || GetTemplateMethodTableInternal()->SanityCheck());
+    _ASSERTE((m_TemplateMT == NULL) || GetTemplateMethodTableInternal()->SanityCheck());
     _ASSERTE(!GetTypeParam().IsNull());
     _ASSERTE(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
                               GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
@@ -90,14 +90,6 @@ PTR_Module TypeDesc::GetLoaderModule()
         }
         return retVal;
     }
-}
-
-
-PTR_Module TypeDesc::GetZapModule()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return ExecutionManager::FindZapModule(dac_cast<TADDR>(this));
 }
 
 PTR_BaseDomain TypeDesc::GetDomain()
@@ -509,7 +501,6 @@ TypeHandle TypeDesc::GetParent() {
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF ParamTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -558,7 +549,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
     }
     return GetManagedClassObjectIfExists();
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -713,7 +703,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
         ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
 
         // Fully load the template method table
-        if (!pPTD->m_TemplateMT.IsNull())
+        if (pPTD->m_TemplateMT != NULL)
         {
             pPTD->GetTemplateMethodTableInternal()->DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
         }
@@ -750,83 +740,6 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
     }
 #endif
 }
-
-
-#ifdef FEATURE_PREJIT
-void TypeDesc::DoRestoreTypeKey()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-#ifndef DACCESS_COMPILE
-    if (HasTypeParam())
-    {
-        ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
-
-        // Must have the same loader module, so not encoded
-        CONSISTENCY_CHECK(!pPTD->m_Arg.IsEncodedFixup());
-        ClassLoader::EnsureLoaded(pPTD->m_Arg, CLASS_LOAD_UNRESTORED);
-
-        // Might live somewhere else e.g. Object[] is shared across all ref array types
-        Module::RestoreMethodTablePointer(&(pPTD->m_TemplateMT), NULL, CLASS_LOAD_UNRESTORED);
-    }
-
-    FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_UnrestoredTypeKey);
-#endif
-}
-
-#ifndef DACCESS_COMPILE
-
-void TypeDesc::SetIsRestored()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    TypeHandle th = TypeHandle(this);
-    FastInterlockAnd(&m_typeAndFlags, ~TypeDesc::enum_flag_Unrestored);
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-void TypeDesc::Restore()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        CONSISTENCY_CHECK(!HasUnrestoredTypeKey());
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    if (HasTypeParam())
-    {
-        ParamTypeDesc *pPTD = dac_cast<PTR_ParamTypeDesc>(this);
-
-        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_EXACTPARENTS);
-
-        // Must have the same loader module
-        ClassLoader::EnsureLoaded(pPTD->m_Arg, CLASS_LOAD_EXACTPARENTS);
-
-        // Method-table pointer must have been restored by DoRestoreTypeKey
-        Module::RestoreMethodTablePointer(&pPTD->m_TemplateMT, NULL, CLASS_LOAD_EXACTPARENTS);
-    }
-
-    SetIsRestored();
-#else
-    DacNotImpl();
-#endif // #ifndef DACCESS_COMPILE
-}
-
-#endif // FEATURE_PREJIT
-
 
 #ifndef DACCESS_COMPILE
 
@@ -1724,7 +1637,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 }
 
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -1761,7 +1673,6 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
     }
     return GetManagedClassObjectIfExists();
 }
-#endif // CROSSGEN_COMPILE
 
 #endif //!DACCESS_COMPILE
 
@@ -1776,13 +1687,6 @@ FnPtrTypeDesc::GetRetAndArgTypes()
     }
     CONTRACTL_END;
 
-    // Decode encoded type handles on demand
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    for (DWORD i = 0; i <= m_NumArgs; i++)
-    {
-        Module::RestoreTypeHandlePointerRaw(&m_RetAndArgTypes[i]);
-    }
-#endif //defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
 
     return m_RetAndArgTypes;
 } // FnPtrTypeDesc::GetRetAndArgTypes

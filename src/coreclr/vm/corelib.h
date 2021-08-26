@@ -515,9 +515,7 @@ DEFINE_CLASS(VECTOR64T,             Intrinsics,             Vector64`1)
 DEFINE_CLASS(VECTOR128T,            Intrinsics,             Vector128`1)
 DEFINE_CLASS(VECTOR256T,            Intrinsics,             Vector256`1)
 
-#ifndef CROSSGEN_COMPILE
 DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
-#endif // !CROSSGEN_COMPILE
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 

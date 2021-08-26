@@ -37,11 +37,6 @@ PTR_VOID EEClassHashEntry::GetData()
     }
     CONTRACTL_END;
 
-    // TypeHandles are encoded as a relative pointer rather than a regular pointer to avoid the need for image
-    // fixups (any TypeHandles in this hash are defined in the same module).
-    if ((dac_cast<TADDR>(m_Data) & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
-        return RelativePointer<PTR_VOID>::GetValueMaybeNullAtPtr(PTR_HOST_INT_MEMBER_TADDR(EEClassHashEntry, this, m_Data));
-
     return m_Data;
 }
 
@@ -56,15 +51,7 @@ void EEClassHashEntry::SetData(void *data)
     }
     CONTRACTL_END;
 
-    // TypeHandles are encoded as a relative pointer rather than a regular pointer to avoid the need for image
-    // fixups (any TypeHandles in this hash are defined in the same module).
-    if (((TADDR)data & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
-    {
-        RelativePointer<void *> *pRelPtr = (RelativePointer<void *> *) &m_Data;
-        pRelPtr->SetValueMaybeNull(data);
-    }
-    else
-        m_Data = data;
+    m_Data = data;
 }
 
 void EEClassHashEntry::SetEncloser(EEClassHashEntry *pEncloser)
@@ -253,7 +240,7 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         // in this case, the lifetime of Key is bounded by the lifetime of cqb, which will free the memory
         // it allocated on destruction.
 
-        _ASSERTE(!m_pModule.IsNull());
+        _ASSERTE(m_pModule != NULL);
         LPSTR        pszName = NULL;
         LPSTR        pszNameSpace = NULL;
         IMDInternalImport *pInternalImport = NULL;
@@ -341,7 +328,7 @@ EEClassHashEntry_t *EEClassHashTable::InsertValue(LPCUTF8 pszNamespace, LPCUTF8 
 
     _ASSERTE(pszNamespace != NULL);
     _ASSERTE(pszClassName != NULL);
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
 
     EEClassHashEntry *pEntry = BaseAllocateEntry(pamTracker);
 
@@ -419,7 +406,7 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueIfNotFound(LPCUTF8 pszNamespace
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE(pszNamespace != NULL);
     _ASSERTE(pszClassName != NULL);
 
@@ -464,7 +451,7 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE(pszNamespace != NULL);
     _ASSERTE(pszClassName != NULL);
 
@@ -518,7 +505,7 @@ EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(const NameHandle* pNam
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE(pName);
 
     if (pName->GetNameSpace())
@@ -549,7 +536,7 @@ EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(LPCUTF8 pszNamespace, 
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
 
     PTR_EEClassHashEntry pSearch = BaseFindNextEntryByHash(pContext);
 
@@ -582,7 +569,7 @@ EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(LPCUTF8 pszFullyQualif
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
 
     CQuickBytes szNamespace;
 
@@ -624,7 +611,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszFullyQualifiedName, P
     }
     CONTRACTL_END;
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
 
     CQuickBytes szNamespace;
 
@@ -670,7 +657,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszNamespace, LPCUTF8 ps
     CONTRACTL_END;
 
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     EEClassHashEntry_t *pItem = FindItem(pszNamespace, pszClassName, IsNested, pContext);
     if (pItem)
         *pData = pItem->GetData();
@@ -694,7 +681,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOI
 
 
     _ASSERTE(pName);
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     if(pName->GetNameSpace() == NULL) {
         return GetValue(pName->GetName(), pData, IsNested, pContext);
     }
@@ -737,7 +724,7 @@ BOOL EEClassHashTable::CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2)
     CONTRACTL_END;
 
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE (pEntry);
     _ASSERTE (pKey2);
 
@@ -805,7 +792,7 @@ EEClassHashTable *EEClassHashTable::MakeCaseInsensitiveTable(Module *pModule, Al
 
 
 
-    _ASSERTE(!m_pModule.IsNull());
+    _ASSERTE(m_pModule != NULL);
     _ASSERTE(pModule == GetModule());
 
     // Allocate the table and verify that we actually got one.

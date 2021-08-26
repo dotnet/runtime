@@ -31,9 +31,6 @@ enum PrecodeType {
 
 // For more details see. file:../../doc/BookOfTheRuntime/ClassLoader/MethodDescDesign.doc
 class Precode {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     BYTE m_data[SIZEOF_PRECODE_BASE];
 
@@ -180,11 +177,6 @@ public:
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
 
-#ifdef CROSSGEN_COMPILE
-        // Crossgen does not create jump stubs on AMD64, so just return always false here to
-        // avoid non-deterministic behavior.
-        return FALSE;
-#else // CROSSGEN_COMPILE
         if (target == addr)
             return TRUE;
 
@@ -198,7 +190,6 @@ public:
 #endif // TARGET_AMD64
 
         return FALSE;
-#endif // CROSSGEN_COMPILE
     }
 
     BOOL IsPointingToNativeCode(PCODE pNativeCode)

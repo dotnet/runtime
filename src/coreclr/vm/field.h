@@ -34,12 +34,9 @@
 class FieldDesc
 {
     friend class MethodTableBuilder;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
   protected:
-    RelativePointer<PTR_MethodTable> m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
+    PTR_MethodTable m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
 
     // See also: FieldDesc::InitializeFrom method
 
@@ -89,7 +86,7 @@ public:
 #ifndef DACCESS_COMPILE
     void InitializeFrom(const FieldDesc& sourceField, MethodTable *pMT)
     {
-        m_pMTOfEnclosingClass.SetValue(pMT);
+        m_pMTOfEnclosingClass = pMT;
 
         m_mb = sourceField.m_mb;
         m_isStatic = sourceField.m_isStatic;
@@ -122,7 +119,7 @@ public:
     void SetMethodTable(MethodTable* mt)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pMTOfEnclosingClass.SetValue(mt);
+        m_pMTOfEnclosingClass = mt;
     }
 #endif
 
@@ -390,7 +387,7 @@ public:
     PTR_MethodTable GetApproxEnclosingMethodTable_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pMTOfEnclosingClass.GetValue(PTR_HOST_MEMBER_TADDR(FieldDesc, this, m_pMTOfEnclosingClass));
+        return m_pMTOfEnclosingClass;
     }
 
     PTR_MethodTable GetApproxEnclosingMethodTable()
@@ -586,15 +583,6 @@ public:
         return GetApproxEnclosingMethodTable()->GetModule();
     }
 
-    BOOL IsZapped()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Field Desc's are currently always saved into the same module as their
-        // corresponding method table.
-        return GetApproxEnclosingMethodTable()->IsZapped();
-    }
-
     Module *GetLoaderModule()
     {
         WRAPPER_NO_CONTRACT;
@@ -666,7 +654,6 @@ public:
         return GetMDImport()->GetNameOfFieldDef(GetMemberDef(), pszName);
     }
 
-    void PrecomputeNameHash();
     BOOL MightHaveName(ULONG nameHashValue);
 
     // <TODO>@TODO: </TODO>This is slow, don't use it!

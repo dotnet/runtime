@@ -258,11 +258,11 @@ protected:
 
     PTR_Module GetModule()
     {
-        return ReadPointerMaybeNull(this, &NgenHashTable<NGEN_HASH_ARGS>::m_pModule);
+        return m_pModule;
     }
 
     // Owning module set at hash creation time (possibly NULL if this hash instance is not to be ngen'd).
-    RelativePointer<PTR_Module> m_pModule;
+    PTR_Module m_pModule;
 
 private:
     // Internal implementation details. Nothing of interest to sub-classers for here on.
@@ -307,14 +307,14 @@ private:
     {
         SUPPORTS_DAC;
 
-        return ReadPointer(this, &NgenHashTable<NGEN_HASH_ARGS>::m_pWarmBuckets);
+        return m_pWarmBuckets;
     }
 
     // Loader heap provided at construction time. May be NULL (in which case m_pModule must *not* be NULL).
     LoaderHeap             *m_pHeap;
 
     // Fields related to the runtime (volatile or warm) part of the hash.
-    RelativePointer<DPTR(PTR_VolatileEntry)> m_pWarmBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
+    DPTR(PTR_VolatileEntry)                  m_pWarmBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
     DWORD                                    m_cWarmBuckets;  // Count of buckets in the above array (always non-zero)
     DWORD                                    m_cWarmEntries;  // Count of elements in the warm section of the hash
 };
@@ -343,7 +343,7 @@ public:
 #endif // !DACCESS_COMPILE
 
 private:
-    RelativePointer<DPTR(VALUE)> m_rpEntryRef;  // Entry ref encoded as a delta from this field's location.
+    DPTR(VALUE) m_rpEntryRef;  // Entry ref encoded as a delta from this field's location.
 };
 
 #endif // __NGEN_HASH_INCLUDED

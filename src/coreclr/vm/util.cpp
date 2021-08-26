@@ -20,15 +20,6 @@
 
 #ifndef DACCESS_COMPILE
 
-#ifdef CROSSGEN_COMPILE
-void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
-{
-}
-
-void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
-{
-}
-#else // CROSSGEN_COMPILE
 
 thread_local size_t t_ThreadType;
 
@@ -53,7 +44,6 @@ void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
     LIMITED_METHOD_CONTRACT;
     t_ThreadType &= ~flag;
 }
-#endif // CROSSGEN_COMPILE
 
 thread_local size_t t_CantStopCount;
 
@@ -1216,7 +1206,6 @@ CLRUnmapViewOfFile(
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
 {
@@ -1303,7 +1292,6 @@ BOOL CLRFreeLibrary(HMODULE hModule)
     return FreeLibrary(hModule);
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1868,7 +1856,7 @@ void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
     }
     CONTRACTL_END;
 
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
     NotifyGdb::MethodPitched(MethodDescPtr);
 #endif
     TADDR Args[2] = { JIT_PITCHING_NOTIFICATION, (TADDR) MethodDescPtr };
@@ -2096,12 +2084,10 @@ static CLRRandom g_random;
 
 int GetRandomInt(int maxVal)
 {
-#ifndef CROSSGEN_COMPILE
     // Use the thread-local Random instance if possible
     Thread* pThread = GetThreadNULLOk();
     if (pThread)
         return pThread->GetRandom()->Next(maxVal);
-#endif
 
     // No Thread object - need to fall back to the global generator.
     // In DAC builds we don't need the lock (DAC is single-threaded) and can't get it anyway (DNHSL isn't supported)

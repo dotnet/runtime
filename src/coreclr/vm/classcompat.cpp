@@ -1243,7 +1243,7 @@ VOID MethodTableBuilder::BuildInteropVTable_ExpandInterface(InterfaceInfo_t *pIn
             MethodTable *pItf = it.GetInterfaceApprox();
             if (pItf->HasInstantiation() || pItf->IsSpecialMarkerTypeForGenericCasting())
                 continue;
-            
+
             BuildInteropVTable_ExpandInterface(pInterfaceMap, pItf,
                                                pwInterfaceListSize, pdwMaxInterfaceMethods, FALSE);
         }
@@ -2589,14 +2589,9 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         }
 
         // Some interface checks.
-        // We only need them if default interface method support is disabled or if this is fragile crossgen
+        // We only need them if default interface method support is disabled
 #if !defined(FEATURE_DEFAULT_INTERFACES)
-        if (fIsClassInterface
-#if defined(FEATURE_DEFAULT_INTERFACES)
-            // Only fragile crossgen wasn't upgraded to deal with default interface methods.
-            && !IsReadyToRunCompilation() && !IsNgenPDBCompilationProcess()
-#endif
-            )
+        if (fIsClassInterface)
         {
             if (IsMdVirtual(dwMemberAttrs))
             {

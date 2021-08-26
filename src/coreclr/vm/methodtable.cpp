@@ -42,9 +42,6 @@
 #include "customattribute.h"
 #include "virtualcallstub.h"
 #include "contractimpl.h"
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#endif //FEATURE_PREJIT
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -383,7 +380,7 @@ PTR_Module MethodTable::GetModule()
         return pMTForModule->GetLoaderModule();
 
     TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return RelativeFixupPointer<PTR_Module>::GetValueAtPtr(pSlot);
+    return *dac_cast<DPTR(PTR_Module)>(pSlot);
 }
 
 //==========================================================================================
@@ -400,7 +397,7 @@ PTR_Module MethodTable::GetModule_NoLogging()
         return pMTForModule->GetLoaderModule();
 
     TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return RelativeFixupPointer<PTR_Module>::GetValueAtPtr(pSlot);
+    return *dac_cast<DPTR(PTR_Module)>(pSlot);
 }
 
 //==========================================================================================
@@ -420,7 +417,7 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
     g_IBCLogger.LogDispatchMapAccess(pMT);
 
     TADDR pSlot = pMT->GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-    return RelativePointer<PTR_DispatchMap>::GetValueAtPtr(pSlot);
+    return *dac_cast<DPTR(PTR_DispatchMap)>(pSlot);
 }
 
 //==========================================================================================
@@ -448,17 +445,7 @@ PTR_Module MethodTable::GetModuleIfLoaded()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
-    g_IBCLogger.LogMethodTableAccess(this);
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (!pMTForModule->HasModuleOverride())
-        return pMTForModule->GetLoaderModule();
-
-    return Module::RestoreModulePointerIfLoaded(pMTForModule->GetModuleOverridePtr(), pMTForModule->GetLoaderModule());
-#else
     return GetModule();
-#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -469,7 +456,7 @@ void MethodTable::SetModule(Module * pModule)
 
     if (HasModuleOverride())
     {
-        GetModuleOverridePtr()->SetValue(pModule);
+        *GetModuleOverridePtr() = pModule;
     }
 
     _ASSERTE(GetModule() == pModule);
@@ -693,35 +680,11 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         MODE_ANY;
     }
     CONTRACTL_END;
-#ifdef FEATURE_PREJIT
-    if (m_pMethodTable.IsTagged())
-    {
-        // Ideally, we would use Module::RestoreMethodTablePointer here. Unfortunately, it is not
-        // possible because of the current type loader architecture that restores types incrementally
-        // even in the NGen case.
-        MethodTable * pItfMT = *(m_pMethodTable.GetValuePtr());
-
-        // Restore the method table, but do not write it back if it has instantiation. We do not want
-        // to write back the approximate instantiations.
-        Module::RestoreMethodTablePointerRaw(&pItfMT, pContainingModule, CLASS_LOAD_APPROXPARENTS);
-
-        if (!pItfMT->HasInstantiation())
-        {
-            // m_pMethodTable.SetValue() is not used here since we want to update the indirection cell
-            *m_pMethodTable.GetValuePtr() = pItfMT;
-        }
-
-        return pItfMT;
-    }
-    MethodTable * pItfMT = m_pMethodTable.GetValue();
-#else
     MethodTable * pItfMT = GetMethodTable();
-#endif
     ClassLoader::EnsureLoaded(TypeHandle(pItfMT), CLASS_LOAD_APPROXPARENTS);
     return pItfMT;
 }
 
-#ifndef CROSSGEN_COMPILE
 //==========================================================================================
 // get the method desc given the interface method desc
 /* static */ MethodDesc *MethodTable::GetMethodDescForInterfaceMethodAndServer(
@@ -885,7 +848,6 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 }
 #endif // FEATURE_COMINTEROP
 
-#endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
@@ -946,7 +908,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
 
 
 #ifdef FEATURE_COMINTEROP
-#ifndef CROSSGEN_COMPILE
 //==========================================================================================
 OBJECTREF MethodTable::GetObjCreateDelegate()
 {
@@ -980,7 +941,6 @@ void MethodTable::SetObjCreateDelegate(OBJECTREF orDelegate)
     else
         SetOHDelegate (GetAppDomain()->CreateHandle(orDelegate));
 }
-#endif //CROSSGEN_COMPILE
 #endif // FEATURE_COMINTEROP
 
 
@@ -997,7 +957,7 @@ void MethodTable::SetInterfaceMap(WORD wNumInterfaces, InterfaceInfo_t* iMap)
     m_wNumInterfaces = wNumInterfaces;
 
     CONSISTENCY_CHECK(IS_ALIGNED(iMap, sizeof(void*)));
-    m_pInterfaceMap.SetValue(iMap);
+    m_pInterfaceMap = iMap;
 }
 
 //==========================================================================================
@@ -1206,7 +1166,7 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     *(((DWORD_PTR *)pNewItfMap) - 1) = NumDynAddedInterfaces + 1;
 
     // Switch the old interface map with the new one.
-    m_pInterfaceMap.SetValueVolatile(pNewItfMap);
+    VolatileStore(&m_pInterfaceMap, pNewItfMap);
 
     // Log the fact that we leaked the interface vtable map.
 #ifdef _DEBUG
@@ -1247,7 +1207,7 @@ void MethodTable::SetupGenericsStaticsInfo(FieldDesc* pStaticFieldDescs)
         pInfo->m_DynamicTypeID = (SIZE_T)-1;
     }
 
-    pInfo->m_pFieldDescs.SetValueMaybeNull(pStaticFieldDescs);
+    pInfo->m_pFieldDescs = pStaticFieldDescs;
 }
 
 #endif // !DACCESS_COMPILE
@@ -1686,11 +1646,9 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
     }
     CONTRACTL_END
 
-#ifndef CROSSGEN_COMPILE
     // we cannot cache T --> Nullable<T> here since result is contextual.
     // callers should have handled this already according to their rules.
     _ASSERTE(!Nullable::IsNullableForType(TypeHandle(pTargetMT), this));
-#endif // CROSSGEN_COMPILE
 
     if (IsArray())
     {
@@ -1820,37 +1778,12 @@ MethodTable::IsExternallyVisible()
     return bIsVisible;
 } // MethodTable::IsExternallyVisible
 
-#ifdef FEATURE_PREJIT
-
-BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule, Module *pCurrentPreferredZapModule)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // These constraints come from two places:
-    //   1. A non-zapped MT cannot share with a zapped MT since it may result in SetSlot() on a read-only slot
-    //   2. Zapping this MT in MethodTable::Save cannot "unshare" something we decide to share now
-    //
-    // We could fix both of these and allow non-zapped MTs to share chunks fully by doing the following
-    //   1. Fix the few dangerous callers of SetSlot to first check whether the chunk itself is zapped
-    //        (see MethodTableBuilder::CopyExactParentSlots, or we could use ExecutionManager::FindZapModule)
-    //   2. Have this function return FALSE if IsCompilationProcess and rely on MethodTable::Save to do all sharing for the NGen case
-
-    return !pTargetMT->IsZapped() &&
-            pTargetMT->GetLoaderModule() == pCurrentLoaderModule &&
-            pCurrentLoaderModule == pCurrentPreferredZapModule &&
-            pCurrentPreferredZapModule == Module::GetPreferredZapModuleForMethodTable(pTargetMT);
-}
-
-#else
-
 BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule)
 {
     WRAPPER_NO_CONTRACT;
 
     return pTargetMT->GetLoaderModule() == pCurrentLoaderModule;
 }
-
-#endif
 
 #ifdef _DEBUG
 
@@ -2125,15 +2058,6 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
 
     MethodTable *pInterfaceMT = ownerType.AsMethodTable();
 
-#ifdef CROSSGEN_COMPILE
-    DispatchSlot implSlot(FindDispatchSlot(pInterfaceMT->GetTypeID(), pInterfaceMD->GetSlot(), throwOnConflict));
-    if (implSlot.IsNull())
-    {
-        _ASSERTE(!throwOnConflict);
-        return NULL;
-    }
-    PCODE pTgt = implSlot.GetTarget();
-#else
     PCODE pTgt = VirtualCallStubManager::GetTarget(
         pInterfaceMT->GetLoaderAllocator()->GetDispatchToken(pInterfaceMT->GetTypeID(), pInterfaceMD->GetSlot()),
         this, throwOnConflict);
@@ -2142,7 +2066,6 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
         _ASSERTE(!throwOnConflict);
         return NULL;
     }
-#endif
     pMD = MethodTable::GetMethodDescForSlotAddress(pTgt);
 
 #ifdef _DEBUG
@@ -2976,7 +2899,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 //==========================================================================================
 void MethodTable::AllocateRegularStaticBoxes()
 {
@@ -2998,39 +2921,7 @@ void MethodTable::AllocateRegularStaticBoxes()
 
     GCPROTECT_BEGININTERIOR(pStaticBase);
 
-#ifdef FEATURE_PREJIT
-    // In ngened case, we have cached array with boxed statics MTs. In JITed case, we have just the FieldDescs
-    ClassCtorInfoEntry *pClassCtorInfoEntry = GetClassCtorInfoIfExists();
-    if (pClassCtorInfoEntry != NULL)
     {
-        OBJECTREF* pStaticSlots = (OBJECTREF*)(pStaticBase + pClassCtorInfoEntry->firstBoxedStaticOffset);
-        GCPROTECT_BEGININTERIOR(pStaticSlots);
-
-        ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ppMTs = GetLoaderModule()->GetZapModuleCtorInfo()->
-            GetGCStaticMTs(pClassCtorInfoEntry->firstBoxedStaticMTIndex);
-
-        DWORD numBoxedStatics = pClassCtorInfoEntry->numBoxedStatics;
-        for (DWORD i = 0; i < numBoxedStatics; i++)
-        {
-            Module::RestoreMethodTablePointer(&(ppMTs[i]), GetLoaderModule());
-
-            MethodTable *pFieldMT = ppMTs[i].GetValue();
-
-            _ASSERTE(pFieldMT);
-
-            LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-            OBJECTREF obj = AllocateStaticBox(pFieldMT, pClassCtorInfoEntry->hasFixedAddressVTStatics);
-
-            SetObjectReference( &(pStaticSlots[i]), obj);
-        }
-        GCPROTECT_END();
-    }
-    else
-#endif
-    {
-        // We should never take this codepath in zapped images.
-        _ASSERTE(!IsZapped());
-
         FieldDesc *pField = HasGenericsStaticsInfo() ?
             GetGenericsStaticFieldDescs() : (GetApproxFieldDescListRaw() + GetNumIntroducedInstanceFields());
         FieldDesc *pFieldEnd = pField + GetNumStaticFields();
@@ -3316,79 +3207,76 @@ void MethodTable::DoRunClassInitThrowing()
         {
             if (pEntry->m_hrResultCode == S_FALSE)
             {
-                if (!NingenEnabled())
+                if (HasBoxedRegularStatics())
                 {
-                    if (HasBoxedRegularStatics())
-                    {
-                        // First, instantiate any objects needed for value type statics
-                        AllocateRegularStaticBoxes();
-                    }
+                    // First, instantiate any objects needed for value type statics
+                    AllocateRegularStaticBoxes();
+                }
 
-                    // Nobody has run the .cctor yet
-                    if (HasClassConstructor())
-                    {
-                        struct _gc {
-                            OBJECTREF pInnerException;
-                            OBJECTREF pInitException;
-                            OBJECTREF pThrowable;
-                        } gc;
-                        gc.pInnerException = NULL;
-                        gc.pInitException = NULL;
-                        gc.pThrowable = NULL;
-                        GCPROTECT_BEGIN(gc);
+                // Nobody has run the .cctor yet
+                if (HasClassConstructor())
+                {
+                    struct _gc {
+                        OBJECTREF pInnerException;
+                        OBJECTREF pInitException;
+                        OBJECTREF pThrowable;
+                    } gc;
+                    gc.pInnerException = NULL;
+                    gc.pInitException = NULL;
+                    gc.pThrowable = NULL;
+                    GCPROTECT_BEGIN(gc);
 
-                        if (!RunClassInitEx(&gc.pInnerException))
+                    if (!RunClassInitEx(&gc.pInnerException))
+                    {
+                        // The .cctor failed and we want to store the exception that resulted
+                        // in the entry. Increment the ref count to keep the entry alive for
+                        // subsequent attempts to run the .cctor.
+                        pEntry->AddRef();
+                        // For collectible types, register the entry for cleanup.
+                        if (GetLoaderAllocator()->IsCollectible())
                         {
-                            // The .cctor failed and we want to store the exception that resulted
-                            // in the entry. Increment the ref count to keep the entry alive for
-                            // subsequent attempts to run the .cctor.
-                            pEntry->AddRef();
-                            // For collectible types, register the entry for cleanup.
-                            if (GetLoaderAllocator()->IsCollectible())
-                            {
-                                GetLoaderAllocator()->RegisterFailedTypeInitForCleanup(pEntry);
-                            }
-
-                            _ASSERTE(g_pThreadAbortExceptionClass == CoreLibBinder::GetException(kThreadAbortException));
-
-                            if(gc.pInnerException->GetMethodTable() == g_pThreadAbortExceptionClass)
-                            {
-                                gc.pThrowable = gc.pInnerException;
-                                gc.pInitException = gc.pInnerException;
-                                gc.pInnerException = NULL;
-                            }
-                            else
-                            {
-                                DefineFullyQualifiedNameForClassWOnStack();
-                                LPCWSTR wszName = GetFullyQualifiedNameForClassW(this);
-
-                                // Note that this may not succeed due to problems creating the exception
-                                // object. On failure, it will first try to
-                                CreateTypeInitializationExceptionObject(
-                                    wszName, &gc.pInnerException, &gc.pInitException, &gc.pThrowable);
-                            }
-
-                            pEntry->m_pLoaderAllocator = GetLoaderAllocator();
-
-                            // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
-                            // init error. Whatever exception was thrown will be rethrown below, so no worries.
-                            EX_TRY {
-                                // Save the exception object, and return to caller as well.
-                                pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(gc.pInitException);
-                            } EX_CATCH {
-                                // If we failed to create the handle (due to OOM), we'll just store the preallocated OOM
-                                // handle here instead.
-                                pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(CLRException::GetPreallocatedOutOfMemoryException());
-                            } EX_END_CATCH(SwallowAllExceptions);
-
-                            pEntry->m_hrResultCode = E_FAIL;
-                            SetClassInitError();
-
-                            COMPlusThrow(gc.pThrowable);
+                            GetLoaderAllocator()->RegisterFailedTypeInitForCleanup(pEntry);
                         }
 
-                        GCPROTECT_END();
+                        _ASSERTE(g_pThreadAbortExceptionClass == CoreLibBinder::GetException(kThreadAbortException));
+
+                        if(gc.pInnerException->GetMethodTable() == g_pThreadAbortExceptionClass)
+                        {
+                            gc.pThrowable = gc.pInnerException;
+                            gc.pInitException = gc.pInnerException;
+                            gc.pInnerException = NULL;
+                        }
+                        else
+                        {
+                            DefineFullyQualifiedNameForClassWOnStack();
+                            LPCWSTR wszName = GetFullyQualifiedNameForClassW(this);
+
+                            // Note that this may not succeed due to problems creating the exception
+                            // object. On failure, it will first try to
+                            CreateTypeInitializationExceptionObject(
+                                wszName, &gc.pInnerException, &gc.pInitException, &gc.pThrowable);
+                        }
+
+                        pEntry->m_pLoaderAllocator = GetLoaderAllocator();
+
+                        // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
+                        // init error. Whatever exception was thrown will be rethrown below, so no worries.
+                        EX_TRY {
+                            // Save the exception object, and return to caller as well.
+                            pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(gc.pInitException);
+                        } EX_CATCH {
+                            // If we failed to create the handle (due to OOM), we'll just store the preallocated OOM
+                            // handle here instead.
+                            pEntry->m_hInitException = pEntry->m_pLoaderAllocator->AllocateHandle(CLRException::GetPreallocatedOutOfMemoryException());
+                        } EX_END_CATCH(SwallowAllExceptions);
+
+                        pEntry->m_hrResultCode = E_FAIL;
+                        SetClassInitError();
+
+                        COMPlusThrow(gc.pThrowable);
                     }
+
+                    GCPROTECT_END();
                 }
 
                 pEntry->m_hrResultCode = S_OK;
@@ -3656,14 +3544,7 @@ void MethodTable::CallFinalizer(Object *obj)
     }
     CONTRACTL_END;
 
-    // Never call any finalizers under ngen for determinism
-    if (IsCompilationProcess())
-    {
-        return;
-    }
-
     MethodTable *pMT = obj->GetMethodTable();
-
 
     // Check for precise init class constructors that have failed, if any have failed, then we didn't run the
     // constructor for the object, and running the finalizer for the object would violate the CLI spec by running
@@ -3801,7 +3682,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     RETURN(GetManagedClassObjectIfExists());
 }
 
-#endif //!DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif //!DACCESS_COMPILE
 
 //==========================================================================================
 // This needs to stay consistent with AllocateNewMT() and MethodTable::Save()
@@ -3995,7 +3876,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
         , fHasEquivalentStructParameter(FALSE)
 #endif
-        , fHasTypeForwarderDependentStructParameter(FALSE)
         , fDependsOnEquivalentOrForwardedStructs(FALSE)
     {
         LIMITED_METHOD_CONTRACT;
@@ -4008,7 +3888,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
     BOOL fHasEquivalentStructParameter;
 #endif
-    BOOL fHasTypeForwarderDependentStructParameter;
     BOOL fDependsOnEquivalentOrForwardedStructs;
 };
 
@@ -4038,131 +3917,6 @@ static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, 
 }
 
 #endif // defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
-
-struct CheckForTypeForwardedTypeRefParameterLocals
-{
-    Module * pModule;
-    BOOL *   pfTypeForwarderFound;
-};
-
-// Callback for code:WalkValueTypeTypeDefOrRefs of type code:PFN_WalkValueTypeTypeDefOrRefs
-static void CheckForTypeForwardedTypeRef(
-    mdToken tkTypeDefOrRef,
-    void *  pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    CheckForTypeForwardedTypeRefParameterLocals * pLocals = (CheckForTypeForwardedTypeRefParameterLocals *)pData;
-
-    // If a type forwarder was found, return - we're done
-    if ((pLocals->pfTypeForwarderFound != NULL) && (*(pLocals->pfTypeForwarderFound)))
-        return;
-
-    // Only type ref's are interesting
-    if (TypeFromToken(tkTypeDefOrRef) == mdtTypeRef)
-    {
-        Module * pDummyModule;
-        mdToken  tkDummy;
-        ClassLoader::ResolveTokenToTypeDefThrowing(
-            pLocals->pModule,
-            tkTypeDefOrRef,
-            &pDummyModule,
-            &tkDummy,
-            Loader::Load,
-            pLocals->pfTypeForwarderFound);
-    }
-}
-
-typedef void (* PFN_WalkValueTypeTypeDefOrRefs)(mdToken tkTypeDefOrRef, void * pData);
-
-// Call 'function' for ValueType in the signature.
-void WalkValueTypeTypeDefOrRefs(
-    const SigParser *              pSig,
-    PFN_WalkValueTypeTypeDefOrRefs function,
-    void *                         pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    SigParser sig(*pSig);
-
-    CorElementType typ;
-    IfFailThrow(sig.GetElemType(&typ));
-
-    switch (typ)
-    {
-        case ELEMENT_TYPE_VALUETYPE:
-            mdToken token;
-            IfFailThrow(sig.GetToken(&token));
-            function(token, pData);
-            break;
-
-        case ELEMENT_TYPE_GENERICINST:
-            // Process and skip generic type
-            WalkValueTypeTypeDefOrRefs(&sig, function, pData);
-            IfFailThrow(sig.SkipExactlyOne());
-
-            // Get number of parameters
-            uint32_t argCnt;
-            IfFailThrow(sig.GetData(&argCnt));
-            while (argCnt-- != 0)
-            {   // Process and skip generic parameter
-                WalkValueTypeTypeDefOrRefs(&sig, function, pData);
-                IfFailThrow(sig.SkipExactlyOne());
-            }
-            break;
-        default:
-            break;
-    }
-}
-
-// Callback for code:MethodDesc::WalkValueTypeParameters (of type code:WalkValueTypeParameterFnPtr)
-static void CheckForTypeForwardedTypeRefParameter(
-    Module *         pModule,
-    mdToken          token,
-    Module *         pDefModule,
-    mdToken          defToken,
-    const SigParser *ptr,
-    SigTypeContext * pTypeContext,
-    void *           pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    DoFullyLoadLocals * pLocals = (DoFullyLoadLocals *)pData;
-
-    // If a type forwarder was found, return - we're done
-    if (pLocals->fHasTypeForwarderDependentStructParameter)
-        return;
-
-    CheckForTypeForwardedTypeRefParameterLocals locals;
-    locals.pModule = pModule;
-    locals.pfTypeForwarderFound = &pLocals->fHasTypeForwarderDependentStructParameter; // By not passing NULL here, we determine if there is a type forwarder involved.
-
-    WalkValueTypeTypeDefOrRefs(ptr, CheckForTypeForwardedTypeRef, &locals);
-
-    if (pLocals->fHasTypeForwarderDependentStructParameter)
-        pLocals->fDependsOnEquivalentOrForwardedStructs = TRUE;
-}
-
-// Callback for code:MethodDesc::WalkValueTypeParameters (of type code:WalkValueTypeParameterFnPtr)
-static void LoadTypeDefOrRefAssembly(
-    Module *         pModule,
-    mdToken          token,
-    Module *         pDefModule,
-    mdToken          defToken,
-    const SigParser *ptr,
-    SigTypeContext * pTypeContext,
-    void *           pData)
-{
-    STANDARD_VM_CONTRACT;
-
-    DoFullyLoadLocals * pLocals = (DoFullyLoadLocals *)pData;
-
-    CheckForTypeForwardedTypeRefParameterLocals locals;
-    locals.pModule = pModule;
-    locals.pfTypeForwarderFound = NULL; // By passing NULL here, we simply resolve the token to TypeDef.
-
-    WalkValueTypeTypeDefOrRefs(ptr, CheckForTypeForwardedTypeRef, &locals);
-}
 
 #endif //!DACCESS_COMPILE
 
@@ -4226,17 +3980,14 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     DoFullyLoadLocals locals(pPending, level, this, pVisited);
 
-    bool fNeedsSanityChecks = !IsZapped(); // Validation has been performed for NGened classes already
+    bool fNeedsSanityChecks = true;
 
 #ifdef FEATURE_READYTORUN
-    if (fNeedsSanityChecks)
-    {
-        Module * pModule = GetModule();
+    Module * pModule = GetModule();
 
-        // No sanity checks for ready-to-run compiled images if possible
-        if (pModule->IsSystem() || (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()))
-            fNeedsSanityChecks = false;
-    }
+    // No sanity checks for ready-to-run compiled images if possible
+    if (pModule->IsSystem() || (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()))
+        fNeedsSanityChecks = false;
 #endif
 
     bool fNeedAccessChecks = (level == CLASS_LOADED) &&
@@ -4245,42 +3996,39 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     TypeHandle typicalTypeHnd;
 
-    if (!IsZapped()) // Validation has been performed for NGened classes already
+    // Fully load the typical instantiation. Make sure that this is done before loading other dependencies
+    // as the recursive generics detection algorithm needs to examine typical instantiations of the types
+    // in the closure.
+    if (!IsTypicalTypeDefinition())
     {
-        // Fully load the typical instantiation. Make sure that this is done before loading other dependencies
-        // as the recursive generics detection algorithm needs to examine typical instantiations of the types
-        // in the closure.
-        if (!IsTypicalTypeDefinition())
-        {
-            typicalTypeHnd = ClassLoader::LoadTypeDefThrowing(GetModule(), GetCl(),
-                ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes,
-                (ClassLoadLevel) (level - 1));
-            CONSISTENCY_CHECK(!typicalTypeHnd.IsNull());
-            typicalTypeHnd.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
-        }
-        else if (level == CLASS_DEPENDENCIES_LOADED && HasInstantiation())
-        {
-            // This is a typical instantiation of a generic type. When attaining CLASS_DEPENDENCIES_LOADED, the
-            // recursive inheritance graph (ECMA part.II Section 9.2) will be constructed and checked for "expanding
-            // cycles" to detect infinite recursion, e.g. A<T> : B<A<A<T>>>.
-            //
-            // The dependencies loaded by this method (parent type, implemented interfaces, generic arguments)
-            // ensure that we will generate the finite instantiation closure as defined in ECMA. This load level
-            // is not being attained under lock so it's not possible to use TypeVarTypeDesc to represent graph
-            // nodes because multiple threads trying to fully load types from the closure at the same time would
-            // interfere with each other. In addition, the graph is only used for loading and can be discarded
-            // when the closure is fully loaded (TypeVarTypeDesc need to stay).
-            //
-            // The graph is represented by Generics::RecursionGraph instances organized in a linked list with
-            // each of them holding part of the graph. They live on the stack and are cleaned up automatically
-            // before returning from DoFullyLoad.
+        typicalTypeHnd = ClassLoader::LoadTypeDefThrowing(GetModule(), GetCl(),
+            ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes,
+            (ClassLoadLevel) (level - 1));
+        CONSISTENCY_CHECK(!typicalTypeHnd.IsNull());
+        typicalTypeHnd.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
+    }
+    else if (level == CLASS_DEPENDENCIES_LOADED && HasInstantiation())
+    {
+        // This is a typical instantiation of a generic type. When attaining CLASS_DEPENDENCIES_LOADED, the
+        // recursive inheritance graph (ECMA part.II Section 9.2) will be constructed and checked for "expanding
+        // cycles" to detect infinite recursion, e.g. A<T> : B<A<A<T>>>.
+        //
+        // The dependencies loaded by this method (parent type, implemented interfaces, generic arguments)
+        // ensure that we will generate the finite instantiation closure as defined in ECMA. This load level
+        // is not being attained under lock so it's not possible to use TypeVarTypeDesc to represent graph
+        // nodes because multiple threads trying to fully load types from the closure at the same time would
+        // interfere with each other. In addition, the graph is only used for loading and can be discarded
+        // when the closure is fully loaded (TypeVarTypeDesc need to stay).
+        //
+        // The graph is represented by Generics::RecursionGraph instances organized in a linked list with
+        // each of them holding part of the graph. They live on the stack and are cleaned up automatically
+        // before returning from DoFullyLoad.
 
-            if (locals.newVisited.CheckForIllegalRecursion())
-            {
-                // An expanding cycle was detected, this type is part of a closure that is defined recursively.
-                IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
-                GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), IDS_CLASSLOAD_GENERICTYPE_RECURSIVE);
-            }
+        if (locals.newVisited.CheckForIllegalRecursion())
+        {
+            // An expanding cycle was detected, this type is part of a closure that is defined recursively.
+            IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
+            GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), IDS_CLASSLOAD_GENERICTYPE_RECURSIVE);
         }
     }
 
@@ -4397,77 +4145,33 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     // structures that marked as type equivalent. In the no-PIA world
     // these structures are called "local types" and are usually generated automatically by the compiler. Note that there
     // is a related logic in code:CompareTypeDefsForEquivalence that declares two tokens corresponding to structures as
-    // equivalent based on an extensive set of equivalency checks..
-    //
-    // To address this situation for NGENed types and methods, we prevent pre-restoring them - see code:ComputeNeedsRestoreWorker
-    // for details. That forces them to go through the final stages of loading at run-time and hit the same code below.
+    // equivalent based on an extensive set of equivalency checks.
 
+#ifdef FEATURE_TYPEEQUIVALENCE
     if ((level == CLASS_LOADED)
         && (GetCl() != mdTypeDefNil)
-        && !ContainsGenericVariables()
-        && (!IsZapped()
-            || DependsOnEquivalentOrForwardedStructs()
-#ifdef DEBUG
-            || TRUE // Always load types in debug builds so that we calculate fDependsOnEquivalentOrForwardedStructs all of the time
-#endif
-           )
-       )
+        && !ContainsGenericVariables())
     {
         MethodTable::IntroducedMethodIterator itMethods(this, FALSE);
         for (; itMethods.IsValid(); itMethods.Next())
         {
             MethodDesc * pMD = itMethods.GetMethodDesc();
-
-            if (IsCompilationProcess())
-            {
-                locals.fHasTypeForwarderDependentStructParameter = FALSE;
-                EX_TRY
-                {
-                    pMD->WalkValueTypeParameters(this, CheckForTypeForwardedTypeRefParameter, &locals);
-                }
-                EX_CATCH
-                {
-                }
-                EX_END_CATCH(RethrowTerminalExceptions);
-
-                // This marks the class as needing restore.
-                if (locals.fHasTypeForwarderDependentStructParameter && !pMD->IsZapped())
-                    pMD->SetHasForwardedValuetypeParameter();
-            }
-            else if (pMD->IsZapped() && pMD->HasForwardedValuetypeParameter())
-            {
-                pMD->WalkValueTypeParameters(this, LoadTypeDefOrRefAssembly, NULL);
-                locals.fDependsOnEquivalentOrForwardedStructs = TRUE;
-            }
-
-#ifdef FEATURE_TYPEEQUIVALENCE
             if (!pMD->DoesNotHaveEquivalentValuetypeParameters() && pMD->IsVirtual())
             {
                 locals.fHasEquivalentStructParameter = FALSE;
                 pMD->WalkValueTypeParameters(this, CheckForEquivalenceAndFullyLoadType, &locals);
-                if (!locals.fHasEquivalentStructParameter && !IsZapped())
+                if (!locals.fHasEquivalentStructParameter)
                     pMD->SetDoesNotHaveEquivalentValuetypeParameters();
             }
-#else
-#ifdef FEATURE_PREJIT
-            if (!IsZapped() && pMD->IsVirtual() && !IsCompilationProcess() )
-            {
-                pMD->PrepareForUseAsADependencyOfANativeImage();
-            }
-#endif
-#endif //FEATURE_TYPEEQUIVALENCE
         }
     }
+#endif //FEATURE_TYPEEQUIVALENCE
 
-    _ASSERTE(!IsZapped() || !IsCanonicalMethodTable() || (level != CLASS_LOADED) || ((!!locals.fDependsOnEquivalentOrForwardedStructs) == (!!DependsOnEquivalentOrForwardedStructs())));
     if (locals.fDependsOnEquivalentOrForwardedStructs)
     {
-        if (!IsZapped())
-        {
-            // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
-            // make sure we come here and pre-load these structure types in NGENed cases as well
-            SetDependsOnEquivalentOrForwardedStructs();
-        }
+        // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
+        // make sure we come here and pre-load these structure types in NGENed cases as well
+        SetDependsOnEquivalentOrForwardedStructs();
     }
 
     // The rules for constraint cycles are same as rules for access checks
@@ -4540,8 +4244,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             break;
 
         case CLASS_LOADED:
-            if (!IsZapped() && // Constraint checks have been performed for NGened classes already
-                !IsTypicalTypeDefinition() &&
+            if (!IsTypicalTypeDefinition() &&
                 !IsSharedByGenericInstantiations())
             {
                 TypeHandle thThis = TypeHandle(this);
@@ -4553,7 +4256,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             }
 
             // Validate implementation of virtual static methods on all implemented interfaces unless:
-            // 1) The type resides in a module where sanity checks are disabled (such as System.Private.CoreLib, or an 
+            // 1) The type resides in a module where sanity checks are disabled (such as System.Private.CoreLib, or an
             //    R2R module with type checks disabled)
             // 2) There are no virtual static methods defined on any of the interfaces implemented by this type;
             // 3) The type is abstract in which case it's allowed to leave some virtual static methods unimplemented
@@ -4596,148 +4299,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
 
 #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-
-// For a MethodTable in a native image, decode sufficient encoded pointers
-// that the TypeKey for this type is recoverable.
-//
-// For instantiated generic types, we need the generic type arguments,
-// the EEClass pointer, and its Module pointer.
-// (For non-generic types, the EEClass and Module are always hard bound).
-//
-// The process is applied recursively e.g. consider C<D<string>[]>.
-// It is guaranteed to terminate because types cannot contain cycles in their structure.
-//
-// Also note that no lock is required; the process of restoring this information is idempotent.
-// (Note the atomic action at the end though)
-//
-void MethodTable::DoRestoreTypeKey()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // If we have an indirection cell then restore the m_pCanonMT and its module pointer
-    //
-    if (union_getLowBits(m_pCanonMT.GetValue()) == UNION_INDIRECTION)
-    {
-        Module::RestoreMethodTablePointerRaw((MethodTable **)(union_getPointer(m_pCanonMT.GetValue())),
-            GetLoaderModule(), CLASS_LOAD_UNRESTORED);
-    }
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (pMTForModule->HasModuleOverride())
-    {
-        Module::RestoreModulePointer(pMTForModule->GetModuleOverridePtr(), pMTForModule->GetLoaderModule());
-    }
-
-    if (IsArray())
-    {
-        //
-        // Restore array element type handle
-        //
-        Module::RestoreTypeHandlePointerRaw(GetArrayElementTypeHandlePtr(),
-                                            GetLoaderModule(), CLASS_LOAD_UNRESTORED);
-    }
-
-    // Next restore the instantiation and recurse
-    Instantiation inst = GetInstantiation();
-    for (DWORD j = 0; j < inst.GetNumArgs(); j++)
-    {
-        Module::RestoreTypeHandlePointer(&inst.GetRawArgs()[j], GetLoaderModule(), CLASS_LOAD_UNRESTORED);
-    }
-
-    FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_UnrestoredTypeKey);
-}
-
-//==========================================================================================
-// For a MethodTable in a native image, apply Restore actions
-// * Decode any encoded pointers
-// * Instantiate static handles
-// * Propagate Restore to EEClass
-// For array method tables, Restore MUST BE IDEMPOTENT as it can be entered from multiple threads
-// For other classes, restore cannot be entered twice because the loader maintains locks
-//
-// When you actually restore the MethodTable for a generic type, the generic
-// dictionary is restored.  That means:
-// * Parent slots in the PerInstInfo are restored by this method eagerly.  They are copied down from the
-//   parent in code:ClassLoader.LoadExactParentAndInterfacesTransitively
-// * Instantiation parameters in the dictionary are restored eagerly when the type is restored.  These are
-//   either hard bound pointers, or tagged tokens (fixups).
-// * All other dictionary entries are either hard bound pointers or they are NULL (they are cleared when we
-//   freeze the Ngen image).  They are *never* tagged tokens.
-void MethodTable::Restore()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(IsZapped());
-        PRECONDITION(!IsRestored_NoLogging());
-        PRECONDITION(!HasUnrestoredTypeKey());
-    }
-    CONTRACTL_END;
-
-    g_IBCLogger.LogMethodTableAccess(this);
-
-    STRESS_LOG1(LF_ZAP, LL_INFO10000, "MethodTable::Restore: Restoring type %pT\n", this);
-    LOG((LF_ZAP, LL_INFO10000,
-         "Restoring methodtable %s at " FMT_ADDR ".\n", GetDebugClassName(), DBG_ADDR(this)));
-
-    // Class pointer should be restored already (in DoRestoreTypeKey)
-    CONSISTENCY_CHECK(IsClassPointerValid());
-
-    // If this isn't the canonical method table itself, then restore the canonical method table
-    // We will load the canonical method table to level EXACTPARENTS in LoadExactParents
-    if (!IsCanonicalMethodTable())
-    {
-        ClassLoader::EnsureLoaded(GetCanonicalMethodTable(), CLASS_LOAD_APPROXPARENTS);
-    }
-
-    //
-    // Restore parent method table
-    //
-    if (IsParentMethodTableIndirectPointerMaybeNull())
-    {
-        Module::RestoreMethodTablePointerRaw(GetParentMethodTableValuePtr(), GetLoaderModule(), CLASS_LOAD_APPROXPARENTS);
-    }
-    else
-    {
-        ClassLoader::EnsureLoaded(ReadPointer(this, &MethodTable::m_pParentMethodTable, GetFlagHasIndirectParent()),
-                                  CLASS_LOAD_APPROXPARENTS);
-    }
-
-    //
-    // Restore interface classes
-    //
-    InterfaceMapIterator it = IterateInterfaceMap();
-    while (it.Next())
-    {
-        // Just make sure that approximate interface is loaded. LoadExactParents fill in the exact interface later.
-        MethodTable * pIftMT;
-        pIftMT = it.GetInterfaceInfo()->GetApproxMethodTable(GetLoaderModule());
-        _ASSERTE(pIftMT != NULL);
-    }
-
-    if (HasCrossModuleGenericStaticsInfo())
-    {
-        MethodTableWriteableData * pWriteableData = GetWriteableDataForWrite();
-        CrossModuleGenericsStaticsInfo * pInfo = pWriteableData->GetCrossModuleGenericsStaticsInfo();
-
-        pInfo->m_pModuleForStatics = GetLoaderModule();
-    }
-
-    LOG((LF_ZAP, LL_INFO10000,
-         "Restored methodtable %s at " FMT_ADDR ".\n", GetDebugClassName(), DBG_ADDR(this)));
-
-    // This has to be last!
-    SetIsRestored();
-}
-#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_COMINTEROP
 
@@ -4812,8 +4373,7 @@ PTR_Dictionary MethodTable::GetDictionary()
     {
         // The instantiation for this class is stored in the type slots table
         // *after* any inherited slots
-        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[GetNumDicts()-1]));
-        return PerInstInfoElem_t::GetValueMaybeNullAtPtr(base);
+        return GetPerInstInfo()[GetNumDicts()-1];
     }
     else
     {
@@ -4830,8 +4390,7 @@ Instantiation MethodTable::GetInstantiation()
     if (HasInstantiation())
     {
         PTR_GenericsDictInfo  pDictInfo = GetGenericsDictInfo();
-        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]));
-        return Instantiation(PerInstInfoElem_t::GetValueMaybeNullAtPtr(base)->GetInstantiation(), pDictInfo->m_wNumTyPars);
+        return Instantiation(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]->GetInstantiation(), pDictInfo->m_wNumTyPars);
     }
     else
     {
@@ -6344,7 +5903,7 @@ MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculati
         GC_NOTRIGGER;
         NOTHROW;
         POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
-        POSTCONDITION(RETVAL->m_pDebugMethodTable.IsNull() || // We must be in BuildMethdTableThrowing()
+        POSTCONDITION(RETVAL->m_pDebugMethodTable == NULL || // We must be in BuildMethdTableThrowing()
                       RETVAL->SanityCheck());
     }
     CONTRACT_END;
@@ -6425,7 +5984,7 @@ BOOL MethodTable::SanityCheck()
     // strings have component size2, all other non-arrays should have 0
     _ASSERTE((GetComponentSize() <= 2) || IsArray());
 
-    if (m_pEEClass.IsNull())
+    if (m_pEEClass == NULL)
     {
         return FALSE;
     }
@@ -6557,51 +6116,6 @@ ClassCtorInfoEntry* MethodTable::GetClassCtorInfoIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_PREJIT
-    if (!IsZapped())
-        return NULL;
-
-    g_IBCLogger.LogCCtorInfoReadAccess(this);
-
-    if (HasBoxedRegularStatics())
-    {
-        ModuleCtorInfo *pModuleCtorInfo = GetZapModule()->GetZapModuleCtorInfo();
-        DPTR(RelativePointer<PTR_MethodTable>) ppMT = pModuleCtorInfo->ppMT;
-        PTR_DWORD hotHashOffsets = pModuleCtorInfo->hotHashOffsets;
-        PTR_DWORD coldHashOffsets = pModuleCtorInfo->coldHashOffsets;
-
-        if (pModuleCtorInfo->numHotHashes)
-        {
-            DWORD hash = pModuleCtorInfo->GenerateHash(PTR_MethodTable(this), ModuleCtorInfo::HOT);
-            _ASSERTE(hash < pModuleCtorInfo->numHotHashes);
-
-            for (DWORD i = hotHashOffsets[hash]; i != hotHashOffsets[hash + 1]; i++)
-            {
-                _ASSERTE(!ppMT[i].IsNull());
-                if (dac_cast<TADDR>(pModuleCtorInfo->GetMT(i)) == dac_cast<TADDR>(this))
-                {
-                    return pModuleCtorInfo->cctorInfoHot + i;
-                }
-            }
-        }
-
-        if (pModuleCtorInfo->numColdHashes)
-        {
-            DWORD hash = pModuleCtorInfo->GenerateHash(PTR_MethodTable(this), ModuleCtorInfo::COLD);
-            _ASSERTE(hash < pModuleCtorInfo->numColdHashes);
-
-            for (DWORD i = coldHashOffsets[hash]; i != coldHashOffsets[hash + 1]; i++)
-            {
-                _ASSERTE(!ppMT[i].IsNull());
-                if (dac_cast<TADDR>(pModuleCtorInfo->GetMT(i)) == dac_cast<TADDR>(this))
-                {
-                    return pModuleCtorInfo->cctorInfoCold + (i - pModuleCtorInfo->numElementsHot);
-                }
-            }
-        }
-    }
-#endif // FEATURE_PREJIT
-
     return NULL;
 }
 
@@ -6618,7 +6132,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
     if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
         return FALSE;
 
-    return !IsParentMethodTableTagged(dac_cast<PTR_MethodTable>(this));
+    return TRUE;
 }
 #endif
 
@@ -7833,7 +7347,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    PTR_MethodTableWriteableData pWriteableData = ReadPointer(this, &MethodTable::m_pWriteableData);
+    PTR_MethodTableWriteableData pWriteableData = m_pWriteableData;
     if (pWriteableData.IsValid())
     {
         pWriteableData.EnumMem();
@@ -7930,11 +7444,7 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
 
         PCODE slot = pMT->GetSlot(slotNumber);
 
-        if ((slot != NULL)
-#ifdef FEATURE_PREJIT
-            && !pMT->GetLoaderModule()->IsVirtualImportThunk(slot)
-#endif
-            )
+        if (slot != NULL)
         {
             return slot;
         }
@@ -7970,11 +7480,7 @@ MethodTable * MethodTable::GetRestoredSlotMT(DWORD slotNumber)
 
         PCODE slot = pMT->GetSlot(slotNumber);
 
-        if ((slot != NULL)
-#ifdef FEATURE_PREJIT
-            && !pMT->GetLoaderModule()->IsVirtualImportThunk(slot)
-#endif
-            )
+        if (slot != NULL)
         {
             return pMT;
         }
@@ -8021,13 +7527,13 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
         if (!IsCanonicalMethodTable())
         {
-            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
+            if (GetVtableIndirections()[indirectionIndex] == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex])
                 fSharedVtableChunk = TRUE;
         }
 
         if (slotNumber < GetNumParentVirtuals())
         {
-            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
+            if (GetVtableIndirections()[indirectionIndex] == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex])
                 fSharedVtableChunk = TRUE;
         }
 
@@ -8046,15 +7552,7 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
     _ASSERTE(IsThumbCode(slotCode));
 #endif
 
-    TADDR slot = GetSlotPtrRaw(slotNumber);
-    if (slotNumber < GetNumVirtuals())
-    {
-        ((MethodTable::VTableIndir2_t *) slot)->SetValueMaybeNull(slotCode);
-    }
-    else
-    {
-        *((PCODE *)slot) = slotCode;
-    }
+    *GetSlotPtrRaw(slotNumber) = slotCode;
 }
 
 //==========================================================================================
@@ -8167,7 +7665,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         }
                         else
                         {
-                            // When performing override checking to ensure that a concrete type is valid, require the implementation 
+                            // When performing override checking to ensure that a concrete type is valid, require the implementation
                             // actually implement the exact or equivalent interface.
                             equivalentOrVariantCompatible = pItfInMap->IsEquivalentTo(pInterfaceType);
                         }
@@ -8251,7 +7749,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             continue;
         }
         MethodDesc *pMethodDecl;
-        
+
         if ((TypeFromToken(methodDecl) == mdtMethodDef) || pInterfaceMT->IsFullyLoaded())
         {
             pMethodDecl =  MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
@@ -8297,7 +7795,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
-        
+
         MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMethodDef(
             GetModule(),
             methodBody,
@@ -8308,7 +7806,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
-        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods 
+        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods
         // defined on the same type that defines the MethodImpl
         if (!HasSameTypeDefAs(pMethodImpl->GetMethodTable()))
         {
@@ -8583,9 +8081,9 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
 
 #ifdef _DEBUG
-    ASSERT_AND_CHECK(!m_pWriteableData.IsNull());
+    ASSERT_AND_CHECK(m_pWriteableData != NULL);
 
-    MethodTableWriteableData *pWriteableData = m_pWriteableData.GetValue();
+    MethodTableWriteableData *pWriteableData = m_pWriteableData;
     DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but
     // this is no longer true because with background gc. Since the purpose of having
@@ -8710,165 +8208,3 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     RETURN (pResult);
 }
 #endif // DACCESS_COMPILE
-
-#ifdef FEATURE_READYTORUN_COMPILER
-
-static BOOL ComputeIsLayoutFixedInCurrentVersionBubble(MethodTable * pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Primitive types and enums have fixed layout
-    if (pMT->IsTruePrimitive() || pMT->IsEnum())
-        return TRUE;
-
-    if (!pMT->GetModule()->IsInCurrentVersionBubble())
-    {
-        if (!pMT->IsValueType())
-        {
-            // Eventually, we may respect the non-versionable attribute for reference types too. For now, we are going
-            // to play is safe and ignore it.
-            return FALSE;
-        }
-
-        // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
-        if (pMT->GetModule()->GetMDImport()->GetCustomAttributeByName(pMT->GetCl(),
-                NONVERSIONABLE_TYPE, NULL, NULL) != S_OK)
-        {
-            return FALSE;
-        }
-    }
-
-    // If the above condition passed, check that all instance fields have fixed layout as well. In particular,
-    // it is important for generic types with non-versionable layout (e.g. Nullable<T>)
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-    {
-        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
-            continue;
-
-        MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-        if (!pFieldMT->IsLayoutFixedInCurrentVersionBubble())
-            return FALSE;
-    }
-
-    return TRUE;
-}
-
-static BOOL ComputeIsLayoutInCurrentVersionBubble(MethodTable* pMT)
-{
-    if (pMT->IsTruePrimitive() || pMT->IsEnum())
-        return TRUE;
-
-    if (!pMT->GetModule()->IsInCurrentVersionBubble())
-        return FALSE;
-
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-    {
-        MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-
-        if (!pFieldMT->IsLayoutInCurrentVersionBubble())
-            return FALSE;
-    }
-
-    if (!pMT->IsValueType())
-    {
-        pMT = pMT->GetParentMethodTable();
-
-        while ((pMT != g_pObjectClass) && (pMT != NULL))
-        {
-            if (!pMT->IsLayoutInCurrentVersionBubble())
-                return FALSE;
-
-            pMT = pMT->GetParentMethodTable();
-        }
-    }
-
-    return TRUE;
-}
-
-BOOL MethodTable::IsLayoutInCurrentVersionBubble()
-{
-    STANDARD_VM_CONTRACT;
-
-    const MethodTableWriteableData * pWriteableData = GetWriteableData();
-    if (!(pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed))
-    {
-        MethodTableWriteableData * pWriteableDataForWrite = GetWriteableDataForWrite();
-        if (ComputeIsLayoutInCurrentVersionBubble(this))
-            pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble;
-        pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed;
-    }
-
-    return (pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble) != 0;
-}
-
-//
-// Is field layout in this type fixed within the current version bubble?
-// This check does not take the inheritance chain into account.
-//
-BOOL MethodTable::IsLayoutFixedInCurrentVersionBubble()
-{
-    STANDARD_VM_CONTRACT;
-
-    const MethodTableWriteableData * pWriteableData = GetWriteableData();
-    if (!(pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixedComputed))
-    {
-        MethodTableWriteableData * pWriteableDataForWrite = GetWriteableDataForWrite();
-        if (ComputeIsLayoutFixedInCurrentVersionBubble(this))
-            pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixed;
-        pWriteableDataForWrite->m_dwFlags |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixedComputed;
-    }
-
-    return (pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutFixed) != 0;
-}
-
-//
-// Is field layout of the inheritance chain fixed within the current version bubble?
-//
-BOOL MethodTable::IsInheritanceChainLayoutFixedInCurrentVersionBubble()
-{
-    STANDARD_VM_CONTRACT;
-
-    // This method is not expected to be called for value types
-    _ASSERTE(!IsValueType());
-
-    MethodTable * pMT = this;
-
-    while ((pMT != g_pObjectClass) && (pMT != NULL))
-    {
-        if (!pMT->IsLayoutFixedInCurrentVersionBubble())
-            return FALSE;
-
-        pMT = pMT->GetParentMethodTable();
-    }
-
-    return TRUE;
-}
-
-//
-// Is the inheritance chain fixed within the current version bubble?
-//
-BOOL MethodTable::IsInheritanceChainFixedInCurrentVersionBubble()
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodTable * pMT = this;
-
-    if (pMT->IsValueType())
-    {
-        return pMT->GetModule()->IsInCurrentVersionBubble();
-    }
-
-    while ((pMT != g_pObjectClass) && (pMT != NULL))
-    {
-        if (!pMT->GetModule()->IsInCurrentVersionBubble())
-            return FALSE;
-
-        pMT = pMT->GetParentMethodTable();
-    }
-
-    return TRUE;
-}
-
-#endif // FEATURE_READYTORUN_COMPILER
