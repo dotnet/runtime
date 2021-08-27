@@ -513,7 +513,7 @@ namespace HttpStress
             {
                 throw new Exception("IGNORE");
             }
-            
+
             if (m.StatusCode != expectedStatus)
             {
                 throw new Exception($"Expected status code {expectedStatus}, got {m.StatusCode}");
