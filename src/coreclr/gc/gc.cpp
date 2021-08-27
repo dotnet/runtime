@@ -5823,13 +5823,6 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
                 gc_etw_segment_pinned_object_heap :
                 gc_etw_segment_large_object_heap);
 
-        GCToEEInterface::DiagAddNewRegion(
-                            gen_number,
-                            heap_segment_mem (res),
-                            heap_segment_allocated (res),
-                            heap_segment_reserved (res)
-                        );
-
 #ifndef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
         hp->thread_uoh_segment (gen_number, res);
@@ -5837,6 +5830,12 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
         thread_uoh_segment (gen_number, res);
 #endif //MULTIPLE_HEAPS
 #endif //!USE_REGIONS
+        GCToEEInterface::DiagAddNewRegion(
+                            gen_number,
+                            heap_segment_mem (res),
+                            heap_segment_allocated (res),
+                            heap_segment_reserved (res)
+                        );
     }
 
     return res;
