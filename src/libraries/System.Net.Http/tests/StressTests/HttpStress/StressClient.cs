@@ -209,6 +209,11 @@ namespace HttpStress
                     {
                         _aggregator.RecordCancellation(opIndex, stopwatch.Elapsed);
                     }
+                    catch (Exception e) when (e.Message == "IGNORE")
+                    {
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/55261")]
+                        // See ClientOperations.ValidateStatusCode
+                    }
                     catch (Exception e)
                     {
                         _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, requestContext.IsCancellationRequested, taskNum: taskNum, iteration: i);
