@@ -2334,12 +2334,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
-                unsigned flag = intrinsicTree->GetFMAOverwritten(op1, op2, op3);
+                unsigned overwrittenOpNum = intrinsicTree->GetOverwrittenOpNumForFMA(op1, op2, op3);
 
                 // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
                 assert(!copiesUpperBits || !op1->isContained());
 
-                if (flag == 1)
+                if (overwrittenOpNum == 1)
                 {
                     // 132 form: op1 = (op1 * op3) + [op2]
 
@@ -2349,7 +2349,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     srcCount += BuildOperandUses(op2);
                     srcCount += BuildDelayFreeUses(op3, op1);
                 }
-                else if (flag == 3)
+                else if (overwrittenOpNum == 3)
                 {
                     // 231 form: op1 = (op2 * op3) + [op1]
 

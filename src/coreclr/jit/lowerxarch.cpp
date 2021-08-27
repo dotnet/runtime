@@ -6315,9 +6315,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         bool supportsRegOptional = false;
 
-                        unsigned flag = node->GetFMAOverwritten(op1, op2, op3);
+                        unsigned overwrittenOpNum = node->GetOverwrittenOpNumForFMA(op1, op2, op3);
 
-                        switch (flag)
+                        switch (overwrittenOpNum)
                         {
                             case 1:
                             {

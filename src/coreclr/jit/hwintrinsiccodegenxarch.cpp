@@ -2133,9 +2133,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
     assert(!copiesUpperBits || !op1->isContained());
 
-    unsigned flag = node->GetFMAOverwritten(op1, op2, op3);
+    unsigned overwrittenOpNum = node->GetOverwrittenOpNumForFMA(op1, op2, op3);
 
-    if (flag == 1)
+    if (overwrittenOpNum == 1)
     {
         // 132 form: op1 = (op1 * op3) + [op2]
 
@@ -2144,9 +2144,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         op2Reg = op3->GetRegNum();
         op3    = op2;
     }
-    else if (flag == 3)
+    else if (overwrittenOpNum == 3)
     {
-        // 231 form: op3 = (op2 * op3) + [op1]
+        // 231 form: op1 = (op2 * op3) + [op1]
 
         ins    = (instruction)(ins + 1);
         op1Reg = op3->GetRegNum();
