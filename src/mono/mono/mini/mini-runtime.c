@@ -3471,6 +3471,16 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			return NULL;
 		}
 
+		if (sig->ret->byref) {
+			if (*(gpointer*)retval == NULL) {
+				MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
+				MonoObject *ex = mono_object_new_checked (klass, error);
+				mono_error_assert_ok (error);
+				mono_error_set_exception_instance (error, (MonoException*)ex);
+				return NULL;
+			}
+		}
+
 		if (info->ret_box_class) {
 			if (sig->ret->byref) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
