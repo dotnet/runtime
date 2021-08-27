@@ -38,6 +38,7 @@ FOR_ALL_ICU_FUNCTIONS
 
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
+ucol_setVariableTop_func ucol_setVariableTop_ptr = NULL;
 
 #if defined (TARGET_UNIX)
 
@@ -380,6 +381,33 @@ static void ValidateICUDataCanLoad()
     }
 }
 
+static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
+{
+    if (ucol_setMaxVariable_ptr != NULL)
+    {
+        return;
+    }
+
+    char symbolName[SYMBOL_NAME_SIZE];
+
+#if defined(TARGET_OSX) || defined(TARGET_ANDROID)
+    // Nothing to do here
+    // OSX and Android always run against ICU version which has ucol_setMaxVariable. We don't need more than that.
+#elif defined(TARGET_WINDOWS)
+    sprintf_s(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
+    ucol_setVariableTop_ptr = (ucol_setVariableTop_func)GetProcAddress((HMODULE)libicui18n, symbolName);
+#else
+    sprintf(symbolName, "ucol_setVariableTop%s", symbolVersion);
+    ucol_setVariableTop_ptr = (ucol_setVariableTop_func)dlsym(libicui18n, symbolName);
+#endif // defined(TARGET_OSX) || defined(TARGET_ANDROID)
+
+    if (ucol_setVariableTop_ptr == NULL)
+    {
+        fprintf(stderr, "Cannot get the symbols of ICU APIs ucol_setMaxVariable or ucol_setVariableTop.\n");
+        abort();
+    }
+}
+
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
@@ -413,6 +441,9 @@ int32_t GlobalizationNative_LoadICU()
 
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
+
+    InitializeVariableMaxAndTopPointers(symbolVersion);
+
     return true;
 }
 
@@ -466,6 +497,8 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
+
+    InitializeVariableMaxAndTopPointers(symbolVersion);
 }
 
 #undef PER_FUNCTION_BLOCK
