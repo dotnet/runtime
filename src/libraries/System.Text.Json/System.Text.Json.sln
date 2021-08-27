@@ -43,7 +43,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Immutable", "..\System.Collections.Immutable\ref\System.Collections.Immutable.csproj", "{BE27618A-2916-4269-9AD5-6BC5EDC32B30}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Json.SourceGeneration.UnitTests", "tests\System.Text.Json.SourceGeneration.UnitTests\System.Text.Json.SourceGeneration.UnitTests.csproj", "{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Json.SourceGeneration.Unit.Tests", "tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Unit.Tests.csproj", "{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
