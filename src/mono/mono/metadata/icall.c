@@ -346,7 +346,7 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 	if (mono_class_is_nullable (ec)) {
 		if (vc && m_class_is_primitive (vc) && vc != m_class_get_nullable_elem_class (ec)) {
-            // T -> Nullable<T>  T must be exact
+			// T -> Nullable<T>  T must be exact
 			set_invalid_cast (error, vc, ec);
 			goto leave;
 		}
@@ -3069,11 +3069,11 @@ ves_icall_RuntimeType_GetCorrespondingInflatedMethod (MonoReflectionTypeHandle r
 	MonoMethod *method;
 	gpointer iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-                if (method->token == generic_method->token) {
+		if (method->token == generic_method->token) {
 			ret = mono_method_get_object_handle (method, klass, error);
 			return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
 		}
-        }
+	}
 
 	return ret;
 }
@@ -4638,7 +4638,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 	g_return_val_if_fail (dir != NULL, NULL);
 	g_return_val_if_fail (file != NULL, NULL);
 
-        /*
+	/*
 	 * If the directory name doesn't have a / on the end, we need
 	 * to add one so we get a proper path to the file
 	 */
@@ -5553,11 +5553,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	g_assert (image_base);
 
 #ifndef HOST_WASM
-        if (mono_is_debugger_attached ()) {
-                mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
-                mono_error_set_pending_exception (error);
-                return;
-        }
+	if (mono_is_debugger_attached ()) {
+		mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
+		mono_error_set_pending_exception (error);
+		return;
+	}
 #endif
 
 	mono_image_load_enc_delta (MONO_ENC_DELTA_API, image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);

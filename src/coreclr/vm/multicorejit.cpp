@@ -268,11 +268,6 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
 
                 _ASSERTE((versionFlags & 0x80000000) == 0);
 
-                if (pFile->HasNativeImage())
-                {
-                    hasNativeImage = 1;
-                }
-
                 pAsm->GetVersion(& major, & minor, & build, & revision);
 
                 pAsm->GetMVID(& mvid);

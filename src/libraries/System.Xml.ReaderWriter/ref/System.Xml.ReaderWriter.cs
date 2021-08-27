@@ -765,7 +765,7 @@ namespace System.Xml
         public static bool operator ==(System.Xml.XmlQualifiedName? a, System.Xml.XmlQualifiedName? b) { throw null; }
         public static bool operator !=(System.Xml.XmlQualifiedName? a, System.Xml.XmlQualifiedName? b) { throw null; }
         public override string ToString() { throw null; }
-        public static string ToString(string name, string ns) { throw null; }
+        public static string ToString(string name, string? ns) { throw null; }
     }
     [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
     [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
