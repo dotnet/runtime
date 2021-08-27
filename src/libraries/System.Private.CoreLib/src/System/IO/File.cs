@@ -73,7 +73,8 @@ namespace System.IO
         // The file is opened with ReadWrite access and cannot be opened by another
         // application until it has been closed.  An IOException is thrown if the
         // directory specified doesn't exist.
-        public static FileStream Create(string path) => Create(path, DefaultBufferSize);
+        public static FileStream Create(string path)
+            => Create(path, DefaultBufferSize);
 
         // Creates a file in a particular path.  If the file exists, it is replaced.
         // The file is opened with ReadWrite access and cannot be opened by another
@@ -191,7 +192,8 @@ namespace System.IO
         public static FileStream OpenWrite(string path)
             => new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
 
-        public static string ReadAllText(string path) => ReadAllText(path, Encoding.UTF8);
+        public static string ReadAllText(string path)
+            => ReadAllText(path, Encoding.UTF8);
 
         public static string ReadAllText(string path, Encoding encoding)
         {
@@ -201,7 +203,8 @@ namespace System.IO
             return sr.ReadToEnd();
         }
 
-        public static void WriteAllText(string path, string? contents) => WriteAllText(path, contents, UTF8NoBOM);
+        public static void WriteAllText(string path, string? contents)
+            => WriteAllText(path, contents, UTF8NoBOM);
 
         public static void WriteAllText(string path, string? contents, Encoding encoding)
         {
@@ -265,7 +268,8 @@ namespace System.IO
 #endif
         }
 
-        public static string[] ReadAllLines(string path) => ReadAllLines(path, Encoding.UTF8);
+        public static string[] ReadAllLines(string path)
+            => ReadAllLines(path, Encoding.UTF8);
 
         public static string[] ReadAllLines(string path, Encoding encoding)
         {
@@ -283,7 +287,8 @@ namespace System.IO
             return lines.ToArray();
         }
 
-        public static IEnumerable<string> ReadLines(string path) => ReadLines(path, Encoding.UTF8);
+        public static IEnumerable<string> ReadLines(string path)
+            => ReadLines(path, Encoding.UTF8);
 
         public static IEnumerable<string> ReadLines(string path, Encoding encoding)
         {
@@ -297,7 +302,8 @@ namespace System.IO
             WriteAllLines(path, (IEnumerable<string>)contents);
         }
 
-        public static void WriteAllLines(string path, IEnumerable<string> contents) => WriteAllLines(path, contents, UTF8NoBOM);
+        public static void WriteAllLines(string path, IEnumerable<string> contents)
+            => WriteAllLines(path, contents, UTF8NoBOM);
 
         public static void WriteAllLines(string path, string[] contents, Encoding encoding)
             => WriteAllLines(path, (IEnumerable<string>)contents, encoding);
@@ -326,7 +332,8 @@ namespace System.IO
             }
         }
 
-        public static void AppendAllText(string path, string? contents) => AppendAllText(path, contents, UTF8NoBOM);
+        public static void AppendAllText(string path, string? contents)
+            => AppendAllText(path, contents, UTF8NoBOM);
 
         public static void AppendAllText(string path, string? contents, Encoding encoding)
         {
@@ -335,7 +342,8 @@ namespace System.IO
             WriteToFile(path, append: true, contents, encoding);
         }
 
-        public static void AppendAllLines(string path, IEnumerable<string> contents) => AppendAllLines(path, contents, UTF8NoBOM);
+        public static void AppendAllLines(string path, IEnumerable<string> contents)
+            => AppendAllLines(path, contents, UTF8NoBOM);
 
         public static void AppendAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
@@ -762,10 +770,8 @@ namespace System.IO
 #if MS_IO_REDIST
         private static void WriteToFile(string path, bool append, string? contents, Encoding encoding)
         {
-            using (StreamWriter sw = new StreamWriter(path, append, encoding))
-            {
-                sw.Write(contents);
-            }
+            using StreamWriter sw = new StreamWriter(path, append, encoding);
+            sw.Write(contents);
         }
 
         private static async Task WriteToFileAsync(string path, bool append, string? contents, Encoding encoding, CancellationToken cancellationToken)
