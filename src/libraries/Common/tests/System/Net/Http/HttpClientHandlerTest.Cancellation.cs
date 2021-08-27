@@ -210,9 +210,12 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
+                var cts = new CancellationTokenSource();
 
                 await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
+                    var clientFinished = new TaskCompletionSource<bool>();
+
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         var headers = new List<HttpHeaderData>();
@@ -224,13 +227,12 @@ namespace System.Net.Http.Functional.Tests
 
                         await connection.ReadRequestDataAsync();
                         await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, isFinal: false);
-
-                        await connection.WaitForCancellationAsync();
+                        await clientFinished.Task;
                     });
 
                     var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     req.Headers.ConnectionClose = connectionClose;
-                    Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead);
+                    Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
                     {
                         // This 'using' shouldn't be necessary in general. However, HTTP3 does not remove the request stream from the
@@ -238,9 +240,7 @@ namespace System.Net.Http.Functional.Tests
                         // This means the connection will fail to shut down promptly.
                         // See https://github.com/dotnet/runtime/issues/58072
                         using HttpResponseMessage resp = await getResponse;
-
                         Stream respStream = await resp.Content.ReadAsStreamAsync(TestAsync);
-                        using var cts = new CancellationTokenSource();
                         Task readTask = readOrCopyToAsync ?
                             respStream.ReadAsync(new byte[1], 0, 1, cts.Token) :
                             respStream.CopyToAsync(Stream.Null, 10, cts.Token);
@@ -248,7 +248,11 @@ namespace System.Net.Http.Functional.Tests
                         await readTask;
                     });
 
-                    await serverTask;
+                    try
+                    {
+                        clientFinished.SetResult(true);
+                        await serverTask;
+                    } catch { }
                 });
             }
         }
