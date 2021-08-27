@@ -419,7 +419,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
     // so must ensure the mapping is compatible with that
     bool enableExecution = isInBundle &&
         source->HasCorHeader() &&
-        (source->HasNativeHeader() || source->HasReadyToRunHeader()) &&
+        source->HasReadyToRunHeader() &&
         g_fAllowNativeImages;
 
     DWORD mapAccess = PAGE_READWRITE;
@@ -602,7 +602,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     if (!HasCorHeader())
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    if ((HasNativeHeader() || HasReadyToRunHeader()) && g_fAllowNativeImages)
+    if (HasReadyToRunHeader() && g_fAllowNativeImages)
     {
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())

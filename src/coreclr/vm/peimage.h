@@ -165,7 +165,6 @@ public:
     IMDInternalImport* GetNativeMDImport(BOOL loadAllowed = TRUE);
 
     BOOL HasContents() ;
-    BOOL HasNativeHeader() ;
     BOOL IsPtrInImage(PTR_CVOID data);
     CHECK CheckFormat();
 
@@ -206,8 +205,6 @@ public:
     BOOL Has32BitNTHeaders();
 
     void VerifyIsAssembly();
-    void VerifyIsNIAssembly();
-
 
     static void GetAll(SArray<PEImage*> &images);
 
@@ -232,8 +229,6 @@ private:
     // ------------------------------------------------------------
 
     void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
-
-    void VerifyIsILOrNIAssembly(BOOL fIL);
 
     struct PEImageLocator
     {

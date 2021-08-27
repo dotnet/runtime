@@ -76,7 +76,6 @@ CHECK PEImage::CheckLayoutFormat(PEDecoder *pe)
     CONTRACT_CHECK_END;
 
     CHECK(pe->IsILOnly());
-    CHECK(!pe->HasNativeHeader());
     CHECK_OK;
 }
 
@@ -380,7 +379,7 @@ IMDInternalImport* PEImage::GetNativeMDImport(BOOL loadAllowed)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasNativeHeader() || HasReadyToRunHeader());
+        PRECONDITION(HasReadyToRunHeader());
         if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
         if (loadAllowed) THROWS;                         else NOTHROW;
         if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
@@ -405,7 +404,7 @@ void PEImage::OpenNativeMDImport()
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasNativeHeader() || HasReadyToRunHeader());
+        PRECONDITION(HasReadyToRunHeader());
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
@@ -536,32 +535,6 @@ void PEImage::GetMVID(GUID *pMvid)
 }
 
 void PEImage::VerifyIsAssembly()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    VerifyIsILOrNIAssembly(TRUE);
-}
-
-void PEImage::VerifyIsNIAssembly()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    VerifyIsILOrNIAssembly(FALSE);
-}
-
-void PEImage::VerifyIsILOrNIAssembly(BOOL fIL)
 {
     CONTRACTL
     {
