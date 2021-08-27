@@ -8718,7 +8718,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     actualMethodRetTypeSigClass = sig->retTypeSigClass;
 
     /* Check for varargs */
-    if (!GlobalJitOptions::compFeatureVarArg() &&
+    if (!compFeatureVarArg() &&
         ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG))
     {

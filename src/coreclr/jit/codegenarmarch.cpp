@@ -684,7 +684,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     GenTree* source = treeNode->gtOp1;
     var_types targetType;
     
-    if (!GlobalJitOptions::compMacOsArm64Abi())
+    if (!compMacOsArm64Abi())
     {
         targetType = genActualType(source->TypeGet());
     }
@@ -746,10 +746,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             regNumber srcReg = genConsumeReg(source);
             assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
 
-            assert(GlobalJitOptions::compMacOsArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
+            assert(compMacOsArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
 
 #ifdef TARGET_ARM64
-            if (GlobalJitOptions::compMacOsArm64Abi() && (treeNode->GetStackByteSize() == 12))
+            if (compMacOsArm64Abi() && (treeNode->GetStackByteSize() == 12))
             {
                 regNumber tmpReg = treeNode->GetSingleTempReg();
                 GetEmitter()->emitStoreSIMD12ToLclOffset(varNumOut, argOffsetOut, srcReg, tmpReg);
@@ -766,7 +766,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             return;
         }
 
-        if (GlobalJitOptions::compMacOsArm64Abi())
+        if (compMacOsArm64Abi())
         {
             switch (treeNode->GetStackByteSize())
             {
@@ -2314,7 +2314,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
         }
 #if FEATURE_ARG_SPLIT_SUPPORTED
-        else if (GlobalJitOptions::compFeatureArgSplit() && curArgTabEntry->IsSplit())
+        else if (compFeatureArgSplit() && curArgTabEntry->IsSplit())
         {
             assert(curArgTabEntry->numRegs >= 1);
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());

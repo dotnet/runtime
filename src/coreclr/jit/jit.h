@@ -218,7 +218,7 @@
 // On all platforms except Arm64 OSX arguments on the stack are taking
 // register size slots. On these platforms we could check that stack slots count
 // matches our new byte size calculations.
-#define DEBUG_ARG_SLOTS_ASSERT(x) assert(GlobalJitOptions::compMacOsArm64Abi() || x)
+#define DEBUG_ARG_SLOTS_ASSERT(x) assert(compMacOsArm64Abi() || x)
 #else
 #define DEBUG_ARG_SLOTS_ARG(x)
 #define DEBUG_ARG_SLOTS_ONLY(x)
@@ -362,17 +362,6 @@ public:
 #ifdef FEATURE_HFA
 #undef FEATURE_HFA
 #endif
-
-// Native Varargs are not supported on Unix (all architectures) and Windows ARM
-#if !defined(TARGET_ARM)
-    static bool compFeatureVarArg() { return TargetOS::IsWindows; }
-#else
-    static bool compFeatureVarArg() { return false; }
-#endif
-
-    static bool compFeatureArgSplit() { return TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64); }
-
-    static bool compMacOsArm64Abi() { return TargetArchitecture::IsArm64 && TargetOS::IsUnix && TargetOS::IsMacOS; }
 };
 
 /*****************************************************************************/

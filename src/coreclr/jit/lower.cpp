@@ -1041,7 +1041,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 
 #if FEATURE_ARG_SPLIT_SUPPORTED
     // Struct can be split into register(s) and stack on ARM
-    if (GlobalJitOptions::compFeatureArgSplit() && info->IsSplit())
+    if (compFeatureArgSplit() && info->IsSplit())
     {
         assert(arg->OperGet() == GT_OBJ || arg->OperGet() == GT_FIELD_LIST);
         // TODO: Need to check correctness for FastTailCall
@@ -1165,7 +1165,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #if !defined(TARGET_64BIT)
                     assert(info->GetByteSize() == 12);
 #else  // TARGET_64BIT
-                    if (GlobalJitOptions::compMacOsArm64Abi())
+                    if (compMacOsArm64Abi())
                     {
                         assert(info->GetByteSize() == 12);
                     }

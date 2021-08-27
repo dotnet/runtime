@@ -3836,7 +3836,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
 //    (e.g. for the target).
 void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs)
 {
-    if (GlobalJitOptions::compFeatureVarArg() && call->IsVarargs() && varTypeIsFloating(argNode))
+    if (compFeatureVarArg() && call->IsVarargs() && varTypeIsFloating(argNode))
     {
         *callHasFloatRegArgs = true;
 

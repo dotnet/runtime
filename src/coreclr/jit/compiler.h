@@ -1612,11 +1612,11 @@ public:
 
     bool IsVararg() const
     {
-        return GlobalJitOptions::compFeatureVarArg() && _isVararg;
+        return compFeatureVarArg() && _isVararg;
     }
     void SetIsVararg(bool value)
     {
-        if (GlobalJitOptions::compFeatureVarArg())
+        if (compFeatureVarArg())
         {
             _isVararg = value;
         }
@@ -1886,7 +1886,7 @@ public:
     {
 
         unsigned roundedByteSize;
-        if (GlobalJitOptions::compMacOsArm64Abi())
+        if (compMacOsArm64Abi())
         {
             // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
             if (isStruct && !isFloatHfa)
@@ -3853,7 +3853,7 @@ public:
         assert(varDsc->lvExactSize == 12);
 
 #if defined(TARGET_64BIT)
-        assert(GlobalJitOptions::compMacOsArm64Abi() || varDsc->lvSize() == 16);
+        assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.

@@ -2323,7 +2323,7 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
 // For CORECLR there is no vararg on System V systems.
 inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 {
-    assert(GlobalJitOptions::compFeatureVarArg());
+    assert(compFeatureVarArg());
 #ifdef TARGET_AMD64
     switch (floatReg)
     {
@@ -2347,7 +2347,7 @@ inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 
 inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
 {
-    assert(GlobalJitOptions::compFeatureVarArg());
+    assert(compFeatureVarArg());
 #ifdef TARGET_AMD64
     switch (intReg)
     {

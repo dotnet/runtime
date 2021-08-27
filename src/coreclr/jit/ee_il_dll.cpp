@@ -469,7 +469,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 // static
 unsigned Compiler::eeGetArgAlignment(var_types type, bool isFloatHfa)
 {
-    if (GlobalJitOptions::compMacOsArm64Abi())
+    if (compMacOsArm64Abi())
     {
         if (isFloatHfa)
         {

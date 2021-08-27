@@ -3305,7 +3305,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(size != 0);
         assert(byteSize != 0);
 
-        if (GlobalJitOptions::compMacOsArm64Abi())
+        if (compMacOsArm64Abi())
         {
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
@@ -3580,7 +3580,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     {
 #if FEATURE_ARG_SPLIT_SUPPORTED
                         // Check for a split (partially enregistered) struct
-                        if (GlobalJitOptions::compFeatureArgSplit() && !passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
+                        if (compFeatureArgSplit() && !passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
                         {
                             // This indicates a partial enregistration of a struct type
                             assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||

@@ -1855,7 +1855,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 
 #if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
         // storing of TYP_SIMD12 (i.e. Vector3) argument.
-        if (GlobalJitOptions::compMacOsArm64Abi() && (type == TYP_SIMD12))
+        if (compMacOsArm64Abi() && (type == TYP_SIMD12))
         {
             // Need an additional integer register to extract upper 4 bytes from data.
             regNumber tmpReg = nextArgNode->GetSingleTempReg();
@@ -2137,7 +2137,7 @@ void CodeGen::genProduceReg(GenTree* tree)
                 }
             }
 #if FEATURE_ARG_SPLIT_SUPPORTED
-            else if (GlobalJitOptions::compFeatureArgSplit() && tree->OperIsPutArgSplit())
+            else if (compFeatureArgSplit() && tree->OperIsPutArgSplit())
             {
                 GenTreePutArgSplit* argSplit = tree->AsPutArgSplit();
                 unsigned            regCount = argSplit->gtNumRegs;
@@ -2154,7 +2154,7 @@ void CodeGen::genProduceReg(GenTree* tree)
                 }
             }
 #ifdef TARGET_ARM
-            else if (GlobalJitOptions::compFeatureArgSplit() && tree->OperIsMultiRegOp())
+            else if (compFeatureArgSplit() && tree->OperIsMultiRegOp())
             {
                 GenTreeMultiRegOp* multiReg = tree->AsMultiRegOp();
                 unsigned           regCount = multiReg->GetRegCount();

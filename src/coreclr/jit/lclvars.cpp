@@ -727,7 +727,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if defined(TARGET_ARM64)
 
-        if (GlobalJitOptions::compFeatureArgSplit())
+        if (compFeatureArgSplit())
         {
             // On arm64 Windows we will need to properly handle the case where a >8byte <=16byte
             // struct is split between register r7 and virtual stack slot s[0]
@@ -1097,7 +1097,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if FEATURE_FASTTAILCALL
             const unsigned argAlignment = eeGetArgAlignment(origArgType, (hfaType == TYP_FLOAT));
-            if (GlobalJitOptions::compMacOsArm64Abi())
+            if (compMacOsArm64Abi())
             {
                 varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
             }
@@ -5500,7 +5500,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
-    noway_assert(GlobalJitOptions::compMacOsArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
+    noway_assert(compMacOsArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 
     if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
@@ -5654,7 +5654,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
 
-        assert(GlobalJitOptions::compMacOsArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
+        assert(compMacOsArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
 
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
@@ -5827,7 +5827,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #elif defined(TARGET_ARM64)
 // Register arguments on ARM64 only take stack space when they have a frame home.
 // Unless on windows and in a vararg method.
-        if (GlobalJitOptions::compFeatureArgSplit() && this->info.compIsVarArgs)
+        if (compFeatureArgSplit() && this->info.compIsVarArgs)
         {
             if (varDsc->lvType == TYP_STRUCT && varDsc->GetOtherArgReg() >= MAX_REG_ARG &&
                 varDsc->GetOtherArgReg() != REG_NA)
@@ -6034,7 +6034,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // TARGET_ARM
         const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
         const unsigned argAlignment = eeGetArgAlignment(varDsc->lvType, isFloatHfa);
-        if (GlobalJitOptions::compMacOsArm64Abi())
+        if (compMacOsArm64Abi())
         {
             argOffs                     = roundUp(argOffs, argAlignment);
         }

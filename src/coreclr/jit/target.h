@@ -9,6 +9,11 @@
 #define FEATURE_CFI_SUPPORT
 #endif
 
+// Native Varargs are not supported on Unix (all architectures) and Windows ARM
+#define compFeatureVarArg() (TargetOS::IsWindows && !TargetArchitecture::IsArm32)
+#define compMacOsArm64Abi() (TargetArchitecture::IsArm64 && TargetOS::IsMacOS)
+#define compFeatureArgSplit() ( TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64) )
+
 /*****************************************************************************/
 // The following are human readable names for the target architectures
 #if defined(TARGET_X86)
