@@ -1598,7 +1598,7 @@ public:
     bool IsSplit() const
     {
 #if FEATURE_ARG_SPLIT_SUPPORTED
-        return _isSplit;
+        return compFeatureArgSplit() && _isSplit;
 #else // FEATURE_ARG_SPLIT_SUPPORTED
         return false;
 #endif

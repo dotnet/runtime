@@ -1295,7 +1295,7 @@ public:
     bool OperIsPutArgSplit() const
     {
 #if FEATURE_ARG_SPLIT_SUPPORTED
-        return gtOper == GT_PUTARG_SPLIT;
+        return compFeatureArgSplit() && (gtOper == GT_PUTARG_SPLIT);
 #else // !FEATURE_ARG_SPLIT_SUPPORTED
         return false;
 #endif
