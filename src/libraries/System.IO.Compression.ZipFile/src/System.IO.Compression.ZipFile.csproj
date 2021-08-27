@@ -11,7 +11,7 @@
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.CaseSensitivity.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <!-- Unix specific files -->

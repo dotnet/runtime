@@ -26,7 +26,7 @@
              Link="Common\System\Collections\Generic\LargeArrayBuilder.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
              Link="Common\System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.CaseSensitivity.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
              Link="Common\System\IO\RowConfigReader.cs" />
@@ -100,7 +100,7 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.cs"
              Link="System\IO\PathInternal.cs" />
     <Compile Include="System\IO\ConnectedStreams.cs" Link="System\IO\ConnectedStreams.cs" />
     <Compile Include="Tests\System\IO\ConnectedStreamsTests.cs" />
@@ -109,7 +109,7 @@
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -126,7 +126,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="Tests\System\IO\PathInternal.Unix.Tests.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
              Link="System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
