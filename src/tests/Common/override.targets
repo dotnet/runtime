@@ -14,8 +14,7 @@
   >
 
     <ItemGroup>
-      <ReferencePath Include="$(RepoRoot)\artifacts\bin\$(RuntimeFlavor)\$(TargetOS).$(TargetArchitecture).$(Configuration)\IL\System.Private.CoreLib.dll" Condition="'$(RuntimeFlavor)' != ''"/>
-      <ReferencePath Include="$(RepoRoot)\artifacts\bin\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\IL\System.Private.CoreLib.dll" Condition="'$(RuntimeFlavor)' == ''"/>
+      <ReferencePath Include="$(RepoRoot)\artifacts\bin\$(RuntimeFlavor)\$(TargetOS).$(TargetArchitecture).$(Configuration)\IL\System.Private.CoreLib.dll"/>
     </ItemGroup>
   </Target>
 
