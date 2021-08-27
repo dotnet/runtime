@@ -1634,7 +1634,8 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
     MethodDesc* pMethodDesc,
     CallerGCMode callerGCMode,
     bool *doBackpatchRef,
-    bool *doFullBackpatchRef)
+    bool *doFullBackpatchRef,
+    Module* pModule)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(!IsLockOwnedByCurrentThread());
@@ -1695,7 +1696,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
 
             // Record the caller's GC mode.
             config->SetCallerGCMode(callerGCMode);
-            pCode = pMethodDesc->PrepareCode(config);
+            pCode = pMethodDesc->PrepareCode(config, pModule);
 
         #ifdef FEATURE_CODE_VERSIONING
             if (config->ProfilerMayHaveActivatedNonDefaultCodeVersion())

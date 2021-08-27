@@ -1640,7 +1640,7 @@ public:
     //
     PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, BOOL fFullBackPatch);
 
-    PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
+    PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown, Module* pModule = NULL);
 
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
@@ -1853,12 +1853,12 @@ public:
 #ifndef DACCESS_COMPILE
 public:
     PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
-    PCODE PrepareCode(PrepareCodeConfig* pConfig);
+    PCODE PrepareCode(PrepareCodeConfig* pConfig, Module* pModule = NULL);
 
 private:
-    PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
-    PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
-    PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
+    PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig, Module* pModule = NULL);
+    PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier, Module* pModule = NULL);
+    PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig, Module* pModule_probe = NULL);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
