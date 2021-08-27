@@ -5,11 +5,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
     partial class TestWithSkipEnabledCheck 
     {
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
         private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, global::System.Exception?> __M0Callback =
             global::Microsoft.Extensions.Logging.LoggerMessage.Define(global::Microsoft.Extensions.Logging.LogLevel.Information, new global::Microsoft.Extensions.Logging.EventId(0, nameof(M0)), "Message: When using SkipEnabledCheck, the generated code skips logger.IsEnabled(logLevel) check before calling log. To be used when consumer has already guarded logger method in an IsEnabled check.", new global::Microsoft.Extensions.Logging.LogDefineOptions() { SkipEnabledCheck = true }); 
 
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
         public static partial void M0(global::Microsoft.Extensions.Logging.ILogger logger)
         {
             __M0Callback(logger, null);

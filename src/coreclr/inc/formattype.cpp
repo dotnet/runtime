@@ -689,14 +689,7 @@ PCCOR_SIGNATURE PrettyPrintType(
                 }
 
                 char sz[32];
-                if(IsCompilationProcess())
-                {
-                    sprintf_s(sz, COUNTOF(sz), " /* TOKEN: 0x%x */", pMT != NULL ? pMT->GetCl() : 0);
-                }
-                else
-                {
-                    sprintf_s(sz, COUNTOF(sz), " /* MT: 0x%p */", pMT);
-                }
+                sprintf_s(sz, COUNTOF(sz), " /* MT: 0x%p */", pMT);
                 appendStr(out, sz);
                 break;
             }

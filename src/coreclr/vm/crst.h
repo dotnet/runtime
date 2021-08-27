@@ -253,11 +253,7 @@ public:
     BOOL OwnedByCurrentThread()
     {
         WRAPPER_NO_CONTRACT;
-#ifdef CROSSGEN_COMPILE
-        return TRUE;
-#else
         return m_holderthreadid.IsCurrentThread();
-#endif
     }
 
     NOINLINE EEThreadId GetHolderThreadId()

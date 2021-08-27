@@ -16,6 +16,7 @@ parameters:
   stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
+  tieringTest: false
   runtimeVariant: ''
   variables: {}
   pool: ''
@@ -359,6 +360,7 @@ jobs:
 
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        tieringTest: ${{ parameters.tieringTest }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the

@@ -41,6 +41,7 @@
     <Compile Include="..\Common\JsonSerializerWrapperForStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForStream.cs" />
     <Compile Include="..\Common\JsonSerializerWrapperForString.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForString.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.InitOnly.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.InitOnly.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.NonPublicAccessors.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
@@ -72,6 +73,7 @@
     <Compile Include="MixedModeContextTests.cs" />
     <Compile Include="SerializationContextTests.cs" />
     <Compile Include="SerializationLogicTests.cs" />
+    <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="TestClasses.cs" />
     <Compile Include="RealWorldContextTests.cs" />

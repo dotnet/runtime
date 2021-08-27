@@ -195,5 +195,37 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfsurf'
+        logicalmachine: 'perfsurf' 
 
+# Uncomment once we fix https://github.com/dotnet/performance/issues/1950
+# # run coreclr linux crossgen perf job
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+#     buildConfig: release
+#     runtimeFlavor: coreclr
+#     platforms:
+#     - Linux_arm64
+#     jobParameters:
+#       testGroup: perf
+#       liveLibrariesBuildConfig: Release
+#       projectFile: crossgen_perf.proj
+#       runKind: crossgen_scenarios
+#       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+#       logicalmachine: 'perfa64'
+
+# # run coreclr windows crossgen perf job
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+#     buildConfig: release
+#     runtimeFlavor: coreclr
+#     platforms:
+#     - windows_arm64
+#     jobParameters:
+#       testGroup: perf
+#       liveLibrariesBuildConfig: Release
+#       projectFile: crossgen_perf.proj
+#       runKind: crossgen_scenarios
+#       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+#       logicalmachine: 'perfsurf'

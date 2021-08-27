@@ -325,28 +325,30 @@ namespace System.Text.Json
                         try
                         {
                             isFinalBlock = WriteCore(converter, writer, value, options, ref state);
+                            await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                            bufferWriter.Clear();
                         }
                         finally
                         {
-                            if (state.PendingAsyncDisposables?.Count > 0)
+                            // Await any pending resumable converter tasks (currently these can only be IAsyncEnumerator.MoveNextAsync() tasks).
+                            // Note that pending tasks are always awaited, even if an exception has been thrown or the cancellation token has fired.
+                            if (state.PendingTask is not null)
                             {
-                                await state.DisposePendingAsyncDisposables().ConfigureAwait(false);
+                                try
+                                {
+                                    await state.PendingTask.ConfigureAwait(false);
+                                }
+                                catch
+                                {
+                                    // Exceptions should only be propagated by the resuming converter
+                                    // TODO https://github.com/dotnet/runtime/issues/22144
+                                }
                             }
-                        }
 
-                        await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                        bufferWriter.Clear();
-
-                        if (state.PendingTask is not null)
-                        {
-                            try
+                            // Dispose any pending async disposables (currently these can only be completed IAsyncEnumerators).
+                            if (state.CompletedAsyncDisposables?.Count > 0)
                             {
-                                await state.PendingTask.ConfigureAwait(false);
-                            }
-                            catch
-                            {
-                                // Exceptions will be propagated elsewhere
-                                // TODO https://github.com/dotnet/runtime/issues/22144
+                                await state.DisposeCompletedAsyncDisposables().ConfigureAwait(false);
                             }
                         }
 
@@ -354,6 +356,7 @@ namespace System.Text.Json
                 }
                 catch
                 {
+                    // On exception, walk the WriteStack for any orphaned disposables and try to dispose them.
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
                 }

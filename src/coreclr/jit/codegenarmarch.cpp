@@ -2448,17 +2448,19 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
-        // Generate a direct call to a non-virtual user defined or helper method
+        // Generate a indirect call to a virtual user defined function or helper method
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
                ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
         assert(call->gtControlExpr == nullptr);
         assert(!call->IsTailCall());
 
         regNumber tmpReg = call->GetSingleTempReg();
-        GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, REG_R2R_INDIRECT_PARAM);
+        regNumber callAddrReg =
+            call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
+        GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
 
         // We have now generated code for gtControlExpr evaluating it into `tmpReg`.
         // We just need to emit "call tmpReg" in this case.
@@ -2475,14 +2477,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         assert(callType == CT_HELPER || callType == CT_USER_FUNC);
 
         void* addr = nullptr;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         if (call->gtEntryPoint.addr != NULL)
         {
             assert(call->gtEntryPoint.accessType == IAT_VALUE);
             addr = call->gtEntryPoint.addr;
         }
         else
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
             if (callType == CT_HELPER)
         {
             CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
@@ -2514,7 +2516,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genEmitCall(emitter::EC_FUNC_TOKEN, methHnd, INDEBUG_LDISASM_COMMA(sigInfo) addr,
                         retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
         }
-
 #if 0 && defined(TARGET_ARM64)
         // Use this path if you want to load an absolute call target using
         //  a sequence of movs followed by an indirect call (blr instruction)

@@ -33,6 +33,10 @@
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
+    <_MonoComponent Include="hot_reload;debugger" />
+  </ItemGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
 
   <!-- "public" target meant for use outside the regular wasm app generation process FIXME: rename please! -->
@@ -145,6 +149,10 @@
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
+      <_WasmPInvokeHPath>$(_WasmRuntimePackIncludeDir)wasm\pinvoke.h</_WasmPInvokeHPath>
+      <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
+
+      <_DriverGenCNeeded Condition="'$(_DriverGenCNeeded)' == '' and '$(RunAOTCompilation)' == 'true'">true</_DriverGenCNeeded>
 
       <_EmccAssertionLevelDefault>0</_EmccAssertionLevelDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0 -s ASSERTIONS=$(_EmccAssertionLevelDefault)</_EmccOptimizationFlagDefault>
@@ -159,10 +167,15 @@
       <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">Normal</_EmccCompileOutputMessageImportance>
       <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' != 'true'">Low</_EmccCompileOutputMessageImportance>
 
+      <_EmccCompileBitcodeRsp>$(_WasmIntermediateOutputPath)emcc-compile-bc.rsp</_EmccCompileBitcodeRsp>
+      <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
+
       <EmccTotalMemory Condition="'$(EmccTotalMemory)' == ''">536870912</EmccTotalMemory>
     </PropertyGroup>
 
     <ItemGroup>
+      <_WasmLinkDependencies Remove="@(_WasmLinkDependencies)" />
+
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0" />
@@ -188,9 +201,20 @@
       <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
       <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
 
-      <_EmccCFlags Include="$(EmccExtraCFlags)" />
+      <!-- Adding optimization flag at the top, so it gets precedence -->
+      <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
+      <_EmccLDFlags Include="@(_EmccCommonFlags)" />
+      <_EmccLDFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
 
-      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)*.c" />
+      <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
+      <_DriverCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
+
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)pinvoke.c"
+                               Dependencies="$(_WasmPInvokeHPath);$(_WasmPInvokeTablePath)" />
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)driver.c"
+                               Dependencies="@(_DriverCDependencies)" />
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)corebindings.c" />
+
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
       <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
@@ -226,16 +250,17 @@
       OutputPath="$(_WasmICallTablePath)" />
   </Target>
 
-  <Target Name="_WasmCompileNativeFiles">
-    <ItemGroup>
-      <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
-      <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" />
-    </ItemGroup>
+  <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == true" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
+  <Target Name="_WasmCompileNativeFiles">
     <PropertyGroup>
       <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
       <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
     </PropertyGroup>
+
+    <ItemGroup>
+      <_EmccCFlags Include="$(EmccExtraCFlags)" />
+    </ItemGroup>
 
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
@@ -243,45 +268,46 @@
     <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
+    <ItemGroup>
+      <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
+      <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" Dependencies="%(_WasmRuntimePackSrcFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileRsp)" />
+    </ItemGroup>
     <EmccCompile
           SourceFiles="@(_WasmSourceFileToCompile)"
           Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"'
           EnvironmentVariables="@(EmscriptenEnvVars)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)" />
-
-    <ItemGroup>
-      <WasmNativeAsset Include="%(_WasmSourceFileToCompile.ObjectFile)" />
-    </ItemGroup>
   </Target>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
-    <_MonoComponent Include="hot_reload;debugger" />
-  </ItemGroup>
+  <Target Name="_WasmCompileAssemblyBitCodeFilesForAOT"
+          Inputs="@(_BitcodeFile);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)"
+          Outputs="@(_BitcodeFile->'%(ObjectFile)')"
+          Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) > 0"
+          DependsOnTargets="_WasmWriteRspForCompilingBitcode">
 
-  <Target Name="_WasmLinkDotNetSelectComponents"
-      Condition="'$(WasmNativeWorkload)' == true"
-      DependsOnTargets="_MonoSelectRuntimeComponents">
-  </Target>
-
-  <Target Name="_WasmLinkDotNet" DependsOnTargets="_WasmLinkDotNetSelectComponents">
     <ItemGroup>
-      <!-- Adding optimization flag at the top, so it gets precedence -->
-      <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
-      <_EmccLDFlags Include="@(_EmccCommonFlags)" />
-
-      <_EmccLDFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
-      <_EmccLDFlags Include="$(EmccExtraLDFlags)" />
+      <_BitCodeFile Dependencies="%(_BitCodeFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)" />
     </ItemGroup>
 
+    <Message Text="Compiling assembly bitcode files..." Importance="High" Condition="@(_BitCodeFile->Count()) > 0" />
     <EmccCompile
-          Condition="@(_BitCodeFile->Count()) > 0"
           SourceFiles="@(_BitCodeFile)"
-          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; @(_EmccLDFlags, ' ')"
+          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; &quot;@$(_EmccCompileBitcodeRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)" />
+  </Target>
 
+  <Target Name="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <!-- order seems to matter -->
+      <_BitcodeLDFlags Include="@(_EmccLDFlags)" />
+      <_BitcodeLDFlags Include="$(EmccExtraBitcodeLDFlags)" />
+    </ItemGroup>
+    <WriteLinesToFile Lines="@(_BitcodeLDFlags)" File="$(_EmccCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <Target Name="_WasmWriteRspFilesForLinking">
+    <ItemGroup>
+      <!-- order matters -->
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
 
@@ -293,25 +319,35 @@
 
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
       <_EmccLinkStepArgs Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
-      <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
+      <_WasmLinkDependencies Include="@(_DotnetJSSrcFile)" />
 
+      <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
       <_EmccLinkStepArgs Include="--pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
       <_EmccLinkStepArgs Include="--post-js &quot;%(_WasmExtraJSFile.Identity)&quot;"    Condition="'%(_WasmExtraJSFile.Kind)' == 'post-js'" />
+      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library' or '%(_WasmExtraJSFile.Kind)' == 'pre-js' or '%(_WasmExtraJSFile.Kind)' == 'post-js'" />
 
       <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
+      <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
+
       <_EmccLinkStepArgs Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
+      <_WasmLinkDependencies Include="$(_EmccLinkRsp)" />
+
+      <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
-    </PropertyGroup>
-
     <WriteLinesToFile Lines="@(_EmccLinkStepArgs)" File="$(_EmccLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <Target Name="_WasmLinkDotNet"
+          Inputs="@(_WasmLinkDependencies);$(_EmccDefaultFlagsRsp);$(_EmccLinkRsp)"
+          Outputs="$(_WasmIntermediateOutputPath)dotnet.js;$(_WasmIntermediateOutputPath)dotnet.wasm"
+          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking">
 
     <Message Text="Linking with emcc. This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Normal" StandardErrorImportance="Normal" />
+    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
 
+    <Message Text="Optimizing dotnet.wasm ..." Importance="High" />
     <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
 
@@ -325,16 +361,15 @@
   <Target Name="_GenerateDriverGenC" Condition="'$(RunAOTCompilation)' != 'true' and '$(WasmProfilers)' != ''">
     <PropertyGroup>
       <EmccExtraCFlags>$(EmccExtraCFlags) -DDRIVER_GEN=1</EmccExtraCFlags>
+      <_DriverGenCNeeded>true</_DriverGenCNeeded>
       <InitAotProfilerCmd>
 void mono_profiler_init_aot (const char *desc)%3B
 EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_profiler_init_aot (desc)%3B }
       </InitAotProfilerCmd>
-
-      <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
     </PropertyGroup>
 
     <Message Text="Generating $(_DriverGenCPath)" Importance="Low" />
-    <WriteLinesToFile File="$(_DriverGenCPath)" Overwrite="true" Lines="$(InitAotProfilerCmd)" />
+    <WriteLinesToFile File="$(_DriverGenCPath)" Overwrite="true" Lines="$(InitAotProfilerCmd)" WriteOnlyWhenDifferent="true" />
 
     <ItemGroup>
         <FileWrites Include="$(_DriverGenCPath)" />
@@ -414,6 +449,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <PropertyGroup>
       <!--<AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">LLVMOnlyInterp</AOTMode>-->
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnlyInterp</AOTMode>
+      <_AOTCompilerCacheFile>$(_WasmIntermediateOutputPath)aot_compiler_cache.json</_AOTCompilerCacheFile>
     </PropertyGroup>
 
     <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_InternalForceInterpretAssemblies->Count()) > 0"
@@ -452,10 +488,11 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       UseAotDataFile="false"
       AOTProfilePath="$(AOTProfilePath)"
       Profilers="$(WasmProfilers)"
-      AotModulesTablePath="$(_WasmIntermediateOutputPath)driver-gen.c"
+      AotModulesTablePath="$(_DriverGenCPath)"
       UseLLVM="true"
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
+      CacheFilePath="$(_AOTCompilerCacheFile)"
       LLVMDebug="dwarfdebug"
       LLVMPath="$(EmscriptenUpstreamBinPath)" >
 
