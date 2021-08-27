@@ -185,6 +185,7 @@ namespace System.Reflection.Emit
         private CustomAttributeBuilder[]? cattrs;
         private string? version;
         private string? culture;
+        private byte[]? public_key_token;
         private Module[]? loaded_modules;
         private uint access;
 #endregion
@@ -221,6 +222,7 @@ namespace System.Reflection.Emit
             {
                 version = v.ToString();
             }
+            public_key_token = n.GetPublicKeyToken();
 
             basic_init(this);
 

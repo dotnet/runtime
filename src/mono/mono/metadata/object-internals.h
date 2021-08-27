@@ -1062,6 +1062,7 @@ typedef struct {
 	MonoArray *cattrs;
 	MonoString *version;
 	MonoString *culture;
+	MonoArray *public_key_token;
 	MonoArray *loaded_modules;
 	guint32 access;
 } MonoReflectionAssemblyBuilder;
