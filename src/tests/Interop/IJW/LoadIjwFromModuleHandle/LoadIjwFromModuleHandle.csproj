@@ -4,6 +4,8 @@
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+    <!-- Internal.Runtime.InteropServices is CoreCLR-only -->
+    <CLRTestRequiresCoreCLRCoreLib>true</CLRTestRequiresCoreCLRCoreLib>
     <!-- IJW is Windows-only -->
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>

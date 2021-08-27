@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
+    <!-- Internal.Runtime.InteropServices is CoreCLR-only -->
+    <CLRTestRequiresCoreCLRCoreLib>true</CLRTestRequiresCoreCLRCoreLib>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
     <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
