@@ -202,6 +202,13 @@ namespace Wasm.Build.Tests
         private string CreateTemplateProject(string id)
         {
             InitBlazorWasmProjectDir(id);
+            if (IsNotUsingWorkloads)
+            {
+                // no packs installed, so no need to update the paths for runtime pack etc
+                File.WriteAllText(Path.Combine(_projectDir!, "Directory.Build.props"), "<Project />");
+                File.WriteAllText(Path.Combine(_projectDir!, "Directory.Build.targets"), "<Project />");
+            }
+
             new DotNetCommand(s_buildEnv, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
                     .ExecuteWithCapturedOutput("new blazorwasm")
