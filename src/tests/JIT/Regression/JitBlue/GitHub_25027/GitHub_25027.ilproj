@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CrossGenTest>false</CrossGenTest>
+    <!-- This test doesn't expect random inlining -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
