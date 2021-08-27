@@ -2156,6 +2156,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     else
     {
         // 213 form: op1 = (op2 * op1) + [op3]
+        assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
 
         op1Reg = op1->GetRegNum();
         op2Reg = op2->GetRegNum();

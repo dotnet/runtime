@@ -2362,6 +2362,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 else
                 {
                     // 213 form: op1 = (op2 * op1) + [op3]
+                    assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
 
                     tgtPrefUse = BuildUse(op1);
                     srcCount += 1;

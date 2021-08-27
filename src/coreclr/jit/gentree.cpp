@@ -19801,6 +19801,7 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
 unsigned GenTreeHWIntrinsic::GetOverwrittenOpNumForFMA(GenTree* op1, GenTree* op2, GenTree* op3)
 {
     // only FMA intrinsic node should call into this function
+    assert(HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) == InstructionSet_FMA);
     GenTreeLclVarCommon* overwritten = gtNext->AsLclVarCommon();
     assert(overwritten->OperIs(GT_STORE_LCL_VAR, GT_LCL_VAR));
     unsigned overwrittenOpNum = 0; // 1->op1, 2->op2, 3->op3
