@@ -49,16 +49,17 @@ namespace Wasm.Build.Tests
         public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(BuildArgs buildArgs, string id)
         {
             string printFileTypeTarget = @"
-                <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmBuildApp"">
+                <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmNestedPublishApp"">
                     <Exec Command=""wasm-dis $(_WasmIntermediateOutputPath)System.Private.CoreLib.dll.o -o $(_WasmIntermediateOutputPath)wasm-dis-out.txt""
-                          ConsoleToMSBuild=""true""
                           EnvironmentVariables=""@(EmscriptenEnvVars)""
                           IgnoreExitCode=""true"">
 
                         <Output TaskParameter=""ExitCode"" PropertyName=""ExitCode"" />
                     </Exec>
 
-                    <Message Text=""wasm-dis exit code: $(ExitCode)"" Importance=""High"" />
+                    <Message Text=""
+                    ** wasm-dis exit code: $(ExitCode)
+                    "" Importance=""High"" />
                 </Target>
                 ";
             string projectName = $"bc_to_o_{buildArgs.Config}";
@@ -71,7 +72,7 @@ namespace Wasm.Build.Tests
                                     dotnetWasmFromRuntimePack: false,
                                     id: id);
 
-            if (!output.Contains("wasm-dis exit code: 0"))
+            if (!output.Contains("** wasm-dis exit code: 0"))
                 throw new XunitException($"Expected to successfully run wasm-dis on System.Private.CoreLib.dll.o ."
                                             + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
         }

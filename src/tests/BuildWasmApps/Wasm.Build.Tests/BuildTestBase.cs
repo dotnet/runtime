@@ -285,8 +285,11 @@ namespace Wasm.Build.Tests
                                   bool useCache = true,
                                   bool expectSuccess = true,
                                   bool createProject = true,
-                                  string? verbosity=null)
+                                  bool publish = true,
+                                  string? verbosity=null,
+                                  string? label=null)
         {
+            string msgPrefix = label != null ? $"[{label}] " : string.Empty;
             if (useCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
                 Console.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
@@ -314,12 +317,13 @@ namespace Wasm.Build.Tests
             }
 
             StringBuilder sb = new();
-            sb.Append("publish");
+            sb.Append(publish ? "publish" : "build");
             sb.Append($" {s_buildEnv.DefaultBuildArgs}");
 
             sb.Append($" /p:Configuration={buildArgs.Config}");
 
-            string logFilePath = Path.Combine(_logPath, $"{buildArgs.ProjectName}.binlog");
+            string logFileSuffix = label == null ? string.Empty : label.Replace(' ', '_');
+            string logFilePath = Path.Combine(_logPath, $"{buildArgs.ProjectName}{logFileSuffix}.binlog");
             _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             Console.WriteLine($"Binlog path: {logFilePath}");
@@ -384,7 +388,6 @@ namespace Wasm.Build.Tests
 
         protected static void AssertBasicAppBundle(string bundleDir, string projectName, string config, bool hasIcudt=true, bool dotnetWasmFromRuntimePack=true)
         {
-            Console.WriteLine ($"AssertBasicAppBundle: {dotnetWasmFromRuntimePack}");
             AssertFilesExist(bundleDir, new []
             {
                 "index.html",
@@ -652,6 +655,29 @@ namespace Wasm.Build.Tests
         {
             string? value = Environment.GetEnvironmentVariable(envVarName);
             return string.IsNullOrEmpty(value) ? defaultValue : value;
+        }
+
+        internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish=true)
+        {
+            string objDir = GetObjDir(buildArgs.Config);
+            string bundleDir = Path.Combine(GetBinDir(baseDir: _projectDir, config: buildArgs.Config), "AppBundle");
+            string wasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "relink");
+
+            return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config), bundleDir);
+        }
+
+        internal IDictionary<string, FileStat> StatFiles(IEnumerable<string> fullpaths)
+        {
+            Dictionary<string, FileStat> table = new();
+            foreach (string file in fullpaths)
+            {
+                if (File.Exists(file))
+                    table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(file), Length: new FileInfo(file).Length));
+                else
+                    table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: false, LastWriteTimeUtc: DateTime.MinValue, Length: 0));
+            }
+
+            return table;
         }
 
         protected static string s_mainReturns42 = @"

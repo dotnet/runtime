@@ -7,6 +7,7 @@
 
     <PublishingTestsRun>true</PublishingTestsRun>
     <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
+    <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
@@ -291,7 +292,7 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;$(BundleTestAppTargets);ArchiveTests" />
+          DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);$(BundleTestAppTargets);ArchiveTests" />
 
   <Target Name="PrepareForTestUsingWorkloads"
           BeforeTargets="Test"

@@ -17,12 +17,6 @@
       _CompleteWasmBuildNative
     </_WasmBuildNativeCoreDependsOn>
 
-    <WasmBuildNativeOnlyDependsOn>
-      _InitializeCommonProperties;
-      _PrepareForWasmBuildNativeOnly;
-      _WasmBuildNativeCore;
-    </WasmBuildNativeOnlyDependsOn>
-
     <_BeforeWasmBuildAppDependsOn>
       $(_BeforeWasmBuildAppDependsOn);
       _SetupEmscripten;
@@ -38,16 +32,6 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
-
-  <!-- "public" target meant for use outside the regular wasm app generation process FIXME: rename please! -->
-  <Target Name="WasmBuildNativeOnly" DependsOnTargets="$(WasmBuildNativeOnlyDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
-
-  <Target Name="_PrepareForWasmBuildNativeOnly">
-    <ItemGroup>
-      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
-      <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
-    </ItemGroup>
-  </Target>
 
   <Target Name="_SetupEmscripten">
     <PropertyGroup>
@@ -117,11 +101,27 @@
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
 
-    <PropertyGroup>
+    <!-- When Building -->
+    <PropertyGroup Condition="'$(WasmBuildingForPublish)' != 'true'">
+      <!-- build AOT, only if explicitly requested -->
+      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
+
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- When Publishing -->
+    <PropertyGroup Condition="'$(WasmBuildingForPublish)' == 'true'">
+      <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'"   >false</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'" >true</WasmBuildNative>
+
+      <!-- not aot, not trimmed app, no reason to relink -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+
+      <!-- default to relinking in Release config -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
 
@@ -152,7 +152,7 @@
       <_WasmPInvokeHPath>$(_WasmRuntimePackIncludeDir)wasm\pinvoke.h</_WasmPInvokeHPath>
       <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
 
-      <_DriverGenCNeeded Condition="'$(_DriverGenCNeeded)' == '' and '$(RunAOTCompilation)' == 'true'">true</_DriverGenCNeeded>
+      <_DriverGenCNeeded Condition="'$(_DriverGenCNeeded)' == '' and '$(_WasmShouldAOT)' == 'true'">true</_DriverGenCNeeded>
 
       <_EmccAssertionLevelDefault>0</_EmccAssertionLevelDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0 -s ASSERTIONS=$(_EmccAssertionLevelDefault)</_EmccOptimizationFlagDefault>
@@ -190,8 +190,8 @@
       <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
 
-      <_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
-      <_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
+      <_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
+      <_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
       <_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DCORE_BINDINGS" />
@@ -282,7 +282,7 @@
   <Target Name="_WasmCompileAssemblyBitCodeFilesForAOT"
           Inputs="@(_BitcodeFile);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)"
           Outputs="@(_BitcodeFile->'%(ObjectFile)')"
-          Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) > 0"
+          Condition="'$(_WasmShouldAOT)' == 'true' and @(_BitcodeFile->Count()) > 0"
           DependsOnTargets="_WasmWriteRspForCompilingBitcode">
 
     <ItemGroup>
@@ -358,7 +358,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_GenerateDriverGenC" Condition="'$(RunAOTCompilation)' != 'true' and '$(WasmProfilers)' != ''">
+  <Target Name="_GenerateDriverGenC" Condition="'$(_WasmShouldAOT)' != 'true' and '$(WasmProfilers)' != ''">
     <PropertyGroup>
       <EmccExtraCFlags>$(EmccExtraCFlags) -DDRIVER_GEN=1</EmccExtraCFlags>
       <_DriverGenCNeeded>true</_DriverGenCNeeded>
@@ -414,7 +414,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       *******************************
   -->
 
-  <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
+  <Target Name="_WasmAotCompileApp" Condition="'$(_WasmShouldAOT)' == 'true'">
     <PropertyGroup>
       <!-- FIXME: do it once -->
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
@@ -461,7 +461,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <PropertyGroup Condition="'$(WasmDedup)' == 'true'">
       <_WasmDedupAssembly>$(_WasmIntermediateOutputPath)\aot-instances.dll</_WasmDedupAssembly>
     </PropertyGroup>
-    <WriteLinesToFile Condition="'$(WasmDedup)' == 'true'" File="$(_WasmIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" />
+    <WriteLinesToFile Condition="'$(WasmDedup)' == 'true'" File="$(_WasmIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
     <Csc
       Condition="'$(WasmDedup)' == 'true'"
       Sources="$(_WasmIntermediateOutputPath)\aot-instances.cs"
@@ -511,7 +511,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
-  <Target Name="_WasmStripAOTAssemblies" Condition="'$(RunAOTCompilation)' == 'true' and '$(WasmStripAOTAssemblies)' == 'true' and '$(AOTMode)' != 'LLVMOnlyInterp' and '$(ArchiveTests)' != 'true'">
+  <Target Name="_WasmStripAOTAssemblies" Condition="'$(_WasmShouldAOT)' == 'true' and '$(WasmStripAOTAssemblies)' == 'true' and '$(AOTMode)' != 'LLVMOnlyInterp' and '$(ArchiveTests)' != 'true'">
     <PropertyGroup>
       <_WasmStrippedAssembliesPath>$([MSBuild]::NormalizeDirectory($(_WasmIntermediateOutputPath), 'stripped-assemblies'))</_WasmStrippedAssembliesPath>
     </PropertyGroup>

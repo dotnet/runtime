@@ -931,23 +931,26 @@ internal class ProxyFile
         if (!_cache.Enabled)
             return true;
 
-        if (!File.Exists(TempFile))
-            throw new LogAsErrorException($"Could not find output file {TempFile}");
-
-        if (!_cache.ShouldCopy(this, out string? cause))
+        try
         {
-            _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");
-            return false;
+            if (!_cache.ShouldCopy(this, out string? cause))
+            {
+                _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");
+                return false;
+            }
+
+            if (File.Exists(TargetFile))
+                File.Delete(TargetFile);
+
+            File.Copy(TempFile, TargetFile);
+
+            _cache.Log.LogMessage(MessageImportance.Low, $"Copying {TempFile} to {TargetFile} because {cause}");
+            return true;
         }
-
-        if (File.Exists(TargetFile))
-            File.Delete(TargetFile);
-
-        File.Copy(TempFile, TargetFile);
-        File.Delete(TempFile);
-
-        _cache.Log.LogMessage(MessageImportance.Low, $"Copying {TempFile} to {TargetFile} because {cause}");
-        return true;
+        finally
+        {
+            File.Delete(TempFile);
+        }
     }
 }
 

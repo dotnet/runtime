@@ -10,16 +10,16 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
-    public class NoopNativeRebuildTest : NativeRebuildTestsBase
+    public class BlazorWasmRebuildTests : NativeRebuildTestsBase
     {
-        public NoopNativeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+        public BlazorWasmRebuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        public void NoOpRebuildForNativeBuilds(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
+        public void NoOpRebuild(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = $"rebuild_noop_{buildArgs.Config}" };
             (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: nativeRelink, invariant: invariant, buildArgs, id);
