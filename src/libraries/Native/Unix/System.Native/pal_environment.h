@@ -8,6 +8,6 @@
 
 PALEXPORT char* SystemNative_GetEnv(const char* variable);
 
-PALEXPORT char** SystemNative_GetEnviron();
+PALEXPORT char** SystemNative_GetEnviron(void);
 
 PALEXPORT void SystemNative_FreeEnviron(char** environ);
