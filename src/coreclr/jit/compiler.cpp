@@ -615,11 +615,9 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     // Start by determining if we have an HFA/HVA with a single element.
     if (GlobalJitOptions::compFeatureHfa)
     {
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
         // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
         // as if they are not HFA types.
-        if (!isVarArg)
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        if (!(TargetArchitecture::IsArm64 && TargetOS::IsWindows && isVarArg))
         {
             switch (structSize)
             {
@@ -810,13 +808,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // Arm64 Windows VarArg methods arguments will not classify HFA/HVA types, they will need to be treated
             // as if they are not HFA/HVA types.
             var_types hfaType;
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            if (isVarArg)
+            if (TargetArchitecture::IsArm64 && TargetOS::IsWindows && isVarArg)
             {
                 hfaType = TYP_UNDEF;
             }
             else
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             {
                 hfaType = GetHfaType(clsHnd);
             }
@@ -1028,14 +1024,13 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
+#endif
+    if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#endif
 
     // Check for cases where a small struct is returned in a register
     // via a primitive type.
@@ -3183,7 +3178,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (verbose)
     {
         printf("****** START compiling %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
-        printf("Generating code for %s %s\n", Target::g_tgtPlatformName, Target::g_tgtCPUName);
+        printf("Generating code for %s %s\n", Target::g_tgtPlatformName(), Target::g_tgtCPUName);
         printf(""); // in our logic this causes a flush
     }
 
@@ -5528,11 +5523,14 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Match OS for compMatchedVM
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-#ifdef TARGET_UNIX
-    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
-#else
-    info.compMatchedVM        = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
-#endif
+    if (TargetOS::IsUnix)
+    {
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
+    }
+    else if (TargetOS::IsWindows)
+    {
+        info.compMatchedVM        = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
+    }
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target
     // architecture. The two main examples here are an ARM targeting altjit hosted on x86 and an ARM64
@@ -6090,6 +6088,16 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                                 JitFlags*             compileFlags)
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
+
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+    if (!TargetOS::OSSettingConfigured)
+    {
+        CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
+        TargetOS::IsUnix = eeInfo->osType == CORINFO_UNIX;
+        TargetOS::IsWindows = eeInfo->osType == CORINFO_WINNT;
+        TargetOS::OSSettingConfigured = true;
+    }
+#endif
 
     info.compCode         = methodInfo->ILCode;
     info.compILCodeSize   = methodInfo->ILCodeSize;

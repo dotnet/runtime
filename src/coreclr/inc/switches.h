@@ -175,4 +175,59 @@
 #define FEATURE_STACK_SAMPLING
 #endif // defined (ALLOW_SXS_JIT)
 
+#ifndef TARGET_OS_ARCH_CLASS
+#define TARGET_OS_ARCH_CLASS
+class TargetOS
+{
+public:
+#ifdef TARGET_WINDOWS
+#define TARGET_WINDOWS_POSSIBLY_SUPPORTED
+    static const bool IsWindows = true;
+    static const bool IsUnix = false;
+#elif defined(TARGET_UNIX)
+#define TARGET_UNIX_POSSIBLY_SUPPORTED
+    static const bool IsWindows = false;
+    static const bool IsUnix = true;
+#else
+#define TARGET_WINDOWS_POSSIBLY_SUPPORTED
+#define TARGET_UNIX_POSSIBLY_SUPPORTED
+#define TARGET_OS_RUNTIMEDETERMINED
+    static bool OSSettingConfigured;
+    static bool IsWindows;
+    static bool IsUnix;
+#endif
+};
+
+class TargetArchitecture
+{
+public:
+#ifdef TARGET_ARM
+    static const bool IsX86 = false;
+    static const bool IsX64 = false;
+    static const bool IsArm64 = false;
+    static const bool IsArm32 = true;
+    static const bool IsArmArch = true;
+#elif defined(TARGET_ARM64)
+    static const bool IsX86 = false;
+    static const bool IsX64 = false;
+    static const bool IsArm64 = true;
+    static const bool IsArm32 = false;
+    static const bool IsArmArch = true;
+#elif defined(TARGET_AMD64)
+    static const bool IsX86 = false;
+    static const bool IsX64 = true;
+    static const bool IsArm64 = false;
+    static const bool IsArm32 = false;
+    static const bool IsArmArch = false;
+#elif defined(TARGET_X86)
+    static const bool IsX86 = true;
+    static const bool IsX64 = false;
+    static const bool IsArm64 = false;
+    static const bool IsArm32 = false;
+    static const bool IsArmArch = false;
+#else
+#error Unknown architecture
+#endif
+};
+#endif // TARGET_OS_ARCH_CLASS
 

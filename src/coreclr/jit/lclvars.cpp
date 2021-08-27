@@ -375,8 +375,8 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 
     unsigned numUserArgsToSkip = 0;
     unsigned numUserArgs       = info.compMethodInfo->args.numArgs;
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConvIsInstanceMethodCallConv(info.compCallConv))
+#if !defined(TARGET_ARM)
+    if (TargetOS::IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
     {
         // If we are a native instance method, handle the first user arg
         // (the unmanaged this parameter) and then handle the hidden
@@ -685,13 +685,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         bool      isHfaArg = false;
         var_types hfaType  = TYP_UNDEF;
 
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+        // Methods that use VarArg or SoftFP cannot have HFA arguments except
         // Native varargs on arm64 unix use the regular calling convention.
-        if (!opts.compUseSoftFP)
-#else
-        // Methods that use VarArg or SoftFP cannot have HFA arguments
-        if (!info.compIsVarArgs && !opts.compUseSoftFP)
-#endif // defined(TARGET_ARM64) && defined(TARGET_UNIX)
+        if (((TargetOS::IsUnix && TargetArchitecture::IsArm64) || !info.compIsVarArgs) && !opts.compUseSoftFP)
         {
             // If the argType is a struct, then check if it is an HFA
             if (varTypeIsStruct(argType))
@@ -703,14 +699,15 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
         else if (info.compIsVarArgs)
         {
-#ifdef TARGET_UNIX
             // Currently native varargs is not implemented on non windows targets.
             //
             // Note that some targets like Arm64 Unix should not need much work as
             // the ABI is the same. While other targets may only need small changes
             // such as amd64 Unix, which just expects RAX to pass numFPArguments.
-            NYI("InitUserArgs for Vararg callee is not yet implemented on non Windows targets.");
-#endif
+            if (TargetOS::IsUnix)
+            {
+                NYI("InitUserArgs for Vararg callee is not yet implemented on non Windows targets.");
+            }
         }
 
         if (isHfaArg)
@@ -2889,14 +2886,14 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
 
 void Compiler::lvaSetStructUsedAsVarArg(unsigned varNum)
 {
-    if (GlobalJitOptions::compFeatureHfa)
+    if (GlobalJitOptions::compFeatureHfa && TargetOS::IsWindows)
     {
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
         LclVarDsc* varDsc = &lvaTable[varNum];
         // For varargs methods incoming and outgoing arguments should not be treated
         // as HFA.
         varDsc->SetHfaType(TYP_UNDEF);
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64)
     }
 }
 
@@ -5524,19 +5521,19 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     }
 
     unsigned userArgsToSkip = 0;
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+#if !defined(TARGET_ARM)
     // In the native instance method calling convention on Windows,
     // the this parameter comes before the hidden return buffer parameter.
     // So, we want to process the native "this" parameter before we process
     // the native return buffer parameter.
-    if (callConvIsInstanceMethodCallConv(info.compCallConv))
+    if (TargetOS::IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
     {
 #ifdef TARGET_X86
         if (!lvaTable[lclNum].lvIsRegArg)
         {
             argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
         }
-#else
+#elif !defined(UNIX_AMD64_ABI)
         argOffs              = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
 #endif // TARGET_X86
         lclNum++;

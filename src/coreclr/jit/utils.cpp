@@ -24,19 +24,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 
 /*****************************************************************************/
-// Define the string platform name based on compilation #ifdefs. This is the
-// same code for all platforms, hence it is here instead of in the targetXXX.cpp
-// files.
-
-#ifdef TARGET_UNIX
-// Should we distinguish Mac? Can we?
-// Should we distinguish flavors of Unix? Can we?
-const char* Target::g_tgtPlatformName = "Unix";
-#else  // !TARGET_UNIX
-const char* Target::g_tgtPlatformName = "Windows";
-#endif // !TARGET_UNIX
-
-/*****************************************************************************/
 
 #define DECLARE_DATA
 

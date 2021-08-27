@@ -418,15 +418,13 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
             if (structSize > (2 * TARGET_POINTER_SIZE))
             {
 
-#ifndef TARGET_UNIX
-                if (info.compIsVarArgs)
+                if (TargetOS::IsWindows && info.compIsVarArgs)
                 {
                     // Arm64 Varargs ABI requires passing in general purpose
                     // registers. Force the decision of whether this is an HFA
                     // to false to correctly pass as if it was not an HFA.
                     isHfa = false;
                 }
-#endif // TARGET_UNIX
                 if (!isHfa)
                 {
                     // This struct is passed by reference using a single 'slot'

@@ -2542,8 +2542,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // At this point, we should never have gtCallLateArgs, as this needs to be done before those are determined.
     assert(call->gtCallLateArgs == nullptr);
 
-#ifdef TARGET_UNIX
-    if (callIsVararg)
+    if (TargetOS::IsUnix && callIsVararg)
     {
         // Currently native varargs is not implemented on non windows targets.
         //
@@ -2552,7 +2551,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // such as amd64 Unix, which just expects RAX to pass numFPArguments.
         NYI("Morphing Vararg call not yet implemented on non Windows targets.");
     }
-#endif // TARGET_UNIX
 
     // Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
     // following the normal calling convention or in the normal argument registers. We either mark existing
@@ -3068,10 +3066,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             hfaType  = GetHfaType(argx);
             isHfaArg = varTypeIsValidHfaType(hfaType);
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            // Make sure for vararg methods isHfaArg is not true.
-            isHfaArg = callIsVararg ? false : isHfaArg;
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
+            if (TargetOS::IsWindows)
+            {
+                // Make sure for vararg methods isHfaArg is not true.
+                isHfaArg = callIsVararg ? false : isHfaArg;
+            }
+#endif // defined(TARGET_ARM64)
 
             if (isHfaArg)
             {
@@ -3388,16 +3389,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 //
                 if (!isRegArg && (size > 1))
                 {
-#if defined(TARGET_WINDOWS)
                     // Arm64 windows native varargs allows splitting a 16 byte struct between stack
                     // and the last general purpose register.
-                    if (callIsVararg)
+                    if (TargetOS::IsWindows && callIsVararg)
                     {
                         // Override the decision and force a split.
                         isRegArg = (intArgRegNum + (size - 1)) <= maxRegArgs;
                     }
                     else
-#endif // defined(TARGET_WINDOWS)
                     {
                         // We also must update intArgRegNum so that we no longer try to
                         // allocate any new general purpose registers for args
@@ -6976,13 +6975,11 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // work required to shuffle arguments to the correct locations.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
-    if (info.compIsVarArgs || callee->IsVarargs())
+    if (TargetOS::IsWindows && TargetArchitecture::IsArmArch && (info.compIsVarArgs || callee->IsVarargs()))
     {
         reportFastTailCallDecision("Fast tail calls with varargs not supported on Windows ARM/ARM64");
         return false;
     }
-#endif // (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
 
     if (compLocallocUsed)
     {

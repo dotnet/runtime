@@ -1429,12 +1429,10 @@ struct FuncInfoDsc
 
 #elif defined(TARGET_X86)
 
-#if defined(TARGET_UNIX)
     emitLocation* startLoc;
     emitLocation* endLoc;
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
-#endif // TARGET_UNIX
 
 #elif defined(TARGET_ARMARCH)
 
@@ -1446,18 +1444,16 @@ struct FuncInfoDsc
                          //   Note 2: we currently don't support hot/cold splitting in functions
                          //   with EH, so uwiCold will be NULL for all funclets.
 
-#if defined(TARGET_UNIX)
     emitLocation* startLoc;
     emitLocation* endLoc;
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
-#endif // TARGET_UNIX
 
 #endif // TARGET_ARMARCH
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     jitstd::vector<CFI_CODE>* cfiCodes;
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // Eventually we may want to move rsModifiedRegsMask, lvaOutgoingArgSize, and anything else
     // that isn't shared between the main function body and funclets.
@@ -1616,17 +1612,14 @@ public:
 
     bool IsVararg() const
     {
-#ifdef FEATURE_VARARG
-        return _isVararg;
-#else
-        return false;
-#endif
+        return GlobalJitOptions::compFeatureVarArg() && _isVararg;
     }
     void SetIsVararg(bool value)
     {
-#ifdef FEATURE_VARARG
-        _isVararg = value;
-#endif // FEATURE_VARARG
+        if (GlobalJitOptions::compFeatureVarArg())
+        {
+            _isVararg = value;
+        }
     }
 
     bool IsHfaArg() const
@@ -4548,10 +4541,8 @@ private:
     bool impIsValueType(typeInfo* pTypeInfo);
     var_types mangleVarArgsType(var_types type);
 
-#if FEATURE_VARARG
     regNumber getCallArgIntRegister(regNumber floatReg);
     regNumber getCallArgFloatRegister(regNumber intReg);
-#endif // FEATURE_VARARG
 
 #if defined(DEBUG)
     static unsigned jitTotalMethodCompiled;
@@ -7903,8 +7894,8 @@ public:
 
     bool generateCFIUnwindCodes()
     {
-#if defined(TARGET_UNIX)
-        return IsTargetAbi(CORINFO_CORERT_ABI);
+#if defined(FEATURE_CFI_SUPPORT)
+        return TargetOS::IsUnix && IsTargetAbi(CORINFO_CORERT_ABI);
 #else
         return false;
 #endif
@@ -8347,7 +8338,7 @@ private:
 
 #endif // TARGET_ARM
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     short mapRegNumToDwarfReg(regNumber reg);
     void createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR opcode, short dwarfReg, INT offset = 0);
     void unwindPushPopCFI(regNumber reg);
@@ -8364,7 +8355,7 @@ private:
                      const CFI_CODE* const pCfiCode);
 #endif
 
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
 #if !defined(__GNUC__)
 #pragma endregion // Note: region is NOT under !defined(__GNUC__)
@@ -9853,13 +9844,16 @@ public:
         // 3. Windows ARM64 native instance calling convention requires the address of RetBuff
         //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        auto callConv = info.compCallConv;
-        if (callConvIsInstanceMethodCallConv(callConv))
+#if defined(TARGET_ARM64)
+        if (TargetOS::IsWindows)
         {
-            return (info.compRetBuffArg != BAD_VAR_NUM);
+            auto callConv = info.compCallConv;
+            if (callConvIsInstanceMethodCallConv(callConv))
+            {
+                return (info.compRetBuffArg != BAD_VAR_NUM);
+            }
         }
-#endif // TARGET_WINDOWS && TARGET_ARM64
+#endif // TARGET_ARM64
         // 4. x86 unmanaged calling conventions require the address of RetBuff to be returned in eax.
         CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_X86)
@@ -11687,11 +11681,8 @@ const instruction INS_SQRT = INS_vsqrt;
 #ifdef TARGET_ARM64
 
 const instruction INS_MULADD = INS_madd;
-#if defined(TARGET_UNIX)
-const instruction INS_BREAKPOINT = INS_brk;
-#else
-const instruction INS_BREAKPOINT = INS_bkpt;
-#endif
+inline const instruction INS_BREAKPOINT_osHelper() { return TargetOS::IsUnix ? INS_brk : INS_bkpt; }
+#define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
 
 const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;

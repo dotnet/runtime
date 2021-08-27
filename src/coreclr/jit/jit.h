@@ -248,11 +248,11 @@
 // Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
-#if (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
+#if (defined(TARGET_ARM) || defined(WINDOWS_ARM64_ABI))
 #define FEATURE_ARG_SPLIT 1
 #else
 #define FEATURE_ARG_SPLIT 0
-#endif // (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
+#endif // (defined(TARGET_ARM) || defined(WINDOWS_ARM64_ABI))
 
 // To get rid of warning 4701 : local variable may be used without being initialized
 #define DUMMY_INIT(x) (x)
@@ -360,6 +360,16 @@ public:
 #ifdef FEATURE_HFA
 #undef FEATURE_HFA
 #endif
+
+// Native Varargs are not supported on Unix (all architectures) and Windows ARM
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+    static bool compFeatureVarArg() { return true; }
+#elif !defined(TARGET_WINDOWS) && !defined(TARGET_UNIX) && !defined(TARGET_ARM)
+    static bool compFeatureVarArg() { return TargetOS::IsWindows; }
+#else
+    static bool compFeatureVarArg() { return false; }
+#endif
+
 };
 
 /*****************************************************************************/

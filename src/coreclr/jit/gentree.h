@@ -4463,10 +4463,14 @@ struct GenTreeCall final : public GenTree
 
     bool HasFixedRetBufArg() const
     {
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-        return hasFixedRetBuffReg() && HasRetBufArg() && !callConvIsInstanceMethodCallConv(GetUnmanagedCallConv());
+        if (!(hasFixedRetBuffReg() && HasRetBufArg()))
+        {
+            return false;
+        }
+#if !defined(TARGET_ARM)
+        return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(GetUnmanagedCallConv());
 #else
-        return hasFixedRetBuffReg() && HasRetBufArg();
+        return true;
 #endif
     }
 

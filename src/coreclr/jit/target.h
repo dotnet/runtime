@@ -5,11 +5,8 @@
 #ifndef TARGET_H_
 #define TARGET_H_
 
-// Native Varargs are not supported on Unix (all architectures) and Windows ARM
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-#define FEATURE_VARARG 1
-#else
-#define FEATURE_VARARG 0
+#ifdef TARGET_UNIX_POSSIBLY_SUPPORTED
+#define FEATURE_CFI_SUPPORT
 #endif
 
 /*****************************************************************************/
@@ -268,7 +265,7 @@ class Target
 {
 public:
     static const char* g_tgtCPUName;
-    static const char* g_tgtPlatformName;
+    static const char* g_tgtPlatformName() { return TargetOS::IsWindows ? "Windows" : "Unix"; };
 
     enum ArgOrder
     {
