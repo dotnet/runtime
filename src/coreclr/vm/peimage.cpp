@@ -101,28 +101,6 @@ CHECK PEImage::CheckILFormat()
     CHECK_OK;
 };
 
-/* static */
-// This method is only intended to be called during NGen.  It doesn't AddRef to the objects it returns,
-// and can be unsafe for general use.
-void PEImage::GetAll(SArray<PEImage*> &images)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    CrstHolder holder(&s_hashLock);
-
-    for (PtrHashMap::PtrIterator i = s_Images->begin(); !i.end(); ++i)
-    {
-        PEImage *image = (PEImage*) i.GetValue();
-        images.Append(image);
-    }
-}
-
 PEImage::~PEImage()
 {
     CONTRACTL
@@ -816,7 +794,6 @@ PEImage::PEImage():
     m_path(),
     m_refCount(1),
     m_bundleFileLocation(),
-    m_bIsTrustedNativeImage(FALSE),
     m_bInHashMap(FALSE),
 #ifdef METADATATRACKER_DATA
     m_pMDTracker(NULL),
@@ -914,7 +891,7 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         BOOL bIsFlatLayoutRequired = !bIsMappedLayoutSuitable;
 
         if (bIsFlatLayoutRequired
-            || (bIsFlatLayoutSuitable && !m_bIsTrustedNativeImage))
+            || bIsFlatLayoutSuitable)
         {
           _ASSERTE(bIsFlatLayoutSuitable);
 
@@ -955,12 +932,11 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     PEImageLayout * pLoadLayout = NULL;
 
     HRESULT loadFailure = S_OK;
-    if (m_bIsTrustedNativeImage || IsFile())
+    if (IsFile())
     {
         // Try to load all files via LoadLibrary first. If LoadLibrary did not work,
         // retry using regular mapping.
-        HRESULT* returnDontThrow = m_bIsTrustedNativeImage ? NULL : &loadFailure;
-        pLoadLayout = PEImageLayout::Load(this, FALSE /* bNTSafeLoad */, returnDontThrow);
+        pLoadLayout = PEImageLayout::Load(this, FALSE /* bNTSafeLoad */, &loadFailure);
     }
 
     if (pLoadLayout != NULL)
