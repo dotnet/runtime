@@ -11,6 +11,7 @@ schedules:
   branches:
     include:
     - main
+    - release/6.0
 
 variables:
   - template: ../variables.yml
