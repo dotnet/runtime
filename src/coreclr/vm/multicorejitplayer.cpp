@@ -233,7 +233,7 @@ public:
         return false;
     }
 
-    bool MatchWith(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shortAbort);
+    bool MatchWith(ModuleVersion & version, bool & gotVersion, Module * pModule);
 
 #ifdef MULTICOREJIT_LOGGING
     void Dump(const WCHAR * prefix, int index);
@@ -242,11 +242,11 @@ public:
 };
 
 
-bool PlayerModuleInfo::MatchWith(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shortAbort)
+bool PlayerModuleInfo::MatchWith(ModuleVersion & version, bool & gotVersion, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    if ((m_pModule == NULL) && m_pRecord->MatchWithModule(version, gotVersion, pModule, shortAbort))
+    if ((m_pModule == NULL) && m_pRecord->MatchWithModule(version, gotVersion, pModule))
     {
         m_pModule   = pModule;
         m_curLevel  = (int) MulticoreJitManager::GetModuleFileLoadLevel(pModule);
@@ -321,7 +321,7 @@ void PlayerModuleInfo::Dump(const WCHAR * prefix, int index)
 
 const unsigned EmptyToken = 0xFFFFFFFF;
 
-bool ModuleRecord::MatchWithModule(ModuleVersion & modVersion, bool & gotVersion, Module * pModule, bool & shouldAbort) const
+bool ModuleRecord::MatchWithModule(ModuleVersion & modVersion, bool & gotVersion, Module * pModule) const
 {
     STANDARD_VM_CONTRACT;
 
@@ -344,14 +344,6 @@ bool ModuleRecord::MatchWithModule(ModuleVersion & modVersion, bool & gotVersion
 
         if (version.MatchWith(modVersion))
         {
-            // If matching image with different native image flag is detected, mark and abort playing profile back
-            if (version.NativeImageFlagDiff(modVersion))
-            {
-                MulticoreJitTrace(("    Module with different native image flag: %s", pName));
-
-                shouldAbort = true;
-            }
-
             return true;
         }
     }
@@ -373,7 +365,6 @@ MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(AssemblyBinder * pBinderCon
     m_nBlockingCount     = 0;
     m_nMissingModule     = 0;
     m_nLoadedModuleCount = 0;
-    m_shouldAbort        = false;
 
     m_pThread            = NULL;
     m_pFileBuffer        = NULL;
@@ -641,7 +632,7 @@ HRESULT MulticoreJitProfilePlayer::OnModule(Module * pModule)
     // Match with simple name, and then version/flag/guid
     for (unsigned i = 0; i < m_moduleCount; i ++)
     {
-        if (m_pModules[i].MatchWith(version, gotVersion, pModule, m_shouldAbort))
+        if (m_pModules[i].MatchWith(version, gotVersion, pModule))
         {
             m_nLoadedModuleCount ++;
             return hr;
@@ -681,41 +672,34 @@ HRESULT MulticoreJitProfilePlayer::UpdateModuleInfo()
     m_nBlockingCount = 0;
     m_nMissingModule = 0;
 
-    if (m_shouldAbort)
+    // Check for blocking level
+    for (unsigned i = 0; i < m_moduleCount; i ++)
     {
-        hr = E_ABORT;
-    }
-    else
-    {
-        // Check for blocking level
-        for (unsigned i = 0; i < m_moduleCount; i ++)
+        PlayerModuleInfo & info = m_pModules[i];
+
+        if (info.IsLowerLevel())
         {
-            PlayerModuleInfo & info = m_pModules[i];
+            if (info.IsModuleLoaded())
+            {
+                info.UpdateCurrentLevel();
+            }
+            else
+            {
+                m_nMissingModule ++;
+            }
 
             if (info.IsLowerLevel())
             {
-                if (info.IsModuleLoaded())
+#ifdef MULTICOREJIT_LOGGING
+                info.Dump(W("    BlockingModule"), i);
+#endif
+
+                if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD))
                 {
-                    info.UpdateCurrentLevel();
-                }
-                else
-                {
-                    m_nMissingModule ++;
+                    _FireEtwMulticoreJitA(W("BLOCKINGMODULE"), info.m_pRecord->GetModuleName(), i, info.m_curLevel, info.m_needLevel);
                 }
 
-                if (info.IsLowerLevel())
-                {
-    #ifdef MULTICOREJIT_LOGGING
-                    info.Dump(W("    BlockingModule"), i);
-    #endif
-
-                    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD))
-                    {
-                        _FireEtwMulticoreJitA(W("BLOCKINGMODULE"), info.m_pRecord->GetModuleName(), i, info.m_curLevel, info.m_needLevel);
-                    }
-
-                    m_nBlockingCount ++;
-                }
+                m_nBlockingCount ++;
             }
         }
     }
@@ -757,7 +741,7 @@ bool MulticoreJitProfilePlayer::ShouldAbort(bool fast) const
 HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, unsigned level)
 {
     STANDARD_VM_CONTRACT;
-    
+
     HRESULT hr = S_OK;
 
     MulticoreJitTrace(("ModuleDependency(%u) start module load",
@@ -1155,7 +1139,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
         if (rcdTyp == MULTICOREJIT_MODULE_RECORD_ID)
         {
-            rcdLen = data1 & 0xFFFFFF;    
+            rcdLen = data1 & 0xFFFFFF;
         }
         else if (rcdTyp == MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID)
         {
@@ -1314,7 +1298,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         {
             hr = COR_E_BADIMAGEFORMAT;
         }
-        
+
         pBuffer += rcdLen;
         nSize -= rcdLen;
 

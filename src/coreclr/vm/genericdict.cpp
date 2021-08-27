@@ -530,7 +530,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
-            FastInterlockExchangePointer(pIMD->m_pPerInstInfo.GetValuePtr(), pNewDictionary);
+            FastInterlockExchangePointer(&pIMD->m_pPerInstInfo, pNewDictionary);
 
             pDictionary = pNewDictionary;
         }
@@ -589,7 +589,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 
             // Publish the new dictionary slots to the type.
             ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
-            Dictionary** pPerInstInfo = pMT->GetPerInstInfo()->GetValuePtr();
+            Dictionary** pPerInstInfo = pMT->GetPerInstInfo();
             FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, pNewDictionary);
 
             pDictionary = pNewDictionary;
@@ -725,7 +725,7 @@ Dictionary::PopulateEntry(
 
         // MethodTable is expected to be normalized
         Dictionary* pDictionary = pMT->GetDictionary();
-        _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex].GetValueMaybeNull());
+        _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex]);
 #endif
     }
 

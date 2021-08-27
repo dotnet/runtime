@@ -1739,36 +1739,6 @@ public:
         return AssemblyIterator::Create(this, assemblyIterationFlags);
     }
 
-private:
-    struct NativeImageDependenciesEntry
-    {
-        BaseAssemblySpec m_AssemblySpec;
-        GUID m_guidMVID;
-    };
-
-    class NativeImageDependenciesTraits : public DeleteElementsOnDestructSHashTraits<DefaultSHashTraits<NativeImageDependenciesEntry *> >
-    {
-    public:
-        typedef BaseAssemblySpec *key_t;
-        static key_t GetKey(NativeImageDependenciesEntry * e) { return &(e->m_AssemblySpec); }
-
-        static count_t Hash(key_t k)
-        {
-            return k->Hash();
-        }
-
-        static BOOL Equals(key_t lhs, key_t rhs)
-        {
-            return lhs->CompareEx(rhs);
-        }
-    };
-
-    SHash<NativeImageDependenciesTraits> m_NativeImageDependencies;
-
-public:
-    void CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID * pGuid);
-    BOOL RemoveNativeImageDependency(AssemblySpec* pSpec);
-
 public:
     class PathIterator
     {
@@ -2574,11 +2544,6 @@ public:
 #endif
 
     //****************************************************************************************
-    //
-    // Use an already exising & inited Application Domain (e.g. a subclass).
-    static void LoadDomain(AppDomain     *pDomain);
-
-    //****************************************************************************************
     // Methods used to get the callers module and hence assembly and app domain.
 
     static MethodDesc* GetCallersMethod(StackCrawlMark* stackMark);
@@ -2698,10 +2663,6 @@ public:
 
 private:
 
-    //****************************************************************************************
-    // Helper function to add a domain to the global list
-    void AddDomain(AppDomain* pDomain);
-
     void CreatePreallocatedExceptions();
 
     void PreallocateSpecialObjects();
@@ -2747,19 +2708,9 @@ private:
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
 
-    static ULONG       s_dNumAppDomains;  // Maintain a count of children app domains.
-
     static DWORD        m_dwLowestFreeIndex;
 #endif // DACCESS_COMPILE
 
-public:
-    static void     SetCompilationOverrides(BOOL fForceDebug,
-                                            BOOL fForceProfiling,
-                                            BOOL fForceInstrument);
-
-    static void     GetCompilationOverrides(BOOL * fForceDebug,
-                                            BOOL * fForceProfiling,
-                                            BOOL * fForceInstrument);
 public:
     //****************************************************************************************
     //

@@ -396,7 +396,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
             CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
-        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributeData.GetCustomAttributes(this);
+        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttribute.GetCustomAttributesData(this);
     }
 }
 #endif

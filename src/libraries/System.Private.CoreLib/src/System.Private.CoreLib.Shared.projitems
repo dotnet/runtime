@@ -341,7 +341,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Nls.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\InternalGlobalizationHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\InvariantModeCasing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ISOWeek.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.cs" />

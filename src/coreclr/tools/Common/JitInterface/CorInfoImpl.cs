@@ -392,7 +392,7 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeEHInfo(ehInfo);
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
-            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos, _compilation.TypeSystemContext.Target);
 #if READYTORUN
             _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
 
