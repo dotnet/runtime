@@ -162,8 +162,12 @@ public class WasmAppBuilder : Task
         }
         FileCopyChecked(MainJS!, Path.Combine(AppDir, "runtime.js"), string.Empty);
 
-        var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
-        File.WriteAllText(Path.Combine(AppDir, "index.html"), html);
+        string indexHtmlPath = Path.Combine(AppDir, "index.html");
+        if (!File.Exists(indexHtmlPath))
+        {
+            var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+            File.WriteAllText(indexHtmlPath, html);
+        }
 
         foreach (var assembly in _assemblies)
         {

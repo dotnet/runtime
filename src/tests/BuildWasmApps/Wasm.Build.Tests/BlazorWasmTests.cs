@@ -136,7 +136,7 @@ namespace Wasm.Build.Tests
             InitBlazorWasmProjectDir(id);
 
             string directoryBuildTargets = @"<Project>
-                <Target Name=""PrintAllProjects"" BeforeTargets=""Build"">
+            <Target Name=""PrintAllProjects"" BeforeTargets=""Build"">
                     <Message Text=""** UsingBrowserRuntimeWorkload: '$(UsingBrowserRuntimeWorkload)'"" Importance=""High"" />
                 </Target>
             </Project>";
@@ -152,11 +152,11 @@ namespace Wasm.Build.Tests
 
             string publishLogPath = Path.Combine(logPath, $"{id}.binlog");
             CommandResult result = new DotNetCommand(s_buildEnv)
-                            .WithWorkingDirectory(_projectDir!)
-                            .ExecuteWithCapturedOutput("publish",
-                                                       $"-bl:{publishLogPath}",
-                                                       (aot ? "-p:RunAOTCompilation=true" : ""),
-                                                       $"-p:Configuration={config}");
+                                            .WithWorkingDirectory(_projectDir!)
+                                            .ExecuteWithCapturedOutput("publish",
+                                                                       $"-bl:{publishLogPath}",
+                                                                       (aot ? "-p:RunAOTCompilation=true" : ""),
+                                                                       $"-p:Configuration={config}");
 
             if (expectError)
             {
