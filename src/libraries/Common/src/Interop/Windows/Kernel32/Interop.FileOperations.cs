@@ -10,6 +10,7 @@ internal static partial class Interop
             internal const uint IO_REPARSE_TAG_FILE_PLACEHOLDER = 0x80000015;
             internal const uint IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003;
             internal const uint IO_REPARSE_TAG_SYMLINK = 0xA000000C;
+            internal const uint IO_REPARSE_TAG_APPEXECLINK = 0x8000001B;
         }
 
         internal static partial class FileOperations

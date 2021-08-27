@@ -38,5 +38,14 @@ internal static partial class Interop
             public ushort PrintNameOffset;
             public ushort PrintNameLength;
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct AppExecLinkReparseBuffer
+        {
+            public uint ReparseTag;
+            public ushort ReparseDataLength;
+            public ushort Reserved;
+            public uint StringCount;
+        }
     }
 }

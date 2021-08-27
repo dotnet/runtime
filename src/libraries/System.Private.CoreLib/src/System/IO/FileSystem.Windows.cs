@@ -539,6 +539,43 @@ namespace System.IO
                     Debug.Assert(!PathInternal.IsPartiallyQualified(targetPath));
                     return targetPath.ToString();
                 }
+                else if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_APPEXECLINK)
+                {
+                    success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.AppExecLinkReparseBuffer rbAppExecLink);
+                    Debug.Assert(success);
+
+                    // The target file is at index 2
+                    if (rbAppExecLink.StringCount >= 3)
+                    {
+                        int stringListOffset = sizeof(Interop.Kernel32.AppExecLinkReparseBuffer);
+                        Span<char> stringList = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(stringListOffset));
+
+                        // Find the 2nd and 3rd null char
+                        int start = -1;
+                        int end = -1;
+                        int count = 0;
+                        for (int i = 0; i < stringList.Length; i++)
+                        {
+                            if (stringList[i] == '\0')
+                            {
+                                count++;
+                                if (count == 2)
+                                {
+                                    start = i + 1; // exclude null char
+                                }
+                                else if (count == 3)
+                                {
+                                    end = i;
+                                    break;
+                                }
+                            }
+                        }
+                        if (start != -1 && end != -1)
+                        {
+                            return stringList.Slice(start, end - start).ToString();
+                        }
+                    }
+                }
 
                 return null;
             }
@@ -557,7 +594,8 @@ namespace System.IO
             if ((data.dwFileAttributes & (uint)FileAttributes.ReparsePoint) == 0 ||
                 // Only symbolic links and mount points are supported at the moment.
                 ((data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0 &&
-                 (data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT) == 0))
+                 (data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT) == 0 &&
+                 (data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_APPEXECLINK) == 0))
             {
                 return null;
             }

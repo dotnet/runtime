@@ -91,6 +91,7 @@ internal static partial class Interop
         internal const int ERROR_EVENTLOG_FILE_CHANGED = 0x5DF;
         internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
+        internal const int ERROR_CANT_ACCESS_FILE = 0x780;
         internal const int ERROR_NOT_A_REPARSE_POINT = 0x1126;
     }
 }
