@@ -289,6 +289,35 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Returns true if the current Windows machine has an Application Execution Alias directory
+        /// located in %LOCALAPPDATA%\Microsoft\WindowsApps, with at least one *.exe file inside.
+        /// </summary>
+        public static bool HasUsableAppExecLinksDirectory
+        {
+            get
+            {
+                try
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        string localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+                        if (string.IsNullOrWhiteSpace(localAppData))
+                        {
+                            return false;
+                        }
+                        string windowsAppsDir = Path.Join(localAppData, "Microsoft", "WindowsApps");
+                        if (Directory.Exists(windowsAppsDir))
+                        {
+                            return Directory.GetFiles(windowsAppsDir, "*.exe", new EnumerationOptions() { RecurseSubdirectories = true, MaxRecursionDepth = 3 }).Length > 0;
+                        }
+                    }
+                }
+                catch { }
+                return false;
+            }
+        }
+
         private static Version GetICUVersion()
         {
             int version = 0;
