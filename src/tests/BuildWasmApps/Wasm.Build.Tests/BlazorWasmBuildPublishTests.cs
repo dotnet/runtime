@@ -20,7 +20,7 @@ namespace Wasm.Build.Tests
             _enablePerTestCleanup = true;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void DefaultTemplate(string config)
@@ -202,46 +202,12 @@ namespace Wasm.Build.Tests
         private string CreateTemplateProject(string id)
         {
             InitBlazorWasmProjectDir(id);
-            if (IsNotUsingWorkloads)
-            {
-                // no packs installed, so no need to update the paths for runtime pack etc
-                File.WriteAllText(Path.Combine(_projectDir!, "Directory.Build.props"), "<Project />");
-                File.WriteAllText(Path.Combine(_projectDir!, "Directory.Build.targets"), "<Project />");
-            }
-
             new DotNetCommand(s_buildEnv, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
             return Path.Combine(_projectDir!, $"{id}.csproj");
-        }
-
-        private string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null)
-        {
-            if (extraProperties == null && extraItems == null)
-                return projectFile;
-
-            XmlDocument doc = new();
-            doc.Load(projectFile);
-
-            if (extraItems != null)
-            {
-                XmlNode node = doc.CreateNode(XmlNodeType.Element, "ItemGroup", null);
-                node.InnerXml = extraItems;
-                doc.DocumentElement!.AppendChild(node);
-            }
-
-            if (extraProperties != null)
-            {
-                XmlNode node = doc.CreateNode(XmlNodeType.Element, "PropertyGroup", null);
-                node.InnerXml = extraProperties;
-                doc.DocumentElement!.AppendChild(node);
-            }
-
-            doc.Save(projectFile);
-
-            return projectFile;
         }
     }
 
