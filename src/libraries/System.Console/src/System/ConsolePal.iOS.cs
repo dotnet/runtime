@@ -12,22 +12,24 @@ namespace System
     internal sealed class NSLogStream : ConsoleStream
     {
         private readonly StringBuilder _buffer = new StringBuilder();
-        private readonly Decoder _decoder;
+        private readonly Encoding _encoding;
 
-        public NSLogStream() : base(FileAccess.Write)
+        public NSLogStream(Encoding encoding) : base(FileAccess.Write)
         {
-            _decoder = Encoding.Unicode.GetDecoder();
+            _encoding = encoding;
         }
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
         public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
-            int charCount = _decoder.GetCharCount(buffer, false);
-            char[] pooledBuffer = ArrayPool<char>.Shared.Rent(charCount);
-            Span<char> charSpan = pooledBuffer;
+            int maxCharCount = _encoding.GetMaxCharCount(buffer.Length);
+            char[]? pooledBuffer = null;
+            Span<char> charSpan = maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
             try
             {
+                Decoder _decoder = _encoding.GetDecoder();
+                int charCount = _decoder.GetCharCount(buffer, false);
                 int count = _decoder.GetChars(buffer, charSpan, false);
                 if (count > 0)
                 {
@@ -36,18 +38,20 @@ namespace System
             }
             finally
             {
-                ArrayPool<char>.Shared.Return(pooledBuffer);
+                if (pooledBuffer != null)
+                {
+                    ArrayPool<char>.Shared.Return(pooledBuffer);
+                }
             }
         }
 
         private static unsafe void WriteOrCache(StringBuilder cache, Span<char> charBuffer, int length)
         {
-            int lineStartIndex = 0;
-            for (int i = 0; i < length; i++)
+            for (int i = length - 1; i >= 0; i--)
             {
                 if (charBuffer[i] == '\n')
                 {
-                    Span<char> lineSpan = charBuffer.Slice(lineStartIndex, i - lineStartIndex);
+                    Span<char> lineSpan = charBuffer.Slice(0, i);
                     if (cache.Length > 0)
                     {
                         Print(cache.Append(lineSpan).ToString());
@@ -58,15 +62,17 @@ namespace System
                         Print(lineSpan.ToString());
                     }
 
-                    lineStartIndex = i + 1;
+                    if (i + 1 < length)
+                    {
+                        cache.Append(charBuffer.Slice(i + 1, length - i - 1));
+                    }
+
+                    return;
                 }
             }
 
-            if (lineStartIndex < length)
-            {
-                // no newlines found, add the entire buffer to the cache
-                cache.Append(charBuffer.Slice(lineStartIndex, length - lineStartIndex));
-            }
+            // no newlines found, add the entire buffer to the cache
+            cache.Append(charBuffer.Slice(0, length));
 
             static void Print(string line)
             {
@@ -85,9 +91,9 @@ namespace System
 
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
 
-        public static Stream OpenStandardOutput() => new NSLogStream();
+        public static Stream OpenStandardOutput() => new NSLogStream(OutputEncoding);
 
-        public static Stream OpenStandardError() => new NSLogStream();
+        public static Stream OpenStandardError() => new NSLogStream(OutputEncoding);
 
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
 
