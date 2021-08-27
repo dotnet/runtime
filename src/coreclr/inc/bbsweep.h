@@ -385,7 +385,7 @@ cleanup:
                 }
                 else
                 {
-#if defined (FEATURE_CORESYSTEM) && !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)
+#if defined (FEATURE_CORESYSTEM) && !defined(DACCESS_COMPILE)
 #define MODULE_NAME W("api-ms-win-security-appcontainer-l1-1-0.dll")
 #else
 #define MODULE_NAME W("kernel32.dll")

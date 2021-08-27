@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -36,7 +35,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(DefineDynamicAssembly_TestData))]
         public void DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess(AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -57,7 +55,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(DefineDynamicAssembly_CustomAttributes_TestData))]
         public void DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess_CustomAttributeBuilder(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder> attributes)
         {
@@ -424,7 +421,17 @@ namespace System.Reflection.Emit.Tests
 	    Assert.Throws<MethodAccessException>(() => d ());
 	}
 
+    [Fact]
+    public void DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty()
+    {
+        AssemblyBuilder assembly = Helpers.DynamicAssembly(nameof(DefineDynamicAssembly_AssemblyBuilderLocationIsEmpty_InternalAssemblyBuilderLocationIsEmpty));
+        Assembly internalAssemblyBuilder  = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.FullName == assembly.FullName);
 
+        Assert.Empty(assembly.Location);
+        Assert.NotNull(internalAssemblyBuilder);
+        Assert.Empty(internalAssemblyBuilder.Location);
+    }
 
     }
 }

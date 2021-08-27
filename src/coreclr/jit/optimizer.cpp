@@ -5462,7 +5462,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
     return 0;
 }
 
-void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
+void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsigned lnum)
 {
 #ifdef DEBUG
     if (verbose)
@@ -5475,6 +5475,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
         printf("\n");
     }
 #endif
+
+    assert(exprBb != nullptr);
 
     // This loop has to be in a form that is approved for hoisting.
     assert(optLoopTable[lnum].lpFlags & LPFLG_HOISTABLE);
@@ -5511,6 +5513,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     // (or in this case, will contain) the expression.
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
+
+    preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
 
     Statement* hoistStmt = gtNewStmt(hoist);
     hoistStmt->SetCompilerAdded();
@@ -6205,6 +6209,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         bool              m_beforeSideEffect;
         unsigned          m_loopNum;
         LoopHoistContext* m_hoistContext;
+        BasicBlock*       m_currentBlock;
 
         bool IsNodeHoistable(GenTree* node)
         {
@@ -6297,11 +6302,13 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             , m_beforeSideEffect(true)
             , m_loopNum(loopNum)
             , m_hoistContext(hoistContext)
+            , m_currentBlock(nullptr)
         {
         }
 
         void HoistBlock(BasicBlock* block)
         {
+            m_currentBlock = block;
             for (Statement* const stmt : block->NonPhiStatements())
             {
                 WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -6309,7 +6316,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
                 if (m_valueStack.TopRef().m_hoistable)
                 {
-                    m_compiler->optHoistCandidate(stmt->GetRootNode(), m_loopNum, m_hoistContext);
+                    m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loopNum, m_hoistContext);
                 }
 
                 m_valueStack.Reset();
@@ -6612,7 +6619,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         value.m_hoistable = false;
                         value.m_invariant = false;
 
-                        m_compiler->optHoistCandidate(value.Node(), m_loopNum, m_hoistContext);
+                        m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
                     }
                 }
             }
@@ -6654,7 +6661,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
     }
 }
 
-void Compiler::optHoistCandidate(GenTree* tree, unsigned lnum, LoopHoistContext* hoistCtxt)
+void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     assert(lnum != BasicBlock::NOT_IN_LOOP);
     assert((optLoopTable[lnum].lpFlags & LPFLG_HOISTABLE) != 0);
@@ -6679,7 +6686,7 @@ void Compiler::optHoistCandidate(GenTree* tree, unsigned lnum, LoopHoistContext*
     }
 
     // Expression can be hoisted
-    optPerformHoistExpr(tree, lnum);
+    optPerformHoistExpr(tree, treeBb, lnum);
 
     // Increment lpHoistedExprCount or lpHoistedFPExprCount
     if (!varTypeIsFloating(tree->TypeGet()))

@@ -247,14 +247,14 @@ extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExcepti
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow = FALSE);
 
-#if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
+#if defined(DACCESS_COMPILE)
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE
-#else // DACCESS_COMPILE || CROSSGEN_COMPILE
+#else // DACCESS_COMPILE
 
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException);
@@ -357,7 +357,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
 
-#endif // DACCESS_COMPILE || CROSSGEN_COMPILE
+#endif // DACCESS_COMPILE
 
 
 #define ENCLOSE_IN_EXCEPTION_HANDLER( func ) \
@@ -459,12 +459,6 @@ ThrowStackOverflow      COMPlusThrowSO defers to this
 
 void COMPlusCooperativeTransitionHandler(Frame* pFrame);
 
-#ifdef CROSSGEN_COMPILE
-
-#define COOPERATIVE_TRANSITION_BEGIN()
-#define COOPERATIVE_TRANSITION_END()
-
-#else // CROSSGEN_COMPILE
 
 #define COOPERATIVE_TRANSITION_BEGIN()              \
   {                                                 \
@@ -479,7 +473,6 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
     END_GCX_ASSERT_PREEMP;                          \
   }
 
-#endif // CROSSGEN_COMPILE
 
 extern LONG UserBreakpointFilter(EXCEPTION_POINTERS *ep);
 extern LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, LPVOID pv);
