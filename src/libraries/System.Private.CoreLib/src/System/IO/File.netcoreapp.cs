@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.IO.Strategies;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,7 +59,7 @@ namespace System.IO
         public static SafeFileHandle OpenHandle(string path, FileMode mode = FileMode.Open, FileAccess access = FileAccess.Read,
             FileShare share = FileShare.Read, FileOptions options = FileOptions.None, long preallocationSize = 0)
         {
-            Strategies.FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize: 0, options, preallocationSize);
+            FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize: 0, options, preallocationSize);
 
             return SafeFileHandle.Open(Path.GetFullPath(path), mode, access, share, options, preallocationSize);
         }
@@ -113,7 +114,8 @@ namespace System.IO
             int preambleSize = encoding.Preamble.Length;
             int maxFileSize = string.IsNullOrEmpty(contents) ? 0 : preambleSize + encoding.GetMaxByteCount(contents.Length);
             long preallocationSize = maxFileSize < ChunkSize ? 0 : maxFileSize; // for small files setting preallocationSize has no perf benefit, as it requires an additional sys-call
-            using SafeFileHandle fileHandle = OpenHandle(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.None, preallocationSize);
+            FileMode mode = append ? FileMode.Append : FileMode.Create;
+            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.None, preallocationSize);
             if (string.IsNullOrEmpty(contents))
             {
                 return; // even if the content is empty, we want to create an empty file
@@ -150,6 +152,8 @@ namespace System.IO
                 {
                     ArrayPool<byte>.Shared.Return(rentedBytes);
                 }
+
+                FileStreamHelpers.EnsureNoTrailingZeros(preallocationSize, mode, fileHandle, fileOffset);
             }
         }
 
@@ -158,7 +162,8 @@ namespace System.IO
             int preambleSize = encoding.Preamble.Length;
             int maxFileSize = string.IsNullOrEmpty(contents) ? 0 : preambleSize + encoding.GetMaxByteCount(contents.Length);
             long preallocationSize = maxFileSize < ChunkSize ? 0 : maxFileSize; // for small files setting preallocationSize has no perf benefit, as it requires an additional sys-call
-            using SafeFileHandle fileHandle = OpenHandle(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, preallocationSize);
+            FileMode mode = append ? FileMode.Append : FileMode.Create;
+            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, preallocationSize);
             if (string.IsNullOrEmpty(contents))
             {
                 return; // even if the content is empty, we want to create an empty file
@@ -190,6 +195,8 @@ namespace System.IO
             finally
             {
                 ArrayPool<byte>.Shared.Return(bytes);
+
+                FileStreamHelpers.EnsureNoTrailingZeros(preallocationSize, mode, fileHandle, fileOffset);
             }
         }
     }
