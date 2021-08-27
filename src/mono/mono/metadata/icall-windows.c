@@ -88,64 +88,6 @@ mono_icall_is_64bit_os (void)
 #endif
 }
 
-MonoArrayHandle
-mono_icall_get_environment_variable_names (MonoError *error)
-{
-	MonoArrayHandle names;
-	MonoStringHandle str;
-	WCHAR* env_strings;
-	WCHAR* env_string;
-	WCHAR* equal_str;
-	int n = 0;
-
-	env_strings = GetEnvironmentStrings();
-
-	if (env_strings) {
-		env_string = env_strings;
-		while (*env_string != '\0') {
-		/* weird case that MS seems to skip */
-			if (*env_string != '=')
-				n++;
-			while (*env_string != '\0')
-				env_string++;
-			env_string++;
-		}
-	}
-
-	names = mono_array_new_handle (mono_defaults.string_class, n, error);
-	return_val_if_nok (error, NULL_HANDLE_ARRAY);
-
-	if (env_strings) {
-		n = 0;
-		str = MONO_HANDLE_NEW (MonoString, NULL);
-		env_string = env_strings;
-		while (*env_string != '\0') {
-			/* weird case that MS seems to skip */
-			if (*env_string != '=') {
-				equal_str = wcschr(env_string, '=');
-				g_assert(equal_str);
-				MonoString *s = mono_string_new_utf16_checked (env_string, (gint32)(equal_str - env_string), error);
-				goto_if_nok (error, cleanup);
-				MONO_HANDLE_ASSIGN_RAW (str, s);
-
-				mono_array_handle_setref (names, n, str);
-				n++;
-			}
-			while (*env_string != '\0')
-				env_string++;
-			env_string++;
-		}
-
-	}
-
-cleanup:
-	if (env_strings)
-		FreeEnvironmentStrings (env_strings);
-	if (!is_ok (error))
-		return NULL_HANDLE_ARRAY;
-	return names;
-}
-
 #if HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
 #include <shlobj.h>
 MonoStringHandle
