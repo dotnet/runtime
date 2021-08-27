@@ -81,6 +81,7 @@
     <Compile Include="FileStream\ctor_options_as.Windows.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />
     <Compile Include="Junctions.Windows.cs" />
+    <Compile Include="AppExecLinks.Windows.cs" />
     <Compile Include="RandomAccess\Mixed.Windows.cs" />
     <Compile Include="RandomAccess\NoBuffering.Windows.cs" />
     <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />
