@@ -4188,7 +4188,9 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
         pEEInfoOut->targetAbi                                  = CORINFO_DESKTOP_ABI;
-#ifdef TARGET_UNIX
+#ifdef TARGET_OSX
+        pEEInfoOut->osType                                     = CORINFO_MACOS;
+#elif defined(TARGET_UNIX)
         pEEInfoOut->osType                                     = CORINFO_UNIX;
 #else
         pEEInfoOut->osType                                     = CORINFO_WINNT;

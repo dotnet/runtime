@@ -1097,9 +1097,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if FEATURE_FASTTAILCALL
             const unsigned argAlignment = eeGetArgAlignment(origArgType, (hfaType == TYP_FLOAT));
-#if defined(OSX_ARM64_ABI)
-            varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
-#endif // OSX_ARM64_ABI
+            if (GlobalJitOptions::compMacOsArm64Abi())
+            {
+                varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
+            }
 
             assert((argSize % argAlignment) == 0);
             assert((varDscInfo->stackArgSize % argAlignment) == 0);
@@ -5499,9 +5500,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
-#if !defined(OSX_ARM64_ABI)
-    noway_assert(compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
-#endif
+    noway_assert(GlobalJitOptions::compMacOsArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 
     if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
@@ -5655,9 +5654,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
 
-#if !defined(OSX_ARM64_ABI)
-        assert(argumentSize % TARGET_POINTER_SIZE == 0);
-#endif // !defined(OSX_ARM64_ABI)
+        assert(GlobalJitOptions::compMacOsArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
 
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
@@ -6037,9 +6034,10 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // TARGET_ARM
         const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
         const unsigned argAlignment = eeGetArgAlignment(varDsc->lvType, isFloatHfa);
-#if defined(OSX_ARM64_ABI)
-        argOffs                     = roundUp(argOffs, argAlignment);
-#endif // OSX_ARM64_ABI
+        if (GlobalJitOptions::compMacOsArm64Abi())
+        {
+            argOffs                     = roundUp(argOffs, argAlignment);
+        }
 
         assert((argSize % argAlignment) == 0);
         assert((argOffs % argAlignment) == 0);

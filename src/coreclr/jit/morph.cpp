@@ -3052,9 +3052,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         unsigned  hfaSlots = 0;
 
         bool passUsingFloatRegs;
-#if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
-#endif
         unsigned  size          = 0;
         unsigned  byteSize      = 0;
         bool      isRegArg      = false;
@@ -3307,12 +3305,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(size != 0);
         assert(byteSize != 0);
 
-#if defined(OSX_ARM64_ABI)
-        // Arm64 Apple has a special ABI for passing small size arguments on stack,
-        // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
-        // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-        unsigned argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
-#endif
+        if (GlobalJitOptions::compMacOsArm64Abi())
+        {
+            // Arm64 Apple has a special ABI for passing small size arguments on stack,
+            // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
+            // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
+            argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
+        }
 
         //
         // Figure out if the argument will be passed in a register.

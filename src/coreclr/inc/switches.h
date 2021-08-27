@@ -184,10 +184,16 @@ public:
 #define TARGET_WINDOWS_POSSIBLY_SUPPORTED
     static const bool IsWindows = true;
     static const bool IsUnix = false;
+    static const bool IsMacOS = false;
 #elif defined(TARGET_UNIX)
 #define TARGET_UNIX_POSSIBLY_SUPPORTED
     static const bool IsWindows = false;
     static const bool IsUnix = true;
+#if defined(TARGET_OSX)
+    static const bool IsMacOS = true;
+#else
+    static const bool IsMacOS = false;
+#endif
 #else
 #define TARGET_WINDOWS_POSSIBLY_SUPPORTED
 #define TARGET_UNIX_POSSIBLY_SUPPORTED
@@ -195,6 +201,7 @@ public:
     static bool OSSettingConfigured;
     static bool IsWindows;
     static bool IsUnix;
+    static bool IsMacOS;
 #endif
 };
 

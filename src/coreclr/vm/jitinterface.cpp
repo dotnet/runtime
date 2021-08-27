@@ -9957,7 +9957,9 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
 
-#ifdef TARGET_UNIX
+#ifdef TARGET_OSX
+    pEEInfoOut->osType = CORINFO_MACOS;
+#elif defined(TARGET_UNIX)
     pEEInfoOut->osType = CORINFO_UNIX;
 #else
     pEEInfoOut->osType = CORINFO_WINNT;

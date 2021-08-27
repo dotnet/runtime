@@ -1162,11 +1162,18 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
                 if (type == TYP_SIMD12)
                 {
-#if !defined(TARGET_64BIT) || defined(OSX_ARM64_ABI)
+#if !defined(TARGET_64BIT)
                     assert(info->GetByteSize() == 12);
-#else  // TARGET_64BIT && !OSX_ARM64_ABI
-                    assert(info->GetByteSize() == 16);
-#endif // FEATURE_SIMD && FEATURE_PUT_STRUCT_ARG_STK
+#else  // TARGET_64BIT
+                    if (GlobalJitOptions::compMacOsArm64Abi())
+                    {
+                        assert(info->GetByteSize() == 12);
+                    }
+                    else
+                    {
+                        assert(info->GetByteSize() == 16);
+                    }
+#endif // TARGET_64BIT
                 }
                 else
 #endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)

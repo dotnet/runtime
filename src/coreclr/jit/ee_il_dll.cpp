@@ -469,22 +469,25 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 // static
 unsigned Compiler::eeGetArgAlignment(var_types type, bool isFloatHfa)
 {
-#if defined(OSX_ARM64_ABI)
-    if (isFloatHfa)
+    if (GlobalJitOptions::compMacOsArm64Abi())
     {
-        assert(varTypeIsStruct(type));
-        return sizeof(float);
+        if (isFloatHfa)
+        {
+            assert(varTypeIsStruct(type));
+            return sizeof(float);
+        }
+        if (varTypeIsStruct(type))
+        {
+            return TARGET_POINTER_SIZE;
+        }
+        const unsigned argSize = genTypeSize(type);
+        assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
+        return argSize;
     }
-    if (varTypeIsStruct(type))
+    else
     {
         return TARGET_POINTER_SIZE;
     }
-    const unsigned argSize = genTypeSize(type);
-    assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
-    return argSize;
-#else
-    return TARGET_POINTER_SIZE;
-#endif
 }
 
 /*****************************************************************************/

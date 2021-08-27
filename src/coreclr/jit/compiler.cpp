@@ -5173,13 +5173,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-#if !defined(OSX_ARM64_ABI)
-    // Set stack levels; this information is necessary for x86
-    // but on other platforms it is used only in asserts.
-    // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
-    StackLevelSetter stackLevelSetter(this);
-    stackLevelSetter.Run();
-#endif // !OSX_ARM64_ABI
+    if (!GlobalJitOptions::compMacOsArm64Abi())
+    {
+        // Set stack levels; this information is necessary for x86
+        // but on other platforms it is used only in asserts.
+        // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
+        StackLevelSetter stackLevelSetter(this);
+        stackLevelSetter.Run();
+    }
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5523,7 +5524,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Match OS for compMatchedVM
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-    if (TargetOS::IsUnix)
+    if (TargetOS::IsMacOS)
+    {
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_MACOS);
+    }
+    else if (TargetOS::IsUnix)
     {
         info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
     }
@@ -6093,7 +6098,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     if (!TargetOS::OSSettingConfigured)
     {
         CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-        TargetOS::IsUnix = eeInfo->osType == CORINFO_UNIX;
+        TargetOS::IsMacOS = eeInfo->osType == CORINFO_MACOS;
+        TargetOS::IsUnix = (eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS);
         TargetOS::IsWindows = eeInfo->osType == CORINFO_WINNT;
         TargetOS::OSSettingConfigured = true;
     }

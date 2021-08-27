@@ -206,17 +206,17 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(DEBUG) && !defined(OSX_ARM64_ABI)
-// On all platforms except Arm64 OSX arguments on the stack are taking
-// register size slots. On these platforms we could check that stack slots count
-// matches our new byte size calculations.
+#if defined(DEBUG)
 #define DEBUG_ARG_SLOTS
 #endif
 
 #if defined(DEBUG_ARG_SLOTS)
 #define DEBUG_ARG_SLOTS_ARG(x) , x
 #define DEBUG_ARG_SLOTS_ONLY(x) x
-#define DEBUG_ARG_SLOTS_ASSERT(x) assert(x)
+// On all platforms except Arm64 OSX arguments on the stack are taking
+// register size slots. On these platforms we could check that stack slots count
+// matches our new byte size calculations.
+#define DEBUG_ARG_SLOTS_ASSERT(x) assert(GlobalJitOptions::compMacOsArm64Abi() || x)
 #else
 #define DEBUG_ARG_SLOTS_ARG(x)
 #define DEBUG_ARG_SLOTS_ONLY(x)
@@ -369,6 +369,8 @@ public:
 #endif
 
     static bool compFeatureArgSplit() { return TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64); }
+
+    static bool compMacOsArm64Abi() { return TargetArchitecture::IsArm64 && TargetOS::IsUnix && TargetOS::IsMacOS; }
 };
 
 /*****************************************************************************/

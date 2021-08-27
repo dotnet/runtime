@@ -1885,20 +1885,23 @@ public:
     void SetByteSize(unsigned byteSize, bool isStruct, bool isFloatHfa)
     {
 
-#ifdef OSX_ARM64_ABI
         unsigned roundedByteSize;
-        // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
-        if (isStruct && !isFloatHfa)
+        if (GlobalJitOptions::compMacOsArm64Abi())
         {
-            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+            // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
+            if (isStruct && !isFloatHfa)
+            {
+                roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                roundedByteSize = byteSize;
+            }
         }
         else
         {
-            roundedByteSize = byteSize;
+            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
         }
-#else  // OSX_ARM64_ABI
-        unsigned roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
-#endif // OSX_ARM64_ABI
 
 #if !defined(TARGET_ARM)
         // Arm32 could have a struct with 8 byte alignment
@@ -3849,8 +3852,8 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
         assert(varDsc->lvExactSize == 12);
 
-#if defined(TARGET_64BIT) && !defined(OSX_ARM64_ABI)
-        assert(varDsc->lvSize() == 16);
+#if defined(TARGET_64BIT)
+        assert(GlobalJitOptions::compMacOsArm64Abi() || varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.

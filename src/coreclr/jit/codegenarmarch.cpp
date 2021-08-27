@@ -682,11 +682,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
     GenTree* source = treeNode->gtOp1;
-#if !defined(OSX_ARM64_ABI)
-    var_types targetType = genActualType(source->TypeGet());
-#else
-    var_types targetType = source->TypeGet();
-#endif
+    var_types targetType;
+    
+    if (!GlobalJitOptions::compMacOsArm64Abi())
+    {
+        targetType = genActualType(source->TypeGet());
+    }
+    else
+    {
+        targetType = source->TypeGet();
+    }
     emitter* emit = GetEmitter();
 
     // This is the varNum for our store operations,
@@ -741,17 +746,17 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             regNumber srcReg = genConsumeReg(source);
             assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
 
-#if !defined(OSX_ARM64_ABI)
-            assert(treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
-#else  // OSX_ARM64_ABI
-            if (treeNode->GetStackByteSize() == 12)
+            assert(GlobalJitOptions::compMacOsArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
+
+#ifdef TARGET_ARM64
+            if (GlobalJitOptions::compMacOsArm64Abi() && (treeNode->GetStackByteSize() == 12))
             {
                 regNumber tmpReg = treeNode->GetSingleTempReg();
                 GetEmitter()->emitStoreSIMD12ToLclOffset(varNumOut, argOffsetOut, srcReg, tmpReg);
                 argOffsetOut += 12;
             }
             else
-#endif // OSX_ARM64_ABI
+#endif // TARGET_ARM64
             {
                 emitAttr storeAttr = emitTypeSize(targetType);
                 emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
@@ -761,20 +766,21 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             return;
         }
 
-#if defined(OSX_ARM64_ABI)
-        switch (treeNode->GetStackByteSize())
+        if (GlobalJitOptions::compMacOsArm64Abi())
         {
-            case 1:
-                targetType = TYP_BYTE;
-                break;
-            case 2:
-                targetType = TYP_SHORT;
-                break;
-            default:
-                assert(treeNode->GetStackByteSize() >= 4);
-                break;
+            switch (treeNode->GetStackByteSize())
+            {
+                case 1:
+                    targetType = TYP_BYTE;
+                    break;
+                case 2:
+                    targetType = TYP_SHORT;
+                    break;
+                default:
+                    assert(treeNode->GetStackByteSize() >= 4);
+                    break;
+            }
         }
-#endif
 
         instruction storeIns  = ins_Store(targetType);
         emitAttr    storeAttr = emitTypeSize(targetType);

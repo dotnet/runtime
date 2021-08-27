@@ -1853,16 +1853,16 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
 // argument area.
 
-#if defined(FEATURE_SIMD) && defined(OSX_ARM64_ABI)
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
         // storing of TYP_SIMD12 (i.e. Vector3) argument.
-        if (type == TYP_SIMD12)
+        if (GlobalJitOptions::compMacOsArm64Abi() && (type == TYP_SIMD12))
         {
             // Need an additional integer register to extract upper 4 bytes from data.
             regNumber tmpReg = nextArgNode->GetSingleTempReg();
             GetEmitter()->emitStoreSIMD12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
         }
         else
-#endif // FEATURE_SIMD && OSX_ARM64_ABI
+#endif // FEATURE_SIMD
         {
             emitAttr attr = emitTypeSize(type);
             GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
