@@ -31,20 +31,23 @@ public static class MountHelper
     /// <summary>Creates a symbolic link using command line tools.</summary>
     public static bool CreateSymbolicLink(string linkPath, string targetPath, bool isDirectory)
     {
-        string fileName;
-        string[] arguments;
+        Process symLinkProcess = new Process();
         if (OperatingSystem.IsWindows())
         {
-            fileName = "cmd";
-            arguments = new[] { "/c", "mklink", isDirectory ? "/D" : "", linkPath, targetPath };
+            symLinkProcess.StartInfo.FileName = "cmd";
+            symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", linkPath, targetPath);
         }
         else
         {
-            fileName = "/bin/ln";
-            arguments = new[] { "-s", targetPath, linkPath };
+            symLinkProcess.StartInfo.FileName = "/bin/ln";
+            symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", targetPath, linkPath);
         }
+        symLinkProcess.StartInfo.UseShellExecute = false;
+        symLinkProcess.StartInfo.RedirectStandardOutput = true;
+        symLinkProcess.Start();
 
-        return RunProcess(CreateStartInfo(fileName, arguments));
+        symLinkProcess.WaitForExit();
+        return (0 == symLinkProcess.ExitCode);
     }
 
     /// <summary>On Windows, creates a junction using command line tools.</summary>
@@ -55,7 +58,7 @@ public static class MountHelper
             throw new PlatformNotSupportedException();
         }
 
-        return RunProcess(CreateStartInfo("cmd", "/c", "mklink", "/J", junctionPath, targetPath));
+        return RunProcess(CreateProcessStartInfo("cmd", "/c", "mklink", "/J", junctionPath, targetPath));
     }
 
     ///<summary>
@@ -70,7 +73,7 @@ public static class MountHelper
         }
 
         char driveLetter = GetNextAvailableDriveLetter();
-        bool success = RunProcess(CreateStartInfo("subst", $"{driveLetter}:", targetDir));
+        bool success = RunProcess(CreateProcessStartInfo("cmd", "/c", SubstPath, $"{driveLetter}:", targetDir));
         if (!success || !DriveInfo.GetDrives().Any(x => x.Name[0] == driveLetter))
         {
             throw new InvalidOperationException($"Could not create virtual drive {driveLetter}: with subst");
@@ -106,7 +109,7 @@ public static class MountHelper
             throw new PlatformNotSupportedException();
         }
 
-        bool success = RunProcess(CreateStartInfo("subst", "/d", $"{driveLetter}:"));
+        bool success = RunProcess(CreateProcessStartInfo("cmd", "/c", SubstPath, "/d", $"{driveLetter}:"));
         if (!success || DriveInfo.GetDrives().Any(x => x.Name[0] == driveLetter))
         {
             throw new InvalidOperationException($"Could not delete virtual drive {driveLetter}: with subst");
@@ -146,7 +149,7 @@ public static class MountHelper
             throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
     }
 
-    private static ProcessStartInfo CreateStartInfo(string fileName, params string[] arguments)
+    private static ProcessStartInfo CreateProcessStartInfo(string fileName, params string[] arguments)
     {
         var info = new ProcessStartInfo
         {
@@ -168,6 +171,21 @@ public static class MountHelper
         var process = Process.Start(startInfo);
         process.WaitForExit();
         return process.ExitCode == 0;
+    }
+
+    private static string SubstPath
+    {
+        get
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            string systemRoot = Environment.GetEnvironmentVariable("SystemRoot") ?? @"C:\Windows";
+            string system32 = Path.Join(systemRoot, "System32");
+            return Path.Join(system32, "subst.exe");
+        }
     }
 
     /// For standalone debugging help. Change Main0 to Main

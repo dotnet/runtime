@@ -8,7 +8,7 @@ namespace System.IO.Tests
     // Need to reuse the same virtual drive for all the test methods.
     // Creating and disposing one virtual drive per class achieves this.
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsSubstAvailable))]
     public class VirtualDrive_SymbolicLinks : BaseSymbolicLinks
     {
         protected override void Dispose(bool disposing)

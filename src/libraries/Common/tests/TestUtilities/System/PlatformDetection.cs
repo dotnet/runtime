@@ -267,6 +267,28 @@ namespace System
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
+        public static bool IsSubstAvailable
+        {
+            get
+            {
+                try
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        string systemRoot = Environment.GetEnvironmentVariable("SystemRoot");
+                        if (string.IsNullOrWhiteSpace(systemRoot))
+                        {
+                            return false;
+                        }
+                        string system32 = Path.Join(systemRoot, "System32");
+                        return File.Exists(Path.Join(system32, "subst.exe"));
+                    }
+                }
+                catch { }
+                return false;
+            }
+        }
+
         private static Version GetICUVersion()
         {
             int version = 0;
