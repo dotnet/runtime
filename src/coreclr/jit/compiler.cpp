@@ -62,6 +62,13 @@ bool GlobalJitOptions::compFeatureHfa          = false;
 LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
 #endif // CONFIGURABLE_ARM_ABI
 
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+bool TargetOS::OSSettingConfigured = false;
+bool TargetOS::IsWindows           = false;
+bool TargetOS::IsUnix              = false;
+bool TargetOS::IsMacOS             = false;
+#endif
+
 /*****************************************************************************
  *
  *  Little helpers to grab the current cycle counter value; this is done

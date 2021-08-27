@@ -247,7 +247,7 @@ function(set_target_definitions_to_custom_os_and_arch)
     if (TARGETDETAILS_OS STREQUAL "unix_osx")
       target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_OSX)
     endif()
-  else()
+  elseif (TARGETDETAILS_OS STREQUAL "win")
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_WINDOWS)
   endif((TARGETDETAILS_OS MATCHES "^unix"))
 
