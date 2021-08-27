@@ -13,12 +13,7 @@ namespace System.IO
 {
     public static partial class File
     {
-        private const int ChunkSize =
-#if DEBUG
-            100;
-#else
-            8192;
-#endif
+        private const int ChunkSize = 8192;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
