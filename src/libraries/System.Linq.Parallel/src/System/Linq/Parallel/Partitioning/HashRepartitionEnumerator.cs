@@ -83,6 +83,9 @@ namespace System.Linq.Parallel
             _barrier = barrier;
             _valueExchangeMatrix = valueExchangeMatrix;
             _cancellationToken = cancellationToken;
+
+            if (OperatingSystem.IsBrowser())
+                Debug.Assert(partitionCount == 1);
         }
 
         //---------------------------------------------------------------------------------------
@@ -119,6 +122,8 @@ namespace System.Linq.Parallel
                 }
                 return false;
             }
+
+            Debug.Assert(!OperatingSystem.IsBrowser());
 
             Mutables? mutables = _mutables;
             if (mutables == null)

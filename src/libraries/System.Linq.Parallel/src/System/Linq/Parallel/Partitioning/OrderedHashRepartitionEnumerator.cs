@@ -121,6 +121,8 @@ namespace System.Linq.Parallel
                 return false;
             }
 
+            Debug.Assert(!OperatingSystem.IsBrowser());
+
             Mutables? mutables = _mutables;
             if (mutables == null)
                 mutables = _mutables = new Mutables();
