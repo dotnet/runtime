@@ -272,6 +272,9 @@
         <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
       </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Environment.Android.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
