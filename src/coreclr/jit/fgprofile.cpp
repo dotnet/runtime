@@ -2326,7 +2326,7 @@ void EfficientEdgeCountReconstructor::Prepare()
 
                     // Ensure at least one return has nonzero counts.
                     //
-                    if ((rval <= 0.5) && !isReturn || (nZeroReturns < (nReturns - 1)))
+                    if ((rval <= 0.5) && (!isReturn || (nZeroReturns < (nReturns - 1))))
                     {
                         profileCount = 0;
                         if (isReturn)
