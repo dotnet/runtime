@@ -199,8 +199,31 @@ namespace System.Text.Json.SourceGeneration.Tests
         public int MyInt { get; set; }
     }
 
+    public class ClassWithCustomConverterProperty
+    {
+        [JsonConverter(typeof(NestedPocoCustomConverter))]
+        public NestedPoco Property { get; set; }
+
+        public class NestedPoco
+        {
+            public int Value { get; set; }
+        }
+
+        public class NestedPocoCustomConverter : JsonConverter<NestedPoco>
+        {
+            public override NestedPoco? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new NestedPoco { Value = reader.GetInt32() };
+            public override void Write(Utf8JsonWriter writer, NestedPoco value, JsonSerializerOptions options) => writer.WriteNumberValue(value.Value);
+        }
+    }
+
+    public struct StructWithCustomConverterProperty
+    {
+        [JsonConverter(typeof(ClassWithCustomConverterProperty.NestedPocoCustomConverter))]
+        public ClassWithCustomConverterProperty.NestedPoco Property { get; set; }
+    }
+
     [JsonConverter(typeof(CustomConverterForStruct))] // Invalid
-    public struct ClassWithBadCustomConverter
+    public class ClassWithBadCustomConverter
     {
         public int MyInt { get; set; }
     }
