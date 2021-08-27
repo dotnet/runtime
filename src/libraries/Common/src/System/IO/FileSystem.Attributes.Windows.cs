@@ -132,7 +132,6 @@ namespace System.IO
                 case Interop.Errors.ERROR_NETWORK_ACCESS_DENIED:
                 case Interop.Errors.ERROR_INVALID_HANDLE:           // eg from \\.\CON
                 case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:     // Path is too long
-                case Interop.Errors.ERROR_CANT_ACCESS_FILE:         // Possibly broken AppExecLink
                     return true;
                 default:
                     return false;

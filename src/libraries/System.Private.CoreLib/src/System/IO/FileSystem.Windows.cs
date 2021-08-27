@@ -550,30 +550,7 @@ namespace System.IO
                         int stringListOffset = sizeof(Interop.Kernel32.AppExecLinkReparseBuffer);
                         Span<char> stringList = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(stringListOffset));
 
-                        // Find the 2nd and 3rd null char
-                        int start = -1;
-                        int end = -1;
-                        int count = 0;
-                        for (int i = 0; i < stringList.Length; i++)
-                        {
-                            if (stringList[i] == '\0')
-                            {
-                                count++;
-                                if (count == 2)
-                                {
-                                    start = i + 1; // exclude null char
-                                }
-                                else if (count == 3)
-                                {
-                                    end = i;
-                                    break;
-                                }
-                            }
-                        }
-                        if (start != -1 && end != -1)
-                        {
-                            return stringList.Slice(start, end - start).ToString();
-                        }
+                        return GetAppExecLinkTarget(stringList);
                     }
                 }
 
@@ -582,6 +559,38 @@ namespace System.IO
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            // Given an appexeclink reparse point string list, finds the
+            // start and end (null chars) of the 3rd string in the list.
+            static string? GetAppExecLinkTarget(ReadOnlySpan<char> stringList)
+            {
+                // Find the 2nd and 3rd null char
+                int start = -1;
+                int end = -1;
+                int count = 0;
+                for (int i = 0; i < stringList.Length; i++)
+                {
+                    if (stringList[i] == '\0')
+                    {
+                        count++;
+                        if (count == 2)
+                        {
+                            start = i + 1; // exclude null char
+                        }
+                        else if (count == 3)
+                        {
+                            end = i;
+                            break;
+                        }
+                    }
+                }
+                if (start != -1 && end != -1)
+                {
+                    return stringList.Slice(start, end - start).ToString();
+                }
+
+                return null;
             }
         }
 
@@ -592,7 +601,7 @@ namespace System.IO
 
             // The file or directory is not a reparse point.
             if ((data.dwFileAttributes & (uint)FileAttributes.ReparsePoint) == 0 ||
-                // Only symbolic links and mount points are supported at the moment.
+                // Only symbolic links, mount points (junctions) and app exec links are supported at the moment.
                 ((data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0 &&
                  (data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT) == 0 &&
                  (data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_APPEXECLINK) == 0))
@@ -610,7 +619,7 @@ namespace System.IO
                 // If the handle fails because it is unreachable, is because the link was broken.
                 // We need to fallback to manually traverse the links and return the target of the last resolved link.
                 int error = Marshal.GetLastWin32Error();
-                if (IsPathUnreachableError(error))
+                if (IsPathUnreachableError(error) || error == Interop.Errors.ERROR_CANT_ACCESS_FILE /* Possibly broken AppExecLink */)
                 {
                     return GetFinalLinkTargetSlow(linkPath);
                 }

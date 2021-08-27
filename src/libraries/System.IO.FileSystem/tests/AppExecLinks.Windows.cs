@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Enumeration;
+using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests
@@ -14,7 +16,15 @@ namespace System.IO.Tests
         public void ResolveAppExecLinkTargets(bool returnFinalTarget)
         {
             string windowsAppsDir = Path.Join(Environment.GetEnvironmentVariable("LOCALAPPDATA"), "Microsoft", "WindowsApps");
-            var appExecLinkPaths = Directory.EnumerateFiles(windowsAppsDir, "*.exe", new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 3 });
+            var appExecLinkPaths = new FileSystemEnumerable<string?>(
+                                   windowsAppsDir,
+                                   (ref FileSystemEntry entry) => entry.ToFullPath(),
+                                   new EnumerationOptions { RecurseSubdirectories = true })
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                    FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
+                    entry.Attributes.HasFlag(FileAttributes.ReparsePoint)
+            };
 
             foreach (string appExecLinkPath in appExecLinkPaths)
             {

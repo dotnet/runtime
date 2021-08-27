@@ -11,6 +11,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
 using Xunit;
+using System.IO.Enumeration;
+using System.Linq;
 
 namespace System
 {
@@ -309,7 +311,16 @@ namespace System
                         string windowsAppsDir = Path.Join(localAppData, "Microsoft", "WindowsApps");
                         if (Directory.Exists(windowsAppsDir))
                         {
-                            return Directory.GetFiles(windowsAppsDir, "*.exe", new EnumerationOptions() { RecurseSubdirectories = true, MaxRecursionDepth = 3 }).Length > 0;
+                            // return Directory.GetFiles(windowsAppsDir, "*.exe", new EnumerationOptions() { RecurseSubdirectories = true, MaxRecursionDepth = 3 }).Length > 0;
+                            return new FileSystemEnumerable<string?>(
+                                   windowsAppsDir,
+                                   (ref FileSystemEntry entry) => null,
+                                   new EnumerationOptions { RecurseSubdirectories = true })
+                            {
+                                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                                    FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
+                                    entry.Attributes.HasFlag(FileAttributes.ReparsePoint)
+                            }.Any();
                         }
                     }
                 }
