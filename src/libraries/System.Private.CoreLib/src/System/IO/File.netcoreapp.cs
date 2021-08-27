@@ -106,17 +106,23 @@ namespace System.IO
 
         private static void WriteToFile(string path, bool append, string? contents, Encoding encoding)
         {
-            int preambleSize = encoding.Preamble.Length;
-            int maxFileSize = string.IsNullOrEmpty(contents) ? 0 : preambleSize + encoding.GetMaxByteCount(contents.Length);
+            ReadOnlySpan<byte> preamble = encoding.GetPreamble();
+            int preambleSize = preamble.Length;
+            int maxFileSize = preambleSize + (string.IsNullOrEmpty(contents) ? 0 : encoding.GetMaxByteCount(contents.Length));
             long preallocationSize = maxFileSize < ChunkSize ? 0 : maxFileSize; // for small files setting preallocationSize has no perf benefit, as it requires an additional sys-call
             FileMode mode = append ? FileMode.Append : FileMode.Create;
+
             using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.None, preallocationSize);
+            long fileOffset = append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
+
             if (string.IsNullOrEmpty(contents))
             {
-                return; // even if the content is empty, we want to create an empty file
+                if (preambleSize > 0) // even if the content is empty, we want to store the preamble
+                {
+                    RandomAccess.WriteAtOffset(fileHandle, preamble, fileOffset);
+                }
+                return;
             }
-
-            long fileOffset = append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
 
             int bytesNeeded = Math.Min(maxFileSize, preambleSize + encoding.GetMaxByteCount(ChunkSize));
             byte[]? rentedBytes = null;
@@ -124,7 +130,7 @@ namespace System.IO
 
             try
             {
-                encoding.Preamble.CopyTo(bytes);
+                preamble.CopyTo(bytes);
 
                 Encoder encoder = encoding.GetEncoder();
                 ReadOnlySpan<char> remaining = contents;
@@ -154,23 +160,29 @@ namespace System.IO
 
         private static async Task WriteToFileAsync(string path, bool append, string? contents, Encoding encoding, CancellationToken cancellationToken)
         {
-            int preambleSize = encoding.Preamble.Length;
-            int maxFileSize = string.IsNullOrEmpty(contents) ? 0 : preambleSize + encoding.GetMaxByteCount(contents.Length);
+            ReadOnlyMemory<byte> preamble = encoding.GetPreamble();
+            int preambleSize = preamble.Length;
+            int maxFileSize = preambleSize + (string.IsNullOrEmpty(contents) ? 0 : encoding.GetMaxByteCount(contents.Length));
             long preallocationSize = maxFileSize < ChunkSize ? 0 : maxFileSize; // for small files setting preallocationSize has no perf benefit, as it requires an additional sys-call
             FileMode mode = append ? FileMode.Append : FileMode.Create;
+
             using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, preallocationSize);
+            long fileOffset = append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
+
             if (string.IsNullOrEmpty(contents))
             {
-                return; // even if the content is empty, we want to create an empty file
+                if (preambleSize > 0) // even if the content is empty, we want to store the preamble
+                {
+                    await RandomAccess.WriteAtOffsetAsync(fileHandle, preamble, fileOffset, cancellationToken).ConfigureAwait(false);
+                }
+                return;
             }
-
-            long fileOffset = append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
 
             byte[] bytes = ArrayPool<byte>.Shared.Rent(Math.Min(maxFileSize, preambleSize + encoding.GetMaxByteCount(ChunkSize)));
 
             try
             {
-                encoding.Preamble.CopyTo(bytes);
+                preamble.CopyTo(bytes);
 
                 Encoder encoder = encoding.GetEncoder();
                 ReadOnlyMemory<char> remaining = contents.AsMemory();
