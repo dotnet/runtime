@@ -725,23 +725,26 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         // it enregistered, as long as we can split the rest onto the stack.
         unsigned cSlotsToEnregister = cSlots;
 
-#if defined(TARGET_ARM64) && FEATURE_ARG_SPLIT
+#if defined(TARGET_ARM64)
 
-        // On arm64 Windows we will need to properly handle the case where a >8byte <=16byte
-        // struct is split between register r7 and virtual stack slot s[0]
-        // We will only do this for calls to vararg methods on Windows Arm64
-        //
-        // !!This does not affect the normal arm64 calling convention or Unix Arm64!!
-        if (this->info.compIsVarArgs && argType == TYP_STRUCT)
+        if (GlobalJitOptions::compFeatureArgSplit())
         {
-            if (varDscInfo->canEnreg(TYP_INT, 1) &&     // The beginning of the struct can go in a register
-                !varDscInfo->canEnreg(TYP_INT, cSlots)) // The end of the struct can't fit in a register
+            // On arm64 Windows we will need to properly handle the case where a >8byte <=16byte
+            // struct is split between register r7 and virtual stack slot s[0]
+            // We will only do this for calls to vararg methods on Windows Arm64
+            //
+            // !!This does not affect the normal arm64 calling convention or Unix Arm64!!
+            if (this->info.compIsVarArgs && argType == TYP_STRUCT)
             {
-                cSlotsToEnregister = 1; // Force the split
+                if (varDscInfo->canEnreg(TYP_INT, 1) &&     // The beginning of the struct can go in a register
+                    !varDscInfo->canEnreg(TYP_INT, cSlots)) // The end of the struct can't fit in a register
+                {
+                    cSlotsToEnregister = 1; // Force the split
+                }
             }
         }
 
-#endif // defined(TARGET_ARM64) && FEATURE_ARG_SPLIT
+#endif // defined(TARGET_ARM64)
 
 #ifdef TARGET_ARM
         // On ARM we pass the first 4 words of integer arguments and non-HFA structs in registers.
@@ -5827,8 +5830,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #elif defined(TARGET_ARM64)
 // Register arguments on ARM64 only take stack space when they have a frame home.
 // Unless on windows and in a vararg method.
-#if FEATURE_ARG_SPLIT
-        if (this->info.compIsVarArgs)
+        if (GlobalJitOptions::compFeatureArgSplit() && this->info.compIsVarArgs)
         {
             if (varDsc->lvType == TYP_STRUCT && varDsc->GetOtherArgReg() >= MAX_REG_ARG &&
                 varDsc->GetOtherArgReg() != REG_NA)
@@ -5839,7 +5841,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 argOffs += TARGET_POINTER_SIZE;
             }
         }
-#endif // FEATURE_ARG_SPLIT
 
 #elif defined(TARGET_ARM)
         // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg

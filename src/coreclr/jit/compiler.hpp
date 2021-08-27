@@ -4262,9 +4262,9 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
         case GT_PUTARG_TYPE:
-#if FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT_SUPPORTED
         case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
+#endif // FEATURE_ARG_SPLIT_SUPPORTED
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:

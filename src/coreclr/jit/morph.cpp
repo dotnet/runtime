@@ -1360,13 +1360,13 @@ void fgArgInfo::ArgsComplete()
             continue;
 #endif
         }
-#if FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT_SUPPORTED
         else if (curArgTabEntry->IsSplit())
         {
             hasStructRegArg = true;
             assert(hasStackArgs == true);
         }
-#endif       // FEATURE_ARG_SPLIT
+#endif       // FEATURE_ARG_SPLIT_SUPPORTED
         else // we have a register argument, next we look for a struct type.
         {
             if (varTypeIsStruct(argx) UNIX_AMD64_ABI_ONLY(|| curArgTabEntry->isStruct))
@@ -1489,12 +1489,12 @@ void fgArgInfo::ArgsComplete()
                 {
                     prevArgTabEntry->needPlace = true;
                 }
-#if FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT_SUPPORTED
                 else if (prevArgTabEntry->IsSplit())
                 {
                     prevArgTabEntry->needPlace = true;
                 }
-#endif // TARGET_ARM
+#endif // FEATURE_ARG_SPLIT_SUPPORTED
 #endif
             }
         }
@@ -3579,9 +3579,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 {
                     if (!isNonStandard)
                     {
-#if FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT_SUPPORTED
                         // Check for a split (partially enregistered) struct
-                        if (!passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
+                        if (GlobalJitOptions::compFeatureArgSplit() && !passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
                         {
                             // This indicates a partial enregistration of a struct type
                             assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||
@@ -3590,7 +3590,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                             assert((unsigned char)numRegsPartial == numRegsPartial);
                             call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
                         }
-#endif // FEATURE_ARG_SPLIT
+#endif // FEATURE_ARG_SPLIT_SUPPORTED
 
                         if (passUsingFloatRegs)
                         {

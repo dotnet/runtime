@@ -1039,9 +1039,9 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
     }
 #endif
 
-#if FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT_SUPPORTED
     // Struct can be split into register(s) and stack on ARM
-    if (info->IsSplit())
+    if (GlobalJitOptions::compFeatureArgSplit() && info->IsSplit())
     {
         assert(arg->OperGet() == GT_OBJ || arg->OperGet() == GT_FIELD_LIST);
         // TODO: Need to check correctness for FastTailCall
@@ -1110,7 +1110,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
         }
     }
     else
-#endif // FEATURE_ARG_SPLIT
+#endif // FEATURE_ARG_SPLIT_SUPPORTED
     {
         if (!isOnStack)
         {
@@ -6451,9 +6451,9 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT_SUPPORTED
         case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
+#endif // FEATURE_ARG_SPLIT_SUPPORTED
             // The regNum must have been set by the lowering of the call.
             assert(node->GetRegNum() != REG_NA);
             break;
