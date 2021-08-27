@@ -663,8 +663,8 @@ const char* refCntWtd2str(weight_t refCntWtd)
     }
     else
     {
-        float scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
-        float intPart      = (float)floor(scaledWeight);
+        weight_t scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
+        weight_t intPart      = (weight_t)floor(scaledWeight);
         bool  isLarge      = intPart > 1e9;
         bool  isSmall      = (intPart < 1e-2) && (intPart != 0);
 
@@ -1898,7 +1898,7 @@ unsigned CountDigits(unsigned num, unsigned base /* = 10 */)
     return count;
 }
 
-unsigned CountDigits(float num, unsigned base /* = 10 */)
+unsigned CountDigits(double num, unsigned base /* = 10 */)
 {
     assert(2 <= base && base <= 16); // sanity check
     unsigned count = 1;
@@ -2151,6 +2151,21 @@ bool FloatingPointUtils::isNormal(float x)
     int32_t bits = reinterpret_cast<int32_t&>(x);
     bits &= 0x7FFFFFFF;
     return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
+}
+
+//------------------------------------------------------------------------
+// infinite_double: return an infinite double value
+//
+// Returns:
+//    Infinite double value.
+//
+// Notes:
+//    This is the predefined constant HUGE_VAL on many platforms.
+//
+double FloatingPointUtils::infinite_double()
+{
+    int64_t bits = 0x7FF0000000000000;
+    return *reinterpret_cast<double*>(&bits);
 }
 
 //------------------------------------------------------------------------

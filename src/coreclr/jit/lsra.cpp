@@ -353,7 +353,7 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 {
     // An interval can have no recentRefPosition if this is the initial assignment
     // of a parameter to its home register.
-    float cost     = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
+    weight_t cost     = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
     spillCost[reg] = cost;
 #ifdef TARGET_ARM
     if (interval->registerType == TYP_DOUBLE)
@@ -2853,11 +2853,11 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation)
 //
 // Note: This helper is designed to be used only from allocateReg() and getDoubleSpillWeight()
 //
-float LinearScan::getSpillWeight(RegRecord* physRegRecord)
+weight_t LinearScan::getSpillWeight(RegRecord* physRegRecord)
 {
     assert(physRegRecord->assignedInterval != nullptr);
     RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
-    float        weight            = BB_ZERO_WEIGHT;
+    weight_t        weight            = BB_ZERO_WEIGHT;
 
     // We shouldn't call this method if there is no recentAssignedRef.
     assert(recentAssignedRef != nullptr);
@@ -11286,9 +11286,9 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     // Apply the SPILL_COST heuristic and eliminate regs that can't be spilled.
 
     // The spill weight for 'refPosition' (the one we're allocating now).
-    float thisSpillWeight = linearScan->getWeight(refPosition);
+    weight_t thisSpillWeight = linearScan->getWeight(refPosition);
     // The  spill weight for the best candidate we've found so far.
-    float bestSpillWeight = FloatingPointUtils::infinite_float();
+    weight_t bestSpillWeight = FloatingPointUtils::infinite_double();
     // True if we found registers with lower spill weight than this refPosition.
     bool foundLowerSpillWeight = false;
 
@@ -11312,7 +11312,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
             continue;
         }
 
-        float        currentSpillWeight = 0;
+        weight_t        currentSpillWeight = 0;
         RefPosition* recentRefPosition  = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
         if ((recentRefPosition != nullptr) &&
             (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
