@@ -13,10 +13,12 @@ namespace System
     {
         private readonly StringBuilder _buffer = new StringBuilder();
         private readonly Encoding _encoding;
+        private readonly Decoder _decoder;
 
         public NSLogStream(Encoding encoding) : base(FileAccess.Write)
         {
             _encoding = encoding;
+            _decoder = _encoding.GetDecoder();
         }
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
@@ -28,12 +30,10 @@ namespace System
             Span<char> charSpan = maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
             try
             {
-                Decoder _decoder = _encoding.GetDecoder();
-                int charCount = _decoder.GetCharCount(buffer, false);
                 int count = _decoder.GetChars(buffer, charSpan, false);
                 if (count > 0)
                 {
-                    WriteOrCache(_buffer, charSpan, charCount);
+                    WriteOrCache(_buffer, charSpan, count);
                 }
             }
             finally
@@ -47,28 +47,26 @@ namespace System
 
         private static unsafe void WriteOrCache(StringBuilder cache, Span<char> charBuffer, int length)
         {
-            for (int i = length - 1; i >= 0; i--)
+            int lastNewLine = charBuffer.LastIndexOf('\n');
+            if (lastNewLine != -1)
             {
-                if (charBuffer[i] == '\n')
+                Span<char> lineSpan = charBuffer.Slice(0, lastNewLine);
+                if (cache.Length > 0)
                 {
-                    Span<char> lineSpan = charBuffer.Slice(0, i);
-                    if (cache.Length > 0)
-                    {
-                        Print(cache.Append(lineSpan).ToString());
-                        cache.Clear();
-                    }
-                    else
-                    {
-                        Print(lineSpan.ToString());
-                    }
-
-                    if (i + 1 < length)
-                    {
-                        cache.Append(charBuffer.Slice(i + 1, length - i - 1));
-                    }
-
-                    return;
+                    Print(cache.Append(lineSpan).ToString());
+                    cache.Clear();
                 }
+                else
+                {
+                    Print(lineSpan.ToString());
+                }
+
+                if (lastNewLine + 1 < length)
+                {
+                    cache.Append(charBuffer.Slice(lastNewLine + 1, length - i - 1));
+                }
+
+                return;
             }
 
             // no newlines found, add the entire buffer to the cache
