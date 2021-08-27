@@ -109,7 +109,7 @@ namespace System.IO
             ReadOnlySpan<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;
             int maxFileSize = preambleSize + (string.IsNullOrEmpty(contents) ? 0 : encoding.GetMaxByteCount(contents.Length));
-            long preallocationSize = maxFileSize < ChunkSize ? 0 : maxFileSize; // for small files setting preallocationSize has no perf benefit, as it requires an additional sys-call
+            long preallocationSize = contents is null || contents.Length < ChunkSize ? 0 : maxFileSize; // for a single write operation setting preallocationSize has no perf benefit, as it requires additional sys-call(s)
             FileMode mode = append ? FileMode.Append : FileMode.Create;
 
             using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.None, preallocationSize);
@@ -163,7 +163,7 @@ namespace System.IO
             ReadOnlyMemory<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;
             int maxFileSize = preambleSize + (string.IsNullOrEmpty(contents) ? 0 : encoding.GetMaxByteCount(contents.Length));
-            long preallocationSize = maxFileSize < ChunkSize ? 0 : maxFileSize; // for small files setting preallocationSize has no perf benefit, as it requires an additional sys-call
+            long preallocationSize = contents is null || contents.Length < ChunkSize ? 0 : maxFileSize; // for a single write operation setting preallocationSize has no perf benefit, as it requires additional sys-call(s)
             FileMode mode = append ? FileMode.Append : FileMode.Create;
 
             using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, preallocationSize);
