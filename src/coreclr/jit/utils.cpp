@@ -646,7 +646,7 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
+const char* refCntWtd2str(weight_t refCntWtd)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];

@@ -848,16 +848,16 @@ private:
                                // that fgMakeOutgoingStructArgCopy consults during global morph
                                // to determine if eliding its copy is legal.
 
-    BasicBlock::weight_t m_lvRefCntWtd; // weighted reference count
+    weight_t m_lvRefCntWtd; // weighted reference count
 
 public:
     unsigned short lvRefCnt(RefCountState state = RCS_NORMAL) const;
     void incLvRefCnt(unsigned short delta, RefCountState state = RCS_NORMAL);
     void setLvRefCnt(unsigned short newValue, RefCountState state = RCS_NORMAL);
 
-    BasicBlock::weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL) const;
-    void incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state = RCS_NORMAL);
-    void setLvRefCntWtd(BasicBlock::weight_t newValue, RefCountState state = RCS_NORMAL);
+    weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL) const;
+    void incLvRefCntWtd(weight_t delta, RefCountState state = RCS_NORMAL);
+    void setLvRefCntWtd(weight_t newValue, RefCountState state = RCS_NORMAL);
 
 private:
     int lvStkOffs; // stack offset of home in bytes.
@@ -957,7 +957,7 @@ public:
                !(lvIsParam || lvAddrExposed || lvIsStructField);
     }
 
-    void incRefCnts(BasicBlock::weight_t weight,
+    void incRefCnts(weight_t weight,
                     Compiler*            pComp,
                     RefCountState        state     = RCS_NORMAL,
                     bool                 propagate = true);
@@ -4879,7 +4879,7 @@ public:
     bool                 fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
     bool                 fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
     bool                 fgNeedsUpdateFlowGraph;   // true if we need to run fgUpdateFlowGraph
-    BasicBlock::weight_t fgCalledCount;            // count of the number of times this method was called
+    weight_t fgCalledCount;            // count of the number of times this method was called
                                                    // This is derived from the profile data
                                                    // or is BB_UNITY_WEIGHT when we don't have profile data
 
@@ -5681,8 +5681,8 @@ public:
     void fgPrintEdgeWeights();
 #endif
     void                 fgComputeBlockAndEdgeWeights();
-    BasicBlock::weight_t fgComputeMissingBlockWeights();
-    void fgComputeCalledCount(BasicBlock::weight_t returnWeight);
+    weight_t fgComputeMissingBlockWeights();
+    void fgComputeCalledCount(weight_t returnWeight);
     void fgComputeEdgeWeights();
 
     bool fgReorderBlocks();
@@ -5763,8 +5763,8 @@ public:
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block);
 #endif
 
-    bool fgProfileWeightsEqual(BasicBlock::weight_t weight1, BasicBlock::weight_t weight2);
-    bool fgProfileWeightsConsistent(BasicBlock::weight_t weight1, BasicBlock::weight_t weight2);
+    bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2);
+    bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2);
 
     static GenTree* fgGetFirstNode(GenTree* tree);
 
@@ -5872,7 +5872,7 @@ protected:
     }
 
     bool fgHaveProfileData();
-    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
+    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, weight_t* weight);
 
     Instrumentor* fgCountInstrumentor;
     Instrumentor* fgClassInstrumentor;
@@ -5906,7 +5906,7 @@ public:
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
-    void fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t weight);
+    void fgSetProfileWeight(BasicBlock* block, weight_t weight);
     void fgApplyProfileScale();
     bool fgHaveSufficientProfileData();
     bool fgHaveTrustedProfileData();
@@ -6453,7 +6453,7 @@ public:
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
-    void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
+    void optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
 
@@ -6895,8 +6895,8 @@ protected:
         unsigned short csdDefCount; // definition   count
         unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
 
-        BasicBlock::weight_t csdDefWtCnt; // weighted def count
-        BasicBlock::weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
+        weight_t csdDefWtCnt; // weighted def count
+        weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
         GenTree*    csdTree;  // treenode containing the 1st occurrence
         Statement*  csdStmt;  // stmt containing the 1st occurrence
@@ -7019,7 +7019,7 @@ protected:
     unsigned             optCSECandidateCount; // Count of CSE's candidates
     unsigned             optCSEstart;          // The first local variable number that is a CSE
     unsigned             optCSEcount;          // The total count of CSE's introduced.
-    BasicBlock::weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
+    weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
 
@@ -8174,9 +8174,9 @@ public:
     DWORD getCanDoubleAlign();
     bool shouldDoubleAlign(unsigned             refCntStk,
                            unsigned             refCntReg,
-                           BasicBlock::weight_t refCntWtdReg,
+                           weight_t refCntWtdReg,
                            unsigned             refCntStkParam,
-                           BasicBlock::weight_t refCntWtdStkDbl);
+                           weight_t refCntWtdStkDbl);
 #endif // DOUBLE_ALIGN
 
     bool IsFullPtrRegMapRequired()

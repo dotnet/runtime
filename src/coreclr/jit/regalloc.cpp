@@ -63,9 +63,9 @@ DWORD Compiler::getCanDoubleAlign()
 //
 bool Compiler::shouldDoubleAlign(unsigned             refCntStk,
                                  unsigned             refCntEBP,
-                                 BasicBlock::weight_t refCntWtdEBP,
+                                 weight_t refCntWtdEBP,
                                  unsigned             refCntStkParam,
-                                 BasicBlock::weight_t refCntWtdStkDbl)
+                                 weight_t refCntWtdStkDbl)
 {
     bool           doDoubleAlign        = false;
     const unsigned DBL_ALIGN_SETUP_SIZE = 7;
@@ -84,7 +84,7 @@ bool Compiler::shouldDoubleAlign(unsigned             refCntStk,
     JITDUMP("  Sum of weighted ref counts for EBP enregistered variables: %f\n", refCntWtdEBP);
     JITDUMP("  Sum of weighted ref counts for weighted stack based doubles: %f\n", refCntWtdStkDbl);
 
-    if (((BasicBlock::weight_t)bytesUsed) > ((refCntWtdStkDbl * misaligned_weight) / BB_UNITY_WEIGHT))
+    if (((weight_t)bytesUsed) > ((refCntWtdStkDbl * misaligned_weight) / BB_UNITY_WEIGHT))
     {
         JITDUMP("    Predicting not to double-align ESP to save %d bytes of code.\n", bytesUsed);
     }

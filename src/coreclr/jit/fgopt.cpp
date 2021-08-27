@@ -1789,7 +1789,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     if (hasProfileWeight || hasNonZeroWeight)
     {
-        BasicBlock::weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
+        weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
 
         if (hasProfileWeight)
         {
@@ -2349,7 +2349,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             flowList* edge1 = fgGetPredForBlock(bDest, block);
             noway_assert(edge1 != nullptr);
 
-            BasicBlock::weight_t edgeWeight;
+            weight_t edgeWeight;
 
             if (edge1->edgeWeightMin() != edge1->edgeWeightMax())
             {
@@ -2390,8 +2390,8 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 //
                 // Update the edge2 min/max weights
                 //
-                BasicBlock::weight_t newEdge2Min;
-                BasicBlock::weight_t newEdge2Max;
+                weight_t newEdge2Min;
+                weight_t newEdge2Max;
 
                 if (edge2->edgeWeightMin() > edge1->edgeWeightMin())
                 {
@@ -2718,7 +2718,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
                 if (fgHaveValidEdgeWeights)
                 {
                     flowList*            edge                = fgGetPredForBlock(bDest, block);
-                    BasicBlock::weight_t branchThroughWeight = edge->edgeWeightMin();
+                    weight_t branchThroughWeight = edge->edgeWeightMin();
 
                     if (bDest->bbWeight > branchThroughWeight)
                     {
@@ -3473,9 +3473,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     bool                 allProfileWeightsAreValid = false;
-    BasicBlock::weight_t weightJump                = bJump->bbWeight;
-    BasicBlock::weight_t weightDest                = bDest->bbWeight;
-    BasicBlock::weight_t weightNext                = bJump->bbNext->bbWeight;
+    weight_t weightJump                = bJump->bbWeight;
+    weight_t weightDest                = bDest->bbWeight;
+    weight_t weightNext                = bJump->bbNext->bbWeight;
     bool                 rareJump                  = bJump->isRunRarely();
     bool                 rareDest                  = bDest->isRunRarely();
     bool                 rareNext                  = bJump->bbNext->isRunRarely();
@@ -3667,7 +3667,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         }
         else
         {
-            BasicBlock::weight_t newWeightDest = 0;
+            weight_t newWeightDest = 0;
 
             if (weightDest > weightJump)
             {
@@ -3805,9 +3805,9 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Update profile data
         //
-        const BasicBlock::weight_t fraction              = newBlock->bbJumpSwt->bbsDominantFraction;
-        const BasicBlock::weight_t blockToTargetWeight   = block->bbWeight * fraction;
-        const BasicBlock::weight_t blockToNewBlockWeight = block->bbWeight - blockToTargetWeight;
+        const weight_t fraction              = newBlock->bbJumpSwt->bbsDominantFraction;
+        const weight_t blockToTargetWeight   = block->bbWeight * fraction;
+        const weight_t blockToNewBlockWeight = block->bbWeight - blockToTargetWeight;
 
         newBlock->setBBProfileWeight(blockToNewBlockWeight);
 
@@ -3834,8 +3834,8 @@ bool Compiler::fgOptimizeSwitchJumps()
                     // Other switch cases also lead to the dominant target.
                     // Subtract off the weight we transferred to the peel.
                     //
-                    BasicBlock::weight_t newMinWeight = pred->edgeWeightMin() - blockToTargetWeight;
-                    BasicBlock::weight_t newMaxWeight = pred->edgeWeightMax() - blockToTargetWeight;
+                    weight_t newMinWeight = pred->edgeWeightMin() - blockToTargetWeight;
+                    weight_t newMaxWeight = pred->edgeWeightMax() - blockToTargetWeight;
 
                     if (newMinWeight < BB_ZERO_WEIGHT)
                     {
@@ -4308,7 +4308,7 @@ bool Compiler::fgReorderBlocks()
         // If the weights of the bPrev, block and bDest were all obtained from a profile run
         // then we can use them to decide if it is useful to reverse this conditional branch
 
-        BasicBlock::weight_t profHotWeight = -1;
+        weight_t profHotWeight = -1;
 
         if (bPrev->hasProfileWeight() && block->hasProfileWeight() && ((bDest == nullptr) || bDest->hasProfileWeight()))
         {
@@ -4484,9 +4484,9 @@ bool Compiler::fgReorderBlocks()
                         //  Generally both weightDest and weightPrev should calculate
                         //  the same value unless bPrev or bDest are part of a loop
                         //
-                        BasicBlock::weight_t weightDest =
+                        weight_t weightDest =
                             bDest->isMaxBBWeight() ? bDest->bbWeight : (bDest->bbWeight + 1) / 2;
-                        BasicBlock::weight_t weightPrev =
+                        weight_t weightPrev =
                             bPrev->isMaxBBWeight() ? bPrev->bbWeight : (bPrev->bbWeight + 2) / 3;
 
                         // select the lower of weightDest and weightPrev
@@ -4510,7 +4510,7 @@ bool Compiler::fgReorderBlocks()
                 // Here we should pull up the highest weight block remaining
                 // and place it here since bPrev does not fall through.
 
-                BasicBlock::weight_t highestWeight           = 0;
+                weight_t highestWeight           = 0;
                 BasicBlock*          candidateBlock          = nullptr;
                 BasicBlock*          lastNonFallThroughBlock = bPrev;
                 BasicBlock*          bTmp                    = bPrev->bbNext;

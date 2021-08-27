@@ -2467,9 +2467,9 @@ private:
                     //
                     if (returnBlock->hasProfileWeight())
                     {
-                        BasicBlock::weight_t const oldWeight =
+                        weight_t const oldWeight =
                             mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : BB_ZERO_WEIGHT;
-                        BasicBlock::weight_t const newWeight = oldWeight + returnBlock->bbWeight;
+                        weight_t const newWeight = oldWeight + returnBlock->bbWeight;
 
                         JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to const return " FMT_BB "\n",
                                 returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);

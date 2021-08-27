@@ -3180,10 +3180,10 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 //  otherwise it returns the number of times that profile data says the method was called.
 //
 // static
-BasicBlock::weight_t BasicBlock::getCalledCount(Compiler* comp)
+weight_t BasicBlock::getCalledCount(Compiler* comp)
 {
     // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
-    BasicBlock::weight_t calledCount = comp->fgCalledCount;
+    weight_t calledCount = comp->fgCalledCount;
 
     // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
     // so return a reasonable value to use until we set it.
@@ -3210,7 +3210,7 @@ BasicBlock::weight_t BasicBlock::getCalledCount(Compiler* comp)
 }
 
 // getBBWeight -- get the normalized weight of this block
-BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
+weight_t BasicBlock::getBBWeight(Compiler* comp)
 {
     if (this->bbWeight == BB_ZERO_WEIGHT)
     {
@@ -3367,8 +3367,8 @@ public:
         assert(!dsc1->lvRegister);
         assert(!dsc2->lvRegister);
 
-        BasicBlock::weight_t weight1 = dsc1->lvRefCntWtd();
-        BasicBlock::weight_t weight2 = dsc2->lvRefCntWtd();
+        weight_t weight1 = dsc1->lvRefCntWtd();
+        weight_t weight2 = dsc2->lvRefCntWtd();
 
 #ifndef TARGET_ARM
         // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
@@ -3906,7 +3906,7 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
 
 void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute)
 {
-    const BasicBlock::weight_t weight = block->getBBWeight(this);
+    const weight_t weight = block->getBBWeight(this);
 
     /* Is this a call to unmanaged code ? */
     if (tree->IsCall() && compMethodRequiresPInvokeFrame())
@@ -4528,7 +4528,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         {
             assert(isRecompute);
 
-            const BasicBlock::weight_t weight = block->getBBWeight(this);
+            const weight_t weight = block->getBBWeight(this);
             for (GenTree* node : LIR::AsRange(block))
             {
                 switch (node->OperGet())

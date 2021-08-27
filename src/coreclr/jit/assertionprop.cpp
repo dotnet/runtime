@@ -143,7 +143,7 @@ void Compiler::optAddCopies()
         BlockSet paramImportantUseDom(BlockSetOps::MakeFull(this));
 
         // This will be threshold for determining heavier-than-average uses
-        BasicBlock::weight_t paramAvgWtdRefDiv2 =
+        weight_t paramAvgWtdRefDiv2 =
             (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
 
         bool paramFoundImportantUse = false;
@@ -308,7 +308,7 @@ void Compiler::optAddCopies()
 
             /* Our default is to use the first block */
             BasicBlock*          bestBlock  = fgFirstBB;
-            BasicBlock::weight_t bestWeight = bestBlock->getBBWeight(this);
+            weight_t bestWeight = bestBlock->getBBWeight(this);
             BasicBlock*          block      = bestBlock;
 
 #ifdef DEBUG

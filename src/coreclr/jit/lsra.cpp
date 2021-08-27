@@ -179,9 +179,9 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 //
 // Returns:
 //    Weight of ref position.
-BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
+weight_t LinearScan::getWeight(RefPosition* refPos)
 {
-    BasicBlock::weight_t weight;
+    weight_t weight;
     GenTree*             treeNode = refPos->treeNode;
 
     if (treeNode != nullptr)
@@ -1031,8 +1031,8 @@ int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block
 {
     if (useBlockWeights)
     {
-        BasicBlock::weight_t weight1 = block1->getBBWeight(compiler);
-        BasicBlock::weight_t weight2 = block2->getBBWeight(compiler);
+        weight_t weight1 = block1->getBBWeight(compiler);
+        weight_t weight2 = block2->getBBWeight(compiler);
 
         if (weight1 > weight2)
         {
@@ -1628,12 +1628,12 @@ void LinearScan::identifyCandidates()
     // for vectors on Arm64, though the actual value may differ.
 
     unsigned int         floatVarCount        = 0;
-    BasicBlock::weight_t thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
-    BasicBlock::weight_t maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
+    weight_t thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    weight_t maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
     VARSET_TP            fpMaybeCandidateVars(VarSetOps::UninitVal());
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     unsigned int         largeVectorVarCount           = 0;
-    BasicBlock::weight_t thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    weight_t thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (enregisterLocalVars)
     {
@@ -1647,9 +1647,9 @@ void LinearScan::identifyCandidates()
 #if DOUBLE_ALIGN
     unsigned             refCntStk       = 0;
     unsigned             refCntReg       = 0;
-    BasicBlock::weight_t refCntWtdReg    = 0;
+    weight_t refCntWtdReg    = 0;
     unsigned             refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
-    BasicBlock::weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
+    weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
     doDoubleAlign                        = false;
     bool checkDoubleAlign                = true;
     if (compiler->codeGen->isFramePointerRequired() || compiler->opts.MinOpts())
@@ -1813,7 +1813,7 @@ void LinearScan::identifyCandidates()
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
-                BasicBlock::weight_t refCntWtd = varDsc->lvRefCntWtd();
+                weight_t refCntWtd = varDsc->lvRefCntWtd();
                 if (refCntWtd >= thresholdLargeVectorRefCntWtd)
                 {
                     VarSetOps::AddElemD(compiler, largeVectorCalleeSaveCandidateVars, varDsc->lvVarIndex);
@@ -1824,7 +1824,7 @@ void LinearScan::identifyCandidates()
                 if (regType(type) == FloatRegisterType)
             {
                 floatVarCount++;
-                BasicBlock::weight_t refCntWtd = varDsc->lvRefCntWtd();
+                weight_t refCntWtd = varDsc->lvRefCntWtd();
                 if (varDsc->lvIsRegArg)
                 {
                     // Don't count the initial reference for register params.  In those cases,
@@ -1873,7 +1873,7 @@ void LinearScan::identifyCandidates()
         // => Here, estimate of the EBP refCnt and weighted refCnt is a wild guess.
         //
         unsigned             refCntEBP    = refCntReg / 8;
-        BasicBlock::weight_t refCntWtdEBP = refCntWtdReg / 8;
+        weight_t refCntWtdEBP = refCntWtdReg / 8;
 
         doDoubleAlign =
             compiler->shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
@@ -8647,7 +8647,7 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
 void LinearScan::dumpLsraStats(FILE* file)
 {
     unsigned             sumStats[LsraStat::COUNT] = {0};
-    BasicBlock::weight_t wtdStats[LsraStat::COUNT] = {0};
+    weight_t wtdStats[LsraStat::COUNT] = {0};
 
     fprintf(file, "----------\n");
     fprintf(file, "LSRA Stats");
@@ -8839,7 +8839,7 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
 void LinearScan::dumpLsraStatsSummary(FILE* file)
 {
     unsigned             sumStats[LsraStat::STAT_FREE] = {0};
-    BasicBlock::weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
+    weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
 
     // Iterate for block 0
     for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)

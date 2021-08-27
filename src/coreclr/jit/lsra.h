@@ -394,7 +394,7 @@ struct LsraBlockInfo
     // bbNum of the predecessor to use for the register location of live-in variables.
     // 0 for fgFirstBB.
     unsigned int         predBBNum;
-    BasicBlock::weight_t weight;
+    weight_t weight;
     bool                 hasCriticalInEdge : 1;
     bool                 hasCriticalOutEdge : 1;
     bool                 hasEHBoundaryIn : 1;
@@ -1129,7 +1129,7 @@ private:
 
     void associateRefPosWithInterval(RefPosition* rp);
 
-    BasicBlock::weight_t getWeight(RefPosition* refPos);
+    weight_t getWeight(RefPosition* refPos);
 
     /*****************************************************************************
      * Register management

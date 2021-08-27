@@ -224,7 +224,7 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
 
                 if (!curBlk->hasProfileWeight())
                 {
-                    BasicBlock::weight_t scale = BB_LOOP_WEIGHT_SCALE;
+                    weight_t scale = BB_LOOP_WEIGHT_SCALE;
 
                     if (!dominates)
                     {
@@ -340,7 +340,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             //
             if (!curBlk->isMaxBBWeight() && !curBlk->hasProfileWeight())
             {
-                BasicBlock::weight_t scale = 1.0f / BB_LOOP_WEIGHT_SCALE;
+                weight_t scale = 1.0f / BB_LOOP_WEIGHT_SCALE;
 
                 if (!fgDominate(curBlk, endBlk))
                 {
@@ -2851,7 +2851,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
                 JITDUMP("in optCanonicalizeLoop: block " FMT_BB " will also contribute to the weight of " FMT_BB "\n",
                         newT->bbNum, topPredBlock->bbNum);
 
-                BasicBlock::weight_t newWeight = newT->getBBWeight(this) + topPredBlock->getBBWeight(this);
+                weight_t newWeight = newT->getBBWeight(this) + topPredBlock->getBBWeight(this);
                 newT->setBBProfileWeight(newWeight);
             }
         }
@@ -4212,11 +4212,11 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         estDupCostSz += tree->GetCostSz();
     }
 
-    BasicBlock::weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
+    weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
     bool                       allProfileWeightsAreValid = false;
-    BasicBlock::weight_t const weightBlock               = block->bbWeight;
-    BasicBlock::weight_t const weightTest                = bTest->bbWeight;
-    BasicBlock::weight_t const weightNext                = block->bbNext->bbWeight;
+    weight_t const weightBlock               = block->bbWeight;
+    weight_t const weightTest                = bTest->bbWeight;
+    weight_t const weightNext                = block->bbNext->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -4467,13 +4467,13 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Note "next" is the loop top block, not bTest's bbNext,
         // we'll call this latter block "after".
         //
-        BasicBlock::weight_t const testToNextLikelihood  = min(1.0f, weightNext / weightTest);
-        BasicBlock::weight_t const testToAfterLikelihood = 1.0f - testToNextLikelihood;
+        weight_t const testToNextLikelihood  = min(1.0f, weightNext / weightTest);
+        weight_t const testToAfterLikelihood = 1.0f - testToNextLikelihood;
 
         // Adjust edges out of bTest (which now has weight weightNext)
         //
-        BasicBlock::weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
-        BasicBlock::weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
+        weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
+        weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
 
         flowList* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
         flowList* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
@@ -4490,11 +4490,11 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         //
         JITDUMP("Profile weight of " FMT_BB " remains unchanged at " FMT_WT "\n", block->bbNum, weightBlock);
 
-        BasicBlock::weight_t const blockToNextLikelihood  = testToNextLikelihood;
-        BasicBlock::weight_t const blockToAfterLikelihood = testToAfterLikelihood;
+        weight_t const blockToNextLikelihood  = testToNextLikelihood;
+        weight_t const blockToAfterLikelihood = testToAfterLikelihood;
 
-        BasicBlock::weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
-        BasicBlock::weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
+        weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
+        weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
         flowList* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
         flowList* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
@@ -6644,7 +6644,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
     while (!blocks->Empty())
     {
         BasicBlock*          block       = blocks->Pop();
-        BasicBlock::weight_t blockWeight = block->getBBWeight(this);
+        weight_t blockWeight = block->getBBWeight(this);
 
         JITDUMP("    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB
                 ">, firstBlock is %s\n",
@@ -6874,8 +6874,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             if (allValidProfileWeights)
             {
-                BasicBlock::weight_t loopEnteredCount;
-                BasicBlock::weight_t loopSkippedCount;
+                weight_t loopEnteredCount;
+                weight_t loopSkippedCount;
                 bool                 useEdgeWeights = fgHaveValidEdgeWeights;
 
                 if (useEdgeWeights)
@@ -6900,14 +6900,14 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     loopSkippedCount = head->bbJumpDest->bbWeight;
                 }
 
-                BasicBlock::weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
+                weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
 
                 JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
                         fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
                         loopSkippedCount, loopTakenRatio);
 
                 // Calculate a good approximation of the preHead's block weight
-                BasicBlock::weight_t preHeadWeight = (head->bbWeight * loopTakenRatio);
+                weight_t preHeadWeight = (head->bbWeight * loopTakenRatio);
                 preHead->setBBProfileWeight(preHeadWeight);
                 noway_assert(!preHead->isRunRarely());
             }
@@ -8294,8 +8294,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         assert(edge1 != nullptr);
         assert(edge2 != nullptr);
 
-        BasicBlock::weight_t edgeSumMin = edge1->edgeWeightMin() + edge2->edgeWeightMin();
-        BasicBlock::weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
+        weight_t edgeSumMin = edge1->edgeWeightMin() + edge2->edgeWeightMin();
+        weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
         if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
         {
             edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->bbJumpDest);
