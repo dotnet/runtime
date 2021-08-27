@@ -594,7 +594,8 @@ public:
         MethodDesc* pMethodDesc,
         CallerGCMode callerGCMode,
         bool *doBackpatchRef,
-        bool *doFullBackpatchRef);
+        bool *doFullBackpatchRef,
+        Module* pModule = NULL);
     HRESULT PublishNativeCodeVersion(MethodDesc* pMethodDesc, NativeCodeVersion nativeCodeVersion);
     HRESULT GetOrCreateMethodDescVersioningState(MethodDesc* pMethod, MethodDescVersioningState** ppMethodDescVersioningState);
     HRESULT GetOrCreateILCodeVersioningState(Module* pModule, mdMethodDef methodDef, ILCodeVersioningState** ppILCodeVersioningState);

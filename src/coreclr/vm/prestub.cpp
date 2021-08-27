@@ -314,14 +314,14 @@ PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
     return PrepareCode(&config);
 }
 
-PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
+PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig, Module* pModule)
 {
     STANDARD_VM_CONTRACT;
 
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
     _ASSERTE(IsIL() || IsNoMetadata());
-    PCODE pCode = PrepareILBasedCode(pConfig);
+    PCODE pCode = PrepareILBasedCode(pConfig, pModule);
 
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
     NotifyGdb::MethodPrepared(this);
@@ -344,7 +344,7 @@ bool MayUsePrecompiledILStub()
     return true;
 }
 
-PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
+PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig, Module* pModule)
 {
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
@@ -394,7 +394,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                         MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
                         if (pTargetMD != NULL)
                         {
-                            pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
+                            pCode = pTargetMD->GetPrecompiledR2RCode(pConfig, pModule);
                             if (pCode != NULL)
                             {
                                 LOG_USING_R2R_CODE(this);
@@ -409,7 +409,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
         if (pCode == NULL)
         {
-            pCode = GetPrecompiledCode(pConfig, shouldTier);
+            pCode = GetPrecompiledCode(pConfig, shouldTier, pModule);
         }
 
 #ifdef FEATURE_PERFMAP
@@ -441,7 +441,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     return pCode;
 }
 
-PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier)
+PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier, Module* pModule)
 {
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
@@ -455,7 +455,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
 #ifdef FEATURE_READYTORUN
     else
     {
-        pCode = GetPrecompiledR2RCode(pConfig);
+        pCode = GetPrecompiledR2RCode(pConfig, pModule);
         if (pCode != NULL)
         {
             LOG_USING_R2R_CODE(this);
@@ -505,7 +505,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
     return pCode;
 }
 
-PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
+PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig, Module* pModule_probe)
 {
     STANDARD_VM_CONTRACT;
 
@@ -527,6 +527,12 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
         {
             pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
         }
+
+        if ((!pCode)
+           && pModule_probe
+               && (pModule_probe->IsReadyToRun())
+                   && (pModule_probe->IsInSameVersionBubble(GetModule())))
+                       pCode = pModule_probe->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
     }
 #endif
 
@@ -1795,7 +1801,8 @@ extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE 
 static PCODE PreStubWorker_Preemptive(
     _In_ TransitionBlock* pTransitionBlock,
     _In_ MethodDesc* pMD,
-    _In_opt_ Thread* currentThread)
+    _In_opt_ Thread* currentThread,
+    Module* pModule = NULL)
 {
     _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
@@ -1828,7 +1835,7 @@ static PCODE PreStubWorker_Preemptive(
     pMD->CheckRestore();
     CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
 
-    pbRetVal = pMD->DoPrestub(NULL, CallerGCMode::Preemptive);
+    pbRetVal = pMD->DoPrestub(NULL, CallerGCMode::Preemptive, pModule);
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -1853,6 +1860,11 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 {
     PCODE pbRetVal = NULL;
 
+    Module* pModule = NULL;
+    FrameWithCookie<ExternalMethodFrame> frame(pTransitionBlock);
+    ExternalMethodFrame * pEMFrame = &frame;
+    pModule = ExecutionManager::FindReadyToRunModule((TADDR)(((BYTE*)pEMFrame->GetReturnAddress())-1));
+
     BEGIN_PRESERVE_LAST_ERROR;
 
     STATIC_CONTRACT_THROWS;
@@ -1868,7 +1880,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
     if (CURRENT_THREAD == NULL
         || !CURRENT_THREAD->PreemptiveGCDisabled())
     {
-        pbRetVal = PreStubWorker_Preemptive(pTransitionBlock, pMD, CURRENT_THREAD);
+        pbRetVal = PreStubWorker_Preemptive(pTransitionBlock, pMD, CURRENT_THREAD, pModule);
     }
     else
     {
@@ -1932,7 +1944,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
         {
-            pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+            pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop, pModule);
         }
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -2001,7 +2013,7 @@ static void TestSEHGuardPageRestore()
 // the case of methods that require stubs to be executed first (e.g., remoted methods
 // that require remoting stubs to be executed first), this stable entrypoint would be a
 // pointer to the stub, and not a pointer directly to the JITted code.
-PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode)
+PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode, Module* pModule)
 {
     CONTRACT(PCODE)
     {
@@ -2106,7 +2118,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         bool doBackpatch = true;
         bool doFullBackpatch = false;
-        pCode = GetCodeVersionManager()->PublishVersionableCodeIfNecessary(this, callerGCMode, &doBackpatch, &doFullBackpatch);
+        pCode = GetCodeVersionManager()->PublishVersionableCodeIfNecessary(this, callerGCMode, &doBackpatch, &doFullBackpatch, pModule);
 
         if (doBackpatch)
         {
