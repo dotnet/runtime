@@ -2717,8 +2717,8 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             {
                 if (fgHaveValidEdgeWeights)
                 {
-                    flowList*            edge                = fgGetPredForBlock(bDest, block);
-                    weight_t branchThroughWeight = edge->edgeWeightMin();
+                    flowList* edge                = fgGetPredForBlock(bDest, block);
+                    weight_t  branchThroughWeight = edge->edgeWeightMin();
 
                     if (bDest->bbWeight > branchThroughWeight)
                     {
@@ -3472,13 +3472,13 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         estDupCostSz += expr->GetCostSz();
     }
 
-    bool                 allProfileWeightsAreValid = false;
+    bool     allProfileWeightsAreValid = false;
     weight_t weightJump                = bJump->bbWeight;
     weight_t weightDest                = bDest->bbWeight;
     weight_t weightNext                = bJump->bbNext->bbWeight;
-    bool                 rareJump                  = bJump->isRunRarely();
-    bool                 rareDest                  = bDest->isRunRarely();
-    bool                 rareNext                  = bJump->bbNext->isRunRarely();
+    bool     rareJump                  = bJump->isRunRarely();
+    bool     rareDest                  = bDest->isRunRarely();
+    bool     rareNext                  = bJump->bbNext->isRunRarely();
 
     // If we have profile data then we calculate the number of time
     // the loop will iterate into loopIterations
@@ -4484,10 +4484,8 @@ bool Compiler::fgReorderBlocks()
                         //  Generally both weightDest and weightPrev should calculate
                         //  the same value unless bPrev or bDest are part of a loop
                         //
-                        weight_t weightDest =
-                            bDest->isMaxBBWeight() ? bDest->bbWeight : (bDest->bbWeight + 1) / 2;
-                        weight_t weightPrev =
-                            bPrev->isMaxBBWeight() ? bPrev->bbWeight : (bPrev->bbWeight + 2) / 3;
+                        weight_t weightDest = bDest->isMaxBBWeight() ? bDest->bbWeight : (bDest->bbWeight + 1) / 2;
+                        weight_t weightPrev = bPrev->isMaxBBWeight() ? bPrev->bbWeight : (bPrev->bbWeight + 2) / 3;
 
                         // select the lower of weightDest and weightPrev
                         profHotWeight = (weightDest < weightPrev) ? weightDest : weightPrev;
@@ -4510,10 +4508,10 @@ bool Compiler::fgReorderBlocks()
                 // Here we should pull up the highest weight block remaining
                 // and place it here since bPrev does not fall through.
 
-                weight_t highestWeight           = 0;
-                BasicBlock*          candidateBlock          = nullptr;
-                BasicBlock*          lastNonFallThroughBlock = bPrev;
-                BasicBlock*          bTmp                    = bPrev->bbNext;
+                weight_t    highestWeight           = 0;
+                BasicBlock* candidateBlock          = nullptr;
+                BasicBlock* lastNonFallThroughBlock = bPrev;
+                BasicBlock* bTmp                    = bPrev->bbNext;
 
                 while (bTmp != nullptr)
                 {

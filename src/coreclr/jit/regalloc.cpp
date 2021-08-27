@@ -61,11 +61,8 @@ DWORD Compiler::getCanDoubleAlign()
 //    Otherwise, we compare the weighted ref count of ebp-enregistered variables against double the
 //    ref count for double-aligned values.
 //
-bool Compiler::shouldDoubleAlign(unsigned             refCntStk,
-                                 unsigned             refCntEBP,
-                                 weight_t refCntWtdEBP,
-                                 unsigned             refCntStkParam,
-                                 weight_t refCntWtdStkDbl)
+bool Compiler::shouldDoubleAlign(
+    unsigned refCntStk, unsigned refCntEBP, weight_t refCntWtdEBP, unsigned refCntStkParam, weight_t refCntWtdStkDbl)
 {
     bool           doDoubleAlign        = false;
     const unsigned DBL_ALIGN_SETUP_SIZE = 7;

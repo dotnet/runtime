@@ -2037,12 +2037,12 @@ private:
     //
     struct Edge
     {
-        weight_t m_weight;
-        BasicBlock*          m_sourceBlock;
-        BasicBlock*          m_targetBlock;
-        Edge*                m_nextOutgoingEdge;
-        Edge*                m_nextIncomingEdge;
-        bool                 m_weightKnown;
+        weight_t    m_weight;
+        BasicBlock* m_sourceBlock;
+        BasicBlock* m_targetBlock;
+        Edge*       m_nextOutgoingEdge;
+        Edge*       m_nextIncomingEdge;
+        bool        m_weightKnown;
 
         Edge(BasicBlock* source, BasicBlock* target)
             : m_weight(BB_ZERO_WEIGHT)
@@ -2065,11 +2065,11 @@ private:
     struct BlockInfo
     {
         weight_t m_weight;
-        Edge*                m_incomingEdges;
-        Edge*                m_outgoingEdges;
-        int                  m_incomingUnknown;
-        int                  m_outgoingUnknown;
-        bool                 m_weightKnown;
+        Edge*    m_incomingEdges;
+        Edge*    m_outgoingEdges;
+        int      m_incomingUnknown;
+        int      m_outgoingUnknown;
+        bool     m_weightKnown;
 
         BlockInfo()
             : m_weight(BB_ZERO_WEIGHT)
@@ -2421,7 +2421,7 @@ void EfficientEdgeCountReconstructor::Solve()
                         info->m_outgoingUnknown);
 
                 weight_t weight      = BB_ZERO_WEIGHT;
-                bool                 weightKnown = false;
+                bool     weightKnown = false;
                 if (info->m_incomingUnknown == 0)
                 {
                     JITDUMP(FMT_BB ": all incoming edge weights known, summming...\n", block->bbNum);
@@ -2480,7 +2480,7 @@ void EfficientEdgeCountReconstructor::Solve()
             if (info->m_incomingUnknown == 1)
             {
                 weight_t weight       = BB_ZERO_WEIGHT;
-                Edge*                resolvedEdge = nullptr;
+                Edge*    resolvedEdge = nullptr;
                 for (Edge* edge = info->m_incomingEdges; edge != nullptr; edge = edge->m_nextIncomingEdge)
                 {
                     if (edge->m_weightKnown)
@@ -2527,7 +2527,7 @@ void EfficientEdgeCountReconstructor::Solve()
             if (info->m_outgoingUnknown == 1)
             {
                 weight_t weight       = BB_ZERO_WEIGHT;
-                Edge*                resolvedEdge = nullptr;
+                Edge*    resolvedEdge = nullptr;
                 for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
                 {
                     if (edge->m_weightKnown)
@@ -2872,10 +2872,7 @@ void Compiler::fgIncorporateEdgeCounts()
 //    false if the edge weight update was inconsistent with the
 //      edge's current [min,max}
 //
-bool flowList::setEdgeWeightMinChecked(weight_t newWeight,
-                                       BasicBlock*          bDst,
-                                       weight_t slop,
-                                       bool*                wbUsedSlop)
+bool flowList::setEdgeWeightMinChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop)
 {
     // Negative weights are nonsensical.
     //
@@ -2988,10 +2985,7 @@ bool flowList::setEdgeWeightMinChecked(weight_t newWeight,
 //    false if the edge weight update was inconsistent with the
 //      edge's current [min,max}
 //
-bool flowList::setEdgeWeightMaxChecked(weight_t newWeight,
-                                       BasicBlock*          bDst,
-                                       weight_t slop,
-                                       bool*                wbUsedSlop)
+bool flowList::setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop)
 {
     // Negative weights are nonsensical.
     //
@@ -3155,12 +3149,12 @@ void Compiler::fgComputeBlockAndEdgeWeights()
 
 weight_t Compiler::fgComputeMissingBlockWeights()
 {
-    BasicBlock*          bSrc;
-    BasicBlock*          bDst;
-    unsigned             iterations = 0;
-    bool                 changed;
-    bool                 modified = false;
-    weight_t returnWeight;
+    BasicBlock* bSrc;
+    BasicBlock* bDst;
+    unsigned    iterations = 0;
+    bool        changed;
+    bool        modified = false;
+    weight_t    returnWeight;
 
     // If we have any blocks that did not have profile derived weight
     // we will try to fix their weight up here
@@ -3347,16 +3341,16 @@ void Compiler::fgComputeEdgeWeights()
         return;
     }
 
-    BasicBlock*          bSrc;
-    BasicBlock*          bDst;
-    weight_t slop;
-    unsigned             goodEdgeCountCurrent     = 0;
-    unsigned             goodEdgeCountPrevious    = 0;
-    bool                 inconsistentProfileData  = false;
-    bool                 hasIncompleteEdgeWeights = false;
-    bool                 usedSlop                 = false;
-    unsigned             numEdges                 = 0;
-    unsigned             iterations               = 0;
+    BasicBlock* bSrc;
+    BasicBlock* bDst;
+    weight_t    slop;
+    unsigned    goodEdgeCountCurrent     = 0;
+    unsigned    goodEdgeCountPrevious    = 0;
+    bool        inconsistentProfileData  = false;
+    bool        hasIncompleteEdgeWeights = false;
+    bool        usedSlop                 = false;
+    unsigned    numEdges                 = 0;
+    unsigned    iterations               = 0;
 
     JITDUMP("Initial weight assignments\n\n");
 
@@ -3463,9 +3457,9 @@ void Compiler::fgComputeEdgeWeights()
                 slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
                 if (bSrc->bbJumpKind == BBJ_COND)
                 {
-                    weight_t diff;
-                    flowList*            otherEdge;
-                    BasicBlock*          otherDst;
+                    weight_t    diff;
+                    flowList*   otherEdge;
+                    BasicBlock* otherDst;
                     if (bSrc->bbNext == bDst)
                     {
                         otherDst = bSrc->bbJumpDest;
@@ -3586,8 +3580,7 @@ void Compiler::fgComputeEdgeWeights()
                         {
                             // minWeightCalc is our minWeight when every other path to bDst takes it's flEdgeWeightMax
                             // value
-                            weight_t minWeightCalc =
-                                (weight_t)(bDstWeight - otherMaxEdgesWeightSum);
+                            weight_t minWeightCalc = (weight_t)(bDstWeight - otherMaxEdgesWeightSum);
                             if (minWeightCalc > edge->edgeWeightMin())
                             {
                                 assignOK &= edge->setEdgeWeightMinChecked(minWeightCalc, bDst, slop, &usedSlop);
@@ -3606,8 +3599,7 @@ void Compiler::fgComputeEdgeWeights()
                         {
                             // maxWeightCalc is our maxWeight when every other path to bDst takes it's flEdgeWeightMin
                             // value
-                            weight_t maxWeightCalc =
-                                (weight_t)(bDstWeight - otherMinEdgesWeightSum);
+                            weight_t maxWeightCalc = (weight_t)(bDstWeight - otherMinEdgesWeightSum);
                             if (maxWeightCalc < edge->edgeWeightMax())
                             {
                                 assignOK &= edge->setEdgeWeightMaxChecked(maxWeightCalc, bDst, slop, &usedSlop);
@@ -3778,11 +3770,11 @@ void Compiler::fgDebugCheckProfileData()
     }
 
     JITDUMP("Checking Profile Data\n");
-    unsigned             problemBlocks    = 0;
-    unsigned             unprofiledBlocks = 0;
-    unsigned             profiledBlocks   = 0;
-    bool                 entryProfiled    = false;
-    bool                 exitProfiled     = false;
+    unsigned problemBlocks    = 0;
+    unsigned unprofiledBlocks = 0;
+    unsigned profiledBlocks   = 0;
+    bool     entryProfiled    = false;
+    bool     exitProfiled     = false;
     weight_t entryWeight      = 0;
     weight_t exitWeight       = 0;
 
@@ -3921,7 +3913,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
     weight_t const blockWeight       = block->bbWeight;
     weight_t       incomingWeightMin = 0;
     weight_t       incomingWeightMax = 0;
-    bool                       foundPreds        = false;
+    bool           foundPreds        = false;
 
     for (flowList* const predEdge : block->PredEdges())
     {

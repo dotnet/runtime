@@ -1722,7 +1722,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
             loop.lpBottom->bbNum, loop.lpChild);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
-    unsigned             depth         = optLoopDepth(loopInd);
+    unsigned depth         = optLoopDepth(loopInd);
     weight_t ambientWeight = 1;
     for (unsigned j = 0; j < depth; j++)
     {

@@ -16131,8 +16131,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
         if (block->hasProfileWeight())
         {
-            weight_t const oldWeight =
-                genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
+            weight_t const oldWeight = genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
             weight_t const newWeight = oldWeight + block->bbWeight;
 
             JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,

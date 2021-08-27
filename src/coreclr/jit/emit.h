@@ -244,7 +244,7 @@ struct insGroup
 #endif
 #if defined(DEBUG) || defined(LATE_DISASM)
     weight_t igWeight;    // the block weight used for this insGroup
-    double               igPerfScore; // The PerfScore for this insGroup
+    double   igPerfScore; // The PerfScore for this insGroup
 #endif
 
 #ifdef DEBUG

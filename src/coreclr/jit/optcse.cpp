@@ -1418,10 +1418,10 @@ void Compiler::optValnumCSE_Availablity()
 
                 if (IS_CSE_INDEX(tree->gtCSEnum))
                 {
-                    unsigned             CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
-                    unsigned             cseAvailBit          = getCSEAvailBit(CSEnum);
-                    unsigned             cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
-                    CSEdsc*              desc                 = optCSEfindDsc(CSEnum);
+                    unsigned CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
+                    unsigned cseAvailBit          = getCSEAvailBit(CSEnum);
+                    unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
+                    CSEdsc*  desc                 = optCSEfindDsc(CSEnum);
                     weight_t stmw                 = block->getBBWeight(this);
 
                     isUse = BitVecOps::IsMember(cseLivenessTraits, available_cses, cseAvailBit);
@@ -1719,8 +1719,8 @@ class CSE_Heuristic
     Compiler* m_pCompiler;
     unsigned  m_addCSEcount;
 
-    weight_t   aggressiveRefCnt;
-    weight_t   moderateRefCnt;
+    weight_t               aggressiveRefCnt;
+    weight_t               moderateRefCnt;
     unsigned               enregCount; // count of the number of predicted enregistered variables
     bool                   largeFrame;
     bool                   hugeFrame;
@@ -2018,7 +2018,7 @@ public:
 
                 weight_t def;
                 weight_t use;
-                unsigned             cost;
+                unsigned cost;
 
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                 {
@@ -2065,11 +2065,11 @@ public:
         CSE_Heuristic*    m_context;
         Compiler::CSEdsc* m_CseDsc;
 
-        unsigned             m_cseIndex;
+        unsigned m_cseIndex;
         weight_t m_defCount;
         weight_t m_useCount;
-        unsigned             m_Cost;
-        unsigned             m_Size;
+        unsigned m_Cost;
+        unsigned m_Size;
 
         // When this Candidate is successfully promoted to a CSE we record
         // the following information about what category was used when promoting it.
@@ -2358,8 +2358,8 @@ public:
 
         weight_t no_cse_cost    = 0;
         weight_t yes_cse_cost   = 0;
-        unsigned             extra_yes_cost = 0;
-        unsigned             extra_no_cost  = 0;
+        unsigned extra_yes_cost = 0;
+        unsigned extra_no_cost  = 0;
 
         // The 'cseRefCnt' is the RefCnt that we will have if we promote this CSE into a new LclVar
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
@@ -2900,8 +2900,8 @@ public:
                     }
                 }
 
-                BasicBlock*          blk       = lst->tslBlock;
-                weight_t curWeight = blk->getBBWeight(m_pCompiler);
+                BasicBlock* blk       = lst->tslBlock;
+                weight_t    curWeight = blk->getBBWeight(m_pCompiler);
 
                 if (setRefCnt)
                 {

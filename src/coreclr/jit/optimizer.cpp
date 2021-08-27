@@ -4213,7 +4213,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
-    bool                       allProfileWeightsAreValid = false;
+    bool           allProfileWeightsAreValid = false;
     weight_t const weightBlock               = block->bbWeight;
     weight_t const weightTest                = bTest->bbWeight;
     weight_t const weightNext                = block->bbNext->bbWeight;
@@ -6643,8 +6643,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
     while (!blocks->Empty())
     {
-        BasicBlock*          block       = blocks->Pop();
-        weight_t blockWeight = block->getBBWeight(this);
+        BasicBlock* block       = blocks->Pop();
+        weight_t    blockWeight = block->getBBWeight(this);
 
         JITDUMP("    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB
                 ">, firstBlock is %s\n",

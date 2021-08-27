@@ -957,10 +957,7 @@ public:
                !(lvIsParam || lvAddrExposed || lvIsStructField);
     }
 
-    void incRefCnts(weight_t weight,
-                    Compiler*            pComp,
-                    RefCountState        state     = RCS_NORMAL,
-                    bool                 propagate = true);
+    void incRefCnts(weight_t weight, Compiler* pComp, RefCountState state = RCS_NORMAL, bool propagate = true);
     bool IsFloatRegType() const
     {
         return varTypeUsesFloatReg(lvType) || lvIsHfaRegArg();
@@ -4872,16 +4869,16 @@ public:
 
     // The following are boolean flags that keep track of the state of internal data structures
 
-    bool                 fgStmtListThreaded;       // true if the node list is now threaded
-    bool                 fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
-    bool                 fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
-    bool                 fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
-    bool                 fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
-    bool                 fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
-    bool                 fgNeedsUpdateFlowGraph;   // true if we need to run fgUpdateFlowGraph
+    bool     fgStmtListThreaded;       // true if the node list is now threaded
+    bool     fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
+    bool     fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
+    bool     fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
+    bool     fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
+    bool     fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
+    bool     fgNeedsUpdateFlowGraph;   // true if we need to run fgUpdateFlowGraph
     weight_t fgCalledCount;            // count of the number of times this method was called
-                                                   // This is derived from the profile data
-                                                   // or is BB_UNITY_WEIGHT when we don't have profile data
+                                       // This is derived from the profile data
+                                       // or is BB_UNITY_WEIGHT when we don't have profile data
 
 #if defined(FEATURE_EH_FUNCLETS)
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
@@ -5680,7 +5677,7 @@ public:
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
-    void                 fgComputeBlockAndEdgeWeights();
+    void     fgComputeBlockAndEdgeWeights();
     weight_t fgComputeMissingBlockWeights();
     void fgComputeCalledCount(weight_t returnWeight);
     void fgComputeEdgeWeights();
@@ -7014,11 +7011,11 @@ protected:
     void optValnumCSE_Availablity();
     void optValnumCSE_Heuristic();
 
-    bool                 optDoCSE;             // True when we have found a duplicate CSE tree
-    bool                 optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
-    unsigned             optCSECandidateCount; // Count of CSE's candidates
-    unsigned             optCSEstart;          // The first local variable number that is a CSE
-    unsigned             optCSEcount;          // The total count of CSE's introduced.
+    bool     optDoCSE;             // True when we have found a duplicate CSE tree
+    bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
+    unsigned optCSECandidateCount; // Count of CSE's candidates
+    unsigned optCSEstart;          // The first local variable number that is a CSE
+    unsigned optCSEcount;          // The total count of CSE's introduced.
     weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
@@ -8172,10 +8169,10 @@ public:
         return codeGen->doDoubleAlign();
     }
     DWORD getCanDoubleAlign();
-    bool shouldDoubleAlign(unsigned             refCntStk,
-                           unsigned             refCntReg,
+    bool shouldDoubleAlign(unsigned refCntStk,
+                           unsigned refCntReg,
                            weight_t refCntWtdReg,
-                           unsigned             refCntStkParam,
+                           unsigned refCntStkParam,
                            weight_t refCntWtdStkDbl);
 #endif // DOUBLE_ALIGN
 

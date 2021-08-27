@@ -1592,7 +1592,7 @@ struct BBswtDesc
 
     // Case number and likelihood of most likely case
     // (only known with PGO, only valid if bbsHasDominantCase is true)
-    unsigned             bbsDominantCase;
+    unsigned bbsDominantCase;
     weight_t bbsDominantFraction;
 
     bool bbsHasDefault;      // true if last switch case is a default case
@@ -1776,9 +1776,9 @@ public:
     flowList* flNext; // The next BasicBlock in the list, nullptr for end of list.
 
 private:
-    BasicBlock*          m_block; // The BasicBlock of interest.
-    weight_t flEdgeWeightMin;
-    weight_t flEdgeWeightMax;
+    BasicBlock* m_block; // The BasicBlock of interest.
+    weight_t    flEdgeWeightMin;
+    weight_t    flEdgeWeightMax;
 
 public:
     unsigned flDupCount; // The count of duplicate "edges" (use only for switch stmts)
@@ -1809,14 +1809,8 @@ public:
     // They return false if the newWeight is not between the current [min..max]
     // when slop is non-zero we allow for the case where our weights might be off by 'slop'
     //
-    bool setEdgeWeightMinChecked(weight_t newWeight,
-                                 BasicBlock*          bDst,
-                                 weight_t slop,
-                                 bool*                wbUsedSlop);
-    bool setEdgeWeightMaxChecked(weight_t newWeight,
-                                 BasicBlock*          bDst,
-                                 weight_t slop,
-                                 bool*                wbUsedSlop);
+    bool setEdgeWeightMinChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
+    bool setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
     void setEdgeWeights(weight_t newMinWeight, weight_t newMaxWeight, BasicBlock* bDst);
 
     flowList(BasicBlock* block, flowList* rest)

@@ -393,13 +393,13 @@ struct LsraBlockInfo
 {
     // bbNum of the predecessor to use for the register location of live-in variables.
     // 0 for fgFirstBB.
-    unsigned int         predBBNum;
-    weight_t weight;
-    bool                 hasCriticalInEdge : 1;
-    bool                 hasCriticalOutEdge : 1;
-    bool                 hasEHBoundaryIn : 1;
-    bool                 hasEHBoundaryOut : 1;
-    bool                 hasEHPred : 1;
+    unsigned int predBBNum;
+    weight_t     weight;
+    bool         hasCriticalInEdge : 1;
+    bool         hasCriticalOutEdge : 1;
+    bool         hasEHBoundaryIn : 1;
+    bool         hasEHBoundaryOut : 1;
+    bool         hasEHPred : 1;
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.

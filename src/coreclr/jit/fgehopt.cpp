@@ -790,12 +790,12 @@ PhaseStatus Compiler::fgCloneFinally()
         assert(bbInTryRegions(XTnum, lastTryBlock));
         BasicBlock* const beforeTryBlock = firstTryBlock->bbPrev;
 
-        BasicBlock*          normalCallFinallyBlock   = nullptr;
-        BasicBlock*          normalCallFinallyReturn  = nullptr;
-        BasicBlock*          cloneInsertAfter         = HBtab->ebdTryLast;
-        bool                 tryToRelocateCallFinally = false;
-        const bool           usingProfileWeights      = fgIsUsingProfileWeights();
-        weight_t currentWeight            = BB_ZERO_WEIGHT;
+        BasicBlock* normalCallFinallyBlock   = nullptr;
+        BasicBlock* normalCallFinallyReturn  = nullptr;
+        BasicBlock* cloneInsertAfter         = HBtab->ebdTryLast;
+        bool        tryToRelocateCallFinally = false;
+        const bool  usingProfileWeights      = fgIsUsingProfileWeights();
+        weight_t    currentWeight            = BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->bbPrev)
         {
@@ -1021,13 +1021,12 @@ PhaseStatus Compiler::fgCloneFinally()
         // Clone the finally body, and splice it into the flow graph
         // within in the parent region of the try.
         //
-        const unsigned             finallyTryIndex = firstBlock->bbTryIndex;
-        BasicBlock*                insertAfter     = nullptr;
-        BlockToBlockMap            blockMap(getAllocator());
-        bool                       clonedOk     = true;
-        unsigned                   cloneBBCount = 0;
-        weight_t const originalWeight =
-            firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
+        const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
+        BasicBlock*     insertAfter     = nullptr;
+        BlockToBlockMap blockMap(getAllocator());
+        bool            clonedOk       = true;
+        unsigned        cloneBBCount   = 0;
+        weight_t const  originalWeight = firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->bbNext)
         {
@@ -1134,10 +1133,10 @@ PhaseStatus Compiler::fgCloneFinally()
         // Modify the targeting call finallys to branch to the cloned
         // finally. Make a note if we see some calls that can't be
         // retargeted (since they want to return to other places).
-        BasicBlock* const    firstCloneBlock    = blockMap[firstBlock];
-        bool                 retargetedAllCalls = true;
-        BasicBlock*          currentBlock       = firstCallFinallyRangeBlock;
-        weight_t retargetedWeight   = BB_ZERO_WEIGHT;
+        BasicBlock* const firstCloneBlock    = blockMap[firstBlock];
+        bool              retargetedAllCalls = true;
+        BasicBlock*       currentBlock       = firstCallFinallyRangeBlock;
+        weight_t          retargetedWeight   = BB_ZERO_WEIGHT;
 
         while (currentBlock != endCallFinallyRangeBlock)
         {
@@ -1236,8 +1235,7 @@ PhaseStatus Compiler::fgCloneFinally()
             // We can't leave the finally more often than we enter.
             // So cap cloned scale at 1.0f
             //
-            weight_t const clonedScale =
-                retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0f;
+            weight_t const clonedScale = retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0f;
             weight_t const originalScale = 1.0f - clonedScale;
 
             JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",

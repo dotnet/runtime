@@ -2550,8 +2550,8 @@ void LinearScan::buildIntervals()
                 // (see lvaComputeRefCounts(); this may be reviewed/changed in future).
                 //
                 weight_t initialWeight = (firstRefPosition->refType == RefTypeParamDef)
-                                                         ? (2 * BB_UNITY_WEIGHT)
-                                                         : blockInfo[firstRefPosition->bbNum].weight;
+                                             ? (2 * BB_UNITY_WEIGHT)
+                                             : blockInfo[firstRefPosition->bbNum].weight;
                 weight -= initialWeight;
 
                 // If the remaining weight is less than the initial weight, we'd like to allocate it only

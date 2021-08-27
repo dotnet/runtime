@@ -182,7 +182,7 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 weight_t LinearScan::getWeight(RefPosition* refPos)
 {
     weight_t weight;
-    GenTree*             treeNode = refPos->treeNode;
+    GenTree* treeNode = refPos->treeNode;
 
     if (treeNode != nullptr)
     {
@@ -1627,13 +1627,13 @@ void LinearScan::identifyCandidates()
     // This is defined as thresholdLargeVectorRefCntWtd, as we are likely to use the same mechanism
     // for vectors on Arm64, though the actual value may differ.
 
-    unsigned int         floatVarCount        = 0;
-    weight_t thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
-    weight_t maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
-    VARSET_TP            fpMaybeCandidateVars(VarSetOps::UninitVal());
+    unsigned int floatVarCount        = 0;
+    weight_t     thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    weight_t     maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
+    VARSET_TP    fpMaybeCandidateVars(VarSetOps::UninitVal());
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    unsigned int         largeVectorVarCount           = 0;
-    weight_t thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    unsigned int largeVectorVarCount           = 0;
+    weight_t     thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (enregisterLocalVars)
     {
@@ -1645,13 +1645,13 @@ void LinearScan::identifyCandidates()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
 #if DOUBLE_ALIGN
-    unsigned             refCntStk       = 0;
-    unsigned             refCntReg       = 0;
+    unsigned refCntStk       = 0;
+    unsigned refCntReg       = 0;
     weight_t refCntWtdReg    = 0;
-    unsigned             refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
+    unsigned refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
     weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
-    doDoubleAlign                        = false;
-    bool checkDoubleAlign                = true;
+    doDoubleAlign            = false;
+    bool checkDoubleAlign    = true;
     if (compiler->codeGen->isFramePointerRequired() || compiler->opts.MinOpts())
     {
         checkDoubleAlign = false;
@@ -1872,7 +1872,7 @@ void LinearScan::identifyCandidates()
         // the lclVars allocated to the frame pointer.
         // => Here, estimate of the EBP refCnt and weighted refCnt is a wild guess.
         //
-        unsigned             refCntEBP    = refCntReg / 8;
+        unsigned refCntEBP    = refCntReg / 8;
         weight_t refCntWtdEBP = refCntWtdReg / 8;
 
         doDoubleAlign =
@@ -8646,7 +8646,7 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
 //
 void LinearScan::dumpLsraStats(FILE* file)
 {
-    unsigned             sumStats[LsraStat::COUNT] = {0};
+    unsigned sumStats[LsraStat::COUNT] = {0};
     weight_t wtdStats[LsraStat::COUNT] = {0};
 
     fprintf(file, "----------\n");
@@ -8838,7 +8838,7 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
 //
 void LinearScan::dumpLsraStatsSummary(FILE* file)
 {
-    unsigned             sumStats[LsraStat::STAT_FREE] = {0};
+    unsigned sumStats[LsraStat::STAT_FREE] = {0};
     weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
 
     // Iterate for block 0
