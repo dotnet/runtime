@@ -137,13 +137,13 @@ namespace System.IO
                 while (!remaining.IsEmpty)
                 {
                     ReadOnlySpan<char> toEncode = remaining.Slice(0, Math.Min(remaining.Length, ChunkSize));
-                    int encoded = encoder.GetBytes(toEncode, bytes.Slice(preambleSize), flush: false);
+                    remaining = remaining.Slice(toEncode.Length);
+                    int encoded = encoder.GetBytes(toEncode, bytes.Slice(preambleSize), flush: remaining.IsEmpty);
                     Span<byte> toStore = bytes.Slice(0, preambleSize + encoded);
 
                     RandomAccess.WriteAtOffset(fileHandle, toStore, fileOffset);
 
                     fileOffset += toStore.Length;
-                    remaining = remaining.Slice(toEncode.Length);
                     preambleSize = 0;
                 }
             }
@@ -189,13 +189,13 @@ namespace System.IO
                 while (!remaining.IsEmpty)
                 {
                     ReadOnlyMemory<char> toEncode = remaining.Slice(0, Math.Min(remaining.Length, ChunkSize));
-                    int encoded = encoder.GetBytes(toEncode.Span, bytes.AsSpan(preambleSize), flush: false);
+                    remaining = remaining.Slice(toEncode.Length);
+                    int encoded = encoder.GetBytes(toEncode.Span, bytes.AsSpan(preambleSize), flush: remaining.IsEmpty);
                     ReadOnlyMemory<byte> toStore = new ReadOnlyMemory<byte>(bytes, 0, preambleSize + encoded);
 
                     await RandomAccess.WriteAtOffsetAsync(fileHandle, toStore, fileOffset, cancellationToken).ConfigureAwait(false);
 
                     fileOffset += toStore.Length;
-                    remaining = remaining.Slice(toEncode.Length);
                     preambleSize = 0;
                 }
             }
