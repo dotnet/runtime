@@ -199,7 +199,7 @@ namespace System.Threading.ThreadPools.Tests
                     Assert.True(ThreadPool.SetMinThreads(1, 1));
                     Assert.True(ThreadPool.SetMaxThreads(2, 1));
                     Assert.False(ThreadPool.SetMinThreads(2, 1));
-                    Assert.False(ThreadPool.SetMinThreads(1, 1));
+                    Assert.False(ThreadPool.SetMaxThreads(1, 1));
                 }, options).Dispose();
             }).Dispose();
         }
