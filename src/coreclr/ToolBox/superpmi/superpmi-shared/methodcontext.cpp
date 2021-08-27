@@ -6265,6 +6265,40 @@ DWORD MethodContext::repGetExpectedTargetArchitecture()
     return value;
 }
 
+void MethodContext::recDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (DoesFieldBelongToClass == nullptr)
+        DoesFieldBelongToClass = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(fld);
+    key.B = CastHandle(cls);
+
+    DWORD value = (DWORD)result;
+    DoesFieldBelongToClass->Add(key, value);
+    DEBUG_REC(dmpDoesFieldBelongToClass(key, result));
+}
+
+void MethodContext::dmpDoesFieldBelongToClass(DLDL key, bool value)
+{
+    printf("DoesFieldBelongToClass key fld=%016llX, cls=%016llx, result=%d", key.A, key.B, value);
+}
+
+bool MethodContext::repDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(fld);
+    key.B = CastHandle(cls);
+
+    AssertMapAndKeyExist(DoesFieldBelongToClass, key, ": key %016llX %016llX", key.A, key.B);
+
+    bool value = (bool)DoesFieldBelongToClass->Get(key);
+    DEBUG_REP(dmpDoesFieldBelongToClass(key, value));
+    return value;
+}
+
 void MethodContext::recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result)
 {
     if (IsValidToken == nullptr)
