@@ -372,88 +372,6 @@ struct VASigCookieBlock
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
 
-// This lookup table persists the information about boxed statics into the ngen'ed image
-// which allows one to the type static initialization without touching expensive EEClasses. Note
-// that since the persisted info is stored at ngen time as opposed to class layout time,
-// in jitted scenarios we would still touch EEClasses. This imples that the variables which store
-// this info in the EEClasses are still present.
-
-// We used this table to store more data require to run cctors in the past (it explains the name),
-// but we are only using it for boxed statics now. Boxed statics are rare. The complexity may not
-// be worth the gains. We should consider removing this cache and avoid the complexity.
-
-typedef DPTR(struct ClassCtorInfoEntry) PTR_ClassCtorInfoEntry;
-struct ClassCtorInfoEntry
-{
-    DWORD firstBoxedStaticOffset;
-    DWORD firstBoxedStaticMTIndex;
-    WORD numBoxedStatics;
-    WORD hasFixedAddressVTStatics; // This is WORD avoid padding in the datastructure. It is really bool.
-};
-
-#define MODULE_CTOR_ELEMENTS 256
-struct ModuleCtorInfo
-{
-    DWORD                   numElements;
-    DWORD                   numLastAllocated;
-    DWORD                   numElementsHot;
-    DPTR(PTR_MethodTable)   ppMT; // size is numElements
-    PTR_ClassCtorInfoEntry  cctorInfoHot;   // size is numElementsHot
-    PTR_ClassCtorInfoEntry  cctorInfoCold;  // size is numElements-numElementsHot
-
-    PTR_DWORD               hotHashOffsets;  // Indices to the start of each "hash region" in the hot part of the ppMT array.
-    PTR_DWORD               coldHashOffsets; // Indices to the start of each "hash region" in the cold part of the ppMT array.
-    DWORD                   numHotHashes;
-    DWORD                   numColdHashes;
-
-    ArrayDPTR(PTR_MethodTable) ppHotGCStaticsMTs;            // hot table
-    ArrayDPTR(PTR_MethodTable) ppColdGCStaticsMTs;           // cold table
-
-    DWORD                   numHotGCStaticsMTs;
-    DWORD                   numColdGCStaticsMTs;
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-    typedef enum {HOT, COLD} REGION;
-    FORCEINLINE DWORD GenerateHash(PTR_MethodTable pMT, REGION region)
-    {
-        SUPPORTS_DAC;
-
-        DWORD tmp1  = pMT->GetTypeDefRid();
-        DWORD tmp2  = pMT->GetNumVirtuals();
-        DWORD tmp3  = pMT->GetNumInterfaces();
-
-        tmp1        = (tmp1 << 7) + (tmp1 << 0); // 10000001
-        tmp2        = (tmp2 << 6) + (tmp2 << 1); // 01000010
-        tmp3        = (tmp3 << 4) + (tmp3 << 3); // 00011000
-
-        tmp1       ^= (tmp1 >> 4);               // 10001001 0001
-        tmp2       ^= (tmp2 >> 4);               // 01000110 0010
-        tmp3       ^= (tmp3 >> 4);               // 00011001 1000
-
-        DWORD hashVal = tmp1 + tmp2 + tmp3;
-
-        if (region == HOT)
-            hashVal     &= (numHotHashes - 1);   // numHotHashes is required to be a power of two
-        else
-            hashVal     &= (numColdHashes - 1);  // numColdHashes is required to be a power of two
-
-        return hashVal;
-    };
-
-    ArrayDPTR(PTR_MethodTable) GetGCStaticMTs(DWORD index);
-
-    PTR_MethodTable GetMT(DWORD i)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return ppMT[i];
-    }
-
-};
-
-
 // For IBC Profiling we collect signature blobs for instantiated types.
 // For such instantiated types and methods we create our own ibc token
 //
@@ -1242,11 +1160,6 @@ private:
 
     } *m_tokenProfileData;
 
-
-protected:
-
-    void CreateDomainThunks();
-
 protected:
     void DoInit(AllocMemTracker *pamTracker, LPCWSTR szName);
 
@@ -1261,8 +1174,6 @@ protected:
 #ifdef _DEBUG
     void DebugLogRidMapOccupancy();
 #endif // _DEBUG
-
-    static HRESULT VerifyFile(PEFile *file, BOOL fZap);
 
  public:
     static Module *Create(Assembly *pAssembly, mdFile kFile, PEFile *pFile, AllocMemTracker *pamTracker);
@@ -1667,9 +1578,6 @@ protected:
             AssemblyBinder      *pBindingContextForLoadedAssembly = NULL
             );
 
-private:
-    // Helper function used by GetAssemblyIfLoaded. Do not call directly.
-    Assembly *GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(mdAssemblyRef kAssemblyRef, BOOL *pfDiscoveredAssemblyRefMatchesTargetDefExactly);
 public:
 
     DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
@@ -2153,8 +2061,6 @@ public:
     static void  TokenDefinitionHelper(void* pModuleContext, Module *pReferencedModule, DWORD index, mdToken* token);
 
 public:
-    MethodTable* MapZapType(UINT32 typeID);
-
     void SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride);
     TADDR GetDynamicIL(mdToken token, BOOL fAllowTemporary);
 

@@ -1983,26 +1983,6 @@ BOOL Module::IsPreV4Assembly()
     return !!(m_dwPersistedFlags & IS_PRE_V4_ASSEMBLY);
 }
 
-
-ArrayDPTR(PTR_MethodTable) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (index < numHotGCStaticsMTs)
-    {
-        _ASSERTE(ppHotGCStaticsMTs != NULL);
-
-        return ppHotGCStaticsMTs + index;
-    }
-    else
-    {
-        _ASSERTE(ppColdGCStaticsMTs != NULL);
-
-        // shift the start of the cold table because all cold offsets are also shifted
-        return ppColdGCStaticsMTs + (index - numHotGCStaticsMTs);
-    }
-}
-
 DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 {
     CONTRACTL
@@ -7724,25 +7704,6 @@ CHECK Module::CheckActivated()
 }
 
 #ifdef DACCESS_COMPILE
-
-void
-ModuleCtorInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    // This class is contained so do not enumerate 'this'.
-    DacEnumMemoryRegion(dac_cast<TADDR>(ppMT), numElements *
-                        sizeof(MethodTable *));
-    DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoHot), numElementsHot *
-                        sizeof(ClassCtorInfoEntry));
-    DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoCold),
-                        (numElements - numElementsHot) *
-                        sizeof(ClassCtorInfoEntry));
-    DacEnumMemoryRegion(dac_cast<TADDR>(hotHashOffsets), numHotHashes *
-                        sizeof(DWORD));
-    DacEnumMemoryRegion(dac_cast<TADDR>(coldHashOffsets), numColdHashes *
-                        sizeof(DWORD));
-}
 
 void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
                                bool enumThis)
