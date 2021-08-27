@@ -28,9 +28,9 @@ namespace System
             Span<char> charSpan = maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
             try
             {
-                Decoder _decoder = _encoding.GetDecoder();
-                int charCount = _decoder.GetCharCount(buffer, false);
-                int count = _decoder.GetChars(buffer, charSpan, false);
+                Decoder decoder = _encoding.GetDecoder();
+                int charCount = decoder.GetCharCount(buffer, false);
+                int count = decoder.GetChars(buffer, charSpan, false);
                 if (count > 0)
                 {
                     WriteOrCache(_buffer, charSpan, charCount);
