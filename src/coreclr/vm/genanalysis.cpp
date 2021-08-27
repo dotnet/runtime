@@ -34,14 +34,20 @@ bool gcGenAnalysisDump = false;
         {
             match = false;
         }
-        if (match && !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes"))&& !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisTime")))
+        if (match && !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")) &&
+                     !CLRConfig::IsConfigOptionSpecified(W("INTERNAL_GCGenAnalysisTimeUSec")) &&
+                     !CLRConfig::IsConfigOptionSpecified(W("INTERNAL_GCGenAnalysisTimeMSec")))
         {
             match = false;
         }
         if (match)
         {
             gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
-            gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisTime) * 10;
+            gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisTimeUSec) * 10;
+            if (gcGenAnalysisTime == 0)
+            {
+                gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisTimeMSec) * 10000;
+            }
             gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisGen);
             gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisIndex);
             gcGenAnalysisBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
