@@ -17,6 +17,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(WriteSuccessCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58204", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void Write(ITestClass testObj)
         {
             var options = new JsonSerializerOptions { IncludeFields = true };

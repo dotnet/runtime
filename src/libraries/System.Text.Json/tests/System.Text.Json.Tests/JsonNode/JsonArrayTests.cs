@@ -196,7 +196,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => jArray.CopyTo(arr, -1));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void ConvertJSONArrayToIListOfJsonNode()
         {
             dynamic obj = JsonSerializer.Deserialize<JsonArray>("[42]");
