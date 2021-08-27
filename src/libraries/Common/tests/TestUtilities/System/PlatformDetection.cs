@@ -273,15 +273,15 @@ namespace System
             {
                 try
                 {
-                    if (OperatingSystem.IsWindows())
+                    if (IsWindows)
                     {
                         string systemRoot = Environment.GetEnvironmentVariable("SystemRoot");
                         if (string.IsNullOrWhiteSpace(systemRoot))
                         {
                             return false;
                         }
-                        string system32 = Path.Join(systemRoot, "System32");
-                        return File.Exists(Path.Join(system32, "subst.exe"));
+                        string system32 = Path.Combine(systemRoot, "System32");
+                        return File.Exists(Path.Combine(system32, "subst.exe"));
                     }
                 }
                 catch { }
