@@ -335,7 +335,7 @@ dotenv::dotenv(pal::string_t dotEnvFilePath, std::istream& contents)
 
 void dotenv::load_into_current_process() const
 {
-    for (std::pair<std::string, std::string>&& env_vars : _environmentVariables)
+    for (const std::pair<std::string, std::string>& env_vars : _environmentVariables)
     {
         pal::string_t name_string = convert_to_string_t(env_vars.first);
         pal::string_t value_string = convert_to_string_t(env_vars.second);
