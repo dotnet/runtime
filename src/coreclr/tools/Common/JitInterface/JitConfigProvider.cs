@@ -141,9 +141,9 @@ namespace Internal.JitInterface
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
 
-            if ((target.Architecture == TargetArchitecture.ARM64) && (target.OperatingSystem == TargetOS.OSX))
+            if ((target.Architecture == TargetArchitecture.ARM64) || (target.Architecture == TargetArchitecture.ARM))
             {
-                targetOSComponent = "unix_osx";
+                targetOSComponent = "universal";
             }
 
             return targetOSComponent + '_' + targetArchComponent + "_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();

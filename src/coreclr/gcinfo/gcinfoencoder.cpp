@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "gcinfoencoder.h"
+#include "targetosarch.h"
 
 #ifdef _DEBUG
     #ifndef LOGGING
