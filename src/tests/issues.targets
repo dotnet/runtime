@@ -30,6 +30,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Features/BackgroundGC/foregroundgc/*">
+            <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Features/LOHFragmentation/lohfragmentation/*">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
