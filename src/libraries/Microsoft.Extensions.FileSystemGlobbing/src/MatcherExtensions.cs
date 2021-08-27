@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public static IEnumerable<string> GetResultsInFullPath(this Matcher matcher, string directoryPath)
         {
             IEnumerable<FilePatternMatch> matches = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(directoryPath))).Files;
-            string[] result = matches.Select(match => Path.GetFullPath(Path.Combine(directoryPath, match.Path!))).ToArray();
+            string[] result = matches.Select(match => Path.GetFullPath(Path.Combine(directoryPath, match.Path))).ToArray();
 
             return result;
         }
