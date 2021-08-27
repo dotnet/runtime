@@ -47,7 +47,7 @@ public static class MountHelper
         symLinkProcess.Start();
 
         symLinkProcess.WaitForExit();
-        return (0 == symLinkProcess.ExitCode);
+        return symLinkProcess.ExitCode == 0;
     }
 
     /// <summary>On Windows, creates a junction using command line tools.</summary>
