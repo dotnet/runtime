@@ -295,8 +295,8 @@ namespace
 
 
 dotenv::dotenv(pal::string_t dotEnvFilePath, std::istream& contents)
-    :_dotenvFilePath(dotEnvFilePath),
-    _environmentVariables()
+    : _dotenvFilePath{dotEnvFilePath}
+    , _environmentVariables{}
 {
     // Peek at the start to set the eof bit if the file is empty
     while (!contents.eof())
