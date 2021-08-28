@@ -23,7 +23,7 @@ if(HOST_DARWIN)
   set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 
   if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
-    set(OS_LIBS "-lobjc" "-lc++")
+    set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
 elseif(HOST_IOS)
 set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
@@ -35,6 +35,8 @@ elseif(HOST_WIN32)
 set(OS_LIBS bcrypt.lib Mswsock.lib ws2_32.lib psapi.lib version.lib advapi32.lib winmm.lib kernel32.lib)
 elseif(HOST_SOLARIS)
   set(OS_LIBS socket pthread m ${CMAKE_DL_LIBS})
+elseif(HOST_FREEBSD)
+  set(OS_LIBS pthread m)
 endif()
 
 #
@@ -254,7 +256,7 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
-elseif(HOST_LINUX OR HOST_SOLARIS)
+elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD)
 set(os_sources "${posix_sources}")
 elseif(HOST_WIN32)
 set(os_sources "${windows_sources}")
