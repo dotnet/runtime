@@ -13,15 +13,17 @@ public class Program
 
     private static bool Test1()
     {
-        byte[] arr = new byte[2];
-        arr[0] = 1;
-        arr[1] = 2;
+        byte[] array = new byte[2];
+        array[0] = 1;
+        array[1] = 2;
 
-        short a1 = Unsafe.ReadUnaligned<short>(ref arr[0]);
-        arr[1] = 42;
-        short a2 = Unsafe.ReadUnaligned<short>(ref arr[0]);
+        // a1, a2 and a3 all have different values here
+        byte a1  = Unsafe.ReadUnaligned<byte>(ref array[0]);
+        short a2 = Unsafe.ReadUnaligned<short>(ref array[0]);
+        array[1] = 42;
+        short a3 = Unsafe.ReadUnaligned<short>(ref array[0]);
 
-        return a1 != a2;
+        return a1 != a2 && a1 != a3 && a2 != a3;
     }
 
     private static bool Test2()
