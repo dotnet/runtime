@@ -108,7 +108,7 @@ namespace System.Linq.Parallel
             FixedMaxHeap<TKey> sharedIndices = new FixedMaxHeap<TKey>(_count, inputStream.KeyComparer); // an array used to track the sequence of indices leading up to the Nth index
             CountdownEvent sharedBarrier = new CountdownEvent(partitionCount); // a barrier to synchronize before yielding
 
-            if (OperatingSystem.IsBrowser())
+            if (ParallelEnumerable.SinglePartitionMode)
                 Debug.Assert(partitionCount == 1);
 
             PartitionedStream<TResult, TKey> outputStream =
@@ -225,7 +225,7 @@ namespace System.Linq.Parallel
                         }
                     }
 
-                    if (!OperatingSystem.IsBrowser()) {
+                    if (!ParallelEnumerable.SinglePartitionMode) {
                         // Before exiting the search phase, we will synchronize with others. This is a barrier.
                         _sharedBarrier.Signal();
                         _sharedBarrier.Wait(_cancellationToken);

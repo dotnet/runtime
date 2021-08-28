@@ -121,7 +121,7 @@ namespace System.Linq.Parallel
                 return false;
             }
 
-            Debug.Assert(!OperatingSystem.IsBrowser());
+            Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
 
             Mutables? mutables = _mutables;
             if (mutables == null)

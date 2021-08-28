@@ -64,7 +64,7 @@ namespace System.Linq.Parallel
 
                     if (partitions.PartitionCount > 1)
                     {
-                        Debug.Assert(!OperatingSystem.IsBrowser());
+                        Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                         // We use a pipelining ordered merge
                         mergeExecutor._mergeHelper = new OrderPreservingPipeliningMergeHelper<TInputOutput, TKey>(
                             partitions, taskScheduler, cancellationState, autoBuffered, queryId, partitions.KeyComparer);

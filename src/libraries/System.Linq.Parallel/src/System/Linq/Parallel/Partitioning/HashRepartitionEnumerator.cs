@@ -84,7 +84,7 @@ namespace System.Linq.Parallel
             _valueExchangeMatrix = valueExchangeMatrix;
             _cancellationToken = cancellationToken;
 
-            if (OperatingSystem.IsBrowser())
+            if (ParallelEnumerable.SinglePartitionMode)
                 Debug.Assert(partitionCount == 1);
         }
 
@@ -123,7 +123,7 @@ namespace System.Linq.Parallel
                 return false;
             }
 
-            Debug.Assert(!OperatingSystem.IsBrowser());
+            Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
 
             Mutables? mutables = _mutables;
             if (mutables == null)

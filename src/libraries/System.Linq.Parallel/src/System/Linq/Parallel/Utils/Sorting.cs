@@ -204,7 +204,7 @@ namespace System.Linq.Parallel
             // Step 3. Enter into the merging phases, each separated by several barriers.
             if (_partitionCount > 1)
             {
-                Debug.Assert(!OperatingSystem.IsBrowser());
+                Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                 // We only need to merge if there is more than 1 partition.
                 MergeSortCooperatively();
             }

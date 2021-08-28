@@ -58,7 +58,7 @@ namespace System.Linq.Parallel
             PartitionedStream<TSource, TKey> inputStream, IPartitionedStreamRecipient<TSource> recipient, bool preferStriping, QuerySettings settings)
         {
             int partitionCount = inputStream.PartitionCount;
-            if (OperatingSystem.IsBrowser())
+            if (ParallelEnumerable.SinglePartitionMode)
                 Debug.Assert(partitionCount == 1);
 
             // Generate the shared data.
@@ -155,7 +155,7 @@ namespace System.Linq.Parallel
 
                     if (!moveNextResult)
                     {
-                        if (OperatingSystem.IsBrowser())
+                        if (ParallelEnumerable.SinglePartitionMode)
                         {
                             currentElement = _defaultValue;
                             currentKey = default(TKey)!;
@@ -194,8 +194,7 @@ namespace System.Linq.Parallel
                     // Every partition (but the 0th) will signal the latch the first time.
                     if (_partitionIndex != 0)
                     {
-                        if (!OperatingSystem.IsBrowser())
-                            _sharedLatch.Signal();
+                        _sharedLatch.Signal();
                     }
                 }
 

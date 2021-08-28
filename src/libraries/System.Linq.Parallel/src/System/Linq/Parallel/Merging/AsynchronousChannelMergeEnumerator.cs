@@ -221,7 +221,7 @@ namespace System.Linq.Parallel
                                 break;
                             }
 
-                            Debug.Assert(!OperatingSystem.IsBrowser());
+                            Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                             Debug.Assert(_consumerEvent != null);
                             //This Wait() does not require cancellation support as it will wake up when all the producers into the
                             //channel have finished.  Hence, if all the producers wake up on cancellation, so will this.

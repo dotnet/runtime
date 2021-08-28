@@ -355,7 +355,7 @@ namespace System.Linq.Parallel
                     {
                         // Wake up all producers. Since the cancellation token has already been
                         // set, the producers will eventually stop after waking up.
-                        if (!OperatingSystem.IsBrowser()) {
+                        if (!ParallelEnumerable.SinglePartitionMode) {
                             object[] locks = _mergeHelper._bufferLocks;
                             for (int i = 0; i < locks.Length; i++)
                             {
@@ -401,7 +401,7 @@ namespace System.Linq.Parallel
                             return false;
                         }
 
-                        if (OperatingSystem.IsBrowser())
+                        if (ParallelEnumerable.SinglePartitionMode)
                             return false;
 
                         _mergeHelper._consumerWaiting[producer] = true;
@@ -422,7 +422,7 @@ namespace System.Linq.Parallel
                     // If the producer is waiting, wake it up
                     if (_mergeHelper._producerWaiting[producer])
                     {
-                        Debug.Assert(!OperatingSystem.IsBrowser());
+                        Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                         Monitor.Pulse(bufferLock);
                         _mergeHelper._producerWaiting[producer] = false;
                     }
@@ -476,7 +476,7 @@ namespace System.Linq.Parallel
             public override void Dispose()
             {
                 // Wake up any waiting producers
-                if (!OperatingSystem.IsBrowser()) {
+                if (!ParallelEnumerable.SinglePartitionMode) {
                     int partitionCount = _mergeHelper._buffers.Length;
                     for (int producer = 0; producer < partitionCount; producer++)
                     {
