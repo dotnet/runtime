@@ -109,7 +109,6 @@ EXTERN_C VOID STDCALL ResetCurrentContext();
 #ifdef _DEBUG
 void CheckStackBarrier(EXCEPTION_REGISTRATION_RECORD *exRecord);
 #endif
-EXCEPTION_REGISTRATION_RECORD *FindNestedEstablisherFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame);
 LFH LookForHandler(const EXCEPTION_POINTERS *pExceptionPointers, Thread *pThread, ThrowCallbackType *tct);
 StackWalkAction COMPlusThrowCallback (CrawlFrame *pCf, ThrowCallbackType *pData);
 void UnwindFrames(Thread *pThread, ThrowCallbackType *tct);
@@ -515,7 +514,6 @@ VOID __cdecl PopSEHRecords(LPVOID pTargetSP);
 VOID UnwindExceptionTrackerAndResumeInInterceptionFrame(ExInfo* pExInfo, EHContext* context);
 #endif // TARGET_X86 && DEBUGGING_SUPPORTED
 
-BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers = FALSE);
 VOID PopNestedExceptionRecords(LPVOID pTargetSP, T_CONTEXT *pCtx, void *pSEH);
 
 // Misc functions to access and update the SEH chain. Be very, very careful about updating the SEH chain.

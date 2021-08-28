@@ -64,4 +64,12 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcCatchException(CALLBA
         return -1;
     }
 }
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE RaiseSE(unsigned short ec)
+{
+    HRESULT res = MAKE_HRESULT(SEVERITY_ERROR, /* facility */ 0, ec);
+    RaiseException(res, 0, 0, NULL);
+
+    return -1; // Should never return
+}
 #endif // _WIN32

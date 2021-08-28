@@ -34,6 +34,8 @@
 
 #ifndef FEATURE_EH_FUNCLETS
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
+BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers = FALSE);
+EXCEPTION_REGISTRATION_RECORD* FindNestedEstablisherFrame(EXCEPTION_REGISTRATION_RECORD* pEstablisherFrame);
 
 #if !defined(DACCESS_COMPILE)
 
@@ -171,8 +173,17 @@ Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
     else
         pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
 
-    // Assert that the exception frame is on the thread or that the exception frame is the top frame.
-    _ASSERTE(GetThreadNULLOk() == NULL || GetThread()->GetFrame() == (Frame*)-1 || GetThread()->GetFrame() <= pFrame);
+#ifdef _DEBUG
+    Thread* thread = GetThreadNULLOk();
+    if (thread != NULL)
+    {
+        Frame* threadFrame = thread->GetFrame();
+        _ASSERTE(
+            threadFrame == FRAME_TOP  // No exception frame on thread
+            || threadFrame <= pFrame  // Current exception frame is the top frame
+            || !InlinedCallFrame::FrameHasActiveCall(threadFrame));  // Current exception frame is not active, meaning it is okay to not be on top
+    }
+#endif // _DEBUG
 
     return pFrame;
 }
@@ -2966,7 +2977,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
     context.Setup(PCODE(startPC + EHClausePtr->HandlerStartPC), pCf->GetRegisterSet());
 
     size_t * pShadowSP = NULL; // Write Esp to *pShadowSP before jumping to handler
-    size_t * pHandlerEnd = NULL;
+    size_t * pHandlerEndUnused = NULL;
 
     OBJECTREF throwable = PossiblyUnwrapThrowable(pThread->GetThrowable(), pCf->GetAssembly());
 
@@ -2978,12 +2989,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
                                       throwable,
                                       pCf->GetCodeManState(),
                                       &pShadowSP,
-                                      &pHandlerEnd);
-
-    if (pHandlerEnd)
-    {
-        *pHandlerEnd = EHClausePtr->HandlerEndPC;
-    }
+                                      &pHandlerEndUnused);
 
     MethodDesc* pMethodDesc = pCf->GetCodeInfo()->GetMethodDesc();
     TADDR startAddress = pCf->GetCodeInfo()->GetStartAddress();
@@ -3069,29 +3075,36 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         _ASSERTE(pExInfo->m_pPrevNestedInfo == 0 || pExInfo->m_pPrevNestedInfo->m_StackAddress >= dEsp);
 
         // Before we unwind the SEH records, get the Frame from the top-most nested exception record.
-        Frame* pNestedFrame = GetCurrFrame(FindNestedEstablisherFrame(GetCurrentSEHRecord()));
+        PEXCEPTION_REGISTRATION_RECORD nestedRecord = FindNestedEstablisherFrame(GetCurrentSEHRecord());
+        Frame* pNestedFrame = GetCurrFrame(nestedRecord);
 
-        PopNestedExceptionRecords((LPVOID)(size_t)dEsp);
+        (VOID)PopNestedExceptionRecords((LPVOID)(size_t)dEsp);
 
         EXCEPTION_REGISTRATION_RECORD* pNewBottomMostHandler = GetCurrentSEHRecord();
 
         pExInfo->m_pShadowSP = pShadowSP;
 
-        // The context and exception record are no longer any good.
-        _ASSERTE(pExInfo->m_pContext < dEsp);   // It must be off the top of the stack.
-        pExInfo->m_pContext = 0;                // Whack it.
+        // The context and exception record are no longer valid.
+        _ASSERTE(pExInfo->m_pContext < dEsp && "Context should be invalid but is still on valid stack space.");
+
+        // Clear out fields in ExInfo that are now invalidated based on the updated stack.
+        pExInfo->m_pContext = 0;
         pExInfo->m_pExceptionRecord = 0;
         pExInfo->m_pExceptionPointers = 0;
 
-        // We're going to put one nested record back on the stack before we resume.  This is
-        // where it goes.
-        NestedHandlerExRecord *pNestedHandlerExRecord = (NestedHandlerExRecord*)((BYTE*)dEsp - ALIGN_UP(sizeof(NestedHandlerExRecord), STACK_ALIGN_SIZE));
+        // We're going to put one nested record back on the stack before we resume.
+        size_t alignedSize = ALIGN_UP(sizeof(NestedHandlerExRecord), STACK_ALIGN_SIZE);
+        NestedHandlerExRecord *pNestedHandlerExRecord = (NestedHandlerExRecord*)((BYTE*)dEsp - alignedSize);
 
         // The point of no return.  The next statement starts scribbling on the stack.  It's
         // deep enough that we won't hit our own locals.  (That's important, 'cuz we're still
         // using them.)
         //
-        _ASSERTE(dEsp > &pCf);
+        _ASSERTE(&pCf < dEsp && "Current CrawlFrame should be invalid but is still on valid stack space.");
+#ifdef _DEBUG
+        // For debug builds let's poison the memory
+        memset(pNestedHandlerExRecord, 0xff, alignedSize);
+#endif // _DEBUG
         pNestedHandlerExRecord->m_handlerInfo.m_hThrowable=NULL; // This is random memory.  Handle
                                                                  // must be initialized to null before
                                                                  // calling Init(), as Init() will try

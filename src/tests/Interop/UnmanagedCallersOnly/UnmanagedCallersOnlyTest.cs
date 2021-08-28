@@ -30,6 +30,10 @@ public unsafe class Program
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
         // Returns -1 if exception was throw and caught.
         public static extern int CallManagedProcCatchException(IntPtr callbackProc, int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        // Returns -1 if exception was not thrown - unexpected.
+        public static extern int RaiseSE(ushort n);
     }
 
     private delegate int IntNativeMethodInvoker();
@@ -56,6 +60,7 @@ public unsafe class Program
             {
                 TestUnmanagedCallersOnlyValid_ThrowException();
                 TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException();
+                TestUnmanagedCallersOnlyInterleavedStack_ThrowStructuredException();
             }
 
             if (args.Length != 0 && args[0].Equals("calli"))
@@ -283,6 +288,42 @@ public unsafe class Program
         catch (Exception e)
         {
             Assert.AreEqual(CallbackThrowsErrorCode, e.HResult);
+        }
+    }
+
+    private static int CallIntoNativeOrThrow(int val)
+    {
+        if (0 < val)
+        {
+            return UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&CallbackFromNative, val - 1);
+        }
+        else
+        {
+            int i = UnmanagedCallersOnlyDll.RaiseSE(CallbackThrowsErrorCode);
+            Assert.Fail($"Function {nameof(UnmanagedCallersOnlyDll.RaiseSE)} should throw");
+            return -1;
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    private static int CallbackFromNative(int val)
+    {
+        return CallIntoNativeOrThrow(val);
+    }
+
+    public static void TestUnmanagedCallersOnlyInterleavedStack_ThrowStructuredException()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyInterleavedStack_ThrowStructuredException)}...");
+
+        int depth = 11;
+        try
+        {
+            CallIntoNativeOrThrow(depth);
+            Assert.Fail($"Function {nameof(CallIntoNativeOrThrow)} should throw");
+        }
+        catch (Exception e)
+        {
+            Assert.IsTrue(e is SEHException, $"Unexpected exception thrown: {e}");
         }
     }
 
