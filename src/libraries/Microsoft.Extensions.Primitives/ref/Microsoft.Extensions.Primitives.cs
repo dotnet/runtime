@@ -72,8 +72,6 @@ namespace Microsoft.Extensions.Primitives
         public int IndexOfAny(char[] anyOf) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, nameof(Buffer))]
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, nameof(Value))]
         public static bool IsNullOrEmpty(Microsoft.Extensions.Primitives.StringSegment value) { throw null; }
         public int LastIndexOf(char value) { throw null; }
         public static bool operator ==(Microsoft.Extensions.Primitives.StringSegment left, Microsoft.Extensions.Primitives.StringSegment right) { throw null; }

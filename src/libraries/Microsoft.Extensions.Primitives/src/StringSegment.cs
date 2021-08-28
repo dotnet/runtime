@@ -648,8 +648,6 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="value">The <see cref="StringSegment"/> to test.</param>
         /// <returns></returns>
-        [MemberNotNullWhen(false, nameof(Buffer))]
-        [MemberNotNullWhen(false, nameof(Value))]
         public static bool IsNullOrEmpty(StringSegment value)
         {
             bool res = false;
