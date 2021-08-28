@@ -4242,8 +4242,9 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
     var_types elemTyp = DecodeElemType(elemTypeEq);
     var_types indType = (tree == nullptr) ? elemTyp : tree->TypeGet();
     ValueNum  selectedElem;
+    unsigned  elemWidth = varTypeIsStruct(elemTyp) ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemTyp);
 
-    if ((fldSeq == FieldSeqStore::NotAField()) || (genTypeSize(indType) > genTypeSize(elemTyp)))
+    if ((fldSeq == FieldSeqStore::NotAField()) || (genTypeSize(indType) > elemWidth))
     {
         // This doesn't represent a proper array access
         JITDUMP("    *** Not a proper arrray access encountered in fgValueNumberArrIndexVal\n");
