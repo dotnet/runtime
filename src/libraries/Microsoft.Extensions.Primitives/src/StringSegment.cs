@@ -84,6 +84,7 @@ namespace Microsoft.Extensions.Primitives
         /// Gets whether this <see cref="StringSegment"/> contains a valid value.
         /// </summary>
         [MemberNotNullWhen(true, nameof(Buffer))]
+        [MemberNotNullWhen(true, nameof(Value))]
         public bool HasValue => Buffer != null;
 
         /// <summary>

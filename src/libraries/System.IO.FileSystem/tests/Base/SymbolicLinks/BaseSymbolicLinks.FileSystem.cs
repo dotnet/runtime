@@ -460,11 +460,10 @@ namespace System.IO.Tests
             Assert.Equal(filePath, finalTarget.FullName);
         }
 
+        // Must call inside a remote executor
         protected void CreateSymbolicLink_PathToTarget_RelativeToLinkPath_Internal(bool createOpposite)
         {
-            string tempCwd = GetRandomDirPath();
-            Directory.CreateDirectory(tempCwd);
-            Directory.SetCurrentDirectory(tempCwd);
+            string tempCwd = ChangeCurrentDirectory();
 
             // Create a dummy file or directory in cwd.
             string fileOrDirectoryInCwd = GetRandomFileName();

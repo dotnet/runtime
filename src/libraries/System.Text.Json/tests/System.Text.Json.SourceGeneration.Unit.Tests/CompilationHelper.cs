@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -16,6 +17,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 {
     public class CompilationHelper
     {
+        private static readonly CSharpParseOptions s_parseOptions =
+            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse)
+            // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
+            .WithLanguageVersion(LanguageVersion.Preview);
+
         public static Compilation CreateCompilation(
             string source,
             MetadataReference[] additionalReferences = null,
@@ -55,18 +61,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source) },
+                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, s_parseOptions) },
                 references: references.ToArray(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
         }
 
-        private static GeneratorDriver CreateDriver(Compilation compilation, params ISourceGenerator[] generators)
+        private static GeneratorDriver CreateDriver(Compilation compilation, IIncrementalGenerator[] generators)
             => CSharpGeneratorDriver.Create(
-                generators: ImmutableArray.Create(generators),
-                parseOptions: new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse));
+                generators: generators.Select(g => g.AsSourceGenerator()),
+                parseOptions: s_parseOptions);
 
-        public static Compilation RunGenerators(Compilation compilation, out ImmutableArray<Diagnostic> diagnostics, params ISourceGenerator[] generators)
+        public static Compilation RunGenerators(Compilation compilation, out ImmutableArray<Diagnostic> diagnostics, params IIncrementalGenerator[] generators)
         {
             CreateDriver(compilation, generators).RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out diagnostics);
             return outCompilation;
@@ -267,7 +273,15 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Array.Sort(actualMessages);
             Array.Sort(expectedMessages);
 
-            Assert.Equal(expectedMessages, actualMessages);
+            if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Equal(expectedMessages, actualMessages);
+            }
+            else
+            {
+                // for non-English runs, just compare the number of messages are the same
+                Assert.Equal(expectedMessages.Length, actualMessages.Length);
+            }
         }
     }
 }

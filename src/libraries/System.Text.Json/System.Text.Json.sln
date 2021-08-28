@@ -31,7 +31,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "System.Text.Json.FSharp.Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Tests", "tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Tests.csproj", "{33599A6C-F340-4E1B-9B4D-CB8946C22140}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.UnitTests", "tests\System.Text.Json.SourceGeneration.UnitTests\System.Text.Json.SourceGeneration.UnitTests.csproj", "{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Unit.Tests", "tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Unit.Tests.csproj", "{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.Tests", "tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj", "{A0178BAA-A1AF-4C69-8E4A-A700A2723DDC}"
 EndProject
