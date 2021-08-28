@@ -4242,7 +4242,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
     var_types elemTyp = DecodeElemType(elemTypeEq);
     var_types indType = (tree == nullptr) ? elemTyp : tree->TypeGet();
     ValueNum  selectedElem;
-    unsigned  elemWidth = varTypeIsStruct(elemTyp) ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemTyp);
+    unsigned  elemWidth = elemTyp == TYP_STRUCT ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemTyp);
 
     if ((fldSeq == FieldSeqStore::NotAField()) || (genTypeSize(indType) > elemWidth))
     {
