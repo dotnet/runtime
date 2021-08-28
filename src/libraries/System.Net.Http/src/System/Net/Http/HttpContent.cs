@@ -554,7 +554,7 @@ namespace System.Net.Http
         ///<summary>
         /// Creates a <see cref="Stream"/> to read the content from.
         ///</summary>
-        ///<param name="cancellationToken"><see cref="CancellationToken"/> to register in case the stream needs to be disposed.</param>
+        ///<param name="cancellationToken">The <see cref="CancellationToken"/> to register in case the stream needs to be disposed.</param>
         ///<returns>The output <see cref="Stream"/>.</returns>
         protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
         {
