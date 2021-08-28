@@ -76,10 +76,9 @@ namespace System.Threading.Tasks
                 var exceptions = new List<Exception>();
                 foreach (Task t in tasks)
                 {
-                    switch (t.Status)
+                    if (t.GetRealException() is Exception e)
                     {
-                        case TaskStatus.Faulted: exceptions.Add(t.Exception); break;
-                        case TaskStatus.Canceled: exceptions.Add(new TaskCanceledException(t)); break;
+                        exceptions.Add(e);
                     }
                 }
 
@@ -95,28 +94,40 @@ namespace System.Threading.Tasks
         private static Task WhenAllOrAnyFailedCore(this Task[] tasks)
         {
             int remaining = tasks.Length;
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource();
             foreach (Task t in tasks)
             {
                 t.ContinueWith(a =>
                 {
-                    if (a.IsFaulted)
+                    if (a.GetRealException() is Exception e)
                     {
-                        tcs.TrySetException(a.Exception.InnerExceptions);
-                        Interlocked.Decrement(ref remaining);
-                    }
-                    else if (a.IsCanceled)
-                    {
-                        tcs.TrySetCanceled();
-                        Interlocked.Decrement(ref remaining);
+                        tcs.TrySetException(e);
                     }
                     else if (Interlocked.Decrement(ref remaining) == 0)
                     {
-                        tcs.TrySetResult(true);
+                        tcs.TrySetResult();
                     }
                 }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
             return tcs.Task;
+        }
+
+        // Gets the exception (if any) from the Task, for both faulted and cancelled tasks
+        private static Exception? GetRealException(this Task task)
+        {
+            if (task.GetAwaiter().IsCompleted)
+            {
+                try
+                {
+                    task.GetAwaiter().GetResult();
+                }
+                catch (Exception e)
+                {
+                    return e;
+                }
+            }
+
+            return null;
         }
     }
 }
