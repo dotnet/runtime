@@ -89,6 +89,9 @@ namespace WebAssemblyInfo
                 case SectionId.Import:
                     ReadImportSection();
                     break;
+                case SectionId.Code:
+                    ReadCodeSection();
+                    break;
                 default:
                     break;
             }
@@ -97,6 +100,59 @@ namespace WebAssemblyInfo
                 Console.WriteLine();
 
             reader.BaseStream.Seek(begin + size, SeekOrigin.Begin);
+        }
+
+        struct LocalsBlock
+        {
+            public UInt32 Count;
+            public ValueType Type;
+        }
+
+        struct Code
+        {
+            public LocalsBlock[] Locals;
+        }
+
+        Code[]? funcsCode;
+        void ReadCodeSection()
+        {
+            UInt32 count = ReadU32();
+
+            if (Program.Verbose)
+                Console.Write($" count: {count}");
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            funcsCode = new Code[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                var size = ReadU32();
+                var pos = reader.BaseStream.Position;
+
+                if (Program.Verbose2)
+                    Console.WriteLine($"  code: {size} bytes");
+
+                var vecSize = ReadU32();
+                funcsCode[i].Locals = new LocalsBlock[vecSize];
+
+                if (Program.Verbose2)
+                    Console.WriteLine($"  locals blocks count {vecSize}");
+
+                for (var j = 0; j < vecSize; j++)
+                {
+                    funcsCode[i].Locals[j].Count = ReadU32();
+                    ReadValueType(ref funcsCode[i].Locals[j].Type);
+
+                    if (Program.Verbose2)
+                        Console.WriteLine($"    locals count: {funcsCode[i].Locals[j].Count} type: {funcsCode[i].Locals[j].Type}");
+                }
+
+                // read expr
+
+                reader.BaseStream.Seek(pos + size, SeekOrigin.Begin);
+            }
         }
 
         void ReadCustomSection()
@@ -309,11 +365,15 @@ namespace WebAssemblyInfo
 
             for (int i = 0; i < count; i++)
             {
-                var b = reader.ReadByte();
-
-                type.Types[i].IsRefenceType = b <= 0x70;
-                type.Types[i].value = b;
+                ReadValueType(ref type.Types[i]);
             }
+        }
+
+        void ReadValueType(ref ValueType vt)
+        {
+            var b = reader.ReadByte();
+            vt.IsRefenceType = b <= 0x70;
+            vt.value = b;
         }
 
         void ReadFunctionSection()
