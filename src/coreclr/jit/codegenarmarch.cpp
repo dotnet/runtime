@@ -2688,8 +2688,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // a stack argument currently living in a register.  In either case the following
         // assert should hold.
         assert(varDsc->GetRegNum() != REG_STK);
-        assert(varDsc->TypeGet() != TYP_STRUCT);
-        var_types storeType = genActualType(varDsc->TypeGet());
+        assert(varDsc->IsEnregisterableLcl());
+        var_types storeType = varDsc->GetActualRegisterType();
         emitAttr  storeSize = emitActualTypeSize(storeType);
 
 #ifdef TARGET_ARM
