@@ -125,6 +125,8 @@ namespace Microsoft.Extensions.Primitives
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="start"/> is greater than or equal to <see cref="Length"/> or less than zero.
         /// </exception>
+        [MemberNotNull(nameof(Buffer))]
+        [MemberNotNull(nameof(Value))]
         public ReadOnlySpan<char> AsSpan(int start)
         {
             if (!HasValue || start < 0)
@@ -147,6 +149,8 @@ namespace Microsoft.Extensions.Primitives
         /// <paramref name="start"/> or <paramref name="length"/> is less than zero, or <paramref name="start"/> + <paramref name="length"/> is
         /// greater than <see cref="Length"/>.
         /// </exception>
+        [MemberNotNull(nameof(Buffer))]
+        [MemberNotNull(nameof(Value))]
         public ReadOnlySpan<char> AsSpan(int start, int length)
         {
             if (!HasValue || start < 0 || length < 0 || (uint)(start + length) > (uint)Length)
@@ -241,7 +245,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="text">The <see cref="string"/> to compare with the current <see cref="StringSegment"/>.</param>
         /// <returns><see langword="true" /> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <see langword="false" />.</returns>
-        public bool Equals([NotNullWhen(true)] string? text) => Equals(text, StringComparison.Ordinal);
+        public bool Equals(string? text) => Equals(text, StringComparison.Ordinal);
 
         /// <summary>
         /// Checks if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>.
@@ -250,12 +254,12 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><see langword="true" /> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals([NotNullWhen(true)] string? text, StringComparison comparisonType)
+        public bool Equals(string? text, StringComparison comparisonType)
         {
             if (!HasValue || text == null)
             {
                 CheckStringComparison(comparisonType); // must arg check before returning
-                return text == Buffer; // return true if both are null
+                return text == Buffer; // only return true if both are null
             }
 
             return AsSpan().Equals(text.AsSpan(), comparisonType);
@@ -393,6 +397,8 @@ namespace Microsoft.Extensions.Primitives
         /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> + <paramref name="length"/> is
         /// greater than <see cref="Length"/>.
         /// </exception>
+        [MemberNotNull(nameof(Buffer))]
+        [MemberNotNull(nameof(Value))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string Substring(int offset, int length)
         {
@@ -427,6 +433,8 @@ namespace Microsoft.Extensions.Primitives
         /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> + <paramref name="length"/> is
         /// greater than <see cref="Length"/>.
         /// </exception>
+        [MemberNotNull(nameof(Buffer))]
+        [MemberNotNull(nameof(Value))]
         public StringSegment Subsegment(int offset, int length)
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
@@ -640,6 +648,8 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="value">The <see cref="StringSegment"/> to test.</param>
         /// <returns></returns>
+        [MemberNotNullWhen(false, nameof(Buffer))]
+        [MemberNotNullWhen(false, nameof(Value))]
         public static bool IsNullOrEmpty(StringSegment value)
         {
             bool res = false;
