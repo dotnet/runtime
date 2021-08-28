@@ -3,9 +3,6 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(InteropCommonDir)ExeLauncherProgram.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="Licensing/CMakeLists.txt" />
     <ProjectReference Include="../NETServer/NETServer.csproj" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
