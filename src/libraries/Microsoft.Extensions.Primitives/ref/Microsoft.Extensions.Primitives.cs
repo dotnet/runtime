@@ -53,6 +53,8 @@ namespace Microsoft.Extensions.Primitives
         public string? Value { get { throw null; } }
         public System.ReadOnlyMemory<char> AsMemory() { throw null; }
         public System.ReadOnlySpan<char> AsSpan() { throw null; }
+        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Buffer))]
+        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Value))]
         public System.ReadOnlySpan<char> AsSpan(int start) { throw null; }
         [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Buffer))]
         [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Value))]
