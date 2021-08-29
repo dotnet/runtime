@@ -220,6 +220,9 @@ namespace System.Net.Sockets.Tests
         public override bool UsesApm => true;
     }
 
+    // This class elides the SocketFlags argument in calls where possible.
+    // SocketHelperCancellableTask does pass a SocketFlags argument where possible.
+    // Together they provide coverage for overloads with and without SocketFlags.
     public class SocketHelperTask : SocketHelperBase
     {
         public override Task<Socket> AcceptAsync(Socket s) =>
@@ -273,19 +276,19 @@ namespace System.Net.Sockets.Tests
         public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
             s.ConnectAsync(addresses, port, _cts.Token).AsTask();
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
-            s.ReceiveAsync(buffer, _cts.Token).AsTask();
+            s.ReceiveAsync(buffer, SocketFlags.None, _cts.Token).AsTask();
         public override Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
-            s.ReceiveAsync(bufferList);
+            s.ReceiveAsync(bufferList, SocketFlags.None);
         public override Task<SocketReceiveFromResult> ReceiveFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.ReceiveFromAsync(buffer, endPoint, _cts.Token).AsTask();
+            s.ReceiveFromAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask();
         public override Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-           s.ReceiveMessageFromAsync(buffer, endPoint, _cts.Token).AsTask();
+           s.ReceiveMessageFromAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
-            s.SendAsync(buffer, _cts.Token).AsTask();
+            s.SendAsync(buffer, SocketFlags.None, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
-            s.SendAsync(bufferList);
+            s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.SendToAsync(buffer, endPoint, _cts.Token).AsTask() ;
+            s.SendToAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask() ;
         public override Task SendFileAsync(Socket s, string fileName) =>
             s.SendFileAsync(fileName, _cts.Token).AsTask();
         public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
@@ -480,6 +483,9 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    // This class elides the SocketFlags argument in calls where possible.
+    // SocketHelperArraySync does pass a SocketFlags argument where possible.
+    // Together they provide coverage for overloads with and without SocketFlags.
     public class SocketHelperSpanSync : SocketHelperArraySync
     {
         public override bool ValidatesArrayArguments => false;
