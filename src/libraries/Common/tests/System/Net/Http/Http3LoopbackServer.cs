@@ -34,9 +34,7 @@ namespace System.Net.Test.Common
                     EnabledSslProtocols = options.SslProtocols,
                     ApplicationProtocols = new List<SslApplicationProtocol>
                     {
-                        new SslApplicationProtocol("h3-31"),
-                        new SslApplicationProtocol("h3-30"),
-                        new SslApplicationProtocol("h3-29")
+                        new SslApplicationProtocol(options.Alpn)
                     },
                     ServerCertificate = _cert,
                     ClientCertificateRequired = false
@@ -54,7 +52,7 @@ namespace System.Net.Test.Common
             _cert.Dispose();
         }
 
-        public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
+        private async Task<Http3LoopbackConnection> EstablishHttp3ConnectionAsync()
         {
             QuicConnection con = await _listener.AcceptConnectionAsync().ConfigureAwait(false);
             Http3LoopbackConnection connection = new Http3LoopbackConnection(con);
@@ -63,10 +61,16 @@ namespace System.Net.Test.Common
             return connection;
         }
 
+        public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
+        {
+            return await EstablishHttp3ConnectionAsync();
+        }
+
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
-            using GenericLoopbackConnection con = await EstablishGenericConnectionAsync().ConfigureAwait(false);
+            using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
             await funcAsync(con).ConfigureAwait(false);
+            await con.ShutdownAsync();
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
@@ -122,13 +126,17 @@ namespace System.Net.Test.Common
     }
     public class Http3Options : GenericLoopbackOptions
     {
-        public int MaxUnidirectionalStreams {get; set; }
+        public int MaxUnidirectionalStreams { get; set; }
 
-        public int MaxBidirectionalStreams {get; set; }
+        public int MaxBidirectionalStreams { get; set; }
+
+        public string Alpn { get; set; }
+
         public Http3Options()
         {
             MaxUnidirectionalStreams = 100;
             MaxBidirectionalStreams = 100;
+            Alpn = SslApplicationProtocol.Http3.ToString();
         }
     }
 }

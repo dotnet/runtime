@@ -52,7 +52,6 @@ namespace System
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
-        internal const uint ShiftedSignMask = SignMask >> SignShift;
 
         internal const uint ExponentMask = 0x7F80_0000;
         internal const int ExponentShift = 23;
@@ -183,6 +182,7 @@ namespace System
             throw new ArgumentException(SR.Arg_MustBeSingle);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(float value)
         {
             if (m_value < value) return -1;

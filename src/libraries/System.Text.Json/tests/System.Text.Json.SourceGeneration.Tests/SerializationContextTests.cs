@@ -9,6 +9,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(Location))]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes))]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent))]
     [JsonSerializable(typeof(CampaignSummaryViewModel))]
     [JsonSerializable(typeof(IndexViewModel))]
@@ -26,12 +27,17 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
+    [JsonSerializable(typeof(ClassWithCustomConverter))]
+    [JsonSerializable(typeof(StructWithCustomConverter))]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter))]
+    [JsonSerializable(typeof(StructWithBadCustomConverter))]
     internal partial class SerializationContext : JsonSerializerContext, ITestContext
     {
     }
 
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RepeatedTypes.Location), GenerationMode = JsonSourceGenerationMode.Serialization, TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(CampaignSummaryViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(IndexViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -49,6 +55,12 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
     }
@@ -56,6 +68,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RepeatedTypes.Location), GenerationMode = JsonSourceGenerationMode.Serialization, TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(CampaignSummaryViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(IndexViewModel), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -73,6 +86,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationContextWithCamelCase : JsonSerializerContext, ITestContext
     {
     }
@@ -91,6 +108,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Assert.NotNull(SerializationContext.Default.Location.Serialize);
             Assert.NotNull(SerializationContext.Default.RepeatedLocation.Serialize);
+            Assert.NotNull(SerializationContext.Default.NumberTypes.Serialize);
             Assert.NotNull(SerializationContext.Default.ActiveOrUpcomingEvent.Serialize);
             Assert.NotNull(SerializationContext.Default.CampaignSummaryViewModel.Serialize);
             Assert.NotNull(SerializationContext.Default.IndexViewModel.Serialize);
@@ -108,6 +126,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(SerializationContext.Default.ObjectArray.Serialize);
             Assert.Null(SerializationContext.Default.String.Serialize);
             Assert.NotNull(SerializationContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.Null(SerializationContext.Default.ClassWithCustomConverter.Serialize);
+            Assert.Null(SerializationContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => SerializationContext.Default.ClassWithBadCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => SerializationContext.Default.StructWithBadCustomConverter.Serialize);
         }
 
         [Fact]
@@ -122,6 +144,20 @@ namespace System.Text.Json.SourceGeneration.Tests
             VerifyLocation(expected, obj);
 
             AssertFastPathLogicCorrect(json, obj, DefaultContext.Location);
+        }
+
+        [Fact]
+        public override void RoundTripNumberTypes()
+        {
+            NumberTypes expected = CreateNumberTypes();
+
+            string json = JsonSerializer.Serialize(expected, DefaultContext.NumberTypes);
+            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.NumberTypes), typeof(NumberTypes));
+
+            NumberTypes obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).NumberTypes);
+            VerifyNumberTypes(expected, obj);
+
+            AssertFastPathLogicCorrect(json, obj, DefaultContext.NumberTypes);
         }
 
         [Fact]
@@ -352,6 +388,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ObjectArray.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.String.Serialize);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.ClassWithCustomConverter.Serialize);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => SerializationWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => SerializationWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.Serialize);
         }
     }
 }

@@ -3631,7 +3631,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     InfoAccessType  accessType;
     CorInfoHelpFunc helperNum = comp->eeGetHelperNum(call->gtCallMethHnd);
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (call->gtEntryPoint.addr != nullptr)
     {
         accessType = call->gtEntryPoint.accessType;
@@ -4530,7 +4530,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                     // a direct call within range of hardware relative call instruction
                     // stash the address for codegen
                     call->gtDirectCallAddress = addr;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                     call->gtEntryPoint.addr       = nullptr;
                     call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
@@ -4778,14 +4778,14 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         {
 
             bool shouldOptimizeVirtualStubCall = false;
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
             // Skip inserting the indirection node to load the address that is already
             // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
             // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
             // However, for tail calls, the call target is always computed in RBM_FASTTAILCALL_TARGET
             // and so do not optimize virtual stub calls for such cases.
             shouldOptimizeVirtualStubCall = !call->IsTailCall();
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
             if (!shouldOptimizeVirtualStubCall)
             {
@@ -5258,7 +5258,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
             firstNode = preShiftBy;
         }
-        else if (type != TYP_I_IMPL)
+        else if (type != TYP_I_IMPL
+#ifdef TARGET_ARM64
+                 && !simpleMul // On ARM64 we will use a 32x32->64 bit multiply as that's faster.
+#endif
+                 )
         {
             adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
@@ -5273,6 +5277,14 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 #endif
 
         divisor->gtType = TYP_I_IMPL;
+
+#ifdef TARGET_ARM64
+        if (simpleMul)
+        {
+            divisor->gtType = TYP_INT;
+        }
+#endif
+
         divisor->AsIntCon()->SetIconValue(magic);
 
         if (isDiv && !postShift && type == TYP_I_IMPL)

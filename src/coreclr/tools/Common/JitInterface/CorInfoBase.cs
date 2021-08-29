@@ -2563,6 +2563,21 @@ namespace Internal.JitInterface
             }
         }
 
+        [UnmanagedCallersOnly]
+        static byte _doesFieldBelongToClass(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* fldHnd, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.doesFieldBelongToClass(fldHnd, cls) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
 
         static IntPtr GetUnmanagedCallbacks()
         {

@@ -1420,40 +1420,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 
-#ifdef FEATURE_PREJIT
-    case STUB_CODE_BLOCK_VIRTUAL_METHOD_THUNK:
-        {
-            PCODE pTarget = GetMethodThunkTarget(stubStartAddress);
-            if (pTarget == ExecutionManager::FindZapModule(stubStartAddress)->
-                                        GetNGenLayoutInfo()->m_pVirtualImportFixupJumpStub)
-            {
-#ifdef DACCESS_COMPILE
-                DacNotImpl();
-#else
-                trace->InitForManagerPush(GetEEFuncEntryPoint(VirtualMethodFixupPatchLabel), this);
-#endif
-            }
-            else
-            {
-                trace->InitForStub(pTarget);
-            }
-            return TRUE;
-        }
-
-    case STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK:
-        {
-            PCODE pTarget = GetMethodThunkTarget(stubStartAddress);
-            if (pTarget != ExecutionManager::FindZapModule(stubStartAddress)->
-                                        GetNGenLayoutInfo()->m_pExternalMethodFixupJumpStub)
-            {
-                trace->InitForStub(pTarget);
-                return TRUE;
-            }
-        }
-
-        FALLTHROUGH;
-#endif
-
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
 #ifdef DACCESS_COMPILE
         DacNotImpl();
@@ -1483,14 +1449,7 @@ BOOL RangeSectionStubManager::TraceManager(Thread *thread,
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
-    // Both virtual and external import thunks have the same structure. We can use
-    // common code to handle them.
-    _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(VirtualMethodFixupPatchLabel)
-         || GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
-#else
     _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
-#endif
 
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
@@ -1661,7 +1620,6 @@ PCODE ILStubManager::GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallIn
 }
 #endif // FEATURE_COMINTEROP
 
-#ifndef CROSSGEN_COMPILE
 BOOL ILStubManager::TraceManager(Thread *thread,
                                  TraceDestination *trace,
                                  T_CONTEXT *pContext,
@@ -1796,7 +1754,6 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
     return TRUE;
 }
-#endif // !CROSSGEN_COMPILE
 #endif //!DACCESS_COMPILE
 
 // This is used to recognize GenericComPlusCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.

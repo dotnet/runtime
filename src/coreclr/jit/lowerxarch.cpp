@@ -452,10 +452,10 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         unsigned prevOffset        = putArgStk->GetStackByteSize();
         for (GenTreeFieldList::Use& use : fieldList->Uses())
         {
-            GenTree* const  fieldNode   = use.GetNode();
-            const var_types fieldType   = fieldNode->TypeGet();
-            const unsigned  fieldOffset = use.GetOffset();
-            assert(fieldType != TYP_LONG);
+            GenTree* const fieldNode   = use.GetNode();
+            const unsigned fieldOffset = use.GetOffset();
+
+            assert(!fieldNode->TypeIs(TYP_LONG));
 
             // We can treat as a slot any field that is stored at a slot boundary, where the previous
             // field is not in the same slot. (Note that we store the fields in reverse order.)

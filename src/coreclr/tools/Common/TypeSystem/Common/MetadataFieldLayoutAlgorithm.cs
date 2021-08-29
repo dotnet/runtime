@@ -1025,16 +1025,14 @@ namespace Internal.TypeSystem
 
             foreach (FieldDesc field in metadataType.GetFields())
             {
-                if (field.IsStatic || field.IsLiteral)
+                if (field.IsStatic)
                     continue;
 
-                if (!(field.FieldType is DefType fieldType))
+                TypeDesc fieldType = field.FieldType;
+                if (!fieldType.IsValueType || fieldType.IsPrimitive)
                     continue;
 
-                if (fieldType.IsPrimitive)
-                    continue;
-
-                if (fieldType.IsUnsafeValueType)
+                if (((DefType)fieldType).IsUnsafeValueType)
                     return true;
             }
 

@@ -46,6 +46,19 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ConsoleReadSupportsBackspace()
+        {
+            const string expectedLine = "aab\r";
+
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            foreach (char c in expectedLine)
+            {
+                Assert.Equal((int)c, Console.Read());
+            }
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void ReadLine_BackSpaceCanMoveAcrossWrappedLines()
         {
             Console.WriteLine("Please press 'a' until it wraps to the next terminal line, then press 'Backspace' until the input is erased, and then type a single 'a' and press 'Enter'.");

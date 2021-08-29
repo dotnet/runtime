@@ -2963,7 +2963,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
 
     // Extract the matching lclNum and ssaNum.
     const unsigned copyLclNum = (op1.lcl.lclNum == lclNum) ? op2.lcl.lclNum : op1.lcl.lclNum;
-    unsigned       copySsaNum = BAD_VAR_NUM;
+    unsigned       copySsaNum = SsaConfig::RESERVED_SSA_NUM;
     if (!optLocalAssertionProp)
     {
         // Extract the ssaNum of the matching lclNum.
@@ -2991,8 +2991,8 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
         return nullptr;
     }
 
-    tree->SetSsaNum(copySsaNum);
     tree->SetLclNum(copyLclNum);
+    tree->SetSsaNum(copySsaNum);
 
 #ifdef DEBUG
     if (verbose)
@@ -3394,6 +3394,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
                 assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
                 printf("null\n");
             }
+            else if (op1->TypeGet() == TYP_BYREF)
+            {
+                printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+            }
             else
             {
                 printf("??unknown\n");
@@ -3448,6 +3452,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             // The only constant of TYP_REF that ValueNumbering supports is 'null'
             noway_assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
             op1->AsIntCon()->gtIconVal = 0;
+        }
+        else if (op1->TypeGet() == TYP_BYREF)
+        {
+            op1->ChangeOperConst(GT_CNS_INT);
+            op1->AsIntCon()->gtIconVal = static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns));
         }
         else
         {

@@ -273,6 +273,13 @@ namespace System.Reflection
             m_scope = scope;
             m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(scope, caCtorToken)!;
 
+            if (m_ctor!.DeclaringType!.IsGenericType)
+            {
+                MetadataImport metadataScope = scope.MetadataImport;
+                var attributeType = scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
+                m_ctor = (RuntimeConstructorInfo)scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
+            }
+
             ParameterInfo[] parameters = m_ctor.GetParametersNoCopy();
             m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)

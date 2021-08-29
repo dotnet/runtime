@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Act
             using (logger.BeginScope("Scope with named parameter {namedParameter}", 123))
             using (logger.BeginScope("SimpleScope"))
-                logger.Log(LogLevel.Warning, 0, "Message with {args}", 73, _defaultFormatter);
+                logger.Log(LogLevel.Warning, 0, "Message with {args}", 73);
 
             // Assert
             Assert.Equal(1, sink.Writes.Count);

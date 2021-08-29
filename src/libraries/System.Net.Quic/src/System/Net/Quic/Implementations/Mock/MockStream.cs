@@ -42,7 +42,23 @@ namespace System.Net.Quic.Implementations.Mock
 
         private StreamBuffer? ReadStreamBuffer => _isInitiator ? _streamState._inboundStreamBuffer : _streamState._outboundStreamBuffer;
 
+        internal override bool CanTimeout => false;
+
+        internal override int ReadTimeout
+        {
+            get => throw new InvalidOperationException();
+            set => throw new InvalidOperationException();
+        }
+
+        internal override int WriteTimeout
+        {
+            get => throw new InvalidOperationException();
+            set => throw new InvalidOperationException();
+        }
+
         internal override bool CanRead => !_disposed && ReadStreamBuffer is not null;
+
+        internal override bool ReadsCompleted => ReadStreamBuffer?.IsComplete ?? false;
 
         internal override int Read(Span<byte> buffer)
         {
@@ -70,6 +86,11 @@ namespace System.Net.Quic.Implementations.Mock
             int bytesRead = await streamBuffer.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (bytesRead == 0)
             {
+                if (_connection.ConnectionError is long connectonError)
+                {
+                    throw new QuicConnectionAbortedException(connectonError);
+                }
+
                 long errorCode = _isInitiator ? _streamState._inboundReadErrorCode : _streamState._outboundReadErrorCode;
                 if (errorCode != 0)
                 {
@@ -119,6 +140,11 @@ namespace System.Net.Quic.Implementations.Mock
             if (streamBuffer is null)
             {
                 throw new NotSupportedException();
+            }
+
+            if (_connection.ConnectionError is long connectonError)
+            {
+                throw new QuicConnectionAbortedException(connectonError);
             }
 
             long errorCode = _isInitiator ? _streamState._inboundWriteErrorCode : _streamState._outboundWriteErrorCode;

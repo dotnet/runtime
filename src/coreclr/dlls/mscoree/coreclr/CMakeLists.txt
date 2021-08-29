@@ -98,13 +98,11 @@ set(CORECLR_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    mdhotdata_full
     bcltype
     ceefgen
     comfloat_wks
     corguids
     gcinfo
-    ildbsymlib
     utilcode
     v3binder
     System.Globalization.Native-Static

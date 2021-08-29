@@ -34,6 +34,17 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void RoundTripNumberTypes()
+        {
+            NumberTypes expected = CreateNumberTypes();
+
+            string json = JsonSerializer.Serialize(expected, DefaultContext.NumberTypes);
+            NumberTypes obj = JsonSerializer.Deserialize(json, DefaultContext.NumberTypes);
+            VerifyNumberTypes(expected, obj);
+        }
+
+
+        [Fact]
         public virtual void RoundTripIndexViewModel()
         {
             IndexViewModel expected = CreateIndexViewModel();
@@ -99,6 +110,64 @@ namespace System.Text.Json.SourceGeneration.Tests
             VerifyRepeatedLocation(expected, obj);
         }
 
+        [Fact]
+        public virtual void RoundTripWithCustomConverter_Class()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            ClassWithCustomConverter obj = new ClassWithCustomConverter()
+            {
+                MyInt = 42
+            };
+
+            string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverter);
+            Assert.Equal(Json, json);
+
+            obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverter);
+            Assert.Equal(42, obj.MyInt);
+        }
+
+        [Fact]
+        public virtual void RoundTripWithCustomConverter_Struct()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            StructWithCustomConverter obj = new StructWithCustomConverter()
+            {
+                MyInt = 42
+            };
+
+            string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverter);
+            Assert.Equal(Json, json);
+
+            obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverter);
+            Assert.Equal(42, obj.MyInt);
+        }
+
+        [Fact]
+        public virtual void BadCustomConverter_Class()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Serialize(new ClassWithBadCustomConverter(), DefaultContext.ClassWithBadCustomConverter));
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Deserialize(Json, DefaultContext.ClassWithBadCustomConverter));
+        }
+
+        [Fact]
+        public virtual void BadCustomConverter_Struct()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Serialize(new StructWithBadCustomConverter(), DefaultContext.StructWithBadCustomConverter));
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Deserialize(Json, DefaultContext.StructWithBadCustomConverter));
+        }
+
         protected static Location CreateLocation()
         {
             return new Location
@@ -125,6 +194,39 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expected.Name, obj.Name);
             Assert.Equal(expected.PhoneNumber, obj.PhoneNumber);
             Assert.Equal(expected.Country, obj.Country);
+        }
+
+        protected static NumberTypes CreateNumberTypes()
+        {
+            return new NumberTypes
+            {
+                Single = 1.1f,
+                Double = 2.2d,
+                Decimal = 3.3m,
+                SByte = -1,
+                Byte = 1,
+                UShort = 2,
+                Short = -2,
+                UInt = 3,
+                Int = -3,
+                ULong = 4,
+                Long = -4,
+            };
+        }
+
+        protected static void VerifyNumberTypes(NumberTypes expected, NumberTypes obj)
+        {
+            Assert.Equal(expected.Single, obj.Single);
+            Assert.Equal(expected.Double, obj.Double);
+            Assert.Equal(expected.Decimal, obj.Decimal);
+            Assert.Equal(expected.SByte, obj.SByte);
+            Assert.Equal(expected.Byte, obj.Byte);
+            Assert.Equal(expected.UShort, obj.UShort);
+            Assert.Equal(expected.Short, obj.Short);
+            Assert.Equal(expected.UInt, obj.UInt);
+            Assert.Equal(expected.Int, obj.Int);
+            Assert.Equal(expected.ULong, obj.ULong);
+            Assert.Equal(expected.Long, obj.Long);
         }
 
         protected static ActiveOrUpcomingEvent CreateActiveOrUpcomingEvent()
@@ -447,8 +549,9 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Contains(@"""High"":1", json);
             Assert.Contains(@"""Low"":2", json);
 
-            // Deserialization not supported for now.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsImmutable));
+            HighLowTempsImmutable obj = JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsImmutable);
+            Assert.Equal(1, obj.High);
+            Assert.Equal(2, obj.Low);
         }
 
         [Fact]

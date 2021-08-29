@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="AssemblyAttributes.cs" />
     <Compile Include="ByteTypeTests.cs" />
     <Compile Include="CharTypeTests.cs" />

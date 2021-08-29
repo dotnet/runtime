@@ -628,17 +628,13 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
-	if (!mono_gchandle_get_target_internal (alc->gchandle))
-		return NULL;
-
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
 	scope_handle = mono_string_new_handle (scope, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle;
-	gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [3];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = &gchandle;
@@ -694,9 +690,6 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
-	if (!mono_gchandle_get_target_internal (alc->gchandle))
-		return NULL;
-
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
@@ -707,8 +700,7 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	assembly_handle = mono_assembly_get_object_handle (assembly, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle;
-	gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [4];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);

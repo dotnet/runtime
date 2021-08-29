@@ -14,13 +14,14 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(TargetOS)'!='OSX'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(TargetOS)' == 'Linux'">true</FeatureXplatEventSource>
 
         <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
         <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
         <FeaturePortableShuffleThunks Condition="'$(Platform)' != 'x86'">true</FeaturePortableShuffleThunks>
         <FeatureInstantiatingStubAsIL>true</FeatureInstantiatingStubAsIL>
         <FeatureStubsAsIL>true</FeatureStubsAsIL>
+        <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">

@@ -71,6 +71,8 @@ namespace System.Net.Quic
 
         public override bool CanRead => _provider.CanRead;
 
+        public bool ReadsCompleted => _provider.ReadsCompleted;
+
         public override int Read(Span<byte> buffer) => _provider.Read(buffer);
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _provider.ReadAsync(buffer, cancellationToken);
@@ -78,6 +80,20 @@ namespace System.Net.Quic
         public override bool CanWrite => _provider.CanWrite;
 
         public override void Write(ReadOnlySpan<byte> buffer) => _provider.Write(buffer);
+
+        public override bool CanTimeout => _provider.CanTimeout;
+
+        public override int ReadTimeout
+        {
+            get => _provider.ReadTimeout;
+            set => _provider.ReadTimeout = value;
+        }
+
+        public override int WriteTimeout
+        {
+            get => _provider.WriteTimeout;
+            set => _provider.WriteTimeout = value;
+        }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, cancellationToken);
 

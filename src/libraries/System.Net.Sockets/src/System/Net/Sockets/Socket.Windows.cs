@@ -397,14 +397,11 @@ namespace System.Net.Sockets
 
         private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
-            // Open the file, if any
-            FileStream? fileStream = OpenFile(fileName);
-
             SocketError errorCode;
-            using (fileStream)
-            {
-                SafeFileHandle? fileHandle = fileStream?.SafeFileHandle;
 
+            // Open the file, if any
+            using (SafeFileHandle? fileHandle = OpenFileHandle(fileName))
+            {
                 // This can throw ObjectDisposedException.
                 errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
             }

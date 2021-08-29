@@ -118,8 +118,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the <see cref="HostOptions"/> of the <see cref="IHost"/> instance
-        /// related to th.
+        /// Adds a delegate for configuring the <see cref="HostOptions"/> of the <see cref="IHost"/>.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureOptions">The delegate for configuring the <see cref="HostOptions"/>.</param>
@@ -173,17 +172,15 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <remarks>
         ///   The following defaults are applied to the <see cref="IHostBuilder"/>:
-        ///   <list type="bullet">
-        ///     <item><description>set the <see cref="IHostEnvironment.ContentRootPath"/> to the result of <see cref="Directory.GetCurrentDirectory()"/></description></item>
-        ///     <item><description>load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
-        ///     <item><description>load host <see cref="IConfiguration"/> from supplied command line args</description></item>
-        ///     <item><description>load app <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'</description></item>
-        ///     <item><description>load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
-        ///     <item><description>load app <see cref="IConfiguration"/> from environment variables</description></item>
-        ///     <item><description>load app <see cref="IConfiguration"/> from supplied command line args</description></item>
-        ///     <item><description>configure the <see cref="ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
-        ///     <item><description>enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
-        ///   </list>
+        ///     * set the <see cref="IHostEnvironment.ContentRootPath"/> to the result of <see cref="Directory.GetCurrentDirectory()"/>
+        ///     * load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables
+        ///     * load host <see cref="IConfiguration"/> from supplied command line args
+        ///     * load app <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'
+        ///     * load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly
+        ///     * load app <see cref="IConfiguration"/> from environment variables
+        ///     * load app <see cref="IConfiguration"/> from supplied command line args
+        ///     * configure the <see cref="ILoggerFactory"/> to log to the console, debug, and event source output
+        ///     * enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'
         /// </remarks>
         /// <param name="builder">The existing builder to configure.</param>
         /// <param name="args">The command line args.</param>
@@ -288,7 +285,6 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder)
         {
@@ -305,7 +301,6 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions)
         {
@@ -325,7 +320,6 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
@@ -342,7 +336,6 @@ namespace Microsoft.Extensions.Hosting
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
         {
