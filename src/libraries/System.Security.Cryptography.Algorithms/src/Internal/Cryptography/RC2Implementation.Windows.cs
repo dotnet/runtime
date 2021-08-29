@@ -43,14 +43,14 @@ namespace Internal.Cryptography
             using (SafeAlgorithmHandle algorithm = RC2BCryptModes.GetHandle(cipherMode, effectiveKeyLength))
             {
                 // The BasicSymmetricCipherBCrypt ctor will increase algorithm reference count and take ownership.
-                return new BasicSymmetricCipherBCrypt(
+                return new BasicSymmetricCipherLiteBCrypt(
                     algorithm,
                     cipherMode,
                     blockSize,
                     paddingSize,
                     key,
                     ownsParentHandle: true,
-                    iv.ToArray(),
+                    iv,
                     encrypting);
             }
         }

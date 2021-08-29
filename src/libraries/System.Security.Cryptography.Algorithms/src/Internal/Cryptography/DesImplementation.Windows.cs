@@ -37,14 +37,14 @@ namespace Internal.Cryptography
         {
             SafeAlgorithmHandle algorithm = DesBCryptModes.GetSharedHandle(cipherMode, feedbackSize);
 
-            return new BasicSymmetricCipherBCrypt(
+            return new BasicSymmetricCipherLiteBCrypt(
                 algorithm,
                 cipherMode,
                 blockSize,
                 paddingSize,
                 key,
                 ownsParentHandle: false,
-                iv.ToArray(),
+                iv,
                 encrypting);
         }
     }
