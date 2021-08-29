@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.FileProviders
 
                 using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var info = provider.GetFileInfo(Path.Combine("a", "..", "..", root.GetDirectoryName(), "b"));
+                    var info = provider.GetFileInfo(Path.Combine("a", "..", "..", root.GetName(), "b"));
                     Assert.IsType<NotFoundFileInfo>(info);
                 }
             }
@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.FileProviders
 
                 using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var info = provider.GetFileInfo("a///../../" + root.GetDirectoryName() + "/b");
+                    var info = provider.GetFileInfo("a///../../" + root.GetName() + "/b");
                     Assert.IsType<NotFoundFileInfo>(info);
                 }
             }
@@ -691,7 +691,7 @@ namespace Microsoft.Extensions.FileProviders
 
                 using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var contents = provider.GetDirectoryContents(Path.Combine("a", "..", "..", Path.GetDirectoryName(root.Path), "b"));
+                    var contents = provider.GetDirectoryContents(Path.Combine("a", "..", "..", root.GetName(), "b"));
                     Assert.IsType<NotFoundDirectoryContents>(contents);
                 }
             }
@@ -927,7 +927,7 @@ namespace Microsoft.Extensions.FileProviders
             {
                 using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var token = provider.Watch(Path.Combine("a", "..", "..", root.GetDirectoryName(), "b"));
+                    var token = provider.Watch(Path.Combine("a", "..", "..", root.GetName(), "b"));
 
                     Assert.Same(NullChangeToken.Singleton, token);
                 }
@@ -1653,7 +1653,7 @@ namespace Microsoft.Extensions.FileProviders
             File.WriteAllText(Path.Combine(root.Path, path), "temp");
         }
 
-        internal static string GetDirectoryName(this TempDirectory root)
-            => Path.GetDirectoryName(root.Path);
+        internal static string GetName(this TempDirectory root)
+            => Path.GetFileName(root.Path);
     }
 }
