@@ -5531,13 +5531,33 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Match OS for compMatchedVM
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
+
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+    if (!TargetOS::OSSettingConfigured)
+    {
+        CORINFO_EE_INFO* eeInfo       = eeGetEEInfo();
+        TargetOS::IsMacOS             = eeInfo->osType == CORINFO_MACOS;
+        TargetOS::IsUnix              = (eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS);
+        TargetOS::IsWindows           = eeInfo->osType == CORINFO_WINNT;
+        TargetOS::OSSettingConfigured = true;
+    }
+#endif
+
     if (TargetOS::IsMacOS)
     {
         info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_MACOS);
     }
     else if (TargetOS::IsUnix)
     {
-        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
+        if (TargetArchitecture::IsX64)
+        {
+            // MacOS x64 uses the Unix jit variant in crossgen2, not a special jit
+            info.compMatchedVM = info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
+        }
+        else
+        {
+            info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
+        }
     }
     else if (TargetOS::IsWindows)
     {
@@ -6100,17 +6120,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                                 JitFlags*             compileFlags)
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
-
-#ifdef TARGET_OS_RUNTIMEDETERMINED
-    if (!TargetOS::OSSettingConfigured)
-    {
-        CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-        TargetOS::IsMacOS = eeInfo->osType == CORINFO_MACOS;
-        TargetOS::IsUnix = (eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS);
-        TargetOS::IsWindows = eeInfo->osType == CORINFO_WINNT;
-        TargetOS::OSSettingConfigured = true;
-    }
-#endif
 
     info.compCode         = methodInfo->ILCode;
     info.compILCodeSize   = methodInfo->ILCodeSize;

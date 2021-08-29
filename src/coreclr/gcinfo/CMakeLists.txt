@@ -64,6 +64,11 @@ else()
 set(TARGET_OS_NAME win)
 endif()
 
+# For clrjit we need to build an exact targetted gcinfo instead of the universal one
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
+  create_gcinfo_lib(TARGET gcinfo_${TARGET_OS_NAME}_${ARCH_TARGET_NAME} OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
+endif()
+
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_gcinfo_lib(TARGET gcinfo_universal_arm64 OS universal ARCH arm64)
   create_gcinfo_lib(TARGET gcinfo_unix_x64 OS unix ARCH x64)
