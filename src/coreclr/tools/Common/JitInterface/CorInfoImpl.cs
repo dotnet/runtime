@@ -79,32 +79,26 @@ namespace Internal.JitInterface
             [DllImport(JitLibrary)]
             private extern static IntPtr getJit();
 
-            public static IntPtr Get()
-            {
-                if (s_jit != IntPtr.Zero)
-                {
-                    return s_jit;
-                }
-
-                lock(typeof(JitPointerAccessor))
-                {
-                    s_jit = getJit();
-                    return s_jit;
-                }
-            }
-
             [DllImport(JitSupportLibrary)]
             private extern static CorJitResult JitProcessShutdownWork(IntPtr jit);
 
-            public static void ShutdownJit()
+            static JitPointerAccessor()
             {
+                s_jit = getJit();
+
                 if (s_jit != IntPtr.Zero)
                 {
-                    JitProcessShutdownWork(s_jit);
+                    AppDomain.CurrentDomain.ProcessExit += (_, _) => JitProcessShutdownWork(s_jit);
+                    AppDomain.CurrentDomain.UnhandledException += (_, _) => JitProcessShutdownWork(s_jit);
                 }
             }
 
-            private static IntPtr s_jit;
+            public static IntPtr Get()
+            {
+                return s_jit;
+            }
+
+            private static readonly IntPtr s_jit;
         }
 
         [DllImport(JitLibrary)]
@@ -157,11 +151,6 @@ namespace Internal.JitInterface
         public static void Startup()
         {
             jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
-        }
-
-        public static void ShutdownJit()
-        {
-            JitPointerAccessor.ShutdownJit();
         }
 
         public CorInfoImpl()
@@ -722,7 +711,7 @@ namespace Internal.JitInterface
             // Default to managed since in the modopt case we need to differentiate explicitly using a calling convention that matches the default
             // and not specifying a calling convention at all and using the implicit default case in P/Invoke stub inlining.
             callConv = CorInfoCallConvExtension.Managed;
-            if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
+            if (!signature.HasEmbeddedSignatureData)
                 return false;
 
             bool found = false;
@@ -1886,9 +1875,8 @@ namespace Internal.JitInterface
                 if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
                     result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
 
-                // TODO
-                // if (type.IsUnsafeValueType)
-                //    result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
+                if (metadataType.IsUnsafeValueType)
+                    result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -3543,6 +3531,42 @@ namespace Internal.JitInterface
             }
         }
 
+        private bool doesFieldBelongToClass(CORINFO_FIELD_STRUCT_* fld, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var field = HandleToObject(fld);
+            var queryType = HandleToObject(cls);
+
+            Debug.Assert(!field.IsStatic);
+
+            // doesFieldBelongToClass implements the predicate of...
+            // if field is not associated with the class in any way, return false.
+            // if field is the only FieldDesc that the JIT might see for a given class handle
+            // and logical field pair then return true. This is needed as the field handle here
+            // is used as a key into a hashtable mapping writes to fields to value numbers.
+            //
+            // In this implmentation this is made more complex as the JIT is exposed to CORINFO_FIELD_STRUCT
+            // pointers which represent exact instantions, so performing exact matching is the necessary approach
+
+            // BaseType._field, BaseType -> true
+            // BaseType._field, DerivedType -> true
+            // BaseType<__Canon>._field, BaseType<__Canon> -> true
+            // BaseType<__Canon>._field, BaseType<string> -> false
+            // BaseType<__Canon>._field, BaseType<object> -> false
+            // BaseType<sbyte>._field, BaseType<sbyte> -> true
+            // BaseType<sbyte>._field, BaseType<byte> -> false
+
+            var fieldOwnerType = field.OwningType;
+
+            while (queryType != null)
+            {
+                if (fieldOwnerType == queryType)
+                    return true;
+                queryType = queryType.BaseType;
+            }
+
+            return false;
+        }
+
         private bool isMethodDefinedInCoreLib()
         {
             TypeDesc owningType = MethodBeingCompiled.OwningType;
@@ -3590,8 +3614,10 @@ namespace Internal.JitInterface
                     break;
             }
 
+#if READYTORUN
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
+#endif
 
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {

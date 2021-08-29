@@ -79,7 +79,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     {
         noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
 #ifdef TARGET_AMD64
-        if ((int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
+        if ((size_t)(int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
         {
             // initReg = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = initReg
             genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
@@ -2511,7 +2511,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             amount /= STACK_ALIGN;
         }
 
-        genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
+        genSetRegToIcon(regCnt, amount, ((size_t)(int)amount == amount) ? TYP_INT : TYP_LONG);
     }
 
     if (compiler->info.compInitMem)
@@ -4450,7 +4450,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
             LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
             GetEmitter()->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
-                                      emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
+                                      emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, tree->GetLclOffs());
             varDsc->SetRegNum(REG_STK);
         }
         else
@@ -5383,7 +5383,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // clang-format on
         }
     }
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     else if (call->gtEntryPoint.addr != nullptr)
     {
         // clang-format off
@@ -5674,7 +5674,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         assert(varDsc->GetRegNum() != REG_STK);
 
         assert(!varDsc->lvIsStructField || (compiler->lvaTable[varDsc->lvParentLcl].lvFieldCnt == 1));
-        var_types storeType = genActualType(varDsc->lvaArgType()); // We own the memory and can use the full move.
+        var_types storeType = varDsc->GetActualRegisterType(); // We own the memory and can use the full move.
         GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->GetRegNum(), varNum, 0);
 
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
@@ -5789,7 +5789,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
             // Is register argument already in the right register?
             // If not load it from its stack location.
-            var_types loadType = varDsc->lvaArgType();
+            var_types loadType = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
             if (varTypeIsStruct(varDsc->TypeGet()))
@@ -5840,7 +5840,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         if (compiler->info.compIsVarArgs)
         {
             regNumber intArgReg;
-            var_types loadType = varDsc->lvaArgType();
+            var_types loadType = varDsc->GetRegisterType();
             regNumber argReg   = varDsc->GetArgReg(); // incoming arg register
 
             if (varTypeIsFloating(loadType))
@@ -8625,7 +8625,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                 continue;
             }
 
-            var_types storeType = varDsc->lvaArgType();
+            var_types storeType = varDsc->GetRegisterType();
             regNumber argReg    = varDsc->GetArgReg();
 
             instruction store_ins = ins_Store(storeType);
@@ -8695,7 +8695,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
             continue;
         }
 
-        var_types loadType = varDsc->lvaArgType();
+        var_types loadType = varDsc->GetRegisterType();
         regNumber argReg   = varDsc->GetArgReg();
 
         instruction load_ins = ins_Load(loadType);

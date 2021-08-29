@@ -7,8 +7,7 @@ using System.Linq;
 using System.Reflection;
 using Xunit;
 
-[SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-[ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
+[SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Android, Browser, iOS, MacCatalyst, or tvOS.")]
 public class TermInfo
 {
     // Names of internal members accessed via reflection
@@ -27,7 +26,6 @@ public class TermInfo
 
     [Fact]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests TermInfo
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/36878", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public void VerifyInstalledTermInfosParse()
     {
         bool foundAtLeastOne = false;
@@ -62,7 +60,6 @@ public class TermInfo
 
     [Fact]
     [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests TermInfo
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/36878", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public void VerifyTermInfoSupportsNewAndLegacyNcurses()
     {
         MethodInfo readDbMethod = typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseType).GetTypeInfo().GetDeclaredMethods(ReadDatabaseMethod).Where(m => m.GetParameters().Count() == 2).Single();
@@ -87,7 +84,6 @@ public class TermInfo
     [InlineData("mach-color", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
     [InlineData("mach-color", "\u001B\u005B\u00335m", "\u001B\u005B\u00345m", 5)]
     [InlineData("mach-color", "\u001B\u005B\u003312m", "\u001B\u005B\u003412m", 12)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/36878", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public void TermInfoVerification(string termToTest, string expectedForeground, string expectedBackground, int colorValue)
     {
         object db = ReadTermInfoDatabase(termToTest);
@@ -111,7 +107,6 @@ public class TermInfo
 
     [Fact]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests TermInfo
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/36878", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public void TryingToLoadTermThatDoesNotExistDoesNotThrow()
     {
         const string NonexistentTerm = "foobar____";

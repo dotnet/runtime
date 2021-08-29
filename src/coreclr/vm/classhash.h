@@ -17,9 +17,6 @@ class EEClassHashTable;
 typedef struct EEClassHashEntry
 {
     friend class EEClassHashTable;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 #ifdef _DEBUG
     PTR_CUTF8                               DebugKey[2];    // Name of the type
@@ -61,9 +58,6 @@ private:
 typedef DPTR(class EEClassHashTable) PTR_EEClassHashTable;
 class EEClassHashTable : public NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     // The LookupContext type we export to track GetValue/FindNextNestedClass enumerations is simply a rename
@@ -110,21 +104,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     void EnumMemoryRegionsForEntry(EEClassHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags);
 #endif
-
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    void Save(DataImage *pImage, CorProfileData *pProfileData);
-    void Fixup(DataImage *pImage);
-
-private:
-    friend class NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>;
-
-    void PrepareExportedTypesForSaving(DataImage *image);
-
-    bool ShouldSave(DataImage *pImage, EEClassHashEntry_t *pEntry);
-    bool IsHotEntry(EEClassHashEntry_t *pEntry, CorProfileData *pProfileData);
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, EEClassHashEntry_t *pOldEntry, EEClassHashEntry_t *pNewEntry, EntryMappingTable *pMap);
-    void FixupEntry(DataImage *pImage, EEClassHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset);
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
 
 private:
 #ifndef DACCESS_COMPILE

@@ -194,7 +194,7 @@ namespace System.Xml.Serialization
             string typeName;
             string typeNs = XmlSchema.Namespace;
 
-            switch (type.GetTypeCode())
+            switch (Type.GetTypeCode(type))
             {
                 case TypeCode.String: typeName = "string"; break;
                 case TypeCode.Int32: typeName = "int"; break;
@@ -254,7 +254,7 @@ namespace System.Xml.Serialization
             Type t = o.GetType();
             bool wroteStartElement = false;
 
-            switch (t.GetTypeCode())
+            switch (Type.GetTypeCode(t))
             {
                 case TypeCode.String:
                     value = (string)o;
@@ -477,21 +477,17 @@ namespace System.Xml.Serialization
             bool needEmptyDefaultNamespace = false;
             if (_namespaces != null)
             {
-                foreach (string alias in _namespaces.Namespaces.Keys)
-                {
-                    string? aliasNs = (string?)_namespaces.Namespaces[alias];
+                _namespaces.TryLookupPrefix(ns, out prefix);
 
-                    if (alias.Length > 0 && aliasNs == ns)
-                        prefix = alias;
-                    if (alias.Length == 0)
-                    {
-                        if (aliasNs == null || aliasNs.Length == 0)
-                            needEmptyDefaultNamespace = true;
-                        if (ns != aliasNs)
-                            writePrefixed = true;
-                    }
+                if (_namespaces.TryLookupNamespace("", out string? defaultNS))
+                {
+                    if (string.IsNullOrEmpty(defaultNS))
+                        needEmptyDefaultNamespace = true;
+                    if (ns != defaultNS)
+                        writePrefixed = true;
                 }
-                _usedPrefixes = ListUsedPrefixes(_namespaces.Namespaces, _aliasBase);
+
+                _usedPrefixes = ListUsedPrefixes(_namespaces, _aliasBase);
             }
             if (writePrefixed && prefix == null && ns != null && ns.Length > 0)
             {
@@ -503,16 +499,17 @@ namespace System.Xml.Serialization
             }
             if (prefix == null && xmlns != null)
             {
-                prefix = xmlns.LookupPrefix(ns);
+                xmlns.TryLookupPrefix(ns, out prefix);
             }
             if (needEmptyDefaultNamespace && prefix == null && ns != null && ns.Length != 0)
                 prefix = NextPrefix();
             _w.WriteStartElement(prefix, name, ns);
             if (_namespaces != null)
             {
-                foreach (string alias in _namespaces.Namespaces.Keys)
+                foreach (XmlQualifiedName qname in _namespaces.Namespaces)
                 {
-                    string? aliasNs = (string?)_namespaces.Namespaces[alias];
+                    string alias = qname.Name;
+                    string? aliasNs = qname.Namespace;
                     if (alias.Length == 0 && (aliasNs == null || aliasNs.Length == 0))
                         continue;
                     if (aliasNs == null || aliasNs.Length == 0)
@@ -536,17 +533,16 @@ namespace System.Xml.Serialization
             WriteNamespaceDeclarations(xmlns);
         }
 
-        private HashSet<int>? ListUsedPrefixes(Dictionary<string, string?>? nsList, string prefix)
+        private HashSet<int>? ListUsedPrefixes(XmlSerializerNamespaces nsList, string prefix)
         {
             var qnIndexes = new HashSet<int>();
             int prefixLength = prefix.Length;
             const string MaxInt32 = "2147483647";
-            foreach (string alias in _namespaces!.Namespaces.Keys)
+            foreach (XmlQualifiedName qname in nsList.Namespaces)
             {
-                string name;
-                if (alias.Length > prefixLength)
+                if (qname.Name.Length > prefixLength)
                 {
-                    name = alias;
+                    string name = qname.Name;
                     if (name.Length > prefixLength && name.Length <= prefixLength + MaxInt32.Length && name.StartsWith(prefix, StringComparison.Ordinal))
                     {
                         bool numeric = true;
@@ -1316,7 +1312,7 @@ namespace System.Xml.Serialization
                 return;
             }
             Type t = o.GetType();
-            if (t.GetTypeCode() == TypeCode.Object && !(o is Guid) && (t != typeof(XmlQualifiedName)) && !(o is XmlNode[]) && (t != typeof(byte[])))
+            if (Type.GetTypeCode(t) == TypeCode.Object && !(o is Guid) && (t != typeof(XmlQualifiedName)) && !(o is XmlNode[]) && (t != typeof(byte[])))
             {
                 if ((suppressReference || _soap12) && !IsIdDefined(o))
                 {
@@ -1418,14 +1414,14 @@ namespace System.Xml.Serialization
         {
             if (xmlns != null)
             {
-                foreach (KeyValuePair<string, string?> entry in xmlns.Namespaces)
+                foreach (XmlQualifiedName qname in xmlns.Namespaces)
                 {
-                    string prefix = (string)entry.Key;
-                    string? ns = (string?)entry.Value;
+                    string prefix = qname.Name;
+                    string? ns = qname.Namespace;
                     if (_namespaces != null)
                     {
                         string? oldNs;
-                        if (_namespaces.Namespaces.TryGetValue(prefix, out oldNs) && oldNs != null && oldNs != ns)
+                        if (_namespaces.TryLookupNamespace(prefix, out oldNs) && oldNs != null && oldNs != ns)
                         {
                             throw new InvalidOperationException(SR.Format(SR.XmlDuplicateNs, prefix, ns));
                         }

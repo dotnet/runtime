@@ -537,7 +537,7 @@
                     </valueMap>
                     <valueMap name="KnownPathSourceMap">
                         <map value="0x0" message="$(string.RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage)"/>
-                        <map value="0x1" message="$(string.RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.KnownPathSource.UnusedMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.KnownPathSource.AppPathsMessage)"/>
                         <map value="0x3" message="$(string.RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage)"/>
                         <map value="0x4" message="$(string.RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage)"/>
@@ -7276,12 +7276,16 @@
                              message="$(string.MonoProfilerPublisher.GCAllocationKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ALLOCATION_KEYWORD" />
                     <keyword name="GCMovesKeyword" mask="0x400000"
                              message="$(string.MonoProfilerPublisher.GCMovesKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_MOVES_KEYWORD" />
-                    <keyword name="GCRootKeyword" mask="0x800000"
-                             message="$(string.MonoProfilerPublisher.GCRootKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ROOT_KEYWORD" />
+                    <keyword name="GCHeapCollectKeyword" mask="0x800000"
+                             message="$(string.MonoProfilerPublisher.GCHeapCollectKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPCOLLECT_KEYWORD" />
                     <keyword name="GCFinalizationKeyword" mask="0x1000000"
                              message="$(string.MonoProfilerPublisher.GCFinalizationKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_FINALIZATION_KEYWORD" />
                     <keyword name="GCResizeKeyword" mask="0x2000000"
                              message="$(string.MonoProfilerPublisher.GCResizeKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_RESIZE_KEYWORD" />
+                    <keyword name="GCRootKeyword" mask="0x4000000"
+                             message="$(string.MonoProfilerPublisher.GCRootKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ROOT_KEYWORD" />
+                    <keyword name="GCHeapDumpVTableClassReferenceKeyword" mask="0x8000000"
+                             message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPDUMP_VTABLE_CLASS_REFERENCE_KEYWORD" />
                     <keyword name="MethodTracingKeyword" mask="0x20000000"
                              message="$(string.MonoProfilerPublisher.MethodTracingKeywordMessage)" symbol="CLR_MONO_PROFILER_METHOD_TRACING_KEYWORD" />
                     <keyword name="TypeLoadingKeyword" mask="0x8000000000"
@@ -7357,6 +7361,8 @@
                             <opcode name="ThreadStopped" message="$(string.MonoProfilerPublisher.ThreadStoppedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_STOPPED_OPCODE" value="76" />
                             <opcode name="ThreadExited" message="$(string.MonoProfilerPublisher.ThreadExitedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_EXITED_OPCODE" value="77" />
                             <opcode name="ThreadName" message="$(string.MonoProfilerPublisher.ThreadNameOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_NAME_OPCODE" value="78" />
+                            <opcode name="JitDoneVerbose" message="$(string.MonoProfilerPublisher.JitDoneVerboseOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_DONE_VERBOSE_OPCODE" value="79" />
+                            <opcode name="GCHeapDumpVTableClassReference" message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HEAP_DUMP_VTABLE_CLASS_REFERENCE_OPCODE" value="80" />
                         </opcodes>
                     </task>
                 </tasks>
@@ -7416,221 +7422,188 @@
 
                 <templates>
                     <template tid="ContextLoadedUnloaded">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ContextID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
-                            <AppDomainLoadUnload xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ObjectID> %2 </ObjectID>
-                                <AppDomainID> %3 </AppDomainID>
-                                <ContextID> %4 </ContextID>
-                            </AppDomainLoadUnload>
+                            <ContextLoadedUnloaded xmlns="myNs">
+                                <ObjectID> %1 </ObjectID>
+                                <AppDomainID> %2 </AppDomainID>
+                                <ContextID> %3 </ContextID>
+                            </ContextLoadedUnloaded>
                         </UserData>
                     </template>
 
                     <template tid="AppDomainLoadUnload">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <AppDomainLoadUnload xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <AppDomainID> %2 </AppDomainID>
+                                <AppDomainID> %1 </AppDomainID>
                             </AppDomainLoadUnload>
                         </UserData>
                     </template>
 
                     <template tid="AppDomainName">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="AppDomainName" inType="win:UnicodeString" />
                         <UserData>
                             <AppDomainName xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <AppDomainID> %2 </AppDomainID>
-                                <AppDomainName> %3 </AppDomainName>
+                                <AppDomainID> %1 </AppDomainID>
+                                <AppDomainName> %2 </AppDomainName>
                             </AppDomainName>
                         </UserData>
                     </template>
 
                     <template tid="JitBeginFailedDone">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
                         <UserData>
                             <JitBeginFailedDone xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <MethodID> %2 </MethodID>
-                                <ModuleID> %3 </ModuleID>
-                                <MethodToken> %4 </MethodToken>
+                                <MethodID> %1 </MethodID>
+                                <ModuleID> %2 </ModuleID>
+                                <MethodToken> %3 </MethodToken>
                             </JitBeginFailedDone>
                         </UserData>
                     </template>
 
                     <template tid="JitChunkCreated">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ChunkID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="ChunkSize" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <JitChunkCreated xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ChunkID> %2 </ChunkID>
-                                <ChunkSize> %3 </ChunkSize>
+                                <ChunkID> %1 </ChunkID>
+                                <ChunkSize> %2 </ChunkSize>
                             </JitChunkCreated>
                         </UserData>
                     </template>
 
                     <template tid="JitChunkDestroyed">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ChunkID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
                             <JitChunkDestroyed xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ChunkID> %2 </ChunkID>
+                                <ChunkID> %1 </ChunkID>
                             </JitChunkDestroyed>
                         </UserData>
                     </template>
 
                     <template tid="JitCodeBuffer">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="BufferID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="BufferSize" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="BufferType" inType="win:UInt8" map="JitCodeBufferTypeMap" />
                         <UserData>
                             <JitCodeBuffer xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <BufferID> %2 </BufferID>
-                                <BufferSize> %3 </BufferSize>
+                                <BufferID> %1 </BufferID>
+                                <BufferSize> %2 </BufferSize>
                                 <BufferType> %3 </BufferType>
                             </JitCodeBuffer>
                         </UserData>
                     </template>
 
                     <template tid="ClassLoadingFailed">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <ClassLoadingFailed xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ClassID> %2 </ClassID>
-                                <ModuleID> %3 </ModuleID>
+                                <ClassID> %1 </ClassID>
+                                <ModuleID> %2 </ModuleID>
                             </ClassLoadingFailed>
                         </UserData>
                     </template>
 
                     <template tid="ClassLoaded">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ClassName" inType="win:UnicodeString" />
                         <UserData>
                             <ClassLoaded xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ClassID> %2 </ClassID>
-                                <ModuleID> %3 </ModuleID>
-                                <ClassName> %4 </ClassName>
+                                <ClassID> %1 </ClassID>
+                                <ModuleID> %2 </ModuleID>
+                                <ClassName> %3 </ClassName>
                             </ClassLoaded>
                         </UserData>
                     </template>
 
                     <template tid="VTableLoadingFailedLoaded">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <VTableLoadingFailedLoaded xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <VTableID> %2 </VTableID>
-                                <ClassID> %3 </ClassID>
-                                <AppDomainID> %4 </AppDomainID>
+                                <VTableID> %1 </VTableID>
+                                <ClassID> %2 </ClassID>
+                                <AppDomainID> %3 </AppDomainID>
                             </VTableLoadingFailedLoaded>
                         </UserData>
                     </template>
 
                     <template tid="ModuleLoadingUnloadingFailed">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <ModuleLoadingUnloadingFailed xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ModuleID> %2 </ModuleID>
+                                <ModuleID> %1 </ModuleID>
                             </ModuleLoadingUnloadingFailed>
                         </UserData>
                     </template>
 
                     <template tid="ModuleLoadedUnloaded">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleName" inType="win:UnicodeString" />
                         <data name="ModuleSignature" inType="win:UnicodeString" />
                         <UserData>
                             <ModuleLoadedUnloaded xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ModuleID> %2 </ModuleID>
-                                <ModuleName> %3 </ModuleName>
-                                <ModuleSignature> %4 </ModuleSignature>
+                                <ModuleID> %1 </ModuleID>
+                                <ModuleName> %2 </ModuleName>
+                                <ModuleSignature> %3 </ModuleSignature>
                             </ModuleLoadedUnloaded>
                         </UserData>
                     </template>
 
                     <template tid="AssemblyLoadingUnloading">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <AssemblyLoadingUnloading xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <AssemblyID> %2 </AssemblyID>
-                                <ModuleID> %3 </ModuleID>
+                                <AssemblyID> %1 </AssemblyID>
+                                <ModuleID> %2 </ModuleID>
                             </AssemblyLoadingUnloading>
                         </UserData>
                     </template>
 
                     <template tid="AssemblyLoadedUnloaded">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="AssemblyName" inType="win:UnicodeString" />
                         <UserData>
-                            <ModuleLoadedUnloaded xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <AssemblyID> %2 </AssemblyID>
-                                <ModuleID> %3 </ModuleID>
-                                <AssemblyName> %4 </AssemblyName>
-                            </ModuleLoadedUnloaded>
+                            <AssemblyLoadedUnloaded xmlns="myNs">
+                                <AssemblyID> %1 </AssemblyID>
+                                <ModuleID> %2 </ModuleID>
+                                <AssemblyName> %3 </AssemblyName>
+                            </AssemblyLoadedUnloaded>
                         </UserData>
                     </template>
 
                     <template tid="MethodTracing">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <MethodTracing xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <MethodID> %2 </MethodID>
+                                <MethodID> %1 </MethodID>
                             </MethodTracing>
                         </UserData>
                     </template>
 
                     <template tid="ExceptionThrow">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="TypeID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
                             <ExceptionThrow xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <TypeID> %2 </TypeID>
-                                <ObjectID> %3 </ObjectID>
+                                <TypeID> %1 </TypeID>
+                                <ObjectID> %2 </ObjectID>
                             </ExceptionThrow>
                         </UserData>
                     </template>
 
                     <template tid="ExceptionClause">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ClauseType" inType="win:UInt8" map="ExceptionClauseTypeMap" />
                         <data name="ClauseIdx" inType="win:UInt32" />
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
@@ -7638,46 +7611,40 @@
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
                             <ExceptionClause xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ClauseType> %2 </ClauseType>
-                                <ClauseIdx> %3 </ClauseIdx>
-                                <MethodID> %4 </MethodID>
-                                <TypeID> %5 </TypeID>
-                                <ObjectID> %6 </ObjectID>
+                                <ClauseType> %1 </ClauseType>
+                                <ClauseIdx> %2 </ClauseIdx>
+                                <MethodID> %3 </MethodID>
+                                <TypeID> %4 </TypeID>
+                                <ObjectID> %5 </ObjectID>
                             </ExceptionClause>
                         </UserData>
                     </template>
 
                     <template tid="GCEvent">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="GCEventType" inType="win:UInt8" map="GCEventTypeMap" />
                         <data name="GCGeneration" inType="win:UInt32" />
                         <UserData>
                             <GCEvent xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <GCEventType> %2 </GCEventType>
-                                <GCGeneration> %3 </GCGeneration>
+                                <GCEventType> %1 </GCEventType>
+                                <GCGeneration> %2 </GCGeneration>
                             </GCEvent>
                         </UserData>
                     </template>
 
                     <template tid="GCAllocation">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <GCAllocation xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <VTableID> %2 </VTableID>
-                                <ObjectID> %3 </ObjectID>
-                                <ObjectSize> %4 </ObjectSize>
+                                <VTableID> %1 </VTableID>
+                                <ObjectID> %2 </ObjectID>
+                                <ObjectSize> %3 </ObjectSize>
                             </GCAllocation>
                         </UserData>
                     </template>
 
                     <template tid="GCMoves">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
                         <struct name="Values" count="Count">
                             <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
@@ -7685,73 +7652,54 @@
                         </struct>
                         <UserData>
                             <GCMoves xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <Count> %2 </Count>
+                                <Count> %1 </Count>
                             </GCMoves>
                         </UserData>
                     </template>
 
                     <template tid="GCResize">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="NewSize" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <GCResize xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <NewSize> %2 </NewSize>
+                                <NewSize> %1 </NewSize>
                             </GCResize>
                         </UserData>
                     </template>
 
                     <template tid="GCHandleCreated">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="HandleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="HandleType" inType="win:UInt8" map="GCHandleTypeMap" />
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
                             <GCHandleCreated xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <HandleID> %2 </HandleID>
-                                <HandleType> %3 </HandleType>
-                                <ObjectID> %4 </ObjectID>
+                                <HandleID> %1 </HandleID>
+                                <HandleType> %2 </HandleType>
+                                <ObjectID> %3 </ObjectID>
                             </GCHandleCreated>
                         </UserData>
                     </template>
 
                     <template tid="GCHandleDeleted">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="HandleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="HandleType" inType="win:UInt8" map="GCHandleTypeMap" />
                         <UserData>
                             <GCHandleDeleted xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <HandleID> %2 </HandleID>
-                                <HandleType> %3 </HandleType>
+                                <HandleID> %1 </HandleID>
+                                <HandleType> %2 </HandleType>
                             </GCHandleDeleted>
                         </UserData>
                     </template>
 
-                    <template tid="GCFinalizingFinalized">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
-                        <UserData>
-                            <GCFinalizingFinalized xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                            </GCFinalizingFinalized>
-                        </UserData>
-                    </template>
-
                     <template tid="GCFinalizingFinalizedObject">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
-                            <GCFinalizingFinalized xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ObjectID> %2 </ObjectID>
-                            </GCFinalizingFinalized>
+                            <GCFinalizingFinalizedObject xmlns="myNs">
+                                <ObjectID> %1 </ObjectID>
+                            </GCFinalizingFinalizedObject>
                         </UserData>
                     </template>
 
                     <template tid="GCRootRegister">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="RootID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="RootSize" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="RootType" inType="win:UInt8" map="GCRootTypeMap" />
@@ -7759,29 +7707,25 @@
                         <data name="RootKeyName" inType="win:UnicodeString" />
                         <UserData>
                             <GCRootRegister xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <RootID> %2 </RootID>
-                                <RootSize> %3 </RootSize>
-                                <RootType> %4 </RootType>
-                                <RootKeyID> %5 </RootKeyID>
-                                <RootKeyName> %6 </RootKeyName>
+                                <RootID> %1 </RootID>
+                                <RootSize> %2 </RootSize>
+                                <RootType> %3 </RootType>
+                                <RootKeyID> %4 </RootKeyID>
+                                <RootKeyName> %5 </RootKeyName>
                             </GCRootRegister>
                         </UserData>
                     </template>
 
                     <template tid="GCRootUnregister">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="RootID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
                             <GCRootUnregister xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <RootID> %2 </RootID>
+                                <RootID> %1 </RootID>
                             </GCRootUnregister>
                         </UserData>
                     </template>
 
                     <template tid="GCRoots">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
                         <struct name="Values" count="Count">
                             <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
@@ -7789,27 +7733,25 @@
                         </struct>
                         <UserData>
                             <GCRoots xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <Count> %2 </Count>
+                                <Count> %1 </Count>
                             </GCRoots>
                         </UserData>
                     </template>
 
-                    <template tid="GCHeapDumpStartStop">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
+                    <template tid="GCHeapDumpStart">
+                        <data name="HeapCollectParam" inType="win:UnicodeString" />
                         <UserData>
-                            <GCHeapDumpStartStop xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                            </GCHeapDumpStartStop>
+                            <GCHeapDumpStart xmlns="myNs">
+                                <HeapCollectParam> %1 </HeapCollectParam>
+                            </GCHeapDumpStart>
                         </UserData>
                     </template>
 
                     <template tid="GCHeapDumpObjectReference">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
-                        <data name="ObjectGeneration" inType="win:UInt32" />
+                        <data name="ObjectGeneration" inType="win:UInt8" />
                         <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
                         <struct name="Values" count="Count">
                             <data name="ReferenceOffset" inType="win:UInt32" />
@@ -7817,48 +7759,109 @@
                         </struct>
                         <UserData>
                             <GCHeapDumpObjectReference xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ObjectID> %2 </ObjectID>
-                                <VTableID> %3 </VTableID>
-                                <ObjectSize> %4 </ObjectSize>
-                                <ObjectGeneration> %5 </ObjectGeneration>
-                                <Count> %6 </Count>
+                                <ObjectID> %1 </ObjectID>
+                                <VTableID> %2 </VTableID>
+                                <ObjectSize> %3 </ObjectSize>
+                                <ObjectGeneration> %4 </ObjectGeneration>
+                                <Count> %5 </Count>
                             </GCHeapDumpObjectReference>
                         </UserData>
                     </template>
 
                     <template tid="MonitorContentionFailedAcquired">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
                         <UserData>
-                            <GCHeapDumpStartStop xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ObjectID> %2 </ObjectID>
-                            </GCHeapDumpStartStop>
+                            <MonitorContentionFailedAcquired xmlns="myNs">
+                                <ObjectID> %1 </ObjectID>
+                            </MonitorContentionFailedAcquired>
                         </UserData>
                     </template>
 
                     <template tid="ThreadStartedStoppingStoppedExited">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ThreadID" inType="win:UInt64" outType="win:HexInt64" />
                         <UserData>
                             <ThreadStartedStoppingStoppedExited xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ThreadID> %2 </ThreadID>
+                                <ThreadID> %1 </ThreadID>
                             </ThreadStartedStoppingStoppedExited>
                         </UserData>
                     </template>
 
                     <template tid="ThreadName">
-                        <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="ThreadID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ThreadName" inType="win:UnicodeString" />
                         <UserData>
                             <ThreadName xmlns="myNs">
-                                <ClrInstanceID> %1 </ClrInstanceID>
-                                <ThreadID> %2 </ThreadID>
-                                <ThreadName> %3 </ThreadName>
+                                <ThreadID> %1 </ThreadID>
+                                <ThreadName> %2 </ThreadName>
                             </ThreadName>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitDoneVerbose">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodNamespace" inType="win:UnicodeString" />
+                        <data name="MethodName" inType="win:UnicodeString" />
+                        <data name="MethodSignature" inType="win:UnicodeString" />
+                        <UserData>
+                            <JitDoneVerbose xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <MethodNamespace> %2 </MethodNamespace>
+                                <MethodName> %3 </MethodName>
+                                <MethodSignature> %4 </MethodSignature>
+                            </JitDoneVerbose>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitDone_V1">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="Type" inType="win:UInt8" />
+                            <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <JitDone_V1 xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <ModuleID> %2 </ModuleID>
+                                <MethodToken> %3 </MethodToken>
+                                <Count> %4 </Count>
+                            </JitDone_V1>
+                        </UserData>
+                    </template>
+
+                    <template tid="ClassLoaded_V1">
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassName" inType="win:UnicodeString" />
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="Type" inType="win:UInt8" />
+                            <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <ClassLoaded_V1 xmlns="myNs">
+                                <ClassID> %1 </ClassID>
+                                <ModuleID> %2 </ModuleID>
+                                <ClassName> %3 </ClassName>
+                                <Count> %4 </Count>
+                            </ClassLoaded_V1>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCHeapDumpVTableClassReference">
+                        <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassName" inType="win:UnicodeString" />
+                        <UserData>
+                            <GCHeapDumpVTableClassReference xmlns="myNs">
+                                <VTableID> %1 </VTableID>
+                                <ClassID> %2 </ClassID>
+                                <ModuleID> %3 </ModuleID>
+                                <ClassName> %4 </ClassName>
+                            </GCHeapDumpVTableClassReference>
                         </UserData>
                     </template>
 
@@ -7915,6 +7918,11 @@
                            task="MonoProfiler"
                            symbol="MonoProfilerJitDone" message="$(string.MonoProfilerPublisher.JitBeginFailedDoneEventMessage)" />
 
+                    <event value="10" version="1" level="win:Informational"  template="JitDone_V1"
+                           keywords ="JitKeyword" opcode="JitDone"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitDone_V1" message="$(string.MonoProfilerPublisher.JitDone_V1EventMessage)" />
+
                     <event value="11" version="0" level="win:Informational"  template="JitChunkCreated"
                            keywords ="JitKeyword" opcode="JitChunkCreated"
                            task="MonoProfiler"
@@ -7944,6 +7952,11 @@
                            keywords ="TypeLoadingKeyword" opcode="ClassLoaded"
                            task="MonoProfiler"
                            symbol="MonoProfilerClassLoaded" message="$(string.MonoProfilerPublisher.ClassLoadedEventMessage)" />
+
+                    <event value="16" version="1" level="win:Informational"  template="ClassLoaded_V1"
+                           keywords ="TypeLoadingKeyword" opcode="ClassLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerClassLoaded_V1" message="$(string.MonoProfilerPublisher.ClassLoaded_V1EventMessage)" />
 
                     <event value="17" version="0" level="win:Verbose"  template="VTableLoadingFailedLoaded"
                            keywords ="TypeLoadingKeyword" opcode="VTableLoading"
@@ -8056,77 +8069,77 @@
                            symbol="MonoProfilerGCEvent" message="$(string.MonoProfilerPublisher.GCEventEventMessage)" />
 
                     <event value="39" version="0" level="win:Informational"  template="GCAllocation"
-                           keywords ="GCKeyword GCAllocationKeyword" opcode="GCAllocation"
+                           keywords ="GCAllocationKeyword" opcode="GCAllocation"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCAllocation" message="$(string.MonoProfilerPublisher.GCAllocationEventMessage)" />
 
                     <event value="40" version="0" level="win:Informational"  template="GCMoves"
-                           keywords ="GCKeyword GCMovesKeyword" opcode="GCMoves"
+                           keywords ="GCMovesKeyword" opcode="GCMoves"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCMoves" message="$(string.MonoProfilerPublisher.GCMovesEventMessage)" />
 
                     <event value="41" version="0" level="win:Informational"  template="GCResize"
-                           keywords ="GCKeyword GCResizeKeyword" opcode="GCResize"
+                           keywords ="GCResizeKeyword" opcode="GCResize"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCResize" message="$(string.MonoProfilerPublisher.GCResizeEventMessage)" />
 
                     <event value="42" version="0" level="win:Informational"  template="GCHandleCreated"
-                           keywords ="GCKeyword GCHandleKeyword" opcode="GCHandleCreated"
+                           keywords ="GCHandleKeyword" opcode="GCHandleCreated"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHandleCreated" message="$(string.MonoProfilerPublisher.GCHandleCreatedEventMessage)" />
 
                     <event value="43" version="0" level="win:Informational"  template="GCHandleDeleted"
-                           keywords ="GCKeyword GCHandleKeyword" opcode="GCHandleDeleted"
+                           keywords ="GCHandleKeyword" opcode="GCHandleDeleted"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHandleDeleted" message="$(string.MonoProfilerPublisher.GCHandleDeletedEventMessage)" />
 
-                    <event value="44" version="0" level="win:Informational"  template="GCFinalizingFinalized"
-                           keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalizing"
+                    <event value="44" version="0" level="win:Informational"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizing"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalizing" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedEventMessage)" />
 
-                    <event value="45" version="0" level="win:Informational"  template="GCFinalizingFinalized"
-                           keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalized"
+                    <event value="45" version="0" level="win:Informational"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalized"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalized" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedEventMessage)" />
 
                     <event value="46" version="0" level="win:Informational"  template="GCFinalizingFinalizedObject"
-                           keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalizingObject"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizingObject"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalizingObject" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage)" />
 
                     <event value="47" version="0" level="win:Informational"  template="GCFinalizingFinalizedObject"
-                           keywords ="GCKeyword GCFinalizationKeyword" opcode="GCFinalizedObject"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizedObject"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCFinalizedObject" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage)" />
 
                     <event value="48" version="0" level="win:Informational"  template="GCRootRegister"
-                           keywords ="GCKeyword GCRootKeyword" opcode="GCRootRegister"
+                           keywords ="GCRootKeyword" opcode="GCRootRegister"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCRootRegister" message="$(string.MonoProfilerPublisher.GCRootRegisterEventMessage)" />
 
                     <event value="49" version="0" level="win:Informational"  template="GCRootUnregister"
-                           keywords ="GCKeyword GCRootKeyword" opcode="GCRootUnregister"
+                           keywords ="GCRootKeyword" opcode="GCRootUnregister"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCRootUnregister" message="$(string.MonoProfilerPublisher.GCRootUnregisterEventMessage)" />
 
                     <event value="50" version="0" level="win:Informational"  template="GCRoots"
-                           keywords ="GCKeyword GCRootKeyword" opcode="GCRoots"
+                           keywords ="GCRootKeyword" opcode="GCRoots"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCRoots" message="$(string.MonoProfilerPublisher.GCRootsEventMessage)" />
 
-                    <event value="51" version="0" level="win:Informational"  template="GCHeapDumpStartStop"
-                           keywords ="GCKeyword GCHeapDumpKeyword" opcode="GCHeapDumpStart"
+                    <event value="51" version="0" level="win:Informational"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStart" template="GCHeapDumpStart"
                            task="MonoProfiler"
-                           symbol="MonoProfilerGCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartStopEventMessage)" />
+                           symbol="MonoProfilerGCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartEventMessage)" />
 
-                    <event value="52" version="0" level="win:Informational"  template="GCHeapDumpStartStop"
-                           keywords ="GCKeyword GCHeapDumpKeyword" opcode="GCHeapDumpStop"
+                    <event value="52" version="0" level="win:Informational"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStop"
                            task="MonoProfiler"
-                           symbol="MonoProfilerGCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStartStopEventMessage)" />
+                           symbol="MonoProfilerGCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStopEventMessage)" />
 
                     <event value="53" version="0" level="win:Informational"  template="GCHeapDumpObjectReference"
-                           keywords ="GCKeyword GCHeapDumpKeyword" opcode="GCHeapDumpObjectReference"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpObjectReference"
                            task="MonoProfiler"
                            symbol="MonoProfilerGCHeapDumpObjectReference" message="$(string.MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage)" />
 
@@ -8169,6 +8182,16 @@
                            keywords ="ThreadingKeyword" opcode="ThreadName"
                            task="MonoProfiler"
                            symbol="MonoProfilerThreadName" message="$(string.MonoProfilerPublisher.ThreadNameEventMessage)" />
+
+                    <event value="62" version="0" level="win:Verbose"  template="JitDoneVerbose"
+                           keywords ="JitKeyword" opcode="JitDoneVerbose"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitDoneVerbose" message="$(string.MonoProfilerPublisher.JitDoneVerboseEventMessage)" />
+
+                    <event value="63" version="0" level="win:Informational"  template="GCHeapDumpVTableClassReference"
+                           keywords ="GCHeapDumpVTableClassReferenceKeyword" opcode="GCHeapDumpVTableClassReference"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCHeapDumpVTableClassReference" message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceEventMessage)" />
                 </events>
             </provider>
         </events>
@@ -8707,7 +8730,7 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
                 <string id="RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage" value="ApplicationAssemblies" />
-                <string id="RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage" value="AppNativeImagePaths" />
+                <string id="RuntimePublisher.KnownPathSource.UnusedMessage" value="Unused" />
                 <string id="RuntimePublisher.KnownPathSource.AppPathsMessage" value="AppPaths" />
                 <string id="RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage" value="PlatformResourceRoots" />
                 <string id="RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage" value="SatelliteSubdirectory" />
@@ -9197,9 +9220,11 @@
                 <string id="MonoProfilerPublisher.GCHeapDumpKeywordMessage" value="GCHeapDump" />
                 <string id="MonoProfilerPublisher.GCAllocationKeywordMessage" value="GCAllocation" />
                 <string id="MonoProfilerPublisher.GCMovesKeywordMessage" value="GCMoves" />
-                <string id="MonoProfilerPublisher.GCRootKeywordMessage" value="GCRoot" />
-                <string id="MonoProfilerPublisher.GCFinalizationKeywordMessage" value="GCFinalization" />
+                <string id="MonoProfilerPublisher.GCHeapCollectKeywordMessage" value="GCHeapCollect" />
                 <string id="MonoProfilerPublisher.GCResizeKeywordMessage" value="GCResize" />
+                <string id="MonoProfilerPublisher.GCRootKeywordMessage" value="GCRoot" />
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceKeywordMessage" value="GCHeapDumpVTableClassReference" />
+                <string id="MonoProfilerPublisher.GCFinalizationKeywordMessage" value="GCFinalization" />
                 <string id="MonoProfilerPublisher.MethodTracingKeywordMessage" value="PerfTrack" />
                 <string id="MonoProfilerPublisher.TypeLoadingKeywordMessage" value="TypeLoading" />
                 <string id="MonoProfilerPublisher.MonitorKeywordMessage" value="Monitor" />
@@ -9277,6 +9302,10 @@
                 <string id="MonoProfilerPublisher.ThreadExitedOpcodeMessage" value="ThreadExited" />
                 <string id="MonoProfilerPublisher.ThreadNameOpcodeMessage" value="ThreadName" />
 
+                <string id="MonoProfilerPublisher.JitDoneVerboseOpcodeMessage" value="JitDoneVerbose" />
+
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceOpcodeMessage" value="GCHeapDumpVTableClassReference" />
+
                 <string id="MonoProfilerPublisher.CodeBufferTypeMap.MethodMessage" value="Method" />
                 <string id="MonoProfilerPublisher.CodeBufferTypeMap.MethodTrampolineMessage" value="MethodTrampoline" />
                 <string id="MonoProfilerPublisher.CodeBufferTypeMap.UnboxTrampolineMessage" value="UnboxTrampoline" />
@@ -9322,51 +9351,58 @@
                 <string id="MonoProfilerPublisher.GCRootTypeMap.EphemeronMessage" value="Ephemeron" />
                 <string id="MonoProfilerPublisher.GCRootTypeMap.ToggleRefMessage" value="ToggleRef" />
 
-                <string id="MonoProfilerPublisher.ContextLoadedUnloadedEventMessage" value="ClrInstanceID=%1;%nObjectID=%2;%nAppDomainId=%3;%nContextID=%4" />
+                <string id="MonoProfilerPublisher.ContextLoadedUnloadedEventMessage" value="ObjectID=%1;%nAppDomainId=%2;%nContextID=%3" />
 
-                <string id="MonoProfilerPublisher.AppDomainLoadUnloadEventMessage" value="ClrInstanceID=%1;%nAppDomainId=%2" />
-                <string id="MonoProfilerPublisher.AppDomainNameEventMessage" value="ClrInstanceID=%1;%nAppDomainId=%2;%nAppDomainName=%3" />
+                <string id="MonoProfilerPublisher.AppDomainLoadUnloadEventMessage" value="AppDomainId=%1" />
+                <string id="MonoProfilerPublisher.AppDomainNameEventMessage" value="AppDomainId=%1;%nAppDomainName=%2" />
 
-                <string id="MonoProfilerPublisher.JitBeginFailedDoneEventMessage" value="ClrInstanceID=%1;%nMethodId=%2;%nModuleID=%3;%nMethodToken=%4" />
+                <string id="MonoProfilerPublisher.JitBeginFailedDoneEventMessage" value="MethodId=%1;%nModuleID=%2;%nMethodToken=%3" />
+                <string id="MonoProfilerPublisher.JitDone_V1EventMessage" value="MethodId=%1;%nModuleID=%2;%nMethodToken=%3;%nCount=%4" />
 
-                <string id="MonoProfilerPublisher.JitChunkCreatedEventMessage" value="ClrInstanceID=%1;%nChunkID=%2;%nChunkSize=%3" />
-                <string id="MonoProfilerPublisher.JitChunkDestroyedEventMessage" value="ClrInstanceID=%1;%nChunkID=%2" />
-                <string id="MonoProfilerPublisher.JitCodeBufferEventMessage" value="ClrInstanceID=%1;%nBufferID=%2;%nBufferSize=%3;%nBufferType=%4" />
+                <string id="MonoProfilerPublisher.JitChunkCreatedEventMessage" value="ChunkID=%1;%nChunkSize=%2" />
+                <string id="MonoProfilerPublisher.JitChunkDestroyedEventMessage" value="ChunkID=%1" />
+                <string id="MonoProfilerPublisher.JitCodeBufferEventMessage" value="BufferID=%1;%nBufferSize=%2;%nBufferType=%3" />
 
-                <string id="MonoProfilerPublisher.ClassLoadingFailedEventMessage" value="ClrInstanceID=%1;%nClassID=%2;%nModuleID=%3" />
-                <string id="MonoProfilerPublisher.ClassLoadedEventMessage" value="ClrInstanceID=%1;%nClassID=%2;%nModuleID=%3;%nClassName=%4" />
+                <string id="MonoProfilerPublisher.ClassLoadingFailedEventMessage" value="ClassID=%1;%nModuleID=%2" />
+                <string id="MonoProfilerPublisher.ClassLoadedEventMessage" value="ClassID=%1;%nModuleID=%2;%nClassName=%3" />
+                <string id="MonoProfilerPublisher.ClassLoaded_V1EventMessage" value="ClassID=%1;%nModuleID=%2;%nClassName=%3;%nCount=%4" />
 
-                <string id="MonoProfilerPublisher.VTableLoadingFailedLoadedEventMessage" value="ClrInstanceID=%1;%nVTableID=%2;%nClassID=%3;%nAppDomainID=%4" />
+                <string id="MonoProfilerPublisher.VTableLoadingFailedLoadedEventMessage" value="VTableID=%1;%nClassID=%2;%nAppDomainID=%3" />
 
-                <string id="MonoProfilerPublisher.ModuleLoadingUnloadingFailedEventMessage" value="ClrInstanceID=%1;%nModuleID=%2" />
-                <string id="MonoProfilerPublisher.ModuleLoadedUnloadedEventMessage" value="ClrInstanceID=%1;%nModuleID=%2;%nModuleName=%3;%nModuleSignature=%4" />
+                <string id="MonoProfilerPublisher.ModuleLoadingUnloadingFailedEventMessage" value="ModuleID=%1" />
+                <string id="MonoProfilerPublisher.ModuleLoadedUnloadedEventMessage" value="ModuleID=%1;%nModuleName=%2;%nModuleSignature=%3" />
 
-                <string id="MonoProfilerPublisher.AssemblyLoadingUnloadingEventMessage" value="ClrInstanceID=%1;%nAssemblyID=%2;%nModuleID=%3" />
-                <string id="MonoProfilerPublisher.AssemblyLoadedUnloadedEventMessage" value="ClrInstanceID=%1;%nAssemblyID=%2;%nModuleID=%3;%nAssemblyName=%4" />
+                <string id="MonoProfilerPublisher.AssemblyLoadingUnloadingEventMessage" value="AssemblyID=%1;%nModuleID=%2" />
+                <string id="MonoProfilerPublisher.AssemblyLoadedUnloadedEventMessage" value="%nAssemblyID=%1;%nModuleID=%2;%nAssemblyName=%3" />
 
-                <string id="MonoProfilerPublisher.MethodTracingEventMessage" value="ClrInstanceID=%1;%nMethodID=%2" />
+                <string id="MonoProfilerPublisher.MethodTracingEventMessage" value="MethodID=%1" />
 
-                <string id="MonoProfilerPublisher.ExceptionThrowEventMessage" value="ClrInstanceID=%1;%nTypeID=%2;%nObjectID=%3" />
-                <string id="MonoProfilerPublisher.ExceptionClauseEventMessage" value="ClrInstanceID=%1;%nClauseType=%2;%nClauseID=%3;%nMethodID=%4;%nTypeID=%5;%nObjectID=%6" />
+                <string id="MonoProfilerPublisher.ExceptionThrowEventMessage" value="TypeID=%1;%nObjectID=%2" />
+                <string id="MonoProfilerPublisher.ExceptionClauseEventMessage" value="ClauseType=%1;%nClauseID=%2;%nMethodID=%3;%nTypeID=%4;%nObjectID=%5" />
 
-                <string id="MonoProfilerPublisher.GCEventEventMessage" value="ClrInstanceID=%1;%nGCEventType=%2;%nGCGeneration=%3" />
-                <string id="MonoProfilerPublisher.GCAllocationEventMessage" value="ClrInstanceID=%1;%nVTableID=%2;%nObjectID=%3;%nObjectSize=%4" />
-                <string id="MonoProfilerPublisher.GCMovesEventMessage" value="ClrInstanceID=%1;%nCount=%2" />
-                <string id="MonoProfilerPublisher.GCResizeEventMessage" value="ClrInstanceID=%1;%nNewSize=%2" />
-                <string id="MonoProfilerPublisher.GCHandleCreatedEventMessage" value="ClrInstanceID=%1;%nHandleID=%2;%nHandleType=%3;%nObjectID=%4" />
-                <string id="MonoProfilerPublisher.GCHandleDeletedEventMessage" value="ClrInstanceID=%1;%nHandleID=%2;%nHandleType=%3" />
-                <string id="MonoProfilerPublisher.GCFinalizingFinalizedEventMessage" value="ClrInstanceID=%1" />
-                <string id="MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage" value="ClrInstanceID=%1;%nObjectID=%2" />
-                <string id="MonoProfilerPublisher.GCRootRegisterEventMessage" value="ClrInstanceID=%1;%nRootID=%2;%nRootSize=%3;%nRootType=%4;%nRootKeyID=%5;%nRootKeyName=%6" />
-                <string id="MonoProfilerPublisher.GCRootUnregisterEventMessage" value="ClrInstanceID=%1;%nRootID=%2" />
-                <string id="MonoProfilerPublisher.GCRootsEventMessage" value="ClrInstanceID=%1;%nCount=%2" />
-                <string id="MonoProfilerPublisher.GCHeapDumpStartStopEventMessage" value="ClrInstanceID=%1" />
-                <string id="MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage" value="ClrInstanceID=%1;%nObjectID=%2;%nVTableID=%3;%nObjectSize=%4;%nObjectGeneration=%5;%nCount=%6" />
+                <string id="MonoProfilerPublisher.GCEventEventMessage" value="GCEventType=%1;%nGCGeneration=%2" />
+                <string id="MonoProfilerPublisher.GCAllocationEventMessage" value="VTableID=%1;%nObjectID=%2;%nObjectSize=%3" />
+                <string id="MonoProfilerPublisher.GCMovesEventMessage" value="Count=%1" />
+                <string id="MonoProfilerPublisher.GCResizeEventMessage" value="NewSize=%1" />
+                <string id="MonoProfilerPublisher.GCHandleCreatedEventMessage" value="HandleID=%1;%nHandleType=%2;%nObjectID=%3" />
+                <string id="MonoProfilerPublisher.GCHandleDeletedEventMessage" value="HandleID=%1;%nHandleType=%2" />
+                <string id="MonoProfilerPublisher.GCFinalizingFinalizedEventMessage" value="NONE" />
+                <string id="MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage" value="ObjectID=%1" />
+                <string id="MonoProfilerPublisher.GCRootRegisterEventMessage" value="RootID=%1;%nRootSize=%2;%nRootType=%3;%nRootKeyID=%4;%nRootKeyName=%5" />
+                <string id="MonoProfilerPublisher.GCRootUnregisterEventMessage" value="RootID=%1" />
+                <string id="MonoProfilerPublisher.GCRootsEventMessage" value="Count=%1" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStartEventMessage" value="HeapCollectParam=%1" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStopEventMessage" value="NONE" />
+                <string id="MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage" value="ObjectID=%1;%nVTableID=%2;%nObjectSize=%3;%nObjectGeneration=%4;%nCount=%5" />
 
-                <string id="MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage" value="ClrInstanceID=%1;%nObjectID=%2" />
+                <string id="MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage" value="ObjectID=%1" />
 
-                <string id="MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage" value="ClrInstanceID=%1;%nThreadID=%2" />
-                <string id="MonoProfilerPublisher.ThreadNameEventMessage" value="ClrInstanceID=%1;%nThreadID=%2;%nThreadName=%3" />
+                <string id="MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage" value="ThreadID=%1" />
+                <string id="MonoProfilerPublisher.ThreadNameEventMessage" value="ThreadID=%1;%nThreadName=%2" />
+
+                <string id="MonoProfilerPublisher.JitDoneVerboseEventMessage" value="MethodId=%1;%nMethodNamespace=%2;%nMethodName=%3;%nMethodSignature=%4" />
+
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceEventMessage" value="VTableID=%1;%nClassID=%2;%nModuleID=%3;%nClassName=%4" />
             </stringTable>
         </resources>
     </localization>

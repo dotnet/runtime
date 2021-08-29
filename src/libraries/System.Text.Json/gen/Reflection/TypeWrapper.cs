@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
@@ -139,7 +140,7 @@ namespace System.Text.Json.Reflection
                             sb.Insert(0, $"{currentSymbol.Name}+");
                         }
 
-                        if (!string.IsNullOrWhiteSpace(Namespace))
+                        if (!string.IsNullOrWhiteSpace(Namespace) && Namespace != JsonConstants.GlobalNamespaceValue)
                         {
                             sb.Insert(0, $"{Namespace}.");
                         }
@@ -249,7 +250,13 @@ namespace System.Text.Json.Reflection
 
             foreach (IMethodSymbol c in _namedTypeSymbol.Constructors)
             {
-                if (c.DeclaredAccessibility == Accessibility.Public)
+                if (c.IsImplicitlyDeclared && IsValueType)
+                {
+                    continue;
+                }
+
+                if (((BindingFlags.Public & bindingAttr) != 0 && c.DeclaredAccessibility == Accessibility.Public) ||
+                    ((BindingFlags.NonPublic & bindingAttr) != 0 && c.DeclaredAccessibility != Accessibility.Public))
                 {
                     ctors.Add(new ConstructorInfoWrapper(c, _metadataLoadContext));
                 }
@@ -382,6 +389,12 @@ namespace System.Text.Json.Reflection
             {
                 if (item is IPropertySymbol propertySymbol)
                 {
+                    // Skip auto-generated properties on records.
+                    if (_typeSymbol.IsRecord && propertySymbol.DeclaringSyntaxReferences.Length == 0)
+                    {
+                        continue;
+                    }
+
                     // Skip if:
                     if (
                         // we want a static property and this is not static

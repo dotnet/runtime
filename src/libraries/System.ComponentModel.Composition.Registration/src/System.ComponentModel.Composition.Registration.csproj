@@ -2,6 +2,18 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.1</TargetFrameworks>
     <SetIsTrimmable>false</SetIsTrimmable>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>This namespace provides classes that constitute the core of the Managed Extensibility Framework, or MEF.
+
+Commonly Used Types:
+System.ComponentModel.Composition.Registration.RegistrationBuilder
+System.ComponentModel.Composition.Registration.PartBuilder
+System.ComponentModel.Composition.Registration.PartBuilder&lt;T&gt;
+System.ComponentModel.Composition.Registration.ParameterImportBuilder
+System.ComponentModel.Composition.Registration.ImportBuilder
+System.ComponentModel.Composition.Registration.ExportBuilder</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

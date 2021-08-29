@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using System.Diagnostics.Tracing;
+using System.Net.Sockets;
 
 namespace System.Net.Quic.Tests
 {
@@ -66,9 +67,22 @@ namespace System.Net.Quic.Tests
             };
         }
 
+        public QuicClientConnectionOptions CreateQuicClientOptions()
+        {
+            return new QuicClientConnectionOptions()
+            {
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+        }
+
         internal QuicConnection CreateQuicConnection(IPEndPoint endpoint)
         {
             return new QuicConnection(ImplementationProvider, endpoint, GetSslClientAuthenticationOptions());
+        }
+
+        internal QuicConnection CreateQuicConnection(QuicClientConnectionOptions clientOptions)
+        {
+            return new QuicConnection(ImplementationProvider, clientOptions);
         }
 
         internal QuicListenerOptions CreateQuicListenerOptions()
@@ -99,14 +113,73 @@ namespace System.Net.Quic.Tests
             return CreateQuicListener(options);
         }
 
-        internal async Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection()
-        {
-            using QuicListener listener = CreateQuicListener();
-            QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+        private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
 
-            ValueTask clientTask = clientConnection.ConnectAsync();
+        internal Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicListener listener) => CreateConnectedQuicConnection(null, listener);
+        internal async Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicClientConnectionOptions? clientOptions, QuicListenerOptions listenerOptions)
+        {
+            using (QuicListener listener = CreateQuicListener(listenerOptions))
+            {
+                clientOptions ??= new QuicClientConnectionOptions()
+                {
+                    ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                };
+                clientOptions.RemoteEndPoint = listener.ListenEndPoint;
+                return await CreateConnectedQuicConnection(clientOptions, listener);
+            }
+        }
+
+        internal async Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicClientConnectionOptions? clientOptions = null, QuicListener? listener = null)
+        {
+            int retry = 3;
+            int delay = 25;
+            bool disposeListener = false;
+
+            if (listener == null)
+            {
+                listener = CreateQuicListener();
+                disposeListener = true;
+            }
+
+            clientOptions ??= CreateQuicClientOptions();
+            if (clientOptions.RemoteEndPoint == null)
+            {
+                clientOptions.RemoteEndPoint = listener.ListenEndPoint;
+            }
+
+            QuicConnection clientConnection = null;
             ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
-            await new Task[] { clientTask.AsTask(), serverTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            while (retry > 0)
+            {
+                clientConnection = CreateQuicConnection(clientOptions);
+                retry--;
+                try
+                {
+                    await clientConnection.ConnectAsync().ConfigureAwait(false);
+                    break;
+                }
+                catch (QuicException ex) when (ex.HResult == (int)SocketError.ConnectionRefused)
+                {
+                    _output.WriteLine($"ConnectAsync to {clientConnection.RemoteEndPoint} failed with {ex.Message}");
+                    await Task.Delay(delay);
+                    delay *= 2;
+
+                    if (retry == 0)
+                    {
+                        Debug.Fail($"ConnectAsync to {clientConnection.RemoteEndPoint} failed with {ex.Message}");
+                    }
+                }
+            }
+
+            QuicConnection serverConnection = await serverTask.ConfigureAwait(false);
+            if (disposeListener)
+            {
+                listener.Dispose();
+            }
+
+            Assert.True(serverConnection.Connected);
+            Assert.True(clientConnection.Connected);
+
             return (clientConnection, serverTask.Result);
         }
 
@@ -140,8 +213,6 @@ namespace System.Net.Quic.Tests
             await t;
         }
 
-        private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
-
         internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = PassingTestTimeoutMilliseconds, QuicListenerOptions listenerOptions = null)
         {
             const long ClientCloseErrorCode = 11111;
@@ -154,37 +225,28 @@ namespace System.Net.Quic.Tests
 
             for (int i = 0; i < iterations; ++i)
             {
-                await new[]
+                (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
+                using (clientConnection)
+                using (serverConnection)
                 {
-                    Task.Run(async () =>
+                    await new[]
                     {
-                        using QuicConnection serverConnection = await listener.AcceptConnectionAsync().AsTask().WaitAsync(millisecondsTimeout);
-                        await serverFunction(serverConnection);
-
-                        serverFinished.Release();
-                        await clientFinished.WaitAsync();
-                        await serverConnection.CloseAsync(ServerCloseErrorCode);
-                    }),
-                    Task.Run(async () =>
-                    {
-                        using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
-                        try
+                        Task.Run(async () =>
                         {
-                            await clientConnection.ConnectAsync();
-                        }
-                        catch (Exception ex)
+                            await serverFunction(serverConnection);
+                            serverFinished.Release();
+                            await clientFinished.WaitAsync();
+                        }),
+                        Task.Run(async () =>
                         {
-                            _output?.WriteLine("Failed to connect {0} with {1}", listener.ListenEndPoint, ex.Message);
-                            throw;
-                        }
-
-                        await clientFunction(clientConnection);
-
-                        clientFinished.Release();
-                        await serverFinished.WaitAsync();
-                        await clientConnection.CloseAsync(ClientCloseErrorCode);
-                    })
-                }.WhenAllOrAnyFailed(millisecondsTimeout);
+                            await clientFunction(clientConnection);
+                            clientFinished.Release();
+                            await serverFinished.WaitAsync();
+                        })
+                    }.WhenAllOrAnyFailed(millisecondsTimeout);
+                    await serverConnection.CloseAsync(ServerCloseErrorCode);
+                    await clientConnection.CloseAsync(ClientCloseErrorCode);
+                }
             }
         }
 

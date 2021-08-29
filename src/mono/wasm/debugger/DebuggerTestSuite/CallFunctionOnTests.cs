@@ -54,7 +54,7 @@ namespace DebuggerTests
                    {
                        length = TNumber(len),
                        // __proto__ = TArray (type, 0) // Is this one really required?
-                   }, $"obj_own", num_fields: is_js ? 2 : 1);
+                   }, $"obj_own");
 
                });
         }
@@ -85,42 +85,38 @@ namespace DebuggerTests
                     new { @value = num_elems_fetch }
                 }),
                 test_fn: async (result) =>
-               {
+                {
 
-                   var is_js = bp_loc.EndsWith(".js", StringComparison.Ordinal);
+                    var is_js = bp_loc.EndsWith(".js", StringComparison.Ordinal);
 
-                   // isOwn = false, accessorPropertiesOnly = true
-                   var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
-                   {
-                       objectId = result.Value["result"]["objectId"].Value<string>(),
-                       accessorPropertiesOnly = true,
-                       ownProperties = false
-                   }), token);
-                   if (is_js)
+                    // isOwn = false, accessorPropertiesOnly = true
+                    var obj_accessors = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                    {
+                        objectId = result.Value["result"]["objectId"].Value<string>(),
+                        accessorPropertiesOnly = true,
+                        ownProperties = false
+                    }), token);
+
+                    if (is_js)
                        await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
-                   else
-                       AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
+                    else
+                        AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
-                   // Ignoring the __proto__ property
+                    // isOwn = true, accessorPropertiesOnly = false
+                    var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
+                    {
+                        objectId = result.Value["result"]["objectId"].Value<string>(),
+                        accessorPropertiesOnly = false,
+                        ownProperties = true
+                    }), token);
 
-                   // isOwn = true, accessorPropertiesOnly = false
-                   var obj_own = await cli.SendCommand("Runtime.getProperties", JObject.FromObject(new
-                   {
-                       objectId = result.Value["result"]["objectId"].Value<string>(),
-                       accessorPropertiesOnly = false,
-                       ownProperties = true
-                   }), token);
+                    var obj_own_val = obj_own.Value["result"];
+                    var num_elems_recd = len == 0 ? 0 : num_elems_fetch;
+                    AssertEqual(num_elems_recd, obj_own_val.Count(), $"obj_own-count");
 
-                   var obj_own_val = obj_own.Value["result"];
-                   var num_elems_recd = len == 0 ? 0 : num_elems_fetch;
-                   AssertEqual(is_js ? num_elems_recd + 1 : num_elems_recd, obj_own_val.Count(), $"obj_own-count");
-
-                   if (is_js)
-                       CheckObject(obj_own_val, "__proto__", "Object");
-
-                   for (int i = fetch_start_idx; i < fetch_start_idx + num_elems_recd; i++)
-                       CheckNumber(obj_own_val, i.ToString(), 1000 + i);
-               });
+                    for (int i = fetch_start_idx; i < fetch_start_idx + num_elems_recd; i++)
+                        CheckNumber(obj_own_val, i.ToString(), 1000 + i);
+                });
         }
 
         [Theory]
@@ -164,8 +160,7 @@ namespace DebuggerTests
                    await CheckProps(obj_own.Value["result"], new
                    {
                        length = TNumber(ret_len),
-                       // __proto__ returned by js
-                   }, $"obj_own", num_fields: is_js ? 2 : 1);
+                   }, $"obj_own");
                });
         }
 
@@ -215,8 +210,7 @@ namespace DebuggerTests
                    await CheckProps(obj_own_val, new
                    {
                        length = TNumber(ret_len),
-                       // __proto__ returned by JS
-                   }, $"obj_own", num_fields: (is_js ? ret_len + 2 : ret_len + 1));
+                   }, $"obj_own", num_fields: (ret_len + 1));
 
                    for (int i = 0; i < ret_len; i++)
                        CheckNumber(obj_own_val, i.ToString(), i * 2 + 1000);
@@ -368,7 +362,7 @@ namespace DebuggerTests
                {
                    a_obj = TObject("Object"),
                    b_arr = TArray("Array", 2)
-               }, "obj_own", num_fields: 3);
+               }, "obj_own");
            });
 
         [Theory]
@@ -738,7 +732,7 @@ namespace DebuggerTests
                        accessorPropertiesOnly = true
                    });
 
-                   var res = await GetPropertiesAndCheckAccessors(get_prop_req, is_js ? 6 : 5); // js returns extra `__proto__` member also
+                   var res = await GetPropertiesAndCheckAccessors(get_prop_req, 5);
                    Assert.False(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField shouldn't be returned for `accessorPropertiesOnly`");
 
                    // Check with `accessorPropertiesOnly` unset, == false
@@ -747,7 +741,7 @@ namespace DebuggerTests
                        objectId = id,
                    });
 
-                   res = await GetPropertiesAndCheckAccessors(get_prop_req, is_js ? 8 : 7); // js returns a `__proto__` member also
+                   res = await GetPropertiesAndCheckAccessors(get_prop_req, 7);
                    Assert.True(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField should be returned for `accessorPropertiesOnly=false`");
                });
 

@@ -26,7 +26,7 @@ public:
     GetAppDomainStaticAddress();
     virtual ~GetAppDomainStaticAddress();
 
-    virtual GUID GetClsid() override;
+    static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk) override;
     virtual HRESULT STDMETHODCALLTYPE Shutdown() override;
 
