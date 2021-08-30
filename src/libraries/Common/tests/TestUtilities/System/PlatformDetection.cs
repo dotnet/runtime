@@ -299,32 +299,27 @@ namespace System
         {
             get
             {
-                try
+                if (OperatingSystem.IsWindows())
                 {
-                    if (OperatingSystem.IsWindows())
+                    string localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+                    if (string.IsNullOrWhiteSpace(localAppData))
                     {
-                        string localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
-                        if (string.IsNullOrWhiteSpace(localAppData))
+                        return false;
+                    }
+                    string windowsAppsDir = Path.Join(localAppData, "Microsoft", "WindowsApps");
+                    if (Directory.Exists(windowsAppsDir))
+                    {
+                        return new FileSystemEnumerable<string?>(
+                                windowsAppsDir,
+                                (ref FileSystemEntry entry) => null,
+                                new EnumerationOptions { RecurseSubdirectories = true })
                         {
-                            return false;
-                        }
-                        string windowsAppsDir = Path.Join(localAppData, "Microsoft", "WindowsApps");
-                        if (Directory.Exists(windowsAppsDir))
-                        {
-                            // return Directory.GetFiles(windowsAppsDir, "*.exe", new EnumerationOptions() { RecurseSubdirectories = true, MaxRecursionDepth = 3 }).Length > 0;
-                            return new FileSystemEnumerable<string?>(
-                                   windowsAppsDir,
-                                   (ref FileSystemEntry entry) => null,
-                                   new EnumerationOptions { RecurseSubdirectories = true })
-                            {
-                                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                                    FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
-                                    entry.Attributes.HasFlag(FileAttributes.ReparsePoint)
-                            }.Any();
-                        }
+                            ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                                FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
+                                entry.Attributes.HasFlag(FileAttributes.ReparsePoint)
+                        }.Any();
                     }
                 }
-                catch { }
                 return false;
             }
         }
