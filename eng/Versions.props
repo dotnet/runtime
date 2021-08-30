@@ -70,12 +70,12 @@
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppRuntimewinx64Version>7.0.0-alpha.1.21422.3</MicrosoftNETCoreAppRuntimewinx64Version>
-    <MicrosoftNETCoreDotNetHostVersion>7.0.0-alpha.1.21422.3</MicrosoftNETCoreDotNetHostVersion>
-    <MicrosoftNETCoreDotNetHostPolicyVersion>7.0.0-alpha.1.21422.3</MicrosoftNETCoreDotNetHostPolicyVersion>
+    <MicrosoftNETCoreAppRuntimewinx64Version>7.0.0-alpha.1.21430.3</MicrosoftNETCoreAppRuntimewinx64Version>
+    <MicrosoftNETCoreDotNetHostVersion>7.0.0-alpha.1.21430.3</MicrosoftNETCoreDotNetHostVersion>
+    <MicrosoftNETCoreDotNetHostPolicyVersion>7.0.0-alpha.1.21430.3</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>3.1.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>7.0.0-alpha.1.21422.3</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>7.0.0-alpha.1.21430.3</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>5.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftWin32PrimitivesVersion>4.3.0</MicrosoftWin32PrimitivesVersion>
@@ -109,11 +109,11 @@
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <ServiceModelVersion>4.8.1</ServiceModelVersion>
-    <SystemTextJsonVersion>7.0.0-alpha.1.21422.3</SystemTextJsonVersion>
-    <SystemRuntimeCompilerServicesUnsafeVersion>7.0.0-alpha.1.21422.3</SystemRuntimeCompilerServicesUnsafeVersion>
+    <SystemTextJsonVersion>7.0.0-alpha.1.21430.3</SystemTextJsonVersion>
+    <SystemRuntimeCompilerServicesUnsafeVersion>7.0.0-alpha.1.21430.3</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
-    <runtimenativeSystemIOPortsVersion>7.0.0-alpha.1.21422.3</runtimenativeSystemIOPortsVersion>
+    <runtimenativeSystemIOPortsVersion>7.0.0-alpha.1.21430.3</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.21423.2</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.21423.2</SystemComponentModelTypeConverterTestDataVersion>
