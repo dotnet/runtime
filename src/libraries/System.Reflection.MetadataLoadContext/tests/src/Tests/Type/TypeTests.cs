@@ -628,7 +628,7 @@ namespace System.Reflection.Tests
             PathAssemblyResolver resolver = new(runtimeAssemblies);
             using MetadataLoadContext mlc = new(resolver);
 
-            Stream peStream = new MemoryStream(TestData.s_MetadataDelegateImage);
+            using MemoryStream peStream = new(TestData.s_MetadataDelegateImage);
             Assembly a = mlc.LoadFromStream(peStream);
             Assert.NotNull(a);
             Assert.Equal(string.Empty, a.Location);
