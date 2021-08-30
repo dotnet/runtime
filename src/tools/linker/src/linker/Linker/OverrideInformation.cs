@@ -6,11 +6,14 @@ namespace Mono.Linker
 	[DebuggerDisplay ("{Override}")]
 	public class OverrideInformation
 	{
-		public OverrideInformation (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
+		readonly ITryResolveMetadata resolver;
+
+		public OverrideInformation (MethodDefinition @base, MethodDefinition @override, ITryResolveMetadata resolver, InterfaceImplementation matchingInterfaceImplementation = null)
 		{
 			Base = @base;
 			Override = @override;
 			MatchingInterfaceImplementation = matchingInterfaceImplementation;
+			this.resolver = resolver;
 		}
 
 		public MethodDefinition Base { get; }
@@ -32,7 +35,7 @@ namespace Mono.Linker
 					return null;
 
 				if (MatchingInterfaceImplementation != null)
-					return MatchingInterfaceImplementation.InterfaceType.Resolve ();
+					return resolver.TryResolve (MatchingInterfaceImplementation.InterfaceType);
 
 				return Base.DeclaringType;
 			}

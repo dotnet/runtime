@@ -1851,10 +1851,10 @@ namespace Mono.Linker.Dataflow
 					} else if (parameterTypeDef.IsMulticastDelegate ()) {
 						// Delegates are special cased by interop
 						return false;
-					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "CriticalHandle")) {
+					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "CriticalHandle", _context)) {
 						// Subclasses of CriticalHandle are special cased by interop
 						return false;
-					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "SafeHandle")) {
+					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "SafeHandle", _context)) {
 						// Subclasses of SafeHandle are special cased by interop
 						return false;
 					} else if (!parameterTypeDef.IsSequentialLayout && !parameterTypeDef.IsExplicitLayout) {

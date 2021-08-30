@@ -16,11 +16,13 @@ namespace Mono.Linker
 	{
 		private readonly Dictionary<AssemblyNameDefinition, HashSet<(int Code, IMemberDefinition Member)>> _warnings;
 		private readonly FileOutputKind _fileOutputKind;
+		readonly LinkContext _context;
 
-		public WarningSuppressionWriter (FileOutputKind fileOutputKind = FileOutputKind.CSharp)
+		public WarningSuppressionWriter (LinkContext context, FileOutputKind fileOutputKind = FileOutputKind.CSharp)
 		{
 			_warnings = new Dictionary<AssemblyNameDefinition, HashSet<(int, IMemberDefinition)>> ();
 			_fileOutputKind = fileOutputKind;
+			_context = context;
 		}
 
 		public bool IsEmpty => _warnings.Count == 0;
@@ -99,7 +101,7 @@ namespace Mono.Linker
 			List<(int Code, string MemberDocumentationSignature)> listOfWarnings = new List<(int Code, string MemberDocumentationSignature)> ();
 			StringBuilder sb = new StringBuilder ();
 			foreach (var warning in _warnings[assemblyName].ToList ()) {
-				DocumentationSignatureGenerator.VisitMember (warning.Member, sb);
+				DocumentationSignatureGenerator.VisitMember (warning.Member, sb, _context);
 				listOfWarnings.Add ((warning.Code, sb.ToString ()));
 				sb.Clear ();
 			}

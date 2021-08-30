@@ -49,7 +49,13 @@ namespace Mono.Linker
 		public const int NET6 = 6;
 	}
 
-	public class LinkContext : IMetadataResolver, IDisposable
+	public interface ITryResolveMetadata
+	{
+		MethodDefinition TryResolve (MethodReference methodReference);
+		TypeDefinition TryResolve (TypeReference typeReference);
+	}
+
+	public class LinkContext : IMetadataResolver, ITryResolveMetadata, IDisposable
 	{
 
 		readonly Pipeline _pipeline;
@@ -808,7 +814,9 @@ namespace Mono.Linker
 			if (typeReference is GenericParameter || (typeReference is TypeSpecification && typeReference is not GenericInstanceType))
 				throw new NotSupportedException ($"TypeDefinition cannot be resolved from '{typeReference.GetType ()}' type");
 
+#pragma warning disable RS0030
 			td = typeReference.Resolve ();
+#pragma warning restore RS0030
 			if (td == null && !IgnoreUnresolved) {
 				ReportUnresolved (typeReference);
 			}
@@ -838,7 +846,9 @@ namespace Mono.Linker
 					td = TryResolve (ts.GetElementType ());
 				}
 			} else {
+#pragma warning disable RS0030
 				td = typeReference.Resolve ();
+#pragma warning restore RS0030
 			}
 
 			typeresolveCache.Add (typeReference, td);

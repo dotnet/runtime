@@ -228,7 +228,7 @@ namespace Mono.Linker
 
 				case "type":
 				case "member":
-					foreach (var result in DocumentationSignatureParser.GetMembersForDocumentationSignature (info.Target, module))
+					foreach (var result in DocumentationSignatureParser.GetMembersForDocumentationSignature (info.Target, module, _context))
 						yield return (info, result);
 
 					break;

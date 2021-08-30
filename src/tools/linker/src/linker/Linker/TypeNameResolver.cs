@@ -98,7 +98,7 @@ namespace Mono.Linker
 				if (genericTypeRef == null)
 					return null;
 
-				TypeDefinition genericType = genericTypeRef.Resolve ();
+				TypeDefinition genericType = _context.TryResolve (genericTypeRef);
 				var genericInstanceType = new GenericInstanceType (genericType);
 				foreach (var arg in constructedGenericTypeName.GenericArguments) {
 					var genericArgument = ResolveTypeName (assembly, arg);
@@ -123,7 +123,7 @@ namespace Mono.Linker
 				};
 			}
 
-			return assembly.MainModule.ResolveType (typeName.ToString ());
+			return assembly.MainModule.ResolveType (typeName.ToString (), _context);
 		}
 	}
 }

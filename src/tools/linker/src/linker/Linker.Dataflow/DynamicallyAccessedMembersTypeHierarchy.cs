@@ -66,7 +66,7 @@ namespace Mono.Linker.Dataflow
 
 			// Base should already be marked (since we're marking its derived type now)
 			// so we should already have its cached values filled.
-			TypeDefinition baseType = type.BaseType?.Resolve ();
+			TypeDefinition baseType = _context.TryResolve (type.BaseType);
 			Debug.Assert (baseType == null || _context.Annotations.IsMarked (baseType));
 			if (baseType != null && _typesInDynamicallyAccessedMembersHierarchy.TryGetValue (baseType, out var baseValue)) {
 				annotation |= baseValue.annotation;
@@ -80,7 +80,7 @@ namespace Mono.Linker.Dataflow
 			// relatively low. In the future it could be possibly optimized.
 			if (type.HasInterfaces) {
 				foreach (InterfaceImplementation iface in type.Interfaces) {
-					var interfaceType = iface.InterfaceType.Resolve ();
+					var interfaceType = _context.TryResolve (iface.InterfaceType);
 					if (interfaceType != null) {
 						var interfaceValue = ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (interfaceType);
 						annotation |= interfaceValue.annotation;
@@ -196,13 +196,13 @@ namespace Mono.Linker.Dataflow
 			if (applied)
 				return true;
 
-			TypeDefinition baseType = type.BaseType?.Resolve ();
+			TypeDefinition baseType = _context.TryResolve (type.BaseType);
 			if (baseType != null)
 				applied = ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMethodBodyScanner, baseType);
 
 			if (!applied && type.HasInterfaces) {
 				foreach (InterfaceImplementation iface in type.Interfaces) {
-					var interfaceType = iface.InterfaceType.Resolve ();
+					var interfaceType = _context.TryResolve (iface.InterfaceType);
 					if (interfaceType != null) {
 						if (ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMethodBodyScanner, interfaceType)) {
 							applied = true;

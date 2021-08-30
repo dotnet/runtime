@@ -186,7 +186,7 @@ namespace Mono.Linker
 			// This doesn't handle other TypeSpecs. We are only matching what xamarin-android used to do.
 			// Arrays will still work because Resolve returns the array element type.
 
-			TypeDefinition type = typeRef.Resolve ();
+			TypeDefinition type = _context.TryResolve (typeRef);
 			if (type == null)
 				return;
 

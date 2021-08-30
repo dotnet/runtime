@@ -91,7 +91,7 @@ namespace Mono.Linker
 				override_methods.Add (@base, methods);
 			}
 
-			methods.Add (new OverrideInformation (@base, @override, matchingInterfaceImplementation));
+			methods.Add (new OverrideInformation (@base, @override, context, matchingInterfaceImplementation));
 		}
 
 		public void AddDefaultInterfaceImplementation (MethodDefinition @base, TypeDefinition implementingType, InterfaceImplementation matchingInterfaceImplementation)
@@ -123,7 +123,7 @@ namespace Mono.Linker
 
 			// Foreach interface and for each newslot virtual method on the interface, try
 			// to find the method implementation and record it.
-			foreach (var interfaceImpl in type.GetInflatedInterfaces ()) {
+			foreach (var interfaceImpl in type.GetInflatedInterfaces (context)) {
 				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods (context)) {
 					MethodDefinition resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
 					if (resolvedInterfaceMethod == null)
@@ -245,7 +245,7 @@ namespace Mono.Linker
 				var baseType = context.TryResolve (type)?.BaseType;
 
 				if (baseType is GenericInstanceType)
-					return TypeReferenceExtensions.InflateGenericType (genericInstance, baseType);
+					return TypeReferenceExtensions.InflateGenericType (genericInstance, baseType, context);
 
 				return baseType;
 			}
@@ -314,7 +314,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		static bool MethodMatch (MethodReference candidate, MethodReference method)
+		bool MethodMatch (MethodReference candidate, MethodReference method)
 		{
 			if (candidate.HasParameters != method.HasParameters)
 				return false;
@@ -327,7 +327,7 @@ namespace Mono.Linker
 
 			// we need to track what the generic parameter represent - as we cannot allow it to
 			// differ between the return type or any parameter
-			if (!TypeMatch (candidate.GetReturnType (), method.GetReturnType ()))
+			if (!TypeMatch (candidate.GetReturnType (context), method.GetReturnType (context)))
 				return false;
 
 			if (!candidate.HasParameters)
@@ -342,7 +342,7 @@ namespace Mono.Linker
 				return false;
 
 			for (int i = 0; i < cp.Count; i++) {
-				if (!TypeMatch (candidate.GetParameterType (i), method.GetParameterType (i)))
+				if (!TypeMatch (candidate.GetParameterType (i, context), method.GetParameterType (i, context)))
 					return false;
 			}
 

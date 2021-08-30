@@ -53,18 +53,18 @@ namespace Mono.Linker
 			return sb.ToString ();
 		}
 
-		public static TypeReference GetReturnType (this MethodReference method)
+		public static TypeReference GetReturnType (this MethodReference method, LinkContext context)
 		{
 			if (method.DeclaringType is GenericInstanceType genericInstance)
-				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.ReturnType);
+				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.ReturnType, context);
 
 			return method.ReturnType;
 		}
 
-		public static TypeReference GetParameterType (this MethodReference method, int parameterIndex)
+		public static TypeReference GetParameterType (this MethodReference method, int parameterIndex, LinkContext context)
 		{
 			if (method.DeclaringType is GenericInstanceType genericInstance)
-				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters[parameterIndex].ParameterType);
+				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters[parameterIndex].ParameterType, context);
 
 			return method.Parameters[parameterIndex].ParameterType;
 		}

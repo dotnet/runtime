@@ -40,46 +40,46 @@ namespace Mono.Linker
 			All = Method | Field | Type | Property | Event
 		}
 
-		public static IEnumerable<IMemberDefinition> GetMembersForDocumentationSignature (string id, ModuleDefinition module)
+		public static IEnumerable<IMemberDefinition> GetMembersForDocumentationSignature (string id, ModuleDefinition module, ITryResolveMetadata resolver)
 		{
 			var results = new List<IMemberDefinition> ();
 			if (id == null || module == null)
 				return results;
 
-			ParseDocumentationSignature (id, module, results);
+			ParseDocumentationSignature (id, module, results, resolver);
 			return results;
 		}
 
 		// Takes a documentation signature (not including the documentation member type prefix) and resolves it to a type
 		// in the assembly.
-		public static TypeDefinition? GetTypeByDocumentationSignature (AssemblyDefinition assembly, string signature)
+		public static TypeDefinition? GetTypeByDocumentationSignature (AssemblyDefinition assembly, string signature, ITryResolveMetadata resolver)
 		{
 			int index = 0;
 			var results = new List<IMemberDefinition> ();
-			DocumentationSignatureParser.ParseSignaturePart (signature, ref index, assembly.MainModule, DocumentationSignatureParser.MemberType.Type, results);
+			DocumentationSignatureParser.ParseSignaturePart (signature, ref index, assembly.MainModule, DocumentationSignatureParser.MemberType.Type, results, resolver);
 			Debug.Assert (results.Count <= 1);
 			return results.Count == 0 ? null : (TypeDefinition) results[0];
 		}
 
 		// Takes a member signature (not including the declaring type) and returns the matching members on the type.
-		public static IEnumerable<IMemberDefinition> GetMembersByDocumentationSignature (TypeDefinition type, string signature, bool acceptName = false)
+		public static IEnumerable<IMemberDefinition> GetMembersByDocumentationSignature (TypeDefinition type, string signature, ITryResolveMetadata resolver, bool acceptName = false)
 		{
 			int index = 0;
 			var results = new List<IMemberDefinition> ();
 			var nameBuilder = new StringBuilder ();
 			var (name, arity) = DocumentationSignatureParser.ParseTypeOrNamespaceName (signature, ref index, nameBuilder);
-			DocumentationSignatureParser.GetMatchingMembers (signature, ref index, type.Module, type, name, arity, DocumentationSignatureParser.MemberType.All, results, acceptName);
+			DocumentationSignatureParser.GetMatchingMembers (signature, ref index, type.Module, type, name, arity, DocumentationSignatureParser.MemberType.All, results, resolver, acceptName);
 			return results;
 		}
 
-		static string GetSignaturePart (TypeReference type)
+		static string GetSignaturePart (TypeReference type, ITryResolveMetadata resolver)
 		{
 			var builder = new StringBuilder ();
-			DocumentationSignatureGenerator.PartVisitor.Instance.VisitTypeReference (type, builder);
+			DocumentationSignatureGenerator.PartVisitor.Instance.VisitTypeReference (type, builder, resolver);
 			return builder.ToString ();
 		}
 
-		static bool ParseDocumentationSignature (string id, ModuleDefinition module, List<IMemberDefinition> results)
+		static bool ParseDocumentationSignature (string id, ModuleDefinition module, List<IMemberDefinition> results, ITryResolveMetadata resolver)
 		{
 			if (id == null)
 				return false;
@@ -89,11 +89,11 @@ namespace Mono.Linker
 
 			int index = 0;
 			results.Clear ();
-			ParseSignature (id, ref index, module, results);
+			ParseSignature (id, ref index, module, results, resolver);
 			return results.Count > 0;
 		}
 
-		static void ParseSignature (string id, ref int index, ModuleDefinition module, List<IMemberDefinition> results)
+		static void ParseSignature (string id, ref int index, ModuleDefinition module, List<IMemberDefinition> results, ITryResolveMetadata resolver)
 		{
 			Debug.Assert (results.Count == 0);
 			var memberTypeChar = PeekNextChar (id, index);
@@ -128,12 +128,12 @@ namespace Mono.Linker
 			if (PeekNextChar (id, index) == ':')
 				index++;
 
-			ParseSignaturePart (id, ref index, module, memberType, results);
+			ParseSignaturePart (id, ref index, module, memberType, results, resolver);
 		}
 
 		// Parses and resolves a fully-qualified (namespace and nested types but no assembly) member signature,
 		// without the member type prefix. The results include all members matching the specified member types.
-		public static void ParseSignaturePart (string id, ref int index, ModuleDefinition module, MemberType memberTypes, List<IMemberDefinition> results)
+		public static void ParseSignaturePart (string id, ref int index, ModuleDefinition module, MemberType memberTypes, List<IMemberDefinition> results, ITryResolveMetadata resolver)
 		{
 			// Roslyn resolves types by searching namespaces top-down.
 			// We don't have namespace info. Instead try treating each part of a
@@ -162,7 +162,7 @@ namespace Mono.Linker
 
 				// try to resolve it as a type
 				var typeOrNamespaceName = nameBuilder.ToString ();
-				GetMatchingTypes (module, declaringType: containingType, name: typeOrNamespaceName, arity: arity, results: results);
+				GetMatchingTypes (module, declaringType: containingType, name: typeOrNamespaceName, arity: arity, results: results, resolver);
 				Debug.Assert (results.Count <= 1);
 				if (results.Any ()) {
 					// the name resolved to a type
@@ -186,16 +186,16 @@ namespace Mono.Linker
 			}
 
 			var memberName = nameBuilder.ToString ();
-			GetMatchingMembers (id, ref index, module, containingType, memberName, arity, memberTypes, results);
+			GetMatchingMembers (id, ref index, module, containingType, memberName, arity, memberTypes, results, resolver);
 		}
 
 		// Gets all members of the specified member kinds of the containing type, with
 		// mathing name, arity, and signature at the current index (for methods and properties).
 		// This will also resolve types from the given module if no containing type is given.
-		public static void GetMatchingMembers (string id, ref int index, ModuleDefinition module, TypeDefinition? containingType, string memberName, int arity, MemberType memberTypes, List<IMemberDefinition> results, bool acceptName = false)
+		public static void GetMatchingMembers (string id, ref int index, ModuleDefinition module, TypeDefinition? containingType, string memberName, int arity, MemberType memberTypes, List<IMemberDefinition> results, ITryResolveMetadata resolver, bool acceptName = false)
 		{
 			if (memberTypes.HasFlag (MemberType.Type))
-				GetMatchingTypes (module, containingType, memberName, arity, results);
+				GetMatchingTypes (module, containingType, memberName, arity, results, resolver);
 
 			if (containingType == null)
 				return;
@@ -204,13 +204,13 @@ namespace Mono.Linker
 			int endIndex = index;
 
 			if (memberTypes.HasFlag (MemberType.Method)) {
-				GetMatchingMethods (id, ref index, containingType, memberName, arity, results, acceptName);
+				GetMatchingMethods (id, ref index, containingType, memberName, arity, results, resolver, acceptName);
 				endIndex = index;
 				index = startIndex;
 			}
 
 			if (memberTypes.HasFlag (MemberType.Property)) {
-				GetMatchingProperties (id, ref index, containingType, memberName, results, acceptName);
+				GetMatchingProperties (id, ref index, containingType, memberName, results, resolver, acceptName);
 				endIndex = index;
 				index = startIndex;
 			}
@@ -492,12 +492,12 @@ namespace Mono.Linker
 			return true;
 		}
 
-		static void GetMatchingTypes (ModuleDefinition module, TypeDefinition? declaringType, string name, int arity, List<IMemberDefinition> results)
+		static void GetMatchingTypes (ModuleDefinition module, TypeDefinition? declaringType, string name, int arity, List<IMemberDefinition> results, ITryResolveMetadata resolver)
 		{
 			Debug.Assert (module != null);
 
 			if (declaringType == null) {
-				var type = module.ResolveType (name);
+				var type = module.ResolveType (name, resolver);
 				if (type != null) {
 					results.Add (type);
 				}
@@ -524,7 +524,7 @@ namespace Mono.Linker
 			}
 		}
 
-		static void GetMatchingMethods (string id, ref int index, TypeDefinition? type, string memberName, int arity, List<IMemberDefinition> results, bool acceptName = false)
+		static void GetMatchingMethods (string id, ref int index, TypeDefinition? type, string memberName, int arity, List<IMemberDefinition> results, ITryResolveMetadata resolver, bool acceptName = false)
 		{
 			if (type == null)
 				return;
@@ -561,13 +561,13 @@ namespace Mono.Linker
 						continue;
 
 					// if return type is specified, then it must match
-					if (GetSignaturePart (method.ReturnType) != returnType)
+					if (GetSignaturePart (method.ReturnType, resolver) != returnType)
 						continue;
 				}
 
 				if (!isNameOnly || !acceptName) {
 					// check parameters unless we are matching a name only
-					if (!AllParametersMatch (method.Parameters, parameters))
+					if (!AllParametersMatch (method.Parameters, parameters, resolver))
 						continue;
 				}
 
@@ -577,7 +577,7 @@ namespace Mono.Linker
 			index = endIndex;
 		}
 
-		static void GetMatchingProperties (string id, ref int index, TypeDefinition? type, string memberName, List<IMemberDefinition> results, bool acceptName = false)
+		static void GetMatchingProperties (string id, ref int index, TypeDefinition? type, string memberName, List<IMemberDefinition> results, ITryResolveMetadata resolver, bool acceptName = false)
 		{
 			if (type == null)
 				return;
@@ -600,7 +600,7 @@ namespace Mono.Linker
 					}
 					if (!ParseParameterList (id, ref index, property.DeclaringType, parameters))
 						continue;
-					if (!AllParametersMatch (property.Parameters, parameters))
+					if (!AllParametersMatch (property.Parameters, parameters, resolver))
 						continue;
 				} else {
 					if (!acceptName && property.Parameters.Count != 0)
@@ -635,13 +635,13 @@ namespace Mono.Linker
 			}
 		}
 
-		static bool AllParametersMatch (Collection<ParameterDefinition> methodParameters, List<string> expectedParameters)
+		static bool AllParametersMatch (Collection<ParameterDefinition> methodParameters, List<string> expectedParameters, ITryResolveMetadata resolver)
 		{
 			if (methodParameters.Count != expectedParameters.Count)
 				return false;
 
 			for (int i = 0; i < expectedParameters.Count; i++) {
-				if (GetSignaturePart (methodParameters[i].ParameterType) != expectedParameters[i])
+				if (GetSignaturePart (methodParameters[i].ParameterType, resolver) != expectedParameters[i])
 					return false;
 			}
 
