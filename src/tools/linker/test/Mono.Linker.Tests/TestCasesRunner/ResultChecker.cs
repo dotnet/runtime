@@ -21,35 +21,27 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly BaseAssemblyResolver _linkedResolver;
 		readonly ReaderParameters _originalReaderParameters;
 		readonly ReaderParameters _linkedReaderParameters;
-#if !NETCOREAPP
 		readonly PeVerifier _peVerifier;
-#endif
 
 		public ResultChecker ()
 			: this (new TestCaseAssemblyResolver (), new TestCaseAssemblyResolver (),
-#if !NETCOREAPP
-					new PeVerifier (),
-#endif
-					new ReaderParameters {
-						SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
-					},
-					new ReaderParameters {
-						SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
-					})
+				new PeVerifier (),
+				new ReaderParameters {
+					SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
+				},
+				new ReaderParameters {
+					SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
+				})
 		{
 		}
 
 		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver,
-#if !NETCOREAPP
 			PeVerifier peVerifier,
-#endif
 			ReaderParameters originalReaderParameters, ReaderParameters linkedReaderParameters)
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
-#if !NETCOREAPP
 			_peVerifier = peVerifier;
-#endif
 			_originalReaderParameters = originalReaderParameters;
 			_linkedReaderParameters = linkedReaderParameters;
 		}
@@ -206,10 +198,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
-#if !NETCOREAPP
-			// the PE Verifier does not know how to resolve .NET Core assemblies.
 			_peVerifier.Check (linkResult, original);
-#endif
 		}
 
 		void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)

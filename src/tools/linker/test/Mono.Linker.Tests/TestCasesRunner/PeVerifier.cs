@@ -1,9 +1,7 @@
-#if !NETCOREAPP
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Microsoft.Win32;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
@@ -17,7 +15,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public PeVerifier ()
 		{
-			_peExecutable = Environment.OSVersion.Platform == PlatformID.Win32NT ? FindPeExecutableFromRegistry ().ToString () : "pedump";
 		}
 
 		public PeVerifier (string peExecutable)
@@ -74,8 +71,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private void CheckAssembly (NPath assemblyPath)
+		protected virtual void CheckAssembly (NPath assemblyPath)
 		{
+#if NETCOREAPP
+			// the PE Verifier does not know how to resolve .NET Core assemblies.
+#else
 			var capturedOutput = new List<string> ();
 			var process = new Process ();
 			SetupProcess (process, assemblyPath);
@@ -88,6 +88,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (process.ExitCode != 0) {
 				Assert.Fail ($"Invalid IL detected in {assemblyPath}\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
 			}
+#endif
 		}
 
 		protected virtual void SetupProcess (Process process, NPath assemblyPath)
@@ -103,45 +104,5 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				process.StartInfo.Environment["MONO_PATH"] = assemblyPath.Parent.ToString ();
 			}
 		}
-
-		public static NPath FindPeExecutableFromRegistry ()
-		{
-			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-				throw new InvalidOperationException ("This method should only be called on windows");
-
-			if (TryFindPeExecutableFromRegustrySubfolder ("NETFXSDK", out NPath result))
-				return result;
-			if (TryFindPeExecutableFromRegustrySubfolder ("Windows", out result))
-				return result;
-
-			throw new InvalidOperationException ("Could not locate a peverify.exe executable");
-		}
-
-		private static bool TryFindPeExecutableFromRegustrySubfolder (string subfolder, out NPath peVerifyPath)
-		{
-			var keyPath = $"SOFTWARE\\Wow6432Node\\Microsoft\\Microsoft SDKs\\{subfolder}";
-			var key = Registry.LocalMachine.OpenSubKey (keyPath);
-
-			foreach (var sdkKeyName in key.GetSubKeyNames ().OrderBy (name => new Version (name.TrimStart ('v').TrimEnd ('A'))).Reverse ()) {
-				var sdkKey = Registry.LocalMachine.OpenSubKey ($"{keyPath}\\{sdkKeyName}");
-
-				var sdkDir = (string) sdkKey.GetValue ("InstallationFolder");
-				if (string.IsNullOrEmpty (sdkDir))
-					continue;
-
-				var binDir = sdkDir.ToNPath ().Combine ("bin");
-				if (!binDir.Exists ())
-					continue;
-
-				foreach (var netSdkDirs in binDir.Directories ().OrderBy (dir => dir.FileName)) {
-					peVerifyPath = netSdkDirs.Combine ("PEVerify.exe");
-					if (peVerifyPath.FileExists ())
-						return true;
-				}
-			}
-			peVerifyPath = null;
-			return false;
-		}
 	}
 }
-#endif
