@@ -190,7 +190,7 @@ namespace BundleTests.Helpers
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
-                throw new Exception(result.StdOut + result.StdErr);
+                throw new Exception(result.StdOut);
             }
             return "";
         }
