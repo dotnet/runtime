@@ -283,54 +283,50 @@ namespace {@namespace}
                 string typeCompilableName = typeMetadata.TypeRef;
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
 
-                string metadataInitSource;
-
                 // TODO (https://github.com/dotnet/runtime/issues/52218): consider moving this verification source to common helper.
+                StringBuilder metadataInitSource = new(
+                    $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
+                    {TypeTypeRef} typeToConvert = typeof({typeCompilableName});");
+
                 if (typeMetadata.IsValueType)
                 {
-                    metadataInitSource = $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
-                    {TypeTypeRef} typeToConvert = typeof({typeCompilableName});
-                    if (!converter.CanConvert(typeToConvert))
-                    {{
-                        {TypeTypeRef}? underlyingType = {NullableTypeRef}.GetUnderlyingType(typeToConvert);
-                        if (underlyingType != null && converter.CanConvert(underlyingType))
+                    metadataInitSource.Append($@"
+                        if (!converter.CanConvert(typeToConvert))
                         {{
-                            {JsonConverterTypeRef}? actualConverter = converter;
-
-                            if (converter is {JsonConverterFactoryTypeRef} converterFactory)
+                            {TypeTypeRef}? underlyingType = {NullableTypeRef}.GetUnderlyingType(typeToConvert);
+                            if (underlyingType != null && converter.CanConvert(underlyingType))
                             {{
-                                actualConverter = converterFactory.CreateConverter(underlyingType, {OptionsInstanceVariableName});
-
-                                if (actualConverter == null || actualConverter is {JsonConverterFactoryTypeRef})
-                                {{
-                                    throw new {InvalidOperationExceptionTypeRef}($""JsonConverterFactory '{{converter}} cannot return a 'null' or 'JsonConverterFactory' value."");
-                                }}
+                                // Allow nullable handling to forward to the underlying type's converter.
+                                converter = {JsonMetadataServicesTypeRef}.GetNullableConverter<{typeCompilableName}>(this.{typeFriendlyName})!;
                             }}
-
-                            // Allow nullable handling to forward to the underlying type's converter.
-                            converter = {JsonMetadataServicesTypeRef}.GetNullableConverter<{typeCompilableName}>(this.{typeFriendlyName});
-                        }}
-                        else
-                        {{
-                            throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
-                        }}
-                    }}
-
-                    _{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, converter);";
+                            else
+                            {{
+                                throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
+                            }}
+                        }}");
                 }
                 else
                 {
-                    metadataInitSource = $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
-                    {TypeTypeRef} typeToConvert = typeof({typeCompilableName});
-                    if (!converter.CanConvert(typeToConvert))
-                    {{
-                        throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
-                    }}
-
-                    _{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, converter);";
+                    metadataInitSource.Append($@"
+                        if (!converter.CanConvert(typeToConvert))
+                        {{
+                            throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
+                        }}");
                 }
 
-                return GenerateForType(typeMetadata, metadataInitSource);
+                metadataInitSource.Append($@"
+                    else if (converter is { JsonConverterFactoryTypeRef } factory)
+                    {{
+                        {JsonConverterTypeRef}? actualConverter = factory.CreateConverter(typeToConvert, { OptionsInstanceVariableName });
+                        if (actualConverter == null || actualConverter is { JsonConverterFactoryTypeRef })
+                        {{
+                            throw new { InvalidOperationExceptionTypeRef }($""JsonConverterFactory '{{factory.GetType()}}' cannot return a 'null' or 'JsonConverterFactory' value."");
+                        }}
+                        converter = actualConverter;
+                    }}
+                    _{typeFriendlyName} = { JsonMetadataServicesTypeRef }.{ GetCreateValueInfoMethodRef(typeCompilableName)} ({ OptionsInstanceVariableName}, converter); ");
+
+                return GenerateForType(typeMetadata, metadataInitSource.ToString());
             }
 
             private string GenerateForNullable(TypeGenerationSpec typeMetadata)

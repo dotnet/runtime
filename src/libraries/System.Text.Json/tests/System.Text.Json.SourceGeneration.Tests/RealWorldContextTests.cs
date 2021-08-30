@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -124,6 +124,23 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(Json, json);
 
             obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverter);
+            Assert.Equal(42, obj.MyInt);
+        }
+
+        [Fact]
+        public virtual void RoundTripWithCustomConverterFactory_Class()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            ClassWithCustomConverterFactory obj = new()
+            {
+                MyInt = 42
+            };
+
+            string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactory);
+            Assert.Equal(Json, json);
+
+            obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterFactory);
             Assert.Equal(42, obj.MyInt);
         }
 
