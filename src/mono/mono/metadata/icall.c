@@ -6519,102 +6519,11 @@ ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
 	return mono_icall_is_64bit_os ();
 }
 
-MonoStringHandle
-ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_name, MonoError *error)
-{
-	gchar *value;
-
-	if (utf8_name == NULL)
-		return NULL_HANDLE_STRING;
-
-	value = g_getenv (utf8_name);
-
-	if (value == 0)
-		return NULL_HANDLE_STRING;
-	
-	MonoStringHandle res = mono_string_new_handle (value, error);
-	g_free (value);
-	return res;
-}
-
-/*
- * There is no standard way to get at environ.
- */
-#ifndef _MSC_VER
-#ifndef __MINGW32_VERSION
-#if defined(__APPLE__)
-#if defined (TARGET_OSX)
-/* Apple defines this in crt_externs.h but doesn't provide that header for 
- * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
- * in fact exist on all implementations (so far) 
- */
-G_BEGIN_DECLS
-gchar ***_NSGetEnviron(void);
-G_END_DECLS
-#define environ (*_NSGetEnviron())
-#else
-static char *mono_environ[1] = { NULL };
-#define environ mono_environ
-#endif /* defined (TARGET_OSX) */
-#else
-G_BEGIN_DECLS
-extern
-char **environ;
-G_END_DECLS
-#endif
-#endif
-#endif
-
 MonoArrayHandle
 ves_icall_System_Environment_GetCommandLineArgs (MonoError *error)
 {
 	MonoArrayHandle result = mono_runtime_get_main_args_handle (error);
 	return result;
-}
-
-#ifndef HOST_WIN32
-static MonoArrayHandle
-mono_icall_get_environment_variable_names (MonoError *error)
-{
-	MonoArrayHandle names;
-	MonoStringHandle str;
-	gchar **e, **parts;
-	int n;
-
-	n = 0;
-	for (e = environ; *e != 0; ++ e)
-		++ n;
-
-	names = mono_array_new_handle (mono_defaults.string_class, n, error);
-	return_val_if_nok (error, NULL_HANDLE_ARRAY);
-
-	str = MONO_HANDLE_NEW (MonoString, NULL);
-	n = 0;
-	for (e = environ; *e != 0; ++ e) {
-		parts = g_strsplit (*e, "=", 2);
-		if (*parts != 0) {
-			MonoString *s = mono_string_new_checked (*parts, error);
-			MONO_HANDLE_ASSIGN_RAW (str, s);
-			if (!is_ok (error)) {
-				g_strfreev (parts);
-				return NULL_HANDLE_ARRAY;
-			}
-			mono_array_handle_setref (names, n, str);
-		}
-
-		g_strfreev (parts);
-
-		++ n;
-	}
-
-	return names;
-}
-#endif /* !HOST_WIN32 */
-
-MonoArrayHandle
-ves_icall_System_Environment_GetEnvironmentVariableNames (MonoError *error)
-{
-	return mono_icall_get_environment_variable_names (error);
 }
 
 void
