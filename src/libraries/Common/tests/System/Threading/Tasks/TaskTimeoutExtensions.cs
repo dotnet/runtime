@@ -76,7 +76,7 @@ namespace System.Threading.Tasks
                 var exceptions = new List<Exception>();
                 foreach (Task t in tasks)
                 {
-                    if (t.GetRealException() is Exception e)
+                    if (t.IsCompleted && t.GetRealException() is Exception e)
                     {
                         exceptions.Add(e);
                     }
@@ -115,16 +115,13 @@ namespace System.Threading.Tasks
         // Gets the exception (if any) from the Task, for both faulted and cancelled tasks
         private static Exception? GetRealException(this Task task)
         {
-            if (task.GetAwaiter().IsCompleted)
+            try
             {
-                try
-                {
-                    task.GetAwaiter().GetResult();
-                }
-                catch (Exception e)
-                {
-                    return e;
-                }
+                task.GetAwaiter().GetResult();
+            }
+            catch (Exception e)
+            {
+                return e;
             }
 
             return null;
