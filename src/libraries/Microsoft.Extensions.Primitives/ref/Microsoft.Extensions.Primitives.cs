@@ -53,11 +53,7 @@ namespace Microsoft.Extensions.Primitives
         public string? Value { get { throw null; } }
         public System.ReadOnlyMemory<char> AsMemory() { throw null; }
         public System.ReadOnlySpan<char> AsSpan() { throw null; }
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Buffer))]
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Value))]
         public System.ReadOnlySpan<char> AsSpan(int start) { throw null; }
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Buffer))]
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Value))]
         public System.ReadOnlySpan<char> AsSpan(int start, int length) { throw null; }
         public static int Compare(Microsoft.Extensions.Primitives.StringSegment a, Microsoft.Extensions.Primitives.StringSegment b, System.StringComparison comparisonType) { throw null; }
         public bool EndsWith(string text, System.StringComparison comparisonType) { throw null; }
@@ -84,12 +80,8 @@ namespace Microsoft.Extensions.Primitives
         public Microsoft.Extensions.Primitives.StringTokenizer Split(char[] chars) { throw null; }
         public bool StartsWith(string text, System.StringComparison comparisonType) { throw null; }
         public Microsoft.Extensions.Primitives.StringSegment Subsegment(int offset) { throw null; }
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Buffer))]
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Value))]
         public Microsoft.Extensions.Primitives.StringSegment Subsegment(int offset, int length) { throw null; }
         public string Substring(int offset) { throw null; }
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Buffer))]
-        [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Value))]
         public string Substring(int offset, int length) { throw null; }
         public override string ToString() { throw null; }
         public Microsoft.Extensions.Primitives.StringSegment Trim() { throw null; }
