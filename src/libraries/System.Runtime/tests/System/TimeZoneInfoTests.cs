@@ -2646,6 +2646,8 @@ namespace System.Tests
         {
             bool expected = !s_isWindows;
 
+            Assert.Equal(expected, TimeZoneInfo.Local.HasIanaId);
+
             foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
             {
                 Assert.True((expected || tzi.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)) == tzi.HasIanaId, $"`{tzi.Id}` has wrong IANA Id indicator");
