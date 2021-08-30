@@ -94,7 +94,7 @@ namespace System.Threading.Tasks
         private static Task WhenAllOrAnyFailedCore(this Task[] tasks)
         {
             int remaining = tasks.Length;
-            var tcs = new TaskCompletionSource();
+            var tcs = new TaskCompletionSource<bool>();
             foreach (Task t in tasks)
             {
                 t.ContinueWith(a =>
@@ -105,7 +105,7 @@ namespace System.Threading.Tasks
                     }
                     else if (Interlocked.Decrement(ref remaining) == 0)
                     {
-                        tcs.TrySetResult();
+                        tcs.TrySetResult(true);
                     }
                 }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
