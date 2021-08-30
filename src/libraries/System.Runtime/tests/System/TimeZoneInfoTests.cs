@@ -2647,13 +2647,16 @@ namespace System.Tests
         [ConditionalFact(nameof(SupportIanaNamesConversionAndRemoteExecution))]
         public static void IsIanaIdWithNotCacheTest()
         {
-            Assert.Equal(!s_isWindows, TimeZoneInfo.Local.HasIanaId);
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Equal(!s_isWindows, TimeZoneInfo.Local.HasIanaId);
 
-            TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
-            Assert.False(tzi.HasIanaId);
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+                Assert.False(tzi.HasIanaId);
 
-            tzi = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
-            Assert.True(tzi.HasIanaId);
+                tzi = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+                Assert.True(tzi.HasIanaId);
+            }).Dispose();
         }
 
         [ConditionalFact(nameof(SupportIanaNamesConversion))]
