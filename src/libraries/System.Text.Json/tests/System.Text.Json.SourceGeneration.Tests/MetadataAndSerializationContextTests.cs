@@ -8,6 +8,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 {
     [JsonSerializable(typeof(Location))]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation")]
+    [JsonSerializable(typeof(NumberTypes))]
     [JsonSerializable(typeof(ActiveOrUpcomingEvent))]
     [JsonSerializable(typeof(CampaignSummaryViewModel))]
     [JsonSerializable(typeof(IndexViewModel))]
@@ -26,6 +27,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
+    [JsonSerializable(typeof(ClassWithCustomConverter))]
+    [JsonSerializable(typeof(StructWithCustomConverter))]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter))]
+    [JsonSerializable(typeof(StructWithBadCustomConverter))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
     }
@@ -38,6 +43,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override void EnsureFastPathGeneratedAsExpected()
         {
             Assert.NotNull(MetadataAndSerializationContext.Default.Location.Serialize);
+            Assert.NotNull(MetadataAndSerializationContext.Default.NumberTypes.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.RepeatedLocation.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.ActiveOrUpcomingEvent.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.CampaignSummaryViewModel.Serialize);
@@ -56,6 +62,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataAndSerializationContext.Default.ObjectArray.Serialize);
             Assert.Null(MetadataAndSerializationContext.Default.String.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverter);
+            Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverter);
+            Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.ClassWithBadCustomConverter);
+            Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.StructWithBadCustomConverter);
         }
     }
 }

@@ -262,9 +262,9 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
-            from useSsl in BoolValues 
+            from useSsl in BoolValues
             // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-            where PlatformDetection.IsNotBrowser || !useSsl 
+            where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
         [Theory]
@@ -429,10 +429,10 @@ namespace System.Net.Http.Functional.Tests
                     if (PlatformDetection.IsNotBrowser)
                     {
                         request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                        request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     }
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     request.Headers.Date = DateTimeOffset.Parse("Tue, 15 Nov 1994 08:12:31 GMT");
-                    request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     request.Headers.Add("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43");
                     request.Headers.Add("From", "User Name <user@example.com>");
                     request.Headers.Host = "en.wikipedia.org:8080";
@@ -951,12 +951,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion30 && (chunked is null || chunked is false))
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
-                return;
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
@@ -1369,7 +1363,7 @@ namespace System.Net.Http.Functional.Tests
 #region Post Methods Tests
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53876", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1547,6 +1541,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1642,6 +1637,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

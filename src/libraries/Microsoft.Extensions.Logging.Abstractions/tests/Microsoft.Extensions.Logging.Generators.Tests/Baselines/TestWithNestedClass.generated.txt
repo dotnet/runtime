@@ -15,11 +15,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses.NestedNamesp
                     {
                         partial class Nested<T2> where T2 : Class2
                         {
-                            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
+                            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
                             private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, global::System.Exception?> __M9Callback =
                                 global::Microsoft.Extensions.Logging.LoggerMessage.Define(global::Microsoft.Extensions.Logging.LogLevel.Debug, new global::Microsoft.Extensions.Logging.EventId(9, nameof(M9)), "M9", new global::Microsoft.Extensions.Logging.LogDefineOptions() { SkipEnabledCheck = true }); 
 
-                            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
+                            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
                             public static partial void M9(global::Microsoft.Extensions.Logging.ILogger logger)
                             {
                                 if (logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Debug))

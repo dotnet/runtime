@@ -11,6 +11,7 @@
 OPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_NIY, "niy", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
+OPDEF(MINT_IL_SEQ_POINT, "il_seq_point", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_DUMMY_USE, "dummy_use", 2, 0, 1, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_BREAKPOINT, "breakpoint", 1, 0, 0, MintOpNoArgs)
@@ -583,8 +584,6 @@ OPDEF(MINT_CONV_OVF_I1_R8, "conv.ovf.i1.r8", 3, 1, 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I1_U4, "conv.ovf.i1.u4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I1_U8, "conv.ovf.i1.u8", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_CONV_OVF_I1_UN_R4, "conv.ovf.i1.un.r4", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_CONV_OVF_I1_UN_R8, "conv.ovf.i1.un.r8", 3, 1, 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_U1_I4, "conv.ovf.u1.i4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U1_I8, "conv.ovf.u1.i8", 3, 1, 1, MintOpNoArgs)
@@ -598,8 +597,6 @@ OPDEF(MINT_CONV_OVF_I2_R8, "conv.ovf.i2.r8", 3, 1, 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I2_U4, "conv.ovf.i2.u4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I2_U8, "conv.ovf.i2.u8", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_CONV_OVF_I2_UN_R4, "conv.ovf.i2.un.r4", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_CONV_OVF_I2_UN_R8, "conv.ovf.i2.un.r8", 3, 1, 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_U2_I4, "conv.ovf.u2.i4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U2_I8, "conv.ovf.u2.i8", 3, 1, 1, MintOpNoArgs)
@@ -612,8 +609,6 @@ OPDEF(MINT_CONV_OVF_I4_U8, "conv.ovf.i4.u8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I4_R4, "conv.ovf.i4.r4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I4_R8, "conv.ovf.i4.r8", 3, 1, 1, MintOpNoArgs)
 
-OPDEF(MINT_CONV_OVF_I4_UN_R8, "conv.ovf.i4.un.r8", 3, 1, 1, MintOpNoArgs)
-
 OPDEF(MINT_CONV_OVF_U4_I4, "conv.ovf.u4.i4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U4_I8, "conv.ovf.u4.i8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U4_R4, "conv.ovf.u4.r4", 3, 1, 1, MintOpNoArgs)
@@ -622,9 +617,6 @@ OPDEF(MINT_CONV_OVF_U4_R8, "conv.ovf.u4.r8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I8_U8, "conv.ovf.i8.u8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I8_R4, "conv.ovf.i8.r4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I8_R8, "conv.ovf.i8.r8", 3, 1, 1, MintOpNoArgs)
-
-OPDEF(MINT_CONV_OVF_I8_UN_R8, "conv.ovf.i8.un.r8", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_CONV_OVF_I8_UN_R4, "conv.ovf.i8.un.r4", 3, 1, 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_U8_I4, "conv.ovf.u8.i4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U8_I8, "conv.ovf.u8.i8", 3, 1, 1, MintOpNoArgs)

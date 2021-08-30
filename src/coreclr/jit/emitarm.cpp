@@ -1711,8 +1711,11 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(
-    instruction ins, emitAttr attr, regNumber reg, target_ssize_t imm, insFlags flags /* = INS_FLAGS_DONT_CARE */)
+void emitter::emitIns_R_I(instruction    ins,
+                          emitAttr       attr,
+                          regNumber      reg,
+                          target_ssize_t imm,
+                          insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(GenTreeFlags gtFlags))
 
 {
     insFormat fmt = IF_NONE;
@@ -2016,6 +2019,7 @@ void emitter::emitIns_R_I(
     id->idInsSize(isz);
     id->idInsFlags(sf);
     id->idReg1(reg);
+    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
 
     dispIns(id);
     appendToCurIG(id);
@@ -6786,7 +6790,7 @@ void emitter::emitDispImm(int imm, bool addComma, bool alwaysHex /* =false */)
         printf("%d", imm);
     else if ((imm > 0) ||
              (imm == -imm) || // -0x80000000 == 0x80000000. So we don't want to add an extra "-" at the beginning.
-             (emitComp->opts.disDiffable && (imm == 0xD1FFAB1E))) // Don't display this as negative
+             (emitComp->opts.disDiffable && (imm == (int)0xD1FFAB1E))) // Don't display this as negative
         printf("0x%02x", imm);
     else // val <= -1000
         printf("-0x%02x", -imm);

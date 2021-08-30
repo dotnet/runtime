@@ -1177,15 +1177,22 @@ unsigned emitter::emitGetAdjustedSize(instruction ins, emitAttr attr, code_t cod
     return adjustedSize;
 }
 
-// Get size of rex or vex prefix emitted in code
-unsigned emitter::emitGetPrefixSize(code_t code)
+//
+//------------------------------------------------------------------------
+// emitGetPrefixSize: Get size of rex or vex prefix emitted in code
+//
+// Arguments:
+//    code                  -- The current opcode and any known prefixes
+//    includeRexPrefixSize  -- If Rex Prefix size should be included or not
+//
+unsigned emitter::emitGetPrefixSize(code_t code, bool includeRexPrefixSize)
 {
     if (hasVexPrefix(code))
     {
         return 3;
     }
 
-    if (hasRexPrefix(code))
+    if (includeRexPrefixSize && hasRexPrefix(code))
     {
         return 1;
     }
@@ -1946,16 +1953,18 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
     return true;
 }
 
-/*****************************************************************************
- *
- *  Estimate the size (in bytes of generated code) of the given instruction.
- */
-
-inline UNATIVE_OFFSET emitter::emitInsSize(code_t code)
+//------------------------------------------------------------------------
+// emitInsSize: Estimate the size (in bytes of generated code) of the given instruction.
+//
+// Arguments:
+//    code  -- The current opcode and any known prefixes
+//    includeRexPrefixSize  -- If Rex Prefix size should be included or not
+//
+inline UNATIVE_OFFSET emitter::emitInsSize(code_t code, bool includeRexPrefixSize)
 {
     UNATIVE_OFFSET size = (code & 0xFF000000) ? 4 : (code & 0x00FF0000) ? 3 : 2;
 #ifdef TARGET_AMD64
-    size += emitGetPrefixSize(code);
+    size += emitGetPrefixSize(code, includeRexPrefixSize);
 #endif
     return size;
 }
@@ -1973,16 +1982,18 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code)
     instruction ins  = id->idIns();
     emitAttr    attr = id->idOpSize();
 
-    UNATIVE_OFFSET sz = emitInsSize(code);
+    UNATIVE_OFFSET sz = emitGetAdjustedSize(ins, attr, code);
 
-    sz += emitGetAdjustedSize(ins, attr, code);
-
+    bool includeRexPrefixSize = true;
     // REX prefix
     if (TakesRexWPrefix(ins, attr) || IsExtendedReg(id->idReg1(), attr) || IsExtendedReg(id->idReg2(), attr) ||
         (!id->idIsSmallDsc() && (IsExtendedReg(id->idReg3(), attr) || IsExtendedReg(id->idReg4(), attr))))
     {
         sz += emitGetRexPrefixSize(ins);
+        includeRexPrefixSize = !IsAVXInstruction(ins);
     }
+
+    sz += emitInsSize(code, includeRexPrefixSize);
 
     return sz;
 }
@@ -2034,24 +2045,14 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
 {
     emitAttr size = EA_SIZE(attr);
 
-    UNATIVE_OFFSET sz;
-
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
     code_t code = insCodeRM(ins);
 
-    if ((code & 0xFF00) != 0)
-    {
-        sz = IsSSEOrAVXInstruction(ins) ? emitInsSize(code) : 5;
-    }
-    else
-    {
-        sz = emitInsSize(insEncodeRMreg(ins, code));
-    }
+    UNATIVE_OFFSET sz = emitGetAdjustedSize(ins, size, insCodeRM(ins));
 
-    sz += emitGetAdjustedSize(ins, size, insCodeRM(ins));
-
+    bool includeRexPrefixSize = true;
     // REX prefix
     if (!hasRexPrefix(code))
     {
@@ -2059,7 +2060,17 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
             IsExtendedReg(reg2, attr))
         {
             sz += emitGetRexPrefixSize(ins);
+            includeRexPrefixSize = false;
         }
+    }
+
+    if ((code & 0xFF00) != 0)
+    {
+        sz += IsSSEOrAVXInstruction(ins) ? emitInsSize(code, includeRexPrefixSize) : 5;
+    }
+    else
+    {
+        sz += emitInsSize(insEncodeRMreg(ins, code), includeRexPrefixSize);
     }
 
     return sz;
@@ -2069,7 +2080,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
 
 inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 {
-    UNATIVE_OFFSET size = emitInsSize(code);
+    UNATIVE_OFFSET size = emitInsSize(code, /* includeRexPrefixSize */ true);
     UNATIVE_OFFSET offs;
     bool           offsIsUpperBound = true;
     bool           EBPbased         = true;
@@ -2605,14 +2616,17 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
 
     size += emitGetAdjustedSize(ins, attrSize, code);
 
+    bool includeRexPrefixSize = true;
+
     // 64-bit operand instructions will need a REX.W prefix
     if (TakesRexWPrefix(ins, attrSize) || IsExtendedReg(id->idReg1(), attrSize) ||
         IsExtendedReg(id->idReg2(), attrSize))
     {
         size += emitGetRexPrefixSize(ins);
+        includeRexPrefixSize = false;
     }
 
-    return size + emitInsSize(code);
+    return size + emitInsSize(code, includeRexPrefixSize);
 }
 
 inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val)
@@ -2621,7 +2635,14 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
-#ifndef TARGET_AMD64
+#ifdef TARGET_AMD64
+    // 64-bit immediates are only supported on mov r64, imm64
+    // As per manual:
+    // Support for 64-bit immediate operands is accomplished by expanding
+    // the semantics of the existing move (MOV reg, imm16/32) instructions.
+    if ((valSize > sizeof(INT32)) && (ins != INS_mov))
+        valSize = sizeof(INT32);
+#else
     // occasionally longs get here on x86
     if (valSize > sizeof(INT32))
         valSize = sizeof(INT32);
@@ -3965,7 +3986,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val)
+void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags))
 {
     emitAttr size = EA_SIZE(attr);
 
@@ -4035,7 +4056,15 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             {
                 if (IsSSEOrAVXInstruction(ins))
                 {
-                    sz = emitInsSize(insCodeMI(ins));
+                    bool includeRexPrefixSize = true;
+                    // Do not get the RexSize() but just decide if it will be included down further and if yes,
+                    // do not include it again.
+                    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, size) || instrIsExtendedReg3opImul(ins))
+                    {
+                        includeRexPrefixSize = false;
+                    }
+
+                    sz = emitInsSize(insCodeMI(ins), includeRexPrefixSize);
                     sz += 1;
                 }
                 else if (size == EA_1BYTE && reg == REG_EAX && !instrIs3opImul(ins))
@@ -4089,8 +4118,8 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(reg);
-
     id->idCodeSize(sz);
+    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
 
     dispIns(id);
     emitCurIGsize += sz;
@@ -7595,7 +7624,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                         // An absolute indir address that doesn't need reloc should fit within 32-bits
                         // to be encoded as offset relative to zero.  This addr mode requires an extra
                         // SIB byte
-                        noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+                        noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                         sz++;
                     }
 #endif // TARGET_AMD64
@@ -7631,7 +7660,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             // An absolute indir address that doesn't need reloc should fit within 32-bits
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
-            noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+            noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
 #endif // TARGET_AMD64
@@ -8851,6 +8880,7 @@ void emitter::emitDispIns(
             else
             {
             PRINT_CONSTANT:
+                ssize_t srcVal = val;
                 // Munge any pointers if we want diff-able disassembly
                 if (emitComp->opts.disDiffable)
                 {
@@ -8872,6 +8902,7 @@ void emitter::emitDispIns(
                 { // (val < 0)
                     printf("-0x%IX", -val);
                 }
+                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK);
             }
             break;
 
@@ -11914,10 +11945,12 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 #endif
             if (id->idGCref())
             {
-                // The reg must currently be holding either a gcref or a byref
-                // and the instruction must be inc or dec
-                assert(((emitThisGCrefRegs | emitThisByrefRegs) & regMask) &&
-                       (ins == INS_inc || ins == INS_dec || ins == INS_inc_l || ins == INS_dec_l));
+                assert(ins == INS_inc || ins == INS_dec || ins == INS_inc_l || ins == INS_dec_l);
+                // We would like to assert that the reg must currently be holding either a gcref or a byref.
+                // However, we can see cases where a LCLHEAP generates a non-gcref value into a register,
+                // and the first instruction we generate after the LCLHEAP is an `inc` that is typed as
+                // byref. We'll properly create the byref gcinfo when this happens.
+                //     assert((emitThisGCrefRegs | emitThisByrefRegs) & regMask);
                 assert(id->idGCref() == GCT_BYREF);
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
@@ -12222,15 +12255,30 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     case INS_sub:
                         assert(id->idGCref() == GCT_BYREF);
 
+#if 0
 #ifdef DEBUG
+                        // Due to elided register moves, we can't have the following assert.
+                        // For example, consider:
+                        //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
+                        //        /--*  t85    byref                                                       
+                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx                 
+                        // Here, V01 is type `long` on entry, then is stored as a byref. But because
+                        // the register allocator assigned the same register, no instruction was
+                        // generated, and we only (currently) make gcref/byref changes in emitter GC info
+                        // when an instruction is generated. We still generate correct GC info, as this
+                        // instruction, if writing a GC ref even through reading a long, will go live here.
+                        // These situations typically occur due to unsafe casting, such as with Span<T>.
+
                         regMaskTP regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
 
                         // r1/r2 could have been a GCREF as GCREF + int=BYREF
-                        //                            or BYREF+/-int=BYREF
+                        //                               or BYREF+/-int=BYREF
                         assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
                                ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
-#endif
+#endif // DEBUG
+#endif // 0
+
                         // Mark r1 as holding a byref
                         emitGCregLiveUpd(GCT_BYREF, reg1, dst);
                         break;

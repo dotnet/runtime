@@ -1,10 +1,16 @@
 <Project>
   <Target Name="_MonoReadAvailableComponentsManifest">
-    <Error Condition="'%(ResolvedRuntimePack.PackageDirectory)' == '' and '$(_MonoRuntimeComponentManifestJsonFilePath)' == ''"
-           Text="Empty ResolvedRuntimePack.PackageDirectory while trying to read runtime components manifest" />
+    <Error Condition="'%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App' and '%(ResolvedFrameworkReference.RuntimePackPath)' == '' and '$(_MonoRuntimeComponentManifestJsonFilePath)' == ''"
+           Text="Empty ResolveFrameworkReference.RuntimePackPath while trying to read runtime components manifest. ResolvedFrameworkReference available: @(ResolvedFrameworkReference -> '{ %(Identity), RuntimePackPath: %(RuntimePackPath) }')" />
+
     <PropertyGroup>
-      <_MonoRuntimeComponentManifestJsonFilePath Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == ''">%(ResolvedRuntimePack.PackageDirectory)\runtimes\$(RuntimeIdentifier)\build\RuntimeComponentManifest.json</_MonoRuntimeComponentManifestJsonFilePath>
+      <_MonoRuntimeComponentManifestJsonFilePath 
+        Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == '' and '%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App'">$([MSBuild]::NormalizePath('%(RuntimePackPath)', 'runtimes', '$(RuntimeIdentifier)', 'build', 'RuntimeComponentManifest.json'))</_MonoRuntimeComponentManifestJsonFilePath>
     </PropertyGroup>
+
+    <Error Condition="!Exists('$(_MonoRuntimeComponentManifestJsonFilePath)')"
+           Text="Unable to read the runtime components manifest as the path: $(_MonoRuntimeComponentManifestJsonFilePath) does not exist" />
+
     <MonoRuntimeComponentManifestReadTask JsonFilePath="$(_MonoRuntimeComponentManifestJsonFilePath)">
       <Output TaskParameter="_MonoRuntimeComponentSharedLibExt" ItemName="_MonoRuntimeComponentSharedLibExt" />
       <Output TaskParameter="_MonoRuntimeComponentStaticLibExt" ItemName="_MonoRuntimeComponentStaticLibExt" />

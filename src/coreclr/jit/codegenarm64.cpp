@@ -1594,7 +1594,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
                                      regNumber reg,
                                      ssize_t   imm,
-                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -1853,8 +1853,16 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(targetReg != REG_NA);
+    emitAttr attr = emitActualTypeSize(treeNode);
 
-    regNumber r = emit->emitInsTernary(ins, emitActualTypeSize(treeNode), treeNode, op1, op2);
+    // UMULL/SMULL is twice as fast for 32*32->64bit MUL
+    if ((oper == GT_MUL) && (targetType == TYP_LONG) && genActualTypeIsInt(op1) && genActualTypeIsInt(op2))
+    {
+        ins  = treeNode->IsUnsigned() ? INS_umull : INS_smull;
+        attr = EA_4BYTE;
+    }
+
+    regNumber r = emit->emitInsTernary(ins, attr, treeNode, op1, op2);
     assert(r == targetReg);
 
     genProduceReg(treeNode);
@@ -1940,6 +1948,13 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
         assert(data->IsIntegralConst(0));
         dataReg = REG_ZR;
     }
+    else if (data->isContained())
+    {
+        assert(data->OperIs(GT_BITCAST));
+        const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+        assert(!bitcastSrc->isContained());
+        dataReg = bitcastSrc->GetRegNum();
+    }
     else
     {
         assert(!data->isContained());
@@ -1947,7 +1962,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
     assert(dataReg != REG_NA);
 
-    instruction ins = ins_Store(targetType);
+    instruction ins = ins_StoreFromSrc(dataReg, targetType);
 
     emitAttr attr = emitActualTypeSize(targetType);
 
@@ -2015,10 +2030,11 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         regNumber dataReg = REG_NA;
         if (data->isContained())
         {
-            // This is only possible for a zero-init.
-            assert(data->IsIntegralConst(0) || data->IsSIMDZero());
+            // This is only possible for a zero-init or bitcast.
+            const bool zeroInit = (data->IsIntegralConst(0) || data->IsSIMDZero());
+            assert(zeroInit || data->OperIs(GT_BITCAST));
 
-            if (varTypeIsSIMD(targetType))
+            if (zeroInit && varTypeIsSIMD(targetType))
             {
                 if (targetReg != REG_NA)
                 {
@@ -2040,8 +2056,16 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 }
                 return;
             }
-
-            dataReg = REG_ZR;
+            if (zeroInit)
+            {
+                dataReg = REG_ZR;
+            }
+            else
+            {
+                const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+                assert(!bitcastSrc->isContained());
+                dataReg = bitcastSrc->GetRegNum();
+            }
         }
         else
         {
@@ -2054,7 +2078,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         {
             inst_set_SV_var(lclNode);
 
-            instruction ins  = ins_Store(targetType);
+            instruction ins  = ins_StoreFromSrc(dataReg, targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);

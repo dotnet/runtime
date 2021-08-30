@@ -141,6 +141,11 @@ jobs:
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
               parameters:
                 name: Libraries_AllConfigurations
+                publishPackagesCondition: >-
+                  or(
+                     eq(variables['_librariesBuildProducedPackages'], true),
+                     eq(variables['Build.SourceBranchName'], 'main'),
+                     eq(variables['System.PullRequest.TargetBranch'], 'main')) 
 
         - ${{ if and(eq(parameters.runTests, true), eq(parameters.useHelix, true)) }}:
           - template: /eng/pipelines/libraries/helix.yml

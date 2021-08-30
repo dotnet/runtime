@@ -22,6 +22,16 @@
         <target state="translated">重複した種類名。</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">型 '{0}' には、'JsonConstructorAttribute' で注釈が付けられた複数のコンストラクターがあります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">型には、JsonConstructorAttribute で注釈が付けられた複数のコンストラクターがあります。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
         <target state="translated">'{0}'型 のシリアル化メタデータを生成ませんでした。</target>

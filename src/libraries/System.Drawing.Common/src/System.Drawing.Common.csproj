@@ -7,6 +7,19 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1-Unix;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
+    <PackageDescription>Provides access to GDI+ graphics functionality.
+
+Commonly Used Types:
+System.Drawing.Bitmap
+System.Drawing.BitmapData
+System.Drawing.Brush
+System.Drawing.Font
+System.Drawing.Graphics
+System.Drawing.Icon
+
+Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

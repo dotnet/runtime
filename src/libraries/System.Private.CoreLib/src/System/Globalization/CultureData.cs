@@ -969,7 +969,12 @@ namespace System.Globalization
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
-                        englishDisplayName = EnglishLanguageName;
+                        englishDisplayName = GetLocaleInfoCore(LocaleStringData.EnglishDisplayName);
+                        if (string.IsNullOrEmpty(englishDisplayName))
+                        {
+                            englishDisplayName = EnglishLanguageName;
+                        }
+
                         // differentiate the legacy display names
                         switch (_sName)
                         {
@@ -1026,7 +1031,12 @@ namespace System.Globalization
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
-                        nativeDisplayName = NativeLanguageName;
+                        nativeDisplayName = GetLocaleInfoCore(LocaleStringData.NativeDisplayName);
+                        if (string.IsNullOrEmpty(nativeDisplayName))
+                        {
+                            nativeDisplayName = NativeLanguageName;
+                        }
+
                         // differentiate the legacy display names
                         switch (_sName)
                         {
@@ -1926,14 +1936,23 @@ namespace System.Globalization
             {
                 if (_sTimeSeparator == null && !GlobalizationMode.Invariant)
                 {
-                    string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
-                    if (string.IsNullOrEmpty(longTimeFormat))
+                    // fr-CA culture uses time format as "HH 'h' mm 'min' ss 's'" which we cannot derive the time separator from such pattern.
+                    // We special case such culture and force ':' as time separator.
+                    if (_sName == "fr-CA")
                     {
-                        longTimeFormat = LongTimes[0];
+                        _sTimeSeparator = ":";
                     }
+                    else
+                    {
+                        string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
+                        if (string.IsNullOrEmpty(longTimeFormat))
+                        {
+                            longTimeFormat = LongTimes[0];
+                        }
 
-                    // Compute STIME from time format
-                    _sTimeSeparator = GetTimeSeparator(longTimeFormat);
+                        // Compute STIME from time format
+                        _sTimeSeparator = GetTimeSeparator(longTimeFormat);
+                    }
                 }
                 return _sTimeSeparator!;
             }
@@ -1956,7 +1975,7 @@ namespace System.Globalization
                 // changing the default pattern is likely will happen in the near future which can easily break formatting
                 // and parsing.
                 // We are forcing here the date separator to '/' to ensure the parsing is not going to break when changing
-                // the default short date pattern. The application still can override this in the code by DateTimeFormatInfo.DateSeparartor.
+                // the default short date pattern. The application still can override this in the code by DateTimeFormatInfo.DateSeparator.
                 return "/";
             }
 

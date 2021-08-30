@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using Microsoft.Extensions.FileProviders.Internal;
@@ -28,9 +29,9 @@ namespace Microsoft.Extensions.FileProviders
         private readonly ExclusionFilters _filters;
 
         private readonly Func<PhysicalFilesWatcher> _fileWatcherFactory;
-        private PhysicalFilesWatcher _fileWatcher;
+        private PhysicalFilesWatcher? _fileWatcher;
         private bool _fileWatcherInitialized;
-        private object _fileWatcherLock = new object();
+        private object _fileWatcherLock = new();
 
         private bool? _usePollingFileWatcher;
         private bool? _useActivePolling;
@@ -145,7 +146,7 @@ namespace Microsoft.Extensions.FileProviders
                     ref _fileWatcher,
                     ref _fileWatcherInitialized,
                     ref _fileWatcherLock,
-                    _fileWatcherFactory);
+                    _fileWatcherFactory)!;
             }
             set
             {
@@ -160,17 +161,33 @@ namespace Microsoft.Extensions.FileProviders
         {
             string root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
 
-            // When both UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
-            FileSystemWatcher watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
+            FileSystemWatcher? watcher;
+#if NETCOREAPP
+            //  For browser/iOS/tvOS we will proactively fallback to polling since FileSystemWatcher is not supported.
+            if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+            {
+                UsePollingFileWatcher = true;
+                UseActivePolling = true;
+                watcher = null;
+            }
+            else
+#endif
+            {
+                // When UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
+                watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
+            }
+
             return new PhysicalFilesWatcher(root, watcher, UsePollingFileWatcher, _filters)
             {
                 UseActivePolling = UseActivePolling,
             };
         }
 
+        [MemberNotNull(nameof(_usePollingFileWatcher))]
+        [MemberNotNull(nameof(_useActivePolling))]
         private void ReadPollingEnvironmentVariables()
         {
-            string environmentValue = Environment.GetEnvironmentVariable(PollingEnvironmentKey);
+            string? environmentValue = Environment.GetEnvironmentVariable(PollingEnvironmentKey);
             bool pollForChanges = string.Equals(environmentValue, "1", StringComparison.Ordinal) ||
                 string.Equals(environmentValue, "true", StringComparison.OrdinalIgnoreCase);
 
@@ -208,7 +225,7 @@ namespace Microsoft.Extensions.FileProviders
         /// </summary>
         public string Root { get; }
 
-        private string GetFullPath(string path)
+        private string? GetFullPath(string path)
         {
             if (PathUtils.PathNavigatesAboveRoot(path))
             {
@@ -259,7 +276,7 @@ namespace Microsoft.Extensions.FileProviders
                 return new NotFoundFileInfo(subpath);
             }
 
-            string fullPath = GetFullPath(subpath);
+            string? fullPath = GetFullPath(subpath);
             if (fullPath == null)
             {
                 return new NotFoundFileInfo(subpath);
@@ -301,7 +318,7 @@ namespace Microsoft.Extensions.FileProviders
                     return NotFoundDirectoryContents.Singleton;
                 }
 
-                string fullPath = GetFullPath(subpath);
+                string? fullPath = GetFullPath(subpath);
                 if (fullPath == null || !Directory.Exists(fullPath))
                 {
                     return NotFoundDirectoryContents.Singleton;

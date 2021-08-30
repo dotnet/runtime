@@ -7,6 +7,7 @@
 #include "pal_autoreleasepool.h"
 #include "pal_console.h"
 #include "pal_datetime.h"
+#include "pal_environment.h"
 #include "pal_errno.h"
 #include "pal_interfaceaddresses.h"
 #include "pal_io.h"
@@ -218,6 +219,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetOSArchitecture)
     DllImportEntry(SystemNative_GetProcessArchitecture)
     DllImportEntry(SystemNative_SearchPath)
+    DllImportEntry(SystemNative_SearchPath_TempDirectory)
     DllImportEntry(SystemNative_RegisterForSigChld)
     DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
@@ -257,6 +259,9 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetPosixSignalHandler)
     DllImportEntry(SystemNative_GetPlatformSignalNumber)
     DllImportEntry(SystemNative_GetGroups)
+    DllImportEntry(SystemNative_GetEnv)
+    DllImportEntry(SystemNative_GetEnviron)
+    DllImportEntry(SystemNative_FreeEnviron)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

@@ -192,9 +192,7 @@ namespace Microsoft.Extensions.Hosting
                 _hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
             }
 
-#pragma warning disable CA1416 // 'PhysicalFileProvider' is unsupported on: 'browser' https://github.com/dotnet/runtime/issues/56178
             _hostingEnvironment.ContentRootFileProvider = _defaultProvider = new PhysicalFileProvider(_hostingEnvironment.ContentRootPath);
-#pragma warning restore CA1416 // 'PhysicalFileProvider' is unsupported on: 'browser'
         }
 
         private string ResolveContentRootPath(string contentRootPath, string basePath)

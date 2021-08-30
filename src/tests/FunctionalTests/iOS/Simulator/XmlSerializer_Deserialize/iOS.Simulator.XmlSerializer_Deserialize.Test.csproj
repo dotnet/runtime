@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetOS Condition="'$(TargetOS)' == ''">iOSSimulator</TargetOS>
+    <MainLibraryFileName>iOS.Simulator.XmlSerializer_Deserialize.Test.dll</MainLibraryFileName>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

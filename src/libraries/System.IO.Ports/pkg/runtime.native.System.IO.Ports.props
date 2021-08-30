@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- IncludeBuildOutput needs to be set to true to make NuGet include the passed in debug symbol files. -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <IsPackable>true</IsPackable>
+    <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(SymbolsSuffix)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
+    <!-- This is a native package and doesn't contain any ref/lib assets. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)"
+          PackagePath="runtimes/$(OutputRid)/native"
+          Pack="true" />
+  </ItemGroup>
+
+  <Target Name="AddRuntimeSpecificNativeSymbolToPackage">
+    <ItemGroup>
+      <TfmSpecificDebugSymbolsFile Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)"
+                                   TargetPath="/runtimes/$(OutputRid)/native"
+                                   TargetFramework="$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+</Project>

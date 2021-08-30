@@ -25,10 +25,13 @@ namespace Wasm.Build.Tests
         }
 
         public void EnsureSuccessful(string messagePrefix = "", bool suppressOutput = false)
+            => EnsureExitCode(0, messagePrefix, suppressOutput);
+
+        public void EnsureExitCode(int expectedExitCode = 0, string messagePrefix = "", bool suppressOutput = false)
         {
-            if (ExitCode != 0)
+            if (ExitCode != expectedExitCode)
             {
-                StringBuilder message = new StringBuilder($"{messagePrefix} Command failed with exit code {ExitCode}: {StartInfo.FileName} {StartInfo.Arguments}");
+                StringBuilder message = new StringBuilder($"{messagePrefix} Expected {expectedExitCode} exit code but got {ExitCode}: {StartInfo.FileName} {StartInfo.Arguments}");
 
                 if (!suppressOutput)
                 {

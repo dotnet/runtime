@@ -619,10 +619,6 @@ typedef struct _DacGlobals
 
     ULONG fn__ThePreStubPatchLabel;
     ULONG fn__PrecodeFixupThunk;
-#ifdef FEATURE_PREJIT
-    ULONG fn__StubDispatchFixupStub;
-    ULONG fn__StubDispatchFixupPatchLabel;
-#endif
 #ifdef FEATURE_COMINTEROP
     ULONG fn__Unknown_AddRef;
     ULONG fn__Unknown_AddRefSpecial;

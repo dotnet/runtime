@@ -1172,13 +1172,10 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public static SocketError SendFile(SafeSocketHandle handle, FileStream fileStream)
+        public static SocketError SendFile(SafeSocketHandle handle, SafeFileHandle fileHandle)
         {
             long offset = 0;
-            long length = fileStream.Length;
-
-            SafeFileHandle fileHandle = fileStream.SafeFileHandle;
-
+            long length = RandomAccess.GetLength(fileHandle);
             long bytesTransferred = 0;
 
             if (!handle.IsNonBlocking)
@@ -1918,7 +1915,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        public static async void SendPacketsAsync(
+        public static async Task SendPacketsAsync(
             Socket socket, TransmitFileOptions options, SendPacketsElement[] elements, SafeFileHandle[] fileHandles, CancellationToken cancellationToken, Action<long, SocketError> callback)
         {
             SocketError error = SocketError.Success;

@@ -471,6 +471,12 @@ namespace Internal.JitInterface
                     {
                         if (!FunctionJustThrows(methodIL))
                         {
+                            if (MethodBeingCompiled.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                            {
+                                // Harvest the method being compiled for the purpose of populating the type resolver
+                                var resolver = _compilation.NodeFactory.Resolver;
+                                resolver.AddModuleTokenForMethod(MethodBeingCompiled, new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle));
+                            }
                             CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
                             codeGotPublished = true;
                         }
@@ -1141,6 +1147,10 @@ namespace Internal.JitInterface
             }
 
             pHasSideEffects = type.HasFinalizer;
+
+            // If the type isn't within the version bubble, it could gain a finalizer. Always treat it as if it has a finalizer
+            if (!pHasSideEffects && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+                pHasSideEffects = true;
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
         }

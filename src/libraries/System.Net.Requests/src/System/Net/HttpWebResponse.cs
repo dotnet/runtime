@@ -34,7 +34,7 @@ namespace System.Net
             _cookies = null!;
         }
 
-        [ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("Serialization has been deprecated for HttpWebResponse.")]
         protected HttpWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();

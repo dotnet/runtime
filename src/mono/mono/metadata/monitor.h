@@ -106,19 +106,19 @@ mono_locks_dump (gboolean include_untaken);
 void
 mono_monitor_init (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoBoolean
 mono_monitor_enter_internal (MonoObject *obj);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_monitor_enter_v4_internal (MonoObject *obj, MonoBoolean *lock_taken);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 guint32
 mono_monitor_enter_fast (MonoObject *obj);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 guint32
 mono_monitor_enter_v4_fast (MonoObject *obj, MonoBoolean *lock_taken);
 
