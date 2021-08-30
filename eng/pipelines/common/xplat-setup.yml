@@ -119,9 +119,9 @@ jobs:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1804.Amd64
 
-        # OSX Build Pool (we don't have on-prem OSX BuildPool
+        # OSX Build Pool (we don't have on-prem OSX BuildPool - random comment to trigger rerun : 1
         ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'iOSSimulator', 'tvOS', 'tvOSSimulator') }}:
-          vmImage: 'macOS-10.15'
+          vmImage: 'vsts-macos1015-dev'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
