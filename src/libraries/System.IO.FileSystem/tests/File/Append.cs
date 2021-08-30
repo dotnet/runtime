@@ -16,6 +16,13 @@ namespace System.IO.Tests
             writer.Write(content);
             writer.Dispose();
         }
+
+        protected override void Write(string path, string content, Encoding encoding)
+        {
+            var writer = new StreamWriter(path, IsAppend, encoding);
+            writer.Write(content);
+            writer.Dispose();
+        }
     }
 
     public class File_AppendAllText : File_ReadWriteAllText

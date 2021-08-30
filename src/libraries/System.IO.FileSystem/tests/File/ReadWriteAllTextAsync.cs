@@ -160,7 +160,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(File_ReadWriteAllText.OutputIsTheSameAsForStreamWriter_Args), MemberType = typeof(File_ReadWriteAllText))]
-        public async Task OutputIsTheSameAsForStreamWriter(string content, Encoding encoding)
+        public async Task OutputIsTheSameAsForStreamWriterAsync(string content, Encoding encoding)
         {
             string filePath = GetTestFilePath();
             await WriteAsync(filePath, content, encoding); // it uses System.File.IO APIs
@@ -173,6 +173,27 @@ namespace System.IO.Tests
 
             Assert.Equal(await File.ReadAllTextAsync(swPath, encoding), await File.ReadAllTextAsync(filePath, encoding));
             Assert.Equal(await File.ReadAllBytesAsync(swPath), await File.ReadAllBytesAsync(filePath)); // ensure Preamble was stored
+        }
+
+        [Theory]
+        [MemberData(nameof(File_ReadWriteAllText.OutputIsTheSameAsForStreamWriter_Args), MemberType = typeof(File_ReadWriteAllText))]
+        public async Task OutputIsTheSameAsForStreamWriter_OverwriteAsync(string content, Encoding encoding)
+        {
+            string filePath = GetTestFilePath();
+            string swPath = GetTestFilePath();
+
+            for (int i = 0; i < 2; i++)
+            {
+                await WriteAsync(filePath, content, encoding); // it uses System.File.IO APIs
+
+                using (StreamWriter sw = new StreamWriter(swPath, IsAppend, encoding))
+                {
+                    await sw.WriteAsync(content);
+                }
+            }
+
+            Assert.Equal(await File.ReadAllTextAsync(swPath, encoding), await File.ReadAllTextAsync(filePath, encoding));
+            Assert.Equal(await File.ReadAllBytesAsync(swPath), await File.ReadAllBytesAsync(filePath)); // ensure Preamble was stored once
         }
 
         #endregion

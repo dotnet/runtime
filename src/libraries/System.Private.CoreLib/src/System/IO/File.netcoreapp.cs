@@ -114,7 +114,8 @@ namespace System.IO
 
             if (string.IsNullOrEmpty(contents))
             {
-                if (preambleSize > 0) // even if the content is empty, we want to store the preamble
+                if (preambleSize > 0 // even if the content is empty, we want to store the preamble
+                    && fileOffset == 0) // if we're appending to a file that already has data, don't write the preamble.
                 {
                     RandomAccess.WriteAtOffset(fileHandle, preamble, fileOffset);
                 }
@@ -127,7 +128,14 @@ namespace System.IO
 
             try
             {
-                preamble.CopyTo(bytes);
+                if (fileOffset == 0)
+                {
+                    preamble.CopyTo(bytes);
+                }
+                else
+                {
+                    preambleSize = 0; // don't append preamble to a non-empty file
+                }
 
                 Encoder encoder = encoding.GetEncoder();
                 ReadOnlySpan<char> remaining = contents;
@@ -167,7 +175,8 @@ namespace System.IO
 
             if (string.IsNullOrEmpty(contents))
             {
-                if (preambleSize > 0) // even if the content is empty, we want to store the preamble
+                if (preambleSize > 0 // even if the content is empty, we want to store the preamble
+                    && fileOffset == 0) // if we're appending to a file that already has data, don't write the preamble.
                 {
                     await RandomAccess.WriteAtOffsetAsync(fileHandle, preamble, fileOffset, cancellationToken).ConfigureAwait(false);
                 }
@@ -178,7 +187,14 @@ namespace System.IO
 
             try
             {
-                preamble.CopyTo(bytes);
+                if (fileOffset == 0)
+                {
+                    preamble.CopyTo(bytes);
+                }
+                else
+                {
+                    preambleSize = 0; // don't append preamble to a non-empty file
+                }
 
                 Encoder encoder = encoding.GetEncoder();
                 ReadOnlyMemory<char> remaining = contents.AsMemory();

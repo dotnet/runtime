@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using Xunit;
 
 namespace System.IO.Tests
@@ -12,6 +13,13 @@ namespace System.IO.Tests
         protected override void Write(string path, string content)
         {
             var writer = new FileInfo(path).AppendText();
+            writer.Write(content);
+            writer.Dispose();
+        }
+
+        protected override void Write(string path, string content, Encoding encoding)
+        {
+            var writer = new StreamWriter(path, IsAppend, encoding);
             writer.Write(content);
             writer.Dispose();
         }

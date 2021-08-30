@@ -183,6 +183,27 @@ namespace System.IO.Tests
             Assert.Equal(File.ReadAllBytes(swPath), File.ReadAllBytes(filePath)); // ensure Preamble was stored
         }
 
+        [Theory]
+        [MemberData(nameof(OutputIsTheSameAsForStreamWriter_Args))]
+        public void OutputIsTheSameAsForStreamWriter_Overwrite(string content, Encoding encoding)
+        {
+            string filePath = GetTestFilePath();
+            string swPath = GetTestFilePath();
+
+            for (int i = 0; i < 2; i++)
+            {
+                Write(filePath, content, encoding); // it uses System.File.IO APIs
+
+                using (StreamWriter sw = new StreamWriter(swPath, IsAppend, encoding))
+                {
+                    sw.Write(content);
+                }
+            }
+
+            Assert.Equal(File.ReadAllText(swPath, encoding), File.ReadAllText(filePath, encoding));
+            Assert.Equal(File.ReadAllBytes(swPath), File.ReadAllBytes(filePath)); // ensure Preamble was stored once
+        }
+
         #endregion
     }
 
