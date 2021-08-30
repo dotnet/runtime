@@ -1,16 +1,16 @@
-# Investigating JIT and GC stress
+# Investigating JIT and GC Hole stress
 
-There are two stressing related features for the JIT and JIT generated GC info &ndash; JIT Stress and GC Stress. These features provide a way during development to discover edge cases and more "real world" scenarios without having to develop complex applications.
+There are two stressing related features for the JIT and JIT generated GC info &ndash; JIT Stress and GC Hole Stress. These features provide a way during development to discover edge cases and more "real world" scenarios without having to develop complex applications.
 
-## JIT Stress (Debug builds only)
+## JIT Stress (`DEBUG` builds only &ndash; Debug and Checked)
 
 Enabling JIT Stress can be done in several ways. Setting `DOTNET_JitStress` to a non-zero integer value that will generate varying levels of JIT optimizations based on a hash of the method's name or set to a value of two (for example, `DOTNET_JitStress=2`) that will apply all optimizations. Another way to enable JIT Stress is by setting `DOTNET_JitStressModeNamesOnly=1` and then requesting the stress modes, space delimited, in the `DOTNET_JitStressModeNames` variable (for example, `DOTNET_JitStressModeNames=STRESS_USE_CMOV STRESS_64RSLT_MUL STRESS_LCL_FLDS`).
 
 It is often useful to use [JIT Dump](./viewing-jit-dumps.md) in tandem with JIT Stress.
 
-## GC Stress
+## GC Hole Stress
 
-Enabling GC Stress causes GCs to always occur in specific locations. GC Stress can be enabled using the `DOTNET_GCStress` environment variable. It takes a non-zero integer value in hexadecimal format. Note these values can be or'd together (for example, `0x3 = 0x1 | 0x2`).
+Enabling GC Hole Stress causes GCs to always occur in specific locations and that helps to track down GC holes. GC Hole Stress can be enabled using the `DOTNET_GCStress` environment variable. It takes a non-zero integer value in hexadecimal format. Note these values can be or'd together (for example, `0x3 = 0x1 | 0x2`).
 
 - **0x1** &ndash; GC on all allocs and 'easy' places.
 - **0x2** &ndash; GC on transitions to Preemptive GC.
