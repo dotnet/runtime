@@ -1,7 +1,7 @@
 trigger: none
 
 schedules:
-- cron: "0 7 * * 0,2,4"
+- cron: "0 5 * * *"
   displayName: Sun, Tue, Thu at 11:00 PM (UTC-8:00)
   branches:
     include:
@@ -23,7 +23,6 @@ jobs:
     - windows_x86    
     - windows_x64
     - windows_arm64
-    - windows_arm
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
@@ -55,7 +54,6 @@ jobs:
     - windows_x86
     - windows_x64
     - windows_arm64
-    - windows_arm
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       isOfficialBuild: false
@@ -91,7 +89,7 @@ jobs:
       displayNameArgs: R2R_Composite
       liveLibrariesBuildConfig: Release
 
-# Limited outerloop testing in non-composite mode
+# Outerloop testing in non-composite mode
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
@@ -103,7 +101,6 @@ jobs:
     - Linux_x64
     - OSX_x64
     - OSX_arm64
-    - windows_arm
     - windows_arm64
     - windows_x64
     - windows_x86
