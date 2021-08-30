@@ -11484,7 +11484,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         assert((emitChkAlign == false) || (ins == INS_lea) ||
                ((emitComp->compCodeOpt() == Compiler::SMALL_CODE) && (((size_t)addr & 3) == 0)) ||
                (((size_t)addr & (byteSize - 1)) == 0));
-#endif  // DEBUG
+#endif // DEBUG
     }
     else
     {
