@@ -1076,12 +1076,9 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
 
-                        // Stop, if we've reached the end of a data frame. Waiting for the next data frame may cause a hang, e.g. in echo scenario
+                        // Stop, even if we are in the middle of a data frame. Waiting for the next data may cause a hang
                         // TODO: this is inefficient if data is already available in transport
-                        if (_responseDataPayloadRemaining == 0)
-                        {
-                            break;
-                        }
+                        break;
                     }
                 }
 
@@ -1148,12 +1145,9 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
 
-                        // Stop, if we've reached the end of a data frame. Waiting for the next data frame may cause a hang e.g. in echo scenario
+                        // Stop, even if we are in the middle of a data frame. Waiting for the next data may cause a hang
                         // TODO: this is inefficient if data is already available in transport
-                        if (_responseDataPayloadRemaining == 0)
-                        {
-                            break;
-                        }
+                        break;
                     }
                 }
 
