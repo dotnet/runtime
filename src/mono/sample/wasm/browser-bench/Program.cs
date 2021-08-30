@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 
 namespace Sample
@@ -19,16 +20,46 @@ namespace Sample
             new ExceptionsTask(),
             new JsonTask ()
         };
-
-        static Test instance;
+        static Test instance = new Test ();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string RunBenchmark()
         {
-            if (instance == null)
-                instance = new Test();
-
             return instance.RunTasks ();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void SetTasks(string taskNames)
+        {
+            Regex pattern;
+            var names = taskNames.Split(',');
+            var tasksList = new List<BenchTask>();
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                var idx = names[i].IndexOf(':');
+                string name;
+
+                if (idx == -1) {
+                    name = names[i];
+                    pattern = null;
+                }
+                else
+                {
+                    name = names[i].Substring(0, idx);
+                    pattern = new Regex (names[i][(idx + 1)..]);
+                }
+
+                var taskType = Type.GetType($"Sample.{name}Task");
+                if (taskType == null)
+                    continue;
+
+                var task = (BenchTask)Activator.CreateInstance(taskType);
+                task.pattern = pattern;
+                tasksList.Add (task);
+            }
+
+            instance.tasks = tasksList.ToArray ();
         }
 
         int taskCounter = 0;
@@ -38,10 +69,47 @@ namespace Sample
         BenchTask Task
         {
             get { return task; }
-            set { task = value; measurementIdx = 0; task.Initialize(); }
+            set { task = value; }
         }
-        List<BenchTask.Result> results = new List<BenchTask.Result> ();
+        List<BenchTask.Result> results = new();
         bool resultsReturned;
+
+        bool NextTask ()
+        {
+            bool hasMeasurement;
+            do {
+                if (taskCounter == tasks.Length)
+                    return false;
+
+                Task = tasks[taskCounter];
+                measurementIdx = -1;
+                hasMeasurement = NextMeasurement();
+
+                if (hasMeasurement)
+                    task.Initialize();
+
+                taskCounter++;
+            } while (!hasMeasurement);
+
+            return true;
+        }
+
+        bool NextMeasurement ()
+        {
+            runIdx = 0;
+
+            while (measurementIdx < Task.Measurements.Length - 1)
+            {
+                measurementIdx++;
+
+                if (Task.pattern == null || Task.pattern.Match(Task.Measurements[measurementIdx].Name).Success)
+                    return true;
+            }
+
+            measurementIdx = -1;
+
+            return false;
+        }
 
         public string RunTasks()
         {
@@ -49,31 +117,15 @@ namespace Sample
                 return "";
 
             if (taskCounter == 0) {
-                taskCounter++;
-                Task = tasks[0];
+                NextTask ();
                 return "Benchmark started<br>";
             }
 
-            if (runIdx >= Task.Measurements [measurementIdx].NumberOfRuns)
-            {
-                runIdx = 0;
+            if (measurementIdx == -1)
+                return ResultsSummary();
 
-                measurementIdx++;
-                if (measurementIdx >= Task.Measurements.Length)
-                {
-                    taskCounter++;
-
-                    if (taskCounter > tasks.Length)
-                    {
-                        resultsReturned = true;
-
-                        return ResultsSummary();
-                    }
-
-                    Task = tasks[taskCounter - 1];
-                }
-
-            }
+            if (runIdx >= Task.Measurements [measurementIdx].NumberOfRuns && !NextMeasurement() && !NextTask ())
+                    return ResultsSummary();
 
             runIdx++;
 
@@ -83,7 +135,7 @@ namespace Sample
         string ResultsSummary ()
         {
             Dictionary<string, double> minTimes = new Dictionary<string, double> ();
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             foreach (var result in results)
             {
@@ -115,6 +167,8 @@ namespace Sample
                 sb.Append($"| {key,32} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
             }
             sb.Append("</tt>");
+
+            resultsReturned = true;
 
             return sb.ToString();
         }
