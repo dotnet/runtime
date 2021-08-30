@@ -2642,8 +2642,8 @@ namespace System.Tests
         public static bool SupportIanaNamesConversion => PlatformDetection.IsNotBrowser && PlatformDetection.ICUVersion.Major >= 52;
         public static bool SupportIanaNamesConversionAndRemoteExecution => SupportIanaNamesConversion && RemoteExecutor.IsSupported;
 
-        // This test is executed with the remote execution because it needs to run before creating the time zone cache to ensure testing in the right state.
-        // There already ther tests which test after creating the cache.
+        // This test is executed using the remote execution because it needs to run before creating the time zone cache to ensure testing with that state.
+        // There are already other tests that test after creating the cache.
         [ConditionalFact(nameof(SupportIanaNamesConversionAndRemoteExecution))]
         public static void IsIanaIdWithNotCacheTest()
         {
