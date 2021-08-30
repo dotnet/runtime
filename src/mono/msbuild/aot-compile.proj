@@ -15,6 +15,7 @@
           <MonoEnvVar Include="MONO_PATH=$(MonoPath)" />
           <MonoEnvVar Include="MONO_ENV_OPTIONS=--aot=$(_MonoAotOptions)" />
         </ItemGroup>
+        <Message Importance="High" Text="aot-compile: compiling $(_TestDll); MONO_PATH: $(MonoPath)" />
         <Exec Command="$(_AotCompiler) $(_TestDll)" EnvironmentVariables="@(MonoEnvVar)" />
     </Target>
 </Project>
