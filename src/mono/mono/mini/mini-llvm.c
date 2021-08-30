@@ -11462,7 +11462,7 @@ emit_method_inner (EmitContext *ctx)
 	ctx->has_safepoints = requires_safepoint;
 
 	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
-		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC) {
+		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER) {
 			LLVMSetGC (method, "coreclr");
 			emit_gc_safepoint_poll (ctx->module, ctx->lmodule, cfg);
 		} else if (cfg->compile_aot) {
