@@ -2163,6 +2163,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/54113</Issue>
         </ExcludeList>
 
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
@@ -2357,6 +2360,9 @@
         <!-- The following issues only effect the Mono interpreter; there is currently no way to exclude based on that scenario -->
         <ExcludeList Include = "$(XunitTestBinBase)JIT/IL_Conformance/Old/Base/ckfinite/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
+            <Issue> needs triage </Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -2643,6 +2649,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2861,6 +2870,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
             <Issue>https://github.com/dotnet/runtime/issues/54974</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
+            <Issue> needs triage </Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/53077</Issue>
