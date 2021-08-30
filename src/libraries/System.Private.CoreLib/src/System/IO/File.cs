@@ -210,7 +210,7 @@ namespace System.IO
         {
             Validate(path, encoding);
 
-            WriteToFile(path, append: false, contents, encoding);
+            WriteToFile(path, FileMode.Create, contents, encoding);
         }
 
         public static byte[] ReadAllBytes(string path)
@@ -339,7 +339,7 @@ namespace System.IO
         {
             Validate(path, encoding);
 
-            WriteToFile(path, append: true, contents, encoding);
+            WriteToFile(path, FileMode.Append, contents, encoding);
         }
 
         public static void AppendAllLines(string path, IEnumerable<string> contents)
@@ -486,7 +486,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            return WriteToFileAsync(path, append: false, contents, encoding, cancellationToken);
+            return WriteToFileAsync(path, FileMode.Create, contents, encoding, cancellationToken);
         }
 
         public static Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
@@ -699,7 +699,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            return WriteToFileAsync(path, append: true, contents, encoding, cancellationToken);
+            return WriteToFileAsync(path, FileMode.Append, contents, encoding, cancellationToken);
         }
 
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
@@ -768,21 +768,21 @@ namespace System.IO
         }
 
 #if MS_IO_REDIST
-        private static void WriteToFile(string path, bool append, string? contents, Encoding encoding)
+        private static void WriteToFile(string path, FileMode mode, string? contents, Encoding encoding)
         {
-            using StreamWriter sw = new StreamWriter(path, append, encoding);
+            using StreamWriter sw = new StreamWriter(path, mode == FileMode.Append, encoding);
             sw.Write(contents);
         }
 
-        private static async Task WriteToFileAsync(string path, bool append, string? contents, Encoding encoding, CancellationToken cancellationToken)
+        private static async Task WriteToFileAsync(string path, FileMode mode, string? contents, Encoding encoding, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(contents))
             {
-                new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read).Dispose();
+                new FileStream(path, mode, FileAccess.Write, FileShare.Read).Dispose();
                 return;
             }
 
-            StreamWriter sw = AsyncStreamWriter(path, encoding, append);
+            StreamWriter sw = AsyncStreamWriter(path, encoding, mode == FileMode.Append);
             char[]? buffer = null;
             try
             {

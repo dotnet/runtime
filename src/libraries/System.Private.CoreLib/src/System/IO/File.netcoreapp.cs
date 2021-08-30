@@ -104,16 +104,13 @@ namespace System.IO
             }
         }
 
-        private static void WriteToFile(string path, bool append, string? contents, Encoding encoding)
+        private static void WriteToFile(string path, FileMode mode, string? contents, Encoding encoding)
         {
             ReadOnlySpan<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;
-            int maxFileSize = preambleSize + (string.IsNullOrEmpty(contents) ? 0 : encoding.GetMaxByteCount(contents.Length));
-            long preallocationSize = contents is null || contents.Length < ChunkSize ? 0 : maxFileSize; // for a single write operation setting preallocationSize has no perf benefit, as it requires additional sys-call(s)
-            FileMode mode = append ? FileMode.Append : FileMode.Create;
 
-            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.None, preallocationSize);
-            long fileOffset = append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
+            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.None, GetPreallocationSize(mode, contents, encoding, preambleSize));
+            long fileOffset = mode == FileMode.Append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
 
             if (string.IsNullOrEmpty(contents))
             {
@@ -124,7 +121,7 @@ namespace System.IO
                 return;
             }
 
-            int bytesNeeded = Math.Min(maxFileSize, preambleSize + encoding.GetMaxByteCount(ChunkSize));
+            int bytesNeeded = preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize));
             byte[]? rentedBytes = null;
             Span<byte> bytes = bytesNeeded <= 1024 ? stackalloc byte[1024] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
 
@@ -146,6 +143,10 @@ namespace System.IO
                     fileOffset += toStore.Length;
                     preambleSize = 0;
                 }
+
+                long fileLength = 0;
+                Debug.Assert(!fileHandle.CanSeek || fileOffset == (fileLength = RandomAccess.GetFileLength(fileHandle)),
+                    $"File length different than expected. Offset: {fileOffset}, Length: {fileLength}");
             }
             finally
             {
@@ -153,21 +154,16 @@ namespace System.IO
                 {
                     ArrayPool<byte>.Shared.Return(rentedBytes);
                 }
-
-                FileStreamHelpers.EnsureNoTrailingZeros(preallocationSize, mode, fileHandle, fileOffset);
             }
         }
 
-        private static async Task WriteToFileAsync(string path, bool append, string? contents, Encoding encoding, CancellationToken cancellationToken)
+        private static async Task WriteToFileAsync(string path, FileMode mode, string? contents, Encoding encoding, CancellationToken cancellationToken)
         {
             ReadOnlyMemory<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;
-            int maxFileSize = preambleSize + (string.IsNullOrEmpty(contents) ? 0 : encoding.GetMaxByteCount(contents.Length));
-            long preallocationSize = contents is null || contents.Length < ChunkSize ? 0 : maxFileSize; // for a single write operation setting preallocationSize has no perf benefit, as it requires additional sys-call(s)
-            FileMode mode = append ? FileMode.Append : FileMode.Create;
 
-            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, preallocationSize);
-            long fileOffset = append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
+            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, GetPreallocationSize(mode, contents, encoding, preambleSize));
+            long fileOffset = mode == FileMode.Append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
 
             if (string.IsNullOrEmpty(contents))
             {
@@ -178,7 +174,7 @@ namespace System.IO
                 return;
             }
 
-            byte[] bytes = ArrayPool<byte>.Shared.Rent(Math.Min(maxFileSize, preambleSize + encoding.GetMaxByteCount(ChunkSize)));
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize)));
 
             try
             {
@@ -198,13 +194,38 @@ namespace System.IO
                     fileOffset += toStore.Length;
                     preambleSize = 0;
                 }
+
+                long fileLength = 0;
+                Debug.Assert(!fileHandle.CanSeek || fileOffset == (fileLength = RandomAccess.GetFileLength(fileHandle)),
+                    $"File length different than expected. Offset: {fileOffset}, Length: {fileLength}");
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(bytes);
-
-                FileStreamHelpers.EnsureNoTrailingZeros(preallocationSize, mode, fileHandle, fileOffset);
             }
+        }
+
+        private static long GetPreallocationSize(FileMode mode, string? contents, Encoding encoding, int preambleSize)
+        {
+            // for a single write operation, setting preallocationSize has no perf benefit, as it requires an additional sys-call
+            if (contents is null || contents.Length < ChunkSize)
+            {
+                return 0;
+            }
+
+            // preallocationSize is ignored for Append mode, there is no need to spend cycles on GetByteCount
+            if (mode == FileMode.Append)
+            {
+                return 0;
+            }
+
+            // When the actual EOF is less than initial preallocationSize:
+            // * Windows does not use more space than needed,
+            // * Unix zeroes everything between EOF and preallocationSize.
+            // That is why for non-Windows OSes the accurate byte count is calculated
+            // while for Windows, a cheaper MaxByteCount estimation is fine.
+            // PreallocationSize saves more time than it takes to calculate the accurate byte count.
+            return preambleSize + (OperatingSystem.IsWindows() ? encoding.GetMaxByteCount(contents.Length) : encoding.GetByteCount(contents));
         }
     }
 }

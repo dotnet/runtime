@@ -63,19 +63,6 @@ namespace System.IO.Strategies
                && (access & FileAccess.Write) != 0
                && mode != FileMode.Open && mode != FileMode.Append;
 
-        internal static void EnsureNoTrailingZeros(long preallocationSize, FileMode mode, SafeFileHandle fileHandle, long endOfFile)
-        {
-            // When the actual EOF is less than initial preallocationSize:
-            // * Windows does not use more space than needed,
-            // * Unix zeroes everything between EOF and preallocationSize.
-            // That is why for non-Windows OSes where preallocationSize was used, we shrink the file
-            // to ensure there are no trailing zeroes.
-            if (!OperatingSystem.IsWindows() && ShouldPreallocate(preallocationSize, FileAccess.Write, mode) && fileHandle.CanSeek)
-            {
-                SetFileLength(fileHandle, endOfFile);
-            }
-        }
-
         internal static void ValidateArguments(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             if (path == null)
