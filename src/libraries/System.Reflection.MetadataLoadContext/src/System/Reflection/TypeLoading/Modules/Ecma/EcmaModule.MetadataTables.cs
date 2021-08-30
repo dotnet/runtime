@@ -12,7 +12,7 @@ namespace System.Reflection.TypeLoading.Ecma
     /// </summary>
     internal sealed partial class EcmaModule
     {
-        internal MetadataTable<EcmaDefinitionType, EcmaModule> TypeDefTable
+        internal MetadataTable<EcmaDefinitionType> TypeDefTable
         {
             get
             {
@@ -21,7 +21,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyTypeDefTable;
             }
         }
-        private volatile MetadataTable<EcmaDefinitionType, EcmaModule>? _lazyTypeDefTable;
+        private volatile MetadataTable<EcmaDefinitionType>? _lazyTypeDefTable;
 
         private void EnsureTypeDefTableFullyFilled()
         {
@@ -36,7 +36,7 @@ namespace System.Reflection.TypeLoading.Ecma
         }
         private bool _typeDefTableFullyFilled; // Only gets set true if EnsureTypeDefTableFullyFilled() fills the table. False negative just means some unnecessary work is done.
 
-        internal MetadataTable<RoDefinitionType, EcmaModule> TypeRefTable
+        internal MetadataTable<RoDefinitionType> TypeRefTable
         {
             get
             {
@@ -45,9 +45,9 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyTypeRefTable;
             }
         }
-        private volatile MetadataTable<RoDefinitionType, EcmaModule>? _lazyTypeRefTable;
+        private volatile MetadataTable<RoDefinitionType>? _lazyTypeRefTable;
 
-        internal MetadataTable<EcmaGenericParameterType, EcmaModule> GenericParamTable
+        internal MetadataTable<EcmaGenericParameterType> GenericParamTable
         {
             get
             {
@@ -56,9 +56,9 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyGenericParamTable;
             }
         }
-        private volatile MetadataTable<EcmaGenericParameterType, EcmaModule>? _lazyGenericParamTable;
+        private volatile MetadataTable<EcmaGenericParameterType>? _lazyGenericParamTable;
 
-        internal MetadataTable<RoAssembly, EcmaModule> AssemblyRefTable
+        internal MetadataTable<RoAssembly> AssemblyRefTable
         {
             get
             {
@@ -67,11 +67,18 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyAssemblyRefTable;
             }
         }
-        private volatile MetadataTable<RoAssembly, EcmaModule>? _lazyAssemblyRefTable;
+        private volatile MetadataTable<RoAssembly>? _lazyAssemblyRefTable;
 
-        private MetadataTable<T, EcmaModule> CreateTable<T>(TableIndex tableIndex) where T : class
+        private MetadataTable<T> CreateTable<T>(TableIndex tableIndex) where T : class
         {
-            return new MetadataTable<T, EcmaModule>(Reader.GetTableRowCount(tableIndex));
+            int rowCount = tableIndex switch
+            {
+                // Windows Metadata assemblies contain additional "virtual" AssemblyRefs we need to account for.
+                // This is the simplest way to get the total AssemblyRefs count:
+                TableIndex.AssemblyRef => Reader.AssemblyReferences.Count,
+                _ => Reader.GetTableRowCount(tableIndex)
+            };
+            return new MetadataTable<T>(rowCount);
         }
     }
 }

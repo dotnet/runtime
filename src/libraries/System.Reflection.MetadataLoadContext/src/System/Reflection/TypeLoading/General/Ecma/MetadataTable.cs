@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 
 namespace System.Reflection.TypeLoading.Ecma
@@ -13,10 +14,8 @@ namespace System.Reflection.TypeLoading.Ecma
     ///
     /// The key type is hard-coded to EntityHandle.
     /// The "T" type is the value type (e.g. RoTypeDefinition objects)
-    /// The "C" type is an optional context value passed through the factory methods (so we don't to allocate a closure each time.)
     /// </summary>
-    internal sealed class MetadataTable<T, C>
-        where T : class
+    internal sealed class MetadataTable<T> where T : class
     {
         private readonly T?[] _table;
 
@@ -26,12 +25,12 @@ namespace System.Reflection.TypeLoading.Ecma
             _table = new T?[count];
         }
 
-        public T GetOrAdd(EntityHandle handle, C context, Func<EntityHandle, C, T> factory)
+        public T GetOrAdd(EntityHandle handle, EcmaModule context, Func<EntityHandle, EcmaModule, T> factory)
         {
             Debug.Assert(!handle.IsNil);
             Debug.Assert(factory != null);
 
-            int index = handle.GetToken().GetTokenRowNumber() - 1;
+            int index = context.Reader.GetRowNumber(handle) - 1;
             T?[] table = _table;
             T? result = Volatile.Read(ref table[index]);
             if (result != null)

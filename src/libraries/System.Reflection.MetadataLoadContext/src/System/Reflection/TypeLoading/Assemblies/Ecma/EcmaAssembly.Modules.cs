@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 namespace System.Reflection.TypeLoading.Ecma
@@ -81,7 +82,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 AssemblyFile af = h.GetAssemblyFile(reader);
                 if (includeResourceModules || af.ContainsMetadata)
                 {
-                    yield return new AssemblyFileInfo(af.Name.GetString(reader), af.ContainsMetadata, h.GetToken().GetTokenRowNumber());
+                    yield return new AssemblyFileInfo(af.Name.GetString(reader), af.ContainsMetadata, reader.GetRowNumber(h));
                 }
             }
         }

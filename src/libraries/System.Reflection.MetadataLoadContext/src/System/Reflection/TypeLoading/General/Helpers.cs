@@ -34,8 +34,6 @@ namespace System.Reflection.TypeLoading
             return new ReadOnlyCollection<T>(list.ToArray());
         }
 
-        public static int GetTokenRowNumber(this int token) => token & 0x00ffffff;
-
         public static RoMethod? FilterInheritedAccessor(this RoMethod accessor)
         {
             if (accessor.ReflectedType == accessor.DeclaringType)

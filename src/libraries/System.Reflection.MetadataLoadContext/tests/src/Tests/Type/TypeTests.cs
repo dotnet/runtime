@@ -4,6 +4,7 @@
 using SampleMetadata;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -28,6 +29,7 @@ namespace System.Reflection.Tests
             {
                 yield return typeof(object).Project();
                 yield return typeof(Span<>).Project();
+                yield return typeof(SampleCompletedHandler).Project();
 #if false
                 foreach (Type t in typeof(TopLevelType).Project().Assembly.GetTypes())
                 {
@@ -383,6 +385,8 @@ namespace System.Reflection.Tests
             Assert.False(typeof(BindingFlags).Project().IsPrimitive);
             Assert.False(typeof(int[]).Project().IsPrimitive);
 
+            Assert.False(typeof(SampleCompletedHandler).Project().IsPrimitive);
+
             return;
         }
 
@@ -403,6 +407,7 @@ namespace System.Reflection.Tests
             Assert.False(typeof(ValueType).Project().IsValueType);
             Assert.False(typeof(Enum).Project().IsValueType);
             Assert.True(typeof(MyColor).Project().IsValueType);
+            Assert.False(typeof(SampleCompletedHandler).Project().IsValueType);
 
             return;
         }
@@ -610,6 +615,31 @@ namespace System.Reflection.Tests
                 Type tRetrieved = a.GetType(fullName, throwOnError: true, ignoreCase: false);
                 Assert.Equal(t, tRetrieved);
             }
+        }
+
+        [Fact]
+        public static void WindowsRuntimeMetadataDelegateType()
+        {
+            // Get the array of runtime assemblies.
+            // This will allow us to at least inspect types depending only on BCL.
+            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+
+            // Create MetadataLoadContext that can resolve assemblies using the created array.
+            PathAssemblyResolver resolver = new(runtimeAssemblies);
+            using MetadataLoadContext mlc = new(resolver);
+
+            Stream peStream = new MemoryStream(TestData.s_MetadataDelegateImage);
+            Assembly a = mlc.LoadFromStream(peStream);
+            Assert.NotNull(a);
+            Assert.Equal(string.Empty, a.Location);
+            Assert.Equal("WindowsRuntime 1.4", a.ImageRuntimeVersion);
+
+            string fullName = a.GetName().FullName;
+            Assert.Equal(TestData.s_MetadataDelegateAssemblyName, fullName);
+
+            Type[] types = a.GetTypes();
+            Assert.Single(types);
+            Assert.False(types[0].IsValueType);
         }
     }
 }

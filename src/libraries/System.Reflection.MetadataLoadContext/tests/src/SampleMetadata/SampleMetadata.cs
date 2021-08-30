@@ -548,4 +548,6 @@ namespace SampleMetadata
     {
         public int Yes;
     }
+
+    public delegate void SampleCompletedHandler();
 }
