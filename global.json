@@ -14,7 +14,7 @@
   "msbuild-sdks": {
     "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "6.0.0-beta.21425.3",
     "Microsoft.DotNet.Arcade.Sdk": "6.0.0-beta.21425.3",
-    "Microsoft.DotNet.Helix.Sdk": "6.0.0-beta.21425.3",
+    "Microsoft.DotNet.Helix.Sdk": "6.0.0-beta.21427.1",
     "Microsoft.DotNet.SharedFramework.Sdk": "6.0.0-beta.21425.3",
     "Microsoft.Build.NoTargets": "3.1.0",
     "Microsoft.Build.Traversal": "3.0.23",

@@ -27,7 +27,7 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" ) ]]; then
+    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" || "$__HostArch" == "s390x" ) ]]; then
         __IsMSBuildOnNETCoreSupported=1
     elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
         __IsMSBuildOnNETCoreSupported=1
@@ -230,7 +230,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armel, -arm64, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armel, -arm64, -s390x, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"

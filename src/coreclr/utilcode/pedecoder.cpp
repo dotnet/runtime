@@ -36,9 +36,6 @@ CHECK PEDecoder::CheckFormat() const
             if (IsILOnly())
                 CHECK(CheckILOnly());
 
-            if (HasNativeHeader())
-                CHECK(CheckNativeHeader());
-
             CHECK(CheckWillCreateGuardPage());
         }
     }
@@ -96,7 +93,6 @@ CHECK PEDecoder::CheckILFormat() const
     CHECK(CheckFormat());
     CHECK(HasNTHeaders());
     CHECK(HasCorHeader());
-    CHECK(!HasNativeHeader());
 
     CHECK_OK;
 }
@@ -117,23 +113,6 @@ CHECK PEDecoder::CheckILOnlyFormat() const
     CHECK(HasNTHeaders());
     CHECK(HasCorHeader());
     CHECK(IsILOnly());
-    CHECK(!HasNativeHeader());
-
-    CHECK_OK;
-}
-
-CHECK PEDecoder::CheckNativeFormat() const
-{
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(HasContents());
-    }
-    CONTRACT_CHECK_END;
-
-    CHECK(false);
 
     CHECK_OK;
 }
@@ -1042,12 +1021,12 @@ CHECK PEDecoder::CheckCorHeader() const
         CHECK(VAL16(pCor->MajorRuntimeVersion) > 1 && VAL16(pCor->MajorRuntimeVersion) <= COR_VERSION_MAJOR);
 
 #ifdef HOST_WINDOWS
-    CHECK(CheckDirectory(&pCor->MetaData, IMAGE_SCN_MEM_WRITE, HasNativeHeader() ? NULL_OK : NULL_NOT_OK));
+    CHECK(CheckDirectory(&pCor->MetaData, IMAGE_SCN_MEM_WRITE, NULL_NOT_OK));
 #else
     CHECK(CheckDirectory(
         &pCor->MetaData,
         possiblyCompositeR2R ? 0 : IMAGE_SCN_MEM_WRITE,
-        HasNativeHeader() ? NULL_OK : NULL_NOT_OK));
+        NULL_NOT_OK));
 #endif
     CHECK(CheckDirectory(&pCor->Resources, IMAGE_SCN_MEM_WRITE, NULL_OK));
     CHECK(CheckDirectory(&pCor->StrongNameSignature, IMAGE_SCN_MEM_WRITE, NULL_OK));
@@ -1140,12 +1119,8 @@ CHECK PEDecoder::CheckCorHeader() const
             for(namelen=0; (namelen<32)&&(pSS->rcName[namelen]!=0); namelen++);
             CHECK((0 < namelen)&&(namelen < 32));
 
-            // Is it ngen image?
-            if (!HasNativeHeader())
-            {
-                // Forbid HOT_MODEL_STREAM for non-ngen images
-                CHECK(strcmp(pSS->rcName, HOT_MODEL_STREAM_A) != 0);
-            }
+            // Forbid HOT_MODEL_STREAM
+            CHECK(strcmp(pSS->rcName, HOT_MODEL_STREAM_A) != 0);
 
             pcMD = dac_cast<TADDR>(NextStorageStream(pSS));
             ctMD -= (COUNT_T)(pcMD - dac_cast<TADDR>(pSS));
@@ -2180,35 +2155,6 @@ bool PEDecoder::EnumerateWin32Resources(LPCWSTR lpName, LPCWSTR lpType, PEDecode
     return EnumerateWin32ResourceTable(this, rvaOfResourceSection, rvaOfResourceSection, EnumerateTypesForNames, &state);
 }
 
-BOOL PEDecoder::HasNativeHeader() const
-{
-    CONTRACT(BOOL)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    RETURN FALSE;
-}
-
-CHECK PEDecoder::CheckNativeHeader() const
-{
-    CONTRACT_CHECK
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_CHECK_END;
-
-    CHECK(false);
-
-    CHECK_OK;
-}
-
 READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
 {
     CONTRACTL
@@ -2522,7 +2468,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
     CONTRACT(PTR_CVOID)
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasReadyToRunHeader() || CheckNativeHeader());
+        PRECONDITION(HasReadyToRunHeader());
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // TBD - may not store metadata for IJW
         NOTHROW;
         GC_NOTRIGGER;
