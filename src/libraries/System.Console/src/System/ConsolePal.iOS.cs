@@ -63,7 +63,7 @@ namespace System
 
                 if (lastNewLine + 1 < length)
                 {
-                    cache.Append(charBuffer.Slice(lastNewLine + 1, length - i - 1));
+                    cache.Append(charBuffer.Slice(lastNewLine + 1, length - lastNewLine - 1));
                 }
 
                 return;
