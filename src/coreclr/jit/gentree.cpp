@@ -11789,8 +11789,15 @@ void Compiler::gtDispTree(GenTree*     tree,
 #if !defined(DEBUG_ARG_SLOTS)
             printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
 #else
-            printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
-                   putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
+            if (compMacOsArm64Abi())
+            {
+                printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
+            }
+            else
+            {
+                printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
+                    putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
+            }
 #endif
             if (putArg->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
             {
@@ -11820,8 +11827,15 @@ void Compiler::gtDispTree(GenTree*     tree,
 #if !defined(DEBUG_ARG_SLOTS)
             printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
 #else
-            printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
-                   putArg->gtNumRegs);
+            if (compMacOsArm64Abi())
+            {
+                printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
+            }
+            else
+            {
+                printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
+                    putArg->gtNumRegs);
+            }
 #endif
         }
 #endif // FEATURE_ARG_SPLIT_SUPPORTED

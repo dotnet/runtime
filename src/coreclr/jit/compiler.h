@@ -1911,7 +1911,7 @@ public:
 #endif // TARGET_ARM
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (!isStruct)
+        if (!compMacOsArm64Abi() && !isStruct)
         {
             assert(roundedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
         }

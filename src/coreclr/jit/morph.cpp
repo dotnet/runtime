@@ -1172,7 +1172,10 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+    if (!compMacOsArm64Abi())
+    {
+        nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+    }
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, byteAlignment);
@@ -1271,9 +1274,12 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
-    assert(curArgTabEntry->slotNum == nextSlotNum);
-    nextSlotNum += curArgTabEntry->numSlots;
+    if (!compMacOsArm64Abi())
+    {
+        nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
+        assert(curArgTabEntry->slotNum == nextSlotNum);
+        nextSlotNum += curArgTabEntry->numSlots;
+    }
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->GetByteAlignment());
@@ -3782,11 +3788,14 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
+        if (!compMacOsArm64Abi())
         {
-            if (argSlots % 2 == 1)
+            if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
             {
-                argSlots++;
+                if (argSlots % 2 == 1)
+                {
+                    argSlots++;
+                }
             }
         }
 #endif // DEBUG
@@ -4238,8 +4247,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         const unsigned outgoingArgSpaceSize = GetOutgoingArgByteSize(call->fgArgInfo->GetNextSlotByteOffset());
 
 #if defined(DEBUG_ARG_SLOTS)
-        unsigned preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
-        assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+        unsigned preallocatedArgCount = 0;
+        if (!compMacOsArm64Abi())
+        {
+            preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
+            assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+        }
 #endif
         call->fgArgInfo->SetOutArgSize(max(outgoingArgSpaceSize, MIN_ARG_AREA_FOR_CALL));
 
@@ -4248,10 +4261,18 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         {
             const fgArgInfo* argInfo = call->fgArgInfo;
 #if defined(DEBUG_ARG_SLOTS)
-            printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
-                   "outgoingArgSpaceSize=%d\n",
-                   argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
-                   outgoingArgSpaceSize);
+            if (!compMacOsArm64Abi())
+            {
+                printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
+                    "outgoingArgSpaceSize=%d\n",
+                    argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
+                    outgoingArgSpaceSize);
+            }
+            else
+            {
+                printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
+                    outgoingArgSpaceSize);
+            }
 #else
             printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
                    outgoingArgSpaceSize);
