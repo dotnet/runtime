@@ -9,11 +9,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     internal static partial class FileSystem
     {
