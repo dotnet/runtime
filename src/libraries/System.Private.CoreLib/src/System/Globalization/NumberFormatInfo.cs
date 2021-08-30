@@ -733,9 +733,9 @@ namespace System.Globalization
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0
                 && (style & ~NumberStyles.HexNumber) != 0)
             {
-                throwInvalid(style);
+                ThrowInvalid(style);
 
-                void throwInvalid(NumberStyles value)
+                static void ThrowInvalid(NumberStyles value)
                 {
                     if ((value & InvalidNumberStyles) != 0)
                     {
@@ -752,9 +752,9 @@ namespace System.Globalization
             // Check for undefined flags or hex number
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
             {
-                throwInvalid(style);
+                ThrowInvalid(style);
 
-                void throwInvalid(NumberStyles value)
+                static void ThrowInvalid(NumberStyles value)
                 {
                     if ((value & InvalidNumberStyles) != 0)
                     {

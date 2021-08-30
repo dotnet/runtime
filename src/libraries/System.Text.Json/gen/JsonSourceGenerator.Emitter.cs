@@ -79,15 +79,17 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-            private readonly GeneratorExecutionContext _executionContext;
+            private readonly SourceProductionContext _sourceProductionContext;
 
             private ContextGenerationSpec _currentContext = null!;
 
             private readonly SourceGenerationSpec _generationSpec = null!;
 
-            public Emitter(in GeneratorExecutionContext executionContext, SourceGenerationSpec generationSpec)
+            private readonly HashSet<string> _emittedPropertyFileNames = new();
+
+            public Emitter(in SourceProductionContext sourceProductionContext, SourceGenerationSpec generationSpec)
             {
-                _executionContext = executionContext;
+                _sourceProductionContext = sourceProductionContext;
                 _generationSpec = generationSpec;
             }
 
@@ -166,7 +168,7 @@ namespace {@namespace}
                     sb.AppendLine("}");
                 }
 
-                _executionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
+                _sourceProductionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
             }
 
             private void GenerateTypeInfo(TypeGenerationSpec typeGenerationSpec)
@@ -243,7 +245,7 @@ namespace {@namespace}
                         break;
                     case ClassType.TypeUnsupportedBySourceGen:
                         {
-                            _executionContext.ReportDiagnostic(
+                            _sourceProductionContext.ReportDiagnostic(
                                 Diagnostic.Create(TypeNotSupported, Location.None, new string[] { typeGenerationSpec.TypeRef }));
                             return;
                         }
@@ -253,13 +255,16 @@ namespace {@namespace}
                         }
                 }
 
-                try
+                // Don't add a duplicate file, but instead raise a diagnostic to say the duplicate has been skipped.
+                // Workaround https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
+                string propertyFileName = $"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs";
+                if (_emittedPropertyFileNames.Add(propertyFileName))
                 {
-                    AddSource($"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs", source);
+                    AddSource(propertyFileName, source);
                 }
-                catch (ArgumentException)
+                else
                 {
-                    _executionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
+                    _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
                 }
             }
 
