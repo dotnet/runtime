@@ -165,7 +165,6 @@ public:
     IMDInternalImport* GetNativeMDImport(BOOL loadAllowed = TRUE);
 
     BOOL HasContents() ;
-    BOOL HasNativeHeader() ;
     BOOL IsPtrInImage(PTR_CVOID data);
     CHECK CheckFormat();
 
@@ -179,8 +178,6 @@ public:
     static void GetPathFromDll(HINSTANCE hMod, SString &result);
 #endif // !TARGET_UNIX
     static BOOL PathEquals(const SString &p1, const SString &p2);
-    BOOL IsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; return m_bIsTrustedNativeImage;};
-    void SetIsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; m_bIsTrustedNativeImage=TRUE;};
 
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
@@ -206,10 +203,6 @@ public:
     BOOL Has32BitNTHeaders();
 
     void VerifyIsAssembly();
-    void VerifyIsNIAssembly();
-
-
-    static void GetAll(SArray<PEImage*> &images);
 
 private:
 #ifndef DACCESS_COMPILE
@@ -232,8 +225,6 @@ private:
     // ------------------------------------------------------------
 
     void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
-
-    void VerifyIsILOrNIAssembly(BOOL fIL);
 
     struct PEImageLocator
     {
@@ -279,8 +270,6 @@ private:
     // We are piggy backing on the fact that module name is the same as file name!!!
     //
     SString     m_sModuleFileNameHintUsedByDac; // This is only used by DAC
-private:
-    BOOL        m_bIsTrustedNativeImage;
 
 protected:
 
