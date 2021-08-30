@@ -2649,7 +2649,7 @@ namespace System.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                Assert.Equal(!s_isWindows, TimeZoneInfo.Local.HasIanaId);
+                Assert.Equal(!s_isWindows || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase), TimeZoneInfo.Local.HasIanaId);
 
                 TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
                 Assert.False(tzi.HasIanaId);
@@ -2664,7 +2664,7 @@ namespace System.Tests
         {
             bool expected = !s_isWindows;
 
-            Assert.Equal(expected, TimeZoneInfo.Local.HasIanaId);
+            Assert.Equal((expected || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)), TimeZoneInfo.Local.HasIanaId);
 
             foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
             {
