@@ -58,7 +58,7 @@ namespace System
                 }
                 else
                 {
-                    Print(lineSpan.ToString());
+                    Print(lineSpan);
                 }
 
                 if (lastNewLine + 1 < length)
@@ -72,7 +72,7 @@ namespace System
             // no newlines found, add the entire buffer to the cache
             cache.Append(charBuffer.Slice(0, length));
 
-            static void Print(string line)
+            static void Print(ReadOnlySpan<char> line)
             {
                 fixed (char* ptr = line)
                 {
