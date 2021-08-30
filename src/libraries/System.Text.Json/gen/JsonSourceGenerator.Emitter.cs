@@ -683,12 +683,14 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                         ? @$"jsonPropertyName: ""{memberMetadata.JsonPropertyName}"""
                         : "jsonPropertyName: null";
 
-                    string getterNamedArg = memberMetadata.CanUseGetter
+                    string getterNamedArg = memberMetadata.CanUseGetter &&
+                        memberMetadata.DefaultIgnoreCondition != JsonIgnoreCondition.Always
                         ? $"getter: static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}"
                         : "getter: null";
 
                     string setterNamedArg;
-                    if (memberMetadata.CanUseSetter)
+                    if (memberMetadata.CanUseSetter &&
+                        memberMetadata.DefaultIgnoreCondition != JsonIgnoreCondition.Always)
                     {
                         string propMutation = typeGenerationSpec.IsValueType
                             ? @$"{UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value!"
