@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.NET.HostModel.Bundle;
 using System;
 using System.Collections.Generic;
@@ -162,6 +163,9 @@ namespace BundleTests.Helpers
 
             var singleFile = bundler.GenerateBundle(fileSpecs);
 
+            // Verify no one has an open handle to the bundle
+            VerifyNoOpenHandles(singleFile);
+
             if (copyExludedFiles)
             {
                 foreach (var spec in fileSpecs)
@@ -178,10 +182,23 @@ namespace BundleTests.Helpers
             return singleFile;
         }
 
+        private static string VerifyNoOpenHandles(string path)
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                var result = Command.Create("lsof", path)
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .Execute();
+                throw new Exception(result.StdOut + result.StdErr);
+            }
+            return "";
+        }
+
         // Bundle to a single-file
         // In several tests, the single-file bundle is created explicitly using Bundle API
         // instead of the SDK via /p:PublishSingleFile=true.
-        // This is necessary when the test needs the latest changes in the AppHost, 
+        // This is necessary when the test needs the latest changes in the AppHost,
         // which may not (yet) be available in the SDK.
         public static Bundler BundleApp(TestProjectFixture fixture,
                                         out string singleFile,
