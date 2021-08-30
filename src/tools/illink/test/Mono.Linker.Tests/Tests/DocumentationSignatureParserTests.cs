@@ -3,12 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
+using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
 
 namespace Mono.Linker.Tests
 {
+	class TestResolver : ITryResolveMetadata
+	{
+		public static TestResolver Instance => new TestResolver ();
+
+		public MethodDefinition TryResolve (MethodReference methodReference) => methodReference.Resolve ();
+		public TypeDefinition TryResolve (TypeReference typeReference) => typeReference.Resolve ();
+	}
+
 	[TestFixture]
 	public class DocumentationSignatureParserTests
 	{
@@ -40,7 +49,7 @@ namespace Mono.Linker.Tests
 		{
 			var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
 			Assert.NotNull (module);
-			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module);
+			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, TestResolver.Instance);
 			Assert.AreEqual (1, parseResults.Count ());
 			Assert.AreEqual (member, parseResults.First ());
 		}
@@ -48,7 +57,7 @@ namespace Mono.Linker.Tests
 		public static void CheckGeneratedString (IMemberDefinition member, string expected)
 		{
 			var builder = new StringBuilder ();
-			DocumentationSignatureGenerator.VisitMember (member, builder);
+			DocumentationSignatureGenerator.VisitMember (member, builder, TestResolver.Instance);
 			Assert.AreEqual (expected, builder.ToString ());
 		}
 
@@ -56,7 +65,7 @@ namespace Mono.Linker.Tests
 		{
 			var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
 			Assert.NotNull (module);
-			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module);
+			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, TestResolver.Instance);
 			CollectionAssert.Contains (parseResults, member);
 		}
 
@@ -64,7 +73,7 @@ namespace Mono.Linker.Tests
 		{
 			var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
 			Assert.NotNull (module);
-			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module);
+			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, TestResolver.Instance);
 			CollectionAssert.DoesNotContain (parseResults, member);
 		}
 

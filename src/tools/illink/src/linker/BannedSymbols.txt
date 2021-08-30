@@ -1,0 +1,2 @@
+T:Mono.Cecil.Cil.ILProcessor;Use LinkerILProcessor instead
+M:Mono.Cecil.TypeReference.Resolve();Use LinkContext.Resolve and LinkContext.TryResolve helpers instead

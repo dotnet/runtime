@@ -25,57 +25,57 @@ namespace Mono.Linker
 		{
 		}
 
-		public static void VisitMember (IMemberDefinition member, StringBuilder builder)
+		public static void VisitMember (IMemberDefinition member, StringBuilder builder, ITryResolveMetadata resolver)
 		{
 			switch (member.MetadataToken.TokenType) {
 			case TokenType.TypeDef:
-				VisitTypeDefinition (member as TypeDefinition, builder);
+				VisitTypeDefinition (member as TypeDefinition, builder, resolver);
 				break;
 			case TokenType.Method:
-				VisitMethod (member as MethodDefinition, builder);
+				VisitMethod (member as MethodDefinition, builder, resolver);
 				break;
 			case TokenType.Property:
-				VisitProperty (member as PropertyDefinition, builder);
+				VisitProperty (member as PropertyDefinition, builder, resolver);
 				break;
 			case TokenType.Field:
-				VisitField (member as FieldDefinition, builder);
+				VisitField (member as FieldDefinition, builder, resolver);
 				break;
 			case TokenType.Event:
-				VisitEvent (member as EventDefinition, builder);
+				VisitEvent (member as EventDefinition, builder, resolver);
 				break;
 			default:
 				break;
 			}
 		}
 
-		private static void VisitMethod (MethodDefinition method, StringBuilder builder)
+		private static void VisitMethod (MethodDefinition method, StringBuilder builder, ITryResolveMetadata resolver)
 		{
 			builder.Append (MethodPrefix);
-			PartVisitor.Instance.VisitMethodDefinition (method, builder);
+			PartVisitor.Instance.VisitMethodDefinition (method, builder, resolver);
 		}
 
-		private static void VisitField (FieldDefinition field, StringBuilder builder)
+		private static void VisitField (FieldDefinition field, StringBuilder builder, ITryResolveMetadata resolver)
 		{
 			builder.Append (FieldPrefix);
-			PartVisitor.Instance.VisitField (field, builder);
+			PartVisitor.Instance.VisitField (field, builder, resolver);
 		}
 
-		private static void VisitEvent (EventDefinition evt, StringBuilder builder)
+		private static void VisitEvent (EventDefinition evt, StringBuilder builder, ITryResolveMetadata resolver)
 		{
 			builder.Append (EventPrefix);
-			PartVisitor.Instance.VisitEvent (evt, builder);
+			PartVisitor.Instance.VisitEvent (evt, builder, resolver);
 		}
 
-		private static void VisitProperty (PropertyDefinition property, StringBuilder builder)
+		private static void VisitProperty (PropertyDefinition property, StringBuilder builder, ITryResolveMetadata resolver)
 		{
 			builder.Append (PropertyPrefix);
-			PartVisitor.Instance.VisitProperty (property, builder);
+			PartVisitor.Instance.VisitProperty (property, builder, resolver);
 		}
 
-		private static void VisitTypeDefinition (TypeDefinition type, StringBuilder builder)
+		private static void VisitTypeDefinition (TypeDefinition type, StringBuilder builder, ITryResolveMetadata resolver)
 		{
 			builder.Append (TypePrefix);
-			PartVisitor.Instance.VisitTypeReference (type, builder);
+			PartVisitor.Instance.VisitTypeReference (type, builder, resolver);
 		}
 	}
 }

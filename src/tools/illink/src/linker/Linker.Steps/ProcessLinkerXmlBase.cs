@@ -483,7 +483,7 @@ namespace Mono.Linker.Steps
 
 		public override string ToString () => GetType ().Name + ": " + _xmlDocumentLocation;
 
-		public static bool TryConvertValue (string value, TypeReference target, out object result)
+		public bool TryConvertValue (string value, TypeReference target, out object result)
 		{
 			switch (target.MetadataType) {
 			case MetadataType.Boolean:
@@ -581,7 +581,7 @@ namespace Mono.Linker.Steps
 
 			case MetadataType.ValueType:
 				if (value is string &&
-					target.Resolve () is var typeDefinition &&
+					_context.TryResolve (target) is TypeDefinition typeDefinition &&
 					typeDefinition.IsEnum) {
 					var enumField = typeDefinition.Fields.Where (f => f.IsStatic && f.Name == value).FirstOrDefault ();
 					if (enumField != null) {

@@ -475,7 +475,7 @@ namespace Mono.Linker
 							return -1;
 						}
 
-						context.WarningSuppressionWriter = new WarningSuppressionWriter (fileOutputKind);
+						context.WarningSuppressionWriter = new WarningSuppressionWriter (context, fileOutputKind);
 						continue;
 
 					case "--nowarn":

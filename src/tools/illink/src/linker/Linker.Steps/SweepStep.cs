@@ -256,7 +256,7 @@ namespace Mono.Linker.Steps
 				SweepAssemblyReferences (assembly);
 		}
 
-		static bool SweepAssemblyReferences (AssemblyDefinition assembly)
+		bool SweepAssemblyReferences (AssemblyDefinition assembly)
 		{
 			//
 			// We used to run over list returned by GetTypeReferences but
@@ -266,7 +266,7 @@ namespace Mono.Linker.Steps
 			//
 			assembly.MainModule.AssemblyReferences.Clear ();
 
-			var ars = new AssemblyReferencesCorrector (assembly);
+			var ars = new AssemblyReferencesCorrector (assembly, Context);
 			return ars.Process ();
 		}
 
@@ -568,14 +568,16 @@ namespace Mono.Linker.Steps
 		{
 			readonly AssemblyDefinition assembly;
 			readonly DefaultMetadataImporter importer;
+			readonly ITryResolveMetadata resolver;
 
 			HashSet<TypeReference> updated;
 			bool changedAnyScopes;
 
-			public AssemblyReferencesCorrector (AssemblyDefinition assembly)
+			public AssemblyReferencesCorrector (AssemblyDefinition assembly, ITryResolveMetadata resolver)
 			{
 				this.assembly = assembly;
 				this.importer = new DefaultMetadataImporter (assembly.MainModule);
+				this.resolver = resolver;
 
 				updated = null;
 				changedAnyScopes = false;
@@ -923,7 +925,7 @@ namespace Mono.Linker.Steps
 				//
 				// Resolve to type definition to remove any type forwarding imports
 				//
-				TypeDefinition td = type.Resolve ();
+				TypeDefinition td = resolver.TryResolve (type);
 				if (td == null) {
 					//
 					// This can happen when not all assembly refences were provided and we

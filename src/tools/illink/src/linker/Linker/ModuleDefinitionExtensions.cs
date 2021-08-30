@@ -26,7 +26,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		public static TypeDefinition ResolveType (this ModuleDefinition module, string typeFullName)
+		public static TypeDefinition ResolveType (this ModuleDefinition module, string typeFullName, ITryResolveMetadata resolver)
 		{
 			if (typeFullName == null)
 				return null;
@@ -44,7 +44,7 @@ namespace Mono.Linker
 				(string.Empty, typeFullName);
 
 			TypeReference typeReference = new TypeReference (typeNamespace, typeName, module, module);
-			return typeReference.Resolve ();
+			return resolver.TryResolve (typeReference);
 		}
 	}
 }

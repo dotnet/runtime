@@ -27,9 +27,9 @@ namespace Mono.Linker
 			{
 			}
 
-			public void VisitArrayType (ArrayType arrayType, StringBuilder builder)
+			public void VisitArrayType (ArrayType arrayType, StringBuilder builder, ITryResolveMetadata resolver)
 			{
-				VisitTypeReference (arrayType.ElementType, builder);
+				VisitTypeReference (arrayType.ElementType, builder, resolver);
 
 				// Rank-one arrays are displayed different than rectangular arrays
 				if (arrayType.IsVector) {
@@ -49,13 +49,13 @@ namespace Mono.Linker
 				}
 			}
 
-			public void VisitField (FieldDefinition field, StringBuilder builder)
+			public void VisitField (FieldDefinition field, StringBuilder builder, ITryResolveMetadata resolver)
 			{
-				VisitTypeReference (field.DeclaringType, builder);
+				VisitTypeReference (field.DeclaringType, builder, resolver);
 				builder.Append ('.').Append (field.Name);
 			}
 
-			private void VisitParameters (IEnumerable<ParameterDefinition> parameters, bool isVararg, StringBuilder builder)
+			private void VisitParameters (IEnumerable<ParameterDefinition> parameters, bool isVararg, StringBuilder builder, ITryResolveMetadata resolver)
 			{
 				builder.Append ('(');
 				bool needsComma = false;
@@ -66,7 +66,7 @@ namespace Mono.Linker
 
 					// byrefs are tracked on the parameter type, not the parameter,
 					// so we don't have VisitParameter that Roslyn uses.
-					VisitTypeReference (parameter.ParameterType, builder);
+					VisitTypeReference (parameter.ParameterType, builder, resolver);
 					needsComma = true;
 				}
 
@@ -78,35 +78,35 @@ namespace Mono.Linker
 				builder.Append (')');
 			}
 
-			public void VisitMethodDefinition (MethodDefinition method, StringBuilder builder)
+			public void VisitMethodDefinition (MethodDefinition method, StringBuilder builder, ITryResolveMetadata resolver)
 			{
-				VisitTypeReference (method.DeclaringType, builder);
+				VisitTypeReference (method.DeclaringType, builder, resolver);
 				builder.Append ('.').Append (GetEscapedMetadataName (method));
 
 				if (method.HasGenericParameters)
 					builder.Append ("``").Append (method.GenericParameters.Count);
 
 				if (method.HasParameters || (method.CallingConvention == MethodCallingConvention.VarArg))
-					VisitParameters (method.Parameters, method.CallingConvention == MethodCallingConvention.VarArg, builder);
+					VisitParameters (method.Parameters, method.CallingConvention == MethodCallingConvention.VarArg, builder, resolver);
 
 				if (method.Name == "op_Implicit" || method.Name == "op_Explicit") {
 					builder.Append ('~');
-					VisitTypeReference (method.ReturnType, builder);
+					VisitTypeReference (method.ReturnType, builder, resolver);
 				}
 			}
 
-			public void VisitProperty (PropertyDefinition property, StringBuilder builder)
+			public void VisitProperty (PropertyDefinition property, StringBuilder builder, ITryResolveMetadata resolver)
 			{
-				VisitTypeReference (property.DeclaringType, builder);
+				VisitTypeReference (property.DeclaringType, builder, resolver);
 				builder.Append ('.').Append (GetEscapedMetadataName (property));
 
 				if (property.Parameters.Count > 0)
-					VisitParameters (property.Parameters, false, builder);
+					VisitParameters (property.Parameters, false, builder, resolver);
 			}
 
-			public void VisitEvent (EventDefinition evt, StringBuilder builder)
+			public void VisitEvent (EventDefinition evt, StringBuilder builder, ITryResolveMetadata resolver)
 			{
-				VisitTypeReference (evt.DeclaringType, builder);
+				VisitTypeReference (evt.DeclaringType, builder, resolver);
 				builder.Append ('.').Append (GetEscapedMetadataName (evt));
 			}
 
@@ -129,17 +129,17 @@ namespace Mono.Linker
 				builder.Append (genericParameter.Position);
 			}
 
-			public void VisitTypeReference (TypeReference typeReference, StringBuilder builder)
+			public void VisitTypeReference (TypeReference typeReference, StringBuilder builder, ITryResolveMetadata resolver)
 			{
 				switch (typeReference) {
 				case ByReferenceType byReferenceType:
-					VisitByReferenceType (byReferenceType, builder);
+					VisitByReferenceType (byReferenceType, builder, resolver);
 					return;
 				case PointerType pointerType:
-					VisitPointerType (pointerType, builder);
+					VisitPointerType (pointerType, builder, resolver);
 					return;
 				case ArrayType arrayType:
-					VisitArrayType (arrayType, builder);
+					VisitArrayType (arrayType, builder, resolver);
 					return;
 				case GenericParameter genericParameter:
 					VisitGenericParameter (genericParameter, builder);
@@ -147,7 +147,7 @@ namespace Mono.Linker
 				}
 
 				if (typeReference.IsNested) {
-					VisitTypeReference (typeReference.GetInflatedDeclaringType (), builder);
+					VisitTypeReference (typeReference.GetInflatedDeclaringType (resolver), builder, resolver);
 					builder.Append ('.');
 				}
 
@@ -183,21 +183,21 @@ namespace Mono.Linker
 					if (needsComma)
 						builder.Append (',');
 					var typeArgument = genericInstance.GenericArguments[i];
-					VisitTypeReference (typeArgument, builder);
+					VisitTypeReference (typeArgument, builder, resolver);
 					needsComma = true;
 				}
 				builder.Append ('}');
 			}
 
-			public void VisitPointerType (PointerType pointerType, StringBuilder builder)
+			public void VisitPointerType (PointerType pointerType, StringBuilder builder, ITryResolveMetadata resolver)
 			{
-				VisitTypeReference (pointerType.ElementType, builder);
+				VisitTypeReference (pointerType.ElementType, builder, resolver);
 				builder.Append ('*');
 			}
 
-			public void VisitByReferenceType (ByReferenceType byReferenceType, StringBuilder builder)
+			public void VisitByReferenceType (ByReferenceType byReferenceType, StringBuilder builder, ITryResolveMetadata resolver)
 			{
-				VisitTypeReference (byReferenceType.ElementType, builder);
+				VisitTypeReference (byReferenceType.ElementType, builder, resolver);
 				builder.Append ('@');
 			}
 

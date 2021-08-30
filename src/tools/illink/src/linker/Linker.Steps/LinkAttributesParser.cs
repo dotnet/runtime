@@ -153,7 +153,7 @@ namespace Mono.Linker.Steps
 			return customAttribute;
 		}
 
-		static MethodDefinition FindBestMatchingConstructor (TypeDefinition attributeType, CustomAttributeArgument[] args)
+		MethodDefinition FindBestMatchingConstructor (TypeDefinition attributeType, CustomAttributeArgument[] args)
 		{
 			var methods = attributeType.Methods;
 			for (int i = 0; i < attributeType.Methods.Count; ++i) {
@@ -170,7 +170,8 @@ namespace Mono.Linker.Steps
 					//
 					// No candidates betterness, only exact matches are supported
 					//
-					if (p[ii].ParameterType.Resolve () != args[ii].Type.Resolve ())
+					var parameterType = _context.TryResolve (p[ii].ParameterType);
+					if (parameterType == null || parameterType != _context.TryResolve (args[ii].Type))
 						match = false;
 				}
 
@@ -240,7 +241,7 @@ namespace Mono.Linker.Steps
 					return null;
 				}
 
-				var boxedValue = ReadCustomAttributeArgument (iterator, typeref.Resolve ());
+				var boxedValue = ReadCustomAttributeArgument (iterator, _context.TryResolve (typeref));
 				if (boxedValue is null)
 					return null;
 

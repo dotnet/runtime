@@ -109,7 +109,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static TypeReference GetInflatedDeclaringType (this TypeReference type)
+		public static TypeReference GetInflatedDeclaringType (this TypeReference type, ITryResolveMetadata resolver)
 		{
 			if (type == null)
 				return null;
@@ -118,13 +118,13 @@ namespace Mono.Linker
 				return null;
 
 			if (type is SentinelType sentinelType)
-				return sentinelType.ElementType.GetInflatedDeclaringType ();
+				return sentinelType.ElementType.GetInflatedDeclaringType (resolver);
 
 			if (type is PinnedType pinnedType)
-				return pinnedType.ElementType.GetInflatedDeclaringType ();
+				return pinnedType.ElementType.GetInflatedDeclaringType (resolver);
 
 			if (type is RequiredModifierType requiredModifierType)
-				return requiredModifierType.ElementType.GetInflatedDeclaringType ();
+				return requiredModifierType.ElementType.GetInflatedDeclaringType (resolver);
 
 			if (type is GenericInstanceType genericInstance) {
 				var declaringType = genericInstance.DeclaringType;
@@ -140,31 +140,31 @@ namespace Mono.Linker
 				return declaringType;
 			}
 
-			var resolved = type.Resolve ();
+			var resolved = resolver.TryResolve (type);
 			System.Diagnostics.Debug.Assert (resolved == type);
 			return resolved?.DeclaringType;
 		}
 
-		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef)
+		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)
 		{
-			var typeDef = typeRef.Resolve ();
+			var typeDef = resolver.TryResolve (typeRef);
 
 			if (typeDef?.HasInterfaces != true)
 				yield break;
 
 			if (typeRef is GenericInstanceType genericInstance) {
 				foreach (var interfaceImpl in typeDef.Interfaces)
-					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType), interfaceImpl);
+					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType, resolver), interfaceImpl);
 			} else {
 				foreach (var interfaceImpl in typeDef.Interfaces)
 					yield return (interfaceImpl.InterfaceType, interfaceImpl);
 			}
 		}
 
-		public static TypeReference InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate)
+		public static TypeReference InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate, ITryResolveMetadata resolver)
 		{
 			if (typeToInflate is ArrayType arrayType) {
-				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType);
+				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType, resolver);
 
 				if (inflatedElementType != arrayType.ElementType)
 					return new ArrayType (inflatedElementType, arrayType.Rank);
@@ -173,24 +173,24 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is GenericInstanceType genericInst)
-				return MakeGenericType (genericInstanceProvider, genericInst);
+				return MakeGenericType (genericInstanceProvider, genericInst, resolver);
 
 			if (typeToInflate is GenericParameter genericParameter) {
 				if (genericParameter.Owner is MethodReference)
 					return genericParameter;
 
-				var elementType = genericInstanceProvider.ElementType.Resolve ();
+				var elementType = resolver.TryResolve (genericInstanceProvider.ElementType);
 				var parameter = elementType.GenericParameters.Single (p => p == genericParameter);
 				return genericInstanceProvider.GenericArguments[parameter.Position];
 			}
 
 			if (typeToInflate is FunctionPointerType functionPointerType) {
 				var result = new FunctionPointerType {
-					ReturnType = InflateGenericType (genericInstanceProvider, functionPointerType.ReturnType)
+					ReturnType = InflateGenericType (genericInstanceProvider, functionPointerType.ReturnType, resolver)
 				};
 
 				for (int i = 0; i < functionPointerType.Parameters.Count; i++) {
-					var inflatedParameterType = InflateGenericType (genericInstanceProvider, functionPointerType.Parameters[i].ParameterType);
+					var inflatedParameterType = InflateGenericType (genericInstanceProvider, functionPointerType.Parameters[i].ParameterType, resolver);
 					result.Parameters.Add (new ParameterDefinition (inflatedParameterType));
 				}
 
@@ -198,8 +198,8 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is IModifierType modifierType) {
-				var modifier = InflateGenericType (genericInstanceProvider, modifierType.ModifierType);
-				var elementType = InflateGenericType (genericInstanceProvider, modifierType.ElementType);
+				var modifier = InflateGenericType (genericInstanceProvider, modifierType.ModifierType, resolver);
+				var elementType = InflateGenericType (genericInstanceProvider, modifierType.ElementType, resolver);
 
 				if (modifierType is OptionalModifierType) {
 					return new OptionalModifierType (modifier, elementType);
@@ -209,7 +209,7 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is PinnedType pinnedType) {
-				var elementType = InflateGenericType (genericInstanceProvider, pinnedType.ElementType);
+				var elementType = InflateGenericType (genericInstanceProvider, pinnedType.ElementType, resolver);
 
 				if (elementType != pinnedType.ElementType)
 					return new PinnedType (elementType);
@@ -218,7 +218,7 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is PointerType pointerType) {
-				var elementType = InflateGenericType (genericInstanceProvider, pointerType.ElementType);
+				var elementType = InflateGenericType (genericInstanceProvider, pointerType.ElementType, resolver);
 
 				if (elementType != pointerType.ElementType)
 					return new PointerType (elementType);
@@ -227,7 +227,7 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is ByReferenceType byReferenceType) {
-				var elementType = InflateGenericType (genericInstanceProvider, byReferenceType.ElementType);
+				var elementType = InflateGenericType (genericInstanceProvider, byReferenceType.ElementType, resolver);
 
 				if (elementType != byReferenceType.ElementType)
 					return new ByReferenceType (elementType);
@@ -236,7 +236,7 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is SentinelType sentinelType) {
-				var elementType = InflateGenericType (genericInstanceProvider, sentinelType.ElementType);
+				var elementType = InflateGenericType (genericInstanceProvider, sentinelType.ElementType, resolver);
 
 				if (elementType != sentinelType.ElementType)
 					return new SentinelType (elementType);
@@ -247,20 +247,20 @@ namespace Mono.Linker
 			return typeToInflate;
 		}
 
-		private static GenericInstanceType MakeGenericType (GenericInstanceType genericInstanceProvider, GenericInstanceType type)
+		private static GenericInstanceType MakeGenericType (GenericInstanceType genericInstanceProvider, GenericInstanceType type, ITryResolveMetadata resolver)
 		{
 			var result = new GenericInstanceType (type.ElementType);
 
 			for (var i = 0; i < type.GenericArguments.Count; ++i) {
-				result.GenericArguments.Add (InflateGenericType (genericInstanceProvider, type.GenericArguments[i]));
+				result.GenericArguments.Add (InflateGenericType (genericInstanceProvider, type.GenericArguments[i], resolver));
 			}
 
 			return result;
 		}
 
-		public static IEnumerable<MethodReference> GetMethods (this TypeReference type, LinkContext context)
+		public static IEnumerable<MethodReference> GetMethods (this TypeReference type, ITryResolveMetadata resolver)
 		{
-			TypeDefinition typeDef = context.Resolve (type);
+			TypeDefinition typeDef = resolver.TryResolve (type);
 			if (typeDef?.HasMethods != true)
 				yield break;
 
@@ -337,13 +337,13 @@ namespace Mono.Linker
 			return tr.Name == type.Name && tr.Namespace == tr.Namespace;
 		}
 
-		public static bool IsSubclassOf (this TypeReference type, string ns, string name)
+		public static bool IsSubclassOf (this TypeReference type, string ns, string name, ITryResolveMetadata resolver)
 		{
-			TypeDefinition baseType = type.Resolve ();
+			TypeDefinition baseType = resolver.TryResolve (type);
 			while (baseType != null) {
 				if (baseType.IsTypeOf (ns, name))
 					return true;
-				baseType = baseType.BaseType?.Resolve ();
+				baseType = resolver.TryResolve (baseType.BaseType);
 			}
 
 			return false;

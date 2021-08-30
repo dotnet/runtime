@@ -877,7 +877,7 @@ namespace Mono.Linker.Steps
 
 			TypeDefinition type;
 			if (dynamicDependency.TypeName is string typeName) {
-				type = DocumentationSignatureParser.GetTypeByDocumentationSignature (assembly, typeName);
+				type = DocumentationSignatureParser.GetTypeByDocumentationSignature (assembly, typeName, _context);
 				if (type == null) {
 					_context.LogWarning ($"Unresolved type '{typeName}' in DynamicDependencyAttribute", 2036, _scopeStack.CurrentScope.Origin);
 					return;
@@ -900,7 +900,7 @@ namespace Mono.Linker.Steps
 
 			IEnumerable<IMetadataTokenProvider> members;
 			if (dynamicDependency.MemberSignature is string memberSignature) {
-				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature, acceptName: true);
+				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature, _context, acceptName: true);
 				if (!members.Any ()) {
 					_context.LogWarning ($"No members were resolved for '{memberSignature}'.", 2037, _scopeStack.CurrentScope.Origin);
 					return;
@@ -2037,7 +2037,7 @@ namespace Mono.Linker.Steps
 			TypeDefinition typeDefinition = null;
 			switch (attribute.ConstructorArguments[0].Value) {
 			case string s:
-				typeDefinition = _context.TypeNameResolver.ResolveTypeName (s, _scopeStack.CurrentScope.Origin.Provider, out AssemblyDefinition assemblyDefinition)?.Resolve ();
+				typeDefinition = _context.TryResolve (_context.TypeNameResolver.ResolveTypeName (s, _scopeStack.CurrentScope.Origin.Provider, out AssemblyDefinition assemblyDefinition));
 				if (typeDefinition != null)
 					MarkingHelpers.MarkMatchingExportedType (typeDefinition, assemblyDefinition, new DependencyInfo (DependencyKind.CustomAttribute, provider));
 
