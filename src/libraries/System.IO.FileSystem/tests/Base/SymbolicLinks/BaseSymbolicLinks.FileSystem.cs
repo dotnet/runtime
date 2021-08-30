@@ -493,6 +493,12 @@ namespace System.IO.Tests
             }
 
             string windowsAppsDir = Path.Join(localAppDataPath, "Microsoft", "WindowsApps");
+
+            if (!Directory.Exists(windowsAppsDir))
+            {
+                return null;
+            }
+
             var opts = new EnumerationOptions { RecurseSubdirectories = true };
 
             return new FileSystemEnumerable<string?>(
