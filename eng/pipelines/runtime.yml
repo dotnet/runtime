@@ -826,7 +826,7 @@ jobs:
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: net48
-      runTests: true
+      runTests: false
       testScope: innerloop
       condition: >-
         or(
@@ -842,7 +842,7 @@ jobs:
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
-      runTests: true
+      runTests: false
       useHelix: false
       condition: >-
         or(
