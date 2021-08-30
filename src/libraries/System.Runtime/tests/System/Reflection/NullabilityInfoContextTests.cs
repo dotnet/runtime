@@ -818,15 +818,15 @@ namespace System.Reflection.Tests
             // public (int, string) UnknownValueTuple; [0]
             yield return new object[] { "UnknownValueTuple", NullabilityState.NotNull, NullabilityState.Unknown, NullabilityState.NotNull };
             // public (string?, object) NullNonNonValueTuple; [0, 2, 1]
-            yield return new object[] { "NullNonNonValueTuple", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.NotNull };
-            // public (string?, object)? NullNonNullValueTuple; [0, 2, 1]
-            yield return new object[] { "NullNonNullValueTuple", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable };
-            // public (int, int?)? NonNullNullValueTuple; [0]
-            yield return new object[] { "NonNullNullValueTuple", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.Nullable };
-            // public (int, string) NonNonNonValueTuple; [0, 1]
-            yield return new object[] { "NonNonNonValueTuple", NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.NotNull };
-            // public (int, string?) NonNullNonValueTuple; [0, 2]
-            yield return new object[] { "NonNullNonValueTuple", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull };
+            yield return new object[] { "Null_Non_Non_ValueTuple", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.NotNull };
+            // public (string?, object)? Null_Non_Null_ValueTuple; [0, 2, 1]
+            yield return new object[] { "Null_Non_Null_ValueTuple", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable };
+            // public (int, int?)? Non_Null_Null_ValueTuple; [0]
+            yield return new object[] { "Non_Null_Null_ValueTuple", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.Nullable };
+            // public (int, string) Non_Non_Non_ValueTuple; [0, 1]
+            yield return new object[] { "Non_Non_Non_ValueTuple", NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.NotNull };
+            // public (int, string?) Non_Null_Non_ValueTuple; [0, 2]
+            yield return new object[] { "Non_Null_Non_ValueTuple", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull };
         }
 
         [Theory]
@@ -944,11 +944,11 @@ namespace System.Reflection.Tests
         private IDictionary<Type, string[]>? PropertyDictionaryNonNonNonNull { get; set; }
         public IDictionary<Type, string[]> PropertyDictionaryNonNonNonNon { get; set; } = null!;
 
-        public (string?, object) NullNonNonValueTuple;
-        public (string?, object)? NullNonNullValueTuple;
-        public (int, int?)? NonNullNullValueTuple;
-        public (int, string) NonNonNonValueTuple;
-        public (int, string?) NonNullNonValueTuple;
+        public (string?, object) Null_Non_Non_ValueTuple;
+        public (string?, object)? Null_Non_Null_ValueTuple;
+        public (int, int?)? Non_Null_Null_ValueTuple;
+        public (int, string) Non_Non_Non_ValueTuple;
+        public (int, string?) Non_Null_Non_ValueTuple;
         private const string? FieldNullable = null;
         protected static NullabilityInfoContextTests FieldNonNullable = null!;
         public static double FieldValueTypeNotNull;
