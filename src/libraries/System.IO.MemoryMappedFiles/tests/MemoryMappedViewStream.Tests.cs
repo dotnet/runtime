@@ -97,6 +97,11 @@ namespace System.IO.MemoryMappedFiles.Tests
                         // Containers and OSX with SIP enabled do not have execute permissions by default.
                         throw new SkipTestException("Insufficient execute permission.");
                     }
+                    else if ((OperatingSystem.IsiOS() && PlatformDetection.IsArm64Process) &&
+                       (mapAccess == MemoryMappedFileAccess.ReadWriteExecute && viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
+                    {
+                        throw new SkipTestException("Insufficient execute permission.");
+                    }
 
                     throw;
                 }
