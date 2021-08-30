@@ -17161,8 +17161,13 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         }
         else
         {
-            // inlinee's stack should be empty now.
-            assert(verCurrentState.esStackDepth == 0);
+            if (verCurrentState.esStackDepth != 0)
+            {
+                assert(compIsForInlining());
+                JITDUMP("CALLSITE_COMPILATION_ERROR: inlinee's stack is not empty.");
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
+                return false;
+            }
 
 #ifdef DEBUG
             if (verbose)
