@@ -576,18 +576,26 @@ namespace System.IO
                         count++;
                         if (count == 2)
                         {
-                            start = i + 1; // exclude null char
+                            if (i + 1 >= stringList.Length)
+                            {
+                                // Unexpectedly reached the end of the stringList
+                                // There won't be a third null char
+                                break;
+                            }
+
+                            start = i + 1; // +1 to exclude null char
                         }
                         else if (count == 3)
                         {
                             end = i;
-                            break;
+                            if (start > 0 && end > start)
+                            {
+                                return stringList
+                                    .Slice(start + 1, end - start - 1)
+                                    .ToString();
+                            }
                         }
                     }
-                }
-                if (start != -1 && end != -1)
-                {
-                    return stringList.Slice(start, end - start).ToString();
                 }
 
                 return null;
@@ -619,7 +627,7 @@ namespace System.IO
                 // If the handle fails because it is unreachable, is because the link was broken.
                 // We need to fallback to manually traverse the links and return the target of the last resolved link.
                 int error = Marshal.GetLastWin32Error();
-                if (IsPathUnreachableError(error) || error == Interop.Errors.ERROR_CANT_ACCESS_FILE /* Possibly broken AppExecLink */)
+                if (IsPathUnreachableError(error))
                 {
                     return GetFinalLinkTargetSlow(linkPath);
                 }

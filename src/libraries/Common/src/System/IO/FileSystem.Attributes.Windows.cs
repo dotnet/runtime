@@ -118,6 +118,8 @@ namespace System.IO
 
         internal static bool IsPathUnreachableError(int errorCode)
         {
+            // This switch should *not* catch:
+            // ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION, ERROR_SEM_TIMEOUT
             switch (errorCode)
             {
                 case Interop.Errors.ERROR_FILE_NOT_FOUND:
@@ -132,6 +134,7 @@ namespace System.IO
                 case Interop.Errors.ERROR_NETWORK_ACCESS_DENIED:
                 case Interop.Errors.ERROR_INVALID_HANDLE:           // eg from \\.\CON
                 case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:     // Path is too long
+                case Interop.Errors.ERROR_CANT_ACCESS_FILE:         // Broken AppExecLink files may cause this
                     return true;
                 default:
                     return false;
