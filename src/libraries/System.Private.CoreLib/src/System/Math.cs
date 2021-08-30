@@ -794,7 +794,7 @@ namespace System
 
         public static int ILogB(double x)
         {
-            // Implementation based on https://github.com/ifduyue/musl/blob/cfdfd5ea3ce14c6abf7fb22a531f3d99518b5a1b/src/math/ilogb.c
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogb.c
 
             if (double.IsNaN(x))
             {

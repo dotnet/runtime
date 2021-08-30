@@ -186,7 +186,7 @@ namespace System
 
         public static int ILogB(float x)
         {
-            // Implementation based on https://github.com/ifduyue/musl/blob/cfdfd5ea3ce14c6abf7fb22a531f3d99518b5a1b/src/math/ilogbf.c
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogbf.c
 
             if (float.IsNaN(x))
             {
