@@ -4,7 +4,7 @@
 #include <xplatform.h>
 #include <cassert>
 #include <Server.Contracts.h>
-#include "windows_version_helpers.h"
+#include <windows_version_helpers.h>
 
 // COM headers
 #include <objbase.h>

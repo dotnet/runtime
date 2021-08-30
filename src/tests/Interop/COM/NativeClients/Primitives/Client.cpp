@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "ClientTests.h"
-#include "windows_version_helpers.h"
+#include <windows_version_helpers.h>
 
 template<COINIT TM>
 struct ComInit

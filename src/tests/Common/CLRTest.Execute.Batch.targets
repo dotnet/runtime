@@ -290,7 +290,7 @@ if defined DoLink (
           </BatchLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>
-      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs)</_CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs)</CLRTestRunFile>
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
@@ -304,7 +304,7 @@ $(BatchCopyCoreShimLocalCmds)
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
 ) ELSE (
-  set LAUNCHER=%_DebuggerFullPath% $(_CLRTestRunFile)
+  set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
 
 $(BatchIlrtTestLaunchCmds)
@@ -358,10 +358,10 @@ set CLRTestExpectedExitCode=0
 
     <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
     <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
-    <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
+    <Message Text="CLRTestRunFile:$(CLRTestRunFile)" />
 
     <ItemGroup>
-      <_RequiredProperties Include="_CLRTestRunFile">
+      <_RequiredProperties Include="CLRTestRunFile">
         <Value>$(_CLRTestRunFile)</Value>
       </_RequiredProperties>
     </ItemGroup>

@@ -3,7 +3,7 @@
 
 #include "ClientTests.h"
 #include <memory>
-#include "windows_version_helpers.h"
+#include <windows_version_helpers.h>
 
 
 void Validate_Numeric_In_ReturnByRef();
