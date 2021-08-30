@@ -24,8 +24,7 @@
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
 
-    * To enable a package build for the current patch release, set PatchVem
-ersion to match the current
+    * To enable a package build for the current patch release, set PatchVersion to match the current
       patch version of that package. ("major.minor.patch".) This is normally the same as
       PatchVersion above, but not always. Notably, NETStandard has its own patch version.
     * When the PatchVersion property above is incremented at the beginning of the next servicing
