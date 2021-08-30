@@ -254,7 +254,7 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			return AllCases ()
 				.Where (c => c.TestSuiteDirectory.FileName == suiteName)
-				.Select (c => CreateNUnitTestCase (c, c.DisplayName.Substring (suiteName.Length + 1)))
+				.Select (c => CreateNUnitTestCase (c, c.DisplayName))
 				.OrderBy (c => c.TestName);
 		}
 
