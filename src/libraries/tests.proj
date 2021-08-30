@@ -143,12 +143,10 @@
     <!-- PNSE -->
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" /> -->
     <!-- https://github.com/dotnet/runtime/issues/51414 -->
-    <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" /> -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
 
     <!-- Failures -->
-    <!-- https://github.com/dotnet/runtime/issues/51335 -->
-    <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates/tests/System.Security.Cryptography.X509Certificates.Tests.csproj" /> -->
+    <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates/tests/System.Security.Cryptography.X509Certificates.Tests.csproj" /> -->
 
     <!-- Crashes or hangs, did not produce testResults.xml -->
     <!-- https://github.com/dotnet/runtime/issues/52120 -->
@@ -179,6 +177,11 @@
 
     <!-- Crash https://github.com/dotnet/runtime/issues/56085 -->
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.SourceGeneration.Tests/System.Text.Json.SourceGeneration.Tests.csproj" /> -->
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/51335 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
