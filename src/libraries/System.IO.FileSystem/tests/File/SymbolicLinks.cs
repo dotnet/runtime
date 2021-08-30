@@ -52,7 +52,7 @@ namespace System.IO.Tests
             string unsupportedLinkPath = GetAppExecLinkPath();
             if (unsupportedLinkPath is null)
             {
-                throw new Exception(); // replace with return.
+                return;
             }
 
             Assert.Null(File.ResolveLinkTarget(unsupportedLinkPath, false));
