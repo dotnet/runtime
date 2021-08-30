@@ -2,7 +2,7 @@ trigger: none
 
 schedules:
 - cron: "0 5 * * *"
-  displayName: Sun, Tue, Thu at 11:00 PM (UTC-8:00)
+  displayName: Mon through Sun at 9:00 PM (UTC-8:00)
   branches:
     include:
     - main
