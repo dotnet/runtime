@@ -2640,11 +2640,31 @@ namespace System.Tests
         }
 
         public static bool SupportIanaNamesConversion => PlatformDetection.IsNotBrowser && PlatformDetection.ICUVersion.Major >= 52;
+        public static bool SupportIanaNamesConversionAndRemoteExecution => SupportIanaNamesConversion && RemoteExecutor.IsSupported;
+
+        // This test is executed using the remote execution because it needs to run before creating the time zone cache to ensure testing with that state.
+        // There are already other tests that test after creating the cache.
+        [ConditionalFact(nameof(SupportIanaNamesConversionAndRemoteExecution))]
+        public static void IsIanaIdWithNotCacheTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Equal(!s_isWindows || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase), TimeZoneInfo.Local.HasIanaId);
+
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+                Assert.False(tzi.HasIanaId);
+
+                tzi = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+                Assert.True(tzi.HasIanaId);
+            }).Dispose();
+        }
 
         [ConditionalFact(nameof(SupportIanaNamesConversion))]
         public static void IsIanaIdTest()
         {
             bool expected = !s_isWindows;
+
+            Assert.Equal((expected || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)), TimeZoneInfo.Local.HasIanaId);
 
             foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
             {

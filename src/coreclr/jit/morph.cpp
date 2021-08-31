@@ -851,6 +851,35 @@ REMOVE_CAST:
 #endif
 
 #ifdef DEBUG
+const char* getNonStandardArgKindName(NonStandardArgKind kind)
+{
+    switch (kind)
+    {
+        case NonStandardArgKind::None:
+            return "None";
+        case NonStandardArgKind::PInvokeFrame:
+            return "PInvokeFrame";
+        case NonStandardArgKind::PInvokeTarget:
+            return "PInvokeTarget";
+        case NonStandardArgKind::PInvokeCookie:
+            return "PInvokeCookie";
+        case NonStandardArgKind::WrapperDelegateCell:
+            return "WrapperDelegateCell";
+        case NonStandardArgKind::ShiftLow:
+            return "ShiftLow";
+        case NonStandardArgKind::ShiftHigh:
+            return "ShiftHigh";
+        case NonStandardArgKind::FixedRetBuffer:
+            return "FixedRetBuffer";
+        case NonStandardArgKind::VirtualStubCell:
+            return "VirtualStubCell";
+        case NonStandardArgKind::R2RIndirectionCell:
+            return "R2RIndirectionCell";
+        default:
+            unreached();
+    }
+}
+
 void fgArgTabEntry::Dump() const
 {
     printf("fgArgTabEntry[arg %u", argNum);
@@ -907,9 +936,9 @@ void fgArgTabEntry::Dump() const
     {
         printf(", isBackFilled");
     }
-    if (isNonStandard)
+    if (nonStandardArgKind != NonStandardArgKind::None)
     {
-        printf(", isNonStandard");
+        printf(", nonStandard[%s]", getNonStandardArgKindName(nonStandardArgKind));
     }
     if (isStruct)
     {
@@ -1106,9 +1135,9 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     {
         curArgTabEntry->SetHfaElemKind(CORINFO_HFA_ELEM_NONE);
     }
-    curArgTabEntry->isBackFilled  = false;
-    curArgTabEntry->isNonStandard = false;
-    curArgTabEntry->isStruct      = isStruct;
+    curArgTabEntry->isBackFilled       = false;
+    curArgTabEntry->nonStandardArgKind = NonStandardArgKind::None;
+    curArgTabEntry->isStruct           = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
     curArgTabEntry->SetByteAlignment(byteAlignment);
     curArgTabEntry->SetByteSize(byteSize, isStruct, isFloatHfa);
@@ -1204,9 +1233,9 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     {
         curArgTabEntry->SetHfaElemKind(CORINFO_HFA_ELEM_NONE);
     }
-    curArgTabEntry->isBackFilled  = false;
-    curArgTabEntry->isNonStandard = false;
-    curArgTabEntry->isStruct      = isStruct;
+    curArgTabEntry->isBackFilled       = false;
+    curArgTabEntry->nonStandardArgKind = NonStandardArgKind::None;
+    curArgTabEntry->isStruct           = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
 
     curArgTabEntry->SetByteAlignment(byteAlignment);
@@ -2562,9 +2591,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     {
         struct NonStandardArg
         {
-            regNumber reg;  // The register to be assigned to this non-standard argument.
-            GenTree*  node; // The tree node representing this non-standard argument.
-                            //   Note that this must be updated if the tree node changes due to morphing!
+            GenTree* node;           // The tree node representing this non-standard argument.
+                                     //   Note that this must be updated if the tree node changes due to morphing!
+            regNumber          reg;  // The register to be assigned to this non-standard argument.
+            NonStandardArgKind kind; // The kind of the non-standard arg
         };
 
         ArrayStack<NonStandardArg> args;
@@ -2584,9 +2614,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // Return Value:
         //    None.
         //
-        void Add(GenTree* node, regNumber reg)
+        void Add(GenTree* node, regNumber reg, NonStandardArgKind kind)
         {
-            NonStandardArg nsa = {reg, node};
+            NonStandardArg nsa = {node, reg, kind};
             args.Push(nsa);
         }
 
@@ -2613,27 +2643,28 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
 
         //-----------------------------------------------------------------------------
-        // FindReg: Look for a GenTree node in the non-standard arguments set. If found,
+        // Find: Look for a GenTree node in the non-standard arguments set. If found,
         // set the register to use for the node.
         //
         // Arguments:
         //    node - a GenTree node to look for
         //    pReg - an OUT argument. *pReg is set to the non-standard register to use if
         //           'node' is found in the non-standard argument set.
+        //    pKind - an OUT argument. *pKind is set to the kind of the non-standard arg.
         //
         // Return Value:
-        //    'true' if 'node' is a non-standard argument. In this case, *pReg is set to the
-        //          register to use.
-        //    'false' otherwise (in this case, *pReg is unmodified).
+        //    'true' if 'node' is a non-standard argument. In this case, *pReg and *pKing are set.
+        //    'false' otherwise (in this case, *pReg and *pKind are unmodified).
         //
-        bool FindReg(GenTree* node, regNumber* pReg)
+        bool Find(GenTree* node, regNumber* pReg, NonStandardArgKind* pKind)
         {
             for (int i = 0; i < args.Height(); i++)
             {
                 NonStandardArg& nsa = args.TopRef(i);
                 if (node == nsa.node)
                 {
-                    *pReg = nsa.reg;
+                    *pReg  = nsa.reg;
+                    *pKind = nsa.kind;
                     return true;
                 }
             }
@@ -2691,7 +2722,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         GenTreeCall::Use* args = call->gtCallArgs;
         GenTree*          arg1 = args->GetNode();
         assert(arg1 != nullptr);
-        nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME);
+        nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME, NonStandardArgKind::PInvokeFrame);
     }
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
 #if defined(TARGET_ARM)
@@ -2728,7 +2759,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         *insertionPoint = gtNewCallArgs(newArg);
 
         numArgs++;
-        nonStandardArgs.Add(newArg, virtualStubParamInfo->GetReg());
+        nonStandardArgs.Add(newArg, virtualStubParamInfo->GetReg(), NonStandardArgKind::WrapperDelegateCell);
     }
 #endif // defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -2740,12 +2771,12 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         GenTreeCall::Use* args = call->gtCallArgs;
         GenTree*          arg1 = args->GetNode();
         assert(arg1 != nullptr);
-        nonStandardArgs.Add(arg1, REG_LNGARG_LO);
+        nonStandardArgs.Add(arg1, REG_LNGARG_LO, NonStandardArgKind::ShiftLow);
 
         args          = args->GetNext();
         GenTree* arg2 = args->GetNode();
         assert(arg2 != nullptr);
-        nonStandardArgs.Add(arg2, REG_LNGARG_HI);
+        nonStandardArgs.Add(arg2, REG_LNGARG_HI, NonStandardArgKind::ShiftHigh);
     }
 #else  // !TARGET_X86
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
@@ -2768,7 +2799,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         // We don't increment numArgs here, since we already counted this argument above.
 
-        nonStandardArgs.Add(argx, theFixedRetBuffReg());
+        nonStandardArgs.Add(argx, theFixedRetBuffReg(), NonStandardArgKind::FixedRetBuffer);
     }
 
     // We are allowed to have a Fixed Return Buffer argument combined
@@ -2785,7 +2816,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
 
             numArgs++;
-            nonStandardArgs.Add(stubAddrArg, stubAddrArg->GetRegNum());
+            nonStandardArgs.Add(stubAddrArg, stubAddrArg->GetRegNum(), NonStandardArgKind::VirtualStubCell);
         }
         else
         {
@@ -2817,7 +2848,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
 #endif // defined(TARGET_X86)
 
-        nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
+        nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM, NonStandardArgKind::PInvokeCookie);
         numArgs++;
 
         // put destination into R10/EAX
@@ -2825,7 +2856,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
         numArgs++;
 
-        nonStandardArgs.Add(arg, REG_PINVOKE_TARGET_PARAM);
+        nonStandardArgs.Add(arg, REG_PINVOKE_TARGET_PARAM, NonStandardArgKind::PInvokeTarget);
 
         // finally change this call to a helper call
         call->gtCallType    = CT_HELPER;
@@ -2856,7 +2887,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
 
         numArgs++;
-        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum());
+        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum(),
+                            NonStandardArgKind::R2RIndirectionCell);
     }
 
 #endif // FEATURE_READYTORUN && TARGET_ARMARCH
@@ -3057,11 +3089,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
 #endif
-        unsigned  size          = 0;
-        unsigned  byteSize      = 0;
-        bool      isRegArg      = false;
-        bool      isNonStandard = false;
-        regNumber nonStdRegNum  = REG_NA;
+        unsigned size     = 0;
+        unsigned byteSize = 0;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
@@ -3316,6 +3345,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         //
         // Figure out if the argument will be passed in a register.
         //
+        bool               isRegArg           = false;
+        NonStandardArgKind nonStandardArgKind = NonStandardArgKind::None;
+        regNumber          nonStdRegNum       = REG_NA;
 
         if (isRegParamType(genActualType(argx->TypeGet()))
 #ifdef UNIX_AMD64_ABI
@@ -3457,7 +3489,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         //
         // They should not affect the placement of any other args or stack space required.
         // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
-        isNonStandard = nonStandardArgs.FindReg(argx, &nonStdRegNum);
+        bool isNonStandard = nonStandardArgs.Find(argx, &nonStdRegNum, &nonStandardArgKind);
         if (isNonStandard)
         {
             isRegArg = (nonStdRegNum != REG_STK);
@@ -3563,7 +3595,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                                                                UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
                                                                    UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
             newArgEntry->SetIsBackFilled(isBackFilled);
-            newArgEntry->isNonStandard = isNonStandard;
 
             // Set up the next intArgRegNum and fltArgRegNum values.
             if (!isBackFilled)
@@ -3631,6 +3662,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             }
 #endif
         }
+
+        newArgEntry->nonStandardArgKind = nonStandardArgKind;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
@@ -3792,7 +3825,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 #endif // DEBUG
-        if (argEntry->isNonStandard)
+        if (argEntry->isNonStandard() && argEntry->isPassedInRegisters())
         {
             // We need to update the node field for this nonStandard arg here
             // as it may have been changed by the call to fgMorphTree.
@@ -8048,20 +8081,13 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // can't do that in an assert.
     // assert(!fgCanFastTailCall(call, nullptr));
 
-    bool virtualCall = call->IsVirtual();
-
-    // If VSD then get rid of arg to VSD since we turn this into a direct call.
-    // The extra arg will be the first arg so this needs to be done before we
-    // handle the retbuf below.
-    if (call->IsVirtualStub())
-    {
-        JITDUMP("This is a VSD\n");
-#if FEATURE_FASTTAILCALL
-        call->ResetArgInfo();
-#endif
-
-        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-    }
+    // We might or might not have called fgInitArgInfo before this point: in
+    // builds with FEATURE_FASTTAILCALL we will have called it when checking if
+    // we could do a fast tailcall, so it is possible we have added extra IR
+    // for non-standard args that we must get rid of. Get rid of that IR here
+    // and do this first as it will 'expose' the retbuf as the first arg, which
+    // we rely upon in fgCreateCallDispatcherAndGetResult.
+    call->ResetArgInfo();
 
     GenTree* callDispatcherAndGetResult = fgCreateCallDispatcherAndGetResult(call, help.hCallTarget, help.hDispatcher);
 
@@ -8069,11 +8095,9 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     if (call->HasRetBufArg())
     {
         JITDUMP("Removing retbuf");
+
         call->gtCallArgs = call->gtCallArgs->GetNext();
         call->gtCallMoreFlags &= ~GTF_CALL_M_RETBUFFARG;
-
-        // We changed args so recompute info.
-        call->fgArgInfo = nullptr;
     }
 
     const bool stubNeedsTargetFnPtr = (help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0;
@@ -8095,7 +8119,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         //      the stub also needs "this" in order to evalute the target.
 
         const bool callNeedsNullCheck = call->NeedsNullCheck();
-        const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && virtualCall;
+        const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && call->IsVirtual();
 
         // TODO-Review: The following transformation is implemented under assumption that
         // both conditions can be true. However, I could not construct such example
@@ -8166,7 +8190,6 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         // in the right execution order.
         assert(thisPtr != nullptr);
         call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
-        call->fgArgInfo  = nullptr;
     }
 
     // We may need to pass the target, for instance for calli or generic methods
@@ -8175,7 +8198,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     {
         JITDUMP("Adding target since VM requested it\n");
         GenTree* target;
-        if (!virtualCall)
+        if (!call->IsVirtual())
         {
             if (call->gtCallType == CT_INDIRECT)
             {
@@ -8225,8 +8248,6 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         }
 
         *newArgSlot = gtNewCallArgs(target);
-
-        call->fgArgInfo = nullptr;
     }
 
     // This is now a direct call to the store args stub and not a tailcall.

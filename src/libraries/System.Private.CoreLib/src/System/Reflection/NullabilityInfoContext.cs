@@ -347,19 +347,23 @@ namespace System.Reflection
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes, int index)
         {
             NullabilityState state = NullabilityState.Unknown;
+            NullabilityInfo? elementState = null;
+            NullabilityInfo[] genericArgumentsState = Array.Empty<NullabilityInfo>();
+            Type? underlyingType = type;
 
             if (type.IsValueType)
             {
-                if (Nullable.GetUnderlyingType(type) != null)
+                underlyingType = Nullable.GetUnderlyingType(type);
+
+                if (underlyingType != null)
                 {
                     state = NullabilityState.Nullable;
                 }
                 else
                 {
+                    underlyingType = type;
                     state = NullabilityState.NotNull;
                 }
-
-                return new NullabilityInfo(type, state, state, null, Array.Empty<NullabilityInfo>());
             }
             else
             {
@@ -368,32 +372,36 @@ namespace System.Reflection
                     state = GetNullableContext(memberInfo);
                 }
 
-                NullabilityInfo? elementState = null;
-                NullabilityInfo[]? genericArgumentsState = null;
-
                 if (type.IsArray)
                 {
                     elementState = GetNullabilityInfo(memberInfo, type.GetElementType()!, customAttributes, index + 1);
                 }
-                else if (type.IsGenericType)
-                {
-                    Type[] genericArguments = type.GetGenericArguments();
-                    genericArgumentsState = new NullabilityInfo[genericArguments.Length];
-
-                    for (int i = 0; i < genericArguments.Length; i++)
-                    {
-                        genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, i + 1);
-                    }
-                }
-
-                NullabilityInfo nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState ?? Array.Empty<NullabilityInfo>());
-                if (state != NullabilityState.Unknown)
-                {
-                    TryLoadGenericMetaTypeNullability(memberInfo, nullability);
-                }
-
-                return nullability;
             }
+
+            if (underlyingType.IsGenericType)
+            {
+                Type[] genericArguments = underlyingType.GetGenericArguments();
+                genericArgumentsState = new NullabilityInfo[genericArguments.Length];
+
+                for (int i = 0, offset = 0; i < genericArguments.Length; i++)
+                {
+                    if (!genericArguments[i].IsValueType)
+                    {
+                        offset++;
+                    }
+
+                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, offset);
+                }
+            }
+
+            NullabilityInfo nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState);
+
+            if (!type.IsValueType && state != NullabilityState.Unknown)
+            {
+                TryLoadGenericMetaTypeNullability(memberInfo, nullability);
+            }
+
+            return nullability;
         }
 
         private static bool ParseNullableState(IList<CustomAttributeData> customAttributes, int index, ref NullabilityState state)

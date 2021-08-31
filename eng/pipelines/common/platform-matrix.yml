@@ -262,7 +262,7 @@ jobs:
       targetRid: freebsd-x64
       platform: FreeBSD_x64
       container:
-        image: ubuntu-18.04-cross-freebsd-11-20200407092345-a84b0d2
+        image: ubuntu-18.04-cross-freebsd-12-20210813173449-f13d79e
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

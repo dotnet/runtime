@@ -243,6 +243,12 @@
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/s390x-linux-gnu/pkgconfig" />
     </ItemGroup>
 
+    <!-- x64 FreeBSD cross build options -->
+    <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' and '$(MonoCrossDir)' != ''">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+    </ItemGroup>
+
     <!-- Windows specific options -->
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <_MonoCPPFLAGS Include="-DWIN32" />
@@ -522,7 +528,7 @@
     </ItemGroup>
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from %(FilesToStrip.Identity)" Importance="High"/>
     <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="dsymutil --flat --minimize %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="strip -no_code_signature_warning -S %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and '$(Configuration)' == 'Release'" Command="strip -no_code_signature_warning -S %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --only-keep-debug %(FilesToStrip.Identity) %(FilesToStrip.Identity).dbg" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --strip-unneeded %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true')" Command="$(_Objcopy) --add-gnu-debuglink=%(FilesToStrip.Identity).dbg %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>

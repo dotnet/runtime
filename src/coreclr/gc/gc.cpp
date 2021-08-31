@@ -5823,8 +5823,6 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
                 gc_etw_segment_pinned_object_heap :
                 gc_etw_segment_large_object_heap);
 
-        GCToEEInterface::DiagUpdateGenerationBounds();
-
 #ifndef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
         hp->thread_uoh_segment (gen_number, res);
@@ -5832,6 +5830,12 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
         thread_uoh_segment (gen_number, res);
 #endif //MULTIPLE_HEAPS
 #endif //!USE_REGIONS
+        GCToEEInterface::DiagAddNewRegion(
+                            gen_number,
+                            heap_segment_mem (res),
+                            heap_segment_allocated (res),
+                            heap_segment_reserved (res)
+                        );
     }
 
     return res;
@@ -16117,11 +16121,13 @@ BOOL gc_heap::soh_try_fit (int gen_number,
                 fix_youngest_allocation_area();
 
                 heap_segment* next_seg = heap_segment_next (ephemeral_heap_segment);
+                bool new_seg = false;
 
                 if (!next_seg)
                 {
                     assert (ephemeral_heap_segment == generation_tail_region (generation_of (gen_number)));
                     next_seg = get_new_region (gen_number);
+                    new_seg = true;
                 }
 
                 if (next_seg)
@@ -16129,6 +16135,15 @@ BOOL gc_heap::soh_try_fit (int gen_number,
                     dprintf (REGIONS_LOG, ("eph seg %Ix -> next %Ix", 
                         heap_segment_mem (ephemeral_heap_segment), heap_segment_mem (next_seg)));
                     ephemeral_heap_segment = next_seg;
+                    if (new_seg)
+                    {
+                        GCToEEInterface::DiagAddNewRegion(
+                            heap_segment_gen_num (next_seg),
+                            heap_segment_mem (next_seg),
+                            heap_segment_allocated (next_seg),
+                            heap_segment_reserved (next_seg)
+                        );
+                    }
                 }
                 else
                 {
@@ -21209,9 +21224,22 @@ bool gc_heap::extend_soh_for_no_gc()
             }
 
             region = heap_segment_next (region);
-            if ((region == nullptr) && !(region = get_new_region (0)))
+            if (region == nullptr)
             {
-                break;
+                region = get_new_region (0);
+                if (region == nullptr)
+                {
+                    break;
+                }
+                else
+                {
+                    GCToEEInterface::DiagAddNewRegion(
+                            0,
+                            heap_segment_mem (region),
+                            heap_segment_allocated (region),
+                            heap_segment_reserved (region)
+                        );
+                }
             }
         }
         else
@@ -43153,6 +43181,75 @@ unsigned int GCHeap::WhichGeneration (Object* object)
     unsigned int g = hp->object_gennum ((uint8_t*)object);
     dprintf (3, ("%Ix is in gen %d", (size_t)object, g));
     return g;
+}
+
+unsigned int GCHeap::GetGenerationWithRange (Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved)
+{
+    int generation = -1;
+    heap_segment * hs = gc_heap::find_segment ((uint8_t*)object, FALSE);
+#ifdef USE_REGIONS
+    generation = heap_segment_gen_num (hs);
+    if (generation == max_generation)
+    {
+        if (heap_segment_loh_p (hs))
+        {
+            generation = loh_generation;
+        }
+        else if (heap_segment_poh_p (hs))
+        {
+            generation = poh_generation;
+        }
+    }
+
+    *ppStart = heap_segment_mem (hs);
+    *ppAllocated = heap_segment_allocated (hs);
+    *ppReserved = heap_segment_reserved (hs);
+#else
+#ifdef MULTIPLE_HEAPS
+    gc_heap* hp = heap_segment_heap (hs);
+#else
+    gc_heap* hp = __this;
+#endif //MULTIPLE_HEAPS
+    if (hs == hp->ephemeral_heap_segment)
+    {
+        uint8_t* reserved = heap_segment_reserved (hs);
+        uint8_t* end = heap_segment_allocated(hs);
+        for (int gen = 0; gen < max_generation; gen++)
+        {
+            uint8_t* start = generation_allocation_start (hp->generation_of (gen));
+            if ((uint8_t*)object >= start)
+            {
+                generation = gen;
+                *ppStart = start;
+                *ppAllocated = end;
+                *ppReserved = reserved;
+                break;
+            }
+            end = reserved = start;
+        }
+        if (generation == -1)
+        {
+            *ppStart = heap_segment_mem (hs);
+            *ppAllocated = *ppReserved = generation_allocation_start (hp->generation_of (max_generation - 1));
+        }
+    }
+    else
+    {
+        generation = max_generation;
+        if (heap_segment_loh_p (hs))
+        {
+            generation = loh_generation;
+        }
+        else if (heap_segment_poh_p (hs))
+        {
+            generation = poh_generation;
+        }
+        *ppStart = heap_segment_mem (hs);
+        *ppAllocated = heap_segment_allocated (hs);
+        *ppReserved = heap_segment_reserved (hs);
+    }
+#endif //USE_REGIONS
+    return (unsigned int)generation;
 }
 
 bool GCHeap::IsEphemeral (Object* object)
