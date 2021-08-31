@@ -179,7 +179,7 @@ namespace
                 // We also request collection notification since this holder is presently
                 // only used for new activation of wrappers therefore the notification won't occur
                 // at the typical time of before finalization.
-                InteropLib::Com::DestroyWrapperForExternal(Result.Context, /* notifyIsCollected */ true);
+                InteropLib::Com::DestroyWrapperForExternal(Result.Context, /* notifyIsBeingCollected */ true);
             }
         }
         InteropLib::Com::ExternalWrapperResult* operator&()

@@ -551,10 +551,10 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE Trigger_NotifyEndOfReferenceTracking
     return TrackerRuntimeManager.NotifyEndOfReferenceTrackingOnThread();
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE IsWrapperConnected(IUnknown* inst)
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE IsTrackerObjectConnected(IUnknown* inst)
 {
     auto trackerObject = reinterpret_cast<TrackerObject::TrackerObjectImpl*>(inst);
-    return trackerObject->IsConnected() ? TRUE : FALSE;
+    return trackerObject->IsConnected();
 }
 
 extern "C" DLL_EXPORT void* STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceTrackerAndReturn(IUnknown *obj)
