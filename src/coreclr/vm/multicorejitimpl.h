@@ -266,7 +266,7 @@ class MulticoreJitProfilePlayer
 friend class MulticoreJitRecorder;
 
 private:
-    AssemblyBinder * m_pBinderContext;
+    AssemblyBinder                   * m_pBinderContext;
     LONG                               m_nMySession;
     unsigned                           m_nStartTime;
     BYTE                             * m_pFileBuffer;
@@ -605,7 +605,7 @@ class MulticoreJitRecorder
 {
 private:
     AppDomain               * m_pDomain;            // AutoStartProfile could be called from SystemDomain
-    AssemblyBinder * m_pBinderContext;
+    AssemblyBinder          * m_pBinderContext;
     SString                   m_fullFileName;
     MulticoreJitPlayerStat  & m_stats;
 

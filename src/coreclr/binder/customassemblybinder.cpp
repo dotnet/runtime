@@ -14,7 +14,7 @@ using namespace BINDER_SPACE;
 // CustomAssemblyBinder implementation
 // ============================================================================
 HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                                   BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly)
+                                                       BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
@@ -166,10 +166,10 @@ AssemblyLoaderAllocator* CustomAssemblyBinder::GetLoaderAllocator()
 //=============================================================================
 /* static */
 HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pTPABinder,
-                                                       AssemblyLoaderAllocator* pLoaderAllocator,
-                                                       void* loaderAllocatorHandle,
-                                                       UINT_PTR ptrAssemblyLoadContext,
-                                                       CustomAssemblyBinder **ppBindContext)
+                                           AssemblyLoaderAllocator* pLoaderAllocator,
+                                           void* loaderAllocatorHandle,
+                                           UINT_PTR ptrAssemblyLoadContext,
+                                           CustomAssemblyBinder **ppBindContext)
 {
     HRESULT hr = E_FAIL;
     EX_TRY
