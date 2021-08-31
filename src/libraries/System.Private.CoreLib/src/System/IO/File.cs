@@ -333,6 +333,11 @@ namespace System.IO
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
             using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
             {
+                if (!fs.CanSeek)
+                {
+                    return ReadAllBytesUnknownLength(fs);
+                }
+
                 long fileLength = fs.Length;
                 if (fileLength > int.MaxValue)
                 {
@@ -729,6 +734,12 @@ namespace System.IO
             bool returningInternalTask = false;
             try
             {
+                if (!fs.CanSeek)
+                {
+                    returningInternalTask = true;
+                    return InternalReadAllBytesUnknownLengthAsync(fs, cancellationToken);
+                }
+
                 long fileLength = fs.Length;
                 if (fileLength > int.MaxValue)
                 {
