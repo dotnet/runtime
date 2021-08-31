@@ -145,6 +145,18 @@
       <argument>ILLink</argument>
       <argument>IL2035</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.GetServerCertificateCustomValidationCallback</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Net.Http.HttpClientHandler.SetServerCertificateCustomValidationCallback(System.Func{System.Net.Http.HttpRequestMessage,System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.X509Certificates.X509Chain,System.Net.Security.SslPolicyErrors,System.Boolean})</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2035</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Net.Http.HttpClientHandler.GetCheckCertificateRevocationList()</property>
       <property name="Justification">The Xamarin.iOS and Mono.Android libraries are not present when running the trimmer analysis during our build. A consuming application will get a warning if these libraries aren't present when trimming the full app.</property>
     </attribute>
