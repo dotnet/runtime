@@ -128,7 +128,7 @@ namespace System.Text.RegularExpressions.Tests
         // End of Rust parser tests ==============
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public void Parse_Netcoreapp(string pattern, RegexOptions options, object error, int offset = -1)
+        public void Parse_Netcoreapp(string pattern, RegexOptions options, RegexParseError? error, int offset = -1)
         {
             Parse(pattern, options, error, offset);
         }
@@ -191,15 +191,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <param name="action">The action to invoke.</param>
         static partial void MayThrow(Action action)
         {
-            try
-            {
-                action();
-            }
-            catch (RegexParseException)
-            {
-                return;
-            }
-            catch (Exception e)
+            if (Record.Exception(action) is Exception e && e is not RegexParseException)
             {
                 throw new XunitException($"Expected RegexParseException or no exception -> Actual: ({e})");
             }

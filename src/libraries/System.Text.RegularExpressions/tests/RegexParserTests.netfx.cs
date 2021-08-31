@@ -42,17 +42,9 @@ namespace System.Text.RegularExpressions.Tests
         /// <param name="action">The action to invoke.</param>
         static partial void MayThrow(Action action)
         {
-            try
+            if (Record.Exception(action) is Exception e && e is not ArgumentException)
             {
-                action();
-            }
-            catch (ArgumentException)
-            {
-                return;
-            }
-            catch (Exception e)
-            {
-                throw new XunitException($"Expected RegexParseException or no exception -> Actual: ({e})");
+                throw new XunitException($"Expected ArgumentException or no exception -> Actual: ({e})");
             }
         }
     }

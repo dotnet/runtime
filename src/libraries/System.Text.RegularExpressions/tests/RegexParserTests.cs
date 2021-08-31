@@ -704,23 +704,21 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("??", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
         [InlineData("(?=*)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 4)]
         [InlineData("((((((*))))))", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 7)]
-        public void ParseCheckOffset(string pattern, RegexOptions options, object errorObj, int offset = -1)
+        public void ParseCheckOffset(string pattern, RegexOptions options, RegexParseError? error, int offset = -1)
         {
-            Parse(pattern, options, errorObj, offset);
+            Parse(pattern, options, error, offset);
         }
 
-        private static void Parse(string pattern, RegexOptions options, object errorObj, int offset = -1)
+        private static void Parse(string pattern, RegexOptions options, RegexParseError? error, int offset = -1)
         {
-            RegexParseError? error = (RegexParseError?)errorObj;
-
             if (error != null)
             {
-                Assert.True(error.Value >= 0);
+                Assert.InRange(offset, 0, int.MaxValue);
                 Throws(error.Value, offset, () => new Regex(pattern, options));
                 return;
             }
 
-            Assert.True(offset == -1);
+            Assert.Equal(-1, offset);
 
             // Nothing to assert here without having access to internals.
             new Regex(pattern, options); // Does not throw
@@ -734,17 +732,20 @@ namespace System.Text.RegularExpressions.Tests
             // Verify that if it throws, it's the correct exception type
             for (int i = pattern.Length - 1; i > 0; i--)
             {
-                MayThrow(() => new Regex(pattern.Substring(0, i), options));
+                string str = pattern.Substring(0, i);
+                MayThrow(() => new Regex(str, options));
             }
 
             for (int i = 1; i < pattern.Length; i++)
             {
-                MayThrow(() => new Regex(pattern.Substring(i), options));
+                string str = pattern.Substring(i);
+                MayThrow(() => new Regex(str, options));
             }
 
             for (int i = 1; i < pattern.Length; i++)
             {
-                MayThrow(() => new Regex(pattern.Substring(0, i) + pattern.Substring(i + 1), options));
+                string str = pattern.Substring(0, i) + pattern.Substring(i + 1);
+                MayThrow(() => new Regex(str, options));
             }
         }
 
