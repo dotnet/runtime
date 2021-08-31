@@ -241,7 +241,7 @@ namespace Mono.Linker.Steps
 				// branch is replaced with nops.
 				//
 				if (reducer.RewriteBody ())
-					_context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method {method.GetDisplayName ()}");
+					_context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method '{method.GetDisplayName ()}'.");
 
 				// Even if the rewriter doesn't find any branches to fold the inlining above may have changed the method enough
 				// such that we can now deduce its return value.
@@ -648,7 +648,7 @@ namespace Mono.Linker.Steps
 
 				var bodySweeper = new BodySweeper (Body, reachableInstrs, unreachableEH, context);
 				if (!bodySweeper.Initialize ()) {
-					context.LogMessage ($"Unreachable IL reduction is not supported for method '{Body.Method.GetDisplayName ()}'");
+					context.LogMessage ($"Unreachable IL reduction is not supported for method '{Body.Method.GetDisplayName ()}'.");
 					return false;
 				}
 

@@ -98,25 +98,25 @@ namespace ILLink.Tasks
 		{
 			var namespaceFilePath = NamespaceFilePath.ItemSpec;
 			if (!File.Exists (namespaceFilePath)) {
-				Log.LogError ("File " + namespaceFilePath + " doesn't exist.");
+				Log.LogError ($"File '{namespaceFilePath}' doesn't exist.");
 				return false;
 			}
 
 			var mscorlibFilePath = MscorlibFilePath.ItemSpec;
 			if (!File.Exists (mscorlibFilePath)) {
-				Log.LogError ("File " + mscorlibFilePath + " doesn't exist.");
+				Log.LogError ($"File '{mscorlibFilePath}' doesn't exist.");
 				return false;
 			}
 
 			var cortypeFilePath = CortypeFilePath.ItemSpec;
 			if (!File.Exists (cortypeFilePath)) {
-				Log.LogError ("File " + cortypeFilePath + " doesn't exist.");
+				Log.LogError ($"File '{cortypeFilePath}' doesn't exist.");
 				return false;
 			}
 
 			var rexcepFilePath = RexcepFilePath.ItemSpec;
 			if (!File.Exists (rexcepFilePath)) {
-				Log.LogError ("File " + rexcepFilePath + " doesn't exist.");
+				Log.LogError ($"File '{rexcepFilePath}' doesn't exist.");
 				return false;
 			}
 
@@ -124,7 +124,7 @@ namespace ILLink.Tasks
 
 			var iLLinkTrimXmlFilePath = ILLinkTrimXmlFilePath.ItemSpec;
 			if (!File.Exists (iLLinkTrimXmlFilePath)) {
-				Log.LogError ("File " + iLLinkTrimXmlFilePath + " doesn't exist.");
+				Log.LogError ($"File '{iLLinkTrimXmlFilePath}' doesn't exist.");
 				return false;
 			}
 
@@ -183,12 +183,12 @@ namespace ILLink.Tasks
 				//We will handle BEGIN_ILLINK_FEATURE_SWITCH and END_ILLINK_FEATURE_SWITCH
 				if (def.StartsWith ("BEGIN_ILLINK_FEATURE_SWITCH")) {
 					if (currentFeatureSwitch.HasValue) {
-						Log.LogError ($"Could not figure out feature switch status in '{typeFile}' for line {def}");
+						Log.LogError ($"Could not figure out feature switch status in '{typeFile}' for line {def}.");
 					} else {
 						char[] separators = { ',', '(', ')', ' ', '\t', '/' };
 						string[] featureSwitchElements = def.Split (separators, StringSplitOptions.RemoveEmptyEntries);
 						if (featureSwitchElements.Length != 4) {
-							Log.LogError ($"BEGIN_ILLINK_FEATURE_SWITCH is not formatted correctly '{typeFile}' for line {def}");
+							Log.LogError ($"BEGIN_ILLINK_FEATURE_SWITCH is not formatted correctly '{typeFile}' for line {def}.");
 							return;
 						}
 						currentFeatureSwitch = new FeatureSwitchMembers (featureSwitchElements[1], featureSwitchElements[2], featureSwitchElements[3]);
@@ -199,7 +199,7 @@ namespace ILLink.Tasks
 				}
 				if (def.StartsWith ("END_ILLINK_FEATURE_SWITCH")) {
 					if (!currentFeatureSwitch.HasValue) {
-						Log.LogError ($"Could not figure out feature switch status in '{typeFile}' for line {def}");
+						Log.LogError ($"Could not figure out feature switch status in '{typeFile}' for line {def}.");
 					} else {
 						currentFeatureSwitch = null;
 					}
@@ -465,7 +465,7 @@ namespace ILLink.Tasks
 			}
 
 			if (!namespaceDictionary.ContainsKey (classNamespace)) {
-				Log.LogError ("Unknown namespace: " + classNamespace);
+				Log.LogError ($"Unknown namespace '{classNamespace}'.");
 			}
 
 			return namespaceDictionary[classNamespace] + "." + className;
@@ -531,7 +531,7 @@ namespace ILLink.Tasks
 
 				if (line.StartsWith ("#else")) {
 					if (activeSections.Count == 0) {
-						log.LogError ($"Could not figure out ifdefs in '{filePath}' around line {linenum}");
+						log.LogError ($"Could not figure out ifdefs in '{filePath}' around line {linenum}.");
 					} else {
 						bool? activeSection = activeSections.Pop ();
 						if (activeSection == null)
@@ -545,7 +545,7 @@ namespace ILLink.Tasks
 
 				if (line.StartsWith ("#endif")) {
 					if (activeSections.Count == 0)
-						log.LogError ($"Could not figure out ifdefs in '{filePath}' around line {linenum}");
+						log.LogError ($"Could not figure out ifdefs in '{filePath}' around line {linenum}.");
 					else
 						activeSections.Pop ();
 

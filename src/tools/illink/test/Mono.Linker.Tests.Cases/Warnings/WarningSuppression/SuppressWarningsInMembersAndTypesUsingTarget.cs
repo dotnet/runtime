@@ -101,7 +101,8 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			RUCMethod ();
 		}
 
-		[LogContains (nameof (MultipleSuppressions) + "() has more than one unconditional suppression")]
+		[LogContains ("Element 'Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers." + nameof (MultipleSuppressions) + "()'" +
+			" has more than one unconditional suppression.")]
 		[UnconditionalSuppressMessage ("Test", "IL2026")]
 		public static void MultipleSuppressions ()
 		{

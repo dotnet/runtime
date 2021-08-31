@@ -11,11 +11,11 @@ This class is in charge of analyzing the command line, and instantiating two
 important objects, a LinkContext, and a Pipeline.
 
 The LinkContext contains all the information that will be used during the
-linking process, such as the assemblies involved, the output directory and
+trimming process, such as the assemblies involved, the output directory and
 other useful things.
 
 The Pipeline is simply a queue of actions (steps), to be applied to the current
-context. The whole process of linking is split into these different steps
+context. The whole process of trimming is split into these different steps
 that are all located in the Linker.Steps namespace.
 
 Here are the current steps that are implemented, in the order they are used:

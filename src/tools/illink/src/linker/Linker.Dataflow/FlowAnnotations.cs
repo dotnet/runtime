@@ -248,7 +248,7 @@ namespace Mono.Linker.Dataflow
 
 						if (!IsTypeInterestingForDataflow (methodParameter.ParameterType)) {
 							_context.LogWarning (
-								$"Parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (methodParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodParameter.Method)}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to parameters of type 'System.Type' or 'System.String'",
+								$"Parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (methodParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodParameter.Method)}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to parameters of type 'System.Type' or 'System.String'.",
 								2098, method, subcategory: MessageSubCategory.TrimAnalysis);
 							continue;
 						}
@@ -578,7 +578,7 @@ namespace Mono.Linker.Dataflow
 					2095, origin, subcategory: MessageSubCategory.TrimAnalysis);
 				break;
 			default:
-				throw new NotImplementedException ($"Unsupported provider type{provider.GetType ()}");
+				throw new NotImplementedException ($"Unsupported provider type '{provider.GetType ()}'.");
 			}
 		}
 

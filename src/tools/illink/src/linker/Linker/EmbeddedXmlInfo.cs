@@ -35,11 +35,11 @@ namespace Mono.Linker
 
 			DescriptorMarker marker = null;
 			try {
-				context.LogMessage ($"Processing embedded linker descriptor {rsc.Name} from {assembly.Name}");
+				context.LogMessage ($"Processing embedded linker descriptor '{rsc.Name}' from '{assembly.Name}'.");
 				marker = GetExternalResolveStep (context, rsc, assembly);
 			} catch (XmlException ex) {
 				/* This could happen if some broken XML file is embedded. */
-				context.LogError ($"Error processing {rsc.Name}: {ex}", 1003);
+				context.LogError ($"Error processing '{rsc.Name}': {ex}.", 1003);
 			}
 
 			if (marker != null)
@@ -57,10 +57,10 @@ namespace Mono.Linker
 
 			BodySubstitutionParser parser = null;
 			try {
-				context.LogMessage ($"Processing embedded substitution descriptor {rsc.Name} from {assembly.Name}");
+				context.LogMessage ($"Processing embedded substitution descriptor '{rsc.Name}' from '{assembly.Name}'.");
 				parser = GetExternalSubstitutionParser (context, rsc, assembly);
 			} catch (XmlException ex) {
-				context.LogError ($"Error processing {rsc.Name}: {ex}", 1003);
+				context.LogError ($"Error processing '{rsc.Name}': {ex}.", 1003);
 			}
 
 			if (parser == null)
@@ -82,10 +82,10 @@ namespace Mono.Linker
 
 			LinkAttributesParser parser = null;
 			try {
-				context.LogMessage ($"Processing embedded {rsc.Name} from {assembly.Name}");
+				context.LogMessage ($"Processing embedded '{rsc.Name}' from '{assembly.Name}'.");
 				parser = GetExternalLinkAttributesParser (context, rsc, assembly);
 			} catch (XmlException ex) {
-				context.LogError ($"Error processing {rsc.Name} from {assembly.Name}: {ex}", 1003);
+				context.LogError ($"Error processing {rsc.Name} from {assembly.Name}: {ex}.", 1003);
 			}
 
 			if (parser == null)

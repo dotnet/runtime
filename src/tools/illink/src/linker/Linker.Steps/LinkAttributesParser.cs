@@ -50,13 +50,13 @@ namespace Mono.Linker.Steps
 
 					// TODO: Replace with IsAttributeType check once we have it
 					if (provider is not TypeDefinition) {
-						LogWarning ($"Internal attribute '{attributeType.Name}' can only be used on attribute types", 2048, iterator.Current);
+						LogWarning ($"Internal attribute '{attributeType.Name}' can only be used on attribute types.", 2048, iterator.Current);
 						continue;
 					}
 				} else {
 					string attributeFullName = GetFullName (iterator.Current);
 					if (string.IsNullOrEmpty (attributeFullName)) {
-						LogWarning ($"'attribute' element does not contain attribute 'fullname' or it's empty", 2029, iterator.Current);
+						LogWarning ($"'attribute' element does not contain attribute 'fullname' or it's empty.", 2029, iterator.Current);
 						continue;
 					}
 
@@ -66,7 +66,7 @@ namespace Mono.Linker.Steps
 
 				CustomAttribute customAttribute = CreateCustomAttribute (iterator, attributeType);
 				if (customAttribute != null) {
-					_context.LogMessage ($"Assigning external custom attribute '{FormatCustomAttribute (customAttribute)}' instance to '{provider}'");
+					_context.LogMessage ($"Assigning external custom attribute '{FormatCustomAttribute (customAttribute)}' instance to '{provider}'.");
 					builder.Add (customAttribute);
 				}
 			}
@@ -138,7 +138,7 @@ namespace Mono.Linker.Steps
 			MethodDefinition constructor = FindBestMatchingConstructor (attributeType, arguments);
 			if (constructor == null) {
 				LogWarning (
-					$"Could not find matching constructor for custom attribute '{attributeType.GetDisplayName ()}' arguments",
+					$"Could not find matching constructor for custom attribute '{attributeType.GetDisplayName ()}' arguments.",
 					2022,
 					iterator.Current);
 				return null;
@@ -187,13 +187,13 @@ namespace Mono.Linker.Steps
 			while (iterator.MoveNext ()) {
 				string propertyName = GetName (iterator.Current);
 				if (string.IsNullOrEmpty (propertyName)) {
-					LogWarning ($"Property element does not contain attribute 'name'", 2051, iterator.Current);
+					LogWarning ($"Property element does not contain attribute 'name'.", 2051, iterator.Current);
 					continue;
 				}
 
 				PropertyDefinition property = attributeType.Properties.Where (prop => prop.Name == propertyName).FirstOrDefault ();
 				if (property == null) {
-					LogWarning ($"Property '{propertyName}' could not be found", 2052, iterator.Current);
+					LogWarning ($"Property '{propertyName}' could not be found.", 2052, iterator.Current);
 					continue;
 				}
 
@@ -237,7 +237,7 @@ namespace Mono.Linker.Steps
 			case MetadataType.Object:
 				iterator = iterator.Current.SelectChildren ("argument", string.Empty);
 				if (iterator?.MoveNext () != true) {
-					_context.LogError ($"Custom attribute argument for 'System.Object' requires nested 'argument' node", 1043);
+					_context.LogError ($"Custom attribute argument for 'System.Object' requires nested 'argument' node.", 1043);
 					return null;
 				}
 
@@ -276,14 +276,14 @@ namespace Mono.Linker.Steps
 
 				TypeReference type = _context.TypeNameResolver.ResolveTypeName (svalue, memberWithAttribute, out _);
 				if (type == null) {
-					_context.LogError ($"Could not resolve custom attribute type value '{svalue}'", 1044, origin: GetMessageOriginForPosition (iterator.Current));
+					_context.LogError ($"Could not resolve custom attribute type value '{svalue}'.", 1044, origin: GetMessageOriginForPosition (iterator.Current));
 					return null;
 				}
 
 				return new CustomAttributeArgument (typeref, type);
 			default:
 				// No support for null and arrays, consider adding - mono/linker/issues/1957
-				_context.LogError ($"Unexpected attribute argument type '{typeref.GetDisplayName ()}'", 1045);
+				_context.LogError ($"Unexpected attribute argument type '{typeref.GetDisplayName ()}'.", 1045);
 				return null;
 			}
 
@@ -295,7 +295,7 @@ namespace Mono.Linker.Steps
 
 				TypeReference typeref = _context.TypeNameResolver.ResolveTypeName (typeName, memberWithAttribute, out _);
 				if (typeref == null) {
-					_context.LogError ($"The type '{typeName}' used with attribute value '{iterator.Current.Value}' could not be found", 1041, origin: GetMessageOriginForPosition (iterator.Current));
+					_context.LogError ($"The type '{typeName}' used with attribute value '{iterator.Current.Value}' could not be found.", 1041, origin: GetMessageOriginForPosition (iterator.Current));
 					return null;
 				}
 
@@ -353,7 +353,7 @@ namespace Mono.Linker.Steps
 			try {
 				return Convert.ChangeType (value, typeCode);
 			} catch {
-				_context.LogError ($"Cannot convert value '{value}' to type '{targetType.GetDisplayName ()}'", 1042);
+				_context.LogError ($"Cannot convert value '{value}' to type '{targetType.GetDisplayName ()}'.", 1042);
 				return null;
 			}
 		}
@@ -368,12 +368,12 @@ namespace Mono.Linker.Steps
 				try {
 					assembly = _context.TryResolve (AssemblyNameReference.Parse (assemblyName));
 					if (assembly == null) {
-						LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, iterator.Current);
+						LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'.", 2030, iterator.Current);
 						attributeType = default;
 						return false;
 					}
 				} catch (Exception) {
-					LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, iterator.Current);
+					LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'.", 2030, iterator.Current);
 					attributeType = default;
 					return false;
 				}
@@ -382,7 +382,7 @@ namespace Mono.Linker.Steps
 			}
 
 			if (attributeType == null) {
-				LogWarning ($"Attribute type '{attributeFullName}' could not be found", 2031, iterator.Current);
+				LogWarning ($"Attribute type '{attributeFullName}' could not be found.", 2031, iterator.Current);
 				return false;
 			}
 
@@ -450,7 +450,7 @@ namespace Mono.Linker.Steps
 						if (paramName == parameter.Name) {
 							if (parameter.HasCustomAttributes || _attributeInfo.CustomAttributes.ContainsKey (parameter))
 								LogWarning (
-									$"More than one value specified for parameter '{paramName}' of method '{method.GetDisplayName ()}'",
+									$"More than one value specified for parameter '{paramName}' of method '{method.GetDisplayName ()}'.",
 									2024, iterator.Current);
 							_attributeInfo.AddCustomAttributes (parameter, attributes);
 							break;
@@ -470,7 +470,7 @@ namespace Mono.Linker.Steps
 					PopulateAttributeInfo (method.MethodReturnType, iterator.Current);
 				} else {
 					LogWarning (
-						$"There is more than one 'return' child element specified for method '{method.GetDisplayName ()}'",
+						$"There is more than one 'return' child element specified for method '{method.GetDisplayName ()}'.",
 						2023, iterator.Current);
 				}
 			}

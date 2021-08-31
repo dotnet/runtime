@@ -29,7 +29,8 @@ namespace Mono.Linker
 				suppressions = new Dictionary<int, SuppressMessageInfo> ();
 				_suppressions.Add (provider, suppressions);
 			} else if (suppressions.ContainsKey (info.Id)) {
-				_context.LogMessage ($"Element {provider} has more than one unconditional suppression. Note that only the last one is used.");
+				string elementName = provider is MemberReference memberRef ? memberRef.GetDisplayName () : provider.ToString ();
+				_context.LogMessage ($"Element '{elementName}' has more than one unconditional suppression. Note that only the last one is used.");
 			}
 
 			suppressions[info.Id] = info;

@@ -12,7 +12,7 @@ etc. The edges represent the dependencies.
 ## How to dump dependencies
 
 The linker analyzer needs a linker dependencies file as an input. It
-can be retrieved by enabling dependencies dumping during linking of a
+can be retrieved by enabling dependencies dumping during trimming of a
 Xamarin.Android, Xamarin.iOS, or .NET SDK style project.
 
 For Xamarin.Android and Xamarin.iOS, that can be done on the command line by setting
