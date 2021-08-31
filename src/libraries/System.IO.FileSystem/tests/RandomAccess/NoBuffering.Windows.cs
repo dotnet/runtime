@@ -205,8 +205,9 @@ namespace System.IO.Tests
                 await RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { firstHalf, secondHalf }, 0);
 
                 buffer.GetSpan().Clear();
-                await RandomAccess.ReadAsync(handle, new Memory<byte>[] { firstHalf, secondHalf }, 0);
+                long nRead = await RandomAccess.ReadAsync(handle, new Memory<byte>[] { firstHalf, secondHalf }, 0);
 
+                Assert.Equal(buffer.GetSpan().Length, nRead);
                 AssertExtensions.SequenceEqual(buffer.GetSpan(), content.AsSpan());
             }
         }
