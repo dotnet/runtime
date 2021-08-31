@@ -570,10 +570,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CorElementType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeExtensions.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeFormatException.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeNamedArgument.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeTypedArgument.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeNamedArgument.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeTypedArgument.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\DefaultMemberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
@@ -1237,14 +1237,16 @@
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsMobileLike)' != 'true'">
+  <ItemGroup Condition="'$(IsMobileLike)' != 'true' and '$(TargetsCoreRT)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Interop.HostPolicy.cs">
       <Link>Common\Interop\Interop.HostPolicy.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyDependencyResolver.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsMobileLike)' == 'true'">
+  <ItemGroup Condition="'$(IsMobileLike)' == 'true' or '$(TargetsCoreRT)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyDependencyResolver.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsMobileLike)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -1504,6 +1506,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetComputerName.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleOutputCP.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetConsoleOutputCP.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCPInfo.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCPInfo.cs</Link>
