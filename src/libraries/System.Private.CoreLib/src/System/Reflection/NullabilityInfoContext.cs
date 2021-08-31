@@ -13,6 +13,7 @@ namespace System.Reflection
     public sealed class NullabilityInfoContext
     {
         private const string CompilerServicesNameSpace = "System.Runtime.CompilerServices";
+        private const string ValueTuple = nameof(System.ValueTuple);
         private readonly Dictionary<Module, NotAnnotatedStatus> _publicOnlyModules = new();
         private readonly Dictionary<MemberInfo, NullabilityState> _context = new();
 
@@ -385,12 +386,14 @@ namespace System.Reflection
 
                 for (int i = 0, offset = 0; i < genericArguments.Length; i++)
                 {
-                    if (!genericArguments[i].IsValueType)
+                    Type t = Nullable.GetUnderlyingType(genericArguments[i]) ?? genericArguments[i];
+
+                    if (!t.IsValueType || t.Name.Contains(ValueTuple))
                     {
                         offset++;
                     }
 
-                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, offset);
+                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, index + offset);
                 }
             }
 
