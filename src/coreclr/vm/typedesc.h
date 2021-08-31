@@ -34,9 +34,6 @@ typedef DPTR(class TypeDesc) PTR_TypeDesc;
 class TypeDesc
 {
 public:
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 #ifndef DACCESS_COMPILE
     TypeDesc(CorElementType type) {
         LIMITED_METHOD_CONTRACT;
@@ -220,9 +217,6 @@ class ParamTypeDesc : public TypeDesc {
     friend class TypeDesc;
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 #ifndef DACCESS_COMPILE
@@ -313,9 +307,6 @@ protected:
 
 class TypeVarTypeDesc : public TypeDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 public:
 
 #ifndef DACCESS_COMPILE
@@ -461,9 +452,6 @@ typedef SPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
 
 class FnPtrTypeDesc : public TypeDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 #ifndef DACCESS_COMPILE

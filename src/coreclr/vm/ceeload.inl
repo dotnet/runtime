@@ -337,7 +337,7 @@ FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiled
     COUNT_T nImportSections;
     PTR_CORCOMPILE_IMPORT_SECTION pImportSections = GetImportSections(&nImportSections);
 
-    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetNativeOrReadyToRunImage(), mayUsePrecompiledNDirectMethods);
+    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetReadyToRunImage(), mayUsePrecompiledNDirectMethods);
 }
 
 template<typename Ptr, typename FixupNativeEntryCallback>

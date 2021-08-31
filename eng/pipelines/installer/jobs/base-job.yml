@@ -252,6 +252,7 @@ jobs:
       value: |
         set -x
         df -h
+        docker info
         $(RunArguments) $(BuildScript) $(BuildArguments)
 
   ###

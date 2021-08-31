@@ -32,7 +32,6 @@
 class    AppDomain;
 class    ArrayClass;
 class    ArrayMethodDesc;
-struct   ClassCtorInfoEntry;
 class ClassLoader;
 class FCallMethodDesc;
 class    EEClass;
@@ -99,9 +98,6 @@ enum class WellKnownAttribute : DWORD;
 //
 struct InterfaceInfo_t
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     // Method table of the interface
     PTR_MethodTable m_pMethodTable;
@@ -850,10 +846,6 @@ public:
     BOOL HasClassConstructor();
     void SetHasClassConstructor();
     WORD GetClassConstructorSlot();
-    void SetClassConstructorSlot (WORD wCCtorSlot);
-
-    ClassCtorInfoEntry* GetClassCtorInfoIfExists();
-
 
     void GetSavedExtent(TADDR *ppStart, TADDR *ppEnd);
 
@@ -869,9 +861,6 @@ public:
     static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0);
 
     void CheckRestore();
-
-    // Perform restore actions on type key components of method table (EEClass pointer + Module, generic args)
-    void DoRestoreTypeKey();
 
     inline BOOL HasUnrestoredTypeKey() const
     {
