@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO.Strategies;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -20,7 +19,6 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         public static long GetLength(SafeFileHandle handle)
         {
             ValidateInput(handle, fileOffset: 0);
@@ -33,12 +31,11 @@ namespace System.IO
         /// </summary>
         /// <param name="handle">The file handle.</param>
         /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the file.</param>
-        /// <param name="fileOffset">The file position to read from.</param>
+        /// <param name="fileOffset">The file position to read from. For a file that does not support seeking (pipe or socket), it's ignored.</param>
         /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes allocated in the buffer if that many bytes are not currently available, or zero (0) if the end of the file has been reached.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -55,12 +52,11 @@ namespace System.IO
         /// </summary>
         /// <param name="handle">The file handle.</param>
         /// <param name="buffers">A list of memory buffers. When this method returns, the contents of the buffers are replaced by the bytes read from the file.</param>
-        /// <param name="fileOffset">The file position to read from.</param>
+        /// <param name="fileOffset">The file position to read from. For a file that does not support seeking (pipe or socket), it's ignored.</param>
         /// <returns>The total number of bytes read into the buffers. This can be less than the number of bytes allocated in the buffers if that many bytes are not currently available, or zero (0) if the end of the file has been reached.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -78,13 +74,12 @@ namespace System.IO
         /// </summary>
         /// <param name="handle">The file handle.</param>
         /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the file.</param>
-        /// <param name="fileOffset">The file position to read from.</param>
+        /// <param name="fileOffset">The file position to read from. For a file that does not support seeking (pipe or socket), it's ignored.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="P:System.Threading.CancellationToken.None" />.</param>
         /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes allocated in the buffer if that many bytes are not currently available, or zero (0) if the end of the file has been reached.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -106,13 +101,12 @@ namespace System.IO
         /// </summary>
         /// <param name="handle">The file handle.</param>
         /// <param name="buffers">A list of memory buffers. When this method returns, the contents of these buffers are replaced by the bytes read from the file.</param>
-        /// <param name="fileOffset">The file position to read from.</param>
+        /// <param name="fileOffset">The file position to read from. For a file that does not support seeking (pipe or socket), it's ignored.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="P:System.Threading.CancellationToken.None" />.</param>
         /// <returns>The total number of bytes read into the buffers. This can be less than the number of bytes allocated in the buffers if that many bytes are not currently available, or zero (0) if the end of the file has been reached.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -135,11 +129,10 @@ namespace System.IO
         /// </summary>
         /// <param name="handle">The file handle.</param>
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the file.</param>
-        /// <param name="fileOffset">The file position to write to.</param>
+        /// <param name="fileOffset">The file position to write to. For a file that does not support seeking (pipe or socket), it's ignored.</param>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -156,11 +149,10 @@ namespace System.IO
         /// </summary>
         /// <param name="handle">The file handle.</param>
         /// <param name="buffers">A list of memory buffers. This method copies the contents of these buffers to the file.</param>
-        /// <param name="fileOffset">The file position to write to.</param>
+        /// <param name="fileOffset">The file position to write to. For a file that does not support seeking (pipe or socket), it's ignored.</param>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -178,13 +170,12 @@ namespace System.IO
         /// </summary>
         /// <param name="handle">The file handle.</param>
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the file.</param>
-        /// <param name="fileOffset">The file position to write to.</param>
+        /// <param name="fileOffset">The file position to write to. For a file that does not support seeking (pipe or socket), it's ignored.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="P:System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task representing the asynchronous completion of the write operation.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -206,13 +197,12 @@ namespace System.IO
         /// </summary>
         /// <param name="handle">The file handle.</param>
         /// <param name="buffers">A list of memory buffers. This method copies the contents of these buffers to the file.</param>
-        /// <param name="fileOffset">The file position to write to.</param>
+        /// <param name="fileOffset">The file position to write to. For a file that does not support seeking (pipe or socket), it's ignored.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="P:System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task representing the asynchronous completion of the write operation.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers"/> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
-        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
