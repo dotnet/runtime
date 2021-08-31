@@ -13,7 +13,7 @@
 class AssemblyLoaderAllocator;
 class PEImage;
 
-class CustomAssemblyBinder final : public AssemblyLoadContext
+class CustomAssemblyBinder final : public AssemblyBinder
 {
 public:
 

@@ -373,14 +373,14 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        PTR_AssemblyBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
-        if (pBindingContext == NULL)
+        PTR_AssemblyBinder pBinder = pAssembly->GetManifestFile()->GetBindingContext();
+        if (pBinder == NULL)
         {
             // GetBindingContext() returns NULL for System.Private.CoreLib
             return NULL;
         }
 
-        return ((AssemblyLoadContext*)pBindingContext)->GetManagedAssemblyLoadContext();
+        return pBinder->GetManagedAssemblyLoadContext();
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)

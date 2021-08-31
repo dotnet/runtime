@@ -6,12 +6,12 @@
 #define __DEFAULT_ASSEMBLY_BINDER_H__
 
 #include "applicationcontext.hpp"
-#include "assemblyloadcontext.h"
+#include "assemblybinder.h"
 
 class PEAssembly;
 class PEImage;
 
-class DefaultAssemblyBinder final : public AssemblyLoadContext
+class DefaultAssemblyBinder final : public AssemblyBinder
 {
 public:
     //=========================================================================

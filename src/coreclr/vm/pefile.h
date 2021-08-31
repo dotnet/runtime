@@ -45,7 +45,6 @@ class PEFile;
 class PEModule;
 class PEAssembly;
 class SimpleRWLock;
-class AssemblyLoadContext;
 
 typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
@@ -409,8 +408,8 @@ protected:
     Volatile<LONG>           m_refCount;
     int                      m_flags;
 
-    // AssemblyLoadContext that this PEFile is associated with
-    PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
+    // AssemblyBinder that this PEFile is associated with
+    PTR_AssemblyBinder       m_pAssemblyBinder;
 
 public:
 
@@ -504,13 +503,13 @@ public:
 
 #endif //!DACCESS_COMPILE
 
-    // Returns AssemblyLoadContext into which the current PEFile was loaded.
-    PTR_AssemblyLoadContext GetAssemblyLoadContext()
+    // Returns AssemblyBinder which owns the context into which the current PEFile was loaded.
+    PTR_AssemblyBinder GetAssemblyBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(m_pAssemblyLoadContext != NULL);
-        return m_pAssemblyLoadContext;
+        _ASSERTE(m_pAssemblyBinder != NULL);
+        return m_pAssemblyBinder;
     }
 
     bool HasHostAssembly()

@@ -727,10 +727,10 @@ AssemblyBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         DefaultAssemblyBinder *pTPABinder = pDomain->GetTPABinderContext();
         if (pTPABinder == pParentAssemblyBinder)
         {
-            // If the parent assembly is a platform (TPA) assembly, then its binding context will always be the TPABinder context. In
+            // If the parent assembly is a platform (TPA) assembly, then its binding context will always be the DefaultBinder context. In
             // such case, we will return the default context for binding to allow the bind to go
             // via the custom binder context, if it was overridden. If it was not overridden, then we will get the expected
-            // TPABinder context anyways.
+            // DefaultBinder context anyways.
             //
             // Get the reference to the default binding context (this could be the TPABinder context or custom AssemblyLoadContext)
             pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetTPABinderContext());

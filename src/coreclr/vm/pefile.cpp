@@ -47,7 +47,7 @@ PEFile::PEFile(PEImage *identity) :
     m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
     m_refCount(1),
     m_flags(0),
-    m_pAssemblyLoadContext(nullptr),
+    m_pAssemblyBinder(nullptr),
     m_pHostAssembly(nullptr),
     m_pFallbackLoadContextBinder(nullptr)
 {
@@ -1387,8 +1387,8 @@ void PEFile::SetupAssemblyLoadContext()
 {
     PTR_AssemblyBinder pBindingContext = GetBindingContext();
 
-    m_pAssemblyLoadContext = (pBindingContext != NULL) ?
-        (AssemblyLoadContext*)pBindingContext :
+    m_pAssemblyBinder = (pBindingContext != NULL) ?
+        pBindingContext :
         AppDomain::GetCurrentDomain()->CreateBinderContext();
 }
 

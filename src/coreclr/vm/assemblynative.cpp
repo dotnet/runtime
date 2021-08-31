@@ -1254,16 +1254,12 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
 
     _ASSERTE(pAssembly != NULL);
 
-    AssemblyLoadContext* pAssemblyLoadContext = pAssembly->GetFile()->GetAssemblyLoadContext();
+    AssemblyBinder* pAssemblyBinder = pAssembly->GetFile()->GetAssemblyBinder();
 
-    if (pAssemblyLoadContext != AppDomain::GetCurrentDomain()->GetTPABinderContext())
+    if (pAssemblyBinder != AppDomain::GetCurrentDomain()->GetTPABinderContext())
     {
-        // Only CustomAssemblyBinder instance contains the reference to its
-        // corresponding managed instance.
-        CustomAssemblyBinder* pBinder = (CustomAssemblyBinder*)(pAssemblyLoadContext);
-
         // Fetch the managed binder reference from the native binder instance
-        ptrManagedAssemblyLoadContext = pBinder->GetManagedAssemblyLoadContext();
+        ptrManagedAssemblyLoadContext = pAssemblyBinder->GetManagedAssemblyLoadContext();
         _ASSERTE(ptrManagedAssemblyLoadContext != NULL);
     }
 

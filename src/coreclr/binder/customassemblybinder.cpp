@@ -77,8 +77,8 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
             hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName, m_pTPABinder, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
-                // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.
-                // In such a case, we will not overwrite the binding context (which would be wrong since it would not
+                // We maybe returned an assembly that was bound to a different AssemblyBinder instance.
+                // In such a case, we will not overwrite the binder (which would be wrong since the assembly would not
                 // be present in the cache of the current binding context).
                 if (pCoreCLRFoundAssembly->GetBinder() == NULL)
                 {
@@ -159,7 +159,7 @@ AssemblyLoaderAllocator* CustomAssemblyBinder::GetLoaderAllocator()
 }
 
 //=============================================================================
-// Creates an instance of the AssemblyLoadContext Binder
+// Creates an instance of the CustomAssemblyBinder
 //
 // This method does not take a lock since it is invoked from the ctor of the
 // managed AssemblyLoadContext type.
@@ -188,7 +188,7 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pTPABinder,
 
                 // Save the reference to the IntPtr for GCHandle for the managed
                 // AssemblyLoadContext instance
-                pBinder->m_ptrManagedAssemblyLoadContext = ptrAssemblyLoadContext;
+                pBinder->SetManagedAssemblyLoadContext(ptrAssemblyLoadContext);
 
                 if (pLoaderAllocator != NULL)
                 {
@@ -253,16 +253,16 @@ CustomAssemblyBinder::CustomAssemblyBinder()
 
 void CustomAssemblyBinder::ReleaseLoadContext()
 {
-    VERIFY(m_ptrManagedAssemblyLoadContext != NULL);
+    VERIFY(GetManagedAssemblyLoadContext() != NULL);
     VERIFY(m_ptrManagedStrongAssemblyLoadContext != NULL);
 
     // This method is called to release the weak and strong handles on the managed AssemblyLoadContext
     // once the Unloading event has been fired
-    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
+    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(GetManagedAssemblyLoadContext());
     DestroyLongWeakHandle(handle);
     handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedStrongAssemblyLoadContext);
     DestroyHandle(handle);
-    m_ptrManagedAssemblyLoadContext = NULL;
+    SetManagedAssemblyLoadContext(NULL);
 }
 
 #endif // !defined(DACCESS_COMPILE)

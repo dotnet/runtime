@@ -2844,7 +2844,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         AssemblyBinder *pFileBinder = pFile->GetBindingContext();
         if (pFileBinder != NULL)
         {
-            // Assemblies loaded with AssemblyLoadContext need to use a different LoaderAllocator if
+            // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
             // marked as collectible
             pLoaderAllocator = pFileBinder->GetLoaderAllocator();
         }
@@ -2904,7 +2904,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         if (registerNewAssembly)
         {
-            pFile->GetAssemblyLoadContext()->AddLoadedAssembly(pDomainAssembly->GetCurrentAssembly());
+            pFile->GetAssemblyBinder()->AddLoadedAssembly(pDomainAssembly->GetCurrentAssembly());
         }
     }
     else
