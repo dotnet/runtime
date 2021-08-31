@@ -370,7 +370,7 @@ namespace System.Net.Sockets.Tests
                 _waitHandle.Reset();
                 udpClient.BeginSend(sendBytes, sendBytes.Length, remoteServer, new AsyncCallback(AsyncCompleted), udpClient);
 
-                Assert.True(_waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                Assert.True(_waitHandle.WaitOne(TestSettings.PassingTestShortTimeout), "Timed out while waiting for connection");
             }
         }
 
