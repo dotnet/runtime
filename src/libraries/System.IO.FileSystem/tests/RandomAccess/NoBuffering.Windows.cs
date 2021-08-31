@@ -180,18 +180,17 @@ namespace System.IO.Tests
             Assert.Equal(content, File.ReadAllBytes(filePath));
         }
 
-        [Fact]
-        public async Task ReadWriteAsyncUsingNonPageSizedMultipleBuffers()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadWriteAsyncUsingMultipleBuffers(bool memoryPageSized)
         {
             string filePath = GetTestFilePath();
-            // The Windows scatter/gather APIs accept segments that are exactly one page long.
-            // Combined with the FILE_FLAG_NO_BUFFERING's requirements, the segments must also
-            // be aligned at page size boundaries and have a size of a multiple of the page size.
-            // Using segments with a length of twice the page size adheres to FILE_FLAG_NO_BUFFERING's
-            // requirements but not the scatter/gather APIs'. The RandomAccess implementation will
-            // see it and issue sequential read/write syscalls per segment, instead of one
-            // scatter/gather syscall. This test verifies that fallback behavior.
-            int bufferSize = Environment.SystemPageSize * 2;
+            // We test with buffers both one and two memory pages long. In the former case,
+            // the I/O operations will issue one scatter/gather API call, and in the latter
+            // case they will issue multiple calls; one per buffer. The buffers must still
+            // be aligned to comply with FILE_FLAG_NO_BUFFERING's requirements.
+            int bufferSize = Environment.SystemPageSize * (memoryPageSized ? 1 : 2);
             int fileSize = bufferSize * 2;
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
