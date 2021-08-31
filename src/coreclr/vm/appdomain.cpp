@@ -111,8 +111,6 @@ static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 
-ULONG               SystemDomain::s_dNumAppDomains = 0;
-
 DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
 
 // Constructor for the PinnedHeapHandleBucket class.
@@ -1210,12 +1208,8 @@ void SystemDomain::Init()
         // the state here:
         GCX_COOP();
 
-        if (!NingenEnabled())
-        {
-            CreatePreallocatedExceptions();
-
-            PreallocateSpecialObjects();
-        }
+        CreatePreallocatedExceptions();
+        PreallocateSpecialObjects();
 
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
@@ -1326,7 +1320,7 @@ void SystemDomain::LoadBaseSystemClasses()
     ETWOnStartup(LdSysBases_V1, LdSysBasesEnd_V1);
 
     {
-        m_pSystemFile = PEAssembly::OpenSystem(NULL);
+        m_pSystemFile = PEAssembly::OpenSystem();
     }
     // Only partially load the system assembly. Other parts of the code will want to access
     // the globals in this function before finishing the load.
@@ -1461,27 +1455,8 @@ void SystemDomain::LoadBaseSystemClasses()
 #endif // PROFILING_SUPPORTED
 
 #if defined(_DEBUG)
-    if (!NingenEnabled())
-    {
-        g_CoreLib.Check();
-    }
+    g_CoreLib.Check();
 #endif
-}
-
-/*static*/
-void SystemDomain::LoadDomain(AppDomain *pDomain)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(System()));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    SystemDomain::System()->AddDomain(pDomain);
 }
 
 #endif // !DACCESS_COMPILE
@@ -1895,35 +1870,6 @@ void SystemDomain::PublishAppDomainAndInformDebugger (AppDomain *pDomain)
 }
 
 #endif // DEBUGGING_SUPPORTED
-
-void SystemDomain::AddDomain(AppDomain* pDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer((pDomain)));
-    }
-    CONTRACTL_END;
-
-    {
-        LockHolder lh;
-
-        _ASSERTE (pDomain->m_Stage != AppDomain::STAGE_CREATING);
-        if (pDomain->m_Stage == AppDomain::STAGE_READYFORMANAGEDCODE ||
-            pDomain->m_Stage == AppDomain::STAGE_ACTIVE)
-        {
-            pDomain->SetStage(AppDomain::STAGE_OPEN);
-        }
-    }
-
-    // Note that if you add another path that can reach here without calling
-    // PublishAppDomainAndInformDebugger, then you should go back & make sure
-    // that PADAID gets called.  Right after this call, if not sooner.
-    LOG((LF_CORDB, LL_INFO1000, "SD::AD:Would have added domain here! 0x%x\n",
-        pDomain));
-}
 
 #ifdef PROFILING_SUPPORTED
 void SystemDomain::NotifyProfilerStartup()
@@ -3235,98 +3181,6 @@ CHECK AppDomain::CheckValidModule(Module * pModule)
     CHECK_OK;
 }
 
-static void NormalizeAssemblySpecForNativeDependencies(AssemblySpec * pSpec)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (pSpec->IsStrongNamed() && pSpec->HasPublicKey())
-    {
-        pSpec->ConvertPublicKeyToToken();
-    }
-
-    //
-    // CoreCLR binder unifies assembly versions. Ignore assembly version here to
-    // detect more types of potential mismatches.
-    //
-    AssemblyMetaDataInternal * pContext = pSpec->GetContext();
-    pContext->usMajorVersion = (USHORT)-1;
-    pContext->usMinorVersion = (USHORT)-1;
-    pContext->usBuildNumber = (USHORT)-1;
-    pContext->usRevisionNumber = (USHORT)-1;
-}
-
-void AppDomain::CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID * pGuid)
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // The native images are ever used only for trusted images in CoreCLR.
-    // We don't wish to open the IL file at runtime so we just forgo any
-    // eager consistency checking. But we still want to prevent mistmatched
-    // NGen images from being used. We record all mappings between assembly
-    // names and MVID, and fail once we detect mismatch.
-    //
-    NormalizeAssemblySpecForNativeDependencies(pSpec);
-
-    CrstHolder ch(&m_DomainCrst);
-
-    const NativeImageDependenciesEntry * pEntry = m_NativeImageDependencies.Lookup(pSpec);
-
-    if (pEntry != NULL)
-    {
-        if (*pGuid != pEntry->m_guidMVID)
-        {
-            SString msg;
-            msg.Printf("ERROR: Native images generated against multiple versions of assembly %s. ", pSpec->GetName());
-            WszOutputDebugString(msg.GetUnicode());
-            COMPlusThrowNonLocalized(kFileLoadException, msg.GetUnicode());
-        }
-    }
-    else
-    {
-        //
-        // No entry yet - create one
-        //
-        NativeImageDependenciesEntry * pNewEntry = new NativeImageDependenciesEntry();
-        pNewEntry->m_AssemblySpec.CopyFrom(pSpec);
-        pNewEntry->m_AssemblySpec.CloneFields(AssemblySpec::ALL_OWNED);
-        pNewEntry->m_guidMVID = *pGuid;
-        m_NativeImageDependencies.Add(pNewEntry);
-    }
-}
-
-BOOL AppDomain::RemoveNativeImageDependency(AssemblySpec * pSpec)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pSpec));
-    }
-    CONTRACTL_END;
-
-    BOOL result = FALSE;
-    NormalizeAssemblySpecForNativeDependencies(pSpec);
-
-    CrstHolder ch(&m_DomainCrst);
-
-    const NativeImageDependenciesEntry * pEntry = m_NativeImageDependencies.Lookup(pSpec);
-
-    if (pEntry != NULL)
-    {
-        m_NativeImageDependencies.Remove(pSpec);
-        delete pEntry;
-        result = TRUE;
-    }
-
-    return result;
-}
-
 void AppDomain::SetupSharedStatics()
 {
     CONTRACTL
@@ -3337,9 +3191,6 @@ void AppDomain::SetupSharedStatics()
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-
-    if (NingenEnabled())
-        return;
 
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: SetupSharedStatics()"));
 
@@ -3576,7 +3427,9 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAll
     }
     CONTRACTL_END;
 
-    CrstHolder holder(&m_DomainCacheCrst);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
+
     // !!! suppress exceptions
     if(!m_AssemblyCache.StoreFile(pSpec, pFile) && !fAllowFailure)
     {
@@ -3606,7 +3459,9 @@ BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembl
     }
     CONTRACTL_END;
 
-    CrstHolder holder(&m_DomainCacheCrst);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
+
     // !!! suppress exceptions
     BOOL bRetVal = m_AssemblyCache.StoreAssembly(pSpec, pAssembly);
     return bRetVal;
@@ -3627,7 +3482,9 @@ BOOL AppDomain::AddExceptionToCache(AssemblySpec* pSpec, Exception *ex)
     if (ex->IsTransient())
         return TRUE;
 
-    CrstHolder holder(&m_DomainCacheCrst);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
+
     // !!! suppress exceptions
     return m_AssemblyCache.StoreException(pSpec, ex);
 }
@@ -3645,7 +3502,7 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
     }
     CONTRACTL_END;
 
-    CrstHolder lock(&m_DomainCacheCrst);
+    DomainCacheCrstHolderForGCPreemp lock(this);
 
     const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
     if (existingEntry != NULL)
@@ -3675,7 +3532,8 @@ NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
     }
     CONTRACT_END;
 
-    CrstHolder lock(&m_DomainCacheCrst);
+    DomainCacheCrstHolderForGCPreemp lock(this);
+
     const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
     if (existingEntry == NULL)
         RETURN NULL;
@@ -3717,7 +3575,8 @@ BOOL AppDomain::RemoveAssemblyFromCache(DomainAssembly* pAssembly)
     }
     CONTRACTL_END;
 
-    CrstHolder holder(&m_DomainCacheCrst);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
 
     return m_AssemblyCache.RemoveAssembly(pAssembly);
 }
@@ -3839,7 +3698,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                 // Use CoreClr's fusion alternative
                 CoreBindResult bindResult;
 
-                pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult, FALSE /* fNgenExplicitBind */, FALSE /* fExplicitBindToNativeImage */);
+                pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult);
                 hrBindResult = bindResult.GetHRBindResult();
 
                 if (bindResult.Found())

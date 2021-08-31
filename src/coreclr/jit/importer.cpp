@@ -6855,18 +6855,26 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             {
                 lclTyp = JITtype2varType(jitType);
             }
-            assert(genActualType(exprToBox->TypeGet()) == genActualType(lclTyp) ||
-                   varTypeIsFloating(lclTyp) == varTypeIsFloating(exprToBox->TypeGet()));
+
             var_types srcTyp = exprToBox->TypeGet();
             var_types dstTyp = lclTyp;
 
+            // We allow float <-> double mismatches and implicit truncation for small types.
+            assert((genActualType(srcTyp) == genActualType(dstTyp)) ||
+                   (varTypeIsFloating(srcTyp) == varTypeIsFloating(dstTyp)));
+
+            // Note regarding small types.
+            // We are going to store to the box here via an indirection, so the cast added below is
+            // redundant, since the store has an implicit truncation semantic. The reason we still
+            // add this cast is so that the code which deals with GT_BOX optimizations does not have
+            // to account for this implicit truncation (e. g. understand that BOX<byte>(0xFF + 1) is
+            // actually BOX<byte>(0) or deal with signedness mismatch and other GT_CAST complexities).
             if (srcTyp != dstTyp)
             {
-                assert((varTypeIsFloating(srcTyp) && varTypeIsFloating(dstTyp)) ||
-                       (varTypeIsIntegral(srcTyp) && varTypeIsIntegral(dstTyp)));
-                exprToBox = gtNewCastNode(dstTyp, exprToBox, false, dstTyp);
+                exprToBox = gtNewCastNode(genActualType(dstTyp), exprToBox, false, dstTyp);
             }
-            op1 = gtNewAssignNode(gtNewOperNode(GT_IND, lclTyp, op1), exprToBox);
+
+            op1 = gtNewAssignNode(gtNewOperNode(GT_IND, dstTyp, op1), exprToBox);
         }
 
         // Spill eval stack to flush out any pending side effects.
@@ -17153,8 +17161,13 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         }
         else
         {
-            // inlinee's stack should be empty now.
-            assert(verCurrentState.esStackDepth == 0);
+            if (verCurrentState.esStackDepth != 0)
+            {
+                assert(compIsForInlining());
+                JITDUMP("CALLSITE_COMPILATION_ERROR: inlinee's stack is not empty.");
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
+                return false;
+            }
 
 #ifdef DEBUG
             if (verbose)
@@ -17273,45 +17286,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                                op2->AsLclVarCommon()->GetLclNum());
                     }
 #endif
-                }
-
-                // If we are inlining a method that returns a struct byref, check whether we are "reinterpreting" the
-                // struct.
-                GenTree* effectiveRetVal = op2->gtEffectiveVal();
-                if ((returnType == TYP_BYREF) && (info.compRetType == TYP_BYREF) &&
-                    (effectiveRetVal->OperGet() == GT_ADDR))
-                {
-                    GenTree* addrChild = effectiveRetVal->gtGetOp1();
-                    if (addrChild->OperGet() == GT_LCL_VAR)
-                    {
-                        LclVarDsc* varDsc = lvaGetDesc(addrChild->AsLclVarCommon());
-
-                        if (varTypeIsStruct(addrChild->TypeGet()) && !isOpaqueSIMDLclVar(varDsc))
-                        {
-                            CORINFO_CLASS_HANDLE referentClassHandle;
-                            CorInfoType          referentType =
-                                info.compCompHnd->getChildType(info.compMethodInfo->args.retTypeClass,
-                                                               &referentClassHandle);
-                            if (varTypeIsStruct(JITtype2varType(referentType)) &&
-                                (varDsc->GetStructHnd() != referentClassHandle))
-                            {
-                                // We are returning a byref to struct1; the method signature specifies return type as
-                                // byref
-                                // to struct2. struct1 and struct2 are different so we are "reinterpreting" the struct.
-                                // This may happen in, for example, System.Runtime.CompilerServices.Unsafe.As<TFrom,
-                                // TTo>.
-                                // We need to mark the source struct variable as having overlapping fields because its
-                                // fields may be accessed using field handles of a different type, which may confuse
-                                // optimizations, in particular, value numbering.
-
-                                JITDUMP("\nSetting lvOverlappingFields to true on V%02u because of struct "
-                                        "reinterpretation\n",
-                                        addrChild->AsLclVarCommon()->GetLclNum());
-
-                                varDsc->lvOverlappingFields = true;
-                            }
-                        }
-                    }
                 }
 
 #ifdef DEBUG

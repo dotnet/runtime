@@ -346,7 +346,7 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 	if (mono_class_is_nullable (ec)) {
 		if (vc && m_class_is_primitive (vc) && vc != m_class_get_nullable_elem_class (ec)) {
-            // T -> Nullable<T>  T must be exact
+			// T -> Nullable<T>  T must be exact
 			set_invalid_cast (error, vc, ec);
 			goto leave;
 		}
@@ -3069,11 +3069,11 @@ ves_icall_RuntimeType_GetCorrespondingInflatedMethod (MonoReflectionTypeHandle r
 	MonoMethod *method;
 	gpointer iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-                if (method->token == generic_method->token) {
+		if (method->token == generic_method->token) {
 			ret = mono_method_get_object_handle (method, klass, error);
 			return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
 		}
-        }
+	}
 
 	return ret;
 }
@@ -4638,7 +4638,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 	g_return_val_if_fail (dir != NULL, NULL);
 	g_return_val_if_fail (file != NULL, NULL);
 
-        /*
+	/*
 	 * If the directory name doesn't have a / on the end, we need
 	 * to add one so we get a proper path to the file
 	 */
@@ -5553,11 +5553,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	g_assert (image_base);
 
 #ifndef HOST_WASM
-        if (mono_is_debugger_attached ()) {
-                mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
-                mono_error_set_pending_exception (error);
-                return;
-        }
+	if (mono_is_debugger_attached ()) {
+		mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
+		mono_error_set_pending_exception (error);
+		return;
+	}
 #endif
 
 	mono_image_load_enc_delta (MONO_ENC_DELTA_API, image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
@@ -6245,162 +6245,11 @@ mono_array_get_byte_length (MonoArrayHandle array)
 
 /* System.Environment */
 
-MonoStringHandle
-ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_name, MonoError *error)
-{
-	gchar *value;
-
-	if (utf8_name == NULL)
-		return NULL_HANDLE_STRING;
-
-	value = g_getenv (utf8_name);
-
-	if (value == 0)
-		return NULL_HANDLE_STRING;
-	
-	MonoStringHandle res = mono_string_new_handle (value, error);
-	g_free (value);
-	return res;
-}
-
-/*
- * There is no standard way to get at environ.
- */
-#ifndef _MSC_VER
-#ifndef __MINGW32_VERSION
-#if defined(__APPLE__)
-#if defined (TARGET_OSX)
-/* Apple defines this in crt_externs.h but doesn't provide that header for 
- * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
- * in fact exist on all implementations (so far) 
- */
-G_BEGIN_DECLS
-gchar ***_NSGetEnviron(void);
-G_END_DECLS
-#define environ (*_NSGetEnviron())
-#else
-static char *mono_environ[1] = { NULL };
-#define environ mono_environ
-#endif /* defined (TARGET_OSX) */
-#else
-G_BEGIN_DECLS
-extern
-char **environ;
-G_END_DECLS
-#endif
-#endif
-#endif
-
 MonoArrayHandle
 ves_icall_System_Environment_GetCommandLineArgs (MonoError *error)
 {
 	MonoArrayHandle result = mono_runtime_get_main_args_handle (error);
 	return result;
-}
-
-#ifdef HOST_WIN32
-static MonoArrayHandle
-mono_icall_get_environment_variable_names (MonoError *error)
-{
-	MonoArrayHandle names;
-	MonoStringHandle str;
-	WCHAR* env_strings;
-	WCHAR* env_string;
-	WCHAR* equal_str;
-	int n = 0;
-
-	env_strings = GetEnvironmentStrings();
-
-	if (env_strings) {
-		env_string = env_strings;
-		while (*env_string != '\0') {
-		/* weird case that MS seems to skip */
-			if (*env_string != '=')
-				n++;
-			while (*env_string != '\0')
-				env_string++;
-			env_string++;
-		}
-	}
-
-	names = mono_array_new_handle (mono_defaults.string_class, n, error);
-	return_val_if_nok (error, NULL_HANDLE_ARRAY);
-
-	if (env_strings) {
-		n = 0;
-		str = MONO_HANDLE_NEW (MonoString, NULL);
-		env_string = env_strings;
-		while (*env_string != '\0') {
-			/* weird case that MS seems to skip */
-			if (*env_string != '=') {
-				equal_str = wcschr(env_string, '=');
-				g_assert(equal_str);
-				MonoString *s = mono_string_new_utf16_checked (env_string, (gint32)(equal_str - env_string), error);
-				goto_if_nok (error, cleanup);
-				MONO_HANDLE_ASSIGN_RAW (str, s);
-
-				mono_array_handle_setref (names, n, str);
-				n++;
-			}
-			while (*env_string != '\0')
-				env_string++;
-			env_string++;
-		}
-
-	}
-
-cleanup:
-	if (env_strings)
-		FreeEnvironmentStrings (env_strings);
-	if (!is_ok (error))
-		return NULL_HANDLE_ARRAY;
-	return names;
-}
-
-#else
-
-static MonoArrayHandle
-mono_icall_get_environment_variable_names (MonoError *error)
-{
-	MonoArrayHandle names;
-	MonoStringHandle str;
-	gchar **e, **parts;
-	int n;
-
-	n = 0;
-	for (e = environ; *e != 0; ++ e)
-		++ n;
-
-	names = mono_array_new_handle (mono_defaults.string_class, n, error);
-	return_val_if_nok (error, NULL_HANDLE_ARRAY);
-
-	str = MONO_HANDLE_NEW (MonoString, NULL);
-	n = 0;
-	for (e = environ; *e != 0; ++ e) {
-		parts = g_strsplit (*e, "=", 2);
-		if (*parts != 0) {
-			MonoString *s = mono_string_new_checked (*parts, error);
-			MONO_HANDLE_ASSIGN_RAW (str, s);
-			if (!is_ok (error)) {
-				g_strfreev (parts);
-				return NULL_HANDLE_ARRAY;
-			}
-			mono_array_handle_setref (names, n, str);
-		}
-
-		g_strfreev (parts);
-
-		++ n;
-	}
-
-	return names;
-}
-#endif /* !HOST_WIN32 */
-
-MonoArrayHandle
-ves_icall_System_Environment_GetEnvironmentVariableNames (MonoError *error)
-{
-	return mono_icall_get_environment_variable_names (error);
 }
 
 void

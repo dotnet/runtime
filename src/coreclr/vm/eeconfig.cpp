@@ -22,10 +22,6 @@
 
 using namespace clr;
 
-#define DEFAULT_ZAP_SET W("")
-
-#define DEFAULT_APP_DOMAIN_LEAKS 0
-
 
 #ifdef STRESS_HEAP
 // Global counter to disable GCStress. This is needed so we can inhibit
@@ -103,8 +99,6 @@ HRESULT EEConfig::Init()
     iGCconcurrent = 0;
     iGCHoardVM = 0;
     iGCLOHThreshold = 0;
-
-    m_fFreepZapSet = false;
 
     dwSpinInitialDuration = 0x32;
     dwSpinBackoffFactor = 0x3;
@@ -186,10 +180,6 @@ HRESULT EEConfig::Init()
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
-
-    iRequireZaps = REQUIRE_ZAPS_NONE;
-
-    pZapSet = DEFAULT_ZAP_SET;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     dwDisableStackwalkCache = 0;
@@ -277,26 +267,10 @@ HRESULT EEConfig::Cleanup()
         MODE_ANY;
     } CONTRACTL_END;
 
-    if (m_fFreepZapSet)
-        delete[] pZapSet;
     delete[] szZapBBInstr;
-
-    if (pRequireZapsList)
-        delete pRequireZapsList;
-
-    if (pRequireZapsExcludeList)
-        delete pRequireZapsExcludeList;
 
     if (pReadyToRunExcludeList)
         delete pReadyToRunExcludeList;
-
-#ifdef _DEBUG
-    if (pForbidZapsList)
-        delete pForbidZapsList;
-
-    if (pForbidZapsExcludeList)
-        delete pForbidZapsExcludeList;
-#endif
 
 #ifdef FEATURE_COMINTEROP
     if (pszLogCCWRefCountChange)
@@ -385,10 +359,6 @@ HRESULT EEConfig::sync()
 
     if (gcConcurrentWasForced || (gcConcurrentConfigVal == -1 && g_IGCconcurrent))
         iGCconcurrent = TRUE;
-
-    // Disable concurrent GC during ngen for the rare case a GC gets triggered, causing problems
-    if (IsCompilationProcess())
-        iGCconcurrent = FALSE;
 
 #if defined(STRESS_HEAP) || defined(_DEBUG)
     iGCStress           =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCStress);
@@ -503,27 +473,6 @@ HRESULT EEConfig::sync()
             fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
     }
 
-    iRequireZaps        = RequireZapsType(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapRequire, iRequireZaps));
-    if (IsCompilationProcess() || iRequireZaps >= REQUIRE_ZAPS_COUNT)
-        iRequireZaps = REQUIRE_ZAPS_NONE;
-
-    if (iRequireZaps != REQUIRE_ZAPS_NONE)
-    {
-        {
-            NewArrayHolder<WCHAR> wszZapRequireList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapRequireList, &wszZapRequireList));
-            if (wszZapRequireList)
-                pRequireZapsList = new AssemblyNamesList(wszZapRequireList);
-        }
-
-        {
-            NewArrayHolder<WCHAR> wszZapRequireExcludeList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapRequireExcludeList, &wszZapRequireExcludeList));
-            if (wszZapRequireExcludeList)
-                pRequireZapsExcludeList = new AssemblyNamesList(wszZapRequireExcludeList);
-        }
-    }
-
     pReadyToRunExcludeList = NULL;
 #if defined(FEATURE_READYTORUN)
     if (ReadyToRunInfo::IsReadyToRunEnabled())
@@ -534,26 +483,6 @@ HRESULT EEConfig::sync()
             pReadyToRunExcludeList = new AssemblyNamesList(wszReadyToRunExcludeList);
     }
 #endif // defined(FEATURE_READYTORUN)
-
-#ifdef _DEBUG
-    iForbidZaps     = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbid) != 0;
-    if (iForbidZaps != 0)
-    {
-        {
-            NewArrayHolder<WCHAR> wszZapForbidList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbidList, &wszZapForbidList));
-            if (wszZapForbidList)
-                pForbidZapsList = new AssemblyNamesList(wszZapForbidList);
-        }
-
-        {
-            NewArrayHolder<WCHAR> wszZapForbidExcludeList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbidExcludeList, &wszZapForbidExcludeList));
-            if (wszZapForbidExcludeList)
-                pForbidZapsExcludeList = new AssemblyNamesList(wszZapForbidExcludeList);
-        }
-    }
-#endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
@@ -871,38 +800,6 @@ HRESULT EEConfig::sync()
 #endif
     return hr;
 }
-
-bool EEConfig::RequireZap(LPCUTF8 assemblyName) const
-{
-    LIMITED_METHOD_CONTRACT;
-    if (iRequireZaps == REQUIRE_ZAPS_NONE)
-        return false;
-
-    if (pRequireZapsExcludeList != NULL && pRequireZapsExcludeList->IsInList(assemblyName))
-        return false;
-
-    if (pRequireZapsList == NULL || pRequireZapsList->IsInList(assemblyName))
-        return true;
-
-    return false;
-}
-
-#ifdef _DEBUG
-bool EEConfig::ForbidZap(LPCUTF8 assemblyName) const
-{
-    LIMITED_METHOD_CONTRACT;
-    if (iForbidZaps == 0)
-        return false;
-
-    if (pForbidZapsExcludeList != NULL && pForbidZapsExcludeList->IsInList(assemblyName))
-        return false;
-
-    if (pForbidZapsList == NULL || pForbidZapsList->IsInList(assemblyName))
-        return true;
-
-    return false;
-}
-#endif
 
 bool EEConfig::ExcludeReadyToRun(LPCUTF8 assemblyName) const
 {

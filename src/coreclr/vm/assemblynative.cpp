@@ -127,12 +127,13 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 }
 
 /* static */
-Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImage *pILImage, PEImage *pNIImage)
+Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImage *pImage)
 {
     CONTRACT(Assembly*)
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pBinderContext));
+        PRECONDITION(pImage != NULL);
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -140,19 +141,6 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImag
     Assembly *pLoadedAssembly = NULL;
 
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
-
-    // Get the correct PEImage to work with.
-    BOOL fIsNativeImage = TRUE;
-    PEImage *pImage = pNIImage;
-    if (pNIImage == NULL)
-    {
-        // Since we do not have a NI image, we are working with IL assembly
-        pImage = pILImage;
-        fIsNativeImage = FALSE;
-    }
-    _ASSERTE(pImage != NULL);
-
-    BOOL fHadLoadFailure = FALSE;
 
     // Force the image to be loaded and mapped so that subsequent loads do not
     // map a duplicate copy.
@@ -181,7 +169,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImag
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
     DefaultAssemblyBinder *pTPABinder = pCurDomain->GetTPABinderContext();
-    hr = pBinderContext->BindUsingPEImage(pImage, fIsNativeImage, &pAssembly);
+    hr = pBinderContext->BindUsingPEImage(pImage, &pAssembly);
 
     if (hr != S_OK)
     {
@@ -196,7 +184,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImag
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, pAssembly->GetPEImage(), pAssembly->GetNativePEImage(), pAssembly));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, pAssembly->GetPEImage(), pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
@@ -216,9 +204,9 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
     AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
     _ASSERTE(pBinderContext != NULL);
 
-    // Form the PEImage for the ILAssembly. Incase of an exception, the holders will ensure
+    // Form the PEImage for the ILAssembly. Incase of an exception, the holder will ensure
     // the release of the image.
-    PEImageHolder pILImage, pNIImage;
+    PEImageHolder pILImage;
 
     if (pwzILPath != NULL)
     {
@@ -238,7 +226,7 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
         }
     }
 
-    Assembly *pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, pNIImage);
+    Assembly *pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage);
 
     {
         GCX_COOP();
@@ -286,8 +274,8 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_IJW_IN_COLLECTIBLE_ALC);
     }
 
-    // Pass the stream based assembly as IL and NI in an attempt to bind and load it
-    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, NULL);
+    // Pass the stream based assembly as IL in an attempt to bind and load it
+    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage);
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
@@ -343,7 +331,7 @@ void QCALLTYPE AssemblyNative::LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyL
     AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
 
     // Pass the in memory module as IL in an attempt to bind and load it
-    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage, NULL);
+    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage);
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());

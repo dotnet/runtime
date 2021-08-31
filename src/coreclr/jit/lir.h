@@ -298,7 +298,7 @@ public:
 
 public:
     static Range& AsRange(BasicBlock* block);
-    static const LIR::Range& LIR::AsRange(const BasicBlock* block);
+    static const Range& AsRange(const BasicBlock* block);
 
     static Range EmptyRange();
     static Range SeqTree(Compiler* compiler, GenTree* tree);

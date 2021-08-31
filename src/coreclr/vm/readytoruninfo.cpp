@@ -506,7 +506,7 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         AssemblyLoadContext *loadContext = pModule->GetFile()->GetAssemblyLoadContext();
         return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
-    
+
     return NULL;
 }
 
@@ -867,7 +867,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
             IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
             size_t maxSize = offset - pPgoInstrumentationDataDir->VirtualAddress + pPgoInstrumentationDataDir->Size;
 
-            return SUCCEEDED(PgoManager::getPgoInstrumentationResultsFromR2RFormat(this, m_pModule, m_pModule->GetNativeOrReadyToRunImage(), instrumentationDataPtr, maxSize, pAllocatedMemory, ppSchema, pcSchema, pInstrumentationData));
+            return SUCCEEDED(PgoManager::getPgoInstrumentationResultsFromR2RFormat(this, m_pModule, m_pModule->GetReadyToRunImage(), instrumentationDataPtr, maxSize, pAllocatedMemory, ppSchema, pcSchema, pInstrumentationData));
         }
     }
 

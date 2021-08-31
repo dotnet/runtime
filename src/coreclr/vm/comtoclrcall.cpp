@@ -767,18 +767,7 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     {
         // if this represents a ctor or static, use the class method (i.e. the actual ctor or static)
         MethodDesc *pMD = GetCallMethodDesc();
-
-        // first see if we have an NGENed stub
-        pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
-        if (pStubMD != NULL)
-        {
-            pStubMD = RestoreNGENedStub(pStubMD);
-        }
-        if (pStubMD == NULL)
-        {
-            // no NGENed stub - create a new one
-            pStubMD = ComCall::GetILStubMethodDesc(pMD, dwStubFlags);
-        }
+        pStubMD = ComCall::GetILStubMethodDesc(pMD, dwStubFlags);
     }
 
     *ppStubMD = pStubMD;

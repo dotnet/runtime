@@ -99,9 +99,6 @@ typedef DPTR(DictionaryLayout) PTR_DictionaryLayout;
 class DictionaryLayout
 {
     friend class Dictionary;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 private:
     // Current number of non-type-argument slots
     WORD m_numSlots;
@@ -135,7 +132,7 @@ private:
                                                     DictionaryEntrySignatureSource  signatureSource,
                                                     CORINFO_RUNTIME_LOOKUP*         pResult,
                                                     WORD*                           pSlotOut);
-     
+
     static PVOID CreateSignatureWithSlotData(SigBuilder* pSigBuilder, LoaderAllocator* pAllocator, WORD slot);
 
 public:
@@ -169,7 +166,7 @@ public:
     DWORD GetMaxSlots();
     DWORD GetNumInitialSlots();
     DWORD GetNumUsedSlots();
-    
+
     PTR_DictionaryEntryLayout GetEntryLayout(DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
@@ -184,13 +181,9 @@ public:
 // The type of dictionaries. This is just an abstraction around an open-ended array
 class Dictionary
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 private:
-    // First N entries are generic instantiations arguments. They are stored as FixupPointers
-    // in NGen images. It means that the lowest bit is used to mark optional indirection (see code:FixupPointer).
-    // The rest of the open array are normal pointers (no optional indirection).
+    // First N entries are generic instantiations arguments. 
+    // The rest of the open array are normal pointers (no optional indirection) and may be NULL.
     DictionaryEntry m_pEntries[1];
 
     TADDR EntryAddr(ULONG32 idx)
@@ -202,11 +195,11 @@ private:
     }
 
 public:
-    inline DPTR(FixupPointer<TypeHandle>) GetInstantiation()
+    inline DPTR(TypeHandle) GetInstantiation()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return dac_cast<DPTR(FixupPointer<TypeHandle>)>(EntryAddr(0));
+        return dac_cast<DPTR(TypeHandle)>(EntryAddr(0));
     }
 
 #ifndef DACCESS_COMPILE
@@ -272,7 +265,7 @@ private:
         LIMITED_METHOD_CONTRACT;
         return VolatileLoadWithoutBarrier((DWORD*)GetSlotAddr(numGenericArgs, 0));
     }
-    
+
     inline Dictionary **GetBackPointerSlot(DWORD numGenericArgs)
     {
         LIMITED_METHOD_CONTRACT;

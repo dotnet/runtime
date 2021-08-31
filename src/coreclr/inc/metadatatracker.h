@@ -182,7 +182,6 @@ public:
         return address;
     }
 
-    // See the comment above CMiniMdRW::GetHotMetadataTokensSearchAware
     __forceinline static void NoteSearch(void *result)
     {
         WRAPPER_NO_CONTRACT;

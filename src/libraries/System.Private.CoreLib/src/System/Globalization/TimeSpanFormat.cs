@@ -315,7 +315,7 @@ namespace System.Globalization
             bool resultBuilderIsPooled = false;
             if (result == null)
             {
-                result = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
+                result = StringBuilderCache.Acquire();
                 resultBuilderIsPooled = true;
             }
 
@@ -532,7 +532,7 @@ namespace System.Globalization
                     _literals[i] = string.Empty;
                 }
 
-                StringBuilder sb = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
+                StringBuilder sb = StringBuilderCache.Acquire();
                 bool inQuote = false;
                 char quote = '\'';
                 int field = 0;

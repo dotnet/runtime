@@ -119,7 +119,7 @@ public:
 #ifndef TARGET_UNIX
     static void QCALLTYPE LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly);
 #endif
-    static Assembly* LoadFromPEImage(AssemblyBinder* pBinderContext, PEImage *pILImage, PEImage *pNIImage);
+    static Assembly* LoadFromPEImage(AssemblyBinder* pBinderContext, PEImage *pImage);
     static INT_PTR QCALLTYPE GetLoadContextForAssembly(QCall::AssemblyHandle pAssembly);
 
     static BOOL QCALLTYPE InternalTryGetRawMetadata(QCall::AssemblyHandle assembly, UINT8 **blobRef, INT32 *lengthRef);

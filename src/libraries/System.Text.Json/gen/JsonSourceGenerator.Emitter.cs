@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.Json.SourceGeneration
@@ -78,15 +79,17 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-            private readonly GeneratorExecutionContext _executionContext;
+            private readonly SourceProductionContext _sourceProductionContext;
 
             private ContextGenerationSpec _currentContext = null!;
 
             private readonly SourceGenerationSpec _generationSpec = null!;
 
-            public Emitter(in GeneratorExecutionContext executionContext, SourceGenerationSpec generationSpec)
+            private readonly HashSet<string> _emittedPropertyFileNames = new();
+
+            public Emitter(in SourceProductionContext sourceProductionContext, SourceGenerationSpec generationSpec)
             {
-                _executionContext = executionContext;
+                _sourceProductionContext = sourceProductionContext;
                 _generationSpec = generationSpec;
             }
 
@@ -165,7 +168,7 @@ namespace {@namespace}
                     sb.AppendLine("}");
                 }
 
-                _executionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
+                _sourceProductionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
             }
 
             private void GenerateTypeInfo(TypeGenerationSpec typeGenerationSpec)
@@ -242,7 +245,7 @@ namespace {@namespace}
                         break;
                     case ClassType.TypeUnsupportedBySourceGen:
                         {
-                            _executionContext.ReportDiagnostic(
+                            _sourceProductionContext.ReportDiagnostic(
                                 Diagnostic.Create(TypeNotSupported, Location.None, new string[] { typeGenerationSpec.TypeRef }));
                             return;
                         }
@@ -252,13 +255,16 @@ namespace {@namespace}
                         }
                 }
 
-                try
+                // Don't add a duplicate file, but instead raise a diagnostic to say the duplicate has been skipped.
+                // Workaround https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
+                string propertyFileName = $"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs";
+                if (_emittedPropertyFileNames.Add(propertyFileName))
                 {
-                    AddSource($"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs", source);
+                    AddSource(propertyFileName, source);
                 }
-                catch (ArgumentException)
+                else
                 {
-                    _executionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
+                    _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
                 }
             }
 
@@ -817,15 +823,16 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     TypeGenerationSpec propertyTypeSpec = propertyGenSpec.TypeGenerationSpec;
 
                     string runtimePropName = propertyGenSpec.RuntimePropertyName;
+                    string propVarName = propertyGenSpec.PropertyNameVarName;
 
                     // Add the property names to the context-wide cache; we'll generate the source to initialize them at the end of generation.
-                    _currentContext.RuntimePropertyNames.Add(runtimePropName);
+                    Debug.Assert(!_currentContext.RuntimePropertyNames.TryGetValue(runtimePropName, out string? existingName) || existingName == propVarName);
+                    _currentContext.RuntimePropertyNames.TryAdd(runtimePropName, propVarName);
 
                     Type propertyType = propertyTypeSpec.Type;
-                    string propName = $"{runtimePropName}PropName";
                     string? objectRef = castingRequiredForProps ? $"(({propertyGenSpec.DeclaringTypeRef}){ValueVarName})" : ValueVarName;
                     string propValue = $"{objectRef}.{propertyGenSpec.ClrName}";
-                    string methodArgs = $"{propName}, {propValue}";
+                    string methodArgs = $"{propVarName}, {propValue}";
 
                     string? methodToCall = GetWriterMethod(propertyType);
 
@@ -844,7 +851,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     else
                     {
                         serializationLogic = $@"
-    {WriterVarName}.WritePropertyName({propName});
+    {WriterVarName}.WritePropertyName({propVarName});
     {GetSerializeLogicForNonPrimitiveType(propertyTypeSpec.TypeInfoPropertyName, propValue, propertyTypeSpec.GenerateSerializationLogic)}";
                     }
 
@@ -1204,10 +1211,10 @@ private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ g
 
                 StringBuilder sb = new();
 
-                foreach (string propName in _currentContext.RuntimePropertyNames)
+                foreach (KeyValuePair<string, string> name_varName_pair in _currentContext.RuntimePropertyNames)
                 {
                     sb.Append($@"
-private static {JsonEncodedTextTypeRef} {propName}PropName = {JsonEncodedTextTypeRef}.Encode(""{propName}"");");
+private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {JsonEncodedTextTypeRef}.Encode(""{name_varName_pair.Key}"");");
                 }
 
                 return sb.ToString();

@@ -7624,7 +7624,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                         // An absolute indir address that doesn't need reloc should fit within 32-bits
                         // to be encoded as offset relative to zero.  This addr mode requires an extra
                         // SIB byte
-                        noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+                        noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                         sz++;
                     }
 #endif // TARGET_AMD64
@@ -7660,7 +7660,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             // An absolute indir address that doesn't need reloc should fit within 32-bits
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
-            noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+            noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
 #endif // TARGET_AMD64
@@ -8783,58 +8783,9 @@ void emitter::emitDispIns(
     }
     else
     {
-        emitAttr sizeAttr = id->idOpSize();
-        attr              = sizeAttr;
+        attr = emitGetMemOpSize(id);
 
-        switch (ins)
-        {
-            case INS_vextractf128:
-            case INS_vextracti128:
-            case INS_vinsertf128:
-            case INS_vinserti128:
-            {
-                sizeAttr = EA_16BYTE;
-                break;
-            }
-
-            case INS_pextrb:
-            case INS_pinsrb:
-            {
-                sizeAttr = EA_1BYTE;
-                break;
-            }
-
-            case INS_pextrw:
-            case INS_pextrw_sse41:
-            case INS_pinsrw:
-            {
-                sizeAttr = EA_2BYTE;
-                break;
-            }
-
-            case INS_extractps:
-            case INS_insertps:
-            case INS_pextrd:
-            case INS_pinsrd:
-            {
-                sizeAttr = EA_4BYTE;
-                break;
-            }
-
-            case INS_pextrq:
-            case INS_pinsrq:
-            {
-                sizeAttr = EA_8BYTE;
-                break;
-            }
-
-            default:
-            {
-                break;
-            }
-        }
-
-        sstr = codeGen->genSizeStr(sizeAttr);
+        sstr = codeGen->genSizeStr(attr);
 
         if (ins == INS_lea)
         {
@@ -11512,7 +11463,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         addr = emitConsBlock + doff;
 
-        int byteSize = EA_SIZE_IN_BYTES(size);
+#ifdef DEBUG
+        int byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id));
 
         // this instruction has a fixed size (4) src.
         if (ins == INS_cvttss2si || ins == INS_cvtss2sd || ins == INS_vbroadcastss)
@@ -11532,6 +11484,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         assert((emitChkAlign == false) || (ins == INS_lea) ||
                ((emitComp->compCodeOpt() == Compiler::SMALL_CODE) && (((size_t)addr & 3) == 0)) ||
                (((size_t)addr & (byteSize - 1)) == 0));
+#endif // DEBUG
     }
     else
     {

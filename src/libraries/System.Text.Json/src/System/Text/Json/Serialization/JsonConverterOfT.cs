@@ -144,9 +144,6 @@ namespace System.Text.Json.Serialization
         /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-#if NET6_0_OR_GREATER
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             if (ConverterStrategy == ConverterStrategy.Value)
@@ -320,9 +317,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         private static bool IsNull(T value) => value is null;
 
-#if NET6_0_OR_GREATER
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
         internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
