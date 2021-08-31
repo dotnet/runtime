@@ -2250,6 +2250,7 @@ double      gc_heap::short_plugs_pad_ratio = 0;
 #endif //SHORT_PLUGS
 
 int         gc_heap::generation_skip_ratio_threshold = 0;
+int         gc_heap::conserve_mem_setting = 0;
 
 uint64_t    gc_heap::suspended_start_time = 0;
 uint64_t    gc_heap::end_gc_time = 0;
@@ -12571,9 +12572,9 @@ void gc_heap::make_generation (int gen_num, heap_segment* seg, uint8_t* start)
 #endif //DOUBLY_LINKED_FL
 
 #ifdef FREE_USAGE_STATS
-    memset (gen->gen_free_spaces, 0, sizeof (gen.gen_free_spaces));
-    memset (gen->gen_current_pinned_free_spaces, 0, sizeof (gen.gen_current_pinned_free_spaces));
-    memset (gen->gen_plugs, 0, sizeof (gen.gen_plugs));
+    memset (gen->gen_free_spaces, 0, sizeof (gen->gen_free_spaces));
+    memset (gen->gen_current_pinned_free_spaces, 0, sizeof (gen->gen_current_pinned_free_spaces));
+    memset (gen->gen_plugs, 0, sizeof (gen->gen_plugs));
 #endif //FREE_USAGE_STATS
 }
 
@@ -13170,6 +13171,14 @@ gc_heap::init_semi_shared()
     }
 #endif //FEATURE_LOH_COMPACTION
 #endif //FEATURE_EVENT_TRACE
+
+    conserve_mem_setting  = (int)GCConfig::GetGCConserveMem();
+    if (conserve_mem_setting  < 0)
+        conserve_mem_setting = 0;
+    if (conserve_mem_setting > 9)
+        conserve_mem_setting = 9;
+
+    dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
 
     ret = 1;
 
@@ -17690,7 +17699,6 @@ void gc_heap::init_free_and_plug()
 #else
         memset (gen->gen_free_spaces, 0, sizeof (gen->gen_free_spaces));
 #endif //DOUBLY_LINKED_FL
-        memset (gen->gen_plugs_allocated_in_free, 0, sizeof (gen->gen_plugs_allocated_in_free));
         memset (gen->gen_plugs, 0, sizeof (gen->gen_plugs));
         memset (gen->gen_current_pinned_free_spaces, 0, sizeof (gen->gen_current_pinned_free_spaces));
     }
@@ -17708,7 +17716,7 @@ void gc_heap::init_free_and_plug()
 
 void gc_heap::print_free_and_plug (const char* msg)
 {
-#if defined(FREE_USAGE_STATS) && defined(SIMPLE_DPRINTF)
+#ifdef FREE_USAGE_STATS
     int older_gen = ((settings.condemned_generation == max_generation) ? max_generation : (settings.condemned_generation + 1));
     for (int i = 0; i <= older_gen; i++)
     {
@@ -17729,7 +17737,7 @@ void gc_heap::print_free_and_plug (const char* msg)
     }
 #else
     UNREFERENCED_PARAMETER(msg);
-#endif //FREE_USAGE_STATS && SIMPLE_DPRINTF
+#endif //FREE_USAGE_STATS
 }
 
 // replace with allocator::first_suitable_bucket
@@ -17801,8 +17809,8 @@ void gc_heap::add_gen_free (int gen_number, size_t free_size)
     (gen->gen_free_spaces[i])++;
     if (gen_number == max_generation)
     {
-        dprintf (3, ("Mb b%d: f+ %Id (%Id->%Id)", 
-            i, free_size, (gen->gen_free_spaces[i]).num_items, (gen->gen_free_spaces[i]).total_size));
+        dprintf (3, ("Mb b%d: f+ %Id (%Id)", 
+            i, free_size, gen->gen_free_spaces[i]));
     }
 #else
     UNREFERENCED_PARAMETER(gen_number);
@@ -17824,8 +17832,8 @@ void gc_heap::remove_gen_free (int gen_number, size_t free_size)
     (gen->gen_free_spaces[i])--;
     if (gen_number == max_generation)
     {
-        dprintf (3, ("Mb b%d: f- %Id (%Id->%Id)", 
-            i, free_size, (gen->gen_free_spaces[i]).num_items, (gen->gen_free_spaces[i]).total_size));
+        dprintf (3, ("Mb b%d: f- %Id (%Id)", 
+            i, free_size, gen->gen_free_spaces[i]));
     }
 #else
     UNREFERENCED_PARAMETER(gen_number);
@@ -19019,6 +19027,37 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             *blocking_collection_p = TRUE;
             settings.loh_compaction = TRUE;
             dprintf (GTC_LOG, ("compacting LOH due to hard limit"));
+        }
+    }
+
+    if ((conserve_mem_setting != 0) && (n == max_generation))
+    {
+        float frag_limit = 1.0f - conserve_mem_setting / 10.0f;
+
+        size_t loh_size = get_total_gen_size (loh_generation);
+        size_t gen2_size = get_total_gen_size (max_generation);
+        float loh_frag_ratio = 0.0f;
+        float combined_frag_ratio = 0.0f;
+        if (loh_size != 0)
+        {
+            size_t loh_frag  = get_total_gen_fragmentation (loh_generation);
+            size_t gen2_frag = get_total_gen_fragmentation (max_generation);
+            loh_frag_ratio = (float)loh_frag / (float)loh_size;
+            combined_frag_ratio = (float)(gen2_frag + loh_frag) / (float)(gen2_size + loh_size);
+        }
+        if (combined_frag_ratio > frag_limit)
+        {
+            dprintf (GTC_LOG, ("combined frag: %f > limit %f, loh frag: %f", combined_frag_ratio, frag_limit, loh_frag_ratio));
+            gc_data_global.gen_to_condemn_reasons.set_condition (gen_max_high_frag_p);
+
+            n = max_generation;
+            *blocking_collection_p = TRUE;
+            if (loh_frag_ratio > frag_limit)
+            {
+                settings.loh_compaction = TRUE;
+
+                dprintf (GTC_LOG, ("compacting LOH due to GCConserveMem setting"));
+            }
         }
     }
 
@@ -24180,6 +24219,21 @@ size_t gc_heap::get_total_gen_estimated_reclaim (int gen_number)
     return total_estimated_reclaim;
 }
 
+size_t gc_heap::get_total_gen_size (int gen_number)
+{
+#ifdef MULTIPLE_HEAPS
+    size_t size = 0;
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[hn];
+        size += hp->generation_size (gen_number);
+    }
+#else
+    size_t size = generation_size (gen_number);
+#endif //MULTIPLE_HEAPS
+    return size;
+}
+
 size_t gc_heap::committed_size()
 {
     size_t total_committed = 0;
@@ -26341,7 +26395,7 @@ BOOL gc_heap::plan_loh()
 
 void gc_heap::compact_loh()
 {
-    assert (loh_compaction_requested() || heap_hard_limit);
+    assert (loh_compaction_requested() || heap_hard_limit || conserve_mem_setting);
 
 #ifdef FEATURE_EVENT_TRACE
     uint64_t start_time, end_time;
@@ -38122,6 +38176,19 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             cst = min (1.0f, float (out) / float (dd_begin_data_size (dd)));
 
             f = surv_to_growth (cst, limit, max_limit);
+            if (conserve_mem_setting != 0)
+            {
+                // if this is set, compute a growth factor based on it.
+                // example: a setting of 6 means we have a goal of 60% live data
+                // this means we allow 40% fragmentation
+                // to keep heap size stable, we only use half of that (20%) for new allocation
+                // f is (live data + new allocation)/(live data), so would be (60% + 20%) / 60% or 1.33
+                float f_conserve = ((10.0f / conserve_mem_setting) - 1) * 0.5f + 1.0f;
+
+                // use the smaller one
+                f = min (f, f_conserve);
+            }
+
             size_t max_growth_size = (size_t)(max_size / f);
             if (current_size >= max_growth_size)
             {
@@ -38145,6 +38212,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
 #ifdef BGC_SERVO_TUNING
                     !bgc_tuning::fl_tuning_triggered &&
 #endif //BGC_SERVO_TUNING
+                    (conserve_mem_setting == 0) &&
                     (dd_fragmentation (dd) > ((size_t)((f-1)*current_size))))
                 {
                     //reducing allocation in case of fragmentation
