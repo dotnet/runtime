@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Strategies;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -437,7 +438,7 @@ namespace System.IO
         // The pinned MemoryHandles and the pointer to the segments must be cleaned-up
         // with the CleanupScatterGatherBuffers method.
         private static unsafe bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
-            THandler handler, out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
+            THandler handler, [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
             where THandler: struct, IMemoryHandler<T>
         {
             int pageSize = s_cachedPageSize;
@@ -447,7 +448,7 @@ namespace System.IO
             long alignedAtPageSizeMask = pageSize - 1;
 
             int buffersCount = buffers.Count;
-            handlesToDispose = new MemoryHandle[buffersCount];
+            handlesToDispose = null;
             segmentsPtr = IntPtr.Zero;
             totalBytes = 0;
 
@@ -469,18 +470,23 @@ namespace System.IO
                         return false;
                     }
 
-                    MemoryHandle handle = handlesToDispose[i] = handler.Pin(in buffer);
+                    MemoryHandle handle = handler.Pin(in buffer);
                     long ptr = segments[i] = (long)handle.Pointer;
                     if ((ptr & alignedAtPageSizeMask) != 0)
                     {
+                        handle.Dispose();
                         return false;
                     }
+
+                    // We avoid allocating an array if there are
+                    // no buffers or the first one is unacceptable.
+                    (handlesToDispose ??= new MemoryHandle[buffersCount])[i] = handle;
                 }
 
                 segmentsPtr = (IntPtr)segments;
                 totalBytes = (int)totalBytes64;
                 success = true;
-                return true;
+                return handlesToDispose != null;
             }
             finally
             {
@@ -491,11 +497,14 @@ namespace System.IO
             }
         }
 
-        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[] handlesToDispose, IntPtr segmentsPtr)
+        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[]? handlesToDispose, IntPtr segmentsPtr)
         {
-            foreach (MemoryHandle handle in handlesToDispose)
+            if (handlesToDispose != null)
             {
-                handle.Dispose();
+                foreach (MemoryHandle handle in handlesToDispose)
+                {
+                    handle.Dispose();
+                }
             }
 
             NativeMemory.Free((void*) segmentsPtr);
@@ -510,7 +519,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
                 return ReadScatterAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -607,7 +616,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
                 return WriteGatherAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
