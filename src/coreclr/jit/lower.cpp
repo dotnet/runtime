@@ -3440,8 +3440,11 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     {
         const var_types lclVarType = varDsc->GetRegisterType(lclVar);
         assert(lclVarType != TYP_UNDEF);
-        const var_types actualType = genActualType(lclVarType);
-        lclVar->ChangeType(actualType);
+        if (!varDsc->lvNormalizeOnLoad())
+        {
+            const var_types actualType = genActualType(lclVarType);
+            lclVar->ChangeType(actualType);
+        }
 
         if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVarType))
         {
