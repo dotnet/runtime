@@ -182,7 +182,7 @@ namespace BundleTests.Helpers
             return singleFile;
         }
 
-        private static string VerifyNoOpenHandles(string path)
+        private static void VerifyNoOpenHandles(string path)
         {
             if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
@@ -190,9 +190,12 @@ namespace BundleTests.Helpers
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
-                throw new Exception(result.StdOut);
+                if (result.StdOut.Length > 0)
+                {
+                    // If anything has a handle to this file, there should be text in the stdout
+                    throw new InvalidOperationException(result.StdOut);
+                }
             }
-            return "";
         }
 
         // Bundle to a single-file
