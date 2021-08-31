@@ -987,17 +987,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             if (verbose)
             {
                 printf("Arg #%u    passed in register(s) ", varDscInfo->varNum);
-                bool isFloat = false;
-#if defined(UNIX_AMD64_ABI)
-                if (varTypeIsStruct(argType) && (structDesc.eightByteCount >= 1))
-                {
-                    isFloat = varTypeUsesFloatReg(firstEightByteType);
-                }
-                else
-#endif // !UNIX_AMD64_ABI
-                {
-                    isFloat = varTypeUsesFloatReg(argType);
-                }
 
 #if defined(UNIX_AMD64_ABI)
                 if (varTypeIsStruct(argType))
@@ -1010,8 +999,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf("firstEightByte: %s",
-                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType),
-                                          isFloat));
+                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType)));
                     }
 
                     if (secondEightByteType == TYP_UNDEF)
@@ -1021,14 +1009,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf(", secondEightByte: %s",
-                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType),
-                                          varTypeUsesFloatReg(secondEightByteType)));
+                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType)));
                     }
                 }
                 else
 #endif // defined(UNIX_AMD64_ABI)
                 {
-                    isFloat            = varTypeUsesFloatReg(argType);
+                    bool     isFloat   = varTypeUsesFloatReg(argType);
                     unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType);
 
                     for (unsigned ix = 0; ix < cSlots; ix++, regArgNum++)
@@ -1052,8 +1039,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             if (argType == TYP_DOUBLE)
                             {
                                 // Print both registers, just to be clear
-                                printf("%s/%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType), isFloat),
-                                       getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType), isFloat));
+                                printf("%s/%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)),
+                                       getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType)));
 
                                 // doubles take 2 slots
                                 assert(ix + 1 < cSlots);
@@ -1062,13 +1049,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             }
                             else
                             {
-                                printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType), isFloat));
+                                printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)));
                             }
                         }
                         else
 #endif // TARGET_ARM
                         {
-                            printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType), isFloat));
+                            printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)));
                         }
                     }
                 }

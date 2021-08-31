@@ -134,7 +134,7 @@ const char* varTypeName(var_types vt)
  *  Return the name of the given register.
  */
 
-const char* getRegName(regNumber reg, bool isFloat)
+const char* getRegName(regNumber reg)
 {
     // Special-case REG_NA; it's not in the regNames array, but we might want to print it.
     if (reg == REG_NA)
@@ -142,27 +142,21 @@ const char* getRegName(regNumber reg, bool isFloat)
         return "NA";
     }
 
+    static const char* const regNames[] = {
 #if defined(TARGET_ARM64)
-    static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
-#include "register.h"
-    };
-    assert(reg < ArrLen(regNames));
-    return regNames[reg];
 #else
-    static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) sname,
+#endif
 #include "register.h"
     };
     assert(reg < ArrLen(regNames));
     return regNames[reg];
-#endif
 }
 
-const char* getRegName(unsigned reg,
-                       bool     isFloat) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
+const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
 {
-    return getRegName((regNumber)reg, isFloat);
+    return getRegName((regNumber)reg);
 }
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
