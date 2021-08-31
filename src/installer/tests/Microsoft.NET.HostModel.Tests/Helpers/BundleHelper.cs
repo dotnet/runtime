@@ -186,14 +186,14 @@ namespace BundleTests.Helpers
         {
             if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
-                var result = Command.Create("lsof", path)
+                var result = Command.Create("lsof", $"\"{path}\"")
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
                 if (result.StdOut.Length > 0)
                 {
                     // If anything has a handle to this file, there should be text in the stdout
-                    throw new InvalidOperationException(result.StdOut);
+                    throw new InvalidOperationException("Path: " + path + "\n" + result.StdOut);
                 }
             }
         }
