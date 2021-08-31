@@ -47,10 +47,10 @@ namespace Mono.Linker.Tests.TestCases
 		public void CodegenAnnotationTests (TestCase testCase)
 		{
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-				Assert.Ignore ("These tests are not valid when linking against .NET Framework");
+				Assert.Ignore ("These tests are not valid when trimming .NET Framework");
 
 #if NETCOREAPP
-			Assert.Ignore ("These tests are not valid when linking against .NET Core");
+			Assert.Ignore ("These tests are not valid when trimming .NET Core");
 #endif
 			Run (testCase);
 		}

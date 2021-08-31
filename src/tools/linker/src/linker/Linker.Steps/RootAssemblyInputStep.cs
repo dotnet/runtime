@@ -36,7 +36,7 @@ namespace Mono.Linker.Steps
 			case AssemblyAction.Link:
 				break;
 			default:
-				Context.LogError ($"Root assembly '{assembly.Name}' cannot use action '{action}'", 1035);
+				Context.LogError ($"Root assembly '{assembly.Name}' cannot use action '{action}'.", 1035);
 				return;
 			}
 
@@ -49,7 +49,7 @@ namespace Mono.Linker.Steps
 			case AssemblyRootMode.EntryPoint:
 				var ep = assembly.MainModule.EntryPoint;
 				if (ep == null) {
-					Context.LogError ($"Root assembly '{assembly.Name}' does not have entry point", 1034);
+					Context.LogError ($"Root assembly '{assembly.Name}' does not have entry point.", 1034);
 					return;
 				}
 
@@ -117,7 +117,7 @@ namespace Mono.Linker.Steps
 			//
 			assembly = Context.TryResolve (fileName);
 			if (assembly == null)
-				Context.LogError ($"Root assembly '{fileName}' could not be found", 1032);
+				Context.LogError ($"Root assembly '{fileName}' could not be found.", 1032);
 
 			return assembly;
 		}

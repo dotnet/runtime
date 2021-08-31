@@ -6,7 +6,7 @@ The `illink` is IL linker version shipping with .NET Core or .NET 5 platforms. I
 the .NET SDK and most of the options are accessible using msbuild properties but any option
 can also be passed using `_ExtraTrimmerArgs` property.
 
-### Linking from the root assembly
+### Trimming from the root assembly
 
 The command:
 
@@ -35,7 +35,7 @@ referenced by any dependency by calling linker like
 
 `illink -a Program.exe visible`
 
-### Linking from an [XML descriptor](data-formats.md#descriptor-format)
+### Trimming from an [XML descriptor](data-formats.md#descriptor-format)
 
 The command:
 
@@ -54,9 +54,9 @@ The linker can do the following things on all or individual assemblies
 - `skip` - skip them, and do nothing with them
 - `copy` - copy them to the output directory
 - `copyused` - copy used assemblies to the output directory
-- `link` - link them to reduce their size
+- `link` - trim them to reduce their size
 - `delete`- remove them from the output
-- `save` - save them in memory without linking
+- `save` - save them in memory without trimming
 
 You can specify an action per assembly using `--action` option like this:
 
@@ -151,17 +151,17 @@ values and pass them as one key-value pair.
 
 ### Supplementary [custom attributes](data-formats.md#custom-attributes-annotations-format)
 
-Much of the linker behaviour is controlled by the custom attributes but they are not always
+Much of the trimmer behaviour is controlled by the custom attributes but they are not always
 present in the input assemblies. The attributes can be applied to any existing metadata using
 `--link-attributes FILE` option.
 
-Alternatively, the linker recognizes the embedded XML resource 'ILLink.LinkAttributes.xml' as a
+Alternatively, the trimmer recognizes the embedded XML resource 'ILLink.LinkAttributes.xml' as a
 special resource to alter the custom attributes applied.
 
 ### Ignoring embedded XML control files
 
-The linker recognizes embedded XML resources based on name as special ones which can
-alter the linking behaviour. The behaviour can be suppressed if necessary by using
+The trimmer recognizes embedded XML resources based on name as special ones which can
+alter the trimming behaviour. The behaviour can be suppressed if necessary by using
 control options listed below.
 
 | File Format | Resource Name  |  Control Option  |
@@ -172,22 +172,22 @@ control options listed below.
 
 ### Treat warnings as errors
 
-The `--warnasserror` (or `--warnaserror+`) option will make the linker report any warning
-messages as error messages instead. By default, the linker behaves as if the `--warnaserror-`
-option was used, which causes the linker to report warnings as usual.
+The `--warnasserror` (or `--warnaserror+`) option will make the trimmer report any warning
+messages as error messages instead. By default, the trimmer behaves as if the `--warnaserror-`
+option was used, which causes the trimmer to report warnings as usual.
 
 Optionally, you may specify a list of warnings that you'd like to be treated as errors. These
 warnings have to be prepended with `IL` and must be separated by either a comma or semicolon.
 
 ### Turning off warnings
 
-The `--nowarn` option prevents the linker from displaying one or more linker warnings by
+The `--nowarn` option prevents the trimmer from displaying one or more trimmer warnings by
 specifying its warning codes. All warning codes must be prepended with `IL` and multiple
 warnings should be separated with a comma or semicolon.
 
 ### Control warning versions
 
-The `--warn VERSION` option prevents the linker from displaying warnings newer than the specified
+The `--warn VERSION` option prevents the trimmer from displaying warnings newer than the specified
 version. Valid versions are in the range 0-9999, where 9999 will display all current and future
 warnings.
 
@@ -200,10 +200,10 @@ You may also pass `--singlewarn Assembly` (or `--singlewarn- Assembly`) to contr
 
 ### Generating warning suppressions
 
-For each of the linked assemblies that triggered any warnings during linking, the
+For each of the linked assemblies that triggered any warnings during trimming, the
 `--generate-warning-suppressions [cs | xml]` option will generate a file containing a list
 with the necessary attributes to suppress these. The generated files can either be C# source
-files or XML files in a [format](data-formats.md#custom-attributes-annotations-format) that is supported by the linker,
+files or XML files in a [format](data-formats.md#custom-attributes-annotations-format) that is supported by the trimmer,
 the emitted format depends upon the argument that is passed to this option (`cs` or `xml`.)
 The attributes contained in these files are assembly-level attributes of type `UnconditionalSuppressMessage`
 specifying the required `Scope` and `Target` properties for each of the warnings seen. The
@@ -211,7 +211,7 @@ generated files are saved in the output directory and named `<AssemblyName>.Warn
 
 ### Detailed dependencies tracing
 
-For tracking why linker kept specific metadata you can use `--dump-dependencies` option
+For tracking why trimmer kept specific metadata you can use `--dump-dependencies` option
 which by default writes detailed information into a compressed file called `linker-dependencies.xml.gz`
 inside output directory. The default output filename can be changed with `--dependencies-file`
 option.
@@ -243,12 +243,12 @@ Example:
 
 `illink -a assembly -l mideast,cjk`
 
-### Linking from an API info file
+### Trimming from an API info file
 
 The command:
 
 `illink -i assembly.info`
 
-will use a file produced by `mono-api-info` as a source. The linker will use
+will use a file produced by `mono-api-info` as a source. The trimmer will use
 this file to link only what is necessary to match the public API defined in
 the info file.

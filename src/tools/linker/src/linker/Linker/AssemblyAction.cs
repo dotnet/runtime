@@ -44,7 +44,7 @@ namespace Mono.Linker
 		Link,
 		// Remove the assembly from the output
 		Delete,
-		// Save the assembly/symbols in memory without linking it. 
+		// Save the assembly/symbols in memory without trimming it. 
 		// E.g. useful to remove unneeded assembly references (as done in SweepStep), 
 		//  resolving [TypeForwardedTo] attributes (like PCL) to their final location
 		Save,

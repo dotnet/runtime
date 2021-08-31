@@ -47,11 +47,11 @@ paths.
 
 ### RootDescriptorFiles
 
-A list of XML [descriptors](data-formats.md#descriptor-format) files specifying linker roots at a granular level.
+A list of XML [descriptors](data-formats.md#descriptor-format) files specifying trimmer roots at a granular level.
 
 ## ILLink Task Customization
 
-The linker can be invoked as an MSBuild task, `ILLink`. We recommend not using the task directly, because the SDK has built-in logic that handles computing the right set of reference assemblies as inputs, incremental linking, and similar logic. If you would like to use the [advanced options](illink-options.md), you can invoke the msbuild task directly and pass any extra arguments like this:
+The trimmer can be invoked as an MSBuild task, `ILLink`. We recommend not using the task directly, because the SDK has built-in logic that handles computing the right set of reference assemblies as inputs, incremental trimming, and similar logic. If you would like to use the [advanced options](illink-options.md), you can invoke the msbuild task directly and pass any extra arguments like this:
 
 ```xml
 <ILLink AssemblyPaths="@(AssemblyFilesToLink)"
@@ -61,11 +61,11 @@ The linker can be invoked as an MSBuild task, `ILLink`. We recommend not using t
         ExtraArgs="-t --trim-mode link" />
 ```
 
-## Default Linking Behavior
+## Default Trimming Behavior
 
 The default in the .NET Core SDK is to trim framework assemblies only, in a conservative assembly-level mode (`copyused` action). Third-party libraries and the app will be analyzed but not trimmed. Other SDKs may modify these defaults.
 
-## Customizing Linking Behavior
+## Customizing Trimming Behavior
 
 `TrimMode` can be used to set the trimming behavior for framework assemblies. Additional assemblies can be given
 metadata `IsTrimmable` and they will also be trimmed using this mode, or they can have per-assembly `TrimMode` which
@@ -73,16 +73,16 @@ takes precedence over the global `TrimMode`.
 
 ## Reflection
 
-Note: this section is out-of-date. New versions of the linker can understand some of these reflection patterns.
+Note: this section is out-of-date. New versions of the trimmer can understand some of these reflection patterns.
 
-Applications or frameworks (including ASP<span />.NET Core and WPF) that use reflection or related dynamic features will often break when trimmed, because the linker does not know about this dynamic behavior, and can not determine in general which framework types will be required for reflection at runtime. To trim such apps, you will need to tell the linker about any types needed by reflection in your code, and in packages or frameworks that you depend on. Be sure to test your apps after trimming.
+Applications or frameworks (including ASP<span />.NET Core and WPF) that use reflection or related dynamic features will often break when trimmed, because the trimmer does not know about this dynamic behavior, and can not determine in general which framework types will be required for reflection at runtime. To trim such apps, you will need to tell the trimmer about any types needed by reflection in your code, and in packages or frameworks that you depend on. Be sure to test your apps after trimming.
 
-If your app or its dependencies use reflection, you may need to tell the linker to keep reflection targets explicitly. For example, dependency injection in ASP<span />.NET Core apps will activate
+If your app or its dependencies use reflection, you may need to tell the trimmer to keep reflection targets explicitly. For example, dependency injection in ASP<span />.NET Core apps will activate
 types depending on what is present at runtime, and therefore may fail
-if the linker has removed assemblies that would otherwise be
+if the trimmer has removed assemblies that would otherwise be
 present. Similarly, WPF apps may call into framework code depending on
 the features used. If you know beforehand what your app will require
-at runtime, you can tell the linker about this in a few ways.
+at runtime, you can tell the trimmer about this in a few ways.
 
 For example, an app may reflect over `System.IO.File`:
 ```csharp
@@ -94,7 +94,7 @@ To ensure that this works:
 - You can include a direct reference to the required type in your code
   somewhere, for example by using `typeof(System.IO.File)`.
 
-- You can tell the linker to explicitly keep an assembly by adding it
+- You can tell the trimmer to explicitly keep an assembly by adding it
   to your csproj (use the assembly name *without* extension):
 
   ```xml
@@ -103,7 +103,7 @@ To ensure that this works:
   </ItemGroup>
   ```
 
-- You can give the linker a more specific list of types or members to
+- You can give the trimmer a more specific list of types or members to
   include using an xml [descriptor](data-formats.md#descriptor-format) file
 
   `.csproj`:
@@ -127,7 +127,7 @@ To ensure that this works:
 Sometimes an application may include multiple versions of the same
 assembly. This may happen when portable apps include platform-specific
 managed code, which gets placed in the `runtimes` directory of the
-publish output. In such cases, the linker will pick one of the
+publish output. In such cases, the trimmer will pick one of the
 duplicate assemblies to analyze. This means that dependencies of the
 un-analyzed duplicates may not be included in the application, so you
 may need to root such dependencies manually.

@@ -11,11 +11,11 @@ Even with the level of investment in .NET Native it wasn't possible to make arbi
 
 Note: While this document mostly talks about reflection, this includes reflection-like APIs with impact on linker's analysis such as `RuntimeHelpers.GetUninitializedObject`, `Marshal.PtrToStructure`, or `RuntimeHelpers.RunClassConstructor`.
 
-In .NET 5, we would like to carve out a _subset_ of reflection patterns that can be made compatible in the presence of ILLink. Since linking is optional, users do not have to adhere to this subset. They can still use ILLink if they do not adhere to this subset, but we will not provide guarantees that linking won't change the semantics of their app. Linker will warn if a reflection pattern within the app is not compatible.
+In .NET 5, we would like to carve out a _subset_ of reflection patterns that can be made compatible in the presence of ILLink. Since trimming is optional, users do not have to adhere to this subset. They can still use ILLink if they do not adhere to this subset, but we will not provide guarantees that trimming won't change the semantics of their app. Linker will warn if a reflection pattern within the app is not compatible.
 
 To achieve compatibility, we'll logically classify methods into following categories:
 
-* Linker-friendly: most code will fall into this category. Linking can be done safely based on information in the static callgraph.
+* Linker-friendly: most code will fall into this category. Trimming can be done safely based on information in the static callgraph.
 * Potentially unfriendly: call to the method is unsafe if the linker cannot reason about a parameter value (e.g. `Type.GetType` with a type name string that could be unknown)
 * Always unfriendly: calls to these methods are never safe in the presence of linker (e.g. `Assembly.ExportedTypes`).
 
@@ -123,7 +123,7 @@ While it would be possible to annotate reflection primitives with the proposed D
 * `Type.GetMember`
 * `Type.GetNestedType`
 
-are going to be special cased so that if the type and name is exactly known at linking time, only the specific member will be preserved. If the name is not known, all matching members are going to be preserved instead. Linker may look at other parameters to these methods, such as the binding flags and parameter counts to further restrict the set of members preserved.
+are going to be special cased so that if the type and name is exactly known at trimming time, only the specific member will be preserved. If the name is not known, all matching members are going to be preserved instead. Linker may look at other parameters to these methods, such as the binding flags and parameter counts to further restrict the set of members preserved.
 
 The special casing will also help in situations such as when the type is not statically known and we only have an annotated value - e.g. calling `GetMethod(...BindingFlags.Public)` on a `System.Type` instance annotated as `DynamicallyAccessedMemberTypes.PublicMethods` should be considered valid.
 

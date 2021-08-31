@@ -105,7 +105,7 @@ namespace Mono.Linker
 			}
 
 			context.LogWarning (
-				$"Attribute '{typeof (RequiresUnreferencedCodeAttribute).FullName}' doesn't have the required number of parameters specified",
+				$"Attribute '{typeof (RequiresUnreferencedCodeAttribute).FullName}' doesn't have the required number of parameters specified.",
 				2028, (IMemberDefinition) provider);
 			return null;
 		}
@@ -120,7 +120,7 @@ namespace Mono.Linker
 				return new RemoveAttributeInstancesAttribute ((CustomAttributeArgument) ca.ConstructorArguments[0].Value);
 			default:
 				context.LogWarning (
-					$"Attribute '{ca.AttributeType.GetDisplayName ()}' doesn't have the required number of arguments specified",
+					$"Attribute '{ca.AttributeType.GetDisplayName ()}' doesn't have the required number of arguments specified.",
 					2028, attributeContext);
 				return null;
 			};

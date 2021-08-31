@@ -464,7 +464,7 @@ namespace Mono.Linker
 					continue;
 
 				if (args[1].Value is not string value || !value.Equals ("True", StringComparison.OrdinalIgnoreCase)) {
-					LogWarning ($"Invalid AssemblyMetadata(\"IsTrimmable\", \"{args[1].Value}\") attribute in assembly '{assembly.Name.Name}'. Value must be \"True\"", 2102, GetAssemblyLocation (assembly));
+					LogWarning ($"Invalid AssemblyMetadata(\"IsTrimmable\", \"{args[1].Value}\") attribute in assembly '{assembly.Name.Name}'. Value must be \"True\".", 2102, GetAssemblyLocation (assembly));
 					continue;
 				}
 
@@ -866,19 +866,19 @@ namespace Mono.Linker
 		protected virtual void ReportUnresolved (FieldReference fieldReference)
 		{
 			if (unresolved_reported.Add (fieldReference))
-				LogError ($"Field '{fieldReference.FullName}' reference could not be resolved", 1040);
+				LogError ($"Field '{fieldReference.FullName}' reference could not be resolved.", 1040);
 		}
 
 		protected virtual void ReportUnresolved (MethodReference methodReference)
 		{
 			if (unresolved_reported.Add (methodReference))
-				LogError ($"Method '{methodReference.GetDisplayName ()}' reference could not be resolved", 1040);
+				LogError ($"Method '{methodReference.GetDisplayName ()}' reference could not be resolved.", 1040);
 		}
 
 		protected virtual void ReportUnresolved (TypeReference typeReference)
 		{
 			if (unresolved_reported.Add (typeReference))
-				LogError ($"Type '{typeReference.GetDisplayName ()}' reference could not be resolved", 1040);
+				LogError ($"Type '{typeReference.GetDisplayName ()}' reference could not be resolved.", 1040);
 		}
 	}
 

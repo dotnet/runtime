@@ -501,7 +501,7 @@ namespace Mono.Linker.Steps
 				Instruction new_instr = Instruction.Create (OpCodes.Pop);
 				ilProcessor.Replace (instr, new_instr);
 
-				_context.LogMessage ($"Removing typecheck of '{type.FullName}' inside {item.Body.Method.GetDisplayName ()} method");
+				_context.LogMessage ($"Removing typecheck of '{type.FullName}' inside '{item.Body.Method.GetDisplayName ()}' method.");
 			}
 		}
 
@@ -867,7 +867,7 @@ namespace Mono.Linker.Steps
 			if (dynamicDependency.AssemblyName != null) {
 				assembly = _context.TryResolve (dynamicDependency.AssemblyName);
 				if (assembly == null) {
-					_context.LogWarning ($"Unresolved assembly '{dynamicDependency.AssemblyName}' in 'DynamicDependencyAttribute'", 2035, _scopeStack.CurrentScope.Origin);
+					_context.LogWarning ($"Unresolved assembly '{dynamicDependency.AssemblyName}' in 'DynamicDependencyAttribute'.", 2035, _scopeStack.CurrentScope.Origin);
 					return;
 				}
 			} else {
@@ -879,7 +879,7 @@ namespace Mono.Linker.Steps
 			if (dynamicDependency.TypeName is string typeName) {
 				type = DocumentationSignatureParser.GetTypeByDocumentationSignature (assembly, typeName, _context);
 				if (type == null) {
-					_context.LogWarning ($"Unresolved type '{typeName}' in DynamicDependencyAttribute", 2036, _scopeStack.CurrentScope.Origin);
+					_context.LogWarning ($"Unresolved type '{typeName}' in 'DynamicDependencyAttribute'.", 2036, _scopeStack.CurrentScope.Origin);
 					return;
 				}
 
@@ -887,13 +887,13 @@ namespace Mono.Linker.Steps
 			} else if (dynamicDependency.Type is TypeReference typeReference) {
 				type = _context.TryResolve (typeReference);
 				if (type == null) {
-					_context.LogWarning ($"Unresolved type '{typeReference}' in DynamicDependencyAtribute", 2036, _scopeStack.CurrentScope.Origin);
+					_context.LogWarning ($"Unresolved type '{typeReference}' in 'DynamicDependencyAtribute'.", 2036, _scopeStack.CurrentScope.Origin);
 					return;
 				}
 			} else {
 				type = _context.TryResolve (context.DeclaringType);
 				if (type == null) {
-					_context.LogWarning ($"Unresolved type '{context.DeclaringType}' in DynamicDependencyAttribute", 2036, context);
+					_context.LogWarning ($"Unresolved type '{context.DeclaringType}' in 'DynamicDependencyAttribute'.", 2036, context);
 					return;
 				}
 			}
@@ -961,7 +961,7 @@ namespace Mono.Linker.Steps
 				assembly = _context.TryResolve (assemblyName);
 				if (assembly == null) {
 					_context.LogWarning (
-						$"Could not resolve dependency assembly '{assemblyName}' specified in a 'PreserveDependency' attribute", 2003, context);
+						$"Could not resolve dependency assembly '{assemblyName}' specified in a 'PreserveDependency' attribute.", 2003, context);
 					return;
 				}
 			} else {
@@ -975,7 +975,7 @@ namespace Mono.Linker.Steps
 
 				if (td == null) {
 					_context.LogWarning (
-						$"Could not resolve dependency type '{typeName}' specified in a `PreserveDependency` attribute", 2004, context);
+						$"Could not resolve dependency type '{typeName}' specified in a 'PreserveDependency' attribute.", 2004, context);
 					return;
 				}
 
@@ -1011,7 +1011,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			_context.LogWarning (
-				$"Could not resolve dependency member '{member}' declared in type '{td.GetDisplayName ()}' specified in a `PreserveDependency` attribute", 2005, context);
+				$"Could not resolve dependency member '{member}' declared in type '{td.GetDisplayName ()}' specified in a 'PreserveDependency' attribute.", 2005, context);
 		}
 
 		bool MarkDependencyMethod (TypeDefinition type, string name, string[] signature, in DependencyInfo reason)
@@ -1787,10 +1787,10 @@ namespace Mono.Linker.Steps
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
 				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type))
 					_context.LogWarning (
-						$"Attribute '{type.GetDisplayName ()}' is being referenced in code but the linker was " +
+						$"Attribute '{type.GetDisplayName ()}' is being referenced in code but the trimmer was " +
 						$"instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to " +
-						$"either remove the linker attribute XML portion which removes the attribute instances, " +
-						$"or override the removal by using the linker XML descriptor to keep the attribute type " +
+						$"either remove the trimmer attribute XML portion which removes the attribute instances, " +
+						$"or override the removal by using the trimmer XML descriptor to keep the attribute type " +
 						$"(which in turn keeps all of its instances).",
 						2045, _scopeStack.CurrentScope.Origin, subcategory: MessageSubCategory.TrimAnalysis);
 			}
@@ -2564,11 +2564,11 @@ namespace Mono.Linker.Steps
 
 				case TypePreserve.Fields:
 					if (!MarkFields (type, true, di, true))
-						_context.LogWarning ($"Type {type.GetDisplayName ()} has no fields to preserve", 2001, type);
+						_context.LogWarning ($"Type '{type.GetDisplayName ()}' has no fields to preserve.", 2001, type);
 					break;
 				case TypePreserve.Methods:
 					if (!MarkMethods (type, di))
-						_context.LogWarning ($"Type {type.GetDisplayName ()} has no methods to preserve", 2002, type);
+						_context.LogWarning ($"Type '{type.GetDisplayName ()}' has no methods to preserve.", 2002, type);
 					break;
 				}
 			}

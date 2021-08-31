@@ -38,7 +38,7 @@ namespace Mono.Linker.Steps
 				// to determine the action.
 				var assembly = Context.TryResolve (assemblyName);
 				if (assembly == null) {
-					Context.LogError ($"Reference assembly '{assemblyPath}' could not be loaded", 1039);
+					Context.LogError ($"Reference assembly '{assemblyPath}' could not be loaded.", 1039);
 					continue;
 				}
 

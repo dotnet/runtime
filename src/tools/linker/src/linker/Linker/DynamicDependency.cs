@@ -75,7 +75,7 @@ namespace Mono.Linker
 			if (dynamicDependency != null)
 				return dynamicDependency;
 
-			context.LogWarning ($"The 'DynamicDependencyAttribute' could not be analyzed", 2034, member);
+			context.LogWarning ($"The 'DynamicDependencyAttribute' could not be analyzed.", 2034, member);
 			return null;
 		}
 

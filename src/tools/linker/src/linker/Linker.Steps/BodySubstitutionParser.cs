@@ -78,7 +78,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition method = FindMethod (type, signature);
 			if (method == null) {
-				LogWarning ($"Could not find method '{signature}' on type '{type.GetDisplayName ()}'", 2009, iterator.Current);
+				LogWarning ($"Could not find method '{signature}' on type '{type.GetDisplayName ()}'.", 2009, iterator.Current);
 				return;
 			}
 
@@ -91,7 +91,7 @@ namespace Mono.Linker.Steps
 				string value = GetAttribute (iterator.Current, "value");
 				if (!string.IsNullOrEmpty (value)) {
 					if (!TryConvertValue (value, method.ReturnType, out object res)) {
-						LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, iterator.Current);
+						LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub.", 2010, iterator.Current);
 						return;
 					}
 
@@ -101,7 +101,7 @@ namespace Mono.Linker.Steps
 				_substitutionInfo.SetMethodAction (method, MethodAction.ConvertToStub);
 				return;
 			default:
-				LogWarning ($"Unknown body modification '{action}' for '{method.GetDisplayName ()}'", 2011, iterator.Current);
+				LogWarning ($"Unknown body modification '{action}' for '{method.GetDisplayName ()}'.", 2011, iterator.Current);
 				return;
 			}
 		}
@@ -114,7 +114,7 @@ namespace Mono.Linker.Steps
 
 			var field = type.Fields.FirstOrDefault (f => f.Name == name);
 			if (field == null) {
-				LogWarning ($"Could not find field '{name}' on type '{type.GetDisplayName ()}'", 2012, iterator.Current);
+				LogWarning ($"Could not find field '{name}' on type '{type.GetDisplayName ()}'.", 2012, iterator.Current);
 				return;
 			}
 
