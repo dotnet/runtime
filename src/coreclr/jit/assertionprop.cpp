@@ -1743,8 +1743,7 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pR
             if (varTypeIsIntegral(source))
             {
                 IntegralRange castRange = IntegralRange::ForCastOutput(source->AsCast());
-                // TODO-Casts: change below to source->TypeGet() when BOX import is fixed to not have CAST(short).
-                IntegralRange nodeRange = IntegralRange::ForType(genActualType(source));
+                IntegralRange nodeRange = IntegralRange::ForType(source->TypeGet());
                 assert(nodeRange.Contains(castRange));
 
                 if (!castRange.Equals(nodeRange))
