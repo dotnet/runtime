@@ -230,15 +230,9 @@ namespace System.IO
             {
                 ThrowHelper.ThrowArgumentException_InvalidHandle(nameof(handle));
             }
-            else if (!handle.CanSeek)
+            else if (handle.IsClosed)
             {
-                // CanSeek calls IsClosed, we don't want to call it twice for valid handles
-                if (handle.IsClosed)
-                {
-                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
-                }
-
-                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
             else if (fileOffset < 0)
             {
