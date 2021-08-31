@@ -185,14 +185,14 @@ namespace InteropLib
             }
         }
 
-        void DestroyWrapperForExternal(_In_ void* contextMaybe, _In_ bool notifyIsCollected) noexcept
+        void DestroyWrapperForExternal(_In_ void* contextMaybe, _In_ bool notifyIsBeingCollected) noexcept
         {
             NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
 
             // A caller should not be destroying a context without knowing if the context is valid.
             _ASSERTE(context != nullptr);
 
-            if (notifyIsCollected)
+            if (notifyIsBeingCollected)
                 NotifyWrapperForExternalIsBeingCollected(contextMaybe);
 
              NativeObjectWrapperContext::Destroy(context);

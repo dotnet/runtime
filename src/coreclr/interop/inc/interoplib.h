@@ -92,7 +92,7 @@ namespace InteropLib
 
          // Destroy the supplied wrapper.
         // Optionally notify the wrapper of collection at the same time.
-        void DestroyWrapperForExternal(_In_ void* context, _In_ bool notifyIsCollected = false) noexcept;
+        void DestroyWrapperForExternal(_In_ void* context, _In_ bool notifyIsBeingCollected = false) noexcept;
 
         // Separate the supplied wrapper from the tracker runtime.
         void SeparateWrapperFromTrackerRuntime(_In_ void* context) noexcept;
