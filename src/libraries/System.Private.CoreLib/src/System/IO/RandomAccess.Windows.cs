@@ -680,13 +680,12 @@ namespace System.IO
 
         private static async ValueTask WriteGatherAtOffsetMultipleSyscallsAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
         {
-            long bytesWritten = 0;
             int buffersCount = buffers.Count;
             for (int i = 0; i < buffersCount; i++)
             {
                 ReadOnlyMemory<byte> rom = buffers[i];
-                await WriteAtOffsetAsync(handle, rom, fileOffset + bytesWritten, cancellationToken).ConfigureAwait(false);
-                bytesWritten += rom.Length;
+                await WriteAtOffsetAsync(handle, rom, fileOffset, cancellationToken).ConfigureAwait(false);
+                fileOffset += rom.Length;
             }
         }
 
