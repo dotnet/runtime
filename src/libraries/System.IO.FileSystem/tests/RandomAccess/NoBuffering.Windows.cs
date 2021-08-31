@@ -187,10 +187,10 @@ namespace System.IO.Tests
             // The Windows scatter/gather APIs accept segments that are exactly one page long.
             // Combined with the FILE_FLAG_NO_BUFFERING's requirements, the segments must also
             // be aligned at page size boundaries and have a size of a multiple of the page size.
-            // Using segments with a length of twice the page size adheres to the second requirement
-            // but not the first. The RandomAccess implementation will see it and issue sequential
-            // read/write syscalls per segment, instead of one scatter/gather syscall.
-            // This test verifies that fallback behavior.
+            // Using segments with a length of twice the page size adheres to FILE_FLAG_NO_BUFFERING's
+            // requirements but not the scatter/gather APIs'. The RandomAccess implementation will
+            // see it and issue sequential read/write syscalls per segment, instead of one
+            // scatter/gather syscall. This test verifies that fallback behavior.
             int bufferSize = Environment.SystemPageSize * 2;
             int fileSize = bufferSize * 2;
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
@@ -206,9 +206,9 @@ namespace System.IO.Tests
 
                 buffer.GetSpan().Clear();
                 await RandomAccess.ReadAsync(handle, new Memory<byte>[] { firstHalf, secondHalf }, 0);
-            }
 
-            Assert.Equal(content, await File.ReadAllBytesAsync(filePath));
+                Assert.True(buffer.GetSpan().SequenceEqual(content.AsSpan()), "Unexpected file content.");
+            }
         }
 
         // when using FileOptions.Asynchronous we are testing Scatter&Gather APIs on Windows (FILE_FLAG_OVERLAPPED requirement)
