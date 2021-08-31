@@ -7,6 +7,8 @@ services:
     image: httpstress
     links:
       - server
+    volumes:
+      - ${HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING}
     environment:
       - HTTPSTRESS_ARGS=-runMode client -serverUri https://server:5001 ${HTTPSTRESS_CLIENT_ARGS}
   server:
