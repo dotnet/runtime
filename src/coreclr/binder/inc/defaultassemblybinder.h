@@ -30,6 +30,11 @@ public:
         return NULL;
     }
 
+    bool IsDefault()
+    {
+        return false;
+    }
+
 public:
 
     HRESULT SetupBindingPaths(SString  &sTrustedPlatformAssemblies,

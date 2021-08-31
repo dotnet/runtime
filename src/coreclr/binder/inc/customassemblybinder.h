@@ -28,6 +28,11 @@ public:
 
     AssemblyLoaderAllocator* GetLoaderAllocator();
 
+    bool IsDefault()
+    {
+        return false;
+    }
+
 public:
     //=========================================================================
     // Class functions
@@ -44,9 +49,6 @@ public:
     void PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext);
     void ReleaseLoadContext();
 
-    //=========================================================================
-    // Internal implementation details
-    //-------------------------------------------------------------------------
 private:
     HRESULT BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName, BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly);
 

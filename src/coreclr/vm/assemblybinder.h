@@ -16,21 +16,20 @@ class AssemblyLoaderAllocator;
 class AssemblyBinder
 {
 public:
-    HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
-        BINDER_SPACE::Assembly** ppAssembly);
 
-    virtual HRESULT BindUsingPEImage(PEImage* pPEImage,
-        BINDER_SPACE::Assembly** ppAssembly) = 0;
+    HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData, BINDER_SPACE::Assembly** ppAssembly);
+    virtual HRESULT BindUsingPEImage(PEImage* pPEImage, BINDER_SPACE::Assembly** ppAssembly) = 0;
+    virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName, BINDER_SPACE::Assembly** ppAssembly) = 0;
 
-    virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-        BINDER_SPACE::Assembly** ppAssembly) = 0;
-
-    /**********************************************************************************
-     ** GetLoaderAllocator
-     ** Get LoaderAllocator for binders that contain it. For other binders, return NULL.
-     **
-     **********************************************************************************/
+    /// <summary>
+    /// Get LoaderAllocator for binders that contain it. For other binders, return NULL.
+    /// </summary>
     virtual AssemblyLoaderAllocator* GetLoaderAllocator() = 0;
+
+    /// <summary>
+    /// Tells if the binder is a default binder (not a custom one)
+    /// </summary>
+    virtual bool IsDefault() = 0;
 
     inline BINDER_SPACE::ApplicationContext* GetAppContext()
     {
