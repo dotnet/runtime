@@ -794,7 +794,8 @@ namespace System.Net.Quic.Tests
 
                     int received = await serverStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
-                    Assert.True(serverStream.ReadsCompleted);
+                    received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
 
                     Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
 
@@ -843,7 +844,8 @@ namespace System.Net.Quic.Tests
 
                     int received = await serverStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
-                    Assert.True(serverStream.ReadsCompleted);
+                    received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
 
                     Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
 
@@ -891,7 +893,8 @@ namespace System.Net.Quic.Tests
 
                     int received = await serverStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
-                    Assert.True(serverStream.ReadsCompleted);
+                    received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
 
                     await serverStream.WriteAsync(new byte[1]);
 
@@ -923,7 +926,8 @@ namespace System.Net.Quic.Tests
 
                     int received = await serverStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
-                    Assert.True(serverStream.ReadsCompleted);
+                    received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
 
                     Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
 
@@ -950,7 +954,8 @@ namespace System.Net.Quic.Tests
 
                     int received = await stream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
-                    Assert.True(stream.ReadsCompleted);
+                    received = await stream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
 
                     // Signal that the server has read data
                     sem.Release();
