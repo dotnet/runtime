@@ -18,8 +18,13 @@
     <SkipIndexCheck>true</SkipIndexCheck>
 
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
-    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(ProductVersion)</PackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == '' and '$(PreReleaseVersionLabel)' != 'servicing'">$(PackageVersion)</StableVersion>
+    <StableVersion Condition="($(MSBuildProjectName.Contains('Private')) or $(MSBuildProjectName.Contains('Experimental')) or $(MSBuildProjectName.Contains('Transport'))) and '$(MSBuildProjectExtension)' == '.pkgproj'"></StableVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
+    <IsShipping>false</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
