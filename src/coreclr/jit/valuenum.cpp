@@ -4242,11 +4242,12 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
     var_types elemTyp = DecodeElemType(elemTypeEq);
     var_types indType = (tree == nullptr) ? elemTyp : tree->TypeGet();
     ValueNum  selectedElem;
+    unsigned  elemWidth = elemTyp == TYP_STRUCT ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemTyp);
 
-    if (fldSeq == FieldSeqStore::NotAField())
+    if ((fldSeq == FieldSeqStore::NotAField()) || (genTypeSize(indType) > elemWidth))
     {
         // This doesn't represent a proper array access
-        JITDUMP("    *** NotAField sequence encountered in fgValueNumberArrIndexVal\n");
+        JITDUMP("    *** Not a proper arrray access encountered in fgValueNumberArrIndexVal\n");
 
         // a new unique value number
         selectedElem = vnStore->VNForExpr(compCurBB, elemTyp);
