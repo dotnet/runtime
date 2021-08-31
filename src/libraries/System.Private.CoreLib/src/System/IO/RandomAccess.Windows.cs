@@ -452,9 +452,7 @@ namespace System.IO
             segmentsPtr = IntPtr.Zero;
             totalBytes = 0;
 
-            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            long* segments = (long*) NativeMemory.Alloc((nuint)(buffersCount + 1), sizeof(long));
-            segments[buffersCount] = 0;
+            long* segments = null;
 
             bool success = false;
             try
@@ -471,18 +469,27 @@ namespace System.IO
                     }
 
                     MemoryHandle handle = handler.Pin(in buffer);
-                    long ptr = segments[i] = (long)handle.Pointer;
+                    long ptr = (long)handle.Pointer;
                     if ((ptr & alignedAtPageSizeMask) != 0)
                     {
                         handle.Dispose();
                         return false;
                     }
 
-                    // We avoid allocating an array if there are
-                    // no buffers or the first one is unacceptable.
+                    // We avoid allocations if there are no
+                    // buffers or the first one is unacceptable.
                     (handlesToDispose ??= new MemoryHandle[buffersCount])[i] = handle;
+                    if (segments == null)
+                    {
+                        // "The array must contain enough elements to store nNumberOfBytesToWrite
+                        // bytes of data, and one element for the terminating NULL."
+                        segments = (long*)NativeMemory.Alloc((nuint)(buffersCount + 1), sizeof(long));
+                    }
+                    segments[i] = ptr;
                 }
 
+                Debug.Assert(segments != null);
+                segments[buffersCount] = 0;
                 segmentsPtr = (IntPtr)segments;
                 totalBytes = (int)totalBytes64;
                 success = true;
@@ -507,7 +514,10 @@ namespace System.IO
                 }
             }
 
-            NativeMemory.Free((void*) segmentsPtr);
+            if (segmentsPtr != IntPtr.Zero)
+            {
+                NativeMemory.Free((void*) segmentsPtr);
+            }
         }
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
