@@ -111,7 +111,7 @@ uint8_t g_build_variant = 2;
 
 VOLATILE(int32_t) g_no_gc_lock = -1;
 
-#if defined (TRACE_GC) && !defined (DACCESS_COMPILE)
+#ifdef TRACE_GC
 const char * const allocation_state_str[] = {
     "start",
     "can_allocate",
@@ -150,11 +150,11 @@ const char * const msl_take_state_str[] = {
     "try_alloc",
     "try_budget"
 };
-#endif //TRACE_GC && !DACCESS_COMPILE
+#endif //TRACE_GC
 
 
 // Keep this in sync with the definition of gc_reason
-#if (defined(DT_LOG) || defined(TRACE_GC)) && !defined (DACCESS_COMPILE)
+#if (defined(DT_LOG) || defined(TRACE_GC))
 static const char* const str_gc_reasons[] =
 {
     "alloc_soh",
@@ -236,7 +236,6 @@ gc_oh_num gen_to_oh(int gen)
     }
 }
 
-#ifndef DACCESS_COMPILE
 uint64_t qpf;
 double qpf_ms;
 double qpf_us;
@@ -252,7 +251,6 @@ uint64_t RawGetHighPrecisionTimeStamp()
 {
     return (uint64_t)GCToOSInterface::QueryPerformanceCounter();
 }
-#endif
 
 #ifdef BGC_SERVO_TUNING
 bool gc_heap::bgc_tuning::enable_fl_tuning = false;
@@ -389,8 +387,6 @@ void c_write (uint32_t& place, uint32_t value)
     Interlocked::Exchange (&place, value);
 }
 
-#ifndef DACCESS_COMPILE
-
 // If every heap's gen2 or gen3 size is less than this threshold we will do a blocking GC.
 const size_t bgc_min_per_heap = 4*1024*1024;
 
@@ -448,10 +444,9 @@ void gc_heap::add_to_history()
 #endif //GC_HISTORY && BACKGROUND_GC
 }
 
-#endif //DACCESS_COMPILE
 #endif //BACKGROUND_GC
 
-#if defined(TRACE_GC) && !defined(DACCESS_COMPILE)
+#ifdef TRACE_GC
 BOOL   gc_log_on = TRUE;
 FILE* gc_log = NULL;
 size_t gc_log_file_size = 0;
@@ -524,9 +519,9 @@ void GCLog (const char *fmt, ... )
         va_end(args);
     }
 }
-#endif // TRACE_GC && !DACCESS_COMPILE
+#endif // TRACE_GC
 
-#if defined(GC_CONFIG_DRIVEN) && !defined(DACCESS_COMPILE)
+#ifdef GC_CONFIG_DRIVEN
 
 BOOL   gc_config_log_on = FALSE;
 FILE* gc_config_log = NULL;
@@ -570,11 +565,11 @@ void GCLogConfig (const char *fmt, ... )
         log_va_msg_config (fmt, args);
     }
 }
-#endif // GC_CONFIG_DRIVEN && !DACCESS_COMPILE
+#endif // GC_CONFIG_DRIVEN
 
 void GCHeap::Shutdown()
 {
-#if defined(TRACE_GC) && !defined(DACCESS_COMPILE) && !defined(BUILD_AS_STANDALONE)
+#if defined(TRACE_GC) && !defined(BUILD_AS_STANDALONE)
     if (gc_log_on && (gc_log != NULL))
     {
         fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
@@ -582,7 +577,7 @@ void GCHeap::Shutdown()
         fclose(gc_log);
         gc_log_buffer_offset = 0;
     }
-#endif //TRACE_GC && !DACCESS_COMPILE && !BUILD_AS_STANDALONE
+#endif //TRACE_GC && !BUILD_AS_STANDALONE
 }
 
 #ifdef SYNCHRONIZATION_STATS
@@ -649,7 +644,6 @@ process_sync_log_stats()
 }
 
 #ifdef MULTIPLE_HEAPS
-#ifndef DACCESS_COMPILE
 uint32_t g_num_active_processors = 0;
 
 // Note that when a join is no longer used we still keep the values here because
@@ -1079,8 +1073,6 @@ t_join gc_t_join;
 t_join bgc_t_join;
 #endif //BACKGROUND_GC
 
-#endif // DACCESS_COMPILE
-
 #endif //MULTIPLE_HEAPS
 
 #define spin_and_switch(count_to_spin, expr) \
@@ -1099,7 +1091,7 @@ t_join bgc_t_join;
     } \
 }
 
-#if defined(BACKGROUND_GC) && !(DACCESS_COMPILE)
+#ifdef BACKGROUND_GC
 
 #define max_pending_allocs 64
 
@@ -1268,7 +1260,7 @@ retry:
     }
 };
 
-#endif //BACKGROUND_GC && !DACCESS_COMPILE
+#endif //BACKGROUND_GC
 
 void reset_memory (uint8_t* o, size_t sizeo);
 
@@ -1279,8 +1271,6 @@ static bool virtual_alloc_hardware_write_watch = false;
 #endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 static bool hardware_write_watch_capability = false;
-
-#ifndef DACCESS_COMPILE
 
 void hardware_write_watch_api_supported()
 {
@@ -1294,7 +1284,6 @@ void hardware_write_watch_api_supported()
         dprintf (2,("WriteWatch not supported"));
     }
 }
-#endif //!DACCESS_COMPILE
 
 inline bool can_use_hardware_write_watch()
 {
@@ -1324,8 +1313,6 @@ inline bool can_use_write_watch_for_card_table()
 #endif //WRITE_WATCH
 
 //check if the low memory notification is supported
-
-#ifndef DACCESS_COMPILE
 
 void WaitLongerNoInstru (int i)
 {
@@ -1613,8 +1600,6 @@ void gc_heap::disable_preemptive (bool restore_cooperative)
         GCToEEInterface::DisablePreemptiveGC();
     }
 }
-
-#endif // !DACCESS_COMPILE
 
 typedef void **  PTR_PTR;
 inline
@@ -1987,8 +1972,6 @@ size_t logcount (size_t word)
     return count;
 }
 
-#ifndef DACCESS_COMPILE
-
 void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_bounds_check)
 {
     WriteBarrierParameters args = {};
@@ -2045,8 +2028,6 @@ void stomp_write_barrier_initialize(uint8_t* ephemeral_low, uint8_t* ephemeral_h
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
-#endif // DACCESS_COMPILE
-
 //extract the low bits [0,low[ of a uint32_t
 #define lowbits(wrd, bits) ((wrd) & ((1 << (bits))-1))
 //extract the high bits [high, 32] of a uint32_t
@@ -2102,10 +2083,8 @@ class sorted_table;
 class c_synchronize;
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
-#ifndef DACCESS_COMPILE
 static
 HRESULT AllocateCFinalize(CFinalize **pCFinalize);
-#endif //!DACCESS_COMPILE
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
 uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
@@ -2199,9 +2178,7 @@ size_t      gc_heap::reserved_memory = 0;
 size_t      gc_heap::reserved_memory_limit = 0;
 BOOL        gc_heap::g_low_memory_status;
 
-#ifndef DACCESS_COMPILE
 static gc_reason gc_trigger_reason = reason_empty;
-#endif //DACCESS_COMPILE
 
 gc_latency_level gc_heap::latency_level = latency_level_default;
 
@@ -2809,8 +2786,6 @@ size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_co
 // budget smoothing
 size_t     gc_heap::smoothed_desired_per_heap[total_generation_count];
 /* end of static initialization */
-
-#ifndef DACCESS_COMPILE
 
 // This is for methods that need to iterate through all SOH heap segments/regions.
 inline 
@@ -46505,17 +46480,9 @@ void checkGCWriteBarrier()
 }
 #endif //WRITE_BARRIER_CHECK && !SERVER_GC
 
-#endif // !DACCESS_COMPILE
-
 #ifdef FEATURE_BASICFREEZE
 void gc_heap::walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef)
 {
-#ifdef DACCESS_COMPILE
-    UNREFERENCED_PARAMETER(seg);
-    UNREFERENCED_PARAMETER(pvContext);
-    UNREFERENCED_PARAMETER(pfnMethodTable);
-    UNREFERENCED_PARAMETER(pfnObjRef);
-#else
     uint8_t *o = heap_segment_mem(seg);
 
     int alignment = get_alignment_constant(TRUE);
@@ -46536,11 +46503,9 @@ void gc_heap::walk_read_only_segment(heap_segment *seg, void *pvContext, object_
 
         o += Align(size(o), alignment);
     }
-#endif //!DACCESS_COMPILE
 }
 #endif // FEATURE_BASICFREEZE
 
-#ifndef DACCESS_COMPILE
 HRESULT GCHeap::WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout)
 {
 #ifdef BACKGROUND_GC
@@ -46559,7 +46524,6 @@ HRESULT GCHeap::WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout)
 
     return S_OK;
 }
-#endif // !DACCESS_COMPILE
 
 void GCHeap::TemporaryEnableConcurrentGC()
 {
@@ -46586,7 +46550,6 @@ bool GCHeap::IsConcurrentGCEnabled()
 
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
-#ifndef DACCESS_COMPILE
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -46667,7 +46630,4 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
-#else
-    UNREFERENCED_PARAMETER(gcDacVars);
-#endif // DACCESS_COMPILE
 }

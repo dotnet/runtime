@@ -24,9 +24,7 @@
 
 inline void FATAL_GC_ERROR()
 {
-#ifndef DACCESS_COMPILE
     GCToOSInterface::DebugBreak();
-#endif // DACCESS_COMPILE
     _ASSERTE(!"Fatal Error in GC.");
     GCToEEInterface::HandleFatalError((unsigned int)COR_E_EXECUTIONENGINE);
 }
@@ -254,8 +252,6 @@ const int policy_expand  = 2;
 #define HEAP_BALANCE_LOG (MIN_CUSTOM_LOG_LEVEL + 10)
 #define HEAP_BALANCE_TEMP_LOG (MIN_CUSTOM_LOG_LEVEL + 11)
 
-#ifndef DACCESS_COMPILE
-
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
@@ -269,9 +265,6 @@ void GCLog (const char *fmt, ... );
 
 #endif //SIMPLE_DPRINTF
 
-#else //DACCESS_COMPILE
-#define dprintf(l,x)
-#endif //DACCESS_COMPILE
 #else //TRACE_GC
 #define dprintf(l,x)
 #endif //TRACE_GC
@@ -5020,9 +5013,6 @@ protected:
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 class CFinalize
 {
-#ifdef DACCESS_COMPILE
-    friend class ::ClrDataAccess;
-#endif // DACCESS_COMPILE
 
     friend class CFinalizeStaticAsserts;
 
