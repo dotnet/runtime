@@ -207,7 +207,7 @@ namespace System.IO.Tests
                 buffer.GetSpan().Clear();
                 await RandomAccess.ReadAsync(handle, new Memory<byte>[] { firstHalf, secondHalf }, 0);
 
-                Assert.True(buffer.GetSpan().SequenceEqual(content.AsSpan()), "Unexpected file content.");
+                AssertExtensions.SequenceEqual(buffer.GetSpan(), content.AsSpan());
             }
         }
 
