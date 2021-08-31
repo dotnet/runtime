@@ -145,12 +145,11 @@
 
   <PropertyGroup>
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
+    <DevTeamProvisioning Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS') and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
   </PropertyGroup>
 
   <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" Name="BundleTestAppleApp" DependsOnTargets="GenerateRuntimeConfig">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-    <Error Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
-           Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account, or 'adhoc' to sign with an adhoc key.." />
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
@@ -229,26 +228,17 @@
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
 
-    <PropertyGroup>
-      <_AppBundleDir>$(AppBundlePath)/../</_AppBundleDir>
-    </PropertyGroup>
+    <ItemGroup>
+      <_appFiles Include="$(AppBundlePath)/../**/*" />
+    </ItemGroup>
 
-    <MakeDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" 
-             Directories="$(TestArchiveTestsDir)" />
-    <ZipDirectory Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
-                  SourceDirectory="$(_AppBundleDir)"
-                  DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
-                  Overwrite="true" />
+    <Copy SourceFiles="@(_appFiles)"
+          DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
 
     <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" 
                Directories="$(OutDir)" />
-  
-    <Message Importance="High" Text="Archived Tests at $(TestArchiveTestsDir): $([System.IO.Directory]::GetFiles('$(TestArchiveTestsDir)', '*', System.IO.SearchOption.TopDirectoryOnly).Length.ToString())" />
-    <Exec Command="df -h"
-          ContinueOnError="true"
-          IgnoreExitCode="true"
-          IgnoreStandardErrorWarningFormat="true" />
-  
   </Target>
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
