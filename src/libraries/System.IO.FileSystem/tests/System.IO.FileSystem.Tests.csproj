@@ -58,6 +58,8 @@
     <Compile Include="PathInternalTests.cs" />
     <Compile Include="RandomAccess\Base.cs" />
     <Compile Include="RandomAccess\GetLength.cs" />
+    <Compile Include="RandomAccess\NonSeekable.cs" />
+    <Compile Include="RandomAccess\NonSeekable_AsyncHandles.cs" />
     <Compile Include="RandomAccess\Read.cs" />
     <Compile Include="RandomAccess\ReadAsync.cs" />
     <Compile Include="RandomAccess\ReadScatter.cs" />
