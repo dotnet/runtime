@@ -11027,6 +11027,12 @@ int gc_heap::object_gennum_plan (uint8_t* o)
 #pragma optimize("", on)        // Go back to command line default optimizations
 #endif //_MSC_VER && TARGET_X86
 
+inline
+bool high_memory_load_p()
+{
+    return ((gc_heap::settings.entry_memory_load >= gc_heap::high_memory_load_th) || gc_heap::g_low_memory_status);
+}
+
 #ifdef USE_REGIONS
 void get_initial_region(int gen, int hn, uint8_t** region_start, uint8_t** region_end)
 {
@@ -11115,7 +11121,7 @@ void gc_heap::clear_region_info (heap_segment* region)
                         settings.gc_index, current_bgc_state,
                         seg_deleted);
 
-    if (settings.entry_memory_load >= high_memory_load_th || g_low_memory_status)
+    if (high_memory_load_p())
     {
         decommit_mark_array_by_seg (region);
     }
@@ -11574,7 +11580,7 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                                                     uint8_t* new_committed)
 {
 #ifdef USE_REGIONS
-    if (settings.entry_memory_load < high_memory_load_th && !g_low_memory_status)
+    if (!high_memory_load_p())
     {
         return 0;
     }
@@ -11609,7 +11615,7 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
 void gc_heap::decommit_heap_segment (heap_segment* seg)
 {
 #ifdef USE_REGIONS
-    if (settings.entry_memory_load < high_memory_load_th && !g_low_memory_status)
+    if (!high_memory_load_p())
     {
         return;
     }
@@ -39539,8 +39545,7 @@ void reset_memory (uint8_t* o, size_t sizeo)
         size_t size = align_lower_page ((size_t)o + sizeo - size_to_skip - plug_skew) - page_start;
         // Note we need to compensate for an OS bug here. This bug would cause the MEM_RESET to fail
         // on write watched memory.
-        if (reset_mm_p &&
-            ((gc_heap::settings.entry_memory_load >= gc_heap::high_memory_load_th) || gc_heap::g_low_memory_status))
+        if (reset_mm_p && high_memory_load_p())
         {
 #ifdef MULTIPLE_HEAPS
             bool unlock_p = true;
