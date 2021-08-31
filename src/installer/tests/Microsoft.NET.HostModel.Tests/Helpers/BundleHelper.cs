@@ -186,7 +186,7 @@ namespace BundleTests.Helpers
         {
             if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
-                var result = Command.Create("lsof", $"\"{path}\"")
+                var result = Command.Create("lsof", $"-f -- \"{path}\"")
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
