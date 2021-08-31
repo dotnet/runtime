@@ -19740,7 +19740,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             continue;
         }
 
-        GenTree* actualArg = use.GetNode();
+        GenTree* actualArg = gtFoldExpr(use.GetNode());
         impInlineRecordArgInfo(pInlineInfo, actualArg, argCnt, inlineResult);
 
         if (inlineResult->IsFailure())
@@ -19842,8 +19842,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         if ((sigType != inlArgNode->gtType) || inlArgNode->OperIs(GT_PUTARG_TYPE))
         {
             assert(impCheckImplicitArgumentCoercion(sigType, inlArgNode->gtType));
-            assert(!varTypeIsStruct(inlArgNode->gtType) && !varTypeIsStruct(sigType) &&
-                   genTypeSize(inlArgNode->gtType) == genTypeSize(sigType));
+            assert(!varTypeIsStruct(inlArgNode->gtType) && !varTypeIsStruct(sigType));
 
             /* In valid IL, this can only happen for short integer types or byrefs <-> [native] ints,
                but in bad IL cases with caller-callee signature mismatches we can see other types.
