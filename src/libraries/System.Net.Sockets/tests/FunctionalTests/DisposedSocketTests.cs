@@ -772,7 +772,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         public async Task NonDisposedSocket_SafeHandlesCollected(bool clientAsync)
         {
-            TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout);
+            TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout);
             List<WeakReference> handles = await CreateHandlesAsync(clientAsync).WaitAsync(timeout);
             await RetryHelper.ExecuteAsync(() => Task.Run(() =>
             {
