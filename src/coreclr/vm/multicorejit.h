@@ -318,7 +318,7 @@ class MultiCoreJITNative
 public:
     static void QCALLTYPE InternalSetProfileRoot(__in_z LPCWSTR directoryPath);
 
-    static void QCALLTYPE InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyLoadContext);
+    static void QCALLTYPE InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder);
 };
 
 #endif // __MULTICORE_JIT_H__

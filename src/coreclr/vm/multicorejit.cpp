@@ -1554,9 +1554,9 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //
 // Arguments:
 //    wszProfile  - profile name
-//    ptrNativeAssemblyLoadContext - the binding context
+//    ptrNativeAssemblyBinder - the binding context
 //
-void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyLoadContext)
+void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
 {
     QCALL_CONTRACT;
 
@@ -1564,7 +1564,7 @@ void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfil
 
     AppDomain * pDomain = GetAppDomain();
 
-    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder *>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder *>(ptrNativeAssemblyBinder);
 
     pDomain->GetMulticoreJitManager().StartProfile(
         pDomain,
