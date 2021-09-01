@@ -57,15 +57,15 @@ jobs:
     name: buildStress
     displayName: Build HttpStress
 
-#  - bash: |
-#      cd '$(httpStressProject)'
-#      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.StagingDirectory):/logs"
-#      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
-#      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
-#      docker-compose up --abort-on-container-exit --no-color
-#    displayName: Run HttpStress - HTTP 3.0
-#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
-#
+  - bash: |
+      cd '$(httpStressProject)'
+      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.StagingDirectory):/logs"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -reportFile /logs/linux-http30.xml"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 3.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
 #  - bash: |
 #      cd '$(httpStressProject)'
 #      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.StagingDirectory):/logs"
@@ -75,14 +75,14 @@ jobs:
 #    displayName: Run HttpStress - HTTP 2.0
 #    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-  - bash: |
-      cd '$(httpStressProject)'
-      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.StagingDirectory):/logs"
-      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1 -reportFile /logs/linux-http11.json"
-      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
-      docker-compose up --abort-on-container-exit --no-color
-    displayName: Run HttpStress - HTTP 1.1
-    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+#  - bash: |
+#      cd '$(httpStressProject)'
+#      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.StagingDirectory):/logs"
+#      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1 -reportFile /logs/linux-http11.json"
+#      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
+#      docker-compose up --abort-on-container-exit --no-color
+#    displayName: Run HttpStress - HTTP 1.1
+#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
   - task: PublishBuildArtifacts@1
     inputs:
@@ -133,7 +133,7 @@ jobs:
   - powershell: |
       cd '$(httpStressProject)'
       $env:HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING = "$(Build.StagingDirectory):c:/logs"
-      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1 -reportFile c:/logs/windows-http11.json"
+      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1 -reportFile c:/logs/windows-http11.xml"
       $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
