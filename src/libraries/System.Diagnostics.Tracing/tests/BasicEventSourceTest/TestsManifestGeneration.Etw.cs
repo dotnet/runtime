@@ -34,9 +34,10 @@ namespace BasicEventSourceTests
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         public void Test_EventSource_EtwManifestGeneration()
         {
-            RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 600_000 };
+            RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
             RemoteExecutor.Invoke(() =>
             {
+                RemoteInvokeOptions localOptions = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
                 using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
                 {
                     var es = new SimpleEventSource();
@@ -45,7 +46,7 @@ namespace BasicEventSourceTests
                         es.WriteSimpleInt(i);
                         Thread.Sleep(100);
                     }
-                }, options))
+                }, localOptions))
                 {
                     var etlFileName = @"file.etl";
                     var tracesession = new TraceEventSession("testname", etlFileName);
