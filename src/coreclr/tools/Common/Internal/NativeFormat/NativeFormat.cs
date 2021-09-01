@@ -90,7 +90,7 @@ namespace Internal.NativeFormat
         IsInst                      = 0x0e,
         CastClass                   = 0x0f,
         AllocateArray               = 0x10,
-        CheckArrayElementType       = 0x11,
+        // unused                   = 0x11,
         TypeSize                    = 0x12,
         FieldOffset                 = 0x13,
         CallingConventionConverter  = 0x14,

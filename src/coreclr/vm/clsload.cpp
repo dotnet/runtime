@@ -1036,12 +1036,6 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 
     if (typeHnd.GetLoadLevel() < level)
     {
-#ifdef FEATURE_PREJIT
-        if (typeHnd.GetLoadLevel() == CLASS_LOAD_UNRESTOREDTYPEKEY)
-        {
-            typeHnd.DoRestoreTypeKey();
-        }
-#endif
         if (level > CLASS_LOAD_UNRESTORED)
         {
             TypeKey typeKey = typeHnd.GetTypeKey();
@@ -1122,38 +1116,6 @@ TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey,
     return th;
 }
 
-
-#ifdef FEATURE_PREJIT
-/* static */
-TypeHandle ClassLoader::LookupInPreferredZapModule(TypeKey *pKey, BOOL fCheckUnderLock)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        PRECONDITION(CheckPointer(pKey));
-        PRECONDITION(pKey->IsConstructed());
-        MODE_ANY;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    // First look for an NGEN'd type in the preferred ngen module
-    TypeHandle th;
-    PTR_Module pPreferredZapModule = Module::ComputePreferredZapModule(pKey);
-
-    if (pPreferredZapModule != NULL && pPreferredZapModule->HasNativeImage())
-    {
-        th = LookupTypeKey(pKey,
-                           pPreferredZapModule->GetAvailableParamTypes(),
-                           &pPreferredZapModule->GetClassLoader()->m_AvailableTypesLock,
-                           fCheckUnderLock);
-    }
-
-    return th;
-}
-#endif // FEATURE_PREJIT
-
-
 /* static */
 TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey, BOOL fCheckUnderLock)
 {
@@ -1224,18 +1186,6 @@ TypeHandle ClassLoader::LookupTypeHandleForTypeKeyInner(TypeKey *pKey, BOOL fChe
     {
         return TypeHandle(pKey->GetModule()->LookupTypeDef(pKey->GetTypeToken()));
     }
-
-#ifdef FEATURE_PREJIT
-    // The following ways of finding a constructed type should be mutually exclusive!
-    //  1. Look for a zapped item in the PreferredZapModule
-    //  2. Look for a unzapped (JIT-loaded) item in the LoaderModule
-
-    TypeHandle thPZM = LookupInPreferredZapModule(pKey, fCheckUnderLock);
-    if (!thPZM.IsNull())
-    {
-        return thPZM;
-    }
-#endif // FEATURE_PREJIT
 
     // Next look in the loader module.  This is where the item is guaranteed to live if
     // it is not latched from an NGEN image, i.e. if it is JIT loaded.
@@ -2988,22 +2938,10 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
             break;
 
         case CLASS_LOAD_UNRESTOREDTYPEKEY :
-#ifdef FEATURE_PREJIT
-            typeHnd.DoRestoreTypeKey();
-#endif
             break;
 
         // Attain level CLASS_LOAD_APPROXPARENTS, starting with unrestored class
         case CLASS_LOAD_UNRESTORED :
-#ifdef FEATURE_PREJIT
-            {
-                CONSISTENCY_CHECK(!typeHnd.IsRestored_NoLogging());
-                if (typeHnd.IsTypeDesc())
-                    typeHnd.AsTypeDesc()->Restore();
-                else
-                    typeHnd.AsMethodTable()->Restore();
-            }
-#endif
             break;
 
         // Attain level CLASS_LOAD_EXACTPARENTS
@@ -3068,7 +3006,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
         {
             typeHnd = CreateTypeHandleForNonCanonicalGenericInstantiation(pKey, pamTracker);
         }
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
         if (Nullable::IsNullableType(typeHnd))
             Nullable::CheckFieldOffsets(typeHnd);
 #endif
@@ -3185,57 +3123,6 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
             return existing;
 
         pTable->InsertValue(typeHnd);
-
-#ifdef _DEBUG
-        // Checks to help ensure that the CoreLib in the ngen process does not get contaminated with pointers to the compilation domains.
-        if (pLoaderModule->IsSystem() && IsCompilationProcess() && pLoaderModule->HasNativeImage())
-        {
-            CorElementType kind = pTypeKey->GetKind();
-            MethodTable *typeHandleMethodTable = typeHnd.GetMethodTable();
-            if ((typeHandleMethodTable != NULL) && (typeHandleMethodTable->GetLoaderAllocator() != pLoaderModule->GetLoaderAllocator()))
-            {
-                _ASSERTE(!"MethodTable of type loaded into CoreLib during NGen is not from CoreLib!");
-            }
-            if ((kind != ELEMENT_TYPE_FNPTR) && (kind != ELEMENT_TYPE_VAR) && (kind != ELEMENT_TYPE_MVAR))
-            {
-                if ((kind == ELEMENT_TYPE_SZARRAY) || (kind == ELEMENT_TYPE_ARRAY) || (kind == ELEMENT_TYPE_BYREF) || (kind == ELEMENT_TYPE_PTR) || (kind == ELEMENT_TYPE_VALUETYPE))
-                {
-                    // Check to ensure param value is also part of CoreLib.
-                    if (pTypeKey->GetElementType().GetLoaderAllocator() != pLoaderModule->GetLoaderAllocator())
-                    {
-                        _ASSERTE(!"Param value of type key used to load type during NGEN not located within CoreLib yet type is placed into CoreLib");
-                    }
-                }
-                else if (kind == ELEMENT_TYPE_FNPTR)
-                {
-                    // Check to ensure the parameter types of fnptr are in CoreLib
-                    for (DWORD i = 0; i <= pTypeKey->GetNumArgs(); i++)
-                    {
-                        if (pTypeKey->GetRetAndArgTypes()[i].GetLoaderAllocator() != pLoaderModule->GetLoaderAllocator())
-                        {
-                            _ASSERTE(!"Ret or Arg type of function pointer type key used to load type during NGEN not located within CoreLib yet type is placed into CoreLib");
-                        }
-                    }
-                }
-                else if (kind == ELEMENT_TYPE_CLASS)
-                {
-                    // Check to ensure that the generic parameters are all within CoreLib
-                    for (DWORD i = 0; i < pTypeKey->GetNumGenericArgs(); i++)
-                    {
-                        if (pTypeKey->GetInstantiation()[i].GetLoaderAllocator() != pLoaderModule->GetLoaderAllocator())
-                        {
-                            _ASSERTE(!"Instantiation parameter of generic class type key used to load type during NGEN not located within CoreLib yet type is placed into CoreLib");
-                        }
-                    }
-                }
-                else
-                {
-                    // Should not be able to get here
-                    _ASSERTE(!"Unknown type key type");
-                }
-            }
-        }
-#endif // DEBUG
     }
     else
     {
@@ -4275,22 +4162,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
     _ASSERTE(m_accessCheckType != kNormalAccessibilityChecks);
 
-    if (NingenEnabled())
-    {
-        // NinGen should always perform normal accessibility checks
-        _ASSERTE(false);
-
-        if (m_fThrowIfTargetIsInaccessible)
-        {
-            ThrowAccessException(pContext, pTargetMT, NULL);
-        }
-
-        return FALSE;
-    }
-
     BOOL canAccessTarget = FALSE;
-
-#ifndef CROSSGEN_COMPILE
 
     // In CoreCLR kRestrictedMemberAccess means that one can access private/internal
     // classes/members in app code.
@@ -4307,7 +4179,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         ThrowAccessException(pContext, pTargetMT, NULL);
     }
 
-#endif // CROSSGEN_COMPILE
 
     return canAccessTarget;
 }

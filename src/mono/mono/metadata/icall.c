@@ -17,8 +17,6 @@
 #include <config.h>
 
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
-/* Needed for _ecvt_s */
-#define MINGW_HAS_SECURE_API 1
 #include <stdio.h>
 #endif
 
@@ -68,11 +66,8 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/security.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/cil-coff.h>
-#include <mono/metadata/security-manager.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-ptr-array.h>
@@ -100,6 +95,9 @@
 #include <mono/utils/mono-math.h>
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
+#endif
+#if defined(HOST_WIN32)
+#include <windows.h>
 #endif
 #include "icall-decl.h"
 #include "mono/utils/mono-threads-coop.h"
@@ -165,7 +163,27 @@ is_generic_parameter (MonoType *type)
 	return !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
 }
 
-#ifndef HOST_WIN32
+#ifdef HOST_WIN32
+static void
+mono_icall_make_platform_path (gchar *path)
+{
+	for (size_t i = strlen (path); i > 0; i--)
+		if (path [i-1] == '\\')
+			path [i-1] = '/';
+}
+
+static const gchar *
+mono_icall_get_file_path_prefix (const gchar *path)
+{
+	if (*path == '/' && *(path + 1) == '/') {
+		return "file:";
+	} else {
+		return "file:///";
+	}
+}
+
+#else
+
 static inline void
 mono_icall_make_platform_path (gchar *path)
 {
@@ -328,7 +346,7 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 	if (mono_class_is_nullable (ec)) {
 		if (vc && m_class_is_primitive (vc) && vc != m_class_get_nullable_elem_class (ec)) {
-            // T -> Nullable<T>  T must be exact
+			// T -> Nullable<T>  T must be exact
 			set_invalid_cast (error, vc, ec);
 			goto leave;
 		}
@@ -992,12 +1010,6 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 #else
 	memcpy (mono_array_addr_internal (MONO_HANDLE_RAW(array), char, 0), field_data, size);
 #endif
-}
-
-gint
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData (void)
-{
-	return offsetof (MonoString, chars);
 }
 
 MonoObjectHandle
@@ -3057,11 +3069,11 @@ ves_icall_RuntimeType_GetCorrespondingInflatedMethod (MonoReflectionTypeHandle r
 	MonoMethod *method;
 	gpointer iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-                if (method->token == generic_method->token) {
+		if (method->token == generic_method->token) {
 			ret = mono_method_get_object_handle (method, klass, error);
 			return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
 		}
-        }
+	}
 
 	return ret;
 }
@@ -4626,7 +4638,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 	g_return_val_if_fail (dir != NULL, NULL);
 	g_return_val_if_fail (file != NULL, NULL);
 
-        /*
+	/*
 	 * If the directory name doesn't have a / on the end, we need
 	 * to add one so we get a proper path to the file
 	 */
@@ -5541,11 +5553,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	g_assert (image_base);
 
 #ifndef HOST_WASM
-        if (mono_is_debugger_attached ()) {
-                mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
-                mono_error_set_pending_exception (error);
-                return;
-        }
+	if (mono_is_debugger_attached ()) {
+		mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
+		mono_error_set_pending_exception (error);
+		return;
+	}
 #endif
 
 	mono_image_load_enc_delta (MONO_ENC_DELTA_API, image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
@@ -5616,14 +5628,6 @@ ves_icall_System_Reflection_RuntimeModule_GetGuidInternal (MonoImage *image, Mon
 		MONO_EXIT_NO_SAFEPOINTS;
 	}
 }
-
-#ifndef HOST_WIN32
-static inline gpointer
-mono_icall_module_get_hinstance (MonoImage *image)
-{
-	return (gpointer) (-1);
-}
-#endif /* HOST_WIN32 */
 
 void
 ves_icall_System_Reflection_RuntimeModule_GetPEKind (MonoImage *image, gint32 *pe_kind, gint32 *machine, MonoError *error)
@@ -6241,135 +6245,11 @@ mono_array_get_byte_length (MonoArrayHandle array)
 
 /* System.Environment */
 
-#ifndef HOST_WIN32
-static MonoStringHandle
-mono_icall_get_new_line (MonoError *error)
-{
-	return mono_string_new_handle ("\n", error);
-}
-#endif /* !HOST_WIN32 */
-
-#ifndef HOST_WIN32
-static inline MonoBoolean
-mono_icall_is_64bit_os (void)
-{
-#if SIZEOF_VOID_P == 8
-	return TRUE;
-#else
-#if defined(HAVE_SYS_UTSNAME_H)
-	struct utsname name;
-
-	if (uname (&name) >= 0) {
-		return strcmp (name.machine, "x86_64") == 0 || strncmp (name.machine, "aarch64", 7) == 0 || strncmp (name.machine, "ppc64", 5) == 0 || strncmp (name.machine, "riscv64", 7) == 0;
-	}
-#endif
-	return FALSE;
-#endif
-}
-#endif /* !HOST_WIN32 */
-
-MonoBoolean
-ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
-{
-	return mono_icall_is_64bit_os ();
-}
-
-MonoStringHandle
-ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_name, MonoError *error)
-{
-	gchar *value;
-
-	if (utf8_name == NULL)
-		return NULL_HANDLE_STRING;
-
-	value = g_getenv (utf8_name);
-
-	if (value == 0)
-		return NULL_HANDLE_STRING;
-	
-	MonoStringHandle res = mono_string_new_handle (value, error);
-	g_free (value);
-	return res;
-}
-
-/*
- * There is no standard way to get at environ.
- */
-#ifndef _MSC_VER
-#ifndef __MINGW32_VERSION
-#if defined(__APPLE__)
-#if defined (TARGET_OSX)
-/* Apple defines this in crt_externs.h but doesn't provide that header for 
- * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
- * in fact exist on all implementations (so far) 
- */
-G_BEGIN_DECLS
-gchar ***_NSGetEnviron(void);
-G_END_DECLS
-#define environ (*_NSGetEnviron())
-#else
-static char *mono_environ[1] = { NULL };
-#define environ mono_environ
-#endif /* defined (TARGET_OSX) */
-#else
-G_BEGIN_DECLS
-extern
-char **environ;
-G_END_DECLS
-#endif
-#endif
-#endif
-
 MonoArrayHandle
 ves_icall_System_Environment_GetCommandLineArgs (MonoError *error)
 {
 	MonoArrayHandle result = mono_runtime_get_main_args_handle (error);
 	return result;
-}
-
-#ifndef HOST_WIN32
-static MonoArrayHandle
-mono_icall_get_environment_variable_names (MonoError *error)
-{
-	MonoArrayHandle names;
-	MonoStringHandle str;
-	gchar **e, **parts;
-	int n;
-
-	n = 0;
-	for (e = environ; *e != 0; ++ e)
-		++ n;
-
-	names = mono_array_new_handle (mono_defaults.string_class, n, error);
-	return_val_if_nok (error, NULL_HANDLE_ARRAY);
-
-	str = MONO_HANDLE_NEW (MonoString, NULL);
-	n = 0;
-	for (e = environ; *e != 0; ++ e) {
-		parts = g_strsplit (*e, "=", 2);
-		if (*parts != 0) {
-			MonoString *s = mono_string_new_checked (*parts, error);
-			MONO_HANDLE_ASSIGN_RAW (str, s);
-			if (!is_ok (error)) {
-				g_strfreev (parts);
-				return NULL_HANDLE_ARRAY;
-			}
-			mono_array_handle_setref (names, n, str);
-		}
-
-		g_strfreev (parts);
-
-		++ n;
-	}
-
-	return names;
-}
-#endif /* !HOST_WIN32 */
-
-MonoArrayHandle
-ves_icall_System_Environment_GetEnvironmentVariableNames (MonoError *error)
-{
-	return mono_icall_get_environment_variable_names (error);
 }
 
 void
@@ -6407,22 +6287,6 @@ ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHa
 	// for us and pass it as much information as possible. On Windows 8+ we can also
 	// use the __fastfail intrinsic.
 	abort ();
-}
-
-#ifndef HOST_WIN32
-static inline MonoStringHandle
-mono_icall_get_windows_folder_path (int folder, MonoError *error)
-{
-	error_init (error);
-	g_warning ("ves_icall_System_Environment_GetWindowsFolderPath should only be called on Windows!");
-	return mono_string_new_handle ("", error);
-}
-#endif /* !HOST_WIN32 */
-
-MonoBoolean
-ves_icall_System_Environment_get_HasShutdownStarted (void)
-{
-	return mono_runtime_is_shutting_down ();
 }
 
 gint32
@@ -6463,14 +6327,6 @@ ves_icall_System_Diagnostics_Debugger_Log (int level, MonoString *volatile* cate
 	if (mono_get_runtime_callbacks ()->debug_log)
 		mono_get_runtime_callbacks ()->debug_log (level, *category, *message);
 }
-
-#ifndef HOST_WIN32
-static inline void
-mono_icall_write_windows_debug_string (const gunichar2 *message)
-{
-	g_warning ("WriteWindowsDebugString called and HOST_WIN32 not defined!\n");
-}
-#endif /* !HOST_WIN32 */
 
 /* Only used for value types */
 MonoObjectHandle
@@ -6691,14 +6547,6 @@ ves_icall_Interop_Sys_DoubleToString(double value, char *format, char *buffer, i
 	return snprintf(buffer, bufferLength, format, value);
 }
 
-void
-ves_icall_System_Runtime_RuntimeImports_ecvt_s(char *buffer, size_t sizeInBytes, double value, int count, int* dec, int* sign)
-{
-#if defined(TARGET_WIN32) || defined(HOST_WIN32)
-	_ecvt_s(buffer, sizeInBytes, value, count, dec, sign);
-#endif
-}
-
 static gboolean
 add_modifier_to_array (MonoType *type, MonoArrayHandle dest, int dest_idx, MonoError *error)
 {
@@ -6912,15 +6760,6 @@ ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObjectHandle obj,
 {
 	return mono_reflection_get_custom_attrs_data_checked (obj, error);
 }
-
-
-#ifndef HOST_WIN32
-static gint32
-mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
-{
-	return WAIT_TIMEOUT;
-}
-#endif /* !HOST_WIN32 */
 
 #ifndef DISABLE_COM
 
@@ -7572,30 +7411,6 @@ void
 ves_icall_System_GC_RecordPressure (gint64 value)
 {
 	mono_gc_add_memory_pressure (value);
-}
-
-gint64
-ves_icall_System_Diagnostics_Stopwatch_GetTimestamp (void)
-{
-	return mono_100ns_ticks ();
-}
-
-gint64
-ves_icall_System_Threading_Timer_GetTimeMonotonic (void)
-{
-	return mono_100ns_ticks ();
-}
-
-gint64
-ves_icall_System_DateTime_GetSystemTimeAsFileTime (void)
-{
-	return mono_100ns_datetime ();
-}
-
-int
-ves_icall_System_Threading_Thread_SystemMaxStackSize (void)
-{
-	return mono_thread_info_get_system_max_stack_size ();
 }
 
 MonoBoolean

@@ -62,7 +62,7 @@ LoaderAllocator *EETypeHashTable::GetLoaderAllocator()
     }
     else
     {
-        _ASSERTE(!m_pModule.IsNull());
+        _ASSERTE(m_pModule != NULL);
         return GetModule()->GetLoaderAllocator();
     }
 }
@@ -378,40 +378,6 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
             if (kind == ELEMENT_TYPE_ARRAY)
             {
                 TypeHandle th = pSearch->GetTypeHandle();
-#ifdef FEATURE_PREJIT
-                // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-                ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
-
-                TADDR fixup = dac_cast<TADDR>(th.GetMethodTable());
-                if (!CORCOMPILE_IS_POINTER_TAGGED(fixup))
-                {
-                    TADDR canonFixup = th.GetMethodTable()->GetCanonicalMethodTableFixup();
-                    if (CORCOMPILE_IS_POINTER_TAGGED(canonFixup))
-                        fixup = canonFixup;
-                }
-
-                if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
-                {
-                    Module *pDefiningModule;
-                    PCCOR_SIGNATURE pSig = GetModule()->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-                    if (pDefiningModule == NULL)
-                        break;
-
-                    _ASSERTE(*pSig == ELEMENT_TYPE_ARRAY);
-                    pSig++;
-                    SigPointer sp(pSig);
-                    if (FAILED(sp.SkipExactlyOne()))
-                        break; // return NULL;
-
-                    uint32_t data;
-                    if (FAILED(sp.GetData(&data)))
-                        break; // return NULL;
-
-                    if (data != pKey->GetRank())
-                        continue;
-                }
-                else
-#endif //FEATURE_PREJIT
                 {
                     if (th.GetRank() != pKey->GetRank())
                         continue;
@@ -450,38 +416,6 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     if (pMT->GetNumGenericArgs() != inst.GetNumArgs())
         return FALSE;
 
-#ifdef FEATURE_PREJIT
-    // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
-
-    TADDR fixup = pMT->GetCanonicalMethodTableFixup();
-
-    // The EEClass pointer is actually an encoding.
-    if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
-    {
-        Module *pDefiningModule;
-
-        PCCOR_SIGNATURE pSig = GetModule()->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-
-        // First check that the modules for the generic type defs match
-        if (dac_cast<TADDR>(pDefiningModule) !=
-            dac_cast<TADDR>(pModule))
-            return FALSE;
-
-        // Now crack the signature encoding, expected to be an instantiated type
-        _ASSERTE(*pSig == ELEMENT_TYPE_GENERICINST);
-        pSig++;
-        _ASSERTE(*pSig == ELEMENT_TYPE_CLASS || *pSig == ELEMENT_TYPE_VALUETYPE);
-        pSig++;
-
-        // Check that the tokens of the generic type def match
-        if (CorSigUncompressToken(pSig) != token)
-            return FALSE;
-    }
-
-    // The EEClass pointer is a real pointer
-    else
-#endif //FEATURE_PREJIT
     {
         // First check that the typedef tokens match
         if (pMT->GetCl() != token)
@@ -505,16 +439,7 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     // Now check the instantiations. Some type arguments might be encoded.
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
-#ifdef FEATURE_PREJIT
-        // Fetch the type handle as TADDR. It may be may be encoded fixup - TypeHandle debug-only validation
-        // asserts on encoded fixups.
-        DACCOP_IGNORE(CastOfMarshalledType, "Dual mode DAC problem, but since the size is the same, the cast is safe");
-        TADDR candidateArg = ((FixupPointer<TADDR> *)candidateInst.GetRawArgs())[i].GetValue();
-
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, inst[i]))
-#else
         if (candidateInst[i] != inst[i])
-#endif
         {
             return FALSE;
         }
@@ -541,10 +466,6 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
         return FALSE;
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_PREJIT
-    // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
-#endif
 
     FnPtrTypeDesc* pTD = t.AsFnPtrType();
 
@@ -555,12 +476,7 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
     TypeHandle *retAndArgTypes2 = pTD->GetRetAndArgTypesPointer();
     for (DWORD i = 0; i <= numArgs; i++)
     {
-#ifdef FEATURE_PREJIT
-        TADDR candidateArg = retAndArgTypes2[i].AsTAddr();
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, retAndArgTypes[i]))
-#else
         if (retAndArgTypes2[i] != retAndArgTypes[i])
-#endif
         {
             return FALSE;
         }
@@ -628,7 +544,7 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
         PRECONDITION(!data.IsEncodedFixup());
         PRECONDITION(!data.IsGenericTypeDefinition()); // Generic type defs live in typedef table (availableClasses)
         PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType()); // It's an instantiated type or an array/ptr/byref type
-        PRECONDITION(m_pModule.IsNull() || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
+        PRECONDITION(m_pModule == NULL || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
     }
     CONTRACTL_END
 
@@ -676,32 +592,9 @@ void EETypeHashEntry::SetTypeHandle(TypeHandle handle)
 
     // We plan to steal the low-order bit of the handle for ngen purposes.
     _ASSERTE((handle.AsTAddr() & 0x1) == 0);
-    m_data.SetValueMaybeNull(handle.AsPtr());
+    m_data = handle.AsPtr();
 }
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
-bool EETypeHashEntry::IsHot()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Low order bit of data field indicates a hot entry.
-    TADDR data = dac_cast<TADDR>(GetData());
-    return (data & 1) != 0;
-}
-
-#ifndef DACCESS_COMPILE
-void EETypeHashEntry::MarkAsHot()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Low order bit of data field indicates a hot entry.
-    TADDR data = dac_cast<TADDR>(GetData());
-    data |= 0x1;
-    m_data.SetValueMaybeNull(dac_cast<PTR_VOID>(data));
-}
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_PREJIT
 
 #ifdef _MSC_VER
 #pragma warning(pop)

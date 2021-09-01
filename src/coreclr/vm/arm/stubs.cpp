@@ -260,7 +260,6 @@ void StubLinkerCPU::Init(void)
     new (gThumbNearJump) ThumbNearJump();
 }
 
-#ifndef CROSSGEN_COMPILE
 
 // GC write barrier support.
 //
@@ -518,11 +517,9 @@ void FlushWriteBarrierInstructionCache()
     FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
@@ -723,7 +720,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->R11 = m_MachState._R4_R11[7];
     pRD->pCurrentContextPointers->Lr = NULL;
 }
-#endif // !CROSSGEN_COMPILE
 
 TADDR FixupPrecode::GetMethodDesc()
 {
@@ -837,7 +833,6 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 }
 
 
-#ifndef CROSSGEN_COMPILE
 /*
 Rough pseudo-code of interface dispatching:
 
@@ -1375,7 +1370,6 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 
 #endif // TARGET_UNIX
 }
-#endif // CROSSGEN_COMPILE
 
 
 // Emits code to adjust for a static delegate target.
@@ -1562,15 +1556,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     ThumbEmitEpilog();
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
 {
-    bool isRelative = MethodTable::VTableIndir2_t::isRelative
-                      && pMD->IsVtableSlot();
-
-    _ASSERTE(!isRelative);
-
     // Use direct call if possible.
     if (pMD->HasStableEntryPoint())
     {
@@ -1582,33 +1570,12 @@ void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
         // mov r12, #slotaddress
         ThumbEmitMovConstant(ThumbReg(12), (TADDR)pMD->GetAddrOfSlot());
 
-        if (isRelative)
-        {
-            // mov r4, r12
-            ThumbEmitMovRegReg(ThumbReg(4), ThumbReg(12));
-        }
-
         // ldr r12, [r12]
         ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(12), 0);
-
-        if (isRelative)
-        {
-            // add r12, r4
-            ThumbEmitAddReg(ThumbReg(12), ThumbReg(4));
-        }
     }
 
-    if (!isRelative)
-    {
-        // bx r12
-        ThumbEmitJumpRegister(ThumbReg(12));
-    }
-    else
-    {
-        // Replace LR with R12 on stack: hybrid-tail call, same as for EmitShuffleThunk
-        // str r12, [sp, 4]
-        ThumbEmitStoreRegIndirect(ThumbReg(12), thumbRegSp, 4);
-    }
+    // bx r12
+    ThumbEmitJumpRegister(ThumbReg(12));
 }
 
 VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg)
@@ -1666,25 +1633,9 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         ThumbEmitIncrement(ThumbReg(0), sizeof(MethodTable*));
     }
 
-    bool isRelative = MethodTable::VTableIndir2_t::isRelative
-                      && pSharedMD->IsVtableSlot();
-
-    _ASSERTE(!isRelative);
-
-    if (isRelative)
-    {
-        ThumbEmitProlog(1, 0, FALSE);
-    }
-
     ThumbEmitTailCallManagedMethod(pSharedMD);
-
-    if (isRelative)
-    {
-        ThumbEmitEpilog();
-    }
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
@@ -1720,7 +1671,6 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pRD->pCurrentContextPointers->Lr = NULL;
 }
 
-#ifndef CROSSGEN_COMPILE
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
     pRD->IsCallerContextValid = FALSE;
@@ -1908,7 +1858,6 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
      SyncRegDisplayToCurrentContext(pRD);
 }
 #endif // FEATURE_HIJACK
-#endif // !CROSSGEN_COMPILE
 
 class UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 {
@@ -1968,7 +1917,6 @@ void UMEntryThunkCode::Poison()
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
@@ -1995,7 +1943,6 @@ void InitJITHelpers1()
     }
 }
 
-#endif // CROSSGEN_COMPILE
 
 VOID ResetCurrentContext()
 {
@@ -2044,7 +1991,6 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_READYTORUN
 
@@ -2258,8 +2204,6 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
-
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -2392,6 +2336,5 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 }
 #endif // FEATURE_READYTORUN
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE

@@ -28,7 +28,6 @@ namespace BINDER_SPACE
     {
         m_cRef = 1;
         m_pPEImage = NULL;
-        m_pNativePEImage = NULL;
         m_pAssemblyName = NULL;
         m_pMDImport = NULL;
         m_dwAssemblyFlags = FLAG_NONE;
@@ -43,14 +42,6 @@ namespace BINDER_SPACE
             m_pPEImage = NULL;
         }
 
-#ifdef  FEATURE_PREJIT
-        if (m_pNativePEImage != NULL)
-        {
-            BinderReleasePEImage(m_pNativePEImage);
-            m_pNativePEImage = NULL;
-        }
-#endif
-
         SAFE_RELEASE(m_pAssemblyName);
         SAFE_RELEASE(m_pMDImport);
     }
@@ -58,7 +49,6 @@ namespace BINDER_SPACE
     HRESULT Assembly::Init(IMDInternalImport       *pIMetaDataAssemblyImport,
                            PEKIND                   PeKind,
                            PEImage                 *pPEImage,
-                           PEImage                 *pNativePEImage,
                            SString                 &assemblyPath,
                            BOOL                     fIsInTPA)
     {
@@ -80,7 +70,6 @@ namespace BINDER_SPACE
         kAssemblyArchitecture = pAssemblyName->GetArchitecture();
         SetIsInTPA(fIsInTPA);
         SetPEImage(pPEImage);
-        SetNativePEImage(pNativePEImage);
         pAssemblyName->SetIsDefinition(TRUE);
 
         // Now take ownership of assembly names

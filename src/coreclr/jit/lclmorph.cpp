@@ -210,7 +210,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         // Arguments:
         //    val - the input value
         //    field - the FIELD node that uses the input address value
-        //    fieldSeqStore - the compiler's field sequence store
+        //    compiler - the compiler instance
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
@@ -224,8 +224,9 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         //     if the offset overflows then location is not representable, must escape
         //   - UNKNOWN => UNKNOWN
         //
-        bool Field(Value& val, GenTreeField* field, FieldSeqStore* fieldSeqStore)
+        bool Field(Value& val, GenTreeField* field, Compiler* compiler)
         {
+
             assert(!IsLocation() && !IsAddress());
 
             if (val.IsLocation())
@@ -246,13 +247,79 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                 m_lclNum = val.m_lclNum;
                 m_offset = newOffset.Value();
 
+                bool haveCorrectFieldForVN;
                 if (field->gtFldMayOverlap)
                 {
-                    m_fieldSeq = FieldSeqStore::NotAField();
+                    haveCorrectFieldForVN = false;
                 }
                 else
                 {
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(m_lclNum);
+                    if (!varTypeIsStruct(varDsc))
+                    {
+                        haveCorrectFieldForVN = false;
+                    }
+                    else if (FieldSeqStore::IsPseudoField(field->gtFldHnd))
+                    {
+                        assert(compiler->compObjectStackAllocation());
+                        // We use PseudoFields when accessing stack allocated classes.
+                        haveCorrectFieldForVN = false;
+                    }
+                    else if (val.m_fieldSeq == nullptr)
+                    {
+
+                        CORINFO_CLASS_HANDLE clsHnd = varDsc->GetStructHnd();
+                        // If the answer is no we are probably accessing a canon type with a non-canon fldHnd,
+                        // currently it could happen in crossgen2 scenario where VM distinguishes class<canon>._field
+                        // from class<not-canon-ref-type>._field.
+                        haveCorrectFieldForVN =
+                            compiler->info.compCompHnd->doesFieldBelongToClass(field->gtFldHnd, clsHnd);
+                    }
+                    else
+                    {
+                        FieldSeqNode* lastSeqNode = val.m_fieldSeq->GetTail();
+                        assert(lastSeqNode != nullptr);
+                        if (lastSeqNode->IsPseudoField() || lastSeqNode == FieldSeqStore::NotAField())
+                        {
+                            haveCorrectFieldForVN = false;
+                        }
+                        else
+                        {
+                            CORINFO_FIELD_HANDLE lastFieldBeforeTheCurrent = lastSeqNode->GetFieldHandle();
+
+                            CORINFO_CLASS_HANDLE clsHnd;
+                            CorInfoType          fieldCorType =
+                                compiler->info.compCompHnd->getFieldType(lastFieldBeforeTheCurrent, &clsHnd);
+                            if (fieldCorType != CORINFO_TYPE_VALUECLASS)
+                            {
+                                // For example, System.IntPtr:ToInt64, when inlined, creates trees like
+                                // *  FIELD     long   _value
+                                // \--*  ADDR      byref
+                                //    \--*  FIELD     long   Information
+                                //       \--*  ADDR      byref
+                                //          \--*  LCL_VAR   struct<Interop+NtDll+IO_STATUS_BLOCK, 16> V08 tmp7
+                                haveCorrectFieldForVN = false;
+                            }
+                            else
+                            {
+
+                                haveCorrectFieldForVN =
+                                    compiler->info.compCompHnd->doesFieldBelongToClass(field->gtFldHnd, clsHnd);
+                                noway_assert(haveCorrectFieldForVN);
+                            }
+                        }
+                    }
+                }
+
+                if (haveCorrectFieldForVN)
+                {
+                    FieldSeqStore* fieldSeqStore = compiler->GetFieldSeqStore();
                     m_fieldSeq = fieldSeqStore->Append(val.m_fieldSeq, fieldSeqStore->CreateSingleton(field->gtFldHnd));
+                }
+                else
+                {
+                    m_fieldSeq = FieldSeqStore::NotAField();
+                    JITDUMP("Setting NotAField for [%06u],\n", compiler->dspTreeID(field));
                 }
             }
 
@@ -463,7 +530,7 @@ public:
                     assert(TopValue(1).Node() == node);
                     assert(TopValue(0).Node() == node->AsField()->gtFldObj);
 
-                    if (!TopValue(1).Field(TopValue(0), node->AsField(), m_compiler->GetFieldSeqStore()))
+                    if (!TopValue(1).Field(TopValue(0), node->AsField(), m_compiler))
                     {
                         // Either the address comes from a location value (e.g. FIELD(IND(...)))
                         // or the field offset has overflowed.

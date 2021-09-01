@@ -16,7 +16,6 @@
 
 #include "check.h"
 #include "classloadlevel.h"
-#include "fixuppointer.h"
 
 class TypeDesc;
 class TypeHandle;
@@ -423,12 +422,6 @@ public:
     // (First strip off array/ptr qualifiers and generic type arguments)
     PTR_Module GetModule() const;
 
-    // The ngen'ed module where this type lives
-    PTR_Module GetZapModule() const;
-
-    // Does this immediate item live in an NGEN module?
-    BOOL IsZapped() const;
-
     // The module where this type lives for the purposes of loading and prejitting
     // Note: NGen time result might differ from runtime result for parametrized types (generics, arrays, etc.)
     // See code:ClassLoader::ComputeLoaderModule or file:clsload.hpp#LoaderModule for more information
@@ -645,29 +638,6 @@ inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
 #endif  // CHECK_INVARIANTS
 
 /*************************************************************************/
-// dac_casts for TypeHandle makes FixupPointer<TypeHandle> work.
-//
-// TypeHandle is wrapper around pointer to MethodTable or TypeDesc. Even though
-// it may feel counterintuitive, it is possible to treat it like a pointer and
-// use the regular FixupPointer to implement TypeHandle indirection cells.
-// The lowest bit of TypeHandle (when wrapped inside FixupPointer) is
-// used to mark optional indirection.
-//
-template<>
-inline TADDR dac_cast(TypeHandle src)
-{
-    SUPPORTS_DAC;
-    return src.AsTAddr();
-}
-
-template<>
-inline TypeHandle dac_cast(TADDR src)
-{
-    SUPPORTS_DAC;
-    return TypeHandle::FromTAddr(src);
-}
-
-/*************************************************************************/
 // Instantiation is representation of generic instantiation.
 // It is simple read-only array of TypeHandles. In NGen, the type handles
 // may be encoded using indirections. That's one reason why it is convenient
@@ -677,7 +647,7 @@ class Instantiation
 public:
     // Construct empty instantiation
     Instantiation()
-        : m_pArgs(NULL), m_nArgs(0)
+        : m_pArgs((TypeHandle*)NULL), m_nArgs(0)
     {
         LIMITED_METHOD_DAC_CONTRACT;
     }
@@ -690,35 +660,26 @@ public:
         _ASSERTE(m_nArgs == 0 || m_pArgs != NULL);
     }
 
-    // Construct instantiation from array of FixupPointers
-    Instantiation(FixupPointer<TypeHandle> * pArgs, DWORD nArgs)
-        : m_pArgs(pArgs), m_nArgs(nArgs)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(m_nArgs == 0 || m_pArgs != NULL);
-    }
-
     // Construct instantiation from array of TypeHandles
-    Instantiation(TypeHandle * pArgs, DWORD nArgs)
+    Instantiation(TypeHandle *pArgs, DWORD nArgs)
         : m_nArgs(nArgs)
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         DACCOP_IGNORE(CastOfMarshalledType, "Dual mode DAC problem, but since the size is the same, the cast is safe");
-        m_pArgs = (FixupPointer<TypeHandle> *)pArgs;
+        m_pArgs = pArgs;
         _ASSERTE(m_nArgs == 0 || m_pArgs != NULL);
     }
 
 #ifdef DACCESS_COMPILE
-    // Construct instantiation from target array of FixupPointers in DAC.
     // This method will create local copy of the instantiation arguments.
-    Instantiation(DPTR(FixupPointer<TypeHandle>) pArgs, DWORD nArgs)
+    Instantiation(PTR_TypeHandle pArgs, DWORD nArgs)
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         // Create a local copy of the instanitation under DAC
         PVOID pLocalArgs = PTR_READ(dac_cast<TADDR>(pArgs), nArgs * sizeof(TypeHandle));
-        m_pArgs = (FixupPointer<TypeHandle> *)pLocalArgs;
+        m_pArgs = (TypeHandle*)pLocalArgs;
 
         m_nArgs = nArgs;
 
@@ -731,7 +692,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(iArg < m_nArgs);
-        return m_pArgs[iArg].GetValue();
+        return m_pArgs[iArg];
     }
 
     DWORD GetNumArgs() const
@@ -747,7 +708,7 @@ public:
     }
 
     // Unsafe access to the instantiation. Do not use unless absolutely necessary!!!
-    FixupPointer<TypeHandle> * GetRawArgs() const
+    TypeHandle * GetRawArgs() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pArgs;
@@ -765,7 +726,7 @@ public:
 
 private:
     // Note that for DAC builds, m_pArgs may be host allocated buffer, not a copy of an object marshalled by DAC.
-    FixupPointer<TypeHandle> * m_pArgs;
+    TypeHandle* m_pArgs;
     DWORD m_nArgs;
 };
 

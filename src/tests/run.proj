@@ -101,7 +101,7 @@ $(_XunitEpilog)
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
-    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppRuntimewinx64Version)</RuntimeFrameworkVersion>
     <RunAnalyzers>false</RunAnalyzers>
  </PropertyGroup>
 
@@ -589,8 +589,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
-      <AotCompiler>$(MonoBinDir)/cross/$(PackageRID)/mono-aot-cross</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)/cross/$(PackageRID)</MonoLlvmPath>
+      <AotCompiler>$(MonoBinDir)/cross/$(OutputRid)/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross/$(OutputRid)</MonoLlvmPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -826,7 +826,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToCoreRoot"
-             Properties="Language=C#;PackageRID=$(PackageRID);RuntimeIdentifier=$(PackageRID)" />
+             Properties="Language=C#;OutputRid=$(OutputRid);RuntimeIdentifier=$(OutputRid)" />
   </Target>
 
   <Target Name="Build">

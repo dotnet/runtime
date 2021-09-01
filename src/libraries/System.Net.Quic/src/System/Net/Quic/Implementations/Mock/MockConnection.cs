@@ -8,6 +8,8 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace System.Net.Quic.Implementations.Mock
 {
@@ -244,6 +246,9 @@ namespace System.Net.Quic.Implementations.Mock
             }
 
             MockStream.StreamState streamState = new MockStream.StreamState(streamId, bidirectional);
+            // TODO Streams are never removed from a connection. Consider cleaning up in the future.
+            state._streams[streamState._streamId] = streamState;
+
             Channel<MockStream.StreamState> streamChannel = _isClient ? state._clientInitiatedStreamChannel : state._serverInitiatedStreamChannel;
             streamChannel.Writer.TryWrite(streamState);
 
@@ -319,6 +324,12 @@ namespace System.Net.Quic.Implementations.Mock
                 {
                     state._serverErrorCode = errorCode;
                     DrainAcceptQueue(errorCode, -1);
+                }
+
+                foreach (KeyValuePair<long, MockStream.StreamState> kvp in state._streams)
+                {
+                    kvp.Value._outboundWritesCompletedTcs.TrySetException(new QuicConnectionAbortedException(errorCode));
+                    kvp.Value._inboundWritesCompletedTcs.TrySetException(new QuicConnectionAbortedException(errorCode));
                 }
             }
 
@@ -474,8 +485,9 @@ namespace System.Net.Quic.Implementations.Mock
         internal sealed class ConnectionState
         {
             public readonly SslApplicationProtocol _applicationProtocol;
-            public Channel<MockStream.StreamState> _clientInitiatedStreamChannel;
-            public Channel<MockStream.StreamState> _serverInitiatedStreamChannel;
+            public readonly Channel<MockStream.StreamState> _clientInitiatedStreamChannel;
+            public readonly Channel<MockStream.StreamState> _serverInitiatedStreamChannel;
+            public readonly ConcurrentDictionary<long, MockStream.StreamState> _streams;
 
             public PeerStreamLimit? _clientStreamLimit;
             public PeerStreamLimit? _serverStreamLimit;
@@ -490,6 +502,7 @@ namespace System.Net.Quic.Implementations.Mock
                 _clientInitiatedStreamChannel = Channel.CreateUnbounded<MockStream.StreamState>();
                 _serverInitiatedStreamChannel = Channel.CreateUnbounded<MockStream.StreamState>();
                 _clientErrorCode = _serverErrorCode = -1;
+                _streams = new ConcurrentDictionary<long, MockStream.StreamState>();
             }
         }
     }

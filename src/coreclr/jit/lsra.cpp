@@ -8215,7 +8215,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     if ((resolveType == ResolveJoin) && (compiler->compHndBBtabCount > 0))
     {
         VARSET_TP extraLiveSet(VarSetOps::Diff(compiler, block->bbLiveOut, toBlock->bbLiveIn));
-        VarSetOps::IntersectionD(compiler, extraLiveSet, registerCandidateVars);
+        VarSetOps::IntersectionD(compiler, extraLiveSet, exceptVars);
         VarSetOps::Iter iter(compiler, extraLiveSet);
         unsigned        extraVarIndex = 0;
         while (iter.NextElem(&extraVarIndex))

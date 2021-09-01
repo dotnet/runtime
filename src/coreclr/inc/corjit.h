@@ -484,6 +484,12 @@ public:
         uint32_t        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
                                           version number for the CORJIT_FLAGS value. */
         ) = 0;
+
+    // Checks if a field belongs to a given class.
+    virtual bool doesFieldBelongToClass(
+        CORINFO_FIELD_HANDLE fldHnd, /* IN: the field that we are checking */
+        CORINFO_CLASS_HANDLE cls     /* IN: the class that we are checking */
+        ) = 0;
 };
 
 /**********************************************************************************/

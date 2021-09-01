@@ -72,7 +72,7 @@
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35</Versions>
+      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35;36</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -225,7 +225,7 @@
     <RuntimeGroup Include="tizen">
       <Parent>linux</Parent>
       <Architectures>x86;armel;arm64</Architectures>
-      <Versions>4.0.0;5.0.0;5.5.0;6.0.0</Versions>
+      <Versions>4.0.0;5.0.0;5.5.0;6.0.0;6.5.0</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ubuntu">

@@ -81,7 +81,7 @@ PTR_LoaderAllocator InstMethodHashTable::GetLoaderAllocator()
     }
     else
     {
-        _ASSERTE(!m_pModule.IsNull());
+        _ASSERTE(m_pModule != NULL);
         return GetModule()->GetLoaderAllocator();
     }
 }
@@ -157,11 +157,6 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
          pSearch != NULL;
          pSearch = BaseFindNextEntryByHash(&sContext))
     {
-#ifdef FEATURE_PREJIT
-        // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-        ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
-#endif
-
         MethodDesc *pMD = pSearch->GetMethod();
 
         if (pMD->GetMemberDef() != token)
@@ -178,16 +173,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
         if ( ((dwKeyFlags & InstMethodHashEntry::UnboxingStub)    == 0) != (unboxingStub == 0) )
             continue;
 
-#ifdef FEATURE_PREJIT
-        // Note pMD->GetMethodTable() might not be restored at this point.
-
-        RelativeFixupPointer<PTR_MethodTable> * ppMT = pMD->GetMethodTablePtr();
-        TADDR pMT = ppMT->GetValueMaybeTagged((TADDR)ppMT);
-
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), pMT, declaringType))
-#else
         if (TypeHandle(pMD->GetMethodTable()) != declaringType)
-#endif
         {
             continue;  // Next iteration of the for loop
         }
@@ -203,15 +189,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
 
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
-#ifdef FEATURE_PREJIT
-                // Fetch the type handle as TADDR. It may be may be encoded fixup - TypeHandle debug-only validation
-                // asserts on encoded fixups.
-                TADDR candidateArg = ((FixupPointer<TADDR> *)candidateInst.GetRawArgs())[i].GetValue();
-
-                if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, inst[i]))
-#else
                 if (candidateInst[i] != inst[i])
-#endif
                 {
                     match = false;
                     break;

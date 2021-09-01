@@ -6,7 +6,7 @@
 #include "defaultassemblybinder.h"
 #include "customassemblybinder.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 using namespace BINDER_SPACE;
 
@@ -26,13 +26,11 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 
     // Do we have the assembly already loaded in the context of the current binder?
     hr = AssemblyBinderCommon::BindAssembly(this,
-                                      pAssemblyName,
-                                      NULL,
-                                      NULL,
-                                      FALSE, //fNgenExplicitBind,
-                                      FALSE, //fExplicitBindToNativeImage,
-                                      false, //excludeAppPaths,
-                                      ppCoreCLRFoundAssembly);
+                                            pAssemblyName,
+                                            NULL,  // szCodeBase
+                                            NULL,  // pParentAssembly
+                                            false, //excludeAppPaths,
+                                            ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
     {
         _ASSERTE(*ppCoreCLRFoundAssembly != NULL);
@@ -105,8 +103,7 @@ Exit:;
 }
 
 HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
-                                                            /* in */ BOOL fIsNativeImage,
-                                                            /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
+                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
 
@@ -120,7 +117,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
 
         // Get the Metadata interface
         DWORD dwPAFlags[2];
-        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, fIsNativeImage));
+        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags));
         IF_FAIL_GO(AssemblyBinderCommon::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
 
         _ASSERTE(pIMetaDataAssemblyImport != NULL);
@@ -201,7 +198,7 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pTPABinder,
                 pBinder->m_pAssemblyLoaderAllocator = pLoaderAllocator;
                 pBinder->m_loaderAllocatorHandle = loaderAllocatorHandle;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
                 if (pLoaderAllocator != NULL)
                 {
                     ((AssemblyLoaderAllocator*)pLoaderAllocator)->RegisterBinder(pBinder);
@@ -268,5 +265,5 @@ void CustomAssemblyBinder::ReleaseLoadContext()
     m_ptrManagedAssemblyLoadContext = NULL;
 }
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 

@@ -157,7 +157,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->SetMemberDef(0);
     pMD->SetSlot(MethodTable::NO_SLOT);       // we can't ever use the slot for dynamic methods
     // the no metadata part of the method desc
-    pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB");
+    pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->m_dwExtendedFlags = mdPublic | DynamicMethodDesc::nomdILStub;
 
     pMD->SetTemporaryEntryPoint(pMT->GetLoaderAllocator(), pamTracker);
@@ -296,11 +296,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     {
         switch(dwStubFlags)
         {
-            case ILSTUB_ARRAYOP_GET: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Get");
+            case ILSTUB_ARRAYOP_GET: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Get";
                                              break;
-            case ILSTUB_ARRAYOP_SET: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Set");
+            case ILSTUB_ARRAYOP_SET: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Set";
                                              break;
-            case ILSTUB_ARRAYOP_ADDRESS: pMD->m_pszMethodName.SetValue((PTR_CUTF8)"IL_STUB_Array_Address");
+            case ILSTUB_ARRAYOP_ADDRESS: pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB_Array_Address";
                                              break;
             default: _ASSERTE(!"Unknown array il stub");
         }
@@ -308,15 +308,15 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     else
 #endif
     {
-        pMD->m_pszMethodName.SetValue(pMD->GetILStubResolver()->GetStubMethodName());
+        pMD->m_pszMethodName = pMD->GetILStubResolver()->GetStubMethodName();
     }
 
 
 #ifdef _DEBUG
-    pMD->m_pszDebugMethodName = RelativePointer<PTR_CUTF8>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(DynamicMethodDesc, pMD, m_pszMethodName));
+    pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
     pMD->m_pszDebugClassName  = ILStubResolver::GetStubClassName(pMD);  // must be called after type is set
     pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
-    pMD->m_pDebugMethodTable.SetValue(pMT);
+    pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 
     RETURN pMD;
@@ -339,7 +339,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
     CONTRACT_END;
 
 #ifdef _DEBUG
-    if (pModule->IsSystem() || pModule->GetDomain()->AsAppDomain()->IsCompilationDomain())
+    if (pModule->IsSystem())
     {
         // in the shared domain and compilation AD we are associated with the module
         CONSISTENCY_CHECK(pModule->GetILStubCache() == this);
@@ -587,157 +587,3 @@ bool ILStubCache::ILStubCacheTraits::Equals(_In_ key_t lhs, _In_ key_t rhs)
     size_t blobDataSize = lhs->m_cbSizeOfBlob - sizeof(ILStubHashBlobBase);
     return memcmp(lhs->m_rgbBlobData, rhs->m_rgbBlobData, blobDataSize) == 0;
 }
-
-#ifdef FEATURE_PREJIT
-
-// ============================================================================
-// Stub method hash entry methods
-// ============================================================================
-PTR_MethodDesc StubMethodHashEntry::GetMethod()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return pMD;
-}
-
-PTR_MethodDesc StubMethodHashEntry::GetStubMethod()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return pStubMD;
-}
-
-#ifndef DACCESS_COMPILE
-
-void StubMethodHashEntry::SetMethodAndStub(MethodDesc *pMD, MethodDesc *pStubMD)
-{
-    LIMITED_METHOD_CONTRACT;
-    this->pMD = pMD;
-    this->pStubMD = pStubMD;
-}
-
-// ============================================================================
-// Stub method hash table methods
-// ============================================================================
-/* static */ StubMethodHashTable *StubMethodHashTable::Create(LoaderAllocator *pAllocator, Module *pModule, DWORD dwNumBuckets, AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LoaderHeap *pHeap = pAllocator->GetLowFrequencyHeap();
-    StubMethodHashTable *pThis = (StubMethodHashTable *)pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(StubMethodHashTable)));
-
-    new (pThis) StubMethodHashTable(pModule, pHeap, dwNumBuckets);
-
-    return pThis;
-}
-
-// Calculate a hash value for a key
-static DWORD Hash(MethodDesc *pMD)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    DWORD dwHash = 0x87654321;
-#define INST_HASH_ADD(_value) dwHash = ((dwHash << 5) + dwHash) ^ (_value)
-
-    INST_HASH_ADD(pMD->GetMemberDef());
-
-    Instantiation inst = pMD->GetClassInstantiation();
-    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-    {
-        TypeHandle thArg = inst[i];
-
-        if (thArg.GetMethodTable())
-        {
-            INST_HASH_ADD(thArg.GetCl());
-
-            Instantiation sArgInst = thArg.GetInstantiation();
-            for (DWORD j = 0; j < sArgInst.GetNumArgs(); j++)
-            {
-                TypeHandle thSubArg = sArgInst[j];
-                if (thSubArg.GetMethodTable())
-                    INST_HASH_ADD(thSubArg.GetCl());
-                else
-                    INST_HASH_ADD(thSubArg.GetSignatureCorElementType());
-            }
-        }
-        else
-            INST_HASH_ADD(thArg.GetSignatureCorElementType());
-    }
-
-    return dwHash;
-}
-
-MethodDesc *StubMethodHashTable::FindMethodDesc(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    MethodDesc *pMDResult = NULL;
-
-    DWORD dwHash = Hash(pMD);
-    StubMethodHashEntry_t* pSearch;
-    LookupContext sContext;
-
-    for (pSearch = BaseFindFirstEntryByHash(dwHash, &sContext);
-         pSearch != NULL;
-         pSearch = BaseFindNextEntryByHash(&sContext))
-    {
-        if (pSearch->GetMethod() == pMD)
-        {
-            pMDResult = pSearch->GetStubMethod();
-            break;
-        }
-    }
-
-    return pMDResult;
-}
-
-// Add method desc to the hash table; must not be present already
-void StubMethodHashTable::InsertMethodDesc(MethodDesc *pMD, MethodDesc *pStubMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(CheckPointer(pStubMD));
-    }
-    CONTRACTL_END
-
-    StubMethodHashEntry_t *pNewEntry = (StubMethodHashEntry_t *)BaseAllocateEntry(NULL);
-    pNewEntry->SetMethodAndStub(pMD, pStubMD);
-
-    DWORD dwHash = Hash(pMD);
-    BaseInsertEntry(dwHash, pNewEntry);
-}
-
-#endif // !DACCESS_COMPILE
-
-#ifdef DACCESS_COMPILE
-
-void StubMethodHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    BaseEnumMemoryRegions(flags);
-}
-
-void StubMethodHashTable::EnumMemoryRegionsForEntry(StubMethodHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    if (pEntry->GetMethod().IsValid())
-        pEntry->GetMethod()->EnumMemoryRegions(flags);
-}
-
-#endif // DACCESS_COMPILE
-
-#endif // FEATURE_PREJIT

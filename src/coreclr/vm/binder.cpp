@@ -255,11 +255,7 @@ Signature CoreLibBinder::GetTargetSignature(LPHARDCODEDMETASIG pHardcodedSig)
     }
     CONTRACTL_END
 
-#ifdef CROSSGEN_COMPILE
-    return GetModule()->m_pBinder->GetSignatureLocal(pHardcodedSig);
-#else
     return (&g_CoreLib)->GetSignatureLocal(pHardcodedSig);
-#endif
 }
 
 // Get the metasig, do a one-time conversion if necessary
@@ -512,7 +508,7 @@ void CoreLibBinder::Startup()
     s_SigConvertCrst.Init(CrstSigConvert);
 }
 
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
 
 // NoClass is used to suppress check for unmanaged and managed size match
 #define NoClass char[USHRT_MAX]
@@ -1102,7 +1098,7 @@ ErrExit:
     _ASSERTE(SUCCEEDED(hr));
 }
 
-#endif // _DEBUG && !CROSSGEN_COMPILE
+#endif // _DEBUG
 
 extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
 extern const USHORT c_nCoreLibClassDescriptions;
@@ -1113,19 +1109,6 @@ extern const USHORT c_nCoreLibMethodDescriptions;
 extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
 extern const USHORT c_nCoreLibFieldDescriptions;
 
-#ifdef CROSSGEN_COMPILE
-namespace CrossGenCoreLib
-{
-    extern const CoreLibClassDescription c_rgCoreLibClassDescriptions[];
-    extern const USHORT c_nCoreLibClassDescriptions;
-
-    extern const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[];
-    extern const USHORT c_nCoreLibMethodDescriptions;
-
-    extern const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[];
-    extern const USHORT c_nCoreLibFieldDescriptions;
-};
-#endif
 
 void CoreLibBinder::AttachModule(Module * pModule)
 {
@@ -1138,40 +1121,9 @@ void CoreLibBinder::AttachModule(Module * pModule)
         c_rgCoreLibMethodDescriptions, c_nCoreLibMethodDescriptions,
         c_rgCoreLibFieldDescriptions,  c_nCoreLibFieldDescriptions);
 
-#if defined(FEATURE_PREJIT) && !defined(CROSSGEN_COMPILE)
-    CoreLibBinder * pPersistedBinder = pModule->m_pBinder;
-
-    if (pPersistedBinder != NULL
-        // Do not use persisted binder for profiling native images. See comment in code:CoreLibBinder::Fixup.
-        && !(pModule->GetNativeImage()->GetNativeVersionInfo()->wConfigFlags  & CORCOMPILE_CONFIG_PROFILING))
-    {
-        pGlobalBinder->m_pClasses = pPersistedBinder->m_pClasses;
-        pGlobalBinder->m_pMethods = pPersistedBinder->m_pMethods;
-        pGlobalBinder->m_pFields = pPersistedBinder->m_pFields;
-
-        pModule->m_pBinder = pGlobalBinder;
-        return;
-    }
-#endif // FEATURE_PREJIT && CROSSGEN_COMPILE
-
     pGlobalBinder->AllocateTables();
 
-#ifdef CROSSGEN_COMPILE
-    CoreLibBinder * pTargetBinder = (CoreLibBinder *)(void *)
-        pModule->GetAssembly()->GetLowFrequencyHeap()
-            ->AllocMem(S_SIZE_T(sizeof(CoreLibBinder)));
-
-    pTargetBinder->SetDescriptions(pModule,
-        CrossGenCoreLib::c_rgCoreLibClassDescriptions,  CrossGenCoreLib::c_nCoreLibClassDescriptions,
-        CrossGenCoreLib::c_rgCoreLibMethodDescriptions, CrossGenCoreLib::c_nCoreLibMethodDescriptions,
-        CrossGenCoreLib::c_rgCoreLibFieldDescriptions,  CrossGenCoreLib::c_nCoreLibFieldDescriptions);
-
-    pTargetBinder->AllocateTables();
-
-    pModule->m_pBinder = pTargetBinder;
-#else
     pModule->m_pBinder = pGlobalBinder;
-#endif
 }
 
 void CoreLibBinder::SetDescriptions(Module * pModule,

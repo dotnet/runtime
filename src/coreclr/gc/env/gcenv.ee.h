@@ -92,6 +92,8 @@ public:
     static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
     static void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg &msg);
     static uint32_t GetCurrentProcessCpuCount();
+
+    static void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved);
 };
 
 #endif // __GCENV_EE_H__

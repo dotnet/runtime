@@ -88,9 +88,6 @@ namespace
             return;
         }
 
-#ifdef CROSSGEN_COMPILE
-        alcName.Set(W("Custom"));
-#else // CROSSGEN_COMPILE
         OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(managedALC);
 
         GCX_COOP();
@@ -108,7 +105,6 @@ namespace
         gc.alcName->GetSString(alcName);
 
         GCPROTECT_END();
-#endif // CROSSGEN_COMPILE
     }
 
     void GetAssemblyLoadContextNameFromBindContext(AssemblyBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
@@ -121,13 +117,9 @@ namespace
         }
         else
         {
-#ifdef CROSSGEN_COMPILE
-            GetAssemblyLoadContextNameFromManagedALC(0, alcName);
-#else // CROSSGEN_COMPILE
             CustomAssemblyBinder* alcBinder = static_cast<CustomAssemblyBinder*>(bindContext);
 
             GetAssemblyLoadContextNameFromManagedALC(alcBinder->GetManagedAssemblyLoadContext(), alcName);
-#endif // CROSSGEN_COMPILE
         }
     }
 

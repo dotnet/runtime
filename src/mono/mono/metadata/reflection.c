@@ -27,8 +27,8 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/exception.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/sre-internals.h>
 #include <stdio.h>
@@ -42,7 +42,6 @@
 #include "mono-endian.h"
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-ptr-array.h>

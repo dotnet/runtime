@@ -367,7 +367,6 @@ set(VM_SOURCES_WKS
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
-    profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
@@ -474,7 +473,6 @@ set(VM_HEADERS_WKS
     olevariant.h
     pendingload.h
     profdetach.h
-    profilermetadataemitvalidator.h
     profilingenumerators.h
     profilinghelper.h
     proftoeeinterfaceimpl.h

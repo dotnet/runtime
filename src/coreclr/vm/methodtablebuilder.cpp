@@ -1128,9 +1128,6 @@ MethodTableBuilder::CopyParentVtable()
 //   - Update the m_cbNativeSize and m_cbManagedSize if HasLayout() is true.
 // Return a BOOL result to indicate whether the size has been updated.
 //
-// Will throw IDS_EE_SIMD_NGEN_DISALLOWED if the type is System.Numerics.Vector`1
-// and this is an ngen compilation process.
-//
 BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
@@ -1150,12 +1147,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    if (IsCompilationProcess())
-    {
-        COMPlusThrow(kTypeLoadException, IDS_EE_SIMD_NGEN_DISALLOWED);
-    }
-
-#ifndef CROSSGEN_COMPILE
     if (!TargetHasAVXSupport())
         return false;
 
@@ -1177,7 +1168,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
             }
         }
     }
-#endif // !CROSSGEN_COMPILE
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     return false;
 }
@@ -1514,23 +1504,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (hr == S_OK && (strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0))
 #endif
         {
-#if defined(CROSSGEN_COMPILE)
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            if ((!IsNgenPDBCompilationProcess()
-                && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule()))
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            {
-                // Disable AOT compiling for managed implementation of hardware intrinsics.
-                // We specially treat them here to ensure correct ISA features are set during compilation
-                //
-                // When a hardware intrinsic is not supported, the JIT can generate a PlatformNotSupportedException
-                // at runtime. We cannot do the same in AOT. AOT generated ones would cause illegal instruction traps.
-                //
-                // To avoid it, one must make sure all usages are protected under IsSupported. We can guarantee this for
-                // CoreLib. That's why we can allow these to AOT compile in CoreLib:
-                COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
-            }
-#endif // defined(CROSSGEN_COMPILE)
             bmtProp->fIsHardwareIntrinsic = true;
         }
     }
@@ -1801,18 +1774,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     // Now setup the method table
 
-#ifdef FEATURE_PREJIT
-    Module *pComputedPZM = pLoaderModule;
-
-    if (bmtGenerics->GetNumGenericArgs() > 0)
-    {
-        pComputedPZM = Module::ComputePreferredZapModule(pModule, bmtGenerics->GetInstantiation());
-    }
-
-    SetupMethodTable2(pLoaderModule, pComputedPZM);
-#else // FEATURE_PREJIT
     SetupMethodTable2(pLoaderModule);
-#endif // FEATURE_PREJIT
 
     MethodTable * pMT = GetHalfBakedMethodTable();
 
@@ -2073,10 +2035,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pModule,
         GetCl(),
         GetHalfBakedMethodTable());
-
-#ifdef FEATURE_PREJIT
-    _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
-#endif // FEATURE_PREJIT
 
     return GetHalfBakedMethodTable();
 } // MethodTableBuilder::BuildMethodTableThrowing
@@ -3021,12 +2979,7 @@ MethodTableBuilder::EnumerateClassMethods()
             // Some interface checks.
             // We only need them if default interface method support is disabled or if this is fragile crossgen
 #if !defined(FEATURE_DEFAULT_INTERFACES)
-            if (fIsClassInterface
-#if defined(FEATURE_DEFAULT_INTERFACES)
-                // Only fragile crossgen wasn't upgraded to deal with default interface methods.
-                && !IsNgenPDBCompilationProcess()
-#endif
-                )
+            if (fIsClassInterface)
             {
                 if (IsMdVirtual(dwMemberAttrs))
                 {
@@ -6064,12 +6017,12 @@ MethodTableBuilder::InitMethodDesc(
             NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
 
             // Allocate writeable data
-            pNewNMD->ndirect.m_pWriteableData.SetValue((NDirectWriteableData*)
-                AllocateFromHighFrequencyHeap(S_SIZE_T(sizeof(NDirectWriteableData))));
+            pNewNMD->ndirect.m_pWriteableData = (NDirectWriteableData*)
+                AllocateFromHighFrequencyHeap(S_SIZE_T(sizeof(NDirectWriteableData)));
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-            pNewNMD->ndirect.m_pImportThunkGlue.SetValue(Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
-                GetLoaderAllocator(), GetMemTracker())->AsNDirectImportPrecode());
+            pNewNMD->ndirect.m_pImportThunkGlue = Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
+                GetLoaderAllocator(), GetMemTracker())->AsNDirectImportPrecode();
 #else // !HAS_NDIRECT_IMPORT_PRECODE
             pNewNMD->GetNDirectImportThunkGlue()->Init(pNewNMD);
 #endif // !HAS_NDIRECT_IMPORT_PRECODE
@@ -6106,18 +6059,18 @@ MethodTableBuilder::InitMethodDesc(
 
         if (strcmp(pMethodName, "Invoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod.IsNull());
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod.SetValue(pNewMD);
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod == NULL);
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod = pNewMD;
         }
         else if (strcmp(pMethodName, "BeginInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod.IsNull());
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod.SetValue(pNewMD);
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod == NULL);
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod = pNewMD;
         }
         else if (strcmp(pMethodName, "EndInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod.IsNull());
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod.SetValue(pNewMD);
+            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod == NULL);
+            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod = pNewMD;
         }
         else
         {
@@ -6206,7 +6159,7 @@ MethodTableBuilder::InitMethodDesc(
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = (LPUTF8)pszDebugMethodName;
     pNewMD->m_pszDebugClassName  = (LPUTF8)pszDebugClassName;
-    pNewMD->m_pDebugMethodTable.SetValue(GetHalfBakedMethodTable());
+    pNewMD->m_pDebugMethodTable = GetHalfBakedMethodTable();
 
     if (pszDebugMethodSignature == NULL)
         pNewMD->m_pszDebugMethodSignature = FormatSig(pNewMD,pNewMD->GetLoaderAllocator()->GetLowFrequencyHeap(),GetMemTracker());
@@ -6321,7 +6274,7 @@ MethodTableBuilder::PlaceMethodImpls()
 
     DWORD * slots = new (GetStackingAllocator()) DWORD[dwMaxSlotSize];
     mdToken * tokens = new (GetStackingAllocator()) mdToken[dwMaxSlotSize];
-    RelativePointer<MethodDesc *> * replaced = new (GetStackingAllocator()) RelativePointer<MethodDesc*>[dwMaxSlotSize];
+    MethodDesc ** replaced = new (GetStackingAllocator()) MethodDesc*[dwMaxSlotSize];
 
     DWORD iEntry = 0;
     bmtMDMethod * pCurImplMethod = bmtMethodImpl->GetImplementationMethod(iEntry);
@@ -6449,7 +6402,7 @@ MethodTableBuilder::WriteMethodImplData(
     DWORD         cSlots,
     DWORD *       rgSlots,
     mdToken *     rgTokens,
-    RelativePointer<MethodDesc *> * rgDeclMD)
+    MethodDesc ** rgDeclMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -6491,9 +6444,9 @@ MethodTableBuilder::WriteMethodImplData(
 
                 if (min != i)
                 {
-                    MethodDesc * mTmp = rgDeclMD[i].GetValue();
-                    rgDeclMD[i].SetValue(rgDeclMD[min].GetValue());
-                    rgDeclMD[min].SetValue(mTmp);
+                    MethodDesc * mTmp = rgDeclMD[i];
+                    rgDeclMD[i] = rgDeclMD[min];
+                    rgDeclMD[min] = mTmp;
 
                     DWORD sTmp = rgSlots[i];
                     rgSlots[i] = rgSlots[min];
@@ -6519,7 +6472,7 @@ MethodTableBuilder::PlaceLocalDeclarationOnClass(
     bmtMDMethod * pDecl,
     bmtMDMethod * pImpl,
     DWORD *       slots,
-    RelativePointer<MethodDesc *> * replaced,
+    MethodDesc ** replaced,
     DWORD *       pSlotIndex,
     DWORD         dwMaxSlotSize)
 {
@@ -6579,7 +6532,7 @@ MethodTableBuilder::PlaceLocalDeclarationOnClass(
     // We implement this slot, record it
     ASSERT(*pSlotIndex < dwMaxSlotSize);
     slots[*pSlotIndex] = pDecl->GetSlotIndex();
-    replaced[*pSlotIndex].SetValue(pDecl->GetMethodDesc());
+    replaced[*pSlotIndex] = pDecl->GetMethodDesc();
 
     // increment the counter
     (*pSlotIndex)++;
@@ -6680,7 +6633,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnInterface(
     bmtMethodHandle hDecl,
     bmtMDMethod   *pImpl,
     DWORD *       slots,
-    RelativePointer<MethodDesc *> * replaced,
+    MethodDesc ** replaced,
     DWORD *       pSlotIndex,
     DWORD         dwMaxSlotSize)
 {
@@ -6713,7 +6666,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnInterface(
     // We implement this slot, record it
     ASSERT(*pSlotIndex < dwMaxSlotSize);
     slots[*pSlotIndex] = hDecl.GetSlotIndex();
-    replaced[*pSlotIndex].SetValue(pDeclMD);
+    replaced[*pSlotIndex] = pDeclMD;
 
     // increment the counter
     (*pSlotIndex)++;
@@ -6725,7 +6678,7 @@ MethodTableBuilder::PlaceParentDeclarationOnClass(
     bmtRTMethod * pDecl,
     bmtMDMethod * pImpl,
     DWORD *       slots,
-    RelativePointer<MethodDesc *> * replaced,
+    MethodDesc**  replaced,
     DWORD *       pSlotIndex,
     DWORD         dwMaxSlotSize)
 {
@@ -6773,7 +6726,7 @@ MethodTableBuilder::PlaceParentDeclarationOnClass(
     // We implement this slot, record it
     ASSERT(*pSlotIndex < dwMaxSlotSize);
     slots[*pSlotIndex] = pDeclMD->GetSlot();
-    replaced[*pSlotIndex].SetValue(pDeclMD);
+    replaced[*pSlotIndex] = pDeclMD;
 
     // increment the counter
     (*pSlotIndex)++;
@@ -6835,7 +6788,7 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
             // If pTargetMT is null, this indicates that the target MethodDesc belongs
             // to the current type. Otherwise, the MethodDesc MUST be owned by a parent
             // of the type we're building.
-            BOOL              fTargetIsOwnedByParent = !pTargetMD->GetMethodTablePtr()->IsNull();
+            BOOL              fTargetIsOwnedByParent = pTargetMD->GetMethodTable() != NULL;
 
             // If the method is owned by a parent, we need to use the parent's module,
             // and we must construct the substitution chain all the way up to the parent.
@@ -6942,10 +6895,8 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
             }
         }
 
-#ifndef CROSSGEN_COMPILE
         if (tokenRange != currentTokenRange ||
             sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
-#endif // CROSSGEN_COMPILE
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -7107,7 +7058,7 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
 
         // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would be ineligible
         // for tiering currently to avoid some unnecessary overhead
-        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->HasNativeOrReadyToRunImage()) &&
+        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->IsReadyToRun()) &&
 
         (pMDMethod->GetMethodType() == METHOD_TYPE_NORMAL || pMDMethod->GetMethodType() == METHOD_TYPE_INSTANTIATED))
 
@@ -8948,9 +8899,6 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
     }
     CONTRACTL_END;
 
-    if (pMT->IsZapped())
-        return;
-
     DWORD nParentVirtuals = pMT->GetNumParentVirtuals();
     if (nParentVirtuals == 0)
         return;
@@ -8973,7 +8921,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
         //
         // Non-canonical method tables either share everything or nothing so it is sufficient to check
         // just the first indirection to detect sharing.
-        if (pMT->GetVtableIndirections()[0].GetValueMaybeNull() != pCanonMT->GetVtableIndirections()[0].GetValueMaybeNull())
+        if (pMT->GetVtableIndirections()[0] != pCanonMT->GetVtableIndirections()[0])
         {
             MethodTable::MethodDataWrapper hCanonMTData(MethodTable::GetMethodData(pCanonMT, FALSE));
             for (DWORD i = 0; i < nParentVirtuals; i++)
@@ -9002,18 +8950,14 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pAp
             // We need to re-inherit this slot from the exact parent.
 
             DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(i);
-            if (pMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == pApproxParentMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
+            if (pMT->GetVtableIndirections()[indirectionIndex] == pApproxParentMT->GetVtableIndirections()[indirectionIndex])
             {
                 // The slot lives in a chunk shared from the approximate parent MT
                 // If so, we need to change to share the chunk from the exact parent MT
 
-#ifdef FEATURE_PREJIT
-                _ASSERTE(MethodTable::CanShareVtableChunksFrom(pParentMT, pMT->GetLoaderModule(), Module::GetPreferredZapModuleForMethodTable(pMT)));
-#else
                 _ASSERTE(MethodTable::CanShareVtableChunksFrom(pParentMT, pMT->GetLoaderModule()));
-#endif
 
-                pMT->GetVtableIndirections()[indirectionIndex].SetValueMaybeNull(pParentMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull());
+                pMT->GetVtableIndirections()[indirectionIndex] = pParentMT->GetVtableIndirections()[indirectionIndex];
 
                 i = MethodTable::GetEndSlotForVtableIndirection(indirectionIndex, nParentVirtuals) - 1;
                 continue;
@@ -9758,21 +9702,6 @@ void MethodTableBuilder::CheckForSystemTypes()
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
 
-#ifdef CROSSGEN_COMPILE
-                // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
-                // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                // aggregate or union types. See https://github.com/dotnet/runtime/issues/9578
-                //
-                // Once they are properly handled according to the ABI requirements, we can remove this check
-                // and allow them to be used in crossgen/AOT scenarios.
-                //
-                // We can allow these to AOT compile in CoreLib since CoreLib versions with the runtime.
-                if (!IsNgenPDBCompilationProcess() &&
-                    GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule())
-                {
-                    COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
-                }
-#endif
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {
@@ -9973,9 +9902,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
 #endif
-#ifdef FEATURE_PREJIT
-        , Module *pComputedPZM
-#endif // FEATURE_PREJIT
         , AllocMemTracker *pamTracker
     )
 {
@@ -10041,9 +9967,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     S_SIZE_T offsetOfUnsharedVtableChunks = cbTotalSize;
 
     BOOL canShareVtableChunks = pMTParent && MethodTable::CanShareVtableChunksFrom(pMTParent, pLoaderModule
-#ifdef FEATURE_PREJIT
-        , pComputedPZM
-#endif //FEATURE_PREJIT
         );
 
     // If pMTParent has a generic instantiation, we cannot share its vtable chunks
@@ -10143,7 +10066,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         {
             // Share the parent chunk
             _ASSERTE(it.GetEndSlot() <= pMTParent->GetNumVirtuals());
-            it.SetIndirectionSlot(pMTParent->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
+            it.SetIndirectionSlot(pMTParent->GetVtableIndirections()[it.GetIndex()]);
         }
         else
         {
@@ -10199,12 +10122,12 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         if (cbInstAndDict)
         {
             MethodTable::PerInstInfoElem_t *pPInstInfo = (MethodTable::PerInstInfoElem_t *)(pPerInstInfo + (dwNumDicts-1));
-            pPInstInfo->SetValueMaybeNull((Dictionary*) (pPerInstInfo + dwNumDicts));
+            *pPInstInfo = (Dictionary*) (pPerInstInfo + dwNumDicts);
         }
     }
 
 #ifdef _DEBUG
-    pMT->m_pWriteableData.GetValue()->m_dwLastVerifedGCCnt = (DWORD)-1;
+    pMT->m_pWriteableData->m_dwLastVerifedGCCnt = (DWORD)-1;
 #endif // _DEBUG
 
     RETURN(pMT);
@@ -10224,11 +10147,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
 VOID
 MethodTableBuilder::SetupMethodTable2(
-        Module * pLoaderModule
-#ifdef FEATURE_PREJIT
-        , Module * pComputedPZM
-#endif // FEATURE_PREJIT
-    )
+        Module * pLoaderModule)
 {
     CONTRACTL
     {
@@ -10297,13 +10216,10 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
                                    fHasDynamicInterfaceMap,
 #endif
-#ifdef FEATURE_PREJIT
-                                   pComputedPZM,
-#endif //FEATURE_PREJIT
                                    GetMemTracker());
 
     pMT->SetClass(pClass);
-    pClass->m_pMethodTable.SetValue(pMT);
+    pClass->m_pMethodTable = pMT;
     m_pHalfBakedMT = pMT;
 
 #ifdef _DEBUG
@@ -10429,13 +10345,13 @@ MethodTableBuilder::SetupMethodTable2(
             MethodDesc *pMD = it->GetMethodDesc();
             if (pMD != NULL)
             {
-                pMD->m_pDebugMethodTable.SetValue(pMT);
+                pMD->m_pDebugMethodTable = pMT;
                 pMD->m_pszDebugMethodSignature = FormatSig(pMD, GetLoaderAllocator()->GetLowFrequencyHeap(), GetMemTracker());
             }
             MethodDesc *pUnboxedMD = it->GetUnboxedMethodDesc();
             if (pUnboxedMD != NULL)
             {
-                pUnboxedMD->m_pDebugMethodTable.SetValue(pMT);
+                pUnboxedMD->m_pDebugMethodTable = pMT;
                 pUnboxedMD->m_pszDebugMethodSignature = FormatSig(pUnboxedMD, GetLoaderAllocator()->GetLowFrequencyHeap(), GetMemTracker());
             }
         }
@@ -10482,7 +10398,7 @@ MethodTableBuilder::SetupMethodTable2(
     // Set all field slots to point to the newly created MethodTable
     for (i = 0; i < (bmtEnumFields->dwNumStaticFields + bmtEnumFields->dwNumInstanceFields); i++)
     {
-        pFieldDescList[i].m_pMTOfEnclosingClass.SetValue(pMT);
+        pFieldDescList[i].m_pMTOfEnclosingClass = pMT;
     }
 
     // Fill in type parameters before looking up exact parent or fetching the types of any field descriptors!
@@ -10505,7 +10421,7 @@ MethodTableBuilder::SetupMethodTable2(
         {
             _ASSERTE(pLayout->GetMaxSlots() > 0);
 
-            PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
+            PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1];
             DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
             *pSizeSlot = cbDictSlotSize;
         }
@@ -10632,7 +10548,7 @@ MethodTableBuilder::SetupMethodTable2(
                 // with code:MethodDesc::SetStableEntryPointInterlocked.
                 //
                 DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(iCurSlot);
-                if (GetParentMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() != pMT->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
+                if (GetParentMethodTable()->GetVtableIndirections()[indirectionIndex] != pMT->GetVtableIndirections()[indirectionIndex])
                     pMT->SetSlot(iCurSlot, pMD->GetInitialEntryPointForCopiedSlot());
             }
             else
@@ -11300,7 +11216,7 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     // Always use the ReadyToRun field layout algorithm if the source IL image was ReadyToRun, independent on
     // whether ReadyToRun is actually enabled for the module. It is required to allow mixing and matching
     // ReadyToRun images with and without input bubble enabled.
-    if (!GetModule()->GetFile()->IsILImageReadyToRun())
+    if (!GetModule()->GetFile()->IsReadyToRun())
     {
         // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
         return FALSE;
