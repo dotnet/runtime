@@ -130,9 +130,9 @@
              Link="System\IO\Path.Windows.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathHelper.Windows.cs"
              Link="System\IO\PathHelper.Windows.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.cs"
              Link="System\IO\PathInternal.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
              Link="Common\System\IO\Win32Marshal.cs" />

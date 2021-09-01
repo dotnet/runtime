@@ -1149,7 +1149,7 @@ arch_init (MonoAotCompile *acfg)
 
 			if (strstr (acfg->aot_opts.mtriple, "ios")) {
 				g_string_append (acfg->llc_args, " -mattr=+v7");
-				g_string_append (acfg->llc_args, " -exception-model=dwarf -disable-fp-elim");
+				g_string_append (acfg->llc_args, " -exception-model=dwarf -frame-pointer=all");
 			}
 		}
 

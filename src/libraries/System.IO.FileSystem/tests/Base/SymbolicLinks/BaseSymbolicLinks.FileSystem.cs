@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO.Enumeration;
+using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests
@@ -480,6 +482,34 @@ namespace System.IO.Tests
             // Verify that Target is resolved and is relative to Link's directory and not to the cwd.
             Assert.False(targetInfo.Exists);
             Assert.Equal(Path.GetDirectoryName(linkInfo.FullName), Path.GetDirectoryName(targetInfo.FullName));
+        }
+
+        protected static string? GetAppExecLinkPath()
+        {
+            string localAppDataPath = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+            if (localAppDataPath is null)
+            {
+                return null;
+            }
+
+            string windowsAppsDir = Path.Join(localAppDataPath, "Microsoft", "WindowsApps");
+
+            if (!Directory.Exists(windowsAppsDir))
+            {
+                return null;
+            }
+
+            var opts = new EnumerationOptions { RecurseSubdirectories = true };
+
+            return new FileSystemEnumerable<string?>(
+                windowsAppsDir,
+                (ref FileSystemEntry entry) => entry.ToFullPath(),
+                opts)
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                    FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
+                    (entry.Attributes & FileAttributes.ReparsePoint) != 0
+            }.FirstOrDefault();
         }
 
         public static IEnumerable<object[]> ResolveLinkTarget_PathToTarget_Data

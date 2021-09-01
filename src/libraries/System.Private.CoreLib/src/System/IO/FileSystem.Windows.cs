@@ -556,8 +556,8 @@ namespace System.IO
             // The file or directory is not a reparse point.
             if ((data.dwFileAttributes & (uint)FileAttributes.ReparsePoint) == 0 ||
                 // Only symbolic links and mount points are supported at the moment.
-                ((data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK) == 0 &&
-                 (data.dwReserved0 & Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT) == 0))
+                (data.dwReserved0 != Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK &&
+                 data.dwReserved0 != Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT))
             {
                 return null;
             }
