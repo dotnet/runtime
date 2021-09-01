@@ -4,7 +4,6 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
-	[IgnoreTestCase ("Requires cecil updated with fix for https://github.com/jbevain/cecil/issues/583")]
 	[SetupCompileBefore ("LibraryWithPortablePdbSymbols.dll", new[] { "Dependencies/LibraryWithPortablePdbSymbols.cs" }, additionalArguments: "/debug:portable", compilerToUse: "csc")]
 	[SetupLinkerLinkSymbols ("true")]
 	[SetupLinkerArgument ("--deterministic", "true")]
