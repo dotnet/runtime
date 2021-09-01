@@ -131,7 +131,7 @@ jobs:
 
         # Public Windows Build Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
-          name: NetCorePublic-Pool
+          name: NetCore1ESPool-Svc-Public
           demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019.Open
 
 
