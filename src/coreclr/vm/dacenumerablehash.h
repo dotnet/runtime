@@ -20,14 +20,7 @@
 //
 // BENEFITS
 //
-//  * Removes next pointer from all persisted hash entries:
-//      o Reduces data footprint of each entry.
-//      o Increases density of entries.
-//      o Removes a base relocation entry.
-//      o Removes a runtime write to each entry (from the relocation above).
-//  * Compresses persisted bucket list and removes the use of pointers:
-//      o Reduces working set hit of reading hash table (especially on 64-bit systems).
-//      o Allows bucket list to be saved in read-only memory and thus use shared rather than private pages.
+//  * Provides built-in DAC memory enumeration with optional per-entry customization for any size of hash entry.
 //  * Factors out common code:
 //      o Less chance of bugs, one place to make fixes.
 //      o Less code overall.
