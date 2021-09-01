@@ -66,7 +66,7 @@ namespace HttpStress
             cmd.AddOption(new Option("-serverInitialConnectionWindowSize", "Overrides kestrel initial connection window size setting.") { Argument = new Argument<int?>("bytes", null) });
             cmd.AddOption(new Option("-serverMaxRequestHeaderFieldSize", "Overrides kestrel max request header field size.") { Argument = new Argument<int?>("bytes", null) });
 
-            cmd.AddOption(new Option("-reportFile", "Stress run report .json file.") { Argument = new Argument<string>("path", "./report.json") });
+            cmd.AddOption(new Option("-reportFile", "Stress run report .xml file.") { Argument = new Argument<string>("path", "./report.xml") });
 
 
             ParseResult cmdline = cmd.Parse(args);

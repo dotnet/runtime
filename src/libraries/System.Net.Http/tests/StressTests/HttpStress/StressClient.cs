@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using System.Xml.Linq;
 
 namespace HttpStress
 {
@@ -128,11 +129,11 @@ namespace HttpStress
             Console.WriteLine($"Saving report file to {_config.ReportFile}.");
             try
             {
-                File.WriteAllText(_config.ReportFile, $"{{ \"totalErrorCount\" : \"{_aggregator.TotalErrorCount}\" }}");
+                _aggregator.SaveFailureReport(_config);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Saving report failed: {ex.Message}");
+                Console.WriteLine($"Saving report failed: {ex}");
             }
         }
 
@@ -243,22 +244,6 @@ namespace HttpStress
             }
         }
 
-        /// <summary>Aggregate view of a particular stress failure type</summary>
-        private sealed class StressFailureType
-        {
-            // Representative error text of stress failure
-            public string ErrorText { get; }
-            // Operation id => failure timestamps
-            public Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>> Failures { get; }
-
-            public StressFailureType(string errorText)
-            {
-                ErrorText = errorText;
-                Failures = new Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>>();
-            }
-
-            public int FailureCount => Failures.Values.Select(x => x.Count).Sum();
-        }
 
         private sealed class StressResultAggregator
         {
@@ -315,8 +300,9 @@ namespace HttpStress
                 void RecordFailureType()
                 {
                     (Type, string, string)[] key = ClassifyFailure(exn);
+                    string fingerprint = FailureReportExporter.GetFailureFingerprint(key);
 
-                    StressFailureType failureType = _failureTypes.GetOrAdd(key, _ => new StressFailureType(exn.ToString()));
+                    StressFailureType failureType = _failureTypes.GetOrAdd(key, _ => new StressFailureType(exn.ToString(), fingerprint));
 
                     lock (failureType)
                     {
@@ -461,7 +447,7 @@ namespace HttpStress
                 foreach (StressFailureType failure in _failureTypes.Values.OrderByDescending(x => x.FailureCount))
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"Failure Type {++i}/{_failureTypes.Count}:");
+                    Console.WriteLine($"Failure Type {++i}/{_failureTypes.Count} [{failure.Fingerprint}]:");
                     Console.ResetColor();
                     Console.WriteLine(failure.ErrorText);
                     Console.WriteLine();
@@ -488,6 +474,12 @@ namespace HttpStress
                     Console.WriteLine();
                 }
             }
+
+            public void SaveFailureReport(Configuration configuration)
+            {
+                XDocument doc = FailureReportExporter.ExportFailures(configuration, _failureTypes.Values);
+                doc.Save(configuration.ReportFile);
+            }
         }
 
 
@@ -496,5 +488,25 @@ namespace HttpStress
             public bool Equals(T? left, T? right) => left != null && left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
             public int GetHashCode([DisallowNull] T value) => value.GetHashCode(StructuralComparisons.StructuralEqualityComparer);
         }
+    }
+
+    /// <summary>Aggregate view of a particular stress failure type</summary>
+    internal sealed class StressFailureType
+    {
+        // Representative error text of stress failure
+        public string ErrorText { get; }
+        // Semi-unique fingerprint for the stress failure
+        public string Fingerprint { get; }
+        // Operation id => failure timestamps
+        public Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>> Failures { get; }
+
+        public StressFailureType(string errorText, string fingerprint)
+        {
+            ErrorText = errorText;
+            Fingerprint = fingerprint;
+            Failures = new Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>>();
+        }
+
+        public int FailureCount => Failures.Values.Select(x => x.Count).Sum();
     }
 }
