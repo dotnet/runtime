@@ -52,8 +52,8 @@ jobs:
   displayName: Docker NanoServer
   timeoutInMinutes: 120
   pool:
-    name: NetCorePublic-Pool
-    queue: BuildPool.Server.Amd64.VS2019.Open
+    name: NetCore1ESPool-Svc-Public
+    demands: ImageOverride -equals Build.Server.Amd64.VS2019.Open
 
   steps:
   - checkout: self

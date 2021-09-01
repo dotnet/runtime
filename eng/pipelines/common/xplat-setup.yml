@@ -109,8 +109,8 @@ jobs:
 
         # Official Build Linux Pool
         ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: NetCoreInternal-Pool
-          queue: BuildPool.Ubuntu.1804.Amd64
+          name: NetCore1ESPool-Svc-Internal
+          demands: ImageOverride -equals Build.Ubuntu.1804.Amd64
 
         # Public OSX Build Pool
         ${{ if eq(parameters.osGroup, 'OSX') }}:
@@ -126,13 +126,13 @@ jobs:
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: NetCoreInternal-Pool
-          queue: BuildPool.Windows.10.Amd64.VS2019
+          name: NetCore1ESPool-Svc-Internal
+          demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019
 
         # Public Windows Build Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCorePublic-Pool
-          queue: BuildPool.Windows.10.Amd64.VS2019.Open
+          demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019.Open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
