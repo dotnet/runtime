@@ -388,15 +388,16 @@ static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
         return;
     }
 
-    char symbolName[SYMBOL_NAME_SIZE];
-
 #if defined(TARGET_OSX) || defined(TARGET_ANDROID)
-    // Nothing to do here
-    // OSX and Android always run against ICU version which has ucol_setMaxVariable. We don't need more than that.
+    // OSX and Android always run against ICU version which has ucol_setMaxVariable.
+    // We shouldn't come here.
+    assert(false);
 #elif defined(TARGET_WINDOWS)
+    char symbolName[SYMBOL_NAME_SIZE];
     sprintf_s(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
     ucol_setVariableTop_ptr = (ucol_setVariableTop_func)GetProcAddress((HMODULE)libicui18n, symbolName);
 #else
+    char symbolName[SYMBOL_NAME_SIZE];
     sprintf(symbolName, "ucol_setVariableTop%s", symbolVersion);
     ucol_setVariableTop_ptr = (ucol_setVariableTop_func)dlsym(libicui18n, symbolName);
 #endif // defined(TARGET_OSX) || defined(TARGET_ANDROID)
