@@ -45,7 +45,7 @@ namespace System
             }
         }
 
-        private static unsafe void WriteOrCache(StringBuilder cache, Span<char> charBuffer)
+        private static void WriteOrCache(StringBuilder cache, Span<char> charBuffer)
         {
             int lastNewLine = charBuffer.LastIndexOf('\n');
             if (lastNewLine != -1)
@@ -63,7 +63,7 @@ namespace System
 
                 if (lastNewLine + 1 < charBuffer.Length)
                 {
-                    cache.Append(charBuffer.Slice(lastNewLine + 1, charBuffer.Length - lastNewLine - 1));
+                    cache.Append(charBuffer.Slice(lastNewLine + 1));
                 }
 
                 return;
@@ -72,7 +72,7 @@ namespace System
             // no newlines found, add the entire buffer to the cache
             cache.Append(charBuffer);
 
-            static void Print(ReadOnlySpan<char> line)
+            static unsafe void Print(ReadOnlySpan<char> line)
             {
                 fixed (char* ptr = line)
                 {
