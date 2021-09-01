@@ -4,6 +4,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging
@@ -20,7 +22,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, IDisposable> DefineScope(string formatString)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
 
             var logValues = new LogValues(formatter);
 
@@ -35,9 +37,16 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, IDisposable> DefineScope<T1>(string formatString)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
+            (LogValuesFormatter formatter, List<string> formatParts, List<string> formats) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
 
-            return (logger, arg1) => logger.BeginScope(new LogValues<T1>(formatter, arg1));
+            var part0 = formatParts[0];
+            var part1 = formatParts.Count == 2 ? formatParts[1] : default;
+            var format = formats[0];
+
+            return (logger, arg1) =>
+            {
+                return logger.BeginScope(new LogValues<T1>(formatter, part0, arg1, format, part1));
+            };
         }
 
         /// <summary>
@@ -49,7 +58,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, IDisposable> DefineScope<T1, T2>(string formatString)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
+            (LogValuesFormatter formatter, List<string> formatParts, List<string> formats) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
 
             return (logger, arg1, arg2) => logger.BeginScope(new LogValues<T1, T2>(formatter, arg1, arg2));
         }
@@ -64,7 +73,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, IDisposable> DefineScope<T1, T2, T3>(string formatString)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
+            (LogValuesFormatter formatter, List<string> formatParts, List<string> formats) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
 
             return (logger, arg1, arg2, arg3) => logger.BeginScope(new LogValues<T1, T2, T3>(formatter, arg1, arg2, arg3));
         }
@@ -80,7 +89,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, T4, IDisposable> DefineScope<T1, T2, T3, T4>(string formatString)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
+            (LogValuesFormatter formatter, List<string> formatParts, List<string> formats) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
 
             return (logger, arg1, arg2, arg3, arg4) => logger.BeginScope(new LogValues<T1, T2, T3, T4>(formatter, arg1, arg2, arg3, arg4));
         }
@@ -97,7 +106,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, T4, T5, IDisposable> DefineScope<T1, T2, T3, T4, T5>(string formatString)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
 
             return (logger, arg1, arg2, arg3, arg4, arg5) => logger.BeginScope(new LogValues<T1, T2, T3, T4, T5>(formatter, arg1, arg2, arg3, arg4, arg5));
         }
@@ -115,7 +124,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, T4, T5, T6, IDisposable> DefineScope<T1, T2, T3, T4, T5, T6>(string formatString)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
 
             return (logger, arg1, arg2, arg3, arg4, arg5, arg6) => logger.BeginScope(new LogValues<T1, T2, T3, T4, T5, T6>(formatter, arg1, arg2, arg3, arg4, arg5, arg6));
         }
@@ -140,7 +149,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, Exception?> Define(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
 
             void Log(ILogger logger, Exception? exception)
             {
@@ -183,11 +192,15 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, Exception?> Define<T1>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
+            (LogValuesFormatter formatter, List<string> formatParts, List<string> formats) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
+
+            var part0 = formatParts[0];
+            var part1 = formatParts.Count == 2 ? formatParts[1] : default;
+            var format = formats[0];
 
             void Log(ILogger logger, T1 arg1, Exception? exception)
             {
-                logger.Log(logLevel, eventId, new LogValues<T1>(formatter, arg1), exception, LogValues<T1>.Callback);
+                logger.Log(logLevel, eventId, new LogValues<T1>(formatter, part0, arg1, format, part1), exception, LogValues<T1>.Callback);
             }
 
             if (options != null && options.SkipEnabledCheck)
@@ -228,7 +241,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, Exception?> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
 
             void Log(ILogger logger, T1 arg1, T2 arg2, Exception? exception)
             {
@@ -275,7 +288,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, Exception?> Define<T1, T2, T3>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
 
             void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, Exception? exception)
             {
@@ -324,7 +337,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, Exception?> Define<T1, T2, T3, T4>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
 
             void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, T4 arg4, Exception? exception)
             {
@@ -375,7 +388,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, T5, Exception?> Define<T1, T2, T3, T4, T5>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
 
             void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, Exception? exception)
             {
@@ -428,7 +441,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log message.</returns>
         public static Action<ILogger, T1, T2, T3, T4, T5, T6, Exception?> Define<T1, T2, T3, T4, T5, T6>(LogLevel logLevel, EventId eventId, string formatString, LogDefineOptions? options)
         {
-            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
+            (LogValuesFormatter formatter, _, _) = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
 
             void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, Exception? exception)
             {
@@ -449,9 +462,12 @@ namespace Microsoft.Extensions.Logging
             };
         }
 
-        private static LogValuesFormatter CreateLogValuesFormatter(string formatString, int expectedNamedParameterCount)
+        private static (LogValuesFormatter logValuesFormatter, List<string> formatParts, List<string> formats) CreateLogValuesFormatter(string formatString, int expectedNamedParameterCount)
         {
-            var logValuesFormatter = new LogValuesFormatter(formatString);
+            var formatParts = new List<string>();
+            var formats = new List<string>();
+
+            var logValuesFormatter = new LogValuesFormatter(formatString, formatParts, formats);
 
             int actualCount = logValuesFormatter.ValueNames.Count;
             if (actualCount != expectedNamedParameterCount)
@@ -460,7 +476,30 @@ namespace Microsoft.Extensions.Logging
                     SR.Format(SR.UnexpectedNumberOfNamedParameters, formatString, expectedNamedParameterCount, actualCount));
             }
 
-            return logValuesFormatter;
+            return (logValuesFormatter, formatParts, formats);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int Append<TValue>(Span<char> span, TValue value, string format)
+        {
+            // ReSharper disable once MergeCastWithTypeCheck
+            if (value is ISpanFormattable)
+            {
+                ((ISpanFormattable)value).TryFormat(span, out var written, format, null);
+                return written;
+            }
+
+            // ReSharper disable once MergeCastWithTypeCheck
+            if (value is IFormattable)
+            {
+                var formatted = ((IFormattable)value).ToString(format, null);
+                formatted.AsSpan().CopyTo(span);
+                return formatted.Length;
+            }
+
+            var simple = value.ToString() ?? "";
+            simple.AsSpan().CopyTo(span);
+            return simple.Length;
         }
 
         private readonly struct LogValues : IReadOnlyList<KeyValuePair<string, object?>>
@@ -506,12 +545,18 @@ namespace Microsoft.Extensions.Logging
             public static readonly Func<LogValues<T0>, Exception?, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
+            private readonly string _part0;
             private readonly T0 _value0;
+            private readonly string _format;
+            private readonly string _part1;
 
-            public LogValues(LogValuesFormatter formatter, T0 value0)
+            public LogValues(LogValuesFormatter formatter, string part0, T0 value0, string format, string part1)
             {
                 _formatter = formatter;
+                _part0 = part0;
                 _value0 = value0;
+                _format = format;
+                _part1 = part1;
             }
 
             public KeyValuePair<string, object?> this[int index]
@@ -540,8 +585,24 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
+            public override string ToString()
+            {
+                Span<char> output = stackalloc char[1024];
 
-            public override string ToString() => _formatter.Format(_value0);
+                _part0.CopyTo(output);
+                int offset = _part0.Length;
+
+                offset += Append(output.Slice(offset), _value0, _format);
+
+                // if there's a non formatted suffix
+                if (_part1 != null)
+                {
+                    _part1.CopyTo(output.Slice(offset));
+                    offset += _part1.Length;
+                }
+
+                return output.Slice(0, offset).ToString();
+            }
 
             IEnumerator IEnumerable.GetEnumerator()
             {

@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging
     internal sealed class LogValuesFormatter
     {
         private const string NullValue = "(null)";
-        private static readonly char[] FormatDelimiters = {',', ':'};
+        private static readonly char[] FormatDelimiters = { ',', ':' };
         private readonly string _format;
         private readonly List<string> _valueNames = new List<string>();
 
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Logging
         // - Be annotated as [SkipLocalsInit] to avoid zero'ing the stackalloc'd char span
         // - Format _valueNames.Count directly into a span
 
-        public LogValuesFormatter(string format)
+        public LogValuesFormatter(string format, ICollection<string>? formatParts = null, ICollection<string>? formats = null)
         {
             if (format == null)
             {
@@ -39,6 +39,7 @@ namespace Microsoft.Extensions.Logging
             while (scanIndex < endIndex)
             {
                 int openBraceIndex = FindBraceIndex(format, '{', scanIndex, endIndex);
+                formatParts?.Add(format.AsSpan(scanIndex, openBraceIndex - scanIndex).ToString());
                 if (scanIndex == 0 && openBraceIndex == endIndex)
                 {
                     // No holes found.
@@ -58,6 +59,8 @@ namespace Microsoft.Extensions.Logging
                     // Format item syntax : { index[,alignment][ :formatString] }.
                     int formatDelimiterIndex = FindIndexOfAny(format, FormatDelimiters, openBraceIndex, closeBraceIndex);
 
+                    formats?.Add(formatDelimiterIndex == closeBraceIndex ? null : format.Substring(formatDelimiterIndex + 1, closeBraceIndex - formatDelimiterIndex - 1));
+
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
                     vsb.Append(_valueNames.Count.ToString());
                     _valueNames.Add(format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
@@ -71,6 +74,10 @@ namespace Microsoft.Extensions.Logging
         }
 
         public string OriginalFormat { get; private set; }
+
+        /// <summary>
+        /// The names of the values to be formatted.
+        /// </summary>
         public List<string> ValueNames => _valueNames;
 
         private static int FindBraceIndex(string format, char brace, int startIndex, int endIndex)
@@ -248,6 +255,10 @@ namespace Microsoft.Extensions.Logging
 
             return value;
         }
+    }
+
+    internal sealed class LogValuesFormatter1
+    {
 
     }
 }
