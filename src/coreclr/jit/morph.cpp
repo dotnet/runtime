@@ -13177,6 +13177,7 @@ DONE_MORPHING_CHILDREN:
                         GenTree* newOp2 = gtNewIconNode(-constVal, op1op2->TypeGet()); // -C
                         mulOrDiv->gtOp1 = newOp1;
                         mulOrDiv->gtOp2 = newOp2;
+                        mulOrDiv->SetVNsFromNode(tree);
 
                         DEBUG_DESTROY_NODE(tree);
                         DEBUG_DESTROY_NODE(op1op2);

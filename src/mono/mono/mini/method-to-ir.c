@@ -7322,7 +7322,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			sp -= n;
 
-			if (virtual_ && cmethod && sp [0]->opcode == OP_TYPED_OBJREF) {
+			if (virtual_ && cmethod && sp [0] && sp [0]->opcode == OP_TYPED_OBJREF) {
 				ERROR_DECL (error);
 
 				MonoMethod *new_cmethod = mono_class_get_virtual_method (sp [0]->klass, cmethod, error);

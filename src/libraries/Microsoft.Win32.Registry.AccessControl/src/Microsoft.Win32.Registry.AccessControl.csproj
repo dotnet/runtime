@@ -23,14 +23,18 @@ System.Security.AccessControl.RegistrySecurity</PackageDescription>
     <Compile Include="Microsoft\Win32\RegistryAclExtensions.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Security.AccessControl" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
-    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
+    <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project: https://github.com/NuGet/Home/issues/10368 -->
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

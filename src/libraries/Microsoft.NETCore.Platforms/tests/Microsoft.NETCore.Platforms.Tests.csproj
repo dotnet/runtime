@@ -5,14 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.NETCore.Platforms.csproj" />
-    <!-- Workaround NuGet promoting this to a ProjectReference -->
-    <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemMemoryVersion)" />
-    <PackageReference Include="System.Security.AccessControl" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemSecurityAccessControlVersion)" />
-    <PackageReference Include="System.Security.Principal.Windows" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemSecurityPrincipalWindowsVersion)" />
-  </ItemGroup>
-  
-  <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="GenerateRuntimeGraphTests.cs" />
     <Compile Include="Log.cs" />
@@ -24,5 +16,16 @@
   <ItemGroup>
     <Content Include="..\src\runtimeGroups.props" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\src\runtime.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.NETCore.Platforms.csproj" />
+  </ItemGroup>
+
+  <!-- Workaround NuGet promoting this to a ProjectReference -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
   </ItemGroup>
 </Project>

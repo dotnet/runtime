@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+    <assembly fullname="System.Security.AccessControl">
+        <!-- This file should be removed once issue https://github.com/mono/linker/issues/2238 is fixed. -->
+        <type fullname="System.Security.AccessControl.AceEnumerator" />
+    </assembly>
+</linker>
