@@ -49,7 +49,7 @@ PEFile::PEFile(PEImage *identity) :
     m_flags(0),
     m_pAssemblyBinder(nullptr),
     m_pHostAssembly(nullptr),
-    m_pFallbackLoadContextBinder(nullptr)
+    m_pFallbackBinder(nullptr)
 {
     CONTRACTL
     {
@@ -1385,7 +1385,7 @@ void PEFile::EnsureImageOpened()
 
 void PEFile::SetupAssemblyLoadContext()
 {
-    PTR_AssemblyBinder pBindingContext = GetBindingContext();
+    PTR_AssemblyBinder pBindingContext = GetBinder();
 
     m_pAssemblyBinder = (pBindingContext != NULL) ?
         pBindingContext :
@@ -1491,7 +1491,7 @@ TADDR PEFile::GetMDInternalRWAddress()
 #endif
 
 // Returns the AssemblyBinder* instance associated with the PEFile
-PTR_AssemblyBinder PEFile::GetBindingContext()
+PTR_AssemblyBinder PEFile::GetBinder()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1513,7 +1513,7 @@ PTR_AssemblyBinder PEFile::GetBindingContext()
             // binder reference.
             if (IsDynamic())
             {
-                pBindingContext = GetFallbackLoadContextBinder();
+                pBindingContext = GetFallbackBinder();
             }
         }
     }

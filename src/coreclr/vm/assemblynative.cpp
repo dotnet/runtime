@@ -101,15 +101,15 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
     // If so, then use it to set the fallback load context binder.
     if (pBinderContext != NULL)
     {
-        spec.SetFallbackLoadContextBinderForRequestingAssembly(pBinderContext);
-        spec.SetPreferFallbackLoadContextBinder();
+        spec.SetFallbackBinderForRequestingAssembly(pBinderContext);
+        spec.SetPreferFallbackBinder();
     }
     else if (pRefAssembly != NULL)
     {
         // If the requesting assembly has Fallback LoadContext binder available,
         // then set it up in the AssemblySpec.
         PEFile *pRefAssemblyManifestFile = pRefAssembly->GetManifestFile();
-        spec.SetFallbackLoadContextBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackLoadContextBinder());
+        spec.SetFallbackBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackBinder());
     }
 
     Assembly *pAssembly;
@@ -127,12 +127,12 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 }
 
 /* static */
-Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImage *pImage)
+Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage)
 {
     CONTRACT(Assembly*)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pBinderContext));
+        PRECONDITION(CheckPointer(pBinder));
         PRECONDITION(pImage != NULL);
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -162,14 +162,13 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinderContext, PEImag
     // Initialize the AssemblySpec
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(1, mdtAssembly), pImage->GetMDImport(), pCallersAssembly);
-    spec.SetBindingContext(pBinderContext);
+    spec.SetBinder(pBinder);
 
     BinderTracing::AssemblyBindOperation bindOperation(&spec, pImage->GetPath());
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    DefaultAssemblyBinder *pTPABinder = pCurDomain->GetTPABinderContext();
-    hr = pBinderContext->BindUsingPEImage(pImage, &pAssembly);
+    hr = pBinder->BindUsingPEImage(pImage, &pAssembly);
 
     if (hr != S_OK)
     {
@@ -201,10 +200,10 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
     PTR_AppDomain pCurDomain = GetAppDomain();
 
     // Get the binder context in which the assembly will be loaded.
-    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
-    _ASSERTE(pBinderContext != NULL);
+    AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
+    _ASSERTE(pBinder != NULL);
 
-    // Form the PEImage for the ILAssembly. Incase of an exception, the holder will ensure
+    // Form the PEImage for the ILAssembly. In case of an exception, the holder will ensure
     // the release of the image.
     PEImageHolder pILImage;
 
@@ -218,7 +217,7 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
         if (!pILImage->CheckILFormat())
             THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
-        LoaderAllocator* pLoaderAllocator = pBinderContext->GetLoaderAllocator();
+        LoaderAllocator* pLoaderAllocator = pBinder->GetLoaderAllocator();
         if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
         {
             // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
@@ -226,7 +225,7 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
         }
     }
 
-    Assembly *pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage);
+    Assembly *pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
 
     {
         GCX_COOP();
@@ -265,9 +264,9 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
     // Get the binder context in which the assembly will be loaded
-    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
 
-    LoaderAllocator* pLoaderAllocator = pBinderContext->GetLoaderAllocator();
+    LoaderAllocator* pLoaderAllocator = pBinder->GetLoaderAllocator();
     if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
     {
         // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
@@ -275,7 +274,7 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
     }
 
     // Pass the stream based assembly as IL in an attempt to bind and load it
-    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage);
+    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
@@ -328,10 +327,10 @@ void QCALLTYPE AssemblyNative::LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyL
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
     // Get the binder context in which the assembly will be loaded
-    AssemblyBinder *pBinderContext = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyLoadContext);
 
     // Pass the in memory module as IL in an attempt to bind and load it
-    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinderContext, pILImage);
+    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
@@ -1167,11 +1166,11 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
 
     // Initialize the assembly binder instance in the VM
     PTR_AppDomain pCurDomain = AppDomain::GetCurrentDomain();
-    DefaultAssemblyBinder *pTPABinderContext = pCurDomain->GetTPABinderContext();
+    DefaultAssemblyBinder *pDefaultBinder = pCurDomain->GetDefaultBinder();
     if (!fRepresentsTPALoadContext)
     {
-        // Initialize a custom Assembly Load Context
-        CustomAssemblyBinder *pBindContext = NULL;
+        // Initialize a custom assembly binder
+        CustomAssemblyBinder *pCustomBinder = NULL;
 
         AssemblyLoaderAllocator* loaderAllocator = NULL;
         OBJECTHANDLE loaderAllocatorHandle = NULL;
@@ -1206,18 +1205,18 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
             loaderAllocator->ActivateManagedTracking();
         }
 
-        IfFailThrow(CustomAssemblyBinder::SetupContext(pTPABinderContext, loaderAllocator, loaderAllocatorHandle, ptrManagedAssemblyLoadContext, &pBindContext));
-        ptrNativeAssemblyLoadContext = reinterpret_cast<INT_PTR>(pBindContext);
+        IfFailThrow(CustomAssemblyBinder::SetupContext(pDefaultBinder, loaderAllocator, loaderAllocatorHandle, ptrManagedAssemblyLoadContext, &pCustomBinder));
+        ptrNativeAssemblyLoadContext = reinterpret_cast<INT_PTR>(pCustomBinder);
     }
     else
     {
         // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
         // First, confirm we do not have an existing managed ALC attached to the TPA binder.
-        _ASSERTE(pTPABinderContext->GetManagedAssemblyLoadContext() == NULL);
+        _ASSERTE(pDefaultBinder->GetManagedAssemblyLoadContext() == NULL);
 
         // Attach the managed TPA binding context with the native one.
-        pTPABinderContext->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
-        ptrNativeAssemblyLoadContext = reinterpret_cast<INT_PTR>(pTPABinderContext);
+        pDefaultBinder->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
+        ptrNativeAssemblyLoadContext = reinterpret_cast<INT_PTR>(pDefaultBinder);
     }
 
     END_QCALL;
@@ -1256,7 +1255,7 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
 
     AssemblyBinder* pAssemblyBinder = pAssembly->GetFile()->GetAssemblyBinder();
 
-    if (pAssemblyBinder != AppDomain::GetCurrentDomain()->GetTPABinderContext())
+    if (!pAssemblyBinder->IsDefault())
     {
         // Fetch the managed binder reference from the native binder instance
         ptrManagedAssemblyLoadContext = pAssemblyBinder->GetManagedAssemblyLoadContext();

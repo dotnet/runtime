@@ -40,7 +40,7 @@ public:
 
     CustomAssemblyBinder();
 
-    static HRESULT SetupContext(DefaultAssemblyBinder *pTPABinder,
+    static HRESULT SetupContext(DefaultAssemblyBinder *pDefaultBinder,
                                 AssemblyLoaderAllocator* pLoaderAllocator,
                                 void* loaderAllocatorHandle,
                                 UINT_PTR ptrAssemblyLoadContext,
@@ -52,7 +52,7 @@ public:
 private:
     HRESULT BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName, BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly);
 
-    DefaultAssemblyBinder *m_pTPABinder;
+    DefaultAssemblyBinder *m_pDefaultBinder;
 
     // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
     // to keep the managed AssemblyLoadContext alive until the unload is finished.

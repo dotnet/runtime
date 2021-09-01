@@ -832,7 +832,7 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
     // Set the binding context to the assembly load context.
     if (m_pBinderContext != NULL)
     {
-        spec.SetBindingContext(m_pBinderContext);
+        spec.SetBinder(m_pBinderContext);
     }
 
     // Bind and load the assembly.

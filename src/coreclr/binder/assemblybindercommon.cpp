@@ -33,7 +33,7 @@
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                 DefaultAssemblyBinder *pTPABinder,
+                                                 DefaultAssemblyBinder *pDefaultBinder,
                                                  BINDER_SPACE::Assembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE)
@@ -1325,7 +1325,7 @@ namespace BINDER_SPACE
 #if !defined(DACCESS_COMPILE)
 HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                             /* in */ AssemblyName       *pAssemblyName,
-                                                            /* in */ DefaultAssemblyBinder *pTPABinder,
+                                                            /* in */ DefaultAssemblyBinder *pDefaultBinder,
                                                             /* out */ Assembly           **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1335,7 +1335,7 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CustomAssemblyBinder::BindAssemblyByName.
     BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
     hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
-                                           pAssemblyName, pTPABinder, &pLoadedAssembly);
+                                           pAssemblyName, pDefaultBinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);
@@ -1459,12 +1459,12 @@ Exit:
     return hr;
 }
 
-HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** ppTPABinder)
+HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** ppDefaultBinder)
 {
     HRESULT hr = S_OK;
     EX_TRY
     {
-        if (ppTPABinder != NULL)
+        if (ppDefaultBinder != NULL)
         {
             NewHolder<DefaultAssemblyBinder> pBinder;
             SAFE_NEW(pBinder, DefaultAssemblyBinder);
@@ -1474,7 +1474,7 @@ HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** 
             if (SUCCEEDED(hr))
             {
                 pBinder->SetManagedAssemblyLoadContext(NULL);
-                *ppTPABinder = pBinder.Extract();
+                *ppDefaultBinder = pBinder.Extract();
             }
         }
     }

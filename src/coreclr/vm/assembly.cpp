@@ -322,7 +322,7 @@ Assembly * Assembly::Create(
     return pAssembly;
 } // Assembly::Create
 
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -464,10 +464,10 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
-        AssemblyBinder* pFallbackLoadContextBinder = pBinderContext;
+        AssemblyBinder* pFallbackBinder = pBinder;
 
         // If ALC is not specified
-        if (pFallbackLoadContextBinder == nullptr)
+        if (pFallbackBinder == nullptr)
         {
             // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
             // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
@@ -483,12 +483,12 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
             if (!pCallerAssemblyManifestFile->IsDynamic())
             {
                 // Static assemblies with do not have fallback load context
-                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackLoadContextBinder() == nullptr);
+                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackBinder() == nullptr);
 
                 if (pCallerAssemblyManifestFile->IsSystem())
                 {
-                    // CoreLibrary is always bound to TPA binder
-                    pFallbackLoadContextBinder = pDomain->GetTPABinderContext();
+                    // CoreLibrary is always bound with default binder
+                    pFallbackBinder = pDomain->GetDefaultBinder();
                 }
                 else
                 {
@@ -496,22 +496,22 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
                     PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
                     _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
 
-                    pFallbackLoadContextBinder = pCallerAssemblyHostAssembly->GetBinder();
+                    pFallbackBinder = pCallerAssemblyHostAssembly->GetBinder();
                 }
             }
             else
             {
                 // Creator assembly is dynamic too, so use its fallback load context for the one
                 // we are creating.
-                pFallbackLoadContextBinder = pCallerAssemblyManifestFile->GetFallbackLoadContextBinder();
+                pFallbackBinder = pCallerAssemblyManifestFile->GetFallbackBinder();
             }
         }
 
         // At this point, we should have a fallback load context binder to work with
-        _ASSERTE(pFallbackLoadContextBinder != nullptr);
+        _ASSERTE(pFallbackBinder != nullptr);
 
         // Set it as the fallback load context binder for the dynamic assembly being created
-        pFile->SetFallbackLoadContextBinder(pFallbackLoadContextBinder);
+        pFile->SetFallbackBinder(pFallbackBinder);
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
@@ -520,10 +520,10 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
     {
         GCX_PREEMP();
 
-        AssemblyLoaderAllocator* pBinderAssemblyLoaderAllocator = nullptr;
-        if (pBinderContext != nullptr)
+        AssemblyLoaderAllocator* pAssemblyLoaderAllocator = nullptr;
+        if (pBinder != nullptr)
         {
-            pBinderAssemblyLoaderAllocator = pBinderContext->GetLoaderAllocator();
+            pAssemblyLoaderAllocator = pBinder->GetLoaderAllocator();
         }
 
         // Create a new LoaderAllocator if appropriate
@@ -543,14 +543,14 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
             pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
             createdNewAssemblyLoaderAllocator = TRUE;
 
-            if(pBinderAssemblyLoaderAllocator != nullptr)
+            if(pAssemblyLoaderAllocator != nullptr)
             {
-                pAssemblyLoaderAllocator->EnsureReference(pBinderAssemblyLoaderAllocator);
+                pAssemblyLoaderAllocator->EnsureReference(pAssemblyLoaderAllocator);
             }
         }
         else
         {
-            pLoaderAllocator = pBinderAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderAssemblyLoaderAllocator;
+            pLoaderAllocator = pAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pAssemblyLoaderAllocator;
         }
 
         if (!createdNewAssemblyLoaderAllocator)

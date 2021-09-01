@@ -318,11 +318,8 @@ namespace
 #endif // !TARGET_UNIX
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        AppDomain* pDomain = GetAppDomain();
-        DefaultAssemblyBinder *pTPABinder = pDomain->GetTPABinderContext();
-
         PEFile *pManifestFile = pAssembly->GetManifestFile();
-        PTR_AssemblyBinder pBindingContext = pManifestFile->GetBindingContext();
+        PTR_AssemblyBinder pBindingContext = pManifestFile->GetBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
         //        The Binding Context can be null or an overridden TPA context
@@ -334,8 +331,8 @@ namespace
 
         AssemblyBinder *pCurrentBinder = pBindingContext;
 
-        // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
-        if (pCurrentBinder == pTPABinder)
+        // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
+        if (pCurrentBinder->IsDefault())
         {
             return NULL;
         }
@@ -352,7 +349,7 @@ namespace
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = ((CustomAssemblyBinder *)pCurrentBinder)->GetManagedAssemblyLoadContext();
+        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
@@ -373,7 +370,7 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        PTR_AssemblyBinder pBinder = pAssembly->GetManifestFile()->GetBindingContext();
+        PTR_AssemblyBinder pBinder = pAssembly->GetManifestFile()->GetBinder();
         if (pBinder == NULL)
         {
             // GetBindingContext() returns NULL for System.Private.CoreLib

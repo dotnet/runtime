@@ -41,9 +41,9 @@ public:
         return m_ptrManagedAssemblyLoadContext;
     }
 
-    void SetManagedAssemblyLoadContext(INT_PTR ptrManagedTPABinderInstance)
+    void SetManagedAssemblyLoadContext(INT_PTR ptrManagedDefaultBinderInstance)
     {
-        m_ptrManagedAssemblyLoadContext = ptrManagedTPABinderInstance;
+        m_ptrManagedAssemblyLoadContext = ptrManagedDefaultBinderInstance;
     }
 
     NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);

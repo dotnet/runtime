@@ -88,10 +88,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     pResult->Reset();
 
     // Have a default binding context setup
-    AssemblyBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
-
-    // Get the reference to the TPABinder context
-    DefaultAssemblyBinder *pTPABinder = pAppDomain->GetTPABinderContext();
+    AssemblyBinder *pBinder = GetBinderFromParentAssembly(pAppDomain);
 
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
@@ -123,9 +120,9 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     }
     else
     {
-        hr = pTPABinder->Bind(m_wszCodeBase,
-                              GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
-                              &pPrivAsm);
+        hr = pAppDomain->GetDefaultBinder()->Bind(m_wszCodeBase,
+                                                  GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
+                                                  &pPrivAsm);
     }
 
     pResult->SetHRBindResult(hr);
@@ -232,7 +229,7 @@ HRESULT BaseAssemblySpec::ParseName()
         _ASSERTE(pDomain);
 
         BINDER_SPACE::ApplicationContext *pAppContext = NULL;
-        DefaultAssemblyBinder *pBinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
         if (pBinder != NULL)
         {
             pAppContext = pBinder->GetAppContext();

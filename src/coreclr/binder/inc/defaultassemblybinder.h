@@ -32,7 +32,7 @@ public:
 
     bool IsDefault()
     {
-        return false;
+        return true;
     }
 
 public:

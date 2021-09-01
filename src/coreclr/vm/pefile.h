@@ -468,10 +468,10 @@ protected:
     // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
     // we need to ensure they are loaded in appropriate load context.
     //
-    // To enable this, we maintain a concept of "Fallback LoadContext", which will be set to the Binder of the
+    // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    PTR_AssemblyBinder m_pFallbackLoadContextBinder;
+    PTR_AssemblyBinder m_pFallbackBinder;
 
 protected:
 
@@ -489,15 +489,15 @@ public:
     }
 
     // Returns the AssemblyBinder* instance associated with the PEFile
-    PTR_AssemblyBinder GetBindingContext();
+    PTR_AssemblyBinder GetBinder();
 
 #ifndef DACCESS_COMPILE
     void SetupAssemblyLoadContext();
 
-    void SetFallbackLoadContextBinder(PTR_AssemblyBinder pFallbackLoadContextBinder)
+    void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
+        m_pFallbackBinder = pFallbackBinder;
         SetupAssemblyLoadContext();
     }
 
@@ -515,11 +515,11 @@ public:
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
-    PTR_AssemblyBinder GetFallbackLoadContextBinder()
+    PTR_AssemblyBinder GetFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackLoadContextBinder;
+        return m_pFallbackBinder;
     }
 };  // class PEFile
 

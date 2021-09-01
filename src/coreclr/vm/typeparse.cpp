@@ -1472,15 +1472,15 @@ DomainAssembly * LoadDomainAssembly(
     // If so, then use it to set the fallback load context binder.
     if (pPrivHostBinder != NULL)
     {
-        spec.SetFallbackLoadContextBinderForRequestingAssembly(pPrivHostBinder);
-        spec.SetPreferFallbackLoadContextBinder();
+        spec.SetFallbackBinderForRequestingAssembly(pPrivHostBinder);
+        spec.SetPreferFallbackBinder();
     }
     else if (pRequestingAssembly != NULL)
     {
         // If the requesting assembly has Fallback LoadContext binder available,
         // then set it up in the AssemblySpec.
         PEFile *pRequestingAssemblyManifestFile = pRequestingAssembly->GetManifestFile();
-        spec.SetFallbackLoadContextBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackLoadContextBinder());
+        spec.SetFallbackBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackBinder());
     }
 
     if (bThrowIfNotFound)
