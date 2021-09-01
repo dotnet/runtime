@@ -43,6 +43,11 @@ namespace System.IO
 
         internal static unsafe long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
         {
+            if (!handle.CanSeek)
+            {
+                return ReadScatterNoOffset(handle, buffers);
+            }
+
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count];
 
@@ -72,6 +77,26 @@ namespace System.IO
             }
 
             return FileStreamHelpers.CheckFileCall(result, handle.Path);
+        }
+
+        private static long ReadScatterNoOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers)
+        {
+            long result = 0;
+
+            int buffersCount = buffers.Count;
+            for (int i = 0; i < buffersCount; i++)
+            {
+                Span<byte> buffer = buffers[i].Span;
+                int read = ReadAtOffset(handle, buffer, fileOffset: 0);
+                result += read;
+
+                if (read != buffer.Length)
+                {
+                    return result; // stop on the first incomplete read
+                }
+            }
+
+            return result;
         }
 
         internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
@@ -127,6 +152,12 @@ namespace System.IO
             int buffersCount = buffers.Count;
             if (buffersCount == 0)
             {
+                return;
+            }
+
+            if (!handle.CanSeek)
+            {
+                WriteGatherNoOffset(handle, buffers);
                 return;
             }
 
@@ -199,6 +230,15 @@ namespace System.IO
                 {
                     memoryHandle.Dispose();
                 }
+            }
+        }
+
+        private static void WriteGatherNoOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers)
+        {
+            int buffersCount = buffers.Count;
+            for (int i = 0; i < buffersCount; i++)
+            {
+                WriteAtOffset(handle, buffers[i].Span, fileOffset: 0);
             }
         }
 

@@ -35,6 +35,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.AnyUnix, "named pipe implementation used by this test is using Sockets on Unix, which allow for both reading and writing")]
         public async Task ThrowsUnauthorizedAccessExceptionWhenOperationIsNotAllowed()
         {
             (SafeFileHandle readHandle, SafeFileHandle writeHandle) = await GetNamedPipeHandlesAsync();
