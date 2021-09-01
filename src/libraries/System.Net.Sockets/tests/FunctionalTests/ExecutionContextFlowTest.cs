@@ -524,7 +524,7 @@ namespace System.Net.Sockets.Tests
                     al.Value = null;
 
                     server.Send(new byte[1]);
-                    Assert.True(receiveCompleted.Wait(TestSettings.PassingTestTimeout ));
+                    Assert.True(receiveCompleted.Wait(TestSettings.PassingTestTimeout));
 
                     for (int i = 0; i < 3; i++)
                     {
@@ -532,7 +532,7 @@ namespace System.Net.Sockets.Tests
                         GC.WaitForPendingFinalizers();
                     }
 
-                    Assert.True(ecDropped.Wait(TestSettings.PassingTestTimeout ));
+                    Assert.True(ecDropped.Wait(TestSettings.PassingTestTimeout));
                 }
             }
         }
