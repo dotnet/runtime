@@ -882,12 +882,14 @@ namespace System.Numerics.Tests
         [Fact]
         public void QuaternionZeroTest()
         {
-            Quaternion val = new();
-            Assert.Equal(val, Quaternion.Zero);
-
-            // The default value should be equal to a zero value.
-            val = default;
-            Assert.Equal(val, Quaternion.Zero);
+            // A default value should be equal to a zero value.
+            Assert.Equal(default(Quaternion), Quaternion.Zero);
+            
+            // A newly constructed value should be equal to a zero value.
+            Assert.Equal(new Quaternion(), Quaternion.Zero);
+            
+            // A newly constructed value with (0, 0, 0, 0) should be equal to a zero value.
+            Assert.Equal(new Quaternion(0, 0, 0, 0), Quaternion.Zero);
         }
 
         // A test for Identity
