@@ -33,12 +33,12 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <!-- Default trampolines run out for libraries tests -->
-    <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=4000" />
-    <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=20000" />
-    <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=512" />
-    <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=8800" />
-    <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=8000" />
-    <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=42000" />
+    <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=16000" />
+    <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=80000" />
+    <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=1024" />
+    <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=17600" />
+    <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=32000" />
+    <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=168000" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
