@@ -208,7 +208,7 @@ namespace System.Net.Sockets.Tests
                         args.SendPacketsElements = new SendPacketsElement[] { e1.Element };
                         if (sock.SendPacketsAsync(args))
                         {
-                            Assert.True(completed.WaitOne(TestSettings.PassingTestShortTimeout), "Timed out");
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout ), "Timed out");
                         }
 
                         Assert.Equal(SocketError.Success, args.SocketError);
@@ -221,7 +221,7 @@ namespace System.Net.Sockets.Tests
                         args.SendPacketsElements = new SendPacketsElement[] { e2.Element };
                         if (sock.SendPacketsAsync(args))
                         {
-                            Assert.True(completed.WaitOne(TestSettings.PassingTestShortTimeout), "Timed out");
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout ), "Timed out");
                         }
 
                         Assert.Equal(SocketError.Success, args.SocketError);
@@ -381,13 +381,13 @@ namespace System.Net.Sockets.Tests
 
                         if (r1)
                         {
-                            Assert.True(completed1.WaitOne(TestSettings.PassingTestShortTimeout), "Timed out");
+                            Assert.True(completed1.WaitOne(TestSettings.PassingTestTimeout ), "Timed out");
                         }
                         Assert.Equal(SocketError.Success, args1.SocketError);
 
                         if (r2)
                         {
-                            Assert.True(completed2.WaitOne(TestSettings.PassingTestShortTimeout), "Timed out");
+                            Assert.True(completed2.WaitOne(TestSettings.PassingTestTimeout ), "Timed out");
                         }
                         Assert.Equal(SocketError.InvalidArgument, args2.SocketError);
 
@@ -639,7 +639,7 @@ namespace System.Net.Sockets.Tests
 
                         if (sock.SendPacketsAsync(args))
                         {
-                            Assert.True(completed.WaitOne(TestSettings.PassingTestShortTimeout), "Timed out");
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout ), "Timed out");
                         }
                         Assert.Equal(SocketError.Success, args.SocketError);
                         Assert.Equal(bytesExpected, args.BytesTransferred);
@@ -690,7 +690,7 @@ namespace System.Net.Sockets.Tests
 
                         if (sock.SendPacketsAsync(args))
                         {
-                            Assert.True(completed.WaitOne(TestSettings.PassingTestShortTimeout), "Timed out");
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout ), "Timed out");
                         }
                         Assert.Equal(expectedResult, args.SocketError);
                         Assert.Equal(bytesExpected, args.BytesTransferred);

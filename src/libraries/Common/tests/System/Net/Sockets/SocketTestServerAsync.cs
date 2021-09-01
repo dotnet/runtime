@@ -136,7 +136,7 @@ namespace System.Net.Sockets.Tests
             }
 
             _log.WriteLine(this.GetHashCode() + " StartAccept(_numConnectedSockets={0})", _numConnectedSockets);
-            if (!_maxNumberAcceptedClientsSemaphore.WaitOne(TestSettings.PassingTestShortTimeout))
+            if (!_maxNumberAcceptedClientsSemaphore.WaitOne(TestSettings.PassingTestTimeout ))
             {
                 throw new TimeoutException("Timeout waiting for client connection.");
             }

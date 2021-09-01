@@ -953,7 +953,7 @@ namespace System.Net.Sockets.Tests
                 Task disposeTask = Task.Run(() => socket.Dispose());
 
                 await Task.WhenAny(disposeTask, receiveTask)
-                          .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout));
+                          .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ));
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -1030,7 +1030,7 @@ namespace System.Net.Sockets.Tests
                             while (true)
                             {
                                 SendAsync(socket1, buffer)
-                                    .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout))
+                                    .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ))
                                     .GetAwaiter().GetResult();
                             }
                         });
@@ -1042,16 +1042,16 @@ namespace System.Net.Sockets.Tests
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
                     await Task.WhenAny(disposeTask, socketOperation)
-                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout));
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ));
                     await disposeTask
-                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout));
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ));
 
                     SocketError? localSocketError = null;
                     bool disposedException = false;
                     try
                     {
                         await socketOperation
-                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout));
+                              .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ));
                     }
                     catch (SocketException se)
                     {
@@ -1087,7 +1087,7 @@ namespace System.Net.Sockets.Tests
                             try
                             {
                                 int received = await ReceiveAsync(socket2, receiveBuffer)
-                                                     .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout));
+                                                     .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ));
                                 if (received == 0)
                                 {
                                     break;
