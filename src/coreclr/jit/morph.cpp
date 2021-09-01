@@ -12494,14 +12494,9 @@ DONE_MORPHING_CHILDREN:
                     {
                         cns1 = op1->AsOp()->gtOp2;
                         cns2 = op2->AsOp()->gtOp2;
-                        cns1->AsIntCon()->gtIconVal += cns2->AsIntCon()->gtIconVal;
-#ifdef TARGET_64BIT
-                        if (cns1->TypeGet() == TYP_INT)
-                        {
-                            // we need to properly re-sign-extend or truncate after adding two int constants above
-                            cns1->AsIntCon()->TruncateOrSignExtend32();
-                        }
-#endif // TARGET_64BIT
+
+                        ssize_t value = cns1->AsIntCon()->IconValue() + cns2->AsIntCon()->IconValue();
+                        cns1->AsIntCon()->SetValueTruncating(value);
 
                         tree->AsOp()->gtOp2 = cns1;
                         DEBUG_DESTROY_NODE(cns2);
@@ -14124,18 +14119,11 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     oper = GT_ADD;
                     tree->ChangeOper(oper);
 
-                    op2->AsIntCon()->gtIconVal = iadd * imul;
+                    op2->AsIntCon()->SetValueTruncating(iadd * imul);
 
                     op1->ChangeOper(GT_MUL);
 
-                    add->AsIntCon()->gtIconVal = imul;
-#ifdef TARGET_64BIT
-                    if (add->gtType == TYP_INT)
-                    {
-                        // we need to properly re-sign-extend or truncate after multiplying two int constants above
-                        add->AsIntCon()->TruncateOrSignExtend32();
-                    }
-#endif // TARGET_64BIT
+                    add->AsIntCon()->SetIconValue(imul);
                 }
             }
 
@@ -14175,17 +14163,10 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     /* Change "(val + iadd) << ishf" into "(val<<ishf + iadd<<ishf)" */
 
                     tree->ChangeOper(GT_ADD);
-                    ssize_t result = iadd << ishf;
-                    op2->AsIntConCommon()->SetIconValue(result);
-#ifdef TARGET_64BIT
-                    if (op1->gtType == TYP_INT)
-                    {
-                        op2->AsIntCon()->TruncateOrSignExtend32();
-                    }
-#endif // TARGET_64BIT
 
                     // we are reusing the shift amount node here, but the type we want is that of the shift result
                     op2->gtType = op1->gtType;
+                    op2->AsIntConCommon()->SetValueTruncating(iadd << ishf);
 
                     if (cns->gtOper == GT_CNS_INT && cns->AsIntCon()->gtFieldSeq != nullptr &&
                         cns->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
