@@ -250,7 +250,7 @@ namespace System.Net.Sockets.Tests
                 args.SocketFlags = SocketFlags.Peek;
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout));
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ));
                 }
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
                 Assert.Equal(1, receiveBuffer[0]);
@@ -262,7 +262,7 @@ namespace System.Net.Sockets.Tests
                 args.SocketFlags = SocketFlags.None;
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout));
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ));
                 }
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
                 Assert.Equal(1, receiveBuffer[0]);
@@ -274,7 +274,7 @@ namespace System.Net.Sockets.Tests
                 args.SetBuffer(receiveBuffer, 0, 100);
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestShortTimeout));
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout ));
                 }
                 Assert.Equal(SocketFlags.Truncated, args.SocketFlags);
                 Assert.Equal(2, receiveBuffer[0]);

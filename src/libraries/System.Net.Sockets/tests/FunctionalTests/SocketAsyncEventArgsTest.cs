@@ -577,7 +577,7 @@ namespace System.Net.Sockets.Tests
                     client.Shutdown(SocketShutdown.Both);
                 }
 
-                Assert.True(accepted.WaitOne(TestSettings.PassingTestShortTimeout), "Test completed in allotted time");
+                Assert.True(accepted.WaitOne(TestSettings.PassingTestTimeout ), "Test completed in allotted time");
 
                 Assert.Equal(SocketError.Success, acceptArgs.SocketError);
 
