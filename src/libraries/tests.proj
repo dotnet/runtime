@@ -284,7 +284,16 @@
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestAssemblies)' == 'true'" />
+                      Condition="'$(TestAssemblies)' == 'true' and
+                                    ('$(ContinuousIntegrationBuild)' != 'true' or
+                                    ('$(RuntimeFlavor)' == 'CoreCLR' and
+                                       '$(librariesContainsChange)' == 'true' and
+                                       '$(CoreCLRContainsChange)' == 'true' and
+                                       '$(isFullMatrix)' == 'true') or
+                                    ('$(RuntimeFlavor)' == 'Mono' and
+                                       '$(librariesContainsChange)' == 'true' and
+                                       '$(monoContainsChange)' == 'true' and
+                                       '$(isFullMatrix)' == 'true'))" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
     <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
