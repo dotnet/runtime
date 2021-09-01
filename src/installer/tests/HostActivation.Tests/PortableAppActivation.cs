@@ -445,7 +445,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void AppHost_CLI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
+        public void AppHost_CLI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInStdErr(bool missingHostfxr)
         {
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
@@ -458,22 +458,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             using (new TestArtifact(invalidDotNet))
             {
                 Directory.CreateDirectory(invalidDotNet);
-
-                string expectedErrorCode;
                 string expectedUrlQuery;
-                string expectedUrlParameter = null;
+                string expectedStdErr;
+                int expectedErrorCode = 0;
                 if (missingHostfxr)
                 {
-                    expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
+                    expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure;
+                    expectedStdErr = $"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                     expectedUrlQuery = "missing_runtime=true&";
-                    expectedUrlParameter = $"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 }
                 else
                 {
                     invalidDotNet = new DotNetBuilder(invalidDotNet, sharedTestState.RepoDirectories.BuiltDotnet, "missingFramework")
                         .Build()
                         .BinPath;
-                    expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
+
+                    expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure;
+                    expectedStdErr = $"The framework '{Constants.MicrosoftNETCoreApp}', " +
+                        $"version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture}) was not found.";
                     expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 }
 
@@ -483,22 +485,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .MultilevelLookup(false)
                     .Start();
 
-                var result = command.WaitForExit(true)
-                    .Should().Fail();
+                var result = command.WaitForExit(true);
+                    result.Should().Fail()
+                    .And.HaveStdErrContaining($"- https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
+                    .And.HaveStdErrContaining(expectedStdErr);
 
-                result.And.HaveStdErrContaining($"- https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}");
-                if (expectedUrlParameter != null)
-                {
-                    result.And.HaveStdErrContaining(expectedUrlParameter);
-                }
+                // Some Unix systems will have 8 bit exit codes.
+                Assert.True(result.ExitCode == expectedErrorCode || result.ExitCode == (expectedErrorCode & 0xFF));
             }
         }
 
-        [Theory]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
-        [InlineData(true)]
-        [InlineData(false)]
-        public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
+        public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog()
         {
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
@@ -515,22 +514,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 string expectedErrorCode;
                 string expectedUrlQuery;
-                string expectedUrlParameter = null;
-                if (missingHostfxr)
-                {
-                    expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
-                    expectedUrlQuery = "missing_runtime=true&";
-                    expectedUrlParameter = $"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
-                }
-                else
-                {
-                    invalidDotNet = new DotNetBuilder(invalidDotNet, sharedTestState.RepoDirectories.BuiltDotnet, "missingFramework")
-                        .Build()
-                        .BinPath;
-                    expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
-                    expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
-                }
+                invalidDotNet = new DotNetBuilder(invalidDotNet, sharedTestState.RepoDirectories.BuiltDotnet, "missingFramework")
+                    .Build()
+                    .BinPath;
 
+                expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
+                expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet)
@@ -541,16 +530,45 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.Process.Kill();
 
                 var result = command.WaitForExit(true)
-                    .Should().Fail();
-
-                result.And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
                     .And.HaveStdErrContaining("&gui=true");
+            }
+        }
 
-                if (expectedUrlParameter != null)
-                {
-                    result.And.HaveStdErrContaining(expectedUrlParameter);
-                }
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AppHost_GUI_MissingRuntime_ErrorReportedInDialog()
+        {
+            var fixture = sharedTestState.PortableAppFixture_Built
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
+            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+
+            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
+            using (new TestArtifact(invalidDotNet))
+            {
+                Directory.CreateDirectory(invalidDotNet);
+                var command = Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(invalidDotNet)
+                    .MultilevelLookup(false)
+                    .Start();
+
+                WaitForPopupFromProcess(command.Process);
+                command.Process.Kill();
+
+                var expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
+                var result = command.WaitForExit(true)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?missing_runtime=true")
+                    .And.HaveStdErrContaining("gui=true")
+                    .And.HaveStdErrContaining($"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
             }
         }
 

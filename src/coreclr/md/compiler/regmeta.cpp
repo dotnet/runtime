@@ -668,16 +668,6 @@ RegMeta::QueryInterface(
         }
     }
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_PREJIT
-    else if (riid == IID_IMetaDataCorProfileData)
-    {
-        *ppUnk = (IMetaDataCorProfileData *)this;
-    }
-    else if (riid == IID_IMDInternalMetadataReorderingOptions)
-    {
-        *ppUnk = (IMDInternalMetadataReorderingOptions *)this;
-    }
-#endif //FEATURE_PREJIT
 #endif //FEATURE_METADATA_IN_VM
     else
     {

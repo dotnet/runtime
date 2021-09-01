@@ -4,28 +4,51 @@
     <EnablePackageValidation>true</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
-    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(PreviousReleaseMajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <!-- PackDependsOn is the right hook in a targets file if the NuGet.Build.Tasks.Pack nuget package is used, otherwise
+         BeforePack must be used. Setting both to ensure that we are always running before other targets. --> 
+    <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
+    <BeforePack>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
-    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage</TargetsForTfmSpecificContentInPackage>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludePrivateProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
     <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
     <IncludeBuildOutput Condition="'$(TargetsAnyOS)' != 'true' or '$(ExcludeFromPackage)' == 'true'">false</IncludeBuildOutput>  
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
     <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true' or ('$(TargetsAnyOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0')))">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
-    <GenerateNuspecDependsOn>IncludeAnalyzersInPackage;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
-    <!-- Generate packages in the allconfigurations build. -->
-    <GeneratePackageOnBuild Condition="'$(BuildAllConfigurations)' == 'true'">true</GeneratePackageOnBuild>
+    <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
+    <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
+    <IsRIDSpecificProject Condition="$(MSBuildProjectName.StartsWith('runtime.')) and
+                                     !$(MSBuildProjectName.StartsWith('runtime.native'))">true</IsRIDSpecificProject>
+    <GeneratePackageOnBuild Condition="('$(BuildAllConfigurations)' == 'true' or
+                                       '$(IsRIDSpecificProject)' == 'true') and
+                                       '$(PreReleaseVersionLabel)' != 'servicing' and
+                                       '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
     <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
     <LibIntellisenseDocumentationFilePath>$(XmlDocFileRoot)1033\$(AssemblyName).xml</LibIntellisenseDocumentationFilePath>
     <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(ServicingVersion)' != ''">
+    <!-- Always update the package version in servicing. -->
+    <PackageVersion>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</PackageVersion>
+    <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
+    <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
+    <_AssemblyInTargetingPack Condition="'$(IsNETCoreAppSrc)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true'">true</_AssemblyInTargetingPack>
+    <!-- Assembly version do not get updated in non-netfx ref pack assemblies. -->
+    <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(EnablePackageValidation)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.PackageValidation" Version="$(MicrosoftDotNetPackageValidationVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-    <!-- TODO: Remove when the SDK is upgraded to RC1. -->
-    <PackageDownload Include="$([MSBuild]::ValueOrDefault('$(PackageValidationBaselineName)', '$(PackageId)'))"
-                     Version="[$(PackageValidationBaselineVersion)]"
-                     Condition="'$(DisablePackageBaselineValidation)' != 'true' and '$(PackageValidationBaselinePath)' == '' and '$(PackageValidationBaselineVersion)' != ''" />
+    <PackageReference Include="Microsoft.DotNet.Compatibility" Version="$(MicrosoftDotNetCompatibilityVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Add a marker to help the designer optimize & share .NET Core packages -->
+    <None Include="$(PackageDesignerMarkerFile)"
+          PackagePath="$([System.IO.Path]::GetFileName('$(PackageDesignerMarkerFile)'))"
+          Pack="true"
+          Condition="'$(IncludeDesignerMarker)' != 'false'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true'">
@@ -124,6 +147,77 @@
            so a rooted path value for TargetPath will override lib.
            https://github.com/NuGet/Home/issues/10860 -->
       <_TargetPathsToSymbols Include="@(_AnalyzerFile)" TargetPath="/%(_AnalyzerFile.PackagePath)" Condition="%(_AnalyzerFile.IsSymbol)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Include a netstandard compat error if the project targets both .NETStandard and
+       .NETCoreApp. This prohibits users to consume packages on an older .NETCoreApp version
+       than the minimum supported one. -->
+  <ItemGroup Condition="'$(DisableNETStandardCompatErrorForNETCoreApp)' != 'true'">
+    <NETStandardCompatError Include="netcoreapp2.0"
+                            Supported="$(NetCoreAppMinimum)"
+                            Condition="$(TargetFrameworks.Contains('netstandard2.')) and
+                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)')))" />
+  </ItemGroup>
+
+  <!-- Add targets file that marks a .NETStandard applicable tfm as unsupported. -->
+  <Target Name="AddNETStandardCompatErrorFileForPackaging"
+          Condition="'@(NETStandardCompatError)' != ''"
+          Inputs="%(NETStandardCompatError.Identity)"
+          Outputs="unused">
+    <PropertyGroup>
+      <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterrors\%(NETStandardCompatError.Identity)\$(PackageId).targets</_NETStandardCompatErrorFilePath>
+      <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId.Replace('.', '_'))_$([System.String]::new('%(NETStandardCompatError.Supported)').Replace('.', '_'))</_NETStandardCompatErrorFileTarget>
+      <_NETStandardCompatErrorFileContent>
+<![CDATA[<Project InitialTargets="$(_NETStandardCompatErrorFileTarget)">
+  <Target Name="$(_NETStandardCompatErrorFileTarget)"
+          Condition="'%24(SuppressTfmSupportBuildWarnings)' == ''">
+    <Error Text="$(PackageId) doesn't support %24(TargetFramework). Consider updating your TargetFramework to %(NETStandardCompatError.Supported) or later." />
+  </Target>
+</Project>]]>
+      </_NETStandardCompatErrorFileContent>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(_NETStandardCompatErrorFilePath)"
+                      Lines="$(_NETStandardCompatErrorFileContent)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <None Include="$(_NETStandardCompatErrorFilePath)"
+            PackagePath="buildTransitive\%(NETStandardCompatError.Identity)"
+            Pack="true" />
+      <None Include="$(PlaceholderFile)"
+            PackagePath="buildTransitive\%(NETStandardCompatError.Supported)"
+            Pack="true" />
+      <FileWrites Include="$(_NETStandardCompatErrorFilePath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludePrivateProjectReferencesWithPackAttributeInPackage"
+          Condition="'@(ProjectReference->WithMetadataValue('PrivateAssets', 'all')->WithMetadataValue('Pack', 'true'))' != ''"
+          DependsOnTargets="BuildOnlySettings;ResolveReferences">
+    <ItemGroup>
+      <!-- Add ReferenceCopyLocalPaths for ProjectReferences which are flagged as Pack="true" into the package. -->
+      <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('PrivateAssets', 'all')->WithMetadataValue('Pack', 'true'))" />
+      <TfmSpecificPackageFile Include="@(_projectReferenceCopyLocalPaths)"
+                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)/$(TargetFramework)'))" />
+      <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
+                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
+                                   TargetFramework="$(TargetFramework)"
+                                   Condition="'$(IncludeSymbols)' == 'true'" />
+      <!-- Remove symbol from the non symbol package. -->
+      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
+      <!-- If the reference assembly is included, don't put the documentation file next to the lib assembly. -->
+      <TfmSpecificPackageFile Remove="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.xml')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true'))" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Include the reference assembly and put the documentation file next to it. -->
+      <_referenceAssemblyPaths Include="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.dll')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true')->Metadata('ReferenceAssembly'))" />
+      <_referenceAssemblyPaths Include="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.xml')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true'))" />
+      <TfmSpecificPackageFile Include="@(_referenceAssemblyPaths)"
+                              PackagePath="ref/$(TargetFramework)" />
     </ItemGroup>
   </Target>
 

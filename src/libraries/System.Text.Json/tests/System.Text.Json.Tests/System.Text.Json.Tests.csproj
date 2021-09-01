@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -8,6 +8,8 @@
     <!-- these tests depend on the pdb files. Causes test failures like:
           [FAIL] System.Text.Json.Tests.DebuggerTests.DefaultJsonElement -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
+    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'Browser'">true</MetadataUpdaterSupport>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -41,6 +43,7 @@
     <Compile Include="..\Common\JsonSerializerWrapperForStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForStream.cs" />
     <Compile Include="..\Common\JsonSerializerWrapperForString.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForString.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.InitOnly.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.InitOnly.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.NonPublicAccessors.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
@@ -123,6 +126,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Int32.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Interface.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.InvalidCast.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.KeyConverters.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.List.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullValueType.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullableTypes.cs" />

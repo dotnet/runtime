@@ -48,7 +48,11 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    liveRuntimeBuildParams: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+      liveRuntimeBuildParams: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      liveRuntimeBuildParams: ${{ format('mono.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+
     ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc'), not(and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64'))), not(eq(parameters.osGroup, 'OSX'))) }}:
       compilerArg: '-clang9'
     ${{ if not(and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc'), not(and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64'))), not(eq(parameters.osGroup, 'OSX')))) }}:
@@ -82,8 +86,12 @@ jobs:
     variables:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
-      - name: liveRuntimeBuildParams
-        value: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+      - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+        - name: liveRuntimeBuildParams
+          value: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+      - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+        - name: liveRuntimeBuildParams
+          value: ${{ format('mono.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
       - name: compilerArg
         value: ''
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:

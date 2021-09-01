@@ -11,7 +11,6 @@
 #include <cor.h>
 #include "typeparse.h"
 #include "typekey.h"
-#include "ildbsymlib.h"
 
 
 //**************************************************

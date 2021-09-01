@@ -44,8 +44,4 @@ System.Composition.Convention.ParameterImportConventionBuilder</PackageDescripti
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
-  </ItemGroup>
 </Project>

@@ -31,7 +31,6 @@ namespace System
 
         private const ushort SignMask = 0x8000;
         private const ushort SignShift = 15;
-        private const ushort ShiftedSignMask = SignMask >> SignShift;
 
         private const ushort ExponentMask = 0x7C00;
         private const ushort ExponentShift = 10;
@@ -126,7 +125,8 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative && !AreZero(left, right);
             }
-            return (left._value < right._value) ^ leftIsNegative;
+
+            return (left._value != right._value) && ((left._value < right._value) ^ leftIsNegative);
         }
 
         public static bool operator >(Half left, Half right)
@@ -151,7 +151,8 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative || AreZero(left, right);
             }
-            return (left._value <= right._value) ^ leftIsNegative;
+
+            return (left._value == right._value) || ((left._value < right._value) ^ leftIsNegative);
         }
 
         public static bool operator >=(Half left, Half right)

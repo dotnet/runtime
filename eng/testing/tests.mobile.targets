@@ -7,18 +7,13 @@
 
     <PublishingTestsRun>true</PublishingTestsRun>
     <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
-
-    <!-- this catches the case when we are running tests, but not archiving them.
-         In case of archiving, the workload gets installed by code elsewhere -->
-    <InstallWorkloadForTesting Condition="'$(TestUsingWorkloads)' == 'true' and '$(ArchiveTests)' != 'true'">true</InstallWorkloadForTesting>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress linker warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <!-- Can be removed when SDK update picks up https://github.com/dotnet/sdk/pull/18655. -->
-    <NoWarn>$(NoWarn);IL2111</NoWarn>
+    <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
     <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
 
@@ -54,7 +49,7 @@
              AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
              Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
 
-  <Target Name="GenerateRuntimeConfig" Condition="'$(OutputType)' != 'library' and '$(TargetOS)' != 'Browser'">
+  <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>

@@ -31,8 +31,6 @@
 #include "mono/metadata/reflection-cache.h"
 #include "mono/metadata/sre-internals.h"
 #include "mono/metadata/custom-attrs-internals.h"
-#include "mono/metadata/security-manager.h"
-#include "mono/metadata/security-core-clr.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/abi-details.h"
@@ -1262,6 +1260,13 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 			assembly->assembly.aname.build = 0;
 			assembly->assembly.aname.revision = 0;
         }
+
+	if (assemblyb->public_key_token) {
+		for (int i = 0; i < 8 && i < mono_array_length_internal (assemblyb->public_key_token); i++) {
+			guint8 byte = mono_array_get_internal (assemblyb->public_key_token, guint8, i);
+			sprintf ((char*)(assembly->assembly.aname.public_key_token + 2 * i), "%02x", byte);
+		}
+	}
 
 	/* SRE assemblies are loaded into the individual loading context, ie,
 	 * they only fire AssemblyResolve events, they don't cause probing for

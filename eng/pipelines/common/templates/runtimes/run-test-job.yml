@@ -16,6 +16,7 @@ parameters:
   stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
+  tieringTest: false
   runtimeVariant: ''
   variables: {}
   pool: ''
@@ -267,7 +268,7 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
       displayName: Copy native test components to test output folder
 
 
@@ -359,6 +360,7 @@ jobs:
 
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        tieringTest: ${{ parameters.tieringTest }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
@@ -478,6 +480,9 @@ jobs:
           - defaultpgo
           - dynamicpgo
           - fullpgo
+          - fullpgo_random_gdv
+          - fullpgo_random_edge
+          - fullpgo_random_gdv_edge
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:

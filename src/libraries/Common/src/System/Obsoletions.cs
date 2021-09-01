@@ -107,5 +107,14 @@ namespace System
 
         internal const string CorruptedStateRecoveryMessage = "Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored.";
         internal const string CorruptedStateRecoveryDiagId = "SYSLIB0032";
+
+        internal const string Rfc2898CryptDeriveKeyMessage = "Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead.";
+        internal const string Rfc2898CryptDeriveKeyDiagId = "SYSLIB0033";
+
+        internal const string CmsSignerCspParamsCtorMessage = "CmsSigner(CspParameters) is obsolete and is not supported. Use an alternative constructor instead.";
+        internal const string CmsSignerCspParamsCtorDiagId = "SYSLIB0034";
+
+        internal const string SignerInfoCounterSigMessage = "ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner.";
+        internal const string SignerInfoCounterSigDiagId = "SYSLIB0035";
     }
 }

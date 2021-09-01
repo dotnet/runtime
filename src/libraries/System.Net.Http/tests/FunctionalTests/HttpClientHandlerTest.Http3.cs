@@ -320,6 +320,119 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task RequestSentResponseDisposed_ThrowsOnServer()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(new string('a', 1024));
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                HttpRequestData request = await stream.ReadRequestDataAsync();
+                await stream.SendResponseHeadersAsync();
+
+                Stopwatch sw = Stopwatch.StartNew();
+                bool hasFailed = false;
+                while (sw.Elapsed < TimeSpan.FromSeconds(15))
+                {
+                    try
+                    {
+                        await stream.SendResponseBodyAsync(data, isFinal: false);
+                    }
+                    catch (QuicStreamAbortedException)
+                    {
+                        hasFailed = true;
+                        break;
+                    }
+                }
+                Assert.True(hasFailed, $"Expected {nameof(QuicStreamAbortedException)}, instead ran successfully for {sw.Elapsed}");
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var stream = await response.Content.ReadAsStreamAsync();
+                byte[] buffer = new byte[512];
+                for (int i = 0; i < 5; ++i)
+                {
+                    var count = await stream.ReadAsync(buffer);
+                }
+
+                // We haven't finished reading the whole respose, but we're disposing it, which should turn into an exception on the server-side.
+                response.Dispose();
+                await serverTask;
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task RequestSendingResponseDisposed_ThrowsOnServer()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(new string('a', 1024));
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                HttpRequestData request = await stream.ReadRequestDataAsync(false);
+                await stream.SendResponseHeadersAsync();
+
+                Stopwatch sw = Stopwatch.StartNew();
+                bool hasFailed = false;
+                while (sw.Elapsed < TimeSpan.FromSeconds(15))
+                {
+                    try
+                    {
+                        var (frameType, payload) = await stream.ReadFrameAsync();
+                        Assert.Equal(Http3LoopbackStream.DataFrame, frameType);
+                    }
+                    catch (QuicStreamAbortedException)
+                    {
+                        hasFailed = true;
+                        break;
+                    }
+                }
+                Assert.True(hasFailed, $"Expected {nameof(QuicStreamAbortedException)}, instead ran successfully for {sw.Elapsed}");
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = new ByteAtATimeContent(60*4, Task.CompletedTask, new TaskCompletionSource<bool>(), 250)
+                };
+
+                var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var stream = await response.Content.ReadAsStreamAsync();
+
+                // We haven't finished sending the whole request, but we're disposing the response, which should turn into an exception on the server-side.
+                response.Dispose();
+                await serverTask;
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
         public async Task ServerCertificateCustomValidationCallback_Succeeds()
         {
             // Mock doesn't make use of cart validation callback.
@@ -377,6 +490,56 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(1, invocationCount);
 
             await serverTask;
+        }
+
+        [Fact]
+        public async Task EmptyCustomContent_FlushHeaders()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            TaskCompletionSource headersReceived = new TaskCompletionSource();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                // Receive headers and unblock the client.
+                await stream.ReadRequestDataAsync(false);
+                headersReceived.SetResult();
+
+                await stream.ReadRequestBodyAsync();
+                await stream.SendResponseAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                Task<HttpResponseMessage> responseTask = client.SendAsync(request);
+
+                Stream requestStream = await requestContent.GetStreamAsync();
+                await requestStream.FlushAsync();
+
+                await headersReceived.Task;
+
+                requestContent.CompleteStream();
+
+                using HttpResponseMessage response = await responseTask;
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
         [Fact]
@@ -669,7 +832,7 @@ namespace System.Net.Http.Functional.Tests
                 Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: cts.Token).AsTask());
 
                 // exact exception depends on who won the race
-                if (ex is not OperationCanceledException and not ObjectDisposedException)
+                if (ex is not OperationCanceledException)
                 {
                     var ioe = Assert.IsType<IOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
@@ -802,6 +965,143 @@ namespace System.Net.Http.Functional.Tests
             return (SslApplicationProtocol)alpn;
         }
 
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [MemberData(nameof(StatusCodesTestData))]
+        public async Task StatusCodes_ReceiveSuccess(HttpStatusCode statusCode, bool qpackEncode)
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Http3LoopbackConnection connection = null;
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                if (qpackEncode)
+                {
+                    await stream.SendResponseHeadersWithEncodedStatusAsync(statusCode).ConfigureAwait(false);
+                }
+                else
+                {
+                    await stream.SendResponseHeadersAsync(statusCode).ConfigureAwait(false);
+                }
+            });
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
+            {
+                Method = HttpMethod.Get,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.Equal(statusCode, response.StatusCode);
+
+            await serverTask;
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
+        [Theory]
+        [InlineData(1)] // frame fits into Http3RequestStream buffer
+        [InlineData(10)]
+        [InlineData(100)] // frame doesn't fit into Http3RequestStream buffer
+        [InlineData(1000)]
+        public async Task EchoServerStreaming_DifferentMessageSize_Success(int messageSize)
+        {
+            int iters = 5;
+            var message = new byte[messageSize];
+            var readBuffer = new byte[5 * messageSize]; // bigger than message
+            var random = new Random(0);
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            Http3LoopbackConnection connection = null;
+            Http3LoopbackStream serverStream = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                serverStream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData requestData = await serverStream.ReadRequestDataAsync(readBody: false).WaitAsync(TimeSpan.FromSeconds(30));
+
+                await serverStream.SendResponseHeadersAsync().ConfigureAwait(false);
+
+                while (true)
+                {
+                    (long? frameType, byte[] payload) = await serverStream.ReadFrameAsync();
+                    if (frameType == null)
+                    {
+                        // EOS
+                        break;
+                    }
+                    // echo back
+                    await serverStream.SendDataFrameAsync(payload).WaitAsync(TimeSpan.FromSeconds(30));
+                }
+                // send FIN
+                await serverStream.SendResponseBodyAsync(Array.Empty<byte>(), isFinal: true);
+            });
+
+            StreamingHttpContent requestContent = new StreamingHttpContent();
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage request = new()
+            {
+                Method = HttpMethod.Post,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                Content = requestContent
+            };
+
+            var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
+
+            Stream requestStream = await requestContent.GetStreamAsync();
+            // Send headers
+            await requestStream.FlushAsync();
+
+            using HttpResponseMessage response = await responseTask;
+
+            var responseStream = await response.Content.ReadAsStreamAsync();
+
+            for (int i = 0; i < iters; ++i)
+            {
+                random.NextBytes(message);
+                await requestStream.WriteAsync(message).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+                await requestStream.FlushAsync();
+
+                int bytesRead = await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.Equal(bytesRead, messageSize);
+                Assert.Equal(message, readBuffer[..bytesRead]);
+            }
+            // Send FIN
+            requestContent.CompleteStream();
+            // Receive FIN
+            Assert.Equal(0, await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
+
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(60));
+
+            serverStream.Dispose();
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
+        public static TheoryData<HttpStatusCode, bool> StatusCodesTestData()
+        {
+            var statuses = Enum.GetValues(typeof(HttpStatusCode)).Cast<HttpStatusCode>().Where(s => s >= HttpStatusCode.OK); // exclude informational
+            var data = new TheoryData<HttpStatusCode, bool>();
+            foreach (var status in statuses)
+            {
+                data.Add(status, true);
+                data.Add(status, false);
+            }
+            return data;
+        }
+
         /// <summary>
         /// These are public interop test servers for various QUIC and HTTP/3 implementations,
         /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations and https://bagder.github.io/HTTP3-test/.
@@ -825,5 +1125,42 @@ namespace System.Net.Http.Functional.Tests
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
                 { "https://pgjones.dev/" }, // aioquic with content
             };
+    }
+
+    internal class StreamingHttpContent : HttpContent
+    {
+        private readonly TaskCompletionSource _completeTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<Stream> _getStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        {
+            _getStreamTcs.TrySetResult(stream);
+
+            var cancellationTcs = new TaskCompletionSource();
+            cancellationToken.Register(() => cancellationTcs.TrySetCanceled());
+
+            await Task.WhenAny(_completeTcs.Task, cancellationTcs.Task);
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = -1;
+            return false;
+        }
+
+        public Task<Stream> GetStreamAsync()
+        {
+            return _getStreamTcs.Task;
+        }
+
+        public void CompleteStream()
+        {
+            _completeTcs.TrySetResult();
+        }
     }
 }

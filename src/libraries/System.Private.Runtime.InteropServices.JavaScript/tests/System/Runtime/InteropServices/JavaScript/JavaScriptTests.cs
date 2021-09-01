@@ -439,5 +439,38 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             b.Invoke("fireEvent", "test");
             Assert.Equal(3, counter[0]);
         }
+
+        [Fact]
+        public static void RoundtripCSDate()
+        {
+            var factory = new Function("dummy", @"
+                return {
+                    dummy:dummy,
+                }");
+            var date = new DateTime(2021, 01, 01, 12, 34, 45);
+
+            var obj = (JSObject)factory.Call(null, date);
+            var dummy = (DateTime)obj.GetObjectProperty("dummy");
+            Assert.Equal(date, dummy);
+        }
+
+        [Fact]
+        public static void RoundtripJSDate()
+        {
+            var factory = new Function(@"
+                var dummy = new Date(2021, 00, 01, 12, 34, 45, 567);
+                return {
+                    dummy:dummy,
+                    check:(value) => {
+                        return value.valueOf()==dummy.valueOf() ? 1 : 0;
+                    },
+                }");
+            var obj = (JSObject)factory.Call();
+
+            var date = (DateTime)obj.GetObjectProperty("dummy");
+            var check = (int)obj.Invoke("check", date);
+            Assert.Equal(1, check);
+        }
+
     }
 }

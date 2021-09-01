@@ -25,6 +25,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData("method", typeof(string), new Type[] { typeof(char?) })]
         [InlineData("Method", typeof(string), new Type[] { typeof(GenericClass2<,>), typeof(GenericClass2<,>) })]
         [InlineData("Method", typeof(string), new Type[] { typeof(TestInterface) })]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void String_Type_TypeArray_Module(string name, Type returnType, Type[] parameterTypes)
         {
             Module module = typeof(TestClass).GetTypeInfo().Module;

@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -31,7 +32,8 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
 
-            private readonly GeneratorExecutionContext _executionContext;
+            private readonly Compilation _compilation;
+            private readonly SourceProductionContext _sourceProductionContext;
             private readonly MetadataLoadContextInternal _metadataLoadContext;
 
             private readonly Type _ilistOfTType;
@@ -43,7 +45,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _dictionaryType;
             private readonly Type? _idictionaryOfTKeyTValueType;
             private readonly Type? _ireadonlyDictionaryType;
-            private readonly Type? _isetType; 
+            private readonly Type? _isetType;
             private readonly Type? _stackOfTType;
             private readonly Type? _queueOfTType;
             private readonly Type? _concurrentStackType;
@@ -84,7 +86,7 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1032",
                 title: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: SystemTextJsonSourceGenerationName,
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
@@ -92,55 +94,56 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1033",
                 title: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: SystemTextJsonSourceGenerationName,
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            public Parser(in GeneratorExecutionContext executionContext)
+            public Parser(Compilation compilation, in SourceProductionContext sourceProductionContext)
             {
-                _executionContext = executionContext;
-                _metadataLoadContext = new MetadataLoadContextInternal(executionContext.Compilation);
+                _compilation = compilation;
+                _sourceProductionContext = sourceProductionContext;
+                _metadataLoadContext = new MetadataLoadContextInternal(_compilation);
 
-                _ilistOfTType = ResolveType(SpecialType.System_Collections_Generic_IList_T);
-                _icollectionOfTType = ResolveType(SpecialType.System_Collections_Generic_ICollection_T);
-                _ienumerableOfTType = ResolveType(SpecialType.System_Collections_Generic_IEnumerable_T);
-                _ienumerableType = ResolveType(SpecialType.System_Collections_IEnumerable);
+                _ilistOfTType = _metadataLoadContext.Resolve(SpecialType.System_Collections_Generic_IList_T);
+                _icollectionOfTType = _metadataLoadContext.Resolve(SpecialType.System_Collections_Generic_ICollection_T);
+                _ienumerableOfTType = _metadataLoadContext.Resolve(SpecialType.System_Collections_Generic_IEnumerable_T);
+                _ienumerableType = _metadataLoadContext.Resolve(SpecialType.System_Collections_IEnumerable);
 
-                _listOfTType = ResolveType(typeof(List<>).FullName!);
-                _dictionaryType = ResolveType(typeof(Dictionary<,>).FullName!);
-                _idictionaryOfTKeyTValueType = ResolveType(typeof(IDictionary<,>).FullName!);
-                _ireadonlyDictionaryType = ResolveType(typeof(IReadOnlyDictionary<,>).FullName!);
-                _isetType = ResolveType(typeof(ISet<>).FullName!);
-                _stackOfTType = ResolveType(typeof(Stack<>).FullName!);
-                _queueOfTType = ResolveType(typeof(Queue<>).FullName!);
-                _concurrentStackType = ResolveType(typeof(ConcurrentStack<>).FullName!);
-                _concurrentQueueType = ResolveType(typeof(ConcurrentQueue<>).FullName!);
-                _idictionaryType = ResolveType(typeof(IDictionary).FullName!);
-                _ilistType = ResolveType(typeof(IList).FullName!);
-                _stackType = ResolveType(typeof(Stack).FullName!);
-                _queueType = ResolveType(typeof(Queue).FullName!);
-                _keyValuePair = ResolveType(typeof(KeyValuePair<,>).FullName!);
+                _listOfTType = _metadataLoadContext.Resolve(typeof(List<>));
+                _dictionaryType = _metadataLoadContext.Resolve(typeof(Dictionary<,>));
+                _idictionaryOfTKeyTValueType = _metadataLoadContext.Resolve(typeof(IDictionary<,>));
+                _ireadonlyDictionaryType = _metadataLoadContext.Resolve(typeof(IReadOnlyDictionary<,>));
+                _isetType = _metadataLoadContext.Resolve(typeof(ISet<>));
+                _stackOfTType = _metadataLoadContext.Resolve(typeof(Stack<>));
+                _queueOfTType = _metadataLoadContext.Resolve(typeof(Queue<>));
+                _concurrentStackType = _metadataLoadContext.Resolve(typeof(ConcurrentStack<>));
+                _concurrentQueueType = _metadataLoadContext.Resolve(typeof(ConcurrentQueue<>));
+                _idictionaryType = _metadataLoadContext.Resolve(typeof(IDictionary));
+                _ilistType = _metadataLoadContext.Resolve(typeof(IList));
+                _stackType = _metadataLoadContext.Resolve(typeof(Stack));
+                _queueType = _metadataLoadContext.Resolve(typeof(Queue));
+                _keyValuePair = _metadataLoadContext.Resolve(typeof(KeyValuePair<,>));
 
-                _booleanType = ResolveType(SpecialType.System_Boolean);
-                _charType = ResolveType(SpecialType.System_Char);
-                _dateTimeType = ResolveType(SpecialType.System_DateTime);
-                _nullableOfTType = ResolveType(SpecialType.System_Nullable_T);
-                _objectType = ResolveType(SpecialType.System_Object);
-                _stringType = ResolveType(SpecialType.System_String);
+                _booleanType = _metadataLoadContext.Resolve(SpecialType.System_Boolean);
+                _charType = _metadataLoadContext.Resolve(SpecialType.System_Char);
+                _dateTimeType = _metadataLoadContext.Resolve(SpecialType.System_DateTime);
+                _nullableOfTType = _metadataLoadContext.Resolve(SpecialType.System_Nullable_T);
+                _objectType = _metadataLoadContext.Resolve(SpecialType.System_Object);
+                _stringType = _metadataLoadContext.Resolve(SpecialType.System_String);
 
-                _dateTimeOffsetType = ResolveType(typeof(DateTimeOffset).FullName!);
-                _byteArrayType = ResolveType(typeof(byte[]).FullName!);
-                _guidType = ResolveType(typeof(Guid).FullName!);
-                _uriType = ResolveType(typeof(Uri).FullName!);
-                _versionType = ResolveType(typeof(Version).FullName!);
-                _jsonElementType = ResolveType(JsonElementFullName);
+                _dateTimeOffsetType = _metadataLoadContext.Resolve(typeof(DateTimeOffset));
+                _byteArrayType = _metadataLoadContext.Resolve(typeof(byte[]));
+                _guidType = _metadataLoadContext.Resolve(typeof(Guid));
+                _uriType = _metadataLoadContext.Resolve(typeof(Uri));
+                _versionType = _metadataLoadContext.Resolve(typeof(Version));
+                _jsonElementType = _metadataLoadContext.Resolve(JsonElementFullName);
 
                 PopulateKnownTypes();
             }
 
-            public SourceGenerationSpec? GetGenerationSpec(List<ClassDeclarationSyntax> classDeclarationSyntaxList)
+            public SourceGenerationSpec? GetGenerationSpec(ImmutableArray<ClassDeclarationSyntax> classDeclarationSyntaxList)
             {
-                Compilation compilation = _executionContext.Compilation;
+                Compilation compilation = _compilation;
                 INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerContext");
                 INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
                 INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute");
@@ -198,7 +201,7 @@ namespace System.Text.Json.SourceGeneration
                     if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
                     {
                         // Class or one of its containing types is not partial so we can't add to it.
-                        _executionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
+                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
                         continue;
                     }
 
@@ -256,7 +259,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             // Returns true if a given type derives directly from JsonSerializerContext.
-            private bool DerivesFromJsonSerializerContext(
+            private static bool DerivesFromJsonSerializerContext(
                 ClassDeclarationSyntax classDeclarationSyntax,
                 INamedTypeSymbol jsonSerializerContextSymbol,
                 SemanticModel compilationSemanticModel)
@@ -385,14 +388,6 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 Type type = typeSymbol.AsType(_metadataLoadContext);
-                if (type.Namespace == "<global namespace>")
-                {
-                    // typeof() reference where the type's name isn't fully qualified.
-                    // The compilation is not valid and the user needs to fix their code.
-                    // The compiler will notify the user so we don't have to.
-                    return null;
-                }
-
                 TypeGenerationSpec typeGenerationSpec = GetOrAddTypeGenerationSpec(type, generationMode);
 
                 if (typeInfoPropertyName != null)
@@ -406,6 +401,36 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return typeGenerationSpec;
+            }
+
+            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : > 0 } } };
+
+            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            {
+                var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
+
+                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
+                {
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
+                        if (attributeSymbol == null)
+                        {
+                            continue;
+                        }
+
+                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                        if (fullName == "System.Text.Json.Serialization.JsonSerializableAttribute")
+                        {
+                            return classDeclarationSyntax;
+                        }
+                    }
+
+                }
+
+                return null;
             }
 
             private static JsonSourceGenerationMode? GetJsonSourceGenerationModeEnumVal(SyntaxNode propertyValueMode)
@@ -737,7 +762,7 @@ namespace System.Text.Json.SourceGeneration
                     if (!type.TryGetDeserializationConstructor(useDefaultCtorInAnnotatedStructs, out ConstructorInfo? constructor))
                     {
                         classType = ClassType.TypeUnsupportedBySourceGen;
-                        _executionContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonConstructorAttribute, Location.None, new string[] { $"{type}" }));
+                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonConstructorAttribute, Location.None, new string[] { $"{type}" }));
                     }
                     else
                     {
@@ -775,8 +800,8 @@ namespace System.Text.Json.SourceGeneration
 
                         // GetInterface() is currently not implemented, so we use GetInterfaces().
                         IEnumerable<string> interfaces = type.GetInterfaces().Select(interfaceType => interfaceType.FullName!);
-                        implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializedFullName) != null;
-                        implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializingFullName) != null;
+                        implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == JsonConstants.IJsonOnSerializedFullName) != null;
+                        implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == JsonConstants.IJsonOnSerializingFullName) != null;
 
                         propGenSpecList = new List<PropertyGenerationSpec>();
                         Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
@@ -1022,6 +1047,8 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 string clrName = memberInfo.Name;
+                string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
+                string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
 
                 return new PropertyGenerationSpec
                 {
@@ -1030,7 +1057,8 @@ namespace System.Text.Json.SourceGeneration
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
                     JsonPropertyName = jsonPropertyName,
-                    RuntimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy),
+                    RuntimePropertyName = runtimePropertyName,
+                    PropertyNameVarName = propertyNameVarName,
                     IsReadOnly = isReadOnly,
                     CanUseGetter = canUseGetter,
                     CanUseSetter = canUseSetter,
@@ -1087,20 +1115,51 @@ namespace System.Text.Json.SourceGeneration
                 return runtimePropName;
             }
 
+            private static string DeterminePropNameIdentifier(string runtimePropName)
+            {
+                const string PropName = "PropName_";
+
+                // Use a different prefix to avoid possible collisions with "PropName_" in
+                // the rare case there is a C# property in a hex format.
+                const string EncodedPropName = "EncodedPropName_";
+
+                if (SyntaxFacts.IsValidIdentifier(runtimePropName))
+                {
+                    return PropName + runtimePropName;
+                }
+
+                // Encode the string to a byte[] and then convert to hexadecimal.
+                // To make the generated code more readable, we could use a different strategy in the future
+                // such as including the full class name + the CLR property name when there are duplicates,
+                // but that will create unnecessary JsonEncodedText properties.
+                byte[] utf8Json = Encoding.UTF8.GetBytes(runtimePropName);
+
+                StringBuilder sb = new StringBuilder(
+                    EncodedPropName,
+                    capacity: EncodedPropName.Length + utf8Json.Length * 2);
+
+                for (int i = 0; i < utf8Json.Length; i++)
+                {
+                    sb.Append(utf8Json[i].ToString("X2")); // X2 is hex format
+                }
+
+                return sb.ToString();
+            }
+
             private void PopulateNumberTypes()
             {
                 Debug.Assert(_numberTypes != null);
-                _numberTypes.Add(ResolveType(SpecialType.System_Byte));
-                _numberTypes.Add(ResolveType(SpecialType.System_Decimal));
-                _numberTypes.Add(ResolveType(SpecialType.System_Double));
-                _numberTypes.Add(ResolveType(SpecialType.System_Int16));
-                _numberTypes.Add(ResolveType(SpecialType.System_SByte));
-                _numberTypes.Add(ResolveType(SpecialType.System_Int32));
-                _numberTypes.Add(ResolveType(SpecialType.System_Int64));
-                _numberTypes.Add(ResolveType(SpecialType.System_Single));
-                _numberTypes.Add(ResolveType(SpecialType.System_UInt16));
-                _numberTypes.Add(ResolveType(SpecialType.System_UInt32));
-                _numberTypes.Add(ResolveType(SpecialType.System_UInt64));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Byte));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Decimal));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Double));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Int16));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_SByte));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Int32));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Int64));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Single));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt16));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt32));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt64));
             }
 
             private void PopulateKnownTypes()
@@ -1121,18 +1180,6 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_uriType);
                 _knownTypes.Add(_versionType);
                 _knownTypes.Add(_jsonElementType);
-            }
-
-            private Type ResolveType(string fullyQualifiedMetadataName)
-            {
-                INamedTypeSymbol? typeSymbol = _executionContext.Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
-                return typeSymbol.AsType(_metadataLoadContext);
-            }
-
-            private Type ResolveType(SpecialType specialType)
-            {
-                INamedTypeSymbol? typeSymbol = _executionContext.Compilation.GetSpecialType(specialType);
-                return typeSymbol.AsType(_metadataLoadContext);
             }
         }
     }

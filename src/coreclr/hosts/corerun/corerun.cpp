@@ -217,12 +217,6 @@ static int run(const configuration& config)
         pal::ensure_trailing_delimiter(app_path);
     }
 
-    // Define the NI app_path.
-    string_t app_path_ni = app_path + W("NI");
-    pal::ensure_trailing_delimiter(app_path_ni);
-    app_path_ni.append(1, pal::env_path_delim);
-    app_path_ni.append(app_path);
-
     // Accumulate path for native search path.
     pal::stringstream_t native_search_dirs;
     native_search_dirs << app_path << pal::env_path_delim;
@@ -291,7 +285,6 @@ static int run(const configuration& config)
     // Construct CoreCLR properties.
     pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(std::move(tpa_list));
     pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(std::move(app_path));
-    pal::string_utf8_t app_path_ni_utf8 = pal::convert_to_utf8(std::move(app_path_ni));
     pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
 
     std::vector<pal::string_utf8_t> user_defined_keys_utf8;
@@ -314,11 +307,6 @@ static int run(const configuration& config)
     // - The list of paths which will be probed by the assembly loader
     propertyKeys.push_back("APP_PATHS");
     propertyValues.push_back(app_path_utf8.c_str());
-
-    // APP_NI_PATHS
-    // - The list of additional paths that the assembly loader will probe for ngen images
-    propertyKeys.push_back("APP_NI_PATHS");
-    propertyValues.push_back(app_path_ni_utf8.c_str());
 
     // NATIVE_DLL_SEARCH_DIRECTORIES
     // - The list of paths that will be probed for native DLLs called by PInvoke

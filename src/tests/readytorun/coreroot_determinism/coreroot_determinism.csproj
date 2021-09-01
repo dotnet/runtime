@@ -4,8 +4,6 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-    <!-- See https://github.com/dotnet/runtime/issues/50704 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This is an explicit crossgen test -->
     <CrossGenTest>false</CrossGenTest>
     <OldToolsVersion>2.0</OldToolsVersion>

@@ -29,16 +29,6 @@ SString &ApplicationContext::GetApplicationName()
     return m_applicationName;
 }
 
-DWORD ApplicationContext::GetAppDomainId()
-{
-    return m_dwAppDomainId;
-}
-
-void ApplicationContext::SetAppDomainId(DWORD dwAppDomainId)
-{
-    m_dwAppDomainId = dwAppDomainId;
-}
-
 ExecutionContext *ApplicationContext::GetExecutionContext()
 {
     return m_pExecutionContext;
@@ -71,11 +61,6 @@ SimpleNameToFileNameMap * ApplicationContext::GetTpaList()
 StringArrayList * ApplicationContext::GetPlatformResourceRoots()
 {
     return &m_platformResourceRoots;
-}
-
-StringArrayList * ApplicationContext::GetAppNiPaths()
-{
-    return &m_appNiPaths;
 }
 
 CRITSEC_COOKIE ApplicationContext::GetCriticalSectionCookie()

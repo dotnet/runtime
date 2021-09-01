@@ -90,7 +90,7 @@ public:
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pManifestFile->IsSystem(); }
 
-    static Assembly *CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args);
+    static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderContext, CreateDynamicAssemblyArgs *args);
 
     MethodDesc *GetEntryPoint();
 
@@ -404,9 +404,6 @@ public:
 
     Assembly();
     ~Assembly();
-#ifdef  FEATURE_PREJIT
-    void DeleteNativeCodeRanges();
-#endif
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
                      PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
@@ -437,10 +434,10 @@ public:
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#ifdef FEATURE_READYTORUN
     BOOL IsInstrumented();
     BOOL IsInstrumentedHelper();
-#endif // FEATURE_PREJIT
+#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_COMINTEROP
     static ITypeLib * const InvalidTypeLib;
@@ -592,14 +589,14 @@ private:
 
     BOOL                  m_fTerminated;
 
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#ifdef FEATURE_READYTORUN
     enum IsInstrumentedStatus {
         IS_INSTRUMENTED_UNSET = 0,
         IS_INSTRUMENTED_FALSE = 1,
         IS_INSTRUMENTED_TRUE = 2,
     };
     IsInstrumentedStatus    m_isInstrumentedStatus;
-#endif // FEATURE_PREJIT
+#endif // FEATURE_READYTORUN
 
 };
 

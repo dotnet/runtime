@@ -8,6 +8,7 @@
 #include "pal_console.h"
 #include "pal_datetime.h"
 #include "pal_dl.h"
+#include "pal_environment.h"
 #include "pal_errno.h"
 #include "pal_interfaceaddresses.h"
 #include "pal_io.h"
@@ -111,6 +112,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag)
     DllImportEntry(SystemNative_ReadProcessStatusInfo)
     DllImportEntry(SystemNative_Log)
+    DllImportEntry(SystemNative_LogError)
     DllImportEntry(SystemNative_AlignedAlloc)
     DllImportEntry(SystemNative_AlignedFree)
     DllImportEntry(SystemNative_AlignedRealloc)
@@ -219,6 +221,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetOSArchitecture)
     DllImportEntry(SystemNative_GetProcessArchitecture)
     DllImportEntry(SystemNative_SearchPath)
+    DllImportEntry(SystemNative_SearchPath_TempDirectory)
     DllImportEntry(SystemNative_RegisterForSigChld)
     DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
@@ -226,6 +229,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SNPrintF)
     DllImportEntry(SystemNative_Sysctl)
     DllImportEntry(SystemNative_MapTcpState)
+    DllImportEntry(SystemNative_LowLevelMonitor_Create)
     DllImportEntry(SystemNative_LowLevelMonitor_Destroy)
     DllImportEntry(SystemNative_LowLevelMonitor_Acquire)
     DllImportEntry(SystemNative_LowLevelMonitor_Release)
@@ -242,7 +246,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetEUid)
     DllImportEntry(SystemNative_GetGroupList)
     DllImportEntry(SystemNative_GetUid)
-    DllImportEntry(SystemNative_LowLevelMonitor_Create)
     DllImportEntry(SystemNative_CreateAutoreleasePool)
     DllImportEntry(SystemNative_DrainAutoreleasePool)
     DllImportEntry(SystemNative_iOSSupportVersion)
@@ -259,6 +262,9 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetPlatformSignalNumber)
     DllImportEntry(SystemNative_GetGroups)
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle)
+    DllImportEntry(SystemNative_GetEnv)
+    DllImportEntry(SystemNative_GetEnviron)
+    DllImportEntry(SystemNative_FreeEnviron)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

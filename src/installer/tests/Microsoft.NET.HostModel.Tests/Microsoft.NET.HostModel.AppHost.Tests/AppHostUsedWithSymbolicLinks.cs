@@ -192,28 +192,6 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
-        public void Put_app_directory_behind_symlink_and_use_dotnet_run()
-        {
-            var fixture = sharedTestState.StandaloneAppFixture_Published
-                .Copy();
-
-            var dotnet = fixture.SdkDotnet;
-            var binDir = fixture.TestProject.OutputDirectory;
-            var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse");
-            Directory.Move(binDir, binDirNewPath);
-
-            using var symlink = new SymLink(binDir, binDirNewPath);
-            dotnet.Exec("run")
-                .WorkingDirectory(fixture.TestProject.Location)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
-        }
-
-        [Fact]
         // If enabled, this tests will need to set the console code page to output unicode characters: Command.Create("chcp 65001").Execute();
         [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_satellite_assembly_behind_symlink()

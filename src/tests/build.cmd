@@ -41,6 +41,11 @@ set processedArgs=
 set __UnprocessedBuildArgs=
 set __CommonMSBuildArgs=
 
+set __RebuildTests=0
+set __BuildTestProject=%%3B
+set __BuildTestDir=%%3B
+set __BuildTestTree=%%3B
+
 set __SkipRestorePackages=
 set __SkipManaged=
 set __SkipTestWrappers=
@@ -94,6 +99,12 @@ if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!pr
 if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+if /i "%1" == "rebuild"               (set __RebuildTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+if /i "%1" == "test"                  (set __BuildTestProject=!__BuildTestProject!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -155,6 +166,11 @@ set "__BinDir=%__RootBinDir%\bin\coreclr\%__OSPlatformConfig%"
 set "__TestRootDir=%__RootBinDir%\tests\coreclr"
 set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
 set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
+
+if "%__RebuildTests%" == "1" (
+    echo Removing tests build dir^: !__TestBinDir!
+    rmdir /s /q !__TestBinDir!
+)
 
 if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%\
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
@@ -361,6 +377,10 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:__SkipPackageRestore=true
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__NativeBinariesLayoutTypeArg!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:RuntimeFlavor=!__RuntimeFlavor!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:BuildTestProject=!__BuildTestProject!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:BuildTestDir=!__BuildTestDir!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:BuildTestTree=!__BuildTestTree!
+
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -376,6 +396,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         )
     ) else (
         set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__NativeBinariesLayoutTypeArg!  !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:RuntimeFlavor=!__RuntimeFlavor!
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -558,6 +579,10 @@ echo -priority=^<N^> : specify a set of tests that will be built and run, with p
 echo     0: Build only priority 0 cases as essential testcases (default)
 echo     1: Build all tests with priority 0 and 1
 echo     666: Build all tests with priority 0, 1 ... 666
+echo test ^<xxx^>: Only build test project ^<xxx^> ^(relative or absolute project path under src\tests^)
+echo dir ^<xxx^>: Build all test projects in the folder ^<xxx^> ^(relative or absolute folder under src\tests^)
+echo tree ^<xxx^>: Build all test projects in the subtree ^<xxx^> ^(relative or absolute folder under src\tests^)
+echo rebuild: Clean up all test artifacts prior to building tests
 echo allTargets: Build managed tests for all target platforms.
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1

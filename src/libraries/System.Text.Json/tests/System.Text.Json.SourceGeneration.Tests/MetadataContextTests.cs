@@ -26,6 +26,12 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
     }
@@ -55,6 +61,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverter.Serialize);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.Serialize);
         }
     }
 
@@ -79,6 +89,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
+    [JsonSerializable(typeof(ClassWithCustomConverter))]
+    [JsonSerializable(typeof(StructWithCustomConverter))]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter))]
+    [JsonSerializable(typeof(StructWithBadCustomConverter))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
     }
@@ -110,6 +124,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.ObjectArray.Serialize);
             Assert.Null(MetadataContext.Default.String.Serialize);
             Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.Null(MetadataContext.Default.ClassWithCustomConverter.Serialize);
+            Assert.Null(MetadataContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.ClassWithBadCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.Serialize);
         }
     }
 }

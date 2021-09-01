@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SERIAL_PORTS</DefineConstants>
@@ -90,6 +90,8 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs"
              Link="Common\Interop\Windows\Interop.FileTypes.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" 
+             Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="Common\System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"
@@ -140,6 +142,7 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Memory" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
     <Reference Include="System.Runtime" />
@@ -153,10 +156,10 @@ System.IO.Ports.SerialPort</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <!-- Just reference the runtime meta package but don't build it to avoid unintentional Build/Pack invocations. -->
-    <ProjectReference Include="..\pkg\runtime.native.$(MSBuildProjectName).proj" />
+    <!-- Just reference the runtime packages but don't build them in order to avoid unintentional Build/Pack invocations. -->
+    <ProjectReference Include="..\pkg\runtime.native.$(MSBuildProjectName).proj" BuildReference="false" />
     <!-- Make the runtime specific packages non transitive so that they aren't flowing into other projects. -->
-    <ProjectReference Include="..\pkg\runtime.*.runtime.native.$(MSBuildProjectName).proj" PrivateAssets="all" />
+    <ProjectReference Include="..\pkg\runtime.*.runtime.native.$(MSBuildProjectName).proj" BuildReference="false" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
@@ -164,9 +167,5 @@ System.IO.Ports.SerialPort</PackageDescription>
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
     <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>
