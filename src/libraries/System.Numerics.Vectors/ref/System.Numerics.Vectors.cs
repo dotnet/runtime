@@ -153,6 +153,7 @@ namespace System.Numerics
         public float Z;
         public Quaternion(System.Numerics.Vector3 vectorPart, float scalarPart) { throw null; }
         public Quaternion(float x, float y, float z, float w) { throw null; }
+        public static System.Numerics.Quaternion Zero { get { throw null; } }
         public static System.Numerics.Quaternion Identity { get { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
         public static System.Numerics.Quaternion Add(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
