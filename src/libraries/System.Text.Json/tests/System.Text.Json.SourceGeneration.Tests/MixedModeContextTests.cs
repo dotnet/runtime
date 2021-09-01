@@ -26,6 +26,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     internal partial class MixedModeContext : JsonSerializerContext, ITestContext
     {
     }
@@ -56,6 +60,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MixedModeContext.Default.ObjectArray.Serialize);
             Assert.Null(MixedModeContext.Default.String.Serialize);
             Assert.NotNull(MixedModeContext.Default.ClassWithEnumAndNullable.Serialize);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverter.Serialize);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.ClassWithBadCustomConverter.Serialize);
+            Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.StructWithBadCustomConverter.Serialize);
         }
 
         [Fact]

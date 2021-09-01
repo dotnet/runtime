@@ -21,7 +21,6 @@
 #include "ecmakey.h"
 #include "customattribute.h"
 #include "typestring.h"
-#include "compile.h"
 
 //*******************************************************************************
 // Helper functions to sort GCdescs by offset (decending order)
@@ -3021,11 +3020,11 @@ MethodTableBuilder::EnumerateClassMethods()
 
             // Some interface checks.
             // We only need them if default interface method support is disabled or if this is fragile crossgen
-#if !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#if !defined(FEATURE_DEFAULT_INTERFACES)
             if (fIsClassInterface
 #if defined(FEATURE_DEFAULT_INTERFACES)
                 // Only fragile crossgen wasn't upgraded to deal with default interface methods.
-                && !IsReadyToRunCompilation() && !IsNgenPDBCompilationProcess()
+                && !IsNgenPDBCompilationProcess()
 #endif
                 )
             {
@@ -3045,7 +3044,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     }
                 }
             }
-#endif // !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#endif // !defined(FEATURE_DEFAULT_INTERFACES)
 
             // No synchronized methods in ValueTypes
             if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
@@ -6784,7 +6783,7 @@ VOID MethodTableBuilder::ValidateStaticMethodImpl(
     bmtMethodHandle     hDecl,
     bmtMethodHandle     hImpl)
 {
-    // While we don't want to place the static method impl declarations on the class/interface, we do 
+    // While we don't want to place the static method impl declarations on the class/interface, we do
     // need to validate the method constraints and signature are compatible
     if (!bmtProp->fNoSanityChecks)
     {
@@ -9105,7 +9104,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
     // and we make this case distinguishable by simply disallowing the optimization in those cases.
     bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
-    
+
     DWORD nAssigned = 0;
     do
     {
@@ -9148,7 +9147,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
                     if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
                     {
-                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the 
+                        // We allow a limited set of interface generic shapes with type variables. In particular, we require the
                         // instantiations to be exactly simple type variables, and to have a relatively small number of generic arguments
                         // so that the fallback instantiating logic works efficiently
                         if (InstantiationIsAllTypeVariables(pItfPossiblyApprox->GetInstantiation()) && pItfPossiblyApprox->GetInstantiation().GetNumArgs() <= MethodTable::MaxGenericParametersForSpecialMarkerType)
@@ -9194,7 +9193,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 #endif
     // We have a special algorithm for interface maps in CoreLib, which doesn't expand interfaces, and assumes no ambiguous
     // duplicates. Code related to this is marked with #SpecialCorelibInterfaceExpansionAlgorithm
-    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType())); 
+    _ASSERTE(!duplicates || !(pMT->GetModule()->IsSystem() && pMT->IsValueType()));
 
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)
@@ -11304,8 +11303,7 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     if (!GetModule()->GetFile()->IsILImageReadyToRun())
     {
         // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
-        if (!IsReadyToRunCompilation())
-            return FALSE;
+        return FALSE;
     }
 
     if (!ModulesAreDistributedAsAnIndivisibleUnit(GetModule(), pParentMT->GetModule()) ||

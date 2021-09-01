@@ -120,20 +120,6 @@ public:
 
     BOOL ContainsMethodDesc(MethodDesc* pMD);
 
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    // Save the hash table and any method descriptors referenced by it
-    void Save(DataImage *image, CorProfileData *pProfileData);
-
-    // Record fixups required on the hash table
-    // Recurse into method descriptors referenced by it
-    void Fixup(DataImage *image);
-
-    bool ShouldSave(DataImage *pImage, InstMethodHashEntry_t *pEntry);
-    bool IsHotEntry(InstMethodHashEntry_t *pEntry, CorProfileData *pProfileData);
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, InstMethodHashEntry_t *pOldEntry, InstMethodHashEntry_t *pNewEntry, EntryMappingTable *pMap);
-    void FixupEntry(DataImage *pImage, InstMethodHashEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset);
-#endif // FEATURE_PREJIT && !DACCESS_COMPILE
-
     // An iterator for the table, currently used only by Module::Save
     struct Iterator
     {

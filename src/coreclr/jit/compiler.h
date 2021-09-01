@@ -9301,7 +9301,7 @@ public:
             return !!(compFlags & optFlag);
         }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         bool IsReadyToRun()
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);

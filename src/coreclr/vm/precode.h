@@ -303,30 +303,6 @@ public:
     static TADDR AllocateTemporaryEntryPoints(MethodDescChunk* pChunk,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
-#ifdef FEATURE_PREJIT
-    //
-    // NGEN stuff
-    //
-
-    void Save(DataImage *image);
-    void Fixup(DataImage *image, MethodDesc * pMD);
-
-    BOOL IsPrebound(DataImage *image);
-
-    // Helper class for saving precodes in chunks
-    class SaveChunk
-    {
-#ifdef HAS_FIXUP_PRECODE_CHUNKS
-        // Array of methods to be saved in the method desc chunk
-        InlineSArray<MethodDesc *, 20> m_rgPendingChunk;
-#endif // HAS_FIXUP_PRECODE_CHUNKS
-
-    public:
-        void Save(DataImage * image, MethodDesc * pMD);
-        void Flush(DataImage * image);
-    };
-#endif // FEATURE_PREJIT
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif

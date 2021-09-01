@@ -1,6 +1,8 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{29991657-E677-42A4-894C-6BE781C51DD7}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Formats.Asn1", "..\System.Formats.Asn1\ref\System.Formats.Asn1.csproj", "{83192560-8AFE-458F-916B-3AB572000065}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Formats.Asn1", "..\System.Formats.Asn1\src\System.Formats.Asn1.csproj", "{A84FF2B2-5272-4F02-AA2B-C0FA61586AA4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj", "{A7ED3F95-30B3-45E8-AD71-5B6A9F547EC1}"
@@ -51,6 +53,10 @@ Global
 		{12345E87-4C47-4857-B7E4-6673D6ECC05F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12345E87-4C47-4857-B7E4-6673D6ECC05F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12345E87-4C47-4857-B7E4-6673D6ECC05F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83192560-8AFE-458F-916B-3AB572000065}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83192560-8AFE-458F-916B-3AB572000065}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83192560-8AFE-458F-916B-3AB572000065}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83192560-8AFE-458F-916B-3AB572000065}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6C660B52-0FE3-43B9-838E-2F92B34E97D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6C660B52-0FE3-43B9-838E-2F92B34E97D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C660B52-0FE3-43B9-838E-2F92B34E97D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -65,6 +71,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5AC30FC5-0E64-4C71-AD80-FE758709E22B} = {8B6D53E6-8F7B-47D1-B6D7-890A783A9959}
+		{83192560-8AFE-458F-916B-3AB572000065} = {8B6D53E6-8F7B-47D1-B6D7-890A783A9959}
 		{A7ED3F95-30B3-45E8-AD71-5B6A9F547EC1} = {8B6D53E6-8F7B-47D1-B6D7-890A783A9959}
 		{A0136D6F-CF53-42F8-9227-2FFF2A1841AA} = {4562CA8C-1A07-4AFB-B5BC-977FD19605CB}
 		{A84FF2B2-5272-4F02-AA2B-C0FA61586AA4} = {4562CA8C-1A07-4AFB-B5BC-977FD19605CB}
