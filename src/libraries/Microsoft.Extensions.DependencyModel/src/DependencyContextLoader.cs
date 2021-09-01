@@ -160,6 +160,7 @@ namespace Microsoft.Extensions.DependencyModel
                 null;
         }
 
+        [RequiresAssemblyFiles]
         private static string? GetNormalizedCodeBasePath(Assembly assembly)
         {
 #pragma warning disable SYSLIB0012 // CodeBase is obsolete

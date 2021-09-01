@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             Target? compileTarget = null;
 
-            Target? ridlessTarget = targets?.FirstOrDefault(t => !IsRuntimeTarget(t.Name));
+            Target? ridlessTarget = targets.FirstOrDefault(t => !IsRuntimeTarget(t.Name));
             if (ridlessTarget != null)
             {
                 compileTarget = ridlessTarget;
@@ -217,7 +217,7 @@ namespace Microsoft.Extensions.DependencyModel
                 runtimeFallbacks ?? Enumerable.Empty<RuntimeFallbacks>());
         }
 
-        private static Target? SelectRuntimeTarget(List<Target>? targets, string? runtimeTargetName)
+        private static Target? SelectRuntimeTarget([NotNull] List<Target>? targets, string? runtimeTargetName)
         {
             Target? target;
 
@@ -464,7 +464,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string? libraryName = reader.GetString()!;
+                string libraryName = reader.GetString()!;
                 reader.Skip();
 
                 runtimes.Add(libraryName);
@@ -486,7 +486,7 @@ namespace Microsoft.Extensions.DependencyModel
                 string? assemblyVersion = null;
                 string? fileVersion = null;
 
-                string? path = reader.GetString()!;
+                string path = reader.GetString()!;
 
                 reader.ReadStartObject();
 
@@ -533,10 +533,10 @@ namespace Microsoft.Extensions.DependencyModel
                     switch (propertyName)
                     {
                         case DependencyContextStrings.RidPropertyName:
-                            runtimeTarget.Rid = Pool(propertyValue)!;
+                            runtimeTarget.Rid = Pool(propertyValue);
                             break;
                         case DependencyContextStrings.AssetTypePropertyName:
-                            runtimeTarget.Type = Pool(propertyValue)!;
+                            runtimeTarget.Type = Pool(propertyValue);
                             break;
                         case DependencyContextStrings.AssemblyVersionPropertyName:
                             runtimeTarget.AssemblyVersion = propertyValue;
@@ -565,7 +565,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string? path = reader.GetString()!;
+                string path = reader.GetString()!;
                 string? locale = null;
 
                 reader.ReadStartObject();
@@ -599,7 +599,8 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string? libraryName = reader.GetString()!;
+                string libraryName = reader.GetString()!;
+
                 libraries.Add(Pool(libraryName), ReadOneLibrary(ref reader));
             }
 
@@ -668,10 +669,8 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string? runtime = reader.GetString();
+                string runtime = reader.GetString()!;
                 string?[] fallbacks = reader.ReadStringArray();
-
-                Debug.Assert(runtime != null);
 
                 runtimeFallbacks.Add(new RuntimeFallbacks(runtime, fallbacks));
             }
@@ -719,7 +718,7 @@ namespace Microsoft.Extensions.DependencyModel
                 var nativeLibraryGroups = new List<RuntimeAssetGroup>();
                 if (targetLibrary.RuntimeTargets != null)
                 {
-                    foreach (IGrouping<string, RuntimeTargetEntryStub> ridGroup in targetLibrary.RuntimeTargets.GroupBy(e => e.Rid))
+                    foreach (IGrouping<string?, RuntimeTargetEntryStub> ridGroup in targetLibrary.RuntimeTargets.GroupBy(e => e.Rid))
                     {
                         RuntimeFile[] groupRuntimeAssemblies = ridGroup
                             .Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
@@ -837,11 +836,11 @@ namespace Microsoft.Extensions.DependencyModel
 
         private struct RuntimeTargetEntryStub
         {
-            public string Type;
+            public string? Type;
 
             public string Path;
 
-            public string Rid;
+            public string? Rid;
 
             public string? AssemblyVersion;
 
