@@ -164,14 +164,14 @@ namespace Mono.Linker
 			case TokenType.Module:
 				return provider as ModuleDefinition;
 			case TokenType.Assembly:
-				return (provider as AssemblyDefinition).MainModule;
+				return ((AssemblyDefinition) provider).MainModule;
 			case TokenType.TypeDef:
-				return (provider as TypeDefinition).Module;
+				return ((TypeDefinition) provider).Module;
 			case TokenType.Method:
 			case TokenType.Property:
 			case TokenType.Field:
 			case TokenType.Event:
-				return (provider as IMemberDefinition).DeclaringType.Module;
+				return ((IMemberDefinition) provider).DeclaringType.Module;
 			default:
 				return null;
 			}
@@ -229,6 +229,9 @@ namespace Mono.Linker
 
 				case "type":
 				case "member":
+					if (info.Target == null)
+						break;
+
 					foreach (var result in DocumentationSignatureParser.GetMembersForDocumentationSignature (info.Target, module, _context))
 						yield return (info, result);
 

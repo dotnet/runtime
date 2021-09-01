@@ -970,7 +970,7 @@ namespace Mono.Linker.Steps
 
 			TypeDefinition td;
 			if (args.Count >= 2 && args[1].Value is string typeName) {
-				AssemblyDefinition assemblyDef = assembly ?? (context as MemberReference).Module.Assembly;
+				AssemblyDefinition assemblyDef = assembly ?? ((MemberReference) context).Module.Assembly;
 				td = _context.TryResolve (assemblyDef, typeName);
 
 				if (td == null) {
@@ -2520,7 +2520,7 @@ namespace Mono.Linker.Steps
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
-					using var _ = _scopeStack.CurrentScope.Origin.Provider == null ? _scopeStack.PushScope (new MessageOrigin ((instance as MemberReference).Resolve ())) : null;
+					using var _ = _scopeStack.CurrentScope.Origin.Provider == null ? _scopeStack.PushScope (new MessageOrigin (((MemberReference) instance).Resolve ())) : null;
 					var scanner = new ReflectionMethodBodyScanner (_context, this, _scopeStack);
 					scanner.ProcessGenericArgumentDataFlow (parameter, argument);
 				}
@@ -3228,8 +3228,8 @@ namespace Mono.Linker.Steps
 
 			foreach (ParameterDefinition pd in method.Parameters) {
 				TypeReference paramTypeReference = pd.ParameterType;
-				if (paramTypeReference is TypeSpecification) {
-					paramTypeReference = (paramTypeReference as TypeSpecification).ElementType;
+				if (paramTypeReference is TypeSpecification paramTypeSpecification) {
+					paramTypeReference = paramTypeSpecification.ElementType;
 				}
 				TypeDefinition paramTypeDefinition = _context.TryResolve (paramTypeReference);
 				if (paramTypeDefinition != null) {

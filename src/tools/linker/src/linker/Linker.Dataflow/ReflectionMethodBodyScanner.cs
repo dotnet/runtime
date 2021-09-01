@@ -1559,8 +1559,8 @@ namespace Mono.Linker.Dataflow
 								}
 
 								if (parameters.Count > 3) {
-									if (methodParams[1].AsConstInt () != null)
-										bindingFlags |= (BindingFlags) methodParams[1].AsConstInt ();
+									if (methodParams[1].AsConstInt () is int constInt)
+										bindingFlags |= (BindingFlags) constInt;
 									else
 										bindingFlags |= BindingFlags.NonPublic | BindingFlags.Public;
 								} else {
@@ -1921,14 +1921,13 @@ namespace Mono.Linker.Dataflow
 
 			BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 			bool parameterlessConstructor = true;
-			if (calledMethod.Parameters.Count == 8 && calledMethod.Parameters[2].ParameterType.MetadataType == MetadataType.Boolean &&
-				methodParams[3].AsConstInt () != null) {
+			if (calledMethod.Parameters.Count == 8 && calledMethod.Parameters[2].ParameterType.MetadataType == MetadataType.Boolean) {
 				parameterlessConstructor = false;
-				bindingFlags = BindingFlags.Instance | (BindingFlags) methodParams[3].AsConstInt ();
-			} else if (calledMethod.Parameters.Count == 8 && calledMethod.Parameters[2].ParameterType.MetadataType == MetadataType.Boolean &&
-				  methodParams[3].AsConstInt () == null) {
-				parameterlessConstructor = false;
-				bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+				bindingFlags = BindingFlags.Instance;
+				if (methodParams[3].AsConstInt () is int bindingFlagsInt)
+					bindingFlags |= (BindingFlags) bindingFlagsInt;
+				else
+					bindingFlags |= BindingFlags.Public | BindingFlags.NonPublic;
 			}
 
 			int methodParamsOffset = calledMethod.HasImplicitThis () ? 1 : 0;

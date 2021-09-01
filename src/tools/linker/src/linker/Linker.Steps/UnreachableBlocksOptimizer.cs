@@ -148,7 +148,7 @@ namespace Mono.Linker.Steps
 		void ProcessStack ()
 		{
 			while (_processingStack.Count > 0) {
-				var stackNode = _processingStack.First;
+				var stackNode = _processingStack.First!;
 				var method = stackNode.Value.Method;
 
 				bool treatUnprocessedDependenciesAsNonConst = false;
@@ -170,7 +170,7 @@ namespace Mono.Linker.Steps
 					var candidateNodeToMoveToTop = _processingStack.Last;
 					bool foundNodesWithNonCurrentVersion = false;
 					while (candidateNodeToMoveToTop != stackNode) {
-						var previousNode = candidateNodeToMoveToTop.Previous;
+						var previousNode = candidateNodeToMoveToTop!.Previous;
 
 						if (candidateNodeToMoveToTop.Value.LastAttemptStackVersion == _processingStackVersion) {
 							lastNodeWithCurrentVersion = candidateNodeToMoveToTop;

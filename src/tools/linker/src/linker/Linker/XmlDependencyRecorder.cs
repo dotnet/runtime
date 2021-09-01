@@ -1,4 +1,4 @@
-﻿//
+//
 // Tracer.cs
 //
 // Copyright (C) 2017 Microsoft Corporation (http://www.microsoft.com)
@@ -152,11 +152,11 @@ namespace Mono.Linker
 
 				var addition = addAssembly ? $":{t.Module}" : "";
 
-				return $"{(o as IMetadataTokenProvider).MetadataToken.TokenType}:{o}{addition}";
+				return $"{((IMetadataTokenProvider) o).MetadataToken.TokenType}:{o}{addition}";
 			}
 
-			if (o is IMetadataTokenProvider)
-				return (o as IMetadataTokenProvider).MetadataToken.TokenType + ":" + o;
+			if (o is IMetadataTokenProvider provider)
+				return provider.MetadataToken.TokenType + ":" + o;
 
 			return "Other:" + o;
 		}

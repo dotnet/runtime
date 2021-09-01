@@ -563,9 +563,9 @@ namespace Mono.Linker
 				return;
 
 			if (WarningSuppressionWriter != null &&
-				(message.Category == MessageCategory.Warning || message.Category == MessageCategory.WarningAsError) &&
+				message.IsWarningMessage (out int? code) &&
 				message.Origin?.Provider != null)
-				WarningSuppressionWriter.AddWarning (message.Code.Value, message.Origin?.Provider);
+				WarningSuppressionWriter.AddWarning (code.Value, message.Origin?.Provider);
 
 			if (message.Category == MessageCategory.Error || message.Category == MessageCategory.WarningAsError)
 				ErrorsCount++;
@@ -715,13 +715,13 @@ namespace Mono.Linker
 
 		public MethodDefinition Resolve (MethodReference methodReference)
 		{
-			if (methodReference is MethodDefinition md)
-				return md;
+			if (methodReference is MethodDefinition methodDefinition)
+				return methodDefinition;
 
 			if (methodReference is null)
 				return null;
 
-			if (methodresolveCache.TryGetValue (methodReference, out md)) {
+			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition md)) {
 				if (md == null && !IgnoreUnresolved)
 					ReportUnresolved (methodReference);
 
@@ -739,13 +739,13 @@ namespace Mono.Linker
 
 		public MethodDefinition TryResolve (MethodReference methodReference)
 		{
-			if (methodReference is MethodDefinition md)
-				return md;
+			if (methodReference is MethodDefinition methodDefinition)
+				return methodDefinition;
 
 			if (methodReference is null)
 				return null;
 
-			if (methodresolveCache.TryGetValue (methodReference, out md))
+			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition md))
 				return md;
 
 			md = methodReference.Resolve ();
@@ -755,13 +755,13 @@ namespace Mono.Linker
 
 		public FieldDefinition Resolve (FieldReference fieldReference)
 		{
-			if (fieldReference is FieldDefinition fd)
-				return fd;
+			if (fieldReference is FieldDefinition fieldDefinition)
+				return fieldDefinition;
 
 			if (fieldReference is null)
 				return null;
 
-			if (fieldresolveCache.TryGetValue (fieldReference, out fd)) {
+			if (fieldresolveCache.TryGetValue (fieldReference, out FieldDefinition fd)) {
 				if (fd == null && !IgnoreUnresolved)
 					ReportUnresolved (fieldReference);
 
@@ -779,13 +779,13 @@ namespace Mono.Linker
 
 		public FieldDefinition TryResolve (FieldReference fieldReference)
 		{
-			if (fieldReference is FieldDefinition fd)
-				return fd;
+			if (fieldReference is FieldDefinition fieldDefinition)
+				return fieldDefinition;
 
 			if (fieldReference is null)
 				return null;
 
-			if (fieldresolveCache.TryGetValue (fieldReference, out fd))
+			if (fieldresolveCache.TryGetValue (fieldReference, out FieldDefinition fd))
 				return fd;
 
 			fd = fieldReference.Resolve ();
@@ -795,13 +795,13 @@ namespace Mono.Linker
 
 		public TypeDefinition Resolve (TypeReference typeReference)
 		{
-			if (typeReference is TypeDefinition td)
-				return td;
+			if (typeReference is TypeDefinition typeDefinition)
+				return typeDefinition;
 
 			if (typeReference is null)
 				return null;
 
-			if (typeresolveCache.TryGetValue (typeReference, out td)) {
+			if (typeresolveCache.TryGetValue (typeReference, out TypeDefinition td)) {
 				if (td == null && !IgnoreUnresolved)
 					ReportUnresolved (typeReference);
 
@@ -827,13 +827,13 @@ namespace Mono.Linker
 
 		public TypeDefinition TryResolve (TypeReference typeReference)
 		{
-			if (typeReference is TypeDefinition td)
-				return td;
+			if (typeReference is TypeDefinition typeDefinition)
+				return typeDefinition;
 
 			if (typeReference is null || typeReference is GenericParameter)
 				return null;
 
-			if (typeresolveCache.TryGetValue (typeReference, out td))
+			if (typeresolveCache.TryGetValue (typeReference, out TypeDefinition td))
 				return td;
 
 			if (typeReference is TypeSpecification ts) {

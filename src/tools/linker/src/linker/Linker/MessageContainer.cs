@@ -1,9 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using Mono.Cecil;
@@ -141,6 +142,19 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Warning, text, code, subcategory, origin);
 		}
 
+		public bool IsWarningMessage ([NotNullWhen (true)] out int? code)
+		{
+			code = null;
+
+			if (Category is MessageCategory.Warning or MessageCategory.WarningAsError) {
+				// Warning messages always have a code.
+				code = Code!;
+				return true;
+			}
+
+			return false;
+		}
+
 		static bool TryLogSingleWarning (LinkContext context, int code, MessageOrigin origin, string subcategory)
 		{
 			if (subcategory != MessageSubCategory.TrimAnalysis)
@@ -233,7 +247,8 @@ namespace Mono.Linker
 				sb.Append (" ")
 					.Append (cat)
 					.Append (" IL")
-					.Append (Code.Value.ToString ("D4"))
+					// Warning and error messages always have a code.
+					.Append (Code!.Value.ToString ("D4"))
 					.Append (": ");
 			} else {
 				sb.Append (" ");
