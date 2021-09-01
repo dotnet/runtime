@@ -10,7 +10,7 @@ Microsoft.Diagnostics.Tracing.EventSource</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AssemblyName>Microsoft.Diagnostics.Tracing.EventSource</AssemblyName>
     <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;TARGET_WINDOWS</DefineConstants>
-    <TargetFrameworks>net461-windows</TargetFrameworks>
+    <TargetFrameworks>net461</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
