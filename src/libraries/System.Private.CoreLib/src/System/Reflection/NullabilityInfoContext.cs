@@ -388,7 +388,7 @@ namespace System.Reflection
                 {
                     Type t = Nullable.GetUnderlyingType(genericArguments[i]) ?? genericArguments[i];
 
-                    if (!t.IsValueType || t.Name.Contains(ValueTuple))
+                    if (!t.IsValueType || t.Name.StartsWith(ValueTuple))
                     {
                         offset++;
                     }

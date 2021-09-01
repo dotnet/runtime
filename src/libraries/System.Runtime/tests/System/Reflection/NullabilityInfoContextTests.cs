@@ -865,6 +865,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(NestedGenericsReturnParameterData))]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
         public void NestedGenericsReturnParameterTest(string methodName, NullabilityState enumState, NullabilityState innerTupleState,
             NullabilityState intState, NullabilityState outerTupleState, NullabilityState stringState, NullabilityState objectState)
         {
