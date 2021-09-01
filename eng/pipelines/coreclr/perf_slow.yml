@@ -1,3 +1,5 @@
+trigger: none
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
