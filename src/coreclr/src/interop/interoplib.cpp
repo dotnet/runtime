@@ -176,7 +176,7 @@ namespace InteropLib
             // A caller should not be destroying a context without knowing if the context is valid.
             _ASSERTE(context != nullptr);
 
-            if (notifyIsCollected)
+            if (notifyIsBeingCollected)
                 NotifyWrapperForExternalIsBeingCollected(contextMaybe);
 
             NativeObjectWrapperContext::Destroy(context);
