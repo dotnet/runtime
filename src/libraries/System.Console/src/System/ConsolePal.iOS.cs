@@ -33,7 +33,7 @@ namespace System
                 int count = _decoder.GetChars(buffer, charSpan, false);
                 if (count > 0)
                 {
-                    WriteOrCache(_buffer, charSpan, count);
+                    WriteOrCache(_buffer, charSpan.Slice(0, count));
                 }
             }
             finally
@@ -45,7 +45,7 @@ namespace System
             }
         }
 
-        private static unsafe void WriteOrCache(StringBuilder cache, Span<char> charBuffer, int length)
+        private static unsafe void WriteOrCache(StringBuilder cache, Span<char> charBuffer)
         {
             int lastNewLine = charBuffer.LastIndexOf('\n');
             if (lastNewLine != -1)
@@ -61,16 +61,16 @@ namespace System
                     Print(lineSpan);
                 }
 
-                if (lastNewLine + 1 < length)
+                if (lastNewLine + 1 < charBuffer.Length)
                 {
-                    cache.Append(charBuffer.Slice(lastNewLine + 1, length - lastNewLine - 1));
+                    cache.Append(charBuffer.Slice(lastNewLine + 1, charBuffer.Length - lastNewLine - 1));
                 }
 
                 return;
             }
 
             // no newlines found, add the entire buffer to the cache
-            cache.Append(charBuffer.Slice(0, length));
+            cache.Append(charBuffer);
 
             static void Print(ReadOnlySpan<char> line)
             {
