@@ -973,7 +973,7 @@ void PEAssembly::Attach()
 
 #ifndef DACCESS_COMPILE
 PEAssembly::PEAssembly(
-                CoreBindResult* pBindResultInfo,
+                BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
                 PEFile *creator,
                 BOOL system,
@@ -1038,7 +1038,8 @@ PEAssembly::PEAssembly(
     {
         // Cannot have both pHostAssembly and a coreclr based bind
         _ASSERTE(pHostAssembly == nullptr);
-        pBindResultInfo->GetBindAssembly(&m_pHostAssembly);
+        pBindResultInfo = clr::SafeAddRef(pBindResultInfo);
+        m_pHostAssembly = pBindResultInfo;
     }
 
 #if _DEBUG
@@ -1124,18 +1125,13 @@ PEAssembly *PEAssembly::DoOpenSystem()
     CONTRACT_END;
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
-    CoreBindResult bindResult;
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm));
-    if(pPrivAsm != NULL)
-    {
-        bindResult.Init(pPrivAsm);
-    }
 
-    RETURN new PEAssembly(&bindResult, NULL, NULL, TRUE);
+    RETURN new PEAssembly(pPrivAsm, NULL, NULL, TRUE);
 }
 
-PEAssembly* PEAssembly::Open(CoreBindResult* pBindResult,
+PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult,
                                    BOOL isSystem)
 {
 

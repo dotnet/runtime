@@ -68,24 +68,19 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     EEFileLoadException::Throw(name, hr);
 }
 
-VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
-                         BOOL            fThrowOnFileNotFound,
-                         CoreBindResult *pResult)
+HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pResult));
+        PRECONDITION(CheckPointer(ppAssembly));
         PRECONDITION(CheckPointer(pAppDomain));
         PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 
-    ReleaseHolder<BINDER_SPACE::Assembly> result;
     HRESULT hr=S_OK;
-
-    pResult->Reset();
 
     // Have a default binding context setup
     AssemblyBinder *pBinder = GetBinderFromParentAssembly(pAppDomain);
@@ -125,20 +120,13 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
                                                   &pPrivAsm);
     }
 
-    pResult->SetHRBindResult(hr);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pPrivAsm != nullptr);
-
-        result = pPrivAsm.Extract();
-        _ASSERTE(result != nullptr);
-
-        pResult->Init(result);
+        *ppAssembly = pPrivAsm.Extract();
     }
-    else if (FAILED(hr) && (fThrowOnFileNotFound || (!Assembly::FileNotFound(hr))))
-    {
-        ThrowLoadError(this, hr);
-    }
+
+    return hr;
 }
 
 

@@ -396,8 +396,6 @@ list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
 set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
     ../inc/jithelpers.h
-    coreclr/corebindresult.h
-    coreclr/corebindresult.inl
     appdomainnative.hpp
     assemblyname.hpp
     assemblynative.hpp

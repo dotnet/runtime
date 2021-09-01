@@ -185,10 +185,9 @@ class AssemblySpec  : public BaseAssemblySpec
     HRESULT EmitToken(IMetaDataAssemblyEmit *pEmit,
                       mdAssemblyRef *pToken);
 
-    VOID Bind(
+    HRESULT Bind(
         AppDomain* pAppDomain,
-        BOOL fThrowOnFileNotFound,
-        CoreBindResult* pBindResult);
+        BINDER_SPACE::Assembly** ppAssembly);
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);

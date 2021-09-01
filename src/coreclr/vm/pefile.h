@@ -552,7 +552,7 @@ class PEAssembly : public PEFile
 #endif
 
     static PEAssembly *Open(
-        CoreBindResult* pBindResult,
+        BINDER_SPACE::Assembly* pBindResult,
         BOOL isSystem);
 
     static PEAssembly *Create(
@@ -605,7 +605,7 @@ class PEAssembly : public PEFile
 
 #ifndef DACCESS_COMPILE
     PEAssembly(
-        CoreBindResult* pBindResultInfo,
+        BINDER_SPACE::Assembly* pBindResultInfo,
         IMetaDataEmit *pEmit,
         PEFile *creator,
         BOOL system,
