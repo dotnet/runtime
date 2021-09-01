@@ -50,9 +50,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>474307e526160c813c9fd58060eb8356ccca6099</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.21427.6">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.21431.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>474307e526160c813c9fd58060eb8356ccca6099</Sha>
+      <Sha>761d2e6545a31d2ebf9cb60443ed2a9c2f8268b5</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21427.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
