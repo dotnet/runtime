@@ -365,6 +365,7 @@ namespace HashTableDetail
     template<DAC_ENUM_HASH_PARAMS, typename std::enable_if<negation<HasCustomEntryMemoryRegionEnum<DAC_ENUM_HASH_ARGS>>::value>::type* = nullptr>
     void EnumMemoryRegionsForEntry(FINAL_CLASS* hashTable, DPTR(VALUE) pEntry, CLRDataEnumMemoryFlags flags)
     {
+        // The supplied hashTable doesn't provide an EnumMemoryRegionsForEntry() implementation.
     }
 }
 
