@@ -169,7 +169,7 @@ namespace InteropLib
             }
         }
 
-        void DestroyWrapperForExternal(_In_ void* contextMaybe, _In_ bool notifyIsCollected) noexcept
+        void DestroyWrapperForExternal(_In_ void* contextMaybe, _In_ bool notifyIsBeingCollected) noexcept
         {
             NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
 
