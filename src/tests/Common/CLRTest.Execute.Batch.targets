@@ -362,7 +362,7 @@ set CLRTestExpectedExitCode=0
 
     <ItemGroup>
       <_RequiredProperties Include="CLRTestRunFile">
-        <Value>$(_CLRTestRunFile)</Value>
+        <Value>$(CLRTestRunFile)</Value>
       </_RequiredProperties>
     </ItemGroup>
 
