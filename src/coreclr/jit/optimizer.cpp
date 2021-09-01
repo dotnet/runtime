@@ -6876,8 +6876,9 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
             {
                 BasicBlock::weight_t loopEnteredCount;
                 BasicBlock::weight_t loopSkippedCount;
+                bool                 useEdgeWeights = fgHaveValidEdgeWeights;
 
-                if (fgHaveValidEdgeWeights)
+                if (useEdgeWeights)
                 {
                     flowList* edgeToNext = fgGetPredForBlock(head->bbNext, head);
                     flowList* edgeToJump = fgGetPredForBlock(head->bbJumpDest, head);
@@ -6886,21 +6887,23 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
                     loopEnteredCount = (edgeToNext->edgeWeightMin() + edgeToNext->edgeWeightMax()) / 2.0f;
                     loopSkippedCount = (edgeToJump->edgeWeightMin() + edgeToJump->edgeWeightMax()) / 2.0f;
+
+                    // Watch out for cases where edge weights were not properly maintained
+                    // so that it appears no profile flow enters the loop.
+                    //
+                    useEdgeWeights = !fgProfileWeightsConsistent(loopEnteredCount, BB_ZERO_WEIGHT);
                 }
-                else
+
+                if (!useEdgeWeights)
                 {
                     loopEnteredCount = head->bbNext->bbWeight;
                     loopSkippedCount = head->bbJumpDest->bbWeight;
                 }
 
-                JITDUMP("%s; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT "\n",
-                        fgHaveValidEdgeWeights ? "valid edge weights" : "no edge weights", loopEnteredCount,
-                        loopSkippedCount);
-
                 BasicBlock::weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
 
-                JITDUMP("%s; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
-                        fgHaveValidEdgeWeights ? "valid edge weights" : "no edge weights", loopEnteredCount,
+                JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
+                        fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
                         loopSkippedCount, loopTakenRatio);
 
                 // Calculate a good approximation of the preHead's block weight
