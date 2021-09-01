@@ -4,10 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace HttpStress
 {
@@ -33,16 +36,49 @@ namespace HttpStress
             return sb.ToString();
         }
 
-        public static void TestGetFailureFingerpint1(string haha)
+        public static void Test()
+        {
+            StressFailureType a = TestGetFailureFingerpint1("a")!;
+            StressFailureType b = TestGetFailureFingerpint1("b")!;
+            StressFailureType c = TestGetFailureFingerpint2()!;
+            StressFailureType d = TestGetFailureFingerpint3()!;
+            XDocument doc = ExportFailures(new Configuration() { HttpVersion = new Version(1, 1) }, new[] { a, b, c, d });
+            Console.WriteLine(doc);
+        }
+
+        internal static XDocument ExportFailures(Configuration configuration, IEnumerable<StressFailureType> failures)
+        {
+            XElement root = new XElement("FailureReport",
+                new XAttribute("Timestamp", DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)),
+                new XAttribute("HttpVersion", configuration.HttpVersion),
+                new XAttribute("OSDescription", RuntimeInformation.OSDescription),
+                failures.Select(FailureToXml));
+            return new XDocument(root);
+
+            static XElement FailureToXml(StressFailureType f) =>
+                new XElement("Failure",
+                new XAttribute("FailureTypeFingerprint", f.Fingerprint),
+                new XAttribute("FailureCount", f.FailureCount),
+                new XElement("FailureText", new XCData(f.ErrorText)));
+        }
+
+        private static StressFailureType MakeFailure(Exception ex)
+        {
+            var key = ClassifyFailure(ex);
+            string fingerprint = GetFailureFingerprint(key);
+            return new StressFailureType(ex.ToString(), fingerprint);
+        }
+
+        internal static StressFailureType? TestGetFailureFingerpint1(string haha)
         {
             try
             {
                 Foo(haha);
+                return null;
             }
             catch (Exception ex)
             {
-                var key = ClassifyFailure(ex);
-                Console.WriteLine(GetFailureFingerprint(key));
+                return MakeFailure(ex);
             }
 
             void Foo(string haha)
@@ -64,16 +100,16 @@ namespace HttpStress
 
         }
 
-        public static void TestGetFailureFingerpint2()
+        internal static StressFailureType? TestGetFailureFingerpint2()
         {
             try
             {
                 Foo();
+                return null;
             }
             catch (Exception ex)
             {
-                var key = ClassifyFailure(ex);
-                Console.WriteLine(GetFailureFingerprint(key));
+                return MakeFailure(ex);
             }
 
             void Foo()
@@ -95,16 +131,16 @@ namespace HttpStress
 
         }
 
-        public static void TestGetFailureFingerpint3()
+        internal static StressFailureType? TestGetFailureFingerpint3()
         {
             try
             {
                 Foo();
+                return null;
             }
             catch (Exception ex)
             {
-                var key = ClassifyFailure(ex);
-                Console.WriteLine(GetFailureFingerprint(key));
+                return MakeFailure(ex);
             }
 
             void Foo()
@@ -128,7 +164,7 @@ namespace HttpStress
                 catch (Exception ex)
                 {
                     throw new InvalidOperationException("lol", ex);
-                }   
+                }
             }
 
             void Bz()
