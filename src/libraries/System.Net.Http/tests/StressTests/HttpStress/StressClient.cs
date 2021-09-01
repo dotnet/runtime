@@ -127,6 +127,11 @@ namespace HttpStress
 
         public void SaveReportFile()
         {
+            if (string.IsNullOrEmpty(_config.ReportFile))
+            {
+                return;
+            }
+
             Console.WriteLine($"Saving report file to {_config.ReportFile}.");
             try
             {
