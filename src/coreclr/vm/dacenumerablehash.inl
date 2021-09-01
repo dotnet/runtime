@@ -3,7 +3,7 @@
 //
 
 //
-// Abstract base class implementation of a hash table suitable for efficient serialization into an ngen image.
+// Abstract base class implementation of a hash table suitable for each DAC memory enumeration.
 // See DacEnumerableHash.h for a more detailed description.
 //
 
@@ -18,12 +18,9 @@
 #ifndef DACCESS_COMPILE
 
 // Base constructor. Call this from your derived constructor to provide the owning module, loader heap and
-// initial number of buckets (which must be non-zero). Module must be provided if this hash is to be
-// serialized into an ngen image. It is exposed to the derived hash class (many need it) but otherwise is only
+// initial number of buckets (which must be non-zero). Module is only
 // used to locate a loader heap for allocating bucket lists and entries unless an alternative heap is
-// provided. Note that the heap provided is not serialized (so you'll allocate from that heap at ngen-time,
-// but revert to allocating from the module's heap at runtime). If no Module pointer is supplied (non-ngen'd
-// hash table) you must provide a direct heap pointer.
+// provided. If no Module pointer is supplied you must provide a direct heap pointer.
 template <DAC_ENUM_HASH_PARAMS>
 DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets)
 {
@@ -433,8 +430,6 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     }
     CONTRACTL_END;
 
-    // We might need to re-iterate our algorithm if we fall off the end of one hash table section (Hot or
-    // Warm) and need to move onto the next.
     while (m_dwBucket < m_pTable->m_cBuckets)
     {
         if (m_pEntry == NULL)

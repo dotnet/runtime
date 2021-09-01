@@ -209,10 +209,9 @@ private:
     // Loader heap provided at construction time. May be NULL (in which case m_pModule must *not* be NULL).
     LoaderHeap             *m_pHeap;
 
-    // Fields related to the runtime (volatile or warm) part of the hash.
     DPTR(PTR_VolatileEntry)                  m_pBuckets;  // Pointer to a simple bucket list (array of VolatileEntry pointers)
     DWORD                                    m_cBuckets;  // Count of buckets in the above array (always non-zero)
-    DWORD                                    m_cEntries;  // Count of elements in the warm section of the hash
+    DWORD                                    m_cEntries;  // Count of elements
 };
 
 #endif // __DAC_ENUMERABLE_HASH_INCLUDED
