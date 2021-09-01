@@ -13,7 +13,6 @@
 #include <formattype.h>
 #include "jitinterface.h"
 #include "sigbuilder.h"
-#include "dacenumerablehash.inl"
 
 #include "eventtrace.h"
 
