@@ -286,10 +286,7 @@
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true' and
                                     ('$(ContinuousIntegrationBuild)' != 'true' or
-                                    ('$(RuntimeFlavor)' == 'CoreCLR' and
-                                       '$(librariesContainsChange)' == 'true' and
-                                       '$(CoreCLRContainsChange)' == 'true' and
-                                       '$(isFullMatrix)' == 'true') or
+                                     '$(RuntimeFlavor)' != 'Mono' or
                                     ('$(RuntimeFlavor)' == 'Mono' and
                                        '$(librariesContainsChange)' == 'true' and
                                        '$(monoContainsChange)' == 'true' and
