@@ -148,6 +148,25 @@ if ($vs) {
       }
     }
   }
+  elseif ($vs -ieq "corehost.sln") {
+    $archToOpen = $arch[0]
+    $configToOpen = $configuration[0]
+    if ($runtimeConfiguration) {
+      $configToOpen = $runtimeConfiguration
+    }
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
+    if (-Not (Test-Path $vs)) {
+      $repoRoot = Split-Path $PSScriptRoot -Parent
+      Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false"
+      if ($lastExitCode -ne 0) {
+        Write-Error "Failed to generate the CoreHost solution file."
+        exit 1
+      }
+      if (-Not (Test-Path $vs)) {
+        Write-Error "Unable to find the CoreHost solution file at $vs."
+      }
+    }
+  }
   elseif (-Not (Test-Path $vs)) {
     $solution = $vs
 
