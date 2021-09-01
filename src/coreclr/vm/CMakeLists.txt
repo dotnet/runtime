@@ -317,7 +317,6 @@ set(VM_SOURCES_WKS
     comutilnative.cpp
     comwaithandle.cpp
     coreassemblyspec.cpp
-    corebindresult.cpp
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp

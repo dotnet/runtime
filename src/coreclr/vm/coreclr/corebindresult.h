@@ -16,25 +16,13 @@
 
 #include "../../binder/inc/assembly.hpp"
 
-struct CoreBindResult : public IUnknown
+struct CoreBindResult
 {
 protected:
     ReleaseHolder<BINDER_SPACE::Assembly> m_pAssembly;
     HRESULT m_hrBindResult;
-    LONG m_cRef;
 
 public:
-
-    // IUnknown methods
-    STDMETHOD(QueryInterface)(REFIID riid,
-                              void ** ppv);
-    STDMETHOD_(ULONG, AddRef)();
-    STDMETHOD_(ULONG, Release)();
-
-    // CoreBindResult methods
-    CoreBindResult() : m_cRef(1) {}
-    virtual ~CoreBindResult() {}
-
     void Init(BINDER_SPACE::Assembly* pAssembly);
     void Reset();
 
