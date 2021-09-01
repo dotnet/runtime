@@ -55,7 +55,7 @@ namespace System.Numerics
         /// <value>A quaternion whose values are <c>(0, 0, 0, 0)</c>.</value>
         public static Quaternion Zero
         {
-            get => default;
+            get => new();
         }
 
         /// <summary>Gets a quaternion that represents no rotation.</summary>
