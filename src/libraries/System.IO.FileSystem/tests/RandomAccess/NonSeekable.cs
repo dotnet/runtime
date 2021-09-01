@@ -46,8 +46,14 @@ namespace System.IO.Tests
                 Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Read(writeHandle, new byte[1], 0));
                 Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Write(readHandle, new byte[1], 0));
 
+                Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Read(writeHandle, GenerateVectors(1, 1), 0));
+                Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Write(readHandle, GenerateReadOnlyVectors(1, 1), 0));
+
                 await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await RandomAccess.ReadAsync(writeHandle, new byte[1], 0));
                 await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await RandomAccess.WriteAsync(readHandle, new byte[1], 0));
+
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await RandomAccess.ReadAsync(writeHandle, GenerateVectors(1, 1), 0));
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await RandomAccess.WriteAsync(readHandle, GenerateReadOnlyVectors(1, 1), 0));
             }
         }
 
@@ -64,10 +70,16 @@ namespace System.IO.Tests
 
                 Assert.True(RandomAccess.ReadAsync(readHandle, new byte[1], 0, token).IsCanceled);
                 Assert.True(RandomAccess.WriteAsync(writeHandle, new byte[1], 0, token).IsCanceled);
+                Assert.True(RandomAccess.ReadAsync(readHandle, GenerateVectors(1, 1), 0, token).IsCanceled);
+                Assert.True(RandomAccess.WriteAsync(writeHandle, GenerateReadOnlyVectors(1, 1), 0, token).IsCanceled);
 
                 TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => RandomAccess.ReadAsync(readHandle, new byte[1], 0, token).AsTask());
                 Assert.Equal(token, ex.CancellationToken);
                 ex = await Assert.ThrowsAsync<TaskCanceledException>(() => RandomAccess.WriteAsync(writeHandle, new byte[1], 0, token).AsTask());
+                Assert.Equal(token, ex.CancellationToken);
+                ex = await Assert.ThrowsAsync<TaskCanceledException>(() => RandomAccess.ReadAsync(writeHandle, GenerateVectors(1, 1), 0, token).AsTask());
+                Assert.Equal(token, ex.CancellationToken);
+                ex = await Assert.ThrowsAsync<TaskCanceledException>(() => RandomAccess.WriteAsync(writeHandle, GenerateReadOnlyVectors(1, 1), 0, token).AsTask());
                 Assert.Equal(token, ex.CancellationToken);
             }
         }
