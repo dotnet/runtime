@@ -611,7 +611,7 @@ namespace System.Net.Sockets.Tests
 
                 netlink.Send(new ReadOnlySpan<byte>(Unsafe.AsPointer(ref req), sizeof(nl_request)));
 
-                Assert.True(netlink.Poll(TestSettings.PassingTestTimeout , SelectMode.SelectRead));
+                Assert.True(netlink.Poll(TestSettings.PassingTestTimeout, SelectMode.SelectRead));
 
                 byte[] response = new byte[4000];
                 int readBytes = netlink.Receive(response);
