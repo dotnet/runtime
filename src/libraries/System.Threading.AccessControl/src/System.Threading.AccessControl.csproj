@@ -62,15 +62,16 @@ System.Security.AccessControl.SemaphoreSecurity</PackageDescription>
     <Compile Include="System\Threading\SemaphoreAcl.net46.cs" />
     <Compile Include="System\Threading\ThreadingAclExtensions.net46.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461-windows</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes to support the creation and validation of XML digital signatures. The classes in this namespace implement the World Wide Web Consortium Recommendation, "XML-Signature Syntax and Processing", described at http://www.w3.org/TR/xmldsig-core/.
 
@@ -143,7 +143,6 @@ System.Security.Cryptography.Xml.XmlLicenseTransform</PackageDescription>
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
