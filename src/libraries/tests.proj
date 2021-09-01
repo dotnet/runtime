@@ -288,9 +288,9 @@
                                     ('$(ContinuousIntegrationBuild)' != 'true' or
                                      '$(RuntimeFlavor)' != 'Mono' or
                                     ('$(RuntimeFlavor)' == 'Mono' and
-                                       '$(librariesContainsChange)' == 'true' and
-                                       '$(monoContainsChange)' == 'true' and
-                                       '$(isFullMatrix)' == 'true'))" />
+                                       ('$(librariesContainsChange)' == 'true' or
+                                       '$(monoContainsChange)' == 'true' or
+                                       '$(isFullMatrix)' == 'true')))" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
     <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
