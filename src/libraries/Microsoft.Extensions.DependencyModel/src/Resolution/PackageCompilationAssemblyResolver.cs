@@ -71,16 +71,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             return new string[] { Path.Combine(basePath, ".nuget", "packages") };
         }
 
-        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
+        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
             if (library is null)
             {
                 throw new ArgumentNullException(nameof(library));
-            }
-
-            if (assemblies is null)
-            {
-                throw new ArgumentNullException(nameof(assemblies));
             }
 
             if (_nugetPackageDirectories == null || _nugetPackageDirectories.Length == 0 ||
@@ -97,7 +92,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 {
                     if (TryResolveFromPackagePath(_fileSystem, library, packagePath, out IEnumerable<string>? fullPathsFromPackage))
                     {
-                        assemblies.AddRange(fullPathsFromPackage);
+                        assemblies?.AddRange(fullPathsFromPackage);
                         return true;
                     }
                 }

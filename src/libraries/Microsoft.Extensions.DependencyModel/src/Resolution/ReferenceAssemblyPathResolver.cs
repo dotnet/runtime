@@ -38,16 +38,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             _fallbackSearchPaths = fallbackSearchPaths ?? throw new ArgumentNullException(nameof(fallbackSearchPaths));
         }
 
-        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
+        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
             if (library is null)
             {
                 throw new ArgumentNullException(nameof(library));
-            }
-
-            if (assemblies is null)
-            {
-                throw new ArgumentNullException(nameof(assemblies));
             }
 
             if (!string.Equals(library.Type, "referenceassembly", StringComparison.OrdinalIgnoreCase))
@@ -60,7 +55,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 {
                     throw new InvalidOperationException(SR.Format(SR.ReferenceAssemblyNotFound, assembly, library.Name));
                 }
-                assemblies.Add(fullName);
+                assemblies?.Add(fullName);
             }
             return true;
         }

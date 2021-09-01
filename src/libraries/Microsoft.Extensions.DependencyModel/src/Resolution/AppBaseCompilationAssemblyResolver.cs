@@ -37,16 +37,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             _dependencyContextPaths = dependencyContextPaths ?? throw new ArgumentNullException(nameof(dependencyContextPaths));
         }
 
-        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
+        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
             if (library is null)
             {
                 throw new ArgumentNullException(nameof(library));
-            }
-
-            if (assemblies is null)
-            {
-                throw new ArgumentNullException(nameof(assemblies));
             }
 
             bool isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase) ||

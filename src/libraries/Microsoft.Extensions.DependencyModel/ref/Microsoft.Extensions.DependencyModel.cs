@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.DependencyModel
     }
     public partial class CompilationOptions
     {
-        public CompilationOptions(System.Collections.Generic.IEnumerable<string> defines, string? languageVersion, string? platform, bool? allowUnsafe, bool? warningsAsErrors, bool? optimize, string? keyFile, bool? delaySign, bool? publicSign, string? debugType, bool? emitEntryPoint, bool? generateXmlDocumentation) { }
+        public CompilationOptions(System.Collections.Generic.IEnumerable<string?> defines, string? languageVersion, string? platform, bool? allowUnsafe, bool? warningsAsErrors, bool? optimize, string? keyFile, bool? delaySign, bool? publicSign, string? debugType, bool? emitEntryPoint, bool? generateXmlDocumentation) { }
         public bool? AllowUnsafe { get { throw null; } }
         public string? DebugType { get { throw null; } }
         public static Microsoft.Extensions.DependencyModel.CompilationOptions Default { get { throw null; } }
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.DependencyModel
         public bool? PublicSign { get { throw null; } }
         public bool? WarningsAsErrors { get { throw null; } }
     }
-    public readonly partial struct Dependency : System.IEquatable<Dependency>
+    public readonly partial struct Dependency : System.IEquatable<Microsoft.Extensions.DependencyModel.Dependency>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -184,12 +184,12 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         public AppBaseCompilationAssemblyResolver() { }
         public AppBaseCompilationAssemblyResolver(string basePath) { }
-        public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string> assemblies) { throw null; }
+        public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string>? assemblies) { throw null; }
     }
     public partial class CompositeCompilationAssemblyResolver : Microsoft.Extensions.DependencyModel.Resolution.ICompilationAssemblyResolver
     {
         public CompositeCompilationAssemblyResolver(Microsoft.Extensions.DependencyModel.Resolution.ICompilationAssemblyResolver[] resolvers) { }
-        public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string> assemblies) { throw null; }
+        public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string>? assemblies) { throw null; }
     }
     public partial class DotNetReferenceAssembliesPathResolver
     {
@@ -199,19 +199,19 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     }
     public partial interface ICompilationAssemblyResolver
     {
-        bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string> assemblies);
+        bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string>? assemblies);
     }
     public partial class PackageCompilationAssemblyResolver : Microsoft.Extensions.DependencyModel.Resolution.ICompilationAssemblyResolver
     {
         public PackageCompilationAssemblyResolver() { }
         public PackageCompilationAssemblyResolver(string nugetPackageDirectory) { }
-        public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string> assemblies) { throw null; }
+        public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string>? assemblies) { throw null; }
     }
     public partial class ReferenceAssemblyPathResolver : Microsoft.Extensions.DependencyModel.Resolution.ICompilationAssemblyResolver
     {
         public ReferenceAssemblyPathResolver() { }
         public ReferenceAssemblyPathResolver(string? defaultReferenceAssembliesPath, string[] fallbackSearchPaths) { }
-        public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string> assemblies) { throw null; }
+        public bool TryResolveAssemblyPaths(Microsoft.Extensions.DependencyModel.CompilationLibrary library, System.Collections.Generic.List<string>? assemblies) { throw null; }
     }
 }
 namespace System.Collections.Generic
