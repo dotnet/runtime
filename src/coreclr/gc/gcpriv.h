@@ -4991,6 +4991,9 @@ public:
     PER_HEAP_ISOLATED
     size_t exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap);
 
+    PER_HEAP_ISOLATED
+    BOOL dt_high_memory_load_p();
+
 protected:
     PER_HEAP
     void update_collection_counts ();
