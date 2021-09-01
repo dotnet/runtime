@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Runtime.Serialization;
 
 namespace Mono.Linker
 {
 	[DataContract]
-	public class PInvokeInfo : IComparable
+	public class PInvokeInfo : IComparable<PInvokeInfo>
 	{
 		[DataMember (Name = "assembly")]
 		internal string AssemblyName { get; set; }
@@ -18,21 +18,20 @@ namespace Mono.Linker
 		[DataMember (Name = "moduleName")]
 		internal string ModuleName { get; set; }
 
-		public int CompareTo (object obj)
+		public int CompareTo (PInvokeInfo other)
 		{
-			if (obj == null) return 1;
+			if (other == null) return 1;
 
-			PInvokeInfo compareTo = obj as PInvokeInfo;
-			int compareField = string.Compare (this.AssemblyName, compareTo.AssemblyName, StringComparison.Ordinal);
+			int compareField = string.Compare (this.AssemblyName, other.AssemblyName, StringComparison.Ordinal);
 			if (compareField != 0) return compareField;
 
-			compareField = string.Compare (this.ModuleName, compareTo.ModuleName, StringComparison.Ordinal);
+			compareField = string.Compare (this.ModuleName, other.ModuleName, StringComparison.Ordinal);
 			if (compareField != 0) return compareField;
 
-			compareField = string.Compare (this.FullName, compareTo.FullName, StringComparison.Ordinal);
+			compareField = string.Compare (this.FullName, other.FullName, StringComparison.Ordinal);
 			if (compareField != 0) return compareField;
 
-			return string.Compare (this.EntryPoint, compareTo.EntryPoint, StringComparison.Ordinal);
+			return string.Compare (this.EntryPoint, other.EntryPoint, StringComparison.Ordinal);
 		}
 	}
 }

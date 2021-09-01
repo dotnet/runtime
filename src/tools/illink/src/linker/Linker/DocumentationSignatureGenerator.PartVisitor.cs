@@ -159,10 +159,8 @@ namespace Mono.Linker
 
 				// For uninstantiated generic types (we already built the mangled name)
 				// or non-generic types, we are done.
-				if (typeReference.HasGenericParameters || !typeReference.IsGenericInstance)
+				if (typeReference.HasGenericParameters || typeReference is not GenericInstanceType genericInstance)
 					return;
-
-				var genericInstance = typeReference as GenericInstanceType;
 
 				// Compute arity counting only the newly-introduced generic parameters
 				var declaringType = genericInstance.DeclaringType;

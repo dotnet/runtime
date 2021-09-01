@@ -202,7 +202,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--dependencies-file":
-						if (!GetStringParam (token, l => dependenciesFileName = l))
+						if (!GetStringParam (token, out dependenciesFileName))
 							return -1;
 
 						continue;
@@ -253,8 +253,10 @@ namespace Mono.Linker
 							return -1;
 						}
 
-						if (!GetStringParam (token, l => body_substituter_steps.Push (l)))
+						if (!GetStringParam (token, out string substitutionFile))
 							return -1;
+
+						body_substituter_steps.Push (substitutionFile);
 
 						continue;
 					case "--explicit-reflection":
@@ -264,10 +266,10 @@ namespace Mono.Linker
 						continue;
 
 					case "--action": {
-							AssemblyAction? action = null;
-							if (!GetStringParam (token, l => action = ParseAssemblyAction (l)))
+							if (!GetStringParam (token, out string actionString))
 								return -1;
 
+							AssemblyAction? action = ParseAssemblyAction (actionString);
 							if (action == null)
 								return -1;
 
@@ -286,10 +288,10 @@ namespace Mono.Linker
 							continue;
 						}
 					case "--trim-mode": {
-							AssemblyAction? action = null;
-							if (!GetStringParam (token, l => action = ParseAssemblyAction (l)))
+							if (!GetStringParam (token, out string actionString))
 								return -1;
 
+							AssemblyAction? action = ParseAssemblyAction (actionString);
 							if (action == null)
 								return -1;
 
@@ -297,8 +299,10 @@ namespace Mono.Linker
 							continue;
 						}
 					case "--custom-step":
-						if (!GetStringParam (token, l => custom_steps.Add (l)))
+						if (!GetStringParam (token, out string custom_step))
 							return -1;
+
+						custom_steps.Add (custom_step);
 
 						continue;
 
@@ -337,8 +341,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--keep-metadata": {
-							string mname = null;
-							if (!GetStringParam (token, l => mname = l))
+							if (!GetStringParam (token, out string mname))
 								return -1;
 
 							if (!TryGetMetadataTrimming (mname, out var type))
@@ -379,8 +382,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--disable-opt": {
-							string optName = null;
-							if (!GetStringParam (token, l => optName = l))
+							if (!GetStringParam (token, out string optName))
 								return -1;
 
 							if (!GetOptimizationName (optName, out var opt))
@@ -392,8 +394,7 @@ namespace Mono.Linker
 							continue;
 						}
 					case "--enable-opt": {
-							string optName = null;
-							if (!GetStringParam (token, l => optName = l))
+							if (!GetStringParam (token, out string optName))
 								return -1;
 
 							if (!GetOptimizationName (optName, out var opt))
@@ -406,8 +407,7 @@ namespace Mono.Linker
 						}
 
 					case "--feature": {
-							string featureName = null;
-							if (!GetStringParam (token, l => featureName = l))
+							if (!GetStringParam (token, out string featureName))
 								return -1;
 
 							if (!GetBoolParam (token, value => {
@@ -440,14 +440,18 @@ namespace Mono.Linker
 						continue;
 
 					case "--output-assemblylist":
-						if (!GetStringParam (token, l => context.AssemblyListFile = l))
+						if (!GetStringParam (token, out string assemblyListFile))
 							return -1;
+
+						context.AssemblyListFile = assemblyListFile;
 
 						continue;
 
 					case "--output-pinvokes":
-						if (!GetStringParam (token, l => context.PInvokesListFile = l))
+						if (!GetStringParam (token, out string pinvokesListFile))
 							return -1;
+
+						context.PInvokesListFile = pinvokesListFile;
 
 						continue;
 
@@ -457,17 +461,16 @@ namespace Mono.Linker
 							return -1;
 						}
 
-						if (!GetStringParam (token, l => {
-							foreach (string file in GetFiles (l))
-								xml_custom_attribute_steps.Push (file);
-						}))
+						if (!GetStringParam (token, out string fileList))
 							return -1;
+
+						foreach (string file in GetFiles (fileList))
+							xml_custom_attribute_steps.Push (file);
 
 						continue;
 
 					case "--generate-warning-suppressions":
-						string generateWarningSuppressionsArgument = string.Empty;
-						if (!GetStringParam (token, l => generateWarningSuppressionsArgument = l))
+						if (!GetStringParam (token, out string generateWarningSuppressionsArgument))
 							return -1;
 
 						if (!GetWarningSuppressionWriterFileOutputKind (generateWarningSuppressionsArgument, out var fileOutputKind)) {
@@ -479,8 +482,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--nowarn":
-						string noWarnArgument = null;
-						if (!GetStringParam (token, l => noWarnArgument = l))
+						if (!GetStringParam (token, out string noWarnArgument))
 							return -1;
 
 						context.NoWarn.UnionWith (ProcessWarningCodes (noWarnArgument));
@@ -514,8 +516,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--warn":
-						string warnVersionArgument = null;
-						if (!GetStringParam (token, l => warnVersionArgument = l))
+						if (!GetStringParam (token, out string warnVersionArgument))
 							return -1;
 
 						if (!GetWarnVersion (warnVersionArgument, out WarnVersion version))
@@ -574,25 +575,26 @@ namespace Mono.Linker
 
 					switch (token.Substring (1)) {
 					case "d":
-						if (!GetStringParam (token, l => {
-							DirectoryInfo info = new DirectoryInfo (l);
-							context.Resolver.AddSearchDirectory (info.FullName);
-						}))
+						if (!GetStringParam (token, out string directory))
 							return -1;
+
+						DirectoryInfo info = new DirectoryInfo (directory);
+						context.Resolver.AddSearchDirectory (info.FullName);
 
 						continue;
 					case "o":
 					case "out":
-						if (!GetStringParam (token, l => context.OutputDirectory = l))
+						if (!GetStringParam (token, out string outputDirectory))
 							return -1;
+
+						context.OutputDirectory = outputDirectory;
 
 						continue;
 					case "t":
 						context.KeepTypeForwarderOnlyAssemblies = true;
 						continue;
 					case "x": {
-							string xmlFile = null;
-							if (!GetStringParam (token, l => xmlFile = l))
+							if (!GetStringParam (token, out string xmlFile))
 								return -1;
 
 							if (!File.Exists (xmlFile)) {
@@ -604,8 +606,7 @@ namespace Mono.Linker
 							continue;
 						}
 					case "a": {
-							string assemblyFile = null;
-							if (!GetStringParam (token, l => assemblyFile = l))
+							if (!GetStringParam (token, out string assemblyFile))
 								return -1;
 
 							if (!File.Exists (assemblyFile) && assemblyFile.EndsWith (".dll", StringComparison.InvariantCultureIgnoreCase)) {
@@ -648,8 +649,10 @@ namespace Mono.Linker
 						return 1;
 
 					case "reference":
-						if (!GetStringParam (token, l => context.Resolver.AddReferenceAssembly (l)))
+						if (!GetStringParam (token, out string reference))
 							return -1;
+
+						context.Resolver.AddReferenceAssembly (reference);
 
 						continue;
 					}
@@ -1172,8 +1175,9 @@ namespace Mono.Linker
 			return false;
 		}
 
-		bool GetStringParam (string token, Action<string> action)
+		bool GetStringParam (string token, out string value)
 		{
+			value = null;
 			if (arguments.Count < 1) {
 				ErrorMissingArgument (token);
 				return false;
@@ -1181,7 +1185,7 @@ namespace Mono.Linker
 
 			var arg = arguments.Dequeue ();
 			if (!string.IsNullOrEmpty (arg)) {
-				action (arg);
+				value = arg;
 				return true;
 			}
 

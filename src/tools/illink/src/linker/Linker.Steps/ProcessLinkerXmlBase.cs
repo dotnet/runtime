@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -82,7 +84,7 @@ namespace Mono.Linker.Steps
 				if (!ShouldProcessElement (nav))
 					return;
 
-				ProcessAssemblies (nav.SelectChildren ("assembly", ""));
+				ProcessAssemblies (nav);
 
 				// For embedded XML, allow not specifying the assembly explicitly in XML.
 				if (_resourceAssembly != null)
@@ -95,44 +97,53 @@ namespace Mono.Linker.Steps
 
 		protected virtual AllowedAssemblies AllowedAssemblySelector { get => _resourceAssembly != null ? AllowedAssemblies.ContainingAssembly : AllowedAssemblies.AnyAssembly; }
 
-		protected virtual void ProcessAssemblies (XPathNodeIterator iterator)
+		bool ShouldProcessAllAssemblies (XPathNavigator nav, [NotNullWhen (false)] out AssemblyNameReference assemblyName)
 		{
-			while (iterator.MoveNext ()) {
-				bool processAllAssemblies = GetFullName (iterator.Current) == AllAssembliesFullName;
+			assemblyName = null;
+			if (GetFullName (nav) == AllAssembliesFullName)
+				return true;
+
+			assemblyName = GetAssemblyName (nav);
+			return false;
+		}
+
+		protected virtual void ProcessAssemblies (XPathNavigator nav)
+		{
+			foreach (XPathNavigator assemblyNav in nav.SelectChildren ("assembly", "")) {
+				// Errors for invalid assembly names should show up even if this element will be
+				// skipped due to feature conditions.
+				bool processAllAssemblies = ShouldProcessAllAssemblies (assemblyNav, out AssemblyNameReference name);
 				if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies) {
-					LogWarning ($"XML contains unsupported wildcard for assembly 'fullname' attribute.", 2100, iterator.Current);
+					LogWarning ($"XML contains unsupported wildcard for assembly 'fullname' attribute.", 2100, assemblyNav);
 					continue;
 				}
 
-				// Errors for invalid assembly names should show up even if this element will be
-				// skipped due to feature conditions.
-				var name = processAllAssemblies ? null : GetAssemblyName (iterator.Current);
-
 				AssemblyDefinition assemblyToProcess = null;
 				if (!AllowedAssemblySelector.HasFlag (AllowedAssemblies.AnyAssembly)) {
+					Debug.Assert (!processAllAssemblies);
 					if (_resourceAssembly.Name.Name != name.Name) {
-						LogWarning ($"Embedded XML in assembly '{_resourceAssembly.Name.Name}' contains assembly 'fullname' attribute for another assembly '{name}'.", 2101, iterator.Current);
+						LogWarning ($"Embedded XML in assembly '{_resourceAssembly.Name.Name}' contains assembly 'fullname' attribute for another assembly '{name}'.", 2101, assemblyNav);
 						continue;
 					}
 					assemblyToProcess = _resourceAssembly;
 				}
 
-				if (!ShouldProcessElement (iterator.Current))
+				if (!ShouldProcessElement (assemblyNav))
 					continue;
 
 				if (processAllAssemblies) {
 					// We could avoid loading all references in this case: https://github.com/mono/linker/issues/1708
 					foreach (AssemblyDefinition assembly in _context.GetReferencedAssemblies ())
-						ProcessAssembly (assembly, iterator.Current, warnOnUnresolvedTypes: false);
+						ProcessAssembly (assembly, assemblyNav, warnOnUnresolvedTypes: false);
 				} else {
 					AssemblyDefinition assembly = assemblyToProcess ?? _context.TryResolve (name);
 
 					if (assembly == null) {
-						LogWarning ($"Could not resolve assembly '{name.Name}'.", 2007, iterator.Current);
+						LogWarning ($"Could not resolve assembly '{name.Name}'.", 2007, assemblyNav);
 						continue;
 					}
 
-					ProcessAssembly (assembly, iterator.Current, warnOnUnresolvedTypes: true);
+					ProcessAssembly (assembly, assemblyNav, warnOnUnresolvedTypes: true);
 				}
 			}
 		}
@@ -141,17 +152,15 @@ namespace Mono.Linker.Steps
 
 		protected virtual void ProcessTypes (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
 		{
-			var iterator = nav.SelectChildren (TypeElementName, XmlNamespace);
-			while (iterator.MoveNext ()) {
-				nav = iterator.Current;
+			foreach (XPathNavigator typeNav in nav.SelectChildren (TypeElementName, XmlNamespace)) {
 
-				if (!ShouldProcessElement (nav))
+				if (!ShouldProcessElement (typeNav))
 					continue;
 
-				string fullname = GetFullName (nav);
+				string fullname = GetFullName (typeNav);
 
 				if (fullname.IndexOf ("*") != -1) {
-					if (ProcessTypePattern (fullname, assembly, nav))
+					if (ProcessTypePattern (fullname, assembly, typeNav))
 						continue;
 				}
 
@@ -171,11 +180,11 @@ namespace Mono.Linker.Steps
 
 				if (type == null) {
 					if (warnOnUnresolvedTypes)
-						LogWarning ($"Could not resolve type '{fullname}'.", 2008, nav);
+						LogWarning ($"Could not resolve type '{fullname}'.", 2008, typeNav);
 					continue;
 				}
 
-				ProcessType (type, nav);
+				ProcessType (type, typeNav);
 			}
 		}
 

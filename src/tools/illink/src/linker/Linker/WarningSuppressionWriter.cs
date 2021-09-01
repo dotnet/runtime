@@ -1,4 +1,4 @@
-﻿// Licensed to the.NET Foundation under one or more agreements.
+// Licensed to the.NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -56,12 +56,12 @@ namespace Mono.Linker
 
 		void OutputSuppressionsXmlFormat (AssemblyNameDefinition assemblyName, string directory)
 		{
-			var xmlTree =
-				new XElement ("linker",
-					new XElement ("assembly", new XAttribute ("fullname", assemblyName.FullName)));
+			var xmlTree = new XElement ("linker");
+			var xmlAssembly = new XElement ("assembly", new XAttribute ("fullname", assemblyName.FullName));
+			xmlTree.Add (xmlAssembly);
 
 			foreach (var warning in GetListOfWarnings (assemblyName)) {
-				xmlTree.Element ("assembly").Add (
+				xmlAssembly.Add (
 					new XElement ("attribute",
 						new XAttribute ("fullname", "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute"),
 						new XElement ("argument", Constants.ILLink),

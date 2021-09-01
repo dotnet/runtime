@@ -227,7 +227,7 @@ namespace Mono.Linker.Steps
 			FileInfo original = GetOriginalAssemblyFileInfo (assembly);
 			string resourceFile = GetAssemblyResourceFileName (original.FullName);
 
-			foreach (var subDirectory in Directory.EnumerateDirectories (original.DirectoryName)) {
+			foreach (var subDirectory in Directory.EnumerateDirectories (original.DirectoryName!)) {
 				var satelliteAssembly = Path.Combine (subDirectory, resourceFile);
 				if (!File.Exists (satelliteAssembly))
 					continue;
