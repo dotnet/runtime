@@ -480,7 +480,7 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
-            }).WaitAsync(TestSettings.PassingTestTimeout ); 
+            }).WaitAsync(TestSettings.PassingTestTimeout); 
         }
 
         [DllImport("libc")]

@@ -545,7 +545,7 @@ namespace System.Net.Sockets.Tests
                 if (!pending)
                     waitHandle.Set();
 
-                Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout ), "Timed out while waiting for connection");
+                Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 if (args.SocketError != SocketError.Success)
                 {
                     throw new SocketException((int)args.SocketError);
@@ -585,7 +585,7 @@ namespace System.Net.Sockets.Tests
                 if (!pending)
                     waitHandle.Set();
 
-                Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout ), "Timed out while waiting for connection");
+                Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 if (args.SocketError != SocketError.Success)
                 {
                     throw new SocketException((int)args.SocketError);
@@ -611,7 +611,7 @@ namespace System.Net.Sockets.Tests
                 if (!pending)
                     waitHandle.Set();
 
-                Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout ), "Timed out while waiting for connection");
+                Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 if (args.SocketError != SocketError.Success)
                 {
                     throw new SocketException((int)args.SocketError);
@@ -845,10 +845,10 @@ namespace System.Net.Sockets.Tests
                 SocketClient client = new SocketClient(_log, serverSocket, connectTo, port);
                 
                 Assert.True(
-                    client.WaitHandle.WaitOne(TestSettings.PassingTestTimeout ),
+                    client.WaitHandle.WaitOne(TestSettings.PassingTestTimeout),
                     "Timed out while waiting for connection");
                 Assert.True(
-                    async.AsyncWaitHandle.WaitOne(TestSettings.PassingTestTimeout ),
+                    async.AsyncWaitHandle.WaitOne(TestSettings.PassingTestTimeout),
                     "Timed out while waiting to accept the client");
 
                 // Due to the nondeterministic nature of calling dispose on a Socket that is doing
@@ -969,7 +969,7 @@ namespace System.Net.Sockets.Tests
                 waitHandles[0] = waitHandle;
                 waitHandles[1] = client.WaitHandle;
 
-                int completedHandle = WaitHandle.WaitAny(waitHandles, TestSettings.PassingTestTimeout );
+                int completedHandle = WaitHandle.WaitAny(waitHandles, TestSettings.PassingTestTimeout);
 
                 if (completedHandle == WaitHandle.WaitTimeout)
                 {
@@ -1101,7 +1101,7 @@ namespace System.Net.Sockets.Tests
                 int sent = client.SendTo(new byte[1], new IPEndPoint(connectTo, port));
                 Assert.Equal(1, sent);
 
-                bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout ); // Make sure the bytes were received
+                bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout); // Make sure the bytes were received
                 if (!success)
                 {
                     throw new TimeoutException();
@@ -1202,7 +1202,7 @@ namespace System.Net.Sockets.Tests
                 int sent = client.EndSendTo(async);
                 Assert.Equal(1, sent);
 
-                bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout ); // Make sure the bytes were received
+                bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout); // Make sure the bytes were received
                 if (!success)
                 {
                     throw new TimeoutException();
@@ -1326,7 +1326,7 @@ namespace System.Net.Sockets.Tests
                     bool async = client.SendToAsync(args);
                     if (async)
                     {
-                        Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout ), "Timeout while waiting for connection");
+                        Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
                     }
 
                     Assert.Equal(1, args.BytesTransferred);
@@ -1336,7 +1336,7 @@ namespace System.Net.Sockets.Tests
                     }
                 }
 
-                bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout ); // Make sure the bytes were received
+                bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout); // Make sure the bytes were received
                 if (!success)
                 {
                     throw new TimeoutException();
@@ -1606,7 +1606,7 @@ namespace System.Net.Sockets.Tests
                 // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
                 SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
-                bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout );
+                bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout);
                 if (!success)
                 {
                     throw new TimeoutException();
@@ -1751,7 +1751,7 @@ namespace System.Net.Sockets.Tests
 
                 bool async = serverSocket.ReceiveFromAsync(args);
                 SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
-                if (async && !waitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout ))
+                if (async && !waitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout))
                 {
                     throw new TimeoutException();
                 }
@@ -1984,7 +1984,7 @@ namespace System.Net.Sockets.Tests
                     {
                         completed.Set();
                     }
-                    Assert.True(completed.Wait(TestSettings.PassingTestTimeout ), "Timeout while waiting for connection");
+                    Assert.True(completed.Wait(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
                     completed.Reset();
 
                     Assert.Equal(DataLength, args.BytesTransferred);
@@ -2031,7 +2031,7 @@ namespace System.Net.Sockets.Tests
                     });
                 }
 
-                serverSocket.ReceiveTimeout = expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout ;
+                serverSocket.ReceiveTimeout = expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout;
 
                 SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
 
@@ -2201,7 +2201,7 @@ namespace System.Net.Sockets.Tests
                 // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
                 SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
-                bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout );
+                bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout);
                 if (!success)
                 {
                     throw new TimeoutException();
@@ -2361,7 +2361,7 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                serverSocket.ReceiveTimeout = expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout ;
+                serverSocket.ReceiveTimeout = expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout;
                 int port = serverSocket.BindToAnonymousPort(listenOn);
 
                 ManualResetEvent waitHandle = new ManualResetEvent(false);
