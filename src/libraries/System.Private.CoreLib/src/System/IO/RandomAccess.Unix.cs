@@ -117,7 +117,7 @@ namespace System.IO
                     // the function to be used by FileStream for all the same situations.
                     int bytesWritten = handle.CanSeek ?
                         Interop.Sys.PWrite(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length), fileOffset) :
-                        Interop.Sys.Write(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length));
+                        Interop.Sys.Write(handle, bufPtr, buffer.Length);
 
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
                     if (bytesWritten == buffer.Length)
