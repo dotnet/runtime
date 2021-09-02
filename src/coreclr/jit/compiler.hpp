@@ -2596,7 +2596,6 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
  *    argument exception (used by feature SIMD)
  *    argument range-check exception (used by feature SIMD)
  *    divide by zero exception  (Not used on X86/X64)
- *    null reference exception (Not currently used)
  *    overflow exception
  */
 
