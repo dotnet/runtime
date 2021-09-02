@@ -22,6 +22,7 @@ namespace System.Net.Http
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue(Gzip);
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue(Deflate);
         private static readonly StringWithQualityHeaderValue s_brotliHeaderValue = new StringWithQualityHeaderValue(Brotli);
+        private static readonly byte[] s_gzipSignature = new byte[] {0x1F, 0x8B, 0x08};
 
         public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandlerStage innerHandler)
         {
@@ -80,7 +81,10 @@ namespace System.Net.Http
 
                 if (GZipEnabled && last == Gzip)
                 {
-                    response.Content = new GZipDecompressedContent(response.Content);
+                    if(await CheckContentSignatureAsync(await response.Content.ReadAsStreamAsync(cancellationToken), s_gzipSignature))
+                    {
+                        response.Content = new GZipDecompressedContent(response.Content);
+                    }
                 }
                 else if (DeflateEnabled && last == Deflate)
                 {
@@ -93,6 +97,23 @@ namespace System.Net.Http
             }
 
             return response;
+        }
+
+        protected async Task<bool> CheckContentSignatureAsync(Stream s, byte[] signature, CancellationToken cancellationToken)
+        {
+	        var position = s.Position;
+
+	        var buffer = new byte[signature.Length];
+	        if (s.Length < signature.Length)
+	        {
+		        return false;
+	        }
+
+	        await s.ReadAsync(buffer.AsMemory(0, signature.Length - 1), cancellationToken);
+
+	        s.Position = position;
+
+	        return buffer.SequenceEqual(signature);
         }
 
         protected override void Dispose(bool disposing)
