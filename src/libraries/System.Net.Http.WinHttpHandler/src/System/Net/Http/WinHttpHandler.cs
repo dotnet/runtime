@@ -1190,10 +1190,7 @@ namespace System.Net.Http
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
             }
 
-            // As of Win10RS5 there's no public constant for WinHTTP + TLS 1.3
-            // This library builds against netstandard, which doesn't define the Tls13 enum field.
-
-            // If only unknown values (e.g. TLS 1.3) were asked for, report ERROR_INVALID_PARAMETER.
+            // If only unknown values were asked for, report ERROR_INVALID_PARAMETER.
             if (optionData == 0)
             {
                 throw WinHttpException.CreateExceptionUsingError(
