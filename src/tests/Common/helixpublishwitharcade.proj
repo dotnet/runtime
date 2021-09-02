@@ -189,13 +189,13 @@
   </Target>
 
   <Target Name="ZipPayloadDirectory" AfterTargets="PreparePayloadDirectory" Condition="'$(TargetOS)' == 'Android'">
-    <PropertyGroup>
+    <ItemGroup>
       <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
       <Payloads Update="@(Payloads)">
         <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
         <PayloadDirectory>%(FullPath)</PayloadDirectory>
       </Payloads>
-    </PropertyGroup>
+    </ItemGroup>
 
     <ZipDirectory SourceDirectory="@(Payloads->Metadata('PayloadDirectory'))" DestinationFile="$(PayloadsRootDirectory)\@(Payloads->Metadata('PayloadGroup')).zip" />
   </Target>
