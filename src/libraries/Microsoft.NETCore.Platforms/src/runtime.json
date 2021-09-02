@@ -3478,6 +3478,73 @@
         "win81-x86-aot"
       ]
     },
+    "win11": {
+      "#import": [
+        "win10"
+      ]
+    },
+    "win11-aot": {
+      "#import": [
+        "win11",
+        "win10-aot"
+      ]
+    },
+    "win11-arm": {
+      "#import": [
+        "win11",
+        "win10-arm"
+      ]
+    },
+    "win11-arm-aot": {
+      "#import": [
+        "win11-aot",
+        "win11-arm",
+        "win11",
+        "win10-arm-aot"
+      ]
+    },
+    "win11-arm64": {
+      "#import": [
+        "win11",
+        "win10-arm64"
+      ]
+    },
+    "win11-arm64-aot": {
+      "#import": [
+        "win11-aot",
+        "win11-arm64",
+        "win11",
+        "win10-arm64-aot"
+      ]
+    },
+    "win11-x64": {
+      "#import": [
+        "win11",
+        "win10-x64"
+      ]
+    },
+    "win11-x64-aot": {
+      "#import": [
+        "win11-aot",
+        "win11-x64",
+        "win11",
+        "win10-x64-aot"
+      ]
+    },
+    "win11-x86": {
+      "#import": [
+        "win11",
+        "win10-x86"
+      ]
+    },
+    "win11-x86-aot": {
+      "#import": [
+        "win11-aot",
+        "win11-x86",
+        "win11",
+        "win10-x86-aot"
+      ]
+    },
     "win7": {
       "#import": [
         "win"
