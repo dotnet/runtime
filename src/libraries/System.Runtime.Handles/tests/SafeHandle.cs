@@ -40,7 +40,14 @@ public partial class SafeHandleTests
         Assert.False(mch.IsClosed);
         Assert.True(mch.IsInvalid);
         Assert.False(mch.IsReleased);
+        Assert.Equal(IntPtr.Zero, mch.DangerousGetHandle());
 
+        mch.Dispose();
+        Assert.True(mch.IsClosed);
+        Assert.True(mch.IsInvalid);
+        Assert.False(mch.IsReleased);
+
+        // Make sure we can dispose multiple times
         mch.Dispose();
         Assert.True(mch.IsClosed);
         Assert.True(mch.IsInvalid);
@@ -50,11 +57,19 @@ public partial class SafeHandleTests
     [Fact]
     public static void SafeHandle_valid()
     {
-        MySafeHandle mch = new MySafeHandle(new IntPtr(1));
+        IntPtr ptr = new IntPtr(1);
+        MySafeHandle mch = new MySafeHandle(ptr);
         Assert.False(mch.IsClosed);
         Assert.False(mch.IsInvalid);
         Assert.False(mch.IsReleased);
+        Assert.Equal(ptr, mch.DangerousGetHandle());
 
+        mch.Dispose();
+        Assert.True(mch.IsClosed);
+        Assert.False(mch.IsInvalid);
+        Assert.True(mch.IsReleased);
+
+        // Make sure we can dispose multiple times
         mch.Dispose();
         Assert.True(mch.IsClosed);
         Assert.False(mch.IsInvalid);
@@ -79,6 +94,18 @@ public partial class SafeHandleTests
         Assert.True(mch.IsClosed);
         Assert.False(mch.IsInvalid);
         Assert.True(mch.IsReleased);
+    }
+
+    [Fact]
+    public static void SafeHandle_SetHandleAsInvalid()
+    {
+        IntPtr ptr = new IntPtr(1);
+        MySafeHandle handle = new MySafeHandle(ptr);
+        handle.SetHandleAsInvalid();
+        Assert.True(handle.IsClosed);
+        Assert.False(handle.IsInvalid);
+        Assert.False(handle.IsReleased);
+        Assert.Equal(ptr, handle.DangerousGetHandle());
     }
 
     [DllImport("Kernel32", SetLastError = true)]
