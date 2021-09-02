@@ -14,6 +14,20 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+function DownloadClangTool {
+    targetPlatform=$(dotnet --info |grep RID:)
+    targetPlatform=${targetPlatform##*RID:* }
+
+    toolUrl=https://clrjit.blob.core.windows.net/clang-tools/${targetPlatform}/$1
+    toolOutput=$2/$1
+
+    if [[ ! -x "$toolOutput" ]]; then
+        curl --retry 5 -o "${toolOutput}" "$toolUrl"
+        chmod 751 $toolOutput
+    fi
+}
+
+
 engFolder="$(cd -P "$( dirname "$scriptroot" )" && pwd )"
 downloadPathFolder="$(cd -P "$( dirname "$engFolder" )" && pwd )/artifacts/tools"
 
@@ -23,15 +37,7 @@ mkdir -p "$downloadPathFolder"
 
 InitializeDotNetCli true
 
-targetPlatform=$(dotnet --info |grep RID:)
-targetPlatform=${targetPlatform##*RID:* }
-
-clangFormatUrl=https://clrjit.blob.core.windows.net/clang-tools/${targetPlatform}/clang-format
-clangFormatOutput=${downloadPathFolder}/clang-format
-
-if [[ ! -x "$downloadPathFolder/clang-format" ]]; then
-    curl --retry 5 -o "${clangFormatOutput}" "$clangFormatUrl"
-    chmod 751 $clangFormatOutput
-fi
+DownloadClangTool "clang-format" "$downloadPathFolder"
+DownloadClangTool "clang-tidy" "$downloadPathFolder"
 
 export PATH=$downloadPathFolder:$PATH
