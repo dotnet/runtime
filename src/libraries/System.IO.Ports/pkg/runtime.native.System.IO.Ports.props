@@ -8,7 +8,7 @@
     <DebugType>none</DebugType>
     <IsPackable>true</IsPackable>
     <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(SymbolsSuffix)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
-    <TargetsForTfmSpecificDebugSymbolsInPackage Condition="'$(keepNativeSymbols)' != 'true'">$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <TargetsForTfmSpecificDebugSymbolsInPackage Condition="'$(KeepNativeSymbols)' != 'true'">$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
     <!-- This is a native package and doesn't contain any ref/lib assets. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
