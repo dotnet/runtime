@@ -1560,13 +1560,21 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
+#if defined(TARGET_ANDROID) && defined(HAVE_FLOCK64)
+    // On Android, fcntl is always implemented by fcntl64 but before https://github.com/aosp-mirror/platform_bionic/commit/09e77f35ab8d291bf88302bb9673aaa518c6bcb0
+    // there was no remapping of F_SETLK to F_SETLK64 when _FILE_OFFSET_BITS=64 (which we set in eng/native/configurecompiler.cmake) so we need to always pass F_SETLK64
+    int command = F_SETLK64;
+#else
+    int command = F_SETLK;
+#endif
+
     lockArgs.l_type = unixLockType;
     lockArgs.l_whence = SEEK_SET;
     lockArgs.l_start = (off_t)offset;
     lockArgs.l_len = (off_t)length;
 
     int32_t ret;
-    while ((ret = fcntl (ToFileDescriptor(fd), F_SETLK, &lockArgs)) < 0 && errno == EINTR);
+    while ((ret = fcntl (ToFileDescriptor(fd), command, &lockArgs)) < 0 && errno == EINTR);
     return ret;
 }
 
