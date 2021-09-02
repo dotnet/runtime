@@ -145,6 +145,60 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void RoundtripWithCustomConverterProperty_Class()
+        {
+            const string ExpectedJson = "{\"Property\":42}";
+
+            ClassWithCustomConverterProperty obj = new()
+            {
+                Property = new ClassWithCustomConverterProperty.NestedPoco { Value = 42 }
+            };
+
+            // Types with properties in custom converters do not support fast path serialization.
+            Assert.True(DefaultContext.ClassWithCustomConverterProperty.Serialize is null);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterProperty));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterProperty);
+                Assert.Equal(ExpectedJson, json);
+            }
+
+            obj = JsonSerializer.Deserialize<ClassWithCustomConverterProperty>(ExpectedJson);
+            Assert.Equal(42, obj.Property.Value);
+        }
+
+        [Fact]
+        public virtual void RoundtripWithCustomConverterProperty_Struct()
+        {
+            const string ExpectedJson = "{\"Property\":42}";
+
+            StructWithCustomConverterProperty obj = new()
+            {
+                Property = new ClassWithCustomConverterProperty.NestedPoco { Value = 42 }
+            };
+
+            // Types with properties in custom converters do not support fast path serialization.
+            Assert.True(DefaultContext.StructWithCustomConverterProperty.Serialize is null);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterProperty));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterProperty);
+                Assert.Equal(ExpectedJson, json);
+            }
+
+            obj = JsonSerializer.Deserialize<StructWithCustomConverterProperty>(ExpectedJson);
+            Assert.Equal(42, obj.Property.Value);
+        }
+
+        [Fact]
         public virtual void BadCustomConverter_Class()
         {
             const string Json = "{\"MyInt\":142}";

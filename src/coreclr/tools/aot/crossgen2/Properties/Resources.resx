@@ -132,6 +132,9 @@
   <data name="EmittingPEFile" xml:space="preserve">
     <value>Emitting R2R PE file: {0}</value>
   </data>
+  <data name="MovingPEFile" xml:space="preserve">
+    <value>Moving R2R PE file: {0} to {1}</value>
+  </data>
   <data name="EnableOptimizationsOption" xml:space="preserve">
     <value>Enable optimizations</value>
   </data>
@@ -191,6 +194,9 @@
   </data>
   <data name="MissingOutputFile" xml:space="preserve">
     <value>Output filename must be specified (--out &lt;file&gt;)</value>
+  </data>
+  <data name="MissingOutNearInput" xml:space="preserve">
+    <value>Single file compilation mode requires --out-near-input option</value>
   </data>
   <data name="InputWasNotLoadable" xml:space="preserve">
     <value>No input files are loadable</value>

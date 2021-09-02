@@ -683,12 +683,14 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                         ? @$"jsonPropertyName: ""{memberMetadata.JsonPropertyName}"""
                         : "jsonPropertyName: null";
 
-                    string getterNamedArg = memberMetadata.CanUseGetter
+                    string getterNamedArg = memberMetadata.CanUseGetter &&
+                        memberMetadata.DefaultIgnoreCondition != JsonIgnoreCondition.Always
                         ? $"getter: static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}"
                         : "getter: null";
 
                     string setterNamedArg;
-                    if (memberMetadata.CanUseSetter)
+                    if (memberMetadata.CanUseSetter &&
+                        memberMetadata.DefaultIgnoreCondition != JsonIgnoreCondition.Always)
                     {
                         string propMutation = typeGenerationSpec.IsValueType
                             ? @$"{UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value!"
@@ -790,7 +792,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
                     out bool castingRequiredForProps))
                 {
-                    string exceptionMessage = @$"""Invalid serializable-property configuration specified for type '{typeRef}'. For more information, use 'JsonSourceGenerationMode.Serialization'.""";
+                    string exceptionMessage = @$"""Invalid serializable-property configuration specified for type '{typeRef}'. For more information, see 'JsonSourceGenerationMode.Serialization'.""";
 
                     return GenerateFastPathFuncForType(
                         serializeMethodName,

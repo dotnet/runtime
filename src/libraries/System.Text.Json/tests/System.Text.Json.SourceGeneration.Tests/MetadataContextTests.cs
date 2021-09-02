@@ -30,10 +30,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
+        public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
     }
 
     public sealed class MetadataWithPerTypeAttributeContextTests : RealWorldContextTests
@@ -91,10 +94,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
+    [JsonSerializable(typeof(ClassWithCustomConverterProperty))]
+    [JsonSerializable(typeof(StructWithCustomConverterProperty))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
+        public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
     }
 
     public sealed class MetadataContextTests : RealWorldContextTests
@@ -126,6 +132,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.Null(MetadataContext.Default.ClassWithCustomConverter.Serialize);
             Assert.Null(MetadataContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Null(MetadataContext.Default.ClassWithCustomConverterProperty.Serialize);
+            Assert.Null(MetadataContext.Default.StructWithCustomConverterProperty.Serialize);
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.ClassWithBadCustomConverter.Serialize);
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.Serialize);
         }
