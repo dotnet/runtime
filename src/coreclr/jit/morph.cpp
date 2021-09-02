@@ -13867,7 +13867,7 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
         if (fgGlobalMorph)
         {
             // If struct promotion was undone, adjust the annotations
-            if(fgMorphImplicitByRefArgs(addr))
+            if (fgMorphImplicitByRefArgs(addr))
             {
                 return ind;
             }
