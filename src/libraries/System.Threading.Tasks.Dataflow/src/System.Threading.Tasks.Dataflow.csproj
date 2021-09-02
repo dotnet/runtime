@@ -2,6 +2,22 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>TPL Dataflow promotes actor/agent-oriented designs through primitives for in-process message passing, dataflow, and pipelining. TDF builds upon the APIs and scheduling infrastructure provided by the Task Parallel Library (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
+
+Commonly Used Types:
+System.Threading.Tasks.Dataflow.ActionBlock&lt;TInput&gt;
+System.Threading.Tasks.Dataflow.BatchBlock&lt;T&gt;
+System.Threading.Tasks.Dataflow.BatchedJoinBlock&lt;T1, T2&gt;
+System.Threading.Tasks.Dataflow.BatchedJoinBlock&lt;T1, T2, T3&gt;
+System.Threading.Tasks.Dataflow.BroadcastBlock&lt;T&gt;
+System.Threading.Tasks.Dataflow.BufferBlock&lt;T&gt;
+System.Threading.Tasks.Dataflow.DataflowBlock
+System.Threading.Tasks.Dataflow.JoinBlock&lt;T1, T2&gt;
+System.Threading.Tasks.Dataflow.JoinBlock&lt;T1, T2, T3&gt;
+System.Threading.Tasks.Dataflow.TransformBlock&lt;TInput, TOutput&gt;
+System.Threading.Tasks.Dataflow.TransformManyBlock&lt;TInput, TOutput&gt;
+System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Base\DataflowBlock.cs" />
@@ -46,7 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="XmlDocs\CommonXmlDocComments.xml" />
-    <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml" />
+    <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml" Pack="false" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
@@ -58,10 +74,5 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Threading.Timer" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-    <PackageReference Include="System.Diagnostics.Contracts" Version="$(SystemDiagnosticsContractsVersion)" />
-    <PackageReference Include="System.Dynamic.Runtime" Version="$(SystemDynamicRuntimeVersion)" />
-    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="$(SystemRuntimeSerializationPrimitivesVersion)" />
   </ItemGroup>
 </Project>

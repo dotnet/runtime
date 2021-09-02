@@ -14,14 +14,15 @@ public class ReliabilityTestSet
 {
     private int _maximumTestLoops = 0;									// default run based on time.
     private int _maximumExecutionTime = 60;	                        // 60 minute run by default.
+    private int _maximumWaitTime = 10;	                            // 10 minute wait by default.
     private int _percentPassIsPass = System.Environment.GetEnvironmentVariable("PERCENTPASSISPASS") == null ? -1 : Convert.ToInt32(System.Environment.GetEnvironmentVariable("PERCENTPASSISPASS"));
     private int[] _minPercentCPUStaggered_times = null;
     private int[] _minPercentCPUStaggered_usage = null;
-    private int _minimumCPUpercent = 0,_minimumMemoryPercent = 0,_minimumTestsRunning = 0,_maximumTestsRunning = -1;			// minimum CPU & memory requirements.
+    private int _minimumCPUpercent = 0, _minimumMemoryPercent = 0, _minimumTestsRunning = 0, _maximumTestsRunning = -1;			// minimum CPU & memory requirements.
     private ReliabilityTest[] _tests;
     private string[] _discoveryPaths = null;
     private string _friendlyName;
-    private bool _enablePerfCounters = true,_disableLogging = false,_installDetours = false;
+    private bool _enablePerfCounters = true, _disableLogging = false, _installDetours = false;
     private bool _suppressConsoleOutputFromTests = false;
     private bool _debugBreakOnTestHang = true;
     private bool _debugBreakOnBadTest = false;
@@ -29,8 +30,8 @@ public class ReliabilityTestSet
     private bool _debugBreakOnPathTooLong = false;
     private bool _debugBreakOnMissingTest = false;
     private TestStartModeEnum _testStartMode = TestStartModeEnum.AppDomainLoader;
-    private string _defaultDebugger,_defaultDebuggerOptions;
-    private int _ulGeneralUnloadPercent = 0,_ulAppDomainUnloadPercent = 0,_ulAssemblyLoadPercent = 0,_ulWaitTime = 0;
+    private string _defaultDebugger, _defaultDebuggerOptions;
+    private int _ulGeneralUnloadPercent = 0, _ulAppDomainUnloadPercent = 0, _ulAssemblyLoadPercent = 0, _ulWaitTime = 0;
     private bool _reportResults = false;
     private string _reportResultsTo = "http://clrqa/SmartAPI/result.asmx";
     private Guid _bvtCategory = Guid.Empty;
@@ -91,6 +92,21 @@ public class ReliabilityTestSet
         set
         {
             _maximumExecutionTime = value;
+        }
+    }
+
+    /// <summary>
+    /// Maximum wait time, in minutes.
+    /// </summary>
+    public int MaximumWaitTime
+    {
+        get
+        {
+            return (_maximumWaitTime);
+        }
+        set
+        {
+            _maximumWaitTime = value;
         }
     }
 

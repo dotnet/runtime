@@ -606,8 +606,8 @@ public class LoadDebuggerTestALC {
         }
         public static void RunMethod(string className, string methodName)
         {
-            var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
-            var mi = ty.GetMethod("GetApplyUpdateCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
+            var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
+            var mi = ty.GetMethod("GetCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
 
             if (mi == null)
                 return;
@@ -643,11 +643,11 @@ public class LoadDebuggerTestALC {
 
             if (version == 1)
             {
-                System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data1_bytes, dil_data1_bytes, dpdb_data1_bytes);
+                System.Reflection.Metadata.MetadataUpdater.ApplyUpdate(assm, dmeta_data1_bytes, dil_data1_bytes, dpdb_data1_bytes);
             }
             else if (version == 2)
             {
-                System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data2_bytes, dil_data2_bytes, dpdb_data2_bytes);
+                System.Reflection.Metadata.MetadataUpdater.ApplyUpdate(assm, dmeta_data2_bytes, dil_data2_bytes, dpdb_data2_bytes);
             }
 
         }
@@ -724,6 +724,49 @@ public class Foo
         await System.Threading.Tasks.Task.Delay(1);
         Console.WriteLine($"time for await");
         return true;
+    }
+
+}
+
+public class MainPage
+{
+    public MainPage()
+    {
+    }
+
+    int count = 0;
+    private int someValue;
+
+    public int SomeValue
+    {
+        get
+        {
+            return someValue;
+        }
+        set
+        {
+            someValue = value;
+            count++;
+
+            if (count == 10)
+            {
+                var view = 150;
+
+                if (view != 50)
+                {
+
+                }
+                System.Diagnostics.Debugger.Break();
+            }
+
+            SomeValue = count;
+        }
+    }
+
+    public static void CallSetValue()
+    {
+        var mainPage = new MainPage();
+        mainPage.SomeValue = 10;
     }
 }
 

@@ -14,6 +14,8 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal class ObjectDefaultConverter<T> : JsonObjectConverter<T> where T : notnull
     {
+        internal override bool CanHaveIdMetadata => true;
+
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
@@ -270,7 +272,7 @@ namespace System.Text.Json.Serialization.Converters
                     onSerializing.OnSerializing();
                 }
 
-                List<KeyValuePair<string, JsonPropertyInfo?>> properties = state.Current.JsonTypeInfo.PropertyCache!.List;
+                List<KeyValuePair<string, JsonPropertyInfo?>> properties = jsonTypeInfo.PropertyCache!.List;
                 for (int i = 0; i < properties.Count; i++)
                 {
                     JsonPropertyInfo jsonPropertyInfo = properties[i].Value!;
@@ -289,7 +291,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Write extension data after the normal properties.
-                JsonPropertyInfo? dataExtensionProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtensionProperty = jsonTypeInfo.DataExtensionProperty;
                 if (dataExtensionProperty?.ShouldSerialize == true)
                 {
                     // Remember the current property for JsonPath support if an exception is thrown.
@@ -325,7 +327,7 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.ProcessedStartToken = true;
                 }
 
-                List<KeyValuePair<string, JsonPropertyInfo?>>? propertyList = state.Current.JsonTypeInfo.PropertyCache!.List!;
+                List<KeyValuePair<string, JsonPropertyInfo?>>? propertyList = jsonTypeInfo.PropertyCache!.List!;
                 while (state.Current.EnumeratorIndex < propertyList.Count)
                 {
                     JsonPropertyInfo? jsonPropertyInfo = propertyList![state.Current.EnumeratorIndex].Value;
@@ -360,7 +362,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Write extension data after the normal properties.
                 if (state.Current.EnumeratorIndex == propertyList.Count)
                 {
-                    JsonPropertyInfo? dataExtensionProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
+                    JsonPropertyInfo? dataExtensionProperty = jsonTypeInfo.DataExtensionProperty;
                     if (dataExtensionProperty?.ShouldSerialize == true)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
@@ -405,7 +407,7 @@ namespace System.Text.Json.Serialization.Converters
 
         // AggressiveInlining since this method is only called from two locations and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void ReadPropertyValue(
+        protected static void ReadPropertyValue(
             object obj,
             ref ReadStack state,
             ref Utf8JsonReader reader,
@@ -436,7 +438,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.EndProperty();
         }
 
-        protected bool ReadAheadPropertyValue(ref ReadStack state, ref Utf8JsonReader reader, JsonPropertyInfo jsonPropertyInfo)
+        protected static bool ReadAheadPropertyValue(ref ReadStack state, ref Utf8JsonReader reader, JsonPropertyInfo jsonPropertyInfo)
         {
             // Returning false below will cause the read-ahead functionality to finish the read.
             state.Current.PropertyState = StackFramePropertyState.ReadValue;

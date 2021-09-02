@@ -3,7 +3,7 @@
 
 namespace System.Text.Json
 {
-    internal static class JsonConstants
+    internal static partial class JsonConstants
     {
         public const byte OpenBrace = (byte)'{';
         public const byte CloseBrace = (byte)'}';
@@ -114,8 +114,5 @@ namespace System.Text.Json
         // The maximum number of parameters a constructor can have where it can be considered
         // for a path on deserialization where we don't box the constructor arguments.
         public const int UnboxedParameterCountThreshold = 4;
-
-        // The maximum number of parameters a constructor can have where it can be supported.
-        public const int MaxParameterCount = 64;
     }
 }

@@ -923,6 +923,16 @@ namespace System.Tests
             Assert.True(!typeof(ContextBoundClass).IsContextful);
         }
 
+        [Fact]
+        public void MakeGenericType_NonRuntimeType()
+        {
+            foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
+            {
+                Type t = typeof(List<>).MakeGenericType(nonRuntimeType);
+                Assert.NotNull(t);
+            }
+        }
+
 #region GetInterfaceMap tests
         public static IEnumerable<object[]> GetInterfaceMap_TestData()
         {

@@ -126,20 +126,31 @@ namespace System.Threading
                                 // of the number of existing threads, is compared with the goal. There may be alternative
                                 // solutions, for now this is only to maintain consistency in behavior.
                                 ThreadCounts counts = threadPoolInstance._separated.counts;
-                                if (counts.NumProcessingWork < threadPoolInstance._maxThreads &&
-                                    counts.NumProcessingWork >= threadPoolInstance._separated.numThreadsGoal)
+                                while (
+                                    counts.NumProcessingWork < threadPoolInstance._maxThreads &&
+                                    counts.NumProcessingWork >= counts.NumThreadsGoal)
                                 {
                                     if (debuggerBreakOnWorkStarvation)
                                     {
                                         Debugger.Break();
                                     }
 
+                                    ThreadCounts newCounts = counts;
                                     short newNumThreadsGoal = (short)(counts.NumProcessingWork + 1);
-                                    threadPoolInstance._separated.numThreadsGoal = newNumThreadsGoal;
-                                    HillClimbing.ThreadPoolHillClimber.ForceChange(
-                                        newNumThreadsGoal,
-                                        HillClimbing.StateOrTransition.Starvation);
-                                    addWorker = true;
+                                    newCounts.NumThreadsGoal = newNumThreadsGoal;
+
+                                    ThreadCounts countsBeforeUpdate =
+                                        threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                                    if (countsBeforeUpdate == counts)
+                                    {
+                                        HillClimbing.ThreadPoolHillClimber.ForceChange(
+                                            newNumThreadsGoal,
+                                            HillClimbing.StateOrTransition.Starvation);
+                                        addWorker = true;
+                                        break;
+                                    }
+
+                                    counts = countsBeforeUpdate;
                                 }
                             }
                             finally
@@ -183,7 +194,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    minimumDelay = (uint)threadPoolInstance._separated.numThreadsGoal * DequeueDelayThresholdMs;
+                    minimumDelay = (uint)threadPoolInstance._separated.counts.NumThreadsGoal * DequeueDelayThresholdMs;
                 }
 
                 return delay > minimumDelay;

@@ -12,7 +12,7 @@ namespace System.ServiceProcess.Tests
         // To view tracing, use DbgView from sysinternals.com;
         // run it elevated, check "Capture>Global Win32" and "Capture>Win32",
         // and filter to just messages beginning with "##"
-        internal const bool DebugTracing = false;
+        internal const bool DebugTracing = false; // toggle in TestServiceProvider.cs as well
 
         private bool _disposed;
         private Task _waitClientConnect;

@@ -1235,6 +1235,11 @@ bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
     return info.compCompHnd->runWithErrorTrap(function, param);
 }
 
+bool Compiler::eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param)
+{
+    return info.compCompHnd->runWithSPMIErrorTrap(function, param);
+}
+
 /*****************************************************************************
  *
  *                      Utility functions
@@ -1268,19 +1273,6 @@ struct FilterSuperPMIExceptionsParam_ee_il
     const char*           fieldOrMethodOrClassNamePtr;
     EXCEPTION_POINTERS    exceptionPointers;
 };
-
-static LONG FilterSuperPMIExceptions_ee_il(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-    FilterSuperPMIExceptionsParam_ee_il* pSPMIEParam = (FilterSuperPMIExceptionsParam_ee_il*)lpvParam;
-    pSPMIEParam->exceptionPointers                   = *pExceptionPointers;
-
-    if (pSPMIEParam->pThis->IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode))
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
 
 const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char** classNamePtr)
 {
@@ -1320,12 +1312,14 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
     param.method       = method;
     param.classNamePtr = classNamePtr;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr =
-            pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr =
+                pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
+        },
+        &param);
+
+    if (!success)
     {
         if (param.classNamePtr != nullptr)
         {
@@ -1334,7 +1328,6 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
 
         param.fieldOrMethodOrClassNamePtr = "hackishMethodName";
     }
-    PAL_ENDTRY
 
     return param.fieldOrMethodOrClassNamePtr;
 }
@@ -1348,16 +1341,17 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
     param.field        = field;
     param.classNamePtr = classNamePtr;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr =
-            pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr =
+                pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
+        },
+        &param);
+
+    if (!success)
     {
         param.fieldOrMethodOrClassNamePtr = "hackishFieldName";
     }
-    PAL_ENDTRY
 
     return param.fieldOrMethodOrClassNamePtr;
 }
@@ -1370,15 +1364,16 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     param.pJitInfo = &info;
     param.clazz    = clsHnd;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_ee_il*, pParam, &param)
-    {
-        pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_ee_il)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
+        },
+        &param);
+
+    if (!success)
     {
         param.fieldOrMethodOrClassNamePtr = "hackishClassName";
     }
-    PAL_ENDTRY
     return param.fieldOrMethodOrClassNamePtr;
 }
 

@@ -238,8 +238,8 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     InitializeSpec(a, pImport, NULL);
 
     // Set the binding context for the AssemblySpec
-    ICLRPrivBinder* pCurrentBinder = GetBindingContext();
-    ICLRPrivBinder* pExpectedBinder = pFile->GetBindingContext();
+    AssemblyBinder* pCurrentBinder = GetBindingContext();
+    AssemblyBinder* pExpectedBinder = pFile->GetBindingContext();
     if (pCurrentBinder == NULL)
     {
         // We should aways having the binding context in the PEAssembly. The only exception to this are the following:
@@ -251,7 +251,6 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 
 // This uses thread storage to allocate space. Please use Checkpoint and release it.
 HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName,
@@ -608,7 +607,6 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef, NULL);
 }
 
-#endif // CROSSGEN_COMPILE
 
 // Check if the supplied assembly's public key matches up with the one in the Spec, if any
 // Throws an appropriate exception in case of a mismatch
@@ -678,34 +676,7 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFil
     return pDomainAssembly->GetAssembly();
 }
 
-// Returns a BOOL indicating if the two Binder references point to the same
-// binder instance.
-BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    BOOL fIsSameInstance = (pBinderA == pBinderB);
-
-    if (!fIsSameInstance && (pBinderA != NULL) && (pBinderB != NULL))
-    {
-        // Get the ID for the first binder
-        UINT_PTR binderIDA = 0, binderIDB = 0;
-        HRESULT hr = pBinderA->GetBinderID(&binderIDA);
-        if (SUCCEEDED(hr))
-        {
-            // Get the ID for the second binder
-            hr = pBinderB->GetBinderID(&binderIDB);
-            if (SUCCEEDED(hr))
-            {
-                fIsSameInstance = (binderIDA == binderIDB);
-            }
-        }
-    }
-
-    return fIsSameInstance;
-}
-
-ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDomain)
+AssemblyBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDomain)
 {
     CONTRACTL
     {
@@ -716,15 +687,13 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
     }
     CONTRACTL_END;
 
-    ICLRPrivBinder *pParentAssemblyBinder = NULL;
+    AssemblyBinder *pParentAssemblyBinder = NULL;
     DomainAssembly *pParentDomainAssembly = GetParentAssembly();
 
     if(pParentDomainAssembly != NULL)
     {
         // Get the PEAssembly associated with the parent's domain assembly
         PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetFile();
-
-        // ICLRPrivAssembly implements ICLRPrivBinder and thus, "is a" binder in a manner of semantics.
         pParentAssemblyBinder = pParentPEAssembly->GetBindingContext();
     }
 
@@ -755,8 +724,8 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
 
     if (pParentAssemblyBinder != NULL)
     {
-        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-        if (AreSameBinderInstance(pTPABinder, pParentAssemblyBinder))
+        DefaultAssemblyBinder *pTPABinder = pDomain->GetTPABinderContext();
+        if (pTPABinder == pParentAssemblyBinder)
         {
             // If the parent assembly is a platform (TPA) assembly, then its binding context will always be the TPABinder context. In
             // such case, we will return the default context for binding to allow the bind to go
@@ -764,7 +733,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
             // TPABinder context anyways.
             //
             // Get the reference to the default binding context (this could be the TPABinder context or custom AssemblyLoadContext)
-            pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetTPABinderContext());
+            pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetTPABinderContext());
         }
     }
 
@@ -775,7 +744,7 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetTPABinderContext());
+        pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetTPABinderContext());
     }
 
     return pParentAssemblyBinder;
@@ -1036,10 +1005,9 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     CONTRACTL_END;
 
     UPTR key = (UPTR)pSpec->Hash();
-    UPTR lookupKey = key;
 
     // On CoreCLR, we will use the BinderID as the key
-    ICLRPrivBinder *pBinderContextForLookup = NULL;
+    AssemblyBinder *pBinderContextForLookup = NULL;
     AppDomain *pSpecDomain = pSpec->GetAppDomain();
     bool fGetBindingContextFromParent = true;
 
@@ -1073,13 +1041,10 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = 0;
-        HRESULT hr = pBinderContextForLookup->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
-        lookupKey = key^binderID;
+        key = key ^ (UPTR)pBinderContextForLookup;
     }
 
-    AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(lookupKey, pSpec);
+    AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
 
     // Reset the binding context if one was originally never present in the AssemblySpec and we didnt find any entry
     // in the cache.
@@ -1286,15 +1251,12 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
     UPTR key = (UPTR)pSpec->Hash();
 
     // On CoreCLR, we will use the BinderID as the key
-    ICLRPrivBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBindingContext();
+    AssemblyBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBindingContext();
 
     _ASSERTE(pBinderContextForLookup || pAssembly->GetFile()->IsSystem());
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = 0;
-        HRESULT hr = pBinderContextForLookup->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
-        key = key^binderID;
+        key = key ^ (UPTR)pBinderContextForLookup;
 
         if (!pSpec->GetBindingContext())
         {
@@ -1371,15 +1333,12 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
     UPTR key = (UPTR)pSpec->Hash();
 
     // On CoreCLR, we will use the BinderID as the key
-    ICLRPrivBinder* pBinderContextForLookup = pFile->GetBindingContext();
+    AssemblyBinder* pBinderContextForLookup = pFile->GetBindingContext();
 
     _ASSERTE(pBinderContextForLookup || pFile->IsSystem());
     if (pBinderContextForLookup)
     {
-        UINT_PTR binderID = 0;
-        HRESULT hr = pBinderContextForLookup->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
-        key = key^binderID;
+        key = key ^ (UPTR)pBinderContextForLookup;
 
         if (!pSpec->GetBindingContext())
         {
@@ -1395,20 +1354,17 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
 
         LoaderHeap* pHeap = m_pHeap;
 
-#ifndef CROSSGEN_COMPILE
         if (pBinderContextForLookup != NULL)
         {
-            LoaderAllocator* pLoaderAllocator = NULL;
+            LoaderAllocator* pLoaderAllocator = pBinderContextForLookup->GetLoaderAllocator();
 
             // Assemblies loaded with AssemblyLoadContext need to use a different heap if
             // marked as collectible
-            if (SUCCEEDED(pBinderContextForLookup->GetLoaderAllocator((LPVOID*)&pLoaderAllocator)))
+            if (pLoaderAllocator)
             {
-                _ASSERTE(pLoaderAllocator != NULL);
                 pHeap = pLoaderAllocator->GetHighFrequencyHeap();
             }
         }
-#endif // !CROSSGEN_COMPILE
 
         entry = abHolder.CreateAssemblyBinding(pHeap);
 
@@ -1465,17 +1421,14 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         //
         // Since no entry was found for this assembly in any binding context, save the failure
         // in the TPABinder context
-        ICLRPrivBinder* pBinderToSaveException = NULL;
+        AssemblyBinder* pBinderToSaveException = NULL;
         pBinderToSaveException = pSpec->GetBindingContext();
         if (pBinderToSaveException == NULL)
         {
             if (!pSpec->IsAssemblySpecForCoreLib())
             {
                 pBinderToSaveException = pSpec->GetBindingContextFromParentAssembly(pSpec->GetAppDomain());
-                UINT_PTR binderID = 0;
-                HRESULT hr = pBinderToSaveException->GetBinderID(&binderID);
-                _ASSERTE(SUCCEEDED(hr));
-                key = key^binderID;
+                key = key ^ (UPTR)pBinderToSaveException;
             }
         }
     }

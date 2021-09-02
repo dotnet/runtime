@@ -56,7 +56,6 @@ namespace System
 
         internal const ulong SignMask = 0x8000_0000_0000_0000;
         internal const int SignShift = 63;
-        internal const uint ShiftedSignMask = (uint)(SignMask >> SignShift);
 
         internal const ulong ExponentMask = 0x7FF0_0000_0000_0000;
         internal const int ExponentShift = 52;
@@ -188,6 +187,7 @@ namespace System
             throw new ArgumentException(SR.Arg_MustBeDouble);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(double value)
         {
             if (m_value < value) return -1;

@@ -631,7 +631,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     LPCWSTR pwzTrustedPlatformAssemblies = NULL;
     LPCWSTR pwzPlatformResourceRoots = NULL;
     LPCWSTR pwzAppPaths = NULL;
-    LPCWSTR pwzAppNiPaths = NULL;
 
     for (int i = 0; i < nProperties; i++)
     {
@@ -655,11 +654,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             pwzAppPaths = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("APP_NI_PATHS")) == 0)
-        {
-            pwzAppNiPaths = pPropertyValues[i];
-        }
-        else
         if (wcscmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
         {
             extern void ParseDefaultStackSize(LPCWSTR value);
@@ -679,15 +673,13 @@ HRESULT CorHost2::CreateAppDomainWithManager(
         SString sTrustedPlatformAssemblies(pwzTrustedPlatformAssemblies);
         SString sPlatformResourceRoots(pwzPlatformResourceRoots);
         SString sAppPaths(pwzAppPaths);
-        SString sAppNiPaths(pwzAppNiPaths);
 
-        CLRPrivBinderCoreCLR *pBinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pBinder = pDomain->GetTPABinderContext();
         _ASSERTE(pBinder != NULL);
         IfFailThrow(pBinder->SetupBindingPaths(
             sTrustedPlatformAssemblies,
             sPlatformResourceRoots,
-            sAppPaths,
-            sAppNiPaths));
+            sAppPaths));
     }
 
     *pAppDomainID=DefaultADID;

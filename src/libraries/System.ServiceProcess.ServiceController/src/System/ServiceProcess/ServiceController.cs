@@ -283,7 +283,7 @@ namespace System.ServiceProcess
         }
 
         /// <summary>
-        /// A set of services on which the given service object is depend upon.
+        /// A set of services on which the given service object is dependent upon.
         /// </summary>
         public unsafe ServiceController[] ServicesDependedOn
         {

@@ -65,6 +65,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58204", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void IncompleteContainers()
         {
             JsonException e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IList<object>>("[1,"));

@@ -255,12 +255,12 @@ namespace System.Net.WebSockets.Client.Tests
                                 "ReceiveAsync"),
                             ex.Message);
 
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State+" state when InvalidOperationException");
                     }
                     else if (ex is WebSocketException)
                     {
                         // Multiple cases.
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State + " state when WebSocketException");
 
                         WebSocketError errCode = (ex as WebSocketException).WebSocketErrorCode;
                         Assert.True(
@@ -269,7 +269,7 @@ namespace System.Net.WebSockets.Client.Tests
                     }
                     else if (ex is OperationCanceledException)
                     {
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State + " state when OperationCanceledException");
                     }
                     else
                     {
@@ -320,6 +320,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53957", TestPlatforms.Browser)]
         public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))

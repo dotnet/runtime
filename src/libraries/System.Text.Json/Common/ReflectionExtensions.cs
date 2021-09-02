@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Collections.Generic;
 #if !BUILDING_SOURCE_GENERATOR
 using System.Diagnostics.CodeAnalysis;
 #endif
@@ -228,6 +229,86 @@ namespace System.Text.Json.Reflection
         {
             Debug.Assert(propertyInfo != null);
             return propertyInfo != null && (propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true);
+        }
+
+        public static bool IsKeyValuePair(this Type type, Type? keyValuePairType = null)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+
+            // Work around not being able to use typeof(KeyValuePair<,>) directly during compile-time src gen type analysis.
+            keyValuePairType ??= typeof(KeyValuePair<,>);
+
+            Type generic = type.GetGenericTypeDefinition();
+            return generic == keyValuePairType;
+        }
+
+        public static bool TryGetDeserializationConstructor(
+#if !BUILDING_SOURCE_GENERATOR
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+#endif
+            this Type type,
+            bool useDefaultCtorInAnnotatedStructs,
+            out ConstructorInfo? deserializationCtor)
+        {
+            ConstructorInfo? ctorWithAttribute = null;
+            ConstructorInfo? publicParameterlessCtor = null;
+            ConstructorInfo? lonePublicCtor = null;
+
+            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+            if (constructors.Length == 1)
+            {
+                lonePublicCtor = constructors[0];
+            }
+
+            foreach (ConstructorInfo constructor in constructors)
+            {
+                if (HasJsonConstructorAttribute(constructor))
+                {
+                    if (ctorWithAttribute != null)
+                    {
+                        deserializationCtor = null;
+                        return false;
+                    }
+
+                    ctorWithAttribute = constructor;
+                }
+                else if (constructor.GetParameters().Length == 0)
+                {
+                    publicParameterlessCtor = constructor;
+                }
+            }
+
+            // For correctness, throw if multiple ctors have [JsonConstructor], even if one or more are non-public.
+            ConstructorInfo? dummyCtorWithAttribute = ctorWithAttribute;
+
+            constructors = type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
+            foreach (ConstructorInfo constructor in constructors)
+            {
+                if (HasJsonConstructorAttribute(constructor))
+                {
+                    if (dummyCtorWithAttribute != null)
+                    {
+                        deserializationCtor = null;
+                        return false;
+                    }
+
+                    dummyCtorWithAttribute = constructor;
+                }
+            }
+
+            // Structs will use default constructor if attribute isn't used.
+            if (useDefaultCtorInAnnotatedStructs && type.IsValueType && ctorWithAttribute == null)
+            {
+                deserializationCtor = null;
+                return true;
+            }
+
+            deserializationCtor = ctorWithAttribute ?? publicParameterlessCtor ?? lonePublicCtor;
+            return true;
         }
     }
 }

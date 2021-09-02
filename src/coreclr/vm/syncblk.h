@@ -823,19 +823,24 @@ public:
         if (m_managedObjectComWrapperMap == NULL)
             return;
 
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-
-        if (callback != NULL)
+        CQuickArrayList<void*> localList;
         {
-            ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
-            while (iter != m_managedObjectComWrapperMap->End())
+            CrstHolder lock(&m_managedObjectComWrapperLock);
+            if (callback != NULL)
             {
-                callback(iter->Value());
-                ++iter;
+                ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
+                while (iter != m_managedObjectComWrapperMap->End())
+                {
+                    localList.Push(iter->Value());
+                    ++iter;
+                }
             }
+
+            m_managedObjectComWrapperMap->RemoveAll();
         }
 
-        m_managedObjectComWrapperMap->RemoveAll();
+        for (SIZE_T i = 0; i < localList.Size(); i++)
+            callback(localList[i]);
     }
 
     using EnumWrappersCallback = bool(void* mocw, void* cxt);

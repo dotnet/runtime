@@ -175,6 +175,12 @@ namespace System.Diagnostics.Metrics
             WriteEvent(14, sessionId, errorMessage);
         }
 
+        [Event(15, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
+        public void MultipleSessionsNotSupportedError(string runningSessionId)
+        {
+            WriteEvent(15, runningSessionId);
+        }
+
         /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
@@ -218,6 +224,19 @@ namespace System.Diagnostics.Metrics
                     {
                         if (_aggregationManager != null)
                         {
+                            if (command.Command == EventCommand.Enable || command.Command == EventCommand.Update)
+                            {
+                                // trying to add more sessions is not supported
+                                // EventSource doesn't provide an API that allows us to enumerate the listeners'
+                                // filter arguments independently or to easily track them ourselves. For example
+                                // removing a listener still shows up as EventCommand.Enable as long as at least
+                                // one other listener is active. In the future we might be able to figure out how
+                                // to infer the changes from the info we do have or add a better API but for now
+                                // I am taking the simple route  and not supporting it.
+                                Log.MultipleSessionsNotSupportedError(_sessionId);
+                                return;
+                            }
+
                             _aggregationManager.Dispose();
                             _aggregationManager = null;
                             Log.Message($"Previous session with id {_sessionId} is stopped");
