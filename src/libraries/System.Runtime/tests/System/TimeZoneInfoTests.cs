@@ -2663,16 +2663,21 @@ namespace System.Tests
         public static void IsIanaIdTest()
         {
             bool expected = !s_isWindows;
-
-            Assert.Equal((expected || PlatformDetection.IsiOS || PlatformDetection.IstvOS || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)), TimeZoneInfo.Local.HasIanaId);
+            Assert.Equal((expected || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)), TimeZoneInfo.Local.HasIanaId);
 
             foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
             {
                 Assert.True((expected || tzi.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)) == tzi.HasIanaId, $"`{tzi.Id}` has wrong IANA Id indicator");
             }
 
-            string timeZoneIdNotIANAId = PlatformDetection.IsiOS || PlatformDetection.IstvOS ? "America/Buenos_Aires" : "Pacific Standard Time";
-            Assert.False(TimeZoneInfo.FindSystemTimeZoneById(timeZoneIdNotIANAId).HasIanaId, $" should not be IANA Id.");
+            if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
+            {
+                Assert.False(TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").HasIanaId, $" should not be IANA Id.");
+            }
+            else
+            {
+                Assert.Throws<TimeZoneNotFoundException>(() => TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").HasIanaId);
+            }
             Assert.True(TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles").HasIanaId, $"'America/Los_Angeles' should be IANA Id");
         }
 
