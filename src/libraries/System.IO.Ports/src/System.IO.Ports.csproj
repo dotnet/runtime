@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SERIAL_PORTS</DefineConstants>
@@ -90,6 +90,8 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs"
              Link="Common\Interop\Windows\Interop.FileTypes.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" 
+             Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="Common\System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"
@@ -140,6 +142,7 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Memory" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
     <Reference Include="System.Runtime" />

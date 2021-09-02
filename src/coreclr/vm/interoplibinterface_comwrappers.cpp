@@ -176,7 +176,10 @@ namespace
             if (Result.Context != NULL)
             {
                 GCX_PREEMP();
-                InteropLib::Com::DestroyWrapperForExternal(Result.Context);
+                // We also request collection notification since this holder is presently
+                // only used for new activation of wrappers therefore the notification won't occur
+                // at the typical time of before finalization.
+                InteropLib::Com::DestroyWrapperForExternal(Result.Context, /* notifyIsBeingCollected */ true);
             }
         }
         InteropLib::Com::ExternalWrapperResult* operator&()
@@ -478,7 +481,11 @@ namespace
                 if (!cxt->IsSet(ExternalObjectContext::Flags_Detached)
                     && !GCHeapUtilities::GetGCHeap()->IsPromoted(OBJECTREFToObject(cxt->GetObjectRef())))
                 {
+                    // Indicate the wrapper entry has been detached.
                     cxt->MarkDetached();
+
+                    // Notify the wrapper it was not promoted and is being collected.
+                    InteropLib::Com::NotifyWrapperForExternalIsBeingCollected(cxt);
                 }
             }
         }

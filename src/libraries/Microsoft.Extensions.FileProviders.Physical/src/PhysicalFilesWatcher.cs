@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             if (fileSystemWatcher != null)
             {
 #if NETCOREAPP
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.FileSystemWatcher_PlatformNotSupported, typeof(FileSystemWatcher)));
                 }
@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = GetOrAddChangeToken(filter);
-// We made sure that browser never uses FileSystemWatcher.
+// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
 #pragma warning disable CA1416 // Validate platform compatibility
             TryEnableFileSystemWatcher();
 #pragma warning restore CA1416 // Validate platform compatibility
@@ -275,6 +275,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
             // For a file name change or a directory's name change notify registered tokens.
@@ -308,12 +311,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
             OnFileSystemEntryChange(e.FullPath);
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OnError(object sender, ErrorEventArgs e)
         {
             // Notify all cache entries on error.
@@ -324,6 +333,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OnFileSystemEntryChange(string fullPath)
         {
             try
@@ -347,6 +359,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void ReportChangeForMatchedEntries(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -384,6 +399,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void TryDisableFileSystemWatcher()
         {
             if (_fileWatcher != null)
@@ -402,6 +420,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void TryEnableFileSystemWatcher()
         {
             if (_fileWatcher != null)

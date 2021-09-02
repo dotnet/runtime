@@ -88,6 +88,14 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(TieringTestIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$RunTieringTest" ]
+then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with the tiering test harness
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
     <![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
@@ -277,7 +285,7 @@ fi
           </BashLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>
-      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs) ${__DotEnvArg}</_CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
 
       <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
@@ -302,7 +310,7 @@ if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
 else
-    LAUNCHER="$_DebuggerFullPath $(_CLRTestRunFile)"
+    LAUNCHER="$_DebuggerFullPath $(CLRTestRunFile)"
 fi
 
 $(BashIlrtTestLaunchCmds)
@@ -330,7 +338,7 @@ if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
 else
-    LAUNCHER="$_DebuggerFullPath $(_CLRTestRunFile)"
+    LAUNCHER="$_DebuggerFullPath $(CLRTestRunFile)"
 fi
 
 $(BashIlrtTestLaunchCmds)
@@ -436,11 +444,11 @@ CLRTestExpectedExitCode=0
 
     <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
     <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
-    <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
+    <Message Text="CLRTestRunFile:$(CLRTestRunFile)" />
 
     <ItemGroup>
-      <_RequiredProperties Include="_CLRTestRunFile">
-        <Value>$(_CLRTestRunFile)</Value>
+      <_RequiredProperties Include="CLRTestRunFile">
+        <Value>$(CLRTestRunFile)</Value>
       </_RequiredProperties>
     </ItemGroup>
 

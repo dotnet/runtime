@@ -85,6 +85,14 @@ IF NOT "%RunInUnloadableContext%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(TieringTestIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%RunTieringTest%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with the tiering test harness
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
     <![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
@@ -282,7 +290,7 @@ if defined DoLink (
           </BatchLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>
-      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</_CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
@@ -296,7 +304,7 @@ $(BatchCopyCoreShimLocalCmds)
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
 ) ELSE (
-  set LAUNCHER=%_DebuggerFullPath% $(_CLRTestRunFile)
+  set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
 
 $(BatchIlrtTestLaunchCmds)
@@ -350,11 +358,11 @@ set CLRTestExpectedExitCode=0
 
     <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
     <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
-    <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
+    <Message Text="CLRTestRunFile:$(CLRTestRunFile)" />
 
     <ItemGroup>
-      <_RequiredProperties Include="_CLRTestRunFile">
-        <Value>$(_CLRTestRunFile)</Value>
+      <_RequiredProperties Include="CLRTestRunFile">
+        <Value>$(CLRTestRunFile)</Value>
       </_RequiredProperties>
     </ItemGroup>
 

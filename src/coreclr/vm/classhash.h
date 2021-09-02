@@ -9,7 +9,7 @@
 #ifndef __CLASS_HASH_INCLUDED
 #define __CLASS_HASH_INCLUDED
 
-#include "ngenhash.h"
+#include "dacenumerablehash.h"
 
 // The type of each entry in the hash.
 typedef DPTR(struct EEClassHashEntry) PTR_EEClassHashEntry;
@@ -43,26 +43,23 @@ private:
     PTR_VOID    m_Data;     // Either the token (if EECLASSHASH_TYPEHANDLE_DISCR), or the type handle encoded
                             // as a relative pointer
 
-    NgenHashEntryRef<EEClassHashTable, EEClassHashEntry, 4> m_pEncloser;    // If this entry is a for a nested
-                                                                            // class, this field stores a
-                                                                            // reference to the enclosing type
-                                                                            // (which must be in this same
-                                                                            // hash). The NgenHashEntryRef<>
-                                                                            // is required to abstract some
-                                                                            // complex logic required while
-                                                                            // ngen'ing such references.
+    PTR_EEClassHashEntry  m_pEncloser;  // If this entry is a for a nested
+                                        // class, this field stores a
+                                        // reference to the enclosing type
+                                        // (which must be in this same
+                                        // hash).
 } EEClassHashEntry_t;
 
-// The hash type itself. All common logic is provided by the NgenHashTable templated base class. See
-// NgenHash.h for details.
+// The hash type itself. All common logic is provided by the DacEnumerableHashTable templated base class. See
+// DacEnumerableHash.h for details.
 typedef DPTR(class EEClassHashTable) PTR_EEClassHashTable;
-class EEClassHashTable : public NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>
+class EEClassHashTable : public DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>
 {
 
 public:
     // The LookupContext type we export to track GetValue/FindNextNestedClass enumerations is simply a rename
     // of the base classes' hash value enumerator.
-    typedef NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>::LookupContext LookupContext;
+    typedef DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>::LookupContext LookupContext;
 
     static EEClassHashTable *Create(Module *pModule, DWORD dwNumBuckets, BOOL bCaseInsensitive, AllocMemTracker *pamTracker);
 
@@ -100,15 +97,10 @@ public:
                                               mdTypeDef *pCL);
     static mdToken UncompressModuleAndClassDef(PTR_VOID Data);
 
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    void EnumMemoryRegionsForEntry(EEClassHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags);
-#endif
-
 private:
 #ifndef DACCESS_COMPILE
     EEClassHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets) :
-        NgenHashTable<EEClassHashTable, EEClassHashEntry, 4>(pModule, pHeap, cInitialBuckets) {}
+        DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>(pModule, pHeap, cInitialBuckets) {}
 #endif
 
     VOID ConstructKeyFromData(PTR_EEClassHashEntry pEntry, ConstructKeyCallback * pCallback);
