@@ -196,6 +196,10 @@ jobs:
         image: centos-7-source-build-20210714125450-5d87b80
         registry: mcr
       jobParameters:
+        name: TestArcadeSourceBuild
+        container:
+          image: centos-7-source-build-20210714125450-5d87b80
+          registry: mcr
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}

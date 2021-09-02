@@ -127,11 +127,8 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
+    jobTemplate: /eng/common/templates/job/source-build.yml
     platforms:
     - SourceBuild_Linux_x64
     jobParameters:
-      nameSuffix: SourceBuild
-      buildArgs: -subset clr+libs+host+packs /p:DotNetBuildFromSource=true --portableBuild false
       timeoutInMinutes: 90
