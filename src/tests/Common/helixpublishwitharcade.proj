@@ -188,6 +188,18 @@
     <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
   </Target>
 
+  <Target Name="ZipPayloadDirectory" AfterTargets="PreparePayloadDirectory" Condition="'$(TargetOS)' == 'Android'">
+    <PropertyGroup>
+      <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
+      <Payloads Update="@(Payloads)">
+        <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+        <PayloadDirectory>%(FullPath)</PayloadDirectory>
+      </Payloads>
+    </PropertyGroup>
+
+    <ZipDirectory SourceDirectory="@(Payloads->Metadata('PayloadDirectory'))" DestinationFile="$(PayloadsRootDirectory)\@(Payloads->Metadata('PayloadGroup')).zip" />
+  </Target>
+
   <Target Name="PrepareCorrelationPayloadDirectory">
     <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
 
@@ -340,6 +352,7 @@
       <TestGroup>%(PayloadGroup)</TestGroup>
       <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. -->
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
+      <PayloadZipFile>$(PayloadsRootDirectory)\%(PayloadGroup).zip)</PayloadZipFile>
     </Payloads>
 
     <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
@@ -349,7 +362,7 @@
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
 
-    <XHarnessApkToTest Include="@(Payloads->Metadata('RuntimeTestApks'))" Condition="'$(TargetOS)' == 'Android'">
+    <XHarnessApkToTest Include="@(Payloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'Android'">
       <TestTarget Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">x86_64</TestTarget>
