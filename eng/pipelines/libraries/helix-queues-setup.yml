@@ -168,6 +168,7 @@ jobs:
             - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
               - Windows.7.Amd64.Open
               - Windows.10.Amd64.Server19H1.Open
+              - Windows.11.Amd64.ClientPre.Open
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
