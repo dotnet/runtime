@@ -502,6 +502,9 @@ public:
     unsigned char lvUnusedStruct : 1; // All references to this promoted struct are through its field locals.
                                       // I.e. there is no longer any reference to the struct directly.
                                       // In this case we can simply remove this struct local.
+
+    unsigned char lvUndoneStructPromotion : 1; // The struct promotion was undone and hence there should be no
+                                               // reference to the fields of this struct.
 #endif
 
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
