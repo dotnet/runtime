@@ -216,6 +216,68 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void RoundTripWithCustomPropertyConverterFactory_Class()
+        {
+            const string Json = "{\"MyEnum\":\"A\"}";
+
+            ClassWithCustomConverterPropertyFactory obj = new()
+            {
+                MyEnum = SampleEnum.A
+            };
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory);
+                Assert.Equal(Json, json);
+            }
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory));
+            }
+            else
+            {
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterPropertyFactory);
+                Assert.Equal(SampleEnum.A, obj.MyEnum);
+            }
+        }
+
+        [Fact]
+        public virtual void RoundTripWithCustomPropertyConverterFactory_Struct()
+        {
+            const string Json = "{\"MyEnum\":\"A\"}";
+
+            StructWithCustomConverterPropertyFactory obj = new()
+            {
+                MyEnum = SampleEnum.A
+            };
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory);
+                Assert.Equal(Json, json);
+            }
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory));
+            }
+            else
+            {
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterPropertyFactory);
+                Assert.Equal(SampleEnum.A, obj.MyEnum);
+            }
+        }
+
+        [Fact]
         public virtual void BadCustomConverter_Class()
         {
             const string Json = "{\"MyInt\":142}";

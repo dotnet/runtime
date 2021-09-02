@@ -28,12 +28,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
-    [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
+    [JsonSerializable(typeof(StructWithCustomConverterFactory))]
     [JsonSerializable(typeof(ClassWithCustomConverterProperty))]
     [JsonSerializable(typeof(StructWithCustomConverterProperty))]
-    [JsonSerializable(typeof(StructWithCustomConverterFactory))]
-    [JsonSerializable(typeof(EnumWithJsonStringEnumConverter))]
+    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory))]
+    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
@@ -66,15 +67,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedClass.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedNestedClass.Serialize);
             Assert.Null(MetadataAndSerializationContext.Default.ObjectArray.Serialize);
+            Assert.Null(MetadataAndSerializationContext.Default.SampleEnum.Serialize);
             Assert.Null(MetadataAndSerializationContext.Default.String.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverter);
-            Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterFactory);
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverter);
+            Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterFactory);
+            Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterFactory);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterProperty);
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterProperty);
-            Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterFactory);
-            Assert.NotNull(MetadataAndSerializationContext.Default.EnumWithJsonStringEnumConverter);
+            Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterPropertyFactory);
+            Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterPropertyFactory);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.ClassWithBadCustomConverter);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.StructWithBadCustomConverter);
         }
