@@ -2663,6 +2663,7 @@ namespace System.Tests
         public static void IsIanaIdTest()
         {
             bool expected = !s_isWindows;
+
             Assert.Equal((expected || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)), TimeZoneInfo.Local.HasIanaId);
 
             foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
