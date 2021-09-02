@@ -531,8 +531,21 @@ namespace ILCompiler
             //
             // Initialize output filename
             //
-            var suffixStr = _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble ? ".ni.dll.tmp" : ".ni.dll";
-            var outFile = _commandLineOptions.OutNearInput ? inFilePaths.First().Value.Replace(".dll", suffixStr) : _commandLineOptions.OutputFilePath;
+            string inFilePath = inFilePaths.First().Value;
+            string inputFileExtension = Path.GetExtension(inFilePath);
+            string nearOutFilePath = inputFileExtension switch
+            {
+                ".dll" => Path.ChangeExtension(inFilePath,
+                    _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble
+                        ? ".ni.dll.tmp"
+                        : ".ni.dll"),
+                ".exe" => Path.ChangeExtension(inFilePath,
+                    _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble
+                        ? ".ni.exe.tmp"
+                        : ".ni.exe"),
+                _ => throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension))
+            };
+            string outFile = _commandLineOptions.OutNearInput ? nearOutFilePath : _commandLineOptions.OutputFilePath;
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
