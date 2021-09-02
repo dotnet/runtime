@@ -125,8 +125,14 @@ namespace ILCompiler
             else if (_commandLineOptions.Optimize)
                 _optimizationMode = OptimizationMode.Blended;
 
-            foreach (var input in _commandLineOptions.InputFilePaths)
-                Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
+            foreach (string input in _commandLineOptions.InputFilePaths)
+            {
+                string[] parts = input.Split(" ");
+                foreach (string part in parts)
+                {
+                    Helpers.AppendExpandedPaths(_inputFilePaths, part, true);
+                }
+            }
 
             foreach (var input in _commandLineOptions.UnrootedInputFilePaths)
                 Helpers.AppendExpandedPaths(_unrootedInputFilePaths, input, true);
