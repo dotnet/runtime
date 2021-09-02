@@ -87,6 +87,19 @@ namespace System.IO.Tests
             Assert.Equal(newLinkInfo.LinkTarget, linkInfo.LinkTarget);
         }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(@"\??\")]
+        [InlineData(@"\\?\")]
+        public void LinkTarget_ExtendedPrefix_IsNotTrimmed(string prefix)
+        {
+            string linkPath = GetRandomLinkPath();
+            string targetPathWithPrefix = Path.Join(prefix, GetRandomFilePath());
+
+            FileSystemInfo info = CreateSymbolicLink(linkPath, targetPathWithPrefix);
+            Assert.Equal(targetPathWithPrefix, info.LinkTarget);
+        }
+
         public static IEnumerable<object[]> LinkTarget_PathToTarget_Data
         {
             get

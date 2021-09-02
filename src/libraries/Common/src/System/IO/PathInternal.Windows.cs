@@ -46,6 +46,7 @@ namespace System.IO
 
         internal const string DirectorySeparatorCharAsString = "\\";
 
+        internal const string NTPathPrefix = @"\??\";
         internal const string ExtendedPathPrefix = @"\\?\";
         internal const string UncPathPrefix = @"\\";
         internal const string UncExtendedPrefixToInsert = @"?\UNC\";

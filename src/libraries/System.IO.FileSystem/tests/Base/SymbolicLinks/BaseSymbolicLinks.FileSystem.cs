@@ -295,6 +295,22 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => ResolveLinkTarget(tail, returnFinalTarget: true));
         }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(@"\??\", false)]
+        [InlineData(@"\??\", true)]
+        [InlineData(@"\\?\", false)]
+        [InlineData(@"\\?\", true)]
+        public void ResolveLinkTarget_ExtendedPrefix_IsNotTrimmed(string prefix, bool returnFinalTarget)
+        {
+            string linkPath = GetRandomLinkPath();
+            string targetPathWithPrefix = Path.Join(prefix, GetRandomFilePath());
+            CreateSymbolicLink(linkPath, targetPathWithPrefix);
+
+            FileSystemInfo info = ResolveLinkTarget(linkPath, returnFinalTarget);
+            Assert.Equal(targetPathWithPrefix, info.FullName);
+        }
+
         private string CreateChainOfLinks(string target, int length, bool relative)
         {
             string previousPath = target;
