@@ -26,7 +26,7 @@ namespace System.Text.Json.SourceGeneration
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
             private const string JsonSerializerContextName = "JsonSerializerContext";
             internal const string JsonContextVarName = "jsonContext";
-            internal const string OptionsInstanceVariableName = "Options";
+            private const string OptionsInstanceVariableName = "Options";
             private const string PropInitMethodNameSuffix = "PropInit";
             private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
             private const string SerializeMethodNameSuffix = "Serialize";
@@ -54,7 +54,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonSerializerTypeRef = "global::System.Text.Json.JsonSerializer";
             private const string JsonSerializerOptionsTypeRef = "global::System.Text.Json.JsonSerializerOptions";
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
-            internal const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
+            private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
             private const string JsonIgnoreConditionTypeRef = "global::System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonNumberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonNumberHandling";
@@ -1186,6 +1186,7 @@ private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ g
             private string GetFetchLogicForGetCustomConverter_PropertiesWithFactories()
             {
                 return @$"
+
 private {JsonConverterTypeRef}<T> {GetConverterFromFactoryMethodName}<T>({JsonConverterFactoryTypeRef} factory)
 {{
     return ({JsonConverterTypeRef}<T>) {GetConverterFromFactoryMethodName}(typeof(T), factory);
@@ -1195,6 +1196,7 @@ private {JsonConverterTypeRef}<T> {GetConverterFromFactoryMethodName}<T>({JsonCo
             private string GetFetchLogicForGetCustomConverter_TypesWithFactories()
             {
                 return @$"
+
 private {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({TypeTypeRef} type, {JsonConverterFactoryTypeRef} factory)
 {{
     {JsonConverterTypeRef}? converter = factory.CreateConverter(type, {Emitter.OptionsInstanceVariableName});

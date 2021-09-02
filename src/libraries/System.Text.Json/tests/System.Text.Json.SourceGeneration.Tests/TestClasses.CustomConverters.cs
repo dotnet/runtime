@@ -87,24 +87,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
     }
 
-    [JsonConverter(typeof(CustomConverter_ClassWithCustomConverter))]
-    public class ClassWithCustomConverter
-    {
-        public int MyInt { get; set; }
-    }
-
-    [JsonConverter(typeof(CustomConverterFactory))]
-    public class ClassWithCustomConverterFactory
-    {
-        public int MyInt { get; set; }
-    }
-
-    [JsonConverter(typeof(CustomConverter_StructWithCustomConverter))] // Invalid
-    public class ClassWithBadCustomConverter
-    {
-        public int MyInt { get; set; }
-    }
-
     /// <summary>
     /// Custom converter that adds\substract 100 from MyIntProperty.
     /// </summary>
@@ -216,8 +198,20 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
     }
 
+    [JsonConverter(typeof(CustomConverter_ClassWithCustomConverter))]
+    public class ClassWithCustomConverter
+    {
+        public int MyInt { get; set; }
+    }
+
     [JsonConverter(typeof(CustomConverter_StructWithCustomConverter))]
     public struct StructWithCustomConverter
+    {
+        public int MyInt { get; set; }
+    }
+
+    [JsonConverter(typeof(CustomConverterFactory))]
+    public class ClassWithCustomConverterFactory
     {
         public int MyInt { get; set; }
     }
@@ -226,13 +220,6 @@ namespace System.Text.Json.SourceGeneration.Tests
     public struct StructWithCustomConverterFactory
     {
         public int MyInt { get; set; }
-    }
-
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public enum EnumWithJsonStringEnumConverter
-    {
-        A = 1,
-        B = 2
     }
 
     public class ClassWithCustomConverterProperty
@@ -256,6 +243,30 @@ namespace System.Text.Json.SourceGeneration.Tests
     {
         [JsonConverter(typeof(ClassWithCustomConverterProperty.NestedPocoCustomConverter))]
         public ClassWithCustomConverterProperty.NestedPoco Property { get; set; }
+    }
+
+    public struct ClassWithCustomConverterPropertyFactory
+    {
+        [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
+        public SampleEnum MyEnum { get; set; }
+    }
+
+    public struct StructWithCustomConverterPropertyFactory
+    {
+        [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
+        public SampleEnum MyEnum { get; set; }
+    }
+
+    public enum SampleEnum
+    {
+        A = 1,
+        B = 2
+    }
+
+    [JsonConverter(typeof(CustomConverter_StructWithCustomConverter))] // Invalid
+    public class ClassWithBadCustomConverter
+    {
+        public int MyInt { get; set; }
     }
 
     [JsonConverter(typeof(CustomConverter_StructWithCustomConverter))] // Invalid

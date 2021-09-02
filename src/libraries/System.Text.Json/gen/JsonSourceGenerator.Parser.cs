@@ -591,7 +591,7 @@ namespace System.Text.Json.SourceGeneration
                         converterInstatiationLogic = GetConverterInstantiationLogic(
                             type,
                             attributeData,
-                            fromContext: true,
+                            forType: true,
                             ref hasTypeFactoryConverter);
                     }
                 }
@@ -1018,7 +1018,7 @@ namespace System.Text.Json.SourceGeneration
                         converterInstantiationLogic = GetConverterInstantiationLogic(
                             memberCLRType,
                             attributeData,
-                            fromContext: false,
+                            forType: false,
                             ref hasFactoryConverter);
                     }
                     else if (attributeType.Assembly.FullName == SystemTextJsonNamespace)
@@ -1155,7 +1155,7 @@ namespace System.Text.Json.SourceGeneration
 
             private string? GetConverterInstantiationLogic(
                 Type type, CustomAttributeData attributeData,
-                bool fromContext,
+                bool forType, // whether for a type or a property
                 ref bool hasFactoryConverter)
             {
                 if (attributeData.AttributeType.FullName != JsonConverterAttributeFullName)
@@ -1175,7 +1175,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     hasFactoryConverter = true;
 
-                    if (fromContext)
+                    if (forType)
                     {
                         return $"this.{Emitter.GetConverterFromFactoryMethodName}(typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
                     }
