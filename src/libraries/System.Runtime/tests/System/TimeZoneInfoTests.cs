@@ -2664,7 +2664,7 @@ namespace System.Tests
         {
             bool expected = !s_isWindows;
 
-            Assert.Equal((expected || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)), TimeZoneInfo.Local.HasIanaId);
+            Assert.Equal((expected || PlatformDetection.IsiOS || PlatformDetection.IstvOS || TimeZoneInfo.Local.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)), TimeZoneInfo.Local.HasIanaId);
 
             foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
             {
