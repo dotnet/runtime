@@ -182,9 +182,9 @@ namespace System.Net.Http
                 // either we know we need to do a Expect: 100-continue send or until we know that the copying of our
                 // content completed asynchronously.
                 CancellationTokenRegistration linkedRegistration = default;
+                bool sendRequestContent = true;
                 try
                 {
-                    bool sendRequestContent = true;
                     if (_expect100ContinueWaiter != null)
                     {
                         linkedRegistration = RegisterRequestBodyCancellation(cancellationToken);
@@ -280,6 +280,13 @@ namespace System.Net.Http
                         if (sendReset)
                         {
                             SendReset();
+                        }
+                        else if (!sendRequestContent)
+                        {
+                            // Send RST_STREAM with CANCEL to notify the server that it shouldn't
+                            // expect the request body.
+                            // If this fails, it means that the connection is aborting and we will be reset.
+                            _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
                         }
                         else
                         {
