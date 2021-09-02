@@ -12,7 +12,7 @@ function DownloadClangTool
 
     if (-not $(ls $downloadOutputPath | Where-Object {$_.Name -eq "$toolName.exe"}))
     {
-        $baseBackoffSeconds = 15;
+        $baseBackoffSeconds = 2;
 
         $success = $false
         for ($i = 0; $i -lt 5; $i++) {
