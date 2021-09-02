@@ -99,5 +99,5 @@ See `corerun --help` for additional details.
 `--debug` - Wait for a debugger to attach prior to loading the .NET runtime.
 - For example, `corerun --debug HelloWorld.dll`
 
-`--env` - Pass the path to a file in the `dotenv` format to specify environment variables for the test run.
+`--env` - Pass the path to a file in the [`dotenv`](https://github.com/motdotla/dotenv) format to specify environment variables for the test run.
 - For example, `corerun --env gcstress.env HelloWorld.dll`.

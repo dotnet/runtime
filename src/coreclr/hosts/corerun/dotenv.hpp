@@ -25,4 +25,4 @@ public:
     static void self_test();
 };
 
-#endif
+#endif // __DOTENV_HPP__

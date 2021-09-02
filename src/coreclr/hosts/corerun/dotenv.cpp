@@ -315,6 +315,7 @@ dotenv::dotenv(pal::string_t dotEnvFilePath, std::istream& contents)
             break;
         }
 
+        // Handle variable expansion scenarios
         if (!read_var_value(contents, [&](std::string name)
             {
                 auto dot_env_entry = _environmentVariables.find(name);
