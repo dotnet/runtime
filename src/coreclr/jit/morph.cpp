@@ -13864,13 +13864,10 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 
     if (addr->OperIs(GT_ADDR) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
-        if (fgGlobalMorph)
+        // If struct promotion was undone, adjust the annotations
+        if (fgGlobalMorph && fgMorphImplicitByRefArgs(addr))
         {
-            // If struct promotion was undone, adjust the annotations
-            if (fgMorphImplicitByRefArgs(addr))
-            {
-                return ind;
-            }
+            return ind;
         }
 
         // If `return` retypes LCL_VAR as a smaller struct it should not set `doNotEnregister` on that
