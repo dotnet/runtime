@@ -790,7 +790,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
                     out bool castingRequiredForProps))
                 {
-                    string exceptionMessage = @$"""Invalid serializable-property configuration specified for type '{typeRef}'. For more information, use 'JsonSourceGenerationMode.Serialization'.""";
+                    string exceptionMessage = @$"""Invalid serializable-property configuration specified for type '{typeRef}'. For more information, see 'JsonSourceGenerationMode.Serialization'.""";
 
                     return GenerateFastPathFuncForType(
                         serializeMethodName,
