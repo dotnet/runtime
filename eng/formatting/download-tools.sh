@@ -25,6 +25,11 @@ function DownloadClangTool {
         curl --retry 5 -o "${toolOutput}" "$toolUrl"
         chmod 751 $toolOutput
     fi
+
+    if [[ ! -x "$toolOutput" ]]; then
+        echo "Failed to download $1"
+        exit 1
+    fi
 }
 
 
