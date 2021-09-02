@@ -1,0 +1,41 @@
+<Project>
+  <!-- Reads the version of the compiler APIs that are currently being used in order to pick the correct Roslyn components. -->
+  <Target Name="_{TargetPrefix}ResolveRoslynApiMajorVersion"
+          Condition="'$(_RoslynApiMajorVersion)' == ''">
+    <GetAssemblyIdentity AssemblyFiles="$(RoslynTargetsPath)\Microsoft.Build.Tasks.CodeAnalysis.dll">
+      <Output TaskParameter="Assemblies" ItemName="_CodeAnalysisIdentity" />
+    </GetAssemblyIdentity>
+
+    <PropertyGroup>
+      <_RoslynApiMajorVersion>$([System.Version]::Parse(%(_CodeAnalysisIdentity.Version)).Major)</_RoslynApiMajorVersion>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_{TargetPrefix}RoslynComponentMultiTargeting" 
+          Condition="'$(SupportsRoslynComponentVersioning)' != 'true'" 
+          AfterTargets="ResolveAssemblyReferences" 
+          DependsOnTargets="_{TargetPrefix}ResolveRoslynApiMajorVersion">
+    <ItemGroup>
+      <!-- clear _CurrentAnalyzer, in case some other target is using it. -->
+      <_CurrentAnalyzer Remove="@(_CurrentAnalyzer)" />
+      <_CurrentAnalyzer Include="@(Analyzer)" Condition="'%(Analyzer.NuGetPackageId)' == '{NuGetPackageId}'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$([System.Int32]::Parse($(_RoslynApiMajorVersion))) &lt; 4">
+      <!-- Remove our analyzers targeting roslyn4.x -->
+      <Analyzer Remove="@(_CurrentAnalyzer)"
+                Condition="$([System.String]::Copy('%(_CurrentAnalyzer.Identity)').IndexOf('roslyn4')) &gt;= 0"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="$([System.Int32]::Parse($(_RoslynApiMajorVersion))) &gt;= 4">
+      <!-- Remove our analyzers targeting roslyn3.x -->
+      <Analyzer Remove="@(_CurrentAnalyzer)"
+                Condition="$([System.String]::Copy('%(_CurrentAnalyzer.Identity)').IndexOf('roslyn3')) &gt;= 0"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$({DisableSourceGeneratorPropertyName})' == 'true'">
+      <!-- Remove all our analyzers -->
+      <Analyzer Remove="@(_CurrentAnalyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>
