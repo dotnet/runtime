@@ -19,17 +19,19 @@ namespace System.Text.Json.SourceGeneration
         private sealed partial class Emitter
         {
             // Literals in generated source
-            private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
-            private const string OptionsInstanceVariableName = "Options";
-            private const string PropInitMethodNameSuffix = "PropInit";
-            private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
-            private const string SerializeMethodNameSuffix = "Serialize";
             private const string CreateValueInfoMethodName = "CreateValueInfo";
+            private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
-            private const string WriterVarName = "writer";
-            private const string ValueVarName = "value";
+            internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
             private const string JsonSerializerContextName = "JsonSerializerContext";
+            internal const string JsonContextVarName = "jsonContext";
+            internal const string OptionsInstanceVariableName = "Options";
+            private const string PropInitMethodNameSuffix = "PropInit";
+            private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
+            private const string SerializeMethodNameSuffix = "Serialize";
+            private const string ValueVarName = "value";
+            private const string WriterVarName = "writer";
 
             private static AssemblyName _assemblyName = typeof(Emitter).Assembly.GetName();
             private static readonly string s_generatedCodeAttributeSource = $@"
@@ -52,7 +54,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonSerializerTypeRef = "global::System.Text.Json.JsonSerializer";
             private const string JsonSerializerOptionsTypeRef = "global::System.Text.Json.JsonSerializerOptions";
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
-            private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
+            internal const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
             private const string JsonIgnoreConditionTypeRef = "global::System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonNumberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonNumberHandling";
@@ -99,15 +101,24 @@ namespace System.Text.Json.SourceGeneration
                 {
                     _currentContext = contextGenerationSpec;
 
+                    bool generateGetConverterMethodForTypes = false;
+                    bool generateGetConverterMethodForProperties = false;
+
                     foreach (TypeGenerationSpec typeGenerationSpec in _currentContext.RootSerializableTypes)
                     {
                         GenerateTypeInfo(typeGenerationSpec);
+
+                        generateGetConverterMethodForTypes |= typeGenerationSpec.HasTypeFactoryConverter;
+                        generateGetConverterMethodForProperties |= typeGenerationSpec.HasPropertyFactoryConverters;
                     }
 
                     string contextName = _currentContext.ContextType.Name;
 
                     // Add root context implementation.
-                    AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(), isRootContextDef: true);
+                    AddSource(
+                        $"{contextName}.g.cs",
+                        GetRootJsonContextImplementation(generateGetConverterMethodForTypes, generateGetConverterMethodForProperties),
+                        isRootContextDef: true);
 
                     // Add GetJsonTypeInfo override implementation.
                     AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation());
@@ -298,6 +309,7 @@ namespace {@namespace}
                             {{
                                 // Allow nullable handling to forward to the underlying type's converter.
                                 converter = {JsonMetadataServicesTypeRef}.GetNullableConverter<{typeCompilableName}>(this.{typeFriendlyName})!;
+                                converter = (({ JsonConverterFactoryTypeRef })converter).CreateConverter(typeToConvert, { OptionsInstanceVariableName })!;
                             }}
                             else
                             {{
@@ -315,15 +327,6 @@ namespace {@namespace}
                 }
 
                 metadataInitSource.Append($@"
-                    else if (converter is { JsonConverterFactoryTypeRef } factory)
-                    {{
-                        {JsonConverterTypeRef}? actualConverter = factory.CreateConverter(typeToConvert, { OptionsInstanceVariableName });
-                        if (actualConverter == null || actualConverter is { JsonConverterFactoryTypeRef })
-                        {{
-                            throw new { InvalidOperationExceptionTypeRef }($""JsonConverterFactory '{{factory.GetType()}}' cannot return a 'null' or 'JsonConverterFactory' value."");
-                        }}
-                        converter = actualConverter;
-                    }}
                     _{typeFriendlyName} = { JsonMetadataServicesTypeRef }.{ GetCreateValueInfoMethodRef(typeCompilableName)} ({ OptionsInstanceVariableName}, converter); ");
 
                 return GenerateForType(typeMetadata, metadataInitSource.ToString());
@@ -480,7 +483,7 @@ namespace {@namespace}
 
                 Type elementType = valueTypeGenerationSpec.Type;
                 string? writerMethodToCall = GetWriterMethod(elementType);
-                
+
                 string iterationLogic;
                 string valueToWrite;
 
@@ -634,7 +637,6 @@ namespace {@namespace}
             private string GeneratePropMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 const string PropVarName = "properties";
-                const string JsonContextVarName = "jsonContext";
 
                 List<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecList!;
 
@@ -1089,7 +1091,9 @@ public {typeInfoPropertyTypeRef} {typeFriendlyName}
                 }}";
             }
 
-            private string GetRootJsonContextImplementation()
+            private string GetRootJsonContextImplementation(
+                bool generateGetConverterMethodForTypes,
+                bool generateGetConverterMethodForProperties)
             {
                 string contextTypeRef = _currentContext.ContextTypeRef;
                 string contextTypeName = _currentContext.ContextType.Name;
@@ -1110,6 +1114,16 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} options) : base(options,
 }}
 
 {GetFetchLogicForRuntimeSpecifiedCustomConverter()}");
+
+                if (generateGetConverterMethodForProperties)
+                {
+                    sb.Append(GetFetchLogicForGetCustomConverter_PropertiesWithFactories());
+                }
+
+                if (generateGetConverterMethodForProperties || generateGetConverterMethodForTypes)
+                {
+                    sb.Append(GetFetchLogicForGetCustomConverter_TypesWithFactories());
+                }
 
                 return sb.ToString();
             }
@@ -1166,6 +1180,30 @@ private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ g
     }}
 
     return null;
+}}";
+            }
+
+            private string GetFetchLogicForGetCustomConverter_PropertiesWithFactories()
+            {
+                return @$"
+private {JsonConverterTypeRef}<T> {GetConverterFromFactoryMethodName}<T>({JsonConverterFactoryTypeRef} factory)
+{{
+    return ({JsonConverterTypeRef}<T>) {GetConverterFromFactoryMethodName}(typeof(T), factory);
+}}";
+            }
+
+            private string GetFetchLogicForGetCustomConverter_TypesWithFactories()
+            {
+                return @$"
+private {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({TypeTypeRef} type, {JsonConverterFactoryTypeRef} factory)
+{{
+    {JsonConverterTypeRef}? converter = factory.CreateConverter(type, {Emitter.OptionsInstanceVariableName});
+    if (converter == null || converter is {JsonConverterFactoryTypeRef})
+    {{
+        throw new {InvalidOperationExceptionTypeRef}($""The converter '{{factory.GetType()}}' cannot return null or a JsonConverterFactory instance."");
+    }}
+     
+    return converter;
 }}";
             }
 
