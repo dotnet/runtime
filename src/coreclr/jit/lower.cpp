@@ -3408,6 +3408,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     unsigned   lclNum = lclVar->GetLclNum();
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
 
+    bool replacedInLowering = false;
     if (varDsc->CanBeReplacedWithItsField(comp))
     {
         // We can replace the struct with its only field and keep the field on a register.
@@ -3422,6 +3423,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         lclVar->ChangeType(fieldDsc->lvType);
         lclNum = fieldLclNum;
         varDsc = comp->lvaGetDesc(lclNum);
+        replacedInLowering = true;
     }
     else if (varDsc->lvPromoted)
     {
@@ -3432,6 +3434,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 
     if (varDsc->lvDoNotEnregister)
     {
+        assert(!replacedInLowering);
         lclVar->ChangeOper(GT_LCL_FLD);
         lclVar->AsLclFld()->SetLclOffs(0);
         lclVar->ChangeType(ret->TypeGet());
@@ -3440,12 +3443,23 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     {
         const var_types lclVarType = varDsc->GetRegisterType(lclVar);
         assert(lclVarType != TYP_UNDEF);
+
+        if (varDsc->lvNormalizeOnLoad() && replacedInLowering)
+        {
+            // For a normalize-on-load var that we replaced late we need to insert a cast
+            // as morph would typically be responsible for this.
+            GenTreeCast* cast = comp->gtNewCastNode(TYP_INT, lclVar, false, lclVarType);
+            ret->gtOp1 = cast;
+            BlockRange().InsertBefore(ret, cast);
+            ContainCheckCast(cast);
+        }
+
         const var_types actualType = genActualType(lclVarType);
         lclVar->ChangeType(actualType);
 
         if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVarType))
         {
-            GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), lclVar);
+            GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
             ret->gtOp1       = bitcast;
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
