@@ -13,8 +13,7 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 	[KeptAssembly (PlatformAssemblies.CoreLib)]
 	[KeptAllTypesAndMembersInAssembly (PlatformAssemblies.CoreLib)]
 
-	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
-	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
+	[SkipPeVerify]
 	class CopyOfCoreLibrariesKeepsUnusedTypes
 	{
 		public static void Main ()
