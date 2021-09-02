@@ -1,23 +1,4 @@
-trigger:
-  batch: true
-  branches:
-    include:
-    - main
-    - release/6.0
-  paths:
-    include:
-    - '*'
-    - src/libraries/System.Private.CoreLib/*
-    exclude:
-    - .github/*
-    - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
+trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
