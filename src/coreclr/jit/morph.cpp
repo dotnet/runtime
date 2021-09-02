@@ -13864,6 +13864,15 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 
     if (addr->OperIs(GT_ADDR) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
+        if (fgGlobalMorph)
+        {
+            // If struct promotion was undone, adjust the annotations
+            if(fgMorphImplicitByRefArgs(addr))
+            {
+                return ind;
+            }
+        }
+
         // If `return` retypes LCL_VAR as a smaller struct it should not set `doNotEnregister` on that
         // LclVar.
         // Example: in `Vector128:AsVector2` we have RETURN SIMD8(OBJ SIMD8(ADDR byref(LCL_VAR SIMD16))).
