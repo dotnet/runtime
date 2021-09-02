@@ -361,32 +361,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void CreateSymbolicLink_WrongTargetType_Throws()
-        {
-            // dirLink -> file
-            // fileLink -> dir
-
-            string targetPath = GetRandomFilePath();
-            CreateFileOrDirectory(targetPath, createOpposite: true); // The underlying file system entry needs to be different
-            Assert.Throws<IOException>(() => CreateSymbolicLink(GetRandomFilePath(), targetPath));
-        }
-
-        [Fact]
-        public void CreateSymbolicLink_WrongTargetType_Indirect_Throws()
-        {
-            // link-2 (dir) -> link-1 (file) -> file
-            // link-2 (file) -> link-1 (dir) -> dir
-            string targetPath = GetRandomFilePath();
-            string firstLinkPath = GetRandomFilePath();
-            string secondLinkPath = GetRandomFilePath();
-
-            CreateFileOrDirectory(targetPath, createOpposite: true);
-            CreateSymbolicLink_Opposite(firstLinkPath, targetPath);
-
-            Assert.Throws<IOException>(() => CreateSymbolicLink(secondLinkPath, firstLinkPath));
-        }
-
-        [Fact]
         public void CreateSymbolicLink_CorrectTargetType_Indirect_Succeeds()
         {
             // link-2 (file) -> link-1 (file) -> file

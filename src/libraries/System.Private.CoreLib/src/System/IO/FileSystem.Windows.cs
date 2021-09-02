@@ -415,16 +415,6 @@ namespace System.IO
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
             string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
-
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(pathToTargetFullPath, ref data, returnErrorOnNotFound: true);
-            if (errorCode == Interop.Errors.ERROR_SUCCESS &&
-                data.dwFileAttributes != -1 &&
-                isDirectory != ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0))
-            {
-                throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
-            }
-
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 
@@ -502,8 +492,7 @@ namespace System.IO
                 success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.SymbolicLinkReparseBuffer rbSymlink);
                 Debug.Assert(success);
 
-                // We use PrintName(Offset|Length) instead of SubstituteName(Offset|Length) since is more friendly to the end-user,
-                // however, there's no guarantee that the NT prefix doesn't show up.
+                // We use PrintName(Offset|Length) instead of SubstituteName(Offset|Length) since is more friendly to the end-user,                // however, there's no guarantee that the NT prefix doesn't show up.
 
                 // PrintName can return a NT path if the link was created explicitly targeting a file/folder in such way.
                 //   e.g: mklink /D linkName \??\C:\path\to\target.
