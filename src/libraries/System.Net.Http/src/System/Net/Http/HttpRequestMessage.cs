@@ -116,7 +116,7 @@ namespace System.Net.Http
         public IDictionary<string, object?> Properties => Options;
 
         /// <summary>
-        /// Gets the options for the HTTP request.
+        /// Gets the special flags to use for the HTTP request. It's used to configure the HTTP request.
         /// </summary>
         public HttpRequestOptions Options => _options ??= new HttpRequestOptions();
 

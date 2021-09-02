@@ -551,11 +551,11 @@ namespace System.Net.Http
             }
         }
 
-        ///<summary>
-        /// Creates a <see cref="Stream"/> to read the content from.
-        ///</summary>
-        ///<param name="cancellationToken">The <see cref="CancellationToken"/> to register in case the stream needs to be disposed.</param>
-        ///<returns>The output <see cref="Stream"/>.</returns>
+        /// <summary>
+        /// Serializes the HTTP content to a memory stream.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The output memory stream which contains the serialized HTTP content.</returns>
         protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
         {
             LoadIntoBuffer(MaxBufferSize, cancellationToken);
