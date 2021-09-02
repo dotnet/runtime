@@ -3421,8 +3421,8 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
                 "[%06u]\n",
                 lclNum, fieldLclNum, comp->dspTreeID(ret));
         lclVar->ChangeType(fieldDsc->lvType);
-        lclNum = fieldLclNum;
-        varDsc = comp->lvaGetDesc(lclNum);
+        lclNum             = fieldLclNum;
+        varDsc             = comp->lvaGetDesc(lclNum);
         replacedInLowering = true;
     }
     else if (varDsc->lvPromoted)
@@ -3449,7 +3449,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             // For a normalize-on-load var that we replaced late we need to insert a cast
             // as morph would typically be responsible for this.
             GenTreeCast* cast = comp->gtNewCastNode(TYP_INT, lclVar, false, lclVarType);
-            ret->gtOp1 = cast;
+            ret->gtOp1        = cast;
             BlockRange().InsertBefore(ret, cast);
             ContainCheckCast(cast);
         }
