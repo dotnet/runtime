@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -85,6 +86,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public static JsonConverter<JsonElement> JsonElementConverter => s_jsonElementConverter ??= new JsonElementConverter();
         private static JsonConverter<JsonElement>? s_jsonElementConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonObject"/> values.
+        /// </summary>
+        public static JsonConverter<JsonObject> JsonObjectConverter => s_jsonObjectConverter ??= new JsonObjectConverter();
+        private static JsonConverter<JsonObject>? s_jsonObjectConverter;
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="object"/> values.
