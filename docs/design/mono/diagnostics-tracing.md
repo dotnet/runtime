@@ -13,7 +13,7 @@ Due to differences between runtimes many of the NativeRuntimeEvents won't apply 
 MonoVM runs on a variety of platforms and depending on platform capabilities MonoVM support different build configurations of EventPipe and DiagnosticServer. For desktop platforms (Windows, Linux, MacOS), MonoVM build DiagnosticServer using
 `NamedPipes` (Windows) or `UnixDomainSockets` (Linux, MacOS) support. This is inline with CoreCLR build configuration of the DiagnosticServer, working in the same way.
 
-On mobile platforms (Android/iOS) or other remote sandboxed environments, MonoVM DiagnosticServer component can be build using TCP/IP support to better handle remote targets. It is also handles the connect scenario (runtime act as TCP/IP client connecting back to tooling), as well as the listening scenario (runtime act as a TCP/IP listener waiting for tooling to connect). Depending on platform, allowed capabilities (some platforms won't allow listening on sockets) and tracing scenarios (startup tracing needs suspended runtime), a combination of these scenarios can be used.
+On mobile platforms (Android/iOS) or other remote sandboxed environments, MonoVM DiagnosticServer component can be build using TCP/IP support to better handle remote targets. It also handles the connect scenario (runtime act as TCP/IP client connecting back to tooling), as well as the listening scenario (runtime act as a TCP/IP listener waiting for tooling to connect). Depending on platform, allowed capabilities (some platforms won't allow listening on sockets) and tracing scenarios (startup tracing needs suspended runtime), a combination of these scenarios can be used.
 
 Existing diagnostic tooling only supports `NamedPipes`/`UnixDomainSockets`, so in order to reuse these tools transparently when targeting MonoVM running on mobile platforms, a new component have been implemeneted in diagnostics repro, `dotnet-dsrouter`, https://github.com/dotnet/diagnostics/tree/main/src/Tools/dotnet-dsrouter. `dotnet-dsrouter` represents the application running on a remote target locally to the diagnostic tools, routing local IPC traffic over to TCP/IP handled by MonoVM running on remote target. `dotnet-dsrouter` implements 4 different modes, server-server (IPC server, TCP server), client-server (IPC client, TCP server), server-client (IPC server, TCP client ) and client-client (IPC client, TCP client) and depending on configuration all four modes can be used with DiagnosticServer and diagnostic tooling. `dotnet-dsrouter` also improves the reversed connect runtime scenario to support more than one diagnostic tooling client at a time, as well as converting the reversed connect runtime scenario (used in scenarios like startup tracing) into a normal direct connect scenario using `dotnet-dsrouter` in client-server or server-server mode.
 
@@ -33,7 +33,7 @@ Depending on platform, there are different recommended and supported ways to inc
 
 ### Android
 
-Android is build using dynamic component support, meaning that components are included as shared objects and runtime will try to load them from the same location as `libmonosgen-2.0.so`. If runtime fails to load component, it will be disabled, if it successfully load the component at runtime, it will be enabled and used. Enabling/disabling components is then a matter of including/excluding the needed shared object files in the APK (in same folder as `libmonosgen-2.0.so`), same runtime build can be used to support any combination of components.
+Android is build using dynamic component support, meaning that components are included as shared objects and runtime will try to load them from the same location as `libmonosgen-2.0.so`. If runtime fails to load component, it will be disabled, if it successfully load the component at runtime, it will be enabled and used. Enabling/disabling components is then a matter of including/excluding the needed shared library files in the APK (in same folder as `libmonosgen-2.0.so`). The same runtime build can be used to support any combination of components.
 
 If `AndroidAppBuilderTask` is used, there is a msbuild property, `RuntimeComponents` that can be used to include specific components in the generated application. By default its empty, meaning all components will be disabled, using a `*` will enabled all components and by specify individual components, only those will be enabled. Enabling tracing would look like this, `RuntimeComponents="diagnostics_tracing"`, more components can be enabled by separating them with `;`.
 
@@ -58,14 +58,20 @@ libmono-component-diagnostics_tracing-static.a
 libmono-component-diagnostics_tracing-stub-static.a
 ```
 
+NOTE, running on iOS simulator offers some additional capabilities, so runtime pack for iOS includes shared as well as static library builds, similar to the Android use case described above.
+
 ## Install diagnostic client tooling
 
+```
 dotnet tool install -g dotnet-trace --add-source=https://aka.ms/dotnet-tools/index.json
 dotnet tool install -g dotnet-counters --add-source=https://aka.ms/dotnet-tools/index.json
+```
 
-'dotnet-dsrouter' is still installed from preview source:
+`dotnet-dsrouter` is still installed from preview source:
 
+```
 dotnet tool install -g dotnet-dsrouter --add-source=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json
+```
 
 If tools have already been installed, they can all be updated to latest version using `update` keyword instead of `install` keyword.
 
@@ -78,7 +84,7 @@ By default, EventPipe/DiagnosticServer is controlled using the same set of envir
 Prerequisites when running below diagnostic scenarios:
 
 * Make sure diagnostics_tracing component is enabled when building/deploying application.
-* If anything EventSource related is used, make sure EventSourceSupport is enabled when building application (or ILLinker can remove needed EventSource classes). If just running tracing collecting native EventPipe events emitted by SampleProfiler, DotNetRuntime or MonoProfiler providers, EventSourceSupport can be enabled or disabled.
+* If anything EventSource related is used, make sure EventSourceSupport is enabled when building application (or ILLinker can remove needed EventSource classes). If just running tracing, collecting native EventPipe events emitted by SampleProfiler, DotNetRuntime or MonoProfiler providers, EventSourceSupport can be enabled or disabled.
 * Install needed diagnostic tooling on development machine.
 
 ### Application running diagnostics and connecting over loopback interface
@@ -94,6 +100,7 @@ On Android, `--forward-port` will automatically adapt to the supplied configurat
 For more information on Android emulator networking and port forwarding:
 
 https://developer.android.com/studio/run/emulator-networking
+
 https://developer.android.com/studio/command-line/adb#forwardports
 
 On IOS, `--forward-port` works in the scenario where DiagnosticServer runs in listening mode on device (connected over usb) using loopback interface.
@@ -142,8 +149,10 @@ dotnet-counters monitor --diagnostic-port ~/myport,connect
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
 
+```
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
+```
 
 `dotnet-dsrouter` needs to run using a compatible configuration depending on scenario. Either launch a new instance for every run or have a background instance running over several sessions using same configuration.
 
@@ -164,8 +173,10 @@ dotnet-counters monitor --diagnostic-port ~/myport,connect
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
 
+```
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,nosuspend
+```
 
 `dotnet-dsrouter` needs to run using a compatible configuration depending on scenario. Either launch a new instance for every run or have a background instance running over several sessions using same configuration.
 
@@ -188,8 +199,10 @@ Using `adb` port forwarding it is possible to use `127.0.0.1:9000` in above scen
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
 
+```
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
+```
 
 `dotnet-dsrouter` needs to run using a compatible configuration depending on scenario. Either launch a new instance for every run or have a background instance running over several sessions using same configuration.
 
@@ -210,8 +223,10 @@ Since `dotnet-dsrouter` is capable to run several different modes, it is also po
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
 
+```
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
+```
 
 `dotnet-dsrouter` needs to run using a compatible configuration depending on scenario. Either launch a new instance for every run or have a background instance running over several sessions using same configuration.
 
@@ -232,8 +247,10 @@ dotnet-trace collect --diagnostic-port ~/myport,connect
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
 
+```
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend
+```
 
 `dotnet-dsrouter` needs to run using a compatible configuration depending on scenario. Either launch a new instance for every run or have a background instance running over several sessions using same configuration.
 
@@ -254,8 +271,10 @@ Since `dotnet-dsrouter` is capable to run several different modes, it is also po
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
 
+```
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend
+```
 
 `dotnet-dsrouter` needs to run using a compatible configuration depending on scenario. Either launch a new instance for every run or have a background instance running over several sessions using same configuration.
 
@@ -292,9 +311,7 @@ Launch application using the following environment variable set, `DIAGNOSTIC_POR
 dotnet-dsrouter server-server -ipcs ~/myport -tcps 127.0.0.1:9000 --forward-port Android &
 ```
 
-```
 Run application on device connected over usb.
-```
 
 ```
 dotnet-trace collect --diagnostic-port ~/myport,connect
@@ -318,9 +335,7 @@ Launch application using the following environment variable set, `DIAGNOSTIC_POR
 dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port iOS &
 ```
 
-```
 Run application on device connected over usb.
-```
 
 ```
 dotnet-trace collect --diagnostic-port ~/myport,connect
@@ -340,13 +355,13 @@ Running using single file based EventPipe session will produce a file in working
 
 Increasing the default log level in `dotnet-trace` for `Microsoft-Windows-DotNETRuntime` provider will include additional events in nettrace file giving more details around JIT and loader activities, like all loaded assemblies, loaded types, loaded/JIT:ed methods as well as timing and size metrics, all valuable information when analyzing things like startup performance, size of loaded/JIT:ed methods, time it takes to JIT all, subset or individual methods etc. To instruct `dotnet-trace` to only collect `Microsoft-Windows-DotNETRuntime` events during startup, use one of that startup tracing scenarios as described above, but add the following parameters to `dotnet-trace`, `--clreventlevel verbose --providers Microsoft-Windows-DotNETRuntime`. `Prefview` have build in analyzers for JIT/Loader stats, so either load resulting nettrace file in `Perfview` or analyze file using custom `TraceEvent` parsers.
 
-#### Trace MonoVM Profiler events during startup.
+### Trace MonoVM Profiler events during startup.
 
-MonoVM comes with a EventPipe provider mapping most of low-level Mono profiler events into native EventPipe events thought `Microsoft-DotNETRuntimeMonoProfiler`. Mainly this provider exists to simplify transition from old MonoVM log profiler over to nettrace, but it also adds a couple of features available in MonoVM profiler as well as ability to take heap shots over EventPipe when running on MonoVM (current dotnet-gcdump is tied to events emitted by CoreCLR GC and not usable on MonoVM).
+MonoVM comes with a EventPipe provider mapping most of low-level Mono profiler events into native EventPipe events thought `Microsoft-DotNETRuntimeMonoProfiler`. Mainly this provider exists to simplify transition from old MonoVM log profiler over to nettrace, but it also adds a couple of features available in MonoVM profiler as well as ability to take heap shots over EventPipe when running on MonoVM (current dotnet-gcdump is tied to events emitted by CoreCLR GC and currently not supported on MonoVM).
 
-Mono profiler include concept of method profiling and have support for method enter/leave events (per method execution timing). This can be used running in JIT/Interpreter mode (for AOT it needs to be passed to MonoVM AOT compiler). Profiling enter/leave can produce a large set of events so there might be a risk hitting buffer manager size limits, temporary dropping events. This can be mitigated by either increasing buffer manager memory limit or reduce the number of profiled methods. Since enter/leave needs method instrumentation it must be enabled when a method is JIT:ed.
+Mono profiler includes the concept of method tracing and have support for method enter/leave events (method execution timing). This can be used when running in JIT/Interpreter mode (for AOT it needs to be passed to MonoVM AOT compiler). Enable enter/leave can produce a large set of events so there might be a risk hitting buffer manager size limits, temporary dropping events. This can be mitigated by either increasing buffer manager memory limit or reduce the number of instrumented methods. Since enter/leave needs instrumentation it must be enabled when a method is JIT:ed.
 
-This can be controlled using a keyword in the MonoProfiler provider, but if an EventPipe session is not running when a method gets JIT:ed using the MonoProfiler provider with keyword enabled, it won't be instrumented and will not emit any enter/leave events. 0x20000000 will start to capture enter/leave events and 0x40000000000 can be used to enable instrumentation for all methods JIT:ed during lifetime of EventPipe session. To make sure all needed methods gets instrumented, runtime should be configured for startup profiling (as described above) and `dotnet-trace` should be run using the following provider configuration, `--providers Microsoft-DotNETRuntimeMonoProfiler:0x40020000000;4`.
+Method tracing can be controlled using a keyword in the MonoProfiler provider, but if an EventPipe session is not running when a method gets JIT:ed, it won't be instrumented and will not fire any enter/leave events. 0x20000000 will start to capture enter/leave events and 0x40000000000 can be used to enable instrumentation including all methods JIT:ed during lifetime of EventPipe session. To make sure all needed methods gets instrumented, runtime should be configured using startup profiling (as described above) and `dotnet-trace` should be run using the following provider configuration, `--providers Microsoft-DotNETRuntimeMonoProfiler:0x40020000000;4`.
 
 To fully control the instrumentation (not depend on running EventPipe session), there is a MonoVM specific environment variable that can be set:
 
@@ -378,11 +393,11 @@ Trace all methods in `Program` type.
 
 If no EventPipe session is running using MonoProfiler provider with method tracing keyword, no events will be emitted, even if running methods have been instrumented using `MONO_DIAGNOSTICS`.
 
-It is then possible to run `dotnet-trace` using the following provider configuration, `--providers Microsoft-DotNETRuntimeMonoProfiler:0x20000000;4`. Since all methods matching callspec will be instrumented it is now possible to capture enter/leave events only when needed at any time during application lifetime.
+When instrumenting methods using `MONO_DIAGNOSTICS`, it is possible to run `dotnet-trace` using the following provider configuration, `--providers Microsoft-DotNETRuntimeMonoProfiler:0x20000000;4`. Since all methods matching callspec will be instrumented it is possible to capture enter/leave events only when needed at any time during application lifetime.
 
 A way to effectively use this precise profiling is to first run with SampleProfiler provider, identifying hot paths worth additional investigation and then enable tracing using a matching callspec and trace execution of methods using MonoProfiler provider tracing keyword. It is of course possible to do enter/leave profiling during startup as well (using callspec or provider enabled instrumentation), just keep in mind that it can produce a large number of events, especially in case no callspec is in use.
 
-#### Collect GC dumps on MonoVM.
+### Collect GC dumps on MonoVM.
 
 ** TODO **: Add example using custom tooling parsing nettrace file including GC dump.
 
@@ -391,7 +406,9 @@ A way to effectively use this precise profiling is to first run with SampleProfi
 Collected events retrieved over EventPipe sessions is stored in a nettrace file that can be analyzed using tooling like perfview, Speedscope or Chromium:
 
 https://docs.microsoft.com/en-us/dotnet/core/diagnostics/debug-highcpu?tabs=windows#trace-generation
+
 https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#dotnet-trace-convert
+
 https://github.com/dotnet/diagnostics/blob/main/documentation/tutorial/app_running_slow_highcpu.md
 
 It is also possible to analyze the trace file using diagnostic client libraries from diagnostic repro:
@@ -405,5 +422,7 @@ Using the diagnostic client library gives full flexibility to use data in nettra
 ## Developing EventPipe/DiagnosticServer on MonoVM
 
 ** TODO **: EventPipe/DiagnosticServer library design.
+
 ** TODO **: How to add a new NativeRuntimeEvent.
+
 ** TODO **: How to add a new component API.
