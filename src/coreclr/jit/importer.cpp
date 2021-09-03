@@ -8147,6 +8147,12 @@ bool Compiler::impIsTailCallILPattern(
 
     OPCODE nextOpcode = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
 
+    // Ignore NOPs
+    while ((nextOpcode == CEE_NOP) && (codeAddrOfNextOpcode + 1 < codeEnd))
+    {
+        nextOpcode = (OPCODE)getU1LittleEndian(++codeAddrOfNextOpcode);
+    }
+
     return (nextOpcode == CEE_RET);
 }
 
