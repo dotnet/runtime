@@ -68,7 +68,7 @@ steps:
       publishArgs='--publish'
     fi
 
-    ${{ coalesce(parameters.platform.buildScript, './build.sh') }} --ci \
+    ${{ coalesce(parameters.platform.buildScript, 'scl enable llvm-toolset-7.0 -- ./build.sh') }} --ci \
       --configuration $buildConfig \
       --restore --build --pack $publishArgs -bl \
       $officialBuildArgs \
