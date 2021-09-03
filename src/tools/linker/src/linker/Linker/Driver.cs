@@ -1208,10 +1208,9 @@ namespace Mono.Linker
 
 		protected virtual LinkContext GetDefaultContext (Pipeline pipeline, ILogger logger)
 		{
-			return new LinkContext (pipeline, logger ?? new ConsoleLogger ()) {
+			return new LinkContext (pipeline, logger ?? new ConsoleLogger (), "output") {
 				TrimAction = AssemblyAction.Link,
 				DefaultAction = AssemblyAction.Link,
-				OutputDirectory = "output",
 			};
 		}
 

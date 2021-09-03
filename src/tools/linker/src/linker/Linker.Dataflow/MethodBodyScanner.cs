@@ -791,7 +791,7 @@ namespace Mono.Linker.Dataflow
 
 			bool isByRef = code == Code.Ldflda || code == Code.Ldsflda;
 
-			FieldDefinition field = _context.TryResolve (operation.Operand as FieldReference);
+			FieldDefinition field = _context.TryResolve ((FieldReference) operation.Operand);
 			if (field != null) {
 				StackSlot slot = new StackSlot (GetFieldValue (thisMethod, field), isByRef);
 				currentStack.Push (slot);
@@ -819,7 +819,7 @@ namespace Mono.Linker.Dataflow
 			if (operation.OpCode.Code == Code.Stfld)
 				PopUnknown (currentStack, 1, methodBody, operation.Offset);
 
-			FieldDefinition field = _context.TryResolve (operation.Operand as FieldReference);
+			FieldDefinition field = _context.TryResolve ((FieldReference) operation.Operand);
 			if (field != null) {
 				HandleStoreField (thisMethod, field, operation, valueToStoreSlot.Value);
 			}

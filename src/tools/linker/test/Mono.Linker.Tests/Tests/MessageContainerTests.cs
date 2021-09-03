@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests
 		[Test]
 		public void MSBuildFormat ()
 		{
-			LinkContext context = new LinkContext (new Pipeline (), new ConsoleLogger ());
+			LinkContext context = new LinkContext (new Pipeline (), new ConsoleLogger (), string.Empty);
 
 			var msg = MessageContainer.CreateCustomErrorMessage ("text", 6001);
 			Assert.AreEqual ("ILLink: error IL6001: text", msg.ToMSBuildString ());

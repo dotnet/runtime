@@ -4,17 +4,20 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.XPath;
 using Mono.Cecil;
 
+#nullable enable
+
 namespace Mono.Linker.Steps
 {
 	public class LinkAttributesParser : ProcessLinkerXmlBase
 	{
-		AttributeInfo _attributeInfo;
+		AttributeInfo? _attributeInfo;
 
 		public LinkAttributesParser (LinkContext context, Stream documentStream, string xmlDocumentLocation)
 			: base (context, documentStream, xmlDocumentLocation)
@@ -29,7 +32,7 @@ namespace Mono.Linker.Steps
 		public void Parse (AttributeInfo xmlInfo)
 		{
 			_attributeInfo = xmlInfo;
-			bool stripLinkAttributes = _context.IsOptimizationEnabled (CodeOptimizations.RemoveLinkAttributes, _resourceAssembly);
+			bool stripLinkAttributes = _context.IsOptimizationEnabled (CodeOptimizations.RemoveLinkAttributes, _resource?.Assembly);
 			ProcessXml (stripLinkAttributes, _context.IgnoreLinkAttributes);
 		}
 
@@ -40,7 +43,7 @@ namespace Mono.Linker.Steps
 				if (!ShouldProcessElement (argumentNav))
 					continue;
 
-				TypeDefinition attributeType;
+				TypeDefinition? attributeType;
 				string internalAttribute = GetAttribute (argumentNav, "internal");
 				if (!string.IsNullOrEmpty (internalAttribute)) {
 					attributeType = GenerateRemoveAttributeInstancesAttribute ();
@@ -63,7 +66,7 @@ namespace Mono.Linker.Steps
 						continue;
 				}
 
-				CustomAttribute customAttribute = CreateCustomAttribute (argumentNav, attributeType);
+				CustomAttribute? customAttribute = CreateCustomAttribute (argumentNav, attributeType);
 				if (customAttribute != null) {
 					_context.LogMessage ($"Assigning external custom attribute '{FormatCustomAttribute (customAttribute)}' instance to '{provider}'.");
 					builder.Add (customAttribute);
@@ -90,7 +93,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		TypeDefinition GenerateRemoveAttributeInstancesAttribute ()
+		TypeDefinition? GenerateRemoveAttributeInstancesAttribute ()
 		{
 			if (_context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition != null)
 				return _context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition;
@@ -130,11 +133,11 @@ namespace Mono.Linker.Steps
 			return _context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition = td;
 		}
 
-		CustomAttribute CreateCustomAttribute (XPathNavigator nav, TypeDefinition attributeType)
+		CustomAttribute? CreateCustomAttribute (XPathNavigator nav, TypeDefinition attributeType)
 		{
 			CustomAttributeArgument[] arguments = ReadCustomAttributeArguments (nav, attributeType);
 
-			MethodDefinition constructor = FindBestMatchingConstructor (attributeType, arguments);
+			MethodDefinition? constructor = FindBestMatchingConstructor (attributeType, arguments);
 			if (constructor == null) {
 				LogWarning (
 					$"Could not find matching constructor for custom attribute '{attributeType.GetDisplayName ()}' arguments.",
@@ -152,7 +155,7 @@ namespace Mono.Linker.Steps
 			return customAttribute;
 		}
 
-		MethodDefinition FindBestMatchingConstructor (TypeDefinition attributeType, CustomAttributeArgument[] args)
+		MethodDefinition? FindBestMatchingConstructor (TypeDefinition attributeType, CustomAttributeArgument[] args)
 		{
 			var methods = attributeType.Methods;
 			for (int i = 0; i < attributeType.Methods.Count; ++i) {
@@ -190,7 +193,7 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				PropertyDefinition property = attributeType.Properties.Where (prop => prop.Name == propertyName).FirstOrDefault ();
+				PropertyDefinition? property = attributeType.Properties.Where (prop => prop.Name == propertyName).FirstOrDefault ();
 				if (property == null) {
 					LogWarning ($"Property '{propertyName}' could not be found.", 2052, propertyNav);
 					continue;
@@ -219,7 +222,7 @@ namespace Mono.Linker.Steps
 
 		CustomAttributeArgument? ReadCustomAttributeArgument (XPathNavigator nav, IMemberDefinition memberWithAttribute)
 		{
-			TypeReference typeref = ResolveArgumentType (nav, memberWithAttribute);
+			TypeReference? typeref = ResolveArgumentType (nav, memberWithAttribute);
 			if (typeref is null)
 				return null;
 
@@ -239,7 +242,11 @@ namespace Mono.Linker.Steps
 					return null;
 				}
 
-				var boxedValue = ReadCustomAttributeArgument (argumentIterator.Current!, _context.TryResolve (typeref));
+				var typedef = _context.TryResolve (typeref);
+				if (typedef == null)
+					return null;
+
+				var boxedValue = ReadCustomAttributeArgument (argumentIterator.Current!, typedef);
 				if (boxedValue is null)
 					return null;
 
@@ -285,7 +292,7 @@ namespace Mono.Linker.Steps
 				return null;
 			}
 
-			TypeReference ResolveArgumentType (XPathNavigator nav, IMemberDefinition memberWithAttribute)
+			TypeReference? ResolveArgumentType (XPathNavigator nav, IMemberDefinition memberWithAttribute)
 			{
 				string typeName = GetAttribute (nav, "type");
 				if (string.IsNullOrEmpty (typeName))
@@ -301,7 +308,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		object ConvertStringValue (object value, TypeReference targetType)
+		object? ConvertStringValue (object value, TypeReference targetType)
 		{
 			TypeCode typeCode;
 			switch (targetType.MetadataType) {
@@ -356,7 +363,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		bool GetAttributeType (XPathNavigator nav, string attributeFullName, out TypeDefinition attributeType)
+		bool GetAttributeType (XPathNavigator nav, string attributeFullName, [NotNullWhen (true)] out TypeDefinition? attributeType)
 		{
 			string assemblyName = GetAttribute (nav, "assembly");
 			if (string.IsNullOrEmpty (assemblyName)) {
@@ -390,11 +397,11 @@ namespace Mono.Linker.Steps
 
 		protected override AllowedAssemblies AllowedAssemblySelector {
 			get {
-				if (_resourceAssembly == null)
+				if (_resource?.Assembly == null)
 					return AllowedAssemblies.AllAssemblies;
 
 				// Corelib XML may contain assembly wildcard to support compiler-injected attribute types
-				if (_resourceAssembly.Name.Name == PlatformAssemblies.CoreLib)
+				if (_resource?.Assembly.Name.Name == PlatformAssemblies.CoreLib)
 					return AllowedAssemblies.AllAssemblies;
 
 				return AllowedAssemblies.ContainingAssembly;
@@ -417,11 +424,10 @@ namespace Mono.Linker.Steps
 			if (!type.HasNestedTypes)
 				return;
 
-			var iterator = nav.SelectChildren ("type", string.Empty);
-			while (iterator.MoveNext ()) {
+			foreach (XPathNavigator nestedTypeNav in nav.SelectChildren ("type", string.Empty)) {
 				foreach (TypeDefinition nested in type.NestedTypes) {
-					if (nested.Name == GetAttribute (iterator.Current, "name") && ShouldProcessElement (iterator.Current))
-						ProcessType (nested, iterator.Current);
+					if (nested.Name == GetAttribute (nestedTypeNav, "name") && ShouldProcessElement (nestedTypeNav))
+						ProcessType (nested, nestedTypeNav);
 				}
 			}
 		}
@@ -431,7 +437,7 @@ namespace Mono.Linker.Steps
 			PopulateAttributeInfo (field, nav);
 		}
 
-		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
+		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
 		{
 			PopulateAttributeInfo (method, nav);
 			ProcessReturnParameters (method, nav);
@@ -440,6 +446,7 @@ namespace Mono.Linker.Steps
 
 		void ProcessParameters (MethodDefinition method, XPathNavigator nav)
 		{
+			Debug.Assert (_attributeInfo != null);
 			foreach (XPathNavigator parameterNav in nav.SelectChildren ("parameter", string.Empty)) {
 				var attributes = ProcessAttributes (parameterNav, method);
 				if (attributes != null) {
@@ -460,21 +467,20 @@ namespace Mono.Linker.Steps
 
 		void ProcessReturnParameters (MethodDefinition method, XPathNavigator nav)
 		{
-			var iterator = nav.SelectChildren ("return", string.Empty);
 			bool firstAppearance = true;
-			while (iterator.MoveNext ()) {
+			foreach (XPathNavigator returnNav in nav.SelectChildren ("return", string.Empty)) {
 				if (firstAppearance) {
 					firstAppearance = false;
-					PopulateAttributeInfo (method.MethodReturnType, iterator.Current);
+					PopulateAttributeInfo (method.MethodReturnType, returnNav);
 				} else {
 					LogWarning (
 						$"There is more than one 'return' child element specified for method '{method.GetDisplayName ()}'.",
-						2023, iterator.Current);
+						2023, returnNav);
 				}
 			}
 		}
 
-		protected override MethodDefinition GetMethod (TypeDefinition type, string signature)
+		protected override MethodDefinition? GetMethod (TypeDefinition type, string signature)
 		{
 			if (type.HasMethods)
 				foreach (MethodDefinition method in type.Methods)
@@ -514,18 +520,19 @@ namespace Mono.Linker.Steps
 			return sb.ToString ();
 		}
 
-		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object customData, bool fromSignature)
+		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature)
 		{
 			PopulateAttributeInfo (property, nav);
 		}
 
-		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object customData)
+		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData)
 		{
 			PopulateAttributeInfo (@event, nav);
 		}
 
 		void PopulateAttributeInfo (ICustomAttributeProvider provider, XPathNavigator nav)
 		{
+			Debug.Assert (_attributeInfo != null);
 			var attributes = ProcessAttributes (nav, provider);
 			if (attributes != null)
 				_attributeInfo.AddCustomAttributes (provider, attributes);
