@@ -3402,7 +3402,7 @@ public:
             weight2 += 2 * BB_UNITY_WEIGHT;
         }
 
-        if (weight1 != weight2)
+        if (fabs(weight1 - weight2) > 0.01)
         {
             return weight1 > weight2;
         }
