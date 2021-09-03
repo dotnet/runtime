@@ -2138,29 +2138,33 @@ namespace System.Globalization
 
             // if digits.Length < NumberFormatInfo.s_asciiDigits.Length means the native digits setting is messed up in the host machine.
             // Instead of throwing IndexOutOfRangeException that will be hard to diagnose after the fact, we'll fall back to use the ASCII digits instead.
-            if (digits.Length >= NumberFormatInfo.s_asciiDigits.Length)
+            if (digits.Length < NumberFormatInfo.s_asciiDigits.Length)
             {
-                // Try to check if the digits are all ASCII so we can avoid the array allocation and use the static array NumberFormatInfo.s_asciiDigits instead.
-                // If we have non-ASCII digits, we should exit the loop very quickly.
-                int i = 0;
-                while (i < NumberFormatInfo.s_asciiDigits.Length)
-                {
-                    if (digits[i] != NumberFormatInfo.s_asciiDigits[i][0])
-                    {
-                        break;
-                    }
-                    i++;
-                }
+                return result;
+            }
 
-                if (i < NumberFormatInfo.s_asciiDigits.Length)
+            // Try to check if the digits are all ASCII so we can avoid the array allocation and use the static array NumberFormatInfo.s_asciiDigits instead.
+            // If we have non-ASCII digits, we should exit the loop very quickly.
+            int i = 0;
+            while (i < NumberFormatInfo.s_asciiDigits.Length)
+            {
+                if (digits[i] != NumberFormatInfo.s_asciiDigits[i][0])
                 {
-                    // we have non-ASCII digits
-                    result = new string[10];
-                    for (i = 0; i < result.Length; i++)
-                    {
-                        result[i] = char.ToString(digits[i]);
-                    }
+                    break;
                 }
+                i++;
+            }
+
+            if (i >= NumberFormatInfo.s_asciiDigits.Length)
+            {
+                return result;
+            }
+
+            // we have non-ASCII digits
+            result = new string[10];
+            for (i = 0; i < result.Length; i++)
+            {
+                result[i] = char.ToString(digits[i]);
             }
 
             return result;
