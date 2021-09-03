@@ -1353,6 +1353,20 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
 }
 
+inline GenTree* Compiler::gtNewKeepAliveNode(GenTree* op)
+{
+    GenTree* keepalive = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, op);
+
+    // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
+    // very subtle and hard to observe. Thus we are conservatively marking it with both
+    // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
+    // necessary. The conservative side-effects are unlikely to have negative impact
+    // on code quality in this case.
+    keepalive->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+
+    return keepalive;
+}
+
 inline GenTreeCast* Compiler::gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
 {
     GenTreeCast* cast = new (this, GT_CAST) GenTreeCast(typ, op1, fromUnsigned, castType);
