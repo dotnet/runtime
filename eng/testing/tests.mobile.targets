@@ -194,7 +194,7 @@
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
-    <ILStrip Condition="'$(RunAOTCompilation)' == 'true'" Assemblies="@(BundleAssemblies)" />
+    <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'" Assemblies="@(BundleAssemblies)" />
 
     <ItemGroup>
       <BundleAssemblies Include="@(_BundleNonAotAssemblies)" />
