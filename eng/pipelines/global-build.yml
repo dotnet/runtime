@@ -127,7 +127,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/common/templates/job/source-build.yml
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
     platforms:
     - SourceBuild_Linux_x64
     jobParameters:
