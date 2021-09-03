@@ -2728,7 +2728,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                             // tail call in tier 0, switch to optimized to avoid spending too much time running slower
                             // code and to avoid stack overflow from recursion
 
-                            // However, let's not do it if we're allowed to compile methods with loops to tier1
+                            // However, let's not do it if we're allowed to compile methods with loops to tier0
                             // and going to instrument the current method.
                             fgSwitchToOptimized();
                         }
