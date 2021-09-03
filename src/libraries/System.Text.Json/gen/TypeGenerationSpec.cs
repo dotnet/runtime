@@ -217,7 +217,8 @@ ReturnFalse:
                 {
                     if (property.TypeGenerationSpec.Type.IsObjectType() ||
                         property.NumberHandling == JsonNumberHandling.AllowNamedFloatingPointLiterals ||
-                        property.NumberHandling == JsonNumberHandling.WriteAsString)
+                        property.NumberHandling == JsonNumberHandling.WriteAsString ||
+                        property.ConverterInstantiationLogic is not null)
                     {
                         return false;
                     }

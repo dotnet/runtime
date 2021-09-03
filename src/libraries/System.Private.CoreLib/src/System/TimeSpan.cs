@@ -90,7 +90,7 @@ namespace System
         {
             long totalMilliSeconds = ((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds;
             if (totalMilliSeconds > MaxMilliSeconds || totalMilliSeconds < MinMilliSeconds)
-                throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             _ticks = (long)totalMilliSeconds * TicksPerMillisecond;
         }
 
@@ -215,15 +215,14 @@ namespace System
         private static TimeSpan Interval(double value, double scale)
         {
             if (double.IsNaN(value))
-                throw new ArgumentException(SR.Arg_CannotBeNaN);
-            double ticks = value * scale;
-            return IntervalFromDoubleTicks(ticks);
+                ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN();
+            return IntervalFromDoubleTicks(value * scale);
         }
 
         private static TimeSpan IntervalFromDoubleTicks(double ticks)
         {
             if ((ticks > long.MaxValue) || (ticks < long.MinValue) || double.IsNaN(ticks))
-                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
+                ThrowHelper.ThrowOverflowException_TimeSpanTooLong();
             if (ticks == long.MaxValue)
                 return TimeSpan.MaxValue;
             return new TimeSpan((long)ticks);
