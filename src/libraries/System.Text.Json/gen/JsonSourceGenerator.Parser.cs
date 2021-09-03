@@ -823,6 +823,8 @@ namespace System.Text.Json.SourceGeneration
 
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
+                            PropertyGenerationSpec spec;
+
                             foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
                             {
                                 bool isVirtual = propertyInfo.IsVirtual();
@@ -833,11 +835,8 @@ namespace System.Text.Json.SourceGeneration
                                     continue;
                                 }
 
-                                PropertyGenerationSpec spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
-                                CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
-
-                                propertyOrderSpecified |= spec.Order != 0;
-                                hasPropertyFactoryConverters |= spec.HasFactoryConverter;
+                                spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
+                                CacheMemberHelper();
                             }
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
@@ -847,11 +846,19 @@ namespace System.Text.Json.SourceGeneration
                                     continue;
                                 }
 
-                                PropertyGenerationSpec spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
+                                spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
+                                CacheMemberHelper();
+                            }
+
+                            void CacheMemberHelper()
+                            {
                                 CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
 
                                 propertyOrderSpecified |= spec.Order != 0;
                                 hasPropertyFactoryConverters |= spec.HasFactoryConverter;
+
+                                // The property type may be implicitly in the context, so add that as well.
+                                hasTypeFactoryConverter |= spec.TypeGenerationSpec.HasTypeFactoryConverter;
                             }
                         }
 
@@ -875,10 +882,10 @@ namespace System.Text.Json.SourceGeneration
                     constructionStrategy,
                     nullableUnderlyingTypeMetadata: nullableUnderlyingTypeGenSpec,
                     converterInstatiationLogic,
-                    implementsIJsonOnSerialized,
-                    implementsIJsonOnSerializing,
-                    hasTypeFactoryConverter,
-                    hasPropertyFactoryConverters);
+                    implementsIJsonOnSerialized : implementsIJsonOnSerialized,
+                    implementsIJsonOnSerializing : implementsIJsonOnSerializing,
+                    hasTypeFactoryConverter : hasTypeFactoryConverter,
+                    hasPropertyFactoryConverters : hasPropertyFactoryConverters);
 
                 return typeMetadata;
             }
@@ -1177,7 +1184,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (forType)
                     {
-                        return $"this.{Emitter.GetConverterFromFactoryMethodName}(typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
+                        return $"{Emitter.GetConverterFromFactoryMethodName}(typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
                     }
                     else
                     {
