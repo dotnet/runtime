@@ -354,6 +354,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }, _state);
 
+            // CR: We should make sure that we never return from a final state (Abort etc.) back to writing. 
+            // Also we're missing final state for writing (we have one for reading).
             lock (_state)
             {
                 if (_state.SendState == SendState.Aborted)
@@ -380,6 +382,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             return registration;
         }
 
+        // CR: Consolidate the state machine from so many small helpers (obstacle - 3 different write methods).
+        // Do not use Handle... for private helpers that are not msquic callbacks.
         private void HandleWriteCompletedState()
         {
             lock (_state)
@@ -397,6 +401,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_state.SendState == SendState.Pending)
                 {
+                    // CR: should we go back to success state after failed attempt to call msquic and send data?
+                    // Should we go into aborted state?
                     _state.SendState = SendState.Finished;
                 }
             }
@@ -483,11 +489,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _state.ReadState = ReadState.None;
 
                     int taken = CopyMsQuicBuffersToUserBuffer(_state.ReceiveQuicBuffers.AsSpan(0, _state.ReceiveQuicBuffersCount), destination.Span);
+                    // CR: we shouldn't be calling msquic in a lock
                     ReceiveComplete(taken);
 
                     if (taken != _state.ReceiveQuicBuffersTotalBytes)
                     {
                         // Need to re-enable receives because MsQuic will pause them when we don't consume the entire buffer.
+                        // CR: we shouldn't be calling msquic in a lock
                         EnableReceive();
                     }
                     else if (_state.ReceiveIsFinal)
@@ -557,6 +565,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            // CR: shouldComplete (all vars) naming unclear
             bool shouldComplete = false;
             lock (_state)
             {
@@ -598,6 +607,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
+            // CR: we're missing setting exception to SendResettableCompletionSource
             if (shouldComplete)
             {
                 _state.ShutdownWriteCompletionSource.SetException(
@@ -613,6 +623,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
         }
 
+        // CR: naming sucks --> CloseAsync()
         internal override async ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -638,6 +649,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                     }
                 }
 
+                // CR: should we be issuing abortive shutdown (immediate) here instead? Beware of shutdown event handler releasing memory and having
+                // memory leaks
                 if (shouldComplete)
                 {
                     state.ShutdownCompletionSource.SetException(
@@ -665,6 +678,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return new ValueTask(_state.ShutdownWriteCompletionSource.Task.WaitAsync(cancellationToken));
         }
 
+        // CR: naming ShutdownWrites, this one closes write side of the stream only
         internal override void Shutdown()
         {
             ThrowIfDisposed();
@@ -805,6 +819,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
 
                 // Check if we already got final event.
+                // CR: use constants for the values of ShutdownDone
                 releaseHandles = Interlocked.Exchange(ref _state.ShutdownDone, 1) == 2;
                 if (releaseHandles)
                 {
@@ -825,6 +840,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 try
                 {
+                    // CR: Use a constant for 0xffffffff
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, 0xffffffff);
                 } catch (ObjectDisposedException) { };
             }
@@ -845,6 +861,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void EnableReceive()
         {
+            // CR: assert no lock is taken
             uint status = MsQuicApi.Api.StreamReceiveSetEnabledDelegate(_state.Handle, enabled: true);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamReceiveSetEnabled failed.");
         }
@@ -866,6 +883,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             return HandleEvent(state, ref streamEvent);
         }
 
+        // CR: why is this a seperate function???
+        // We should be consistent with other ms quic objects like connection and listener.
         private static uint HandleEvent(State state, ref StreamEvent evt)
         {
             if (NetEventSource.Log.IsEnabled())
@@ -883,6 +902,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return HandleEventStartComplete(state, ref evt);
                     // Received data on the stream
                     case QUIC_STREAM_EVENT_TYPE.RECEIVE:
+                        // CR: naming Receive
                         return HandleEventRecv(state, ref evt);
                     // Send has completed.
                     // Contains a canceled bool to indicate if the send was canceled.
@@ -896,6 +916,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return HandleEventPeerSendAborted(state, ref evt);
                     // Peer has stopped receiving data, don't send anymore.
                     case QUIC_STREAM_EVENT_TYPE.PEER_RECEIVE_ABORTED:
+                        // CR: naming Receive
                         return HandleEventPeerRecvAborted(state, ref evt);
                     // Occurs when shutdown is completed for the send side.
                     // This only happens for shutdown on sending, not receiving
@@ -922,6 +943,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
+        // CR: Add high level how the reading works comment.
         private static unsafe uint HandleEventRecv(State state, ref StreamEvent evt)
         {
             ref StreamEventDataReceive receiveEvent = ref evt.Data.Receive;
@@ -1210,6 +1232,9 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static uint HandleEventSendComplete(State state, ref StreamEvent evt)
         {
             StreamEventDataSendComplete sendCompleteEvent = evt.Data.SendComplete;
+            // CR: canceled will be set when connection gets aborted, 
+            // send with FIN followed in a quick succession by another send
+            // CR: we might ignore canceled, since there might be a race between connection getting closed and geting this event.
             bool canceled = sendCompleteEvent.Canceled != 0;
 
             bool complete = false;
@@ -1434,6 +1459,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ReceiveComplete(int bufferLength)
         {
+            // CR: assert no lock is taken
             uint status = MsQuicApi.Api.StreamReceiveCompleteDelegate(_state.Handle, (ulong)bufferLength);
             QuicExceptionHelpers.ThrowIfFailed(status, "Could not complete receive call.");
         }
@@ -1441,6 +1467,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // This can fail if the stream isn't started.
         private long GetStreamId()
         {
+            // CR: assert no lock is taken
             return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
         }
 
@@ -1526,6 +1553,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static Exception GetConnectionAbortedException(State state) =>
             ThrowHelper.GetConnectionAbortedException(state.ConnectionState.AbortErrorCode);
 
+        // CR: naming ??? nobody knows a better name
         private static bool CleanupReadStateAndCheckPending(State state, ReadState finalState)
         {
             Debug.Assert(finalState >= ReadState.ReadsCompleted, $"Expected final read state, got {finalState}");
@@ -1608,6 +1636,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             Closed
         }
 
+        // CR: explain the state machine in comments
         private enum ShutdownWriteState
         {
             None = 0,
@@ -1616,6 +1645,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ConnectionClosed
         }
 
+        // CR: explain the state machine in comments
         private enum ShutdownState
         {
             None = 0,
@@ -1625,6 +1655,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ConnectionClosed
         }
 
+        // CR: explain the state machine in comments
         private enum SendState
         {
             None = 0,

@@ -34,6 +34,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public readonly SafeMsQuicConfigurationHandle? ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
+            // CR: Connections before finished negotiation, we hold them back until they're fully connected / initialized.
+            // Then we put it into accept queue. Note that negotiation might fail thus the connection will never reach the accept queue.
             public readonly ConcurrentDictionary<IntPtr, MsQuicConnection> PendingConnections;
 
             public QuicOptions ConnectionOptions = new QuicOptions();
