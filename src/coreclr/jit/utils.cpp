@@ -665,8 +665,8 @@ const char* refCntWtd2str(weight_t refCntWtd)
     {
         weight_t scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
         weight_t intPart      = (weight_t)floor(scaledWeight);
-        bool  isLarge      = intPart > 1e9;
-        bool  isSmall      = (intPart < 1e-2) && (intPart != 0);
+        bool     isLarge      = intPart > 1e9;
+        bool     isSmall      = (intPart < 1e-2) && (intPart != 0);
 
         // Use g format for high dynamic range counts.
         //

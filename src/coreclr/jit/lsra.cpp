@@ -353,7 +353,7 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 {
     // An interval can have no recentRefPosition if this is the initial assignment
     // of a parameter to its home register.
-    weight_t cost     = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
+    weight_t cost  = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
     spillCost[reg] = cost;
 #ifdef TARGET_ARM
     if (interval->registerType == TYP_DOUBLE)
@@ -2857,7 +2857,7 @@ weight_t LinearScan::getSpillWeight(RegRecord* physRegRecord)
 {
     assert(physRegRecord->assignedInterval != nullptr);
     RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
-    weight_t        weight            = BB_ZERO_WEIGHT;
+    weight_t     weight            = BB_ZERO_WEIGHT;
 
     // We shouldn't call this method if there is no recentAssignedRef.
     assert(recentAssignedRef != nullptr);
@@ -11312,7 +11312,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
             continue;
         }
 
-        weight_t        currentSpillWeight = 0;
+        weight_t     currentSpillWeight = 0;
         RefPosition* recentRefPosition  = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
         if ((recentRefPosition != nullptr) &&
             (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
