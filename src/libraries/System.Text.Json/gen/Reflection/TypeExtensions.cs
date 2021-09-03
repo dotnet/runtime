@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json.SourceGeneration;
 
 namespace System.Text.Json.Reflection
 {

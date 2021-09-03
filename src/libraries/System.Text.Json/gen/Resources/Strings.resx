@@ -141,4 +141,16 @@
   <data name="MultipleJsonConstructorAttributeTitle" xml:space="preserve">
     <value>Type has multiple constructors annotated with JsonConstructorAttribute.</value>
   </data>
+  <data name="MultipleJsonExtensionDataAttributeFormat" xml:space="preserve">
+    <value>Type '{0}' has multiple members annotated with 'JsonExtensionDataAttribute'.</value>
+  </data>
+  <data name="MultipleJsonExtensionDataAttributeTitle" xml:space="preserve">
+    <value>Type has multiple members annotated with JsonExtensionDataAttribute.</value>
+  </data>
+  <data name="DataExtensionPropertyInvalidFormat" xml:space="preserve">
+    <value>The data extension property '{0}.{1}' does not match the required signature of 'IDictionary&lt;string, JsonElement&gt;', 'IDictionary&lt;string, object&gt;' or 'JsonObject'.</value>
+  </data>
+  <data name="DataExtensionPropertyInvalidTitle" xml:space="preserve">
+    <value>Data extension property type invalid.</value>
+  </data>
 </root>

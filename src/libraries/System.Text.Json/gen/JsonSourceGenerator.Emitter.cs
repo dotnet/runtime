@@ -48,7 +48,6 @@ namespace System.Text.Json.SourceGeneration
             private const string IListTypeRef = "global::System.Collections.Generic.IList";
             private const string KeyValuePairTypeRef = "global::System.Collections.Generic.KeyValuePair";
             private const string ListTypeRef = "global::System.Collections.Generic.List";
-            private const string DictionaryTypeRef = "global::System.Collections.Generic.Dictionary";
             private const string JsonEncodedTextTypeRef = "global::System.Text.Json.JsonEncodedText";
             private const string JsonNamingPolicyTypeRef = "global::System.Text.Json.JsonNamingPolicy";
             private const string JsonSerializerTypeRef = "global::System.Text.Json.JsonSerializer";
@@ -253,6 +252,12 @@ namespace {@namespace}
                                     GenerateTypeInfo(spec.TypeGenerationSpec);
                                 }
                             }
+
+                            TypeGenerationSpec? extPropTypeSpec = typeGenerationSpec.ExtensionDataPropertyTypeSpec;
+                            if (extPropTypeSpec != null)
+                            {
+                                GenerateTypeInfo(extPropTypeSpec);
+                            }
                         }
                         break;
                     case ClassType.KnownUnsupportedType:
@@ -431,9 +436,18 @@ namespace {@namespace}
                 CollectionType collectionType = typeGenerationSpec.CollectionType;
 
                 string typeRef = typeGenerationSpec.TypeRef;
-                string createObjectFuncArg = typeGenerationSpec.ConstructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
-                    ? $"createObjectFunc: () => new {typeRef}()"
-                    : "createObjectFunc: null";
+
+                string createObjectFuncArg;
+                if (typeGenerationSpec.RuntimeTypeRef != null)
+                {
+                    createObjectFuncArg = $"createObjectFunc: () => new {typeGenerationSpec.RuntimeTypeRef}()";
+                }
+                else
+                {
+                    createObjectFuncArg = typeGenerationSpec.ConstructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
+                        ? $"createObjectFunc: () => new {typeRef}()"
+                        : "createObjectFunc: null";
+                }
 
                 string collectionInfoCreationPrefix = collectionType switch
                 {
@@ -741,6 +755,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
         {setterNamedArg},
         {ignoreConditionNamedArg},
         hasJsonInclude: {ToCSharpKeyword(memberMetadata.HasJsonInclude)},
+        isExtensionData: {ToCSharpKeyword(memberMetadata.IsExtensionData)},
         numberHandling: {GetNumberHandlingAsStr(memberMetadata.NumberHandling)},
         propertyName: ""{clrPropertyName}"",
         {jsonPropertyNameNamedArg});
