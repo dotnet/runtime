@@ -120,6 +120,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XPath/XPathDocument/System.Xml.XPath.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/ExtendedFunctionalTests/System.Private.Uri.ExtendedFunctional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates\tests\System.Security.Cryptography.X509Certificates.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
@@ -145,68 +146,27 @@
     <!-- https://github.com/dotnet/runtime/issues/51414 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
 
-    <!-- Failures -->
-    <!-- https://github.com/dotnet/runtime/issues/51335 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
-
-    <!-- Crashes or hangs, did not produce testResults.xml -->
-    <!-- https://github.com/dotnet/runtime/issues/52120 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
-
-    <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Http/tests/Microsoft.Extensions.Http.Tests/Microsoft.Extensions.Http.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging/tests/Common/Microsoft.Extensions.Logging.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression/tests/System.IO.Compression.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.Brotli.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem/tests/System.IO.FileSystem.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Packaging/tests/System.IO.Packaging.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/UnitTests/System.Private.Uri.Unit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlResolver/System.Xml.XmlResolver.Tests/System.Xml.XmlResolver.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Csp/tests/System.Security.Cryptography.Csp.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow/tests/System.Threading.Tasks.Dataflow.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks/tests/System.Threading.Tasks.Tests.csproj" />
-
-    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/50589 -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\AOT\tvOS.Simulator.Aot.Test.csproj" />
-
-    <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.Brotli.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile/tests/System.IO.Compression.ZipFile.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(RunDisablediOSTests)' != 'true'">
-    <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
-
-    <!-- Crash https://github.com/dotnet/runtime/issues/56085 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Tests.csproj" />
-
-    <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\Interpreter\iOS.Simulator.Interpreter.Test.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\InvariantCultureOnlyMode\iOS.Simulator.InvariantCultureOnlyMode.Test.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisablediOSTests)' != 'true'">
-    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher/tests/System.IO.FileSystem.Watcher.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client/tests/System.Net.WebSockets.Client.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(TargetArchitecture)' == 'x64' and '$(RunDisablediOSTests)' != 'true'">
     <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions/tests/System.Linq.Expressions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel/tests/System.Linq.Parallel.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests/tests/System.Net.Requests.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/PInvoke/iOS.Simulator.PInvoke.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/tvOS/Simulator/AOT/tvOS.Simulator.Aot.Test.csproj" />
+    <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
+
+    <!-- Crash https://github.com/dotnet/runtime/issues/56085 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.SourceGeneration.Tests/System.Text.Json.SourceGeneration.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/51335 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
@@ -303,8 +263,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'  or '$(TargetOS)' == 'MacCatalyst')">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" />
+    <!-- https://github.com/dotnet/runtime/issues/57666 -->
+    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
+                      BuildInParallel="false" /> -->
 
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
