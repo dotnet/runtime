@@ -121,7 +121,7 @@ jobs:
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
     
     - ${{ if eq(parameters.buildingOnSourceBuildImage, true) }}:
-      - template: /eng/common/templates/job/source-build.yml
+      - template: /eng/common/templates/steps/source-build.yml
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
