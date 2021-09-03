@@ -2620,7 +2620,7 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             }
             else
             {
-                JITDUMP("it is reinterpreted as a struct arg\n");                
+                JITDUMP("it is reinterpreted as a struct arg\n");
             }
             break;
         case DNER_BlockOp:
