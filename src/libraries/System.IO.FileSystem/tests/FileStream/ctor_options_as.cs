@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+using System.Security.Cryptography;
 using Xunit;
 
 namespace System.IO.Tests
@@ -68,6 +70,10 @@ namespace System.IO.Tests
     [Collection("NoParallelTests")]
     public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
     {
+        protected override long PreallocationSize => 10;
+
+        protected override long InitialLength => 10;
+
         [Fact]
         public virtual void NegativePreallocationSizeThrows()
         {
@@ -80,40 +86,48 @@ namespace System.IO.Tests
         [InlineData(FileMode.Create, 0L)]
         [InlineData(FileMode.CreateNew, 0L)]
         [InlineData(FileMode.OpenOrCreate, 0L)]
-        public void WhenFileIsCreatedWithoutPreallocationSizeSpecifiedThePreallocationSizeIsNotSet(FileMode mode, long preallocationSize)
+        public void WhenFileIsCreatedWithoutPreallocationSizeSpecifiedItsLengthIsZero(FileMode mode, long preallocationSize)
         {
             using (var fs = new FileStream(GetPathToNonExistingFile(), GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.Equal(0, GetActualPreallocationSize(fs));
                 Assert.Equal(0, fs.Length);
                 Assert.Equal(0, fs.Position);
             }
         }
 
         [Theory]
-        [InlineData(FileMode.Open, 0L)]
-        [InlineData(FileMode.Open, 1L)]
-        [InlineData(FileMode.OpenOrCreate, 0L)]
-        [InlineData(FileMode.OpenOrCreate, 1L)]
-        [InlineData(FileMode.Append, 0L)]
-        [InlineData(FileMode.Append, 1L)]
-        public void WhenExistingFileIsBeingOpenedWithPreallocationSizeSpecifiedThePreallocationSizeIsNotChanged(FileMode mode, long preallocationSize)
+        [InlineData(FileMode.Open, 20L)]
+        [InlineData(FileMode.Open, 5L)]
+        [InlineData(FileMode.Append, 20L)]
+        [InlineData(FileMode.Append, 5L)]
+        public void PreallocationSizeIsIgnoredForFileModeOpenAndAppend(FileMode mode, long preallocationSize)
         {
-            const int initialSize = 1;
+            const int initialSize = 10;
             string filePath = GetPathToNonExistingFile();
             File.WriteAllBytes(filePath, new byte[initialSize]);
-            long initialPreallocationSize;
-
-            using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, 0))) // preallocationSize NOT provided
-            {
-                initialPreallocationSize = GetActualPreallocationSize(fs); // just read it to ensure it's not being changed
-            }
 
             using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.Equal(initialPreallocationSize, GetActualPreallocationSize(fs)); // it has NOT been changed
-                Assert.Equal(initialSize, fs.Length);
+                Assert.Equal(initialSize, fs.Length); // it has NOT been changed
                 Assert.Equal(mode == FileMode.Append ? initialSize : 0, fs.Position);
+            }
+        }
+
+        [Theory]
+        [InlineData(FileMode.OpenOrCreate, 20L)] // this can extend the file
+        [InlineData(FileMode.OpenOrCreate, 5L)] // this should NOT shink the file
+        public void WhenFileIsBeingOpenedWithOpenOrCreateModeTheLengthCanBeOnlyExtended(FileMode mode, long preallocationSize)
+        {
+            const int initialSize = 10;
+            string filePath = GetPathToNonExistingFile();
+            File.WriteAllBytes(filePath, new byte[initialSize]);
+
+            using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
+            {
+                Assert.Equal(Math.Max(initialSize, preallocationSize), fs.Length); // it was not shrinked
+                Assert.Equal(0, fs.Position);
+
+                AssertFileContentHasBeenZeroed(initialSize, (int)fs.Length, fs);
             }
         }
 
@@ -121,16 +135,16 @@ namespace System.IO.Tests
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
         [InlineData(FileMode.OpenOrCreate)]
-        public void WhenFileIsCreatedWithPreallocationSizeSpecifiedThePreallocationSizeIsSet(FileMode mode)
+        public void WhenFileIsCreatedWithPreallocationSizeSpecifiedTheLengthIsSetAndTheContentIsZeroed(FileMode mode)
         {
             const long preallocationSize = 123;
 
-            using (var fs = new FileStream(GetPathToNonExistingFile(), GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
+            using (var fs = new FileStream(GetPathToNonExistingFile(), GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                // OS might allocate MORE than we have requested
-                Assert.True(GetActualPreallocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualPreallocationSize(fs)}");
-                Assert.Equal(GetExpectedFileLength(preallocationSize), fs.Length);
+                Assert.Equal(preallocationSize, fs.Length);
                 Assert.Equal(0, fs.Position);
+
+                AssertFileContentHasBeenZeroed(0, (int)fs.Length, fs);
             }
         }
 
@@ -153,7 +167,7 @@ namespace System.IO.Tests
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(tooMuch.ToString(), ex.Message);
 
-            // ensure it was NOT created (provided OOTB by Windows, emulated on Unix)
+            // ensure it was NOT created
             bool exists = File.Exists(filePath);
             if (exists)
             {
@@ -163,37 +177,20 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void WhenFileIsTruncatedWithoutPreallocationSizeSpecifiedThePreallocationSizeIsNotSet()
-        {
-            const int initialSize = 10_000;
-
-            string filePath = GetPathToNonExistingFile();
-            File.WriteAllBytes(filePath, new byte[initialSize]);
-
-            using (var fs = new FileStream(filePath, GetOptions(FileMode.Truncate, FileAccess.Write, FileShare.None, FileOptions.None, 0)))
-            {
-                Assert.Equal(0, GetActualPreallocationSize(fs));
-                Assert.Equal(0, fs.Length);
-                Assert.Equal(0, fs.Position);
-            }
-        }
-
-        [Fact]
-        public void WhenFileIsTruncatedWithPreallocationSizeSpecifiedThePreallocationSizeIsSet()
+        public void WhenFileIsTruncatedWithPreallocationSizeSpecifiedTheLengthIsSetAndTheContentIsZeroed()
         {
             const int initialSize = 10_000; // this must be more than 4kb which seems to be minimum allocation size on Windows
             const long preallocationSize = 100;
 
             string filePath = GetPathToNonExistingFile();
-            File.WriteAllBytes(filePath, new byte[initialSize]);
+            File.WriteAllBytes(filePath, Enumerable.Repeat((byte)1, initialSize).ToArray());
 
-            using (var fs = new FileStream(filePath, GetOptions(FileMode.Truncate, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
+            using (var fs = new FileStream(filePath, GetOptions(FileMode.Truncate, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.True(GetActualPreallocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualPreallocationSize(fs)}");
-                // less than initial file size (file got truncated)
-                Assert.True(GetActualPreallocationSize(fs) < initialSize, $"initialSize {initialSize}, actual: {GetActualPreallocationSize(fs)}");
-                Assert.Equal(GetExpectedFileLength(preallocationSize), fs.Length);
+                Assert.Equal(preallocationSize, fs.Length);
                 Assert.Equal(0, fs.Position);
+
+                AssertFileContentHasBeenZeroed(0, (int)fs.Length, fs);
             }
         }
 
@@ -207,6 +204,17 @@ namespace System.IO.Tests
             }
 
             return filePath;
+        }
+
+        private static void AssertFileContentHasBeenZeroed(int from, int to, FileStream fs)
+        {
+            int expectedByteCount = to - from;
+            int extraByteCount = 1;
+            byte[] content = RandomNumberGenerator.GetBytes(expectedByteCount + extraByteCount);
+            fs.Position = from;
+            Assert.Equal(expectedByteCount, fs.Read(content));
+            Assert.All(content.SkipLast(extraByteCount), @byte => Assert.Equal(0, @byte));
+            Assert.Equal(to, fs.Position);
         }
     }
 }
