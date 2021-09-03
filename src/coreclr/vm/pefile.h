@@ -319,7 +319,6 @@ public:
     // in some cases.
     PTR_PEImageLayout GetLoaded();
     PTR_PEImageLayout GetLoadedIL();
-    PTR_PEImageLayout GetAnyILWithRef();        //AddRefs!
     IStream * GetPdbStream();
     void ClearPdbStream();
     BOOL IsLoaded(BOOL bAllowNativeSkip=TRUE) ;
@@ -363,7 +362,6 @@ protected:
 #endif
 
     void OpenMDImport();
-    void RestoreMDImport(IMDInternalImport* pImport);
     void OpenMDImport_Unsafe();
     void OpenImporter();
     void OpenEmitter();
@@ -459,7 +457,7 @@ public:
     LPCWSTR GetPathForErrorMessages();
 
     static PEFile* Dummy();
-    void MarkNativeImageInvalidIfOwned();
+
     void ConvertMDInternalToReadWrite();
 
 protected:
@@ -473,13 +471,6 @@ protected:
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
     PTR_AssemblyBinder m_pFallbackLoadContextBinder;
-
-protected:
-
-#ifndef DACCESS_COMPILE
-    void SetHostAssembly(BINDER_SPACE::Assembly * pHostAssembly)
-    { LIMITED_METHOD_CONTRACT; m_pHostAssembly = clr::SafeAddRef(pHostAssembly); }
-#endif //DACCESS_COMPILE
 
 public:
     // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
