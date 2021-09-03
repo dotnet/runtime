@@ -128,7 +128,10 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildingOnSourceBuildImage: true
+    buildConfig: release
     platforms:
     - SourceBuild_Linux_x64
     jobParameters:
+      nameSuffix: SourceBuild
       timeoutInMinutes: 90
