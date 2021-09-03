@@ -18,7 +18,8 @@ namespace ILLink.RoslynAnalyzer
 				diagnosticString.GetMessageFormat (),
 				GetDiagnosticCategory (diagnosticId),
 				DiagnosticSeverity.Warning,
-				true);
+				true,
+				customTags: WellKnownDiagnosticTags.NotConfigurable);
 		}
 
 		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId, DiagnosticString diagnosticString)
@@ -27,7 +28,8 @@ namespace ILLink.RoslynAnalyzer
 				diagnosticString.GetMessage (),
 				GetDiagnosticCategory (diagnosticId),
 				DiagnosticSeverity.Warning,
-				true);
+				true,
+				customTags: WellKnownDiagnosticTags.NotConfigurable);
 
 		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId,
 			LocalizableResourceString? lrsTitle = null,
@@ -45,7 +47,8 @@ namespace ILLink.RoslynAnalyzer
 					diagnosticCategory ?? GetDiagnosticCategory (diagnosticId),
 					diagnosticSeverity,
 					isEnabledByDefault,
-					helpLinkUri);
+					helpLinkUri,
+					customTags: WellKnownDiagnosticTags.NotConfigurable);
 			}
 
 			return new DiagnosticDescriptor (diagnosticId.AsString (),
@@ -54,7 +57,8 @@ namespace ILLink.RoslynAnalyzer
 				diagnosticCategory ?? GetDiagnosticCategory (diagnosticId),
 				diagnosticSeverity,
 				isEnabledByDefault,
-				helpLinkUri);
+				helpLinkUri,
+				customTags: WellKnownDiagnosticTags.NotConfigurable);
 		}
 
 		static string GetDiagnosticCategory (DiagnosticId diagnosticId)
