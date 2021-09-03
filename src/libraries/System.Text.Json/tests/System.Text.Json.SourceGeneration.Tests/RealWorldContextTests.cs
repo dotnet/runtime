@@ -111,6 +111,31 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void RoundTripValueTuple()
+        {
+            bool isIncludeFieldsEnabled = DefaultContext.IsIncludeFieldsEnabled;
+
+            var tuple = (Label1: "string", Label2: 42, true);
+            string expectedJson = isIncludeFieldsEnabled
+                ? "{\"Item1\":\"string\",\"Item2\":42,\"Item3\":true}"
+                : "{}";
+
+            string json = JsonSerializer.Serialize(tuple, DefaultContext.ValueTupleStringInt32Boolean);
+            Assert.Equal(expectedJson, json);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                // Deserialization not supported in fast path serialization only mode
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean));
+            }
+            else
+            {
+                var deserializedTuple = JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean);
+                Assert.Equal(isIncludeFieldsEnabled ? tuple : default, deserializedTuple);
+            }
+        }
+
+        [Fact]
         public virtual void RoundTripWithCustomConverter_Class()
         {
             const string Json = "{\"MyInt\":142}";
