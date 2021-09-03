@@ -8,12 +8,12 @@
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <AppName>HelloiOS</AppName>
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- FIXME: for some reason trimming is throwing errors about something in System.Diagnostics. -->
-    <!-- <PublishTrimmed>true</PublishTrimmed> -->
-    <!-- <TrimMode>Link</TrimMode> -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
@@ -68,7 +68,7 @@
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
-        ProjectName="HelloiOS"
+        ProjectName="$(AppName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
@@ -116,12 +116,13 @@
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
       <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
+      <_AppBundleName>$([System.IO.Path]::GetFileName('$(AppBundlePath)'))</_AppBundleName>
     </PropertyGroup>
     <ItemGroup>
-      <_appFiles Include="$(AppBundlePath)/../**/*" />
+      <_appFiles Include="$(AppBundlePath)/**/*" />
     </ItemGroup>
     <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/%(RecursiveDir)" />
+          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/$(_AppBundleName)/%(RecursiveDir)" />
 
     <Message Importance="High" Text="AppBundlePath: $(AppBundlePath)"/>
     <Message Importance="High" Text="HelixArchiveRunOnlyAppsDir: $(HelixArchiveRunOnlyAppsDir)"/>
