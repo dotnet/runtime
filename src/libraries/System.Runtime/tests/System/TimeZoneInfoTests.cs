@@ -2639,7 +2639,7 @@ namespace System.Tests
             }
         }
 
-        public static bool SupportIanaNamesConversion => PlatformDetection.IsNotBrowser && PlatformDetection.ICUVersion.Major >= 52;
+        public static bool SupportIanaNamesConversion => PlatformDetection.IsNotMobile && PlatformDetection.ICUVersion.Major >= 52;
         public static bool SupportIanaNamesConversionAndRemoteExecution => SupportIanaNamesConversion && RemoteExecutor.IsSupported;
 
         // This test is executed using the remote execution because it needs to run before creating the time zone cache to ensure testing with that state.
@@ -2698,7 +2698,6 @@ namespace System.Tests
         [InlineData("Argentina Standard Time", "America/Buenos_Aires")]
         [InlineData("Newfoundland Standard Time", "America/St_Johns")]
         [InlineData("Iran Standard Time", "Asia/Tehran")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS/MacCatalyst/tvOS.")]
         public static void IdsConversionsTest(string windowsId, string ianaId)
         {
             Assert.True(TimeZoneInfo.TryConvertIanaIdToWindowsId(ianaId, out string winId));
@@ -2733,7 +2732,6 @@ namespace System.Tests
         [InlineData("GMT Standard Time", "Europe/Dublin", "ie")]
         [InlineData("W. Europe Standard Time", "Europe/Rome", "it")]
         [InlineData("New Zealand Standard Time", "Pacific/Auckland", "nz")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS/MacCatalyst/tvOS.")]
         public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
         {
             Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));
