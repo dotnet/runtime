@@ -2719,19 +2719,13 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                         BADCODE3("tail call not followed by ret", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
                     }
 
-                    if (fgCanSwitchToOptimized() && fgMayExplicitTailCall())
+                    if (fgCanSwitchToOptimized() && fgMayExplicitTailCall() &&
+                        ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
                     {
-                        if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) ||
-                            ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
-                        {
-                            // Method has an explicit tail call that may run like a loop or may not be generated as a
-                            // tail call in tier 0, switch to optimized to avoid spending too much time running slower
-                            // code and to avoid stack overflow from recursion
-
-                            // However, let's not do it if we're allowed to compile methods with loops to tier0
-                            // and going to instrument the current method.
-                            fgSwitchToOptimized();
-                        }
+                        // Method has an explicit tail call that may run like a loop or may not be generated as a
+                        // tail call in tier 0, switch to optimized to avoid spending too much time running slower
+                        // code
+                        fgSwitchToOptimized();
                     }
                 }
                 else
