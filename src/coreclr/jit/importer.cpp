@@ -4532,15 +4532,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_GC_KeepAlive:
             {
-                retNode = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, impPopStack().val);
-
-                // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
-                // very subtle and hard to observe. Thus we are conservatively marking it with both
-                // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
-                // necessary. The conservative side-effects are unlikely to have negative impact
-                // on code quality in this case.
-                retNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
-
+                retNode = impKeepAliveIntrinsic(impPopStack().val);
                 break;
             }
 
@@ -5275,6 +5267,66 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         return arrElem;
     }
+}
+
+//------------------------------------------------------------------------
+// impKeepAliveIntrinsic: Import the GC.KeepAlive intrinsic call
+//
+// Imports the intrinsic as a GT_KEEPALIVE node, and, as an optimization,
+// if the object to keep alive is a GT_BOX, removes its side effects and
+// uses the address of a local (copied from the box's source if needed)
+// as the operand for GT_KEEPALIVE. For the BOX optimization, if the class
+// of the box has no GC fields, a GT_NOP is returned.
+//
+// Arguments:
+//    objToKeepAlive - the intrinisic call's argument
+//
+// Return Value:
+//    The imported GT_KEEPALIVE or GT_NOP - see description.
+//
+GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
+{
+    assert(objToKeepAlive->TypeIs(TYP_REF));
+
+    if (opts.OptimizationEnabled() && objToKeepAlive->IsBoxedValue())
+    {
+        CORINFO_CLASS_HANDLE boxedClass = lvaGetDesc(objToKeepAlive->AsBox()->BoxOp()->AsLclVar())->lvClassHnd;
+        ClassLayout*         layout     = typGetObjLayout(boxedClass);
+
+        if (!layout->HasGCPtr())
+        {
+            gtTryRemoveBoxUpstreamEffects(objToKeepAlive, BR_REMOVE_AND_NARROW);
+            JITDUMP("\nBOX class has no GC fields, KEEPALIVE is a NOP");
+
+            return gtNewNothingNode();
+        }
+
+        GenTree* boxSrc = gtTryRemoveBoxUpstreamEffects(objToKeepAlive, BR_REMOVE_BUT_NOT_NARROW);
+        if (boxSrc != nullptr)
+        {
+            unsigned boxTempNum;
+            if (boxSrc->OperIs(GT_LCL_VAR))
+            {
+                boxTempNum = boxSrc->AsLclVarCommon()->GetLclNum();
+            }
+            else
+            {
+                boxTempNum            = lvaGrabTemp(true DEBUGARG("Temp for the box source"));
+                GenTree*   boxTempAsg = gtNewTempAssign(boxTempNum, boxSrc);
+                Statement* boxAsgStmt = objToKeepAlive->AsBox()->gtCopyStmtWhenInlinedBoxValue;
+                boxAsgStmt->SetRootNode(boxTempAsg);
+            }
+
+            JITDUMP("\nImporting KEEPALIVE(BOX) as KEEPALIVE(ADDR(LCL_VAR V%02u))", boxTempNum);
+
+            GenTree* boxTemp     = gtNewLclvNode(boxTempNum, boxSrc->TypeGet());
+            GenTree* boxTempAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, boxTemp);
+
+            return gtNewKeepAliveNode(boxTempAddr);
+        }
+    }
+
+    return gtNewKeepAliveNode(objToKeepAlive);
 }
 
 bool Compiler::verMergeEntryStates(BasicBlock* block, bool* changed)

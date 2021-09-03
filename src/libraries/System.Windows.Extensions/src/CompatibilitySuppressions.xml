@@ -1,12 +1,12 @@
-<?xml version="1.0"?>
+﻿<?xml version="1.0"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <!-- .NETCoreapp,Version=v3.0 is out of support and dropped from the package. -->
   <Suppression>
     <DiagnosticId>PKV006</DiagnosticId>
-    <Target>.NETCoreapp,Version=v3.0</Target>
+    <Target>.NETCoreApp,Version=v3.0</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>PKV007</DiagnosticId>
-    <Target>.NETCoreapp,Version=v3.0-win</Target>
+    <Target>.NETCoreApp,Version=v3.0-win</Target>
   </Suppression>
 </Suppressions>

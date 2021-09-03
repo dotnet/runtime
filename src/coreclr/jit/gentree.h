@@ -49,13 +49,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //   GenTreeOps nodes, for which codegen will generate the branch
 //     - it will use the appropriate kind based on the opcode, though it's not
 //       clear why SCK_OVERFLOW == SCK_ARITH_EXCPN
-// SCK_PAUSE_EXEC is not currently used.
 //
 enum SpecialCodeKind
 {
     SCK_NONE,
     SCK_RNGCHK_FAIL,                // target when range check fails
-    SCK_PAUSE_EXEC,                 // target to stop (e.g. to allow GC)
     SCK_DIV_BY_ZERO,                // target for divide by zero (Not used on X86/X64)
     SCK_ARITH_EXCPN,                // target on arithmetic exception
     SCK_OVERFLOW = SCK_ARITH_EXCPN, // target on overflow
