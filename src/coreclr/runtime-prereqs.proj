@@ -11,5 +11,17 @@
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
-  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile" />
+  <Target Name="OutputPgoPathForCI" Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <!-- Get the path to PGO data to pass to AzDO so we can pass it to the build-runtime script. -->
+    <MSBuild
+      Projects=".nuget/optdata/optdata.proj"
+      Targets="GetPgoDataPackagePath">
+      <Output
+        TaskParameter="TargetOutputs"
+        PropertyName="PgoDataPath" />
+    </MSBuild>
+    <Message Text="##vso[task.setvariable variable=CoreClrPgoDataArg]-pgodatapath &quot;$(PgoDataPath)&quot;" />
+  </Target>
+
+  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;OutputPgoPathForCI" />
 </Project>
