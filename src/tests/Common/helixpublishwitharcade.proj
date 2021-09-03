@@ -197,7 +197,7 @@
       </Payloads>
     </ItemGroup>
 
-    <ZipDirectory SourceDirectory="@(Payloads->Metadata('PayloadDirectory'))" DestinationFile="$(PayloadsRootDirectory)\@(Payloads->Metadata('PayloadGroup')).zip" />
+    <ZipDirectory SourceDirectory="@(Payloads->Metadata('PayloadDirectory'))" DestinationFile="$(PayloadsRootDirectory)\%(Payloads.PayloadGroup).zip" />
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
