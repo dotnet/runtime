@@ -70,9 +70,7 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Unix.cs" />
-    <Compile Include="FileStream\ctor_options_as.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Windows.cs" />
@@ -88,8 +86,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" Link="Common\Interop\Windows\Interop.GetFinalPathNameByHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="Common\Interop\Windows\Interop.MemOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
@@ -103,7 +99,6 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Browser.cs" />
-    <Compile Include="FileStream\ctor_options_as.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
