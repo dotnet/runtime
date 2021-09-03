@@ -2713,9 +2713,16 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     // allowed. We don't know at this point whether the call is recursive so we conservatively pass
                     // false. This will only affect explicit tail calls when IL verification is not needed for the
                     // method.
-                    bool isRecursive = false;
+                    const bool isRecursive = false;
                     if (!impIsTailCallILPattern(tailCall, opcode, codeAddr + sz, codeEndp, isRecursive))
                     {
+                        if ((impGetNonPrefixOpcode(codeAddr + sz, codeEndp) == CEE_POP) &&
+                            (impGetNonPrefixOpcode(codeAddr + sz + 1, codeEndp) == CEE_RET))
+                        {
+                            // Compat: Jit64 tolerates "tail.call + pop + ret" - we'll import it as a normal call
+                            tailCall = false;
+                            break;
+                        }
                         BADCODE3("tail call not followed by ret", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
                     }
 

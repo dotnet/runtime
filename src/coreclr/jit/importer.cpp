@@ -14350,6 +14350,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
                     }
+                    else if ((impGetNonPrefixOpcode(codeAddr + sizeof(mdToken) + 1, codeEndp) == CEE_POP) &&
+                             (impGetNonPrefixOpcode(codeAddr + sizeof(mdToken) + 2, codeEndp) == CEE_RET))
+                    {
+                        // Compat: Jit64 tolerates "tail.call + pop + ret"
+                        JITDUMP("Ignore tail prefix if the call is followed by CEE_POP + CEE_RET\n")
+                        prefixFlags &= PREFIX_TAILCALL_EXPLICIT;
+                        break;
+                    }
                 }
                 assert(sz == 0);
                 goto PREFIX;
