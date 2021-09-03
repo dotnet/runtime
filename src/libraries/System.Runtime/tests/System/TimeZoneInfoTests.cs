@@ -2671,14 +2671,7 @@ namespace System.Tests
                 Assert.True((expected || tzi.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)) == tzi.HasIanaId, $"`{tzi.Id}` has wrong IANA Id indicator");
             }
 
-            if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
-            {
-                Assert.False(TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").HasIanaId, $" should not be IANA Id.");
-            }
-            else
-            {
-                Assert.Throws<TimeZoneNotFoundException>(() => TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").HasIanaId);
-            }
+            Assert.False(TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").HasIanaId, $" should not be IANA Id.");
             Assert.True(TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles").HasIanaId, $"'America/Los_Angeles' should be IANA Id");
         }
 
