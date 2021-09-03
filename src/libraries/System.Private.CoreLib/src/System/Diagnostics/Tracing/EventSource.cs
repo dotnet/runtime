@@ -1253,7 +1253,9 @@ namespace System.Diagnostics.Tracing
             internal ulong m_Ptr;
             internal int m_Size;
 #pragma warning disable 0649
+#pragma warning disable CA1805
             internal int m_Reserved = 0;       // Used to pad the size to match the Win32 API
+#pragma warning restore CA1805
 #pragma warning restore 0649
 #endregion
         }
