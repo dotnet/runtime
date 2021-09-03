@@ -33,6 +33,10 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
 
+            private const string System_DateOnly_FullName = "System.DateOnly";
+            private const string System_TimeOnly_FullName = "System.TimeOnly";
+            private const string System_IAsyncEnumerable_FullName = "System.Collections.Generic.IAsyncEnumerable`1";
+
             private readonly Compilation _compilation;
             private readonly SourceProductionContext _sourceProductionContext;
             private readonly MetadataLoadContextInternal _metadataLoadContext;
@@ -71,8 +75,20 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _versionType;
             private readonly Type? _jsonElementType;
 
+            // Unsupported types
+            private readonly Type _typeType;
+            private readonly Type _serializationInfoType;
+            private readonly Type _intPtrType;
+            private readonly Type _uIntPtrType;
+
+            // Unsupported types that may not resolve
+            private readonly Type? _iAsyncEnumerableGenericType;
+            private readonly Type? _dateOnlyType;
+            private readonly Type? _timeOnlyType;
+
             private readonly HashSet<Type> _numberTypes = new();
             private readonly HashSet<Type> _knownTypes = new();
+            private readonly HashSet<Type> _knownTypesWithoutConverter = new();
 
             /// <summary>
             /// Type information for member types in input object graphs.
@@ -138,6 +154,15 @@ namespace System.Text.Json.SourceGeneration
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
                 _jsonElementType = _metadataLoadContext.Resolve(JsonElementFullName);
+
+                // Unsupported types.
+                _typeType = _metadataLoadContext.Resolve(typeof(Type));
+                _serializationInfoType = _metadataLoadContext.Resolve(typeof(Runtime.Serialization.SerializationInfo));
+                _intPtrType = _metadataLoadContext.Resolve(typeof(IntPtr));
+                _uIntPtrType = _metadataLoadContext.Resolve(typeof(UIntPtr));
+                _iAsyncEnumerableGenericType = _metadataLoadContext.Resolve(System_IAsyncEnumerable_FullName);
+                _dateOnlyType = _metadataLoadContext.Resolve(System_DateOnly_FullName);
+                _timeOnlyType = _metadataLoadContext.Resolve(System_TimeOnly_FullName);
 
                 PopulateKnownTypes();
             }
@@ -762,6 +787,11 @@ namespace System.Text.Json.SourceGeneration
                         collectionValueType = _objectType;
                     }
                 }
+                else if (_knownTypesWithoutConverter.Contains(type) ||
+                    ImplementsIAsyncEnumerableInterface(type))
+                {
+                    classType = ClassType.TypeUnsupportedNoDefaultConverter;
+                }
                 else
                 {
                     bool useDefaultCtorInAnnotatedStructs = !type.IsKeyValuePair(_keyValuePair);
@@ -888,6 +918,16 @@ namespace System.Text.Json.SourceGeneration
                     hasPropertyFactoryConverters : hasPropertyFactoryConverters);
 
                 return typeMetadata;
+            }
+
+            private bool ImplementsIAsyncEnumerableInterface(Type type)
+            {
+                if (_iAsyncEnumerableGenericType == null)
+                {
+                    return false;
+                }
+
+                return type.GetCompatibleGenericInterface(_iAsyncEnumerableGenericType) is not null;
             }
 
             private Type GetCompatibleGenericBaseClass(Type type, Type baseType)
@@ -1265,8 +1305,10 @@ namespace System.Text.Json.SourceGeneration
             private void PopulateKnownTypes()
             {
                 PopulateNumberTypes();
+
                 Debug.Assert(_knownTypes != null);
                 Debug.Assert(_numberTypes != null);
+                Debug.Assert(_knownTypesWithoutConverter != null);
 
                 _knownTypes.UnionWith(_numberTypes);
                 _knownTypes.Add(_booleanType);
@@ -1280,6 +1322,21 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_uriType);
                 _knownTypes.Add(_versionType);
                 _knownTypes.Add(_jsonElementType);
+
+                _knownTypesWithoutConverter.Add(_typeType);
+                _knownTypesWithoutConverter.Add(_serializationInfoType);
+                _knownTypesWithoutConverter.Add(_intPtrType);
+                _knownTypesWithoutConverter.Add(_uIntPtrType);
+
+                if (_dateOnlyType != null)
+                {
+                    _knownTypesWithoutConverter.Add(_dateOnlyType);
+                }
+
+                if (_timeOnlyType != null)
+                {
+                    _knownTypesWithoutConverter.Add(_timeOnlyType);
+                }
             }
         }
     }

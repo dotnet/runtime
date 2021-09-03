@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Serialization.Tests;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -218,11 +219,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public virtual void RoundTripWithCustomPropertyConverterFactory_Class()
         {
-            const string Json = "{\"MyEnum\":\"A\"}";
+            const string Json = "{\"MyEnum\":\"One\"}";
 
             ClassWithCustomConverterPropertyFactory obj = new()
             {
-                MyEnum = SampleEnum.A
+                MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
@@ -242,18 +243,18 @@ namespace System.Text.Json.SourceGeneration.Tests
             else
             {
                 obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterPropertyFactory);
-                Assert.Equal(SampleEnum.A, obj.MyEnum);
+                Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
 
         [Fact]
         public virtual void RoundTripWithCustomPropertyConverterFactory_Struct()
         {
-            const string Json = "{\"MyEnum\":\"A\"}";
+            const string Json = "{\"MyEnum\":\"One\"}";
 
             StructWithCustomConverterPropertyFactory obj = new()
             {
-                MyEnum = SampleEnum.A
+                MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
@@ -273,7 +274,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             else
             {
                 obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterPropertyFactory);
-                Assert.Equal(SampleEnum.A, obj.MyEnum);
+                Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
 

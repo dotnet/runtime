@@ -10,8 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override bool CanConvert(Type type)
         {
-            // If a value type is added, also add a test that
-            // shows NSE is thrown when Nullable<T> is (de)serialized.
+            // If a type is added, also add to the souce-gen project.
 
             return
                 // There's no safe way to construct a Type from untrusted user input.
