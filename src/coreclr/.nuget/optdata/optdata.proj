@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -32,10 +32,7 @@
   <!-- $(PgoDataPackagePathOutputFile)                                       -->
   <!--                                                                       -->
 
-  <Target Name="DumpPgoDataPackagePath">
-    <!-- Error if PgoDataPackagePathOutputFile is not set. -->
-    <Error Condition="'$(PgoDataPackagePathOutputFile)'==''" Text="PgoDataPackagePathOutputFile must be passed as a property." />
-
+  <Target Name="GetPgoDataPackagePath" Returns="$(PgoPackagePath)">
     <PropertyGroup>
       <PgoPackagePathProperty>Pkgoptimization_$(_TargetOSArchLowercase)_PGO_CoreCLR</PgoPackagePathProperty>
     </PropertyGroup>
@@ -56,8 +53,11 @@
     </PropertyGroup>
 
     <Error Condition="!Exists('$(PgoPackagePath)') And '$(OptimizationDataSupported)' == 'True'" Text="Unable to locate restored PGO package at $(PgoPackagePath). Maybe the platform-specific package naming changed?" />
+  </Target>
 
-    <!-- Cleanup old version file -->
+  <Target Name="DumpPgoDataPackagePath" DependsOnTargets="GetPgoDataPackagePath">
+    <!-- Error if PgoDataPackagePathOutputFile is not set. -->
+    <Error Condition="'$(PgoDataPackagePathOutputFile)'==''" Text="PgoDataPackagePathOutputFile must be passed as a property." />
 
     <WriteLinesToFile File="$(PgoDataPackagePathOutputFile)"
                       Lines="$(PgoPackagePath)"

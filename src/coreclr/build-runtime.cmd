@@ -48,7 +48,7 @@ set __BuildTypeChecked=0
 set __BuildTypeRelease=0
 
 set __PgoInstrument=0
-set __PgoOptimize=1
+set __PgoOptimize=0
 set __EnforcePgo=0
 set __IbcTuning=
 set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
@@ -145,7 +145,7 @@ if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
-if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&shift&goto Arg_Loop)
+if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
@@ -157,7 +157,6 @@ if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_
 if /i "%1" == "skipgenerateversion" (set __SkipGenerateVersion=1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
-if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 
 REM Preserve the equal sign for MSBuild properties
@@ -310,54 +309,12 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-if %__SkipGenerateVersion% EQU 0 (
-    echo %__MsgPrefix%Generating native version headers
-    set "__BinLog=\"%__LogsDir%\GenerateVersionHeaders_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%__RepoRootDir%\eng\empty.csproj" /t:GenerateRuntimeVersionFile /restore^
-        /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
-        /p:RuntimeVersionFile="%__RootBinDir%\obj\coreclr\runtime_version.h"^
-        %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
-        goto ExitWithCode
+REM We will copy our fallback version files to the expected directory if no one generated
+REM and version files previously.
+for /r "%__ProjectDir%\versionfallback" %%a in (*) do (
+    if not exist "%__RootBinDir%\obj\coreclr\%%~nxa" (
+        copy "%%a" "%__RootBinDir%\obj\coreclr"
     )
-)
-
-REM =========================================================================================
-REM ===
-REM === Restore optimization profile data
-REM ===
-REM =========================================================================================
-
-set __PgoOptDataPath=
-if %__PgoOptimize% EQU 1 (
-    set OptDataProjectFilePath=%__ProjectDir%\.nuget\optdata\optdata.csproj
-    set __OptDataRestoreArg=
-    if %__RestoreOptData% EQU 1 (
-        set __OptDataRestoreArg=/restore
-    )
-    set PgoDataPackagePathOutputFile=%__IntermediatesDir%\optdatapath.txt
-    set "__BinLog=\"%__LogsDir%\PgoVersionRead_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
-
-    REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "!OptDataProjectFilePath!" /t:DumpPgoDataPackagePath^
-        /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!" !__OptDataRestoreArg!^
-        %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
-
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%Failed to get PGO data package path.
-        goto ExitWithCode
-    )
-    if not exist "!PgoDataPackagePathOutputFile!" (
-        echo %__ErrMsgPrefix%Failed to get PGO data package path.
-        goto ExitWithError
-    )
-
-    set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 )
 
 REM =========================================================================================
@@ -799,7 +756,6 @@ echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
 echo                     Allowed ^<name^>: jit alljits runtime paltests iltools
-echo -nopgooptimize: do not use profile guided optimizations.
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -cmakeargs: user-settable additional arguments passed to CMake.

@@ -18,7 +18,7 @@ fi
 
 export PYTHON
 
-usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
+usage_list+=("-pgodatapath: path to profile guided optimization data.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
@@ -33,35 +33,6 @@ setup_dirs_local()
 
     if [[ "$__CrossBuild" == 1 ]]; then
         mkdir -p "$__CrossComponentBinDir"
-    fi
-}
-
-restore_optdata()
-{
-    local OptDataProjectFilePath="$__ProjectRoot/.nuget/optdata/optdata.csproj"
-
-    if [[ "$__PgoOptimize" == 1 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
-        # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-
-        local PgoDataPackagePathOutputFile="${__IntermediatesDir}/optdatapath.txt"
-
-        local RestoreArg=""
-
-        if [[ "$__SkipRestoreOptData" == "0" ]]; then
-            RestoreArg="/restore"
-        fi
-
-        # Writes into ${PgoDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath $RestoreArg /t:DumpPgoDataPackagePath \
-                                            ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} \
-                                            -bl:"$__LogsDir/PgoVersionRead_$__ConfigTriplet.binlog" > /dev/null 2>&1
-        local exit_code="$?"
-        if [[ "$exit_code" != 0 || ! -f "${PgoDataPackagePathOutputFile}" ]]; then
-            echo "${__ErrMsgPrefix}Failed to get PGO data package path."
-            exit "$exit_code"
-        fi
-
-        __PgoOptDataPath=$(<"${PgoDataPackagePathOutputFile}")
     fi
 }
 
@@ -95,12 +66,19 @@ build_cross_architecture_components()
     export CROSSCOMPILE
 }
 
+copy_version_files()
+{
+    # Copy dummy version files if version files haven't already been generated
+    cp -r -n "$__ProjectRoot/versionfallback/"* "$__ArtifactsIntermediatesDir/"
+}
+
 handle_arguments_local() {
     case "$1" in
 
-        nopgooptimize|-nopgooptimize)
-            __PgoOptimize=0
-            __SkipRestoreOptData=1
+        pgodatapath|-pgodatapath)
+            __PgoOptimize=1
+            __PgoOptDataPath=$2
+            __ShiftArgs=1
             ;;
 
         pgoinstrument|-pgoinstrument)
@@ -152,7 +130,7 @@ __CrossBuild=0
 __DistroRid=""
 __PgoInstrument=0
 __PgoOptDataPath=""
-__PgoOptimize=1
+__PgoOptimize=0
 __PortableBuild=1
 __ProjectDir="$__ProjectRoot"
 __RootBinDir="$__RepoRootDir/artifacts"
@@ -218,9 +196,6 @@ export MSBUILDDEBUGPATH
 # Check prereqs.
 check_prereqs
 
-# Restore the package containing profile counts for profile-guided optimizations
-restore_optdata
-
 # Build the coreclr (native) components.
 __CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
 
@@ -240,6 +215,8 @@ fi
 if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
+    copy_version_files
+
     build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
     # Build cross-architecture components

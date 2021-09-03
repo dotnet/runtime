@@ -1,7 +1,26 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
+  <PropertyGroup>
+    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset</NativeBuildPartitionPropertiesToRemove>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
+  </ItemGroup>
+
   <Target Name="BuildRuntime"
-          AfterTargets="Build">
+          BeforeTargets="Build">
+
+    <!-- Get the path to PGO data to pass to the runtime build script. -->
+    <MSBuild
+      Projects=".nuget/optdata/optdata.proj"
+      Targets="GetPgoDataPackagePath">
+      <Output
+        TaskParameter="TargetOutputs"
+        PropertyName="PgoDataPath" />
+    </MSBuild>
+
+
     <ItemGroup>
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="$(CMakeArgs)" />
@@ -25,7 +44,7 @@
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))" Include="-msbuild" />
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
-      <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' == 'true' or '$(PgoInstrument)' == 'true'" Include="-nopgooptimize" />
+      <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoDataPath)&quot;" />
       <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
     </ItemGroup>
 
@@ -43,6 +62,7 @@
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
+    <Message Text="Executing &quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" Importance="High" />
     <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>

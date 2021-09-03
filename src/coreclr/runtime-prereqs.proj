@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <NativeVersionFile>$(ArtifactsObjDir)/coreclr/_version.h</NativeVersionFile>
+    <RuntimeVersionFile>$(ArtifactsObjDir)/coreclr/runtime_version.h</RuntimeVersionFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include=".nuget/optdata/optdata.proj" />
+    <ProjectReference Condition="'$(TargetOS)' == 'Windows'" Include="ToolBox/SOS/DacTableGen/DacTableGen.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+
+  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile" />
+</Project>
