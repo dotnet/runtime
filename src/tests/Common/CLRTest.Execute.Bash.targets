@@ -182,6 +182,20 @@ fi
         <Command><![CDATA[        export CORE_ROOT="${i#*=}"]]></Command>
         <Description>Set CORE_ROOT to the specified value before running the test.</Description>
       </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="e;env">
+        <HasParam>true</HasParam>
+        <ParamText>=*</ParamText> <!-- Bash specific -->
+        <ParamName>dotenvFullPath</ParamName>
+        <Command><![CDATA[        export __DotEnv="${i#*=}"
+        if [ ! -f "$__DotEnv" ]
+        then
+            echo "The Debugger FullPath %5C%22${__DotEnv}%5C%22 does not exist"
+            usage
+        fi
+        export __DotEnvArg=-e ${__DotEnv}]]></Command>
+        <Description>A dotenv file to pass to corerun to set environment variables for the test run.</Description>
+      </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
 
       <PropertyGroup>
@@ -271,7 +285,7 @@ fi
           </BashLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>
-      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
 
       <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
