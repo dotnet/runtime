@@ -482,7 +482,7 @@ namespace System.Reflection
             {
                 NullabilityState state = nullability.ReadState;
 
-                if (!ParseNullableState(metaType.GetCustomAttributesData(), 0, ref state))
+                if (state == NullabilityState.NotNull && !ParseNullableState(metaType.GetCustomAttributesData(), 0, ref state))
                 {
                     state = GetNullableContext(metaType);
                 }
