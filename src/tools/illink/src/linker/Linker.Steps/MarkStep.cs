@@ -277,7 +277,7 @@ namespace Mono.Linker.Steps
 					return false;
 				}
 
-				var assembly = _context.GetLoadedAssembly (an.Name);
+				var assembly = _context.GetLoadedAssembly (an.Name!);
 				if (assembly == null)
 					return false;
 

@@ -159,8 +159,9 @@ namespace Mono.Linker.Dataflow
 			return attributeType.Name == "DynamicallyAccessedMembersAttribute" && attributeType.Namespace == "System.Diagnostics.CodeAnalysis";
 		}
 
-		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute (ICustomAttributeProvider provider, IMemberDefinition locationMember = null)
+		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute (IMemberDefinition member, ICustomAttributeProvider providerIfNotMember = null)
 		{
+			ICustomAttributeProvider provider = providerIfNotMember ?? member;
 			if (!_context.CustomAttributes.HasAny (provider))
 				return DynamicallyAccessedMemberTypes.None;
 			foreach (var attribute in _context.CustomAttributes.GetCustomAttributes (provider)) {
@@ -171,7 +172,7 @@ namespace Mono.Linker.Dataflow
 				else
 					_context.LogWarning (
 						$"Attribute 'System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute' doesn't have the required number of parameters specified.",
-						2028, locationMember ?? (provider as IMemberDefinition));
+						2028, member);
 			}
 			return DynamicallyAccessedMemberTypes.None;
 		}
@@ -242,7 +243,7 @@ namespace Mono.Linker.Dataflow
 
 					for (int i = 0; i < method.Parameters.Count; i++) {
 						var methodParameter = method.Parameters[i];
-						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (methodParameter, method);
+						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: methodParameter);
 						if (pa == DynamicallyAccessedMemberTypes.None)
 							continue;
 
@@ -259,7 +260,7 @@ namespace Mono.Linker.Dataflow
 						paramAnnotations[i + offset] = pa;
 					}
 
-					DynamicallyAccessedMemberTypes returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method.MethodReturnType, method);
+					DynamicallyAccessedMemberTypes returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: method.MethodReturnType);
 					if (returnAnnotation != DynamicallyAccessedMemberTypes.None && !IsTypeInterestingForDataflow (method.ReturnType)) {
 						_context.LogWarning (
 							$"Return type of method '{method.GetDisplayName ()}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'.",
@@ -270,7 +271,7 @@ namespace Mono.Linker.Dataflow
 					if (method.HasGenericParameters) {
 						for (int genericParameterIndex = 0; genericParameterIndex < method.GenericParameters.Count; genericParameterIndex++) {
 							var genericParameter = method.GenericParameters[genericParameterIndex];
-							var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (genericParameter, method);
+							var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: genericParameter);
 							if (annotation != DynamicallyAccessedMemberTypes.None) {
 								if (genericParameterAnnotations == null)
 									genericParameterAnnotations = new DynamicallyAccessedMemberTypes[method.GenericParameters.Count];
@@ -392,7 +393,7 @@ namespace Mono.Linker.Dataflow
 			if (type.HasGenericParameters) {
 				for (int genericParameterIndex = 0; genericParameterIndex < type.GenericParameters.Count; genericParameterIndex++) {
 					var genericParameter = type.GenericParameters[genericParameterIndex];
-					var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (genericParameter, type);
+					var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (type, providerIfNotMember: genericParameter);
 					if (annotation != DynamicallyAccessedMemberTypes.None) {
 						if (typeGenericParameterAnnotations == null)
 							typeGenericParameterAnnotations = new DynamicallyAccessedMemberTypes[type.GenericParameters.Count];

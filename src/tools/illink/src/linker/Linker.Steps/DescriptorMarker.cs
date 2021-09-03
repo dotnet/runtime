@@ -10,6 +10,8 @@ using System.Xml.XPath;
 
 using Mono.Cecil;
 
+#nullable enable
+
 namespace Mono.Linker.Steps
 {
 	public class DescriptorMarker : ProcessLinkerXmlBase
@@ -35,7 +37,7 @@ namespace Mono.Linker.Steps
 
 		public void Mark ()
 		{
-			bool stripDescriptors = _context.IsOptimizationEnabled (CodeOptimizations.RemoveDescriptors, _resourceAssembly);
+			bool stripDescriptors = _context.IsOptimizationEnabled (CodeOptimizations.RemoveDescriptors, _resource?.Assembly);
 			ProcessXml (stripDescriptors, _context.IgnoreDescriptors);
 		}
 
@@ -57,12 +59,11 @@ namespace Mono.Linker.Steps
 
 		void ProcessNamespaces (AssemblyDefinition assembly, XPathNavigator nav)
 		{
-			var iterator = nav.SelectChildren (NamespaceElementName, XmlNamespace);
-			while (iterator.MoveNext ()) {
-				if (!ShouldProcessElement (iterator.Current))
+			foreach (XPathNavigator namespaceNav in nav.SelectChildren (NamespaceElementName, XmlNamespace)) {
+				if (!ShouldProcessElement (namespaceNav))
 					continue;
 
-				string fullname = GetFullName (iterator.Current);
+				string fullname = GetFullName (namespaceNav);
 				bool foundMatch = false;
 				foreach (TypeDefinition type in assembly.MainModule.Types) {
 					if (type.Namespace != fullname)
@@ -73,7 +74,7 @@ namespace Mono.Linker.Steps
 				}
 
 				if (!foundMatch) {
-					LogWarning ($"Could not find any type in namespace '{fullname}'.", 2044, iterator.Current);
+					LogWarning ($"Could not find any type in namespace '{fullname}'.", 2044, namespaceNav);
 				}
 			}
 		}
@@ -90,7 +91,7 @@ namespace Mono.Linker.Steps
 				MarkAndPreserveAll (nested);
 		}
 
-		protected override TypeDefinition ProcessExportedType (ExportedType exported, AssemblyDefinition assembly)
+		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly)
 		{
 			_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			return base.ProcessExportedType (exported, assembly);
@@ -154,7 +155,7 @@ namespace Mono.Linker.Steps
 			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 		}
 
-		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
+		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
 		{
 			if (_context.Annotations.IsMarked (method))
 				LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}'.", 2025, nav);
@@ -162,14 +163,14 @@ namespace Mono.Linker.Steps
 			_context.Annotations.MarkIndirectlyCalledMethod (method);
 			_context.Annotations.SetAction (method, MethodAction.Parse);
 
-			if (!(bool) customData) {
+			if (customData is bool required && !required) {
 				_context.Annotations.AddPreservedMethod (type, method);
 			} else {
 				_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			}
 		}
 
-		void ProcessMethodIfNotNull (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
+		void ProcessMethodIfNotNull (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
 		{
 			if (method == null)
 				return;
@@ -177,7 +178,7 @@ namespace Mono.Linker.Steps
 			ProcessMethod (type, method, nav, customData);
 		}
 
-		protected override MethodDefinition GetMethod (TypeDefinition type, string signature)
+		protected override MethodDefinition? GetMethod (TypeDefinition type, string signature)
 		{
 			if (type.HasMethods)
 				foreach (MethodDefinition meth in type.Methods)
@@ -211,7 +212,7 @@ namespace Mono.Linker.Steps
 			return sb.ToString ();
 		}
 
-		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object customData)
+		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData)
 		{
 			if (_context.Annotations.IsMarked (@event))
 				LogWarning ($"Duplicate preserve of '{@event.FullName}'.", 2025, nav);
@@ -221,7 +222,7 @@ namespace Mono.Linker.Steps
 			ProcessMethodIfNotNull (type, @event.InvokeMethod, nav, customData);
 		}
 
-		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object customData, bool fromSignature)
+		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature)
 		{
 			string[] accessors = fromSignature ? GetAccessors (nav) : _accessorsAll;
 
