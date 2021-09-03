@@ -1,0 +1,41 @@
+<Project DefaultTargets="BundleTestAppleApp">
+  <Import Project="Directory.Build.props" />
+  <PropertyGroup>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\apple_build\</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\apple_build\</TestRootDir>
+
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
+    <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
+    <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
+
+    <AppleBuildAppDependsOn>PrepareForAppleBuildApp;$(AppleBuildAppDependsOn)</AppleBuildAppDependsOn>
+
+    <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
+  </PropertyGroup>
+
+  <Import Project="$(_PropsFile)" />
+
+  <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuildApp" />
+
+  <Target Name="PrepareForAppleBuildApp">
+    <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *iOS/tvOS* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
+             Importance="High" />
+
+    <PropertyGroup>
+      <AppleAppDir>$(OriginalPublishDir)</AppleAppDir>
+      <AppleAppBundleDir>$(TestRootDir)AppBundle\</AppleAppBundleDir>
+
+      <MainLibraryFileName>$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Figure out if we can support JustInterp mode -->
+      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" />
+
+      <!-- Extra files are NativeLibraries and should be excluded from AppleAssembliesToBundle -->
+      <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
+    </ItemGroup>
+  </Target>
+  <Import Project="Directory.Build.targets" />
+</Project>

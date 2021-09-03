@@ -1,0 +1,10 @@
+<Project>
+  <!-- This depends on the root Directory.Build.props imported this file -->
+
+  <Import Project="$(MSBuildThisFileDirectory)AppleApp.props" />
+  <PropertyGroup>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+</Project>
