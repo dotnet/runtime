@@ -60,7 +60,6 @@ set __PassThroughArgs=
 REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:OfficialBuildId=value)
 set "__remainingArgs=%*"
 set __UnprocessedBuildArgs=
-set __CommonMSBuildArgs=
 
 set __BuildNative=1
 set __BuildCrossArchNative=0
@@ -159,8 +158,6 @@ if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 
-REM Preserve the equal sign for MSBuild properties
-if "!__remainingArgs:~0,1!" == "="  (set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1=%2"&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1"&shift&goto Arg_Loop
 
 :ArgsDone
@@ -208,8 +205,6 @@ if %__TotalSpecifiedBuildType% GTR 1 (
 if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
-
-set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch%
 
 if %__EnforcePgo%==1 (
     if %__BuildArchArm%==1 (
