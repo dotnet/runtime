@@ -2722,9 +2722,8 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     if (fgCanSwitchToOptimized() && fgMayExplicitTailCall() &&
                         ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
                     {
-                        // Method has an explicit tail call that may run like a loop or may not be generated as a
-                        // tail call in tier 0, switch to optimized to avoid spending too much time running slower
-                        // code
+                        // Method has an explicit tail call that may run like a loop or may not be generated as a tail
+                        // call in tier 0, switch to optimized to avoid spending too much time running slower code
                         fgSwitchToOptimized();
                     }
                 }
