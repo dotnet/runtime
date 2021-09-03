@@ -63,6 +63,8 @@ jobs:
           value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -ci
         - name: setScriptToEchoAndFailOnNonZero
           value: ''
+        - name: logRootNameArg
+          value: 'log '
 
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
         - name: archiveExtension
@@ -80,6 +82,8 @@ jobs:
         # Set the bash script to display each command, and stop if any command exits nonzero.
         - name: setScriptToEchoAndFailOnNonZero
           value: 'set -xe'
+        - name: logRootNameArg
+          value: '-log:'
 
       - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
         # This is only required for cross builds.

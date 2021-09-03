@@ -85,7 +85,7 @@
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
-    <_CopyNativeProjectBinaries>$(CopyNativeProjectBinaries)</_CopyNativeProjectBinaries>
+    <_CopyNativeProjectBinaries Condition="'$(__CopyNativeTestBinaries)' != '1'">$(__CopyNativeProjectsAfterCombinedTestBuild)</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
   </PropertyGroup>

@@ -54,5 +54,6 @@ if [[ "$ci" == true ]]; then
   node_reuse=false
 fi
 
+echo "MSBuild $extra_args"
 MSBuild $extra_args
 ExitWithExitCode 0
