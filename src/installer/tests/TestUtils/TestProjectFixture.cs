@@ -5,6 +5,7 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -75,10 +76,23 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
         }
 
+        static readonly object s_lock = new object();
+
         private TestProject CopyTestProject(TestProject sourceTestProject)
         {
+            // This can race with the filesystem. If we're running this code from two threads, fail fast
+            bool lockTaken = false;
+            object lockObj = s_lock;
+            Monitor.TryEnter(lockObj, 0, ref lockTaken);
+            if (!lockTaken)
+            {
+                throw new InvalidOperationException("Lock is held, test should not be executed in parallel");
+            }
+
             EnsureDirectoryBuildFiles(TestArtifact.TestArtifactsPath);
             return sourceTestProject.Copy();
+
+            // Don't release the lock. There should be only one thread running these tests
         }
 
         private void EnsureDirectoryBuildFiles(string testArtifactDirectory)

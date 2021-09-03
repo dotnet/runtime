@@ -9,6 +9,8 @@ using Microsoft.DotNet.CoreSetup.Test;
 using BundleTests.Helpers;
 using System.Runtime.InteropServices;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace Microsoft.NET.HostModel.Tests
 {
     public class BundleAndRun : IClassFixture<BundleAndRun.SharedTestState>
