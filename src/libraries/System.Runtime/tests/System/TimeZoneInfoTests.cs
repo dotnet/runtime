@@ -2662,7 +2662,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(nameof(SupportIanaNamesConversion))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58440", TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
         public static void IsIanaIdTest()
         {
             bool expected = !s_isWindows;
