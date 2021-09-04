@@ -2325,20 +2325,19 @@ void CodeGen::genEmitCall(int                   callType,
 //     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
 //
 // clang-format off
-void CodeGen::genEmitCall(int                   callType,
-                          CORINFO_METHOD_HANDLE methHnd,
-                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                          GenTreeIndir*         indir
-                          X86_ARG(int argSize),
-                          emitAttr              retSize
-                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          IL_OFFSETX            ilOffset)
+void CodeGen::genEmitCallIndir(int                   callType,
+                               CORINFO_METHOD_HANDLE methHnd,
+                               INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                               GenTreeIndir*         indir
+                               X86_ARG(int argSize),
+                               emitAttr              retSize
+                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               IL_OFFSETX            ilOffset,
+                               bool                  isJump)
 {
 #if !defined(TARGET_X86)
     int argSize = 0;
 #endif // !defined(TARGET_X86)
-    genConsumeAddress(indir->Addr());
-
     GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
                                INDEBUG_LDISASM_COMMA(sigInfo)
@@ -2353,7 +2352,8 @@ void CodeGen::genEmitCall(int                   callType,
                                (indir->Base()  != nullptr) ? indir->Base()->GetRegNum()  : REG_NA,
                                (indir->Index() != nullptr) ? indir->Index()->GetRegNum() : REG_NA,
                                indir->Scale(),
-                               indir->Offset());
+                               indir->Offset(),
+                               isJump);
 }
 // clang-format on
 

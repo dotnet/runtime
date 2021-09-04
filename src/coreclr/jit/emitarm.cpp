@@ -2167,7 +2167,7 @@ void emitter::emitIns_Mov(instruction ins,
         EXTEND_COMMON:
             if (canSkip && (dstReg == srcReg))
             {
-                // There are scenarios such as in genCallInstruction where the sign/zero extension should be elided
+                // There are scenarios such as in genCall where the sign/zero extension should be elided
                 return;
             }
 
