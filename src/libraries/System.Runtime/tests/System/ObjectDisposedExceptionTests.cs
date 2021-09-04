@@ -42,5 +42,19 @@ namespace System.Tests
             Assert.Contains(message, exception.Message);
             Assert.Contains(objectName, exception.Message);
         }
+
+        [Fact]
+        public static void Throw_Object()
+        {
+            var obj = new object();
+            AssertExtensions.Throws<ObjectDisposedException>(obj, () => ObjectDisposedException.Throw(obj));
+        }
+
+        [Fact]
+        public static void Throw_Type()
+        {
+            var type = new object().GetType();
+            AssertExtensions.Throws<ObjectDisposedException>(type, () => ObjectDisposedException.Throw(type));
+        }
     }
 }

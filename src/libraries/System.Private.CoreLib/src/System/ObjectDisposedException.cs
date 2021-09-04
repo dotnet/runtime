@@ -44,6 +44,12 @@ namespace System
             _objectName = info.GetString("ObjectName");
         }
 
+        public static void Throw(object instance) =>
+            Throw(instance.GetType());
+
+        public static void Throw(Type type) =>
+            throw new ObjectDisposedException(type.FullName);
+
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
