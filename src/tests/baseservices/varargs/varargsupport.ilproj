@@ -2,9 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
-  <PropertyGroup>
-    <DebugType>Full</DebugType>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="varargsupport.il" />
   </ItemGroup>

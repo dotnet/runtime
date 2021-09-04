@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="varargsupport.il" />
-  </ItemGroup>
-</Project>
