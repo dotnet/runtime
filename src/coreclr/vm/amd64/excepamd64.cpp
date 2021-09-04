@@ -398,7 +398,7 @@ RtlVirtualUnwind_Worker (
             {
                 NextByte++; // disp8
             }
-            else if (mod == 0b10)
+            else if (mod == 0b10 || (mod == 0b00 && rm == 0b101))
             {
                 NextByte += 4; // disp32
             }
