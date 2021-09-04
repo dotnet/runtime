@@ -5760,8 +5760,8 @@ public:
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block);
 #endif
 
-    bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2);
-    bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2);
+    static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2);
+    static bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2);
 
     static GenTree* fgGetFirstNode(GenTree* tree);
 

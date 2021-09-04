@@ -3380,29 +3380,29 @@ public:
 
         if (isFloat1 != isFloat2)
         {
-            if ((weight2 != 0) && isFloat1)
+            if (!Compiler::fgProfileWeightsEqual(weight2, 0) && isFloat1)
             {
                 return false;
             }
 
-            if ((weight1 != 0) && isFloat2)
+            if (!Compiler::fgProfileWeightsEqual(weight1, 0) && isFloat2)
             {
                 return true;
             }
         }
 #endif
 
-        if ((weight1 != 0) && dsc1->lvIsRegArg)
+        if (!Compiler::fgProfileWeightsEqual(weight1, 0) && dsc1->lvIsRegArg)
         {
             weight1 += 2 * BB_UNITY_WEIGHT;
         }
 
-        if ((weight2 != 0) && dsc2->lvIsRegArg)
+        if (!Compiler::fgProfileWeightsEqual(weight2, 0) && dsc2->lvIsRegArg)
         {
             weight2 += 2 * BB_UNITY_WEIGHT;
         }
 
-        if (fabs(weight1 - weight2) > 0.01)
+        if (!Compiler::fgProfileWeightsEqual(weight1, weight2))
         {
             return weight1 > weight2;
         }

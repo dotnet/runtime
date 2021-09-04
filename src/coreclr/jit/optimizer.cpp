@@ -340,7 +340,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             //
             if (!curBlk->isMaxBBWeight() && !curBlk->hasProfileWeight())
             {
-                weight_t scale = 1.0f / BB_LOOP_WEIGHT_SCALE;
+                weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
 
                 if (!fgDominate(curBlk, endBlk))
                 {
@@ -3818,7 +3818,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     // Note this is not quite right, as we may not have upscaled by this amount
                     // and we might not have upscaled at all, if we had profile data.
                     //
-                    newBlock->scaleBBWeight(1.0f / BB_LOOP_WEIGHT_SCALE);
+                    newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
                     assert(newBlock->bbJumpDest == nullptr);
@@ -4467,8 +4467,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Note "next" is the loop top block, not bTest's bbNext,
         // we'll call this latter block "after".
         //
-        weight_t const testToNextLikelihood  = min(1.0f, weightNext / weightTest);
-        weight_t const testToAfterLikelihood = 1.0f - testToNextLikelihood;
+        weight_t const testToNextLikelihood  = min(1.0, weightNext / weightTest);
+        weight_t const testToAfterLikelihood = 1.0 - testToNextLikelihood;
 
         // Adjust edges out of bTest (which now has weight weightNext)
         //
@@ -6885,8 +6885,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     noway_assert(edgeToNext != nullptr);
                     noway_assert(edgeToJump != nullptr);
 
-                    loopEnteredCount = (edgeToNext->edgeWeightMin() + edgeToNext->edgeWeightMax()) / 2.0f;
-                    loopSkippedCount = (edgeToJump->edgeWeightMin() + edgeToJump->edgeWeightMax()) / 2.0f;
+                    loopEnteredCount = (edgeToNext->edgeWeightMin() + edgeToNext->edgeWeightMax()) / 2.0;
+                    loopSkippedCount = (edgeToJump->edgeWeightMin() + edgeToJump->edgeWeightMax()) / 2.0;
 
                     // Watch out for cases where edge weights were not properly maintained
                     // so that it appears no profile flow enters the loop.

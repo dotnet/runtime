@@ -1739,8 +1739,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // The slow path will, correspondingly, get only 1% of the block weights. It could be argued that we should
     // mark the slow path as "run rarely", since it really shouldn't execute (given the currently optimized loop
     // conditions) except under exceptional circumstances.
-    const weight_t fastPathWeightScaleFactor = 0.99f;
-    const weight_t slowPathWeightScaleFactor = 1.0f - fastPathWeightScaleFactor;
+    const weight_t fastPathWeightScaleFactor = 0.99;
+    const weight_t slowPathWeightScaleFactor = 1.0 - fastPathWeightScaleFactor;
 
     // This is the containing loop, if any -- to label any blocks we create that are outside
     // the loop being cloned.

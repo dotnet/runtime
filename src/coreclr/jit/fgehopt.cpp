@@ -1233,10 +1233,10 @@ PhaseStatus Compiler::fgCloneFinally()
         if (usingProfileWeights && (originalWeight > BB_ZERO_WEIGHT))
         {
             // We can't leave the finally more often than we enter.
-            // So cap cloned scale at 1.0f
+            // So cap cloned scale at 1.0
             //
-            weight_t const clonedScale = retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0f;
-            weight_t const originalScale = 1.0f - clonedScale;
+            weight_t const clonedScale = retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0;
+            weight_t const originalScale = 1.0 - clonedScale;
 
             JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",
                     retargetedWeight, originalWeight, clonedScale, originalScale);

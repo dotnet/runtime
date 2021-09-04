@@ -5641,7 +5641,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     //
     if (emitComp->fgHaveProfileData())
     {
-        const float scenarioHotWeight = 256.0f;
+        const weight_t scenarioHotWeight = 256.0;
         if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
         {
             allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;

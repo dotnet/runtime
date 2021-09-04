@@ -19234,8 +19234,8 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
     else
     {
-        const float prejitHotCallerWeight = 1000000.0f;
-        weight                            = prejitHotCallerWeight;
+        const weight_t prejitHotCallerWeight = 1000000.0;
+        weight                               = prejitHotCallerWeight;
     }
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
@@ -19250,7 +19250,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     {
         const weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
         const weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
-        profileFreq                   = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
+        profileFreq                   = fgProfileWeightsEqual(entryWeight, 0.0) ? 0.0 : callSiteWeight / entryWeight;
         hasProfile                    = true;
 
         assert(callSiteWeight >= 0);

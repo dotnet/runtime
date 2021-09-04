@@ -140,7 +140,7 @@ void Compiler::fgApplyProfileScale()
     //
     if (calleeWeight == BB_ZERO_WEIGHT)
     {
-        calleeWeight = fgHaveProfileData() ? 1.0f : BB_UNITY_WEIGHT;
+        calleeWeight = fgHaveProfileData() ? 1.0 : BB_UNITY_WEIGHT;
         JITDUMP("   ... callee entry has weight zero, will use weight of " FMT_WT " to scale\n", calleeWeight);
     }
 
@@ -2734,8 +2734,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // (at a minimum the cost of a not-taken branch) and a variable portion, plus increased code size.
     // So we don't want to peel in cases where the dominant fraction is too small.
     //
-    const weight_t sufficientSamples  = 30.0f;
-    const weight_t sufficientFraction = 0.55f;
+    const weight_t sufficientSamples  = 30.0;
+    const weight_t sufficientFraction = 0.55;
 
     if (info->m_weight < sufficientSamples)
     {
@@ -3094,8 +3094,8 @@ bool flowList::setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, wei
 void flowList::setEdgeWeights(weight_t theMinWeight, weight_t theMaxWeight, BasicBlock* bDst)
 {
     assert(theMinWeight <= theMaxWeight);
-    assert(theMinWeight >= 0.0f);
-    assert(theMaxWeight >= 0.0f);
+    assert(theMinWeight >= 0.0);
+    assert(theMaxWeight >= 0.0);
 
     JITDUMP("Setting edge weights for " FMT_BB " -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n", getBlock()->bbNum,
             bDst->bbNum, theMinWeight, theMaxWeight);

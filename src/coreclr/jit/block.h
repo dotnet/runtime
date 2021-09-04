@@ -671,10 +671,10 @@ struct BasicBlock : private LIR::Range
     const char* dspToString(int blockNumPadding = 0);
 #endif // DEBUG
 
-#define BB_UNITY_WEIGHT 100.0f       // how much a normal execute once block weighs
+#define BB_UNITY_WEIGHT 100.0        // how much a normal execute once block weighs
 #define BB_UNITY_WEIGHT_UNSIGNED 100 // how much a normal execute once block weighs
-#define BB_LOOP_WEIGHT_SCALE 8.0f    // synthetic profile scale factor for loops
-#define BB_ZERO_WEIGHT 0.0f
+#define BB_LOOP_WEIGHT_SCALE 8.0     // synthetic profile scale factor for loops
+#define BB_ZERO_WEIGHT 0.0
 #define BB_MAX_WEIGHT FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
