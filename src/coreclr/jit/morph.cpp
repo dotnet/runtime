@@ -7738,18 +7738,20 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
-// For R2R we might need a different entry point for this call if we are doing a tailcall.
-// The reason is that the normal delay load helper uses the return address to find the indirection
-// cell in x64, but now the JIT is expected to leave the indirection cell in REG_FASTTAILCALL_TARGET.
-// We optimize delegate invocations manually in the JIT so skip this for those.
+    // For R2R we might need a different entry point for this call if we are doing a tailcall.
+    // The reason is that the normal delay load helper uses the return address to find the indirection
+    // cell in x64, but now the JIT is expected to leave the indirection cell in REG_FASTTAILCALL_TARGET.
+    // We optimize delegate invocations manually in the JIT so skip this for those.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef FEATURE_READYTORUN_COMPILER
     if (call->IsR2RRelativeIndir() && canFastTailCall && !fastTailCallToLoop && !call->IsDelegateInvoke())
     {
         info.compCompHnd->updateEntryPointForTailCall(&call->gtEntryPoint);
 
 #ifdef TARGET_XARCH
-        // We need to redo arg info to add the indirection cell arg.
-        call->fgArgInfo = nullptr;
+        // We have already computed arg info to make the fast tailcall decision, but on X64 we now
+        // have to pass the indirection cell, so redo arg info.
+        call->ResetArgInfo();
 #endif
     }
 #endif
@@ -8935,11 +8937,8 @@ unsigned Compiler::fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEn
     for (unsigned i = 0; i < argCount; i++)
     {
         fgArgTabEntry* arg = argTable[i];
-        if (!arg->isNonStandard())
-            continue;
-
-        // Ret buffer is added as a local, so don't subtract one for it
-        if (arg->nonStandardArgKind == NonStandardArgKind::RetBuffer)
+        // Late added args add extra args that do not map to IL parameters and that we should not reassign.
+        if (!arg->isNonStandard() || !arg->isNonStandardArgAddedLate())
             continue;
 
         if (arg->argNum < argTabEntry->argNum)
@@ -9040,9 +9039,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             {
                 // This is an actual argument that needs to be assigned to the corresponding caller parameter.
                 fgArgTabEntry* curArgTabEntry = gtArgEntryByArgNum(recursiveTailCall, earlyArgIndex);
-                // Ret buffer is part of locals so assign it
-                if (!curArgTabEntry->isNonStandard() ||
-                    (curArgTabEntry->nonStandardArgKind == NonStandardArgKind::RetBuffer))
+                // Late-added non-standard args are extra args that are not passed as locals, so skip those
+                if (!curArgTabEntry->isNonStandard() || !curArgTabEntry->isNonStandardArgAddedLate())
                 {
                     Statement* paramAssignStmt =
                         fgAssignRecursiveCallArgToCallerParam(earlyArg, curArgTabEntry,
@@ -9068,7 +9066,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // A late argument is an actual argument that needs to be assigned to the corresponding caller's parameter.
         GenTree*       lateArg        = use.GetNode();
         fgArgTabEntry* curArgTabEntry = gtArgEntryByLateArgIndex(recursiveTailCall, lateArgIndex);
-        if (!curArgTabEntry->isNonStandard() || curArgTabEntry->nonStandardArgKind == NonStandardArgKind::RetBuffer)
+        // Late-added non-standard args are extra args that are not passed as locals, so skip those
+        if (!curArgTabEntry->isNonStandard() || !curArgTabEntry->isNonStandardArgAddedLate())
         {
             Statement* paramAssignStmt =
                 fgAssignRecursiveCallArgToCallerParam(lateArg, curArgTabEntry,
