@@ -949,13 +949,13 @@ namespace System.Net.Test.Common
                 return headerString;
             }
 
-            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
             {
                 string headerString = GetResponseHeaderString(statusCode, headers);
                 await SendResponseAsync(headerString).ConfigureAwait(false);
             }
 
-            public override async Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+            public override async Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
             {
                 string headerString = GetResponseHeaderString(statusCode, headers);
 
@@ -965,7 +965,7 @@ namespace System.Net.Test.Common
                 await SendResponseAsync(headerString).ConfigureAwait(false);
             }
 
-            public override async Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
+            public override async Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
             {
                 await SendResponseAsync(content).ConfigureAwait(false);
             }
@@ -1041,7 +1041,7 @@ namespace System.Net.Test.Common
                 return requestData;
             }
 
-            public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+            public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
             {
                 var buffer = new byte[1024];
                 while (true)
