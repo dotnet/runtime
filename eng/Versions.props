@@ -51,7 +51,7 @@
     <MicrosoftCodeAnalysisCSharpVersion>3.10.0</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.21452.7</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- SDK dependencies -->
-    <MicrosoftDotNetCompatibilityVersion>1.0.0-rc.1.21453.1</MicrosoftDotNetCompatibilityVersion>
+    <MicrosoftDotNetCompatibilityVersion>1.0.0-rc.1.21453.86</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>7.0.0-beta.21453.2</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>7.0.0-beta.21453.2</MicrosoftDotNetBuildTasksFeedVersion>
