@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -128,6 +128,23 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void RoundTripWithCustomConverterFactory_Class()
+        {
+            const string Json = "{\"MyInt\":142}";
+
+            ClassWithCustomConverterFactory obj = new()
+            {
+                MyInt = 42
+            };
+
+            string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactory);
+            Assert.Equal(Json, json);
+
+            obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterFactory);
+            Assert.Equal(42, obj.MyInt);
+        }
+
+        [Fact]
         public virtual void RoundTripWithCustomConverter_Struct()
         {
             const string Json = "{\"MyInt\":142}";
@@ -142,6 +159,122 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverter);
             Assert.Equal(42, obj.MyInt);
+        }
+
+        [Fact]
+        public virtual void RoundtripWithCustomConverterProperty_Class()
+        {
+            const string ExpectedJson = "{\"Property\":42}";
+
+            ClassWithCustomConverterProperty obj = new()
+            {
+                Property = new ClassWithCustomConverterProperty.NestedPoco { Value = 42 }
+            };
+
+            // Types with properties in custom converters do not support fast path serialization.
+            Assert.True(DefaultContext.ClassWithCustomConverterProperty.Serialize is null);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterProperty));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterProperty);
+                Assert.Equal(ExpectedJson, json);
+            }
+
+            obj = JsonSerializer.Deserialize<ClassWithCustomConverterProperty>(ExpectedJson);
+            Assert.Equal(42, obj.Property.Value);
+        }
+
+        [Fact]
+        public virtual void RoundtripWithCustomConverterProperty_Struct()
+        {
+            const string ExpectedJson = "{\"Property\":42}";
+
+            StructWithCustomConverterProperty obj = new()
+            {
+                Property = new ClassWithCustomConverterProperty.NestedPoco { Value = 42 }
+            };
+
+            // Types with properties in custom converters do not support fast path serialization.
+            Assert.True(DefaultContext.StructWithCustomConverterProperty.Serialize is null);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterProperty));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterProperty);
+                Assert.Equal(ExpectedJson, json);
+            }
+
+            obj = JsonSerializer.Deserialize<StructWithCustomConverterProperty>(ExpectedJson);
+            Assert.Equal(42, obj.Property.Value);
+        }
+
+        [Fact]
+        public virtual void RoundTripWithCustomPropertyConverterFactory_Class()
+        {
+            const string Json = "{\"MyEnum\":\"A\"}";
+
+            ClassWithCustomConverterPropertyFactory obj = new()
+            {
+                MyEnum = SampleEnum.A
+            };
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory);
+                Assert.Equal(Json, json);
+            }
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory));
+            }
+            else
+            {
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterPropertyFactory);
+                Assert.Equal(SampleEnum.A, obj.MyEnum);
+            }
+        }
+
+        [Fact]
+        public virtual void RoundTripWithCustomPropertyConverterFactory_Struct()
+        {
+            const string Json = "{\"MyEnum\":\"A\"}";
+
+            StructWithCustomConverterPropertyFactory obj = new()
+            {
+                MyEnum = SampleEnum.A
+            };
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory);
+                Assert.Equal(Json, json);
+            }
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory));
+            }
+            else
+            {
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterPropertyFactory);
+                Assert.Equal(SampleEnum.A, obj.MyEnum);
+            }
         }
 
         [Fact]

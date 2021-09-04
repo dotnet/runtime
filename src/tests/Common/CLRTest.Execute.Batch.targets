@@ -196,18 +196,18 @@ Exit /b 0
         <Description>Run testcases under debugger.</Description>
       </BatchCLRTestExecutionScriptArgument>
 
-      <BatchCLRTestExecutionScriptArgument Include="env">
+      <BatchCLRTestExecutionScriptArgument Include="e;env">
         <HasParam>true</HasParam>
-        <ParamName>envScriptFullPath</ParamName>
+        <ParamName>dotenvFileFullPath</ParamName>
         <Command><![CDATA[
     IF EXIST "%2" (
-        set __TestEnv=%2
+        set __DotEnvArg=-e %2
     ) ELSE (
-        ECHO The environment script "%2" does not exist
+        ECHO The dotenv file "%2" does not exist
         GOTO :USAGE
     )
         ]]></Command>
-        <Description>Run the specified script to set environment variables before running the test.</Description>
+        <Description>A dotenv file to pass to corerun to set environment variables for the test run.</Description>
       </BatchCLRTestExecutionScriptArgument>
 
       <BatchCLRTestExecutionScriptArgument Include="coreroot">
@@ -290,7 +290,7 @@ if defined DoLink (
           </BatchLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>
-      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs)</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
