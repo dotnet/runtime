@@ -89,5 +89,7 @@ namespace System.Text.Json.SourceGeneration
         /// Source code to instantiate design-time specified custom converter.
         /// </summary>
         public string? ConverterInstantiationLogic { get; init; }
+
+        public bool HasFactoryConverter { get; init; }
     }
 }

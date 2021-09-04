@@ -15,13 +15,13 @@
       ]
     },
     "microsoft.dotnet.xharness.cli": {
-      "version": "1.0.0-prerelease.21426.1",
+      "version": "1.0.0-prerelease.21451.1",
       "commands": [
         "xharness"
       ]
     },
     "microsoft.visualstudio.slngen.tool": {
-      "version": "6.1.0",
+      "version": "6.1.10",
       "commands": [
         "slngen"
       ]

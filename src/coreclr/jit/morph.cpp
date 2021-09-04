@@ -851,6 +851,35 @@ REMOVE_CAST:
 #endif
 
 #ifdef DEBUG
+const char* getNonStandardArgKindName(NonStandardArgKind kind)
+{
+    switch (kind)
+    {
+        case NonStandardArgKind::None:
+            return "None";
+        case NonStandardArgKind::PInvokeFrame:
+            return "PInvokeFrame";
+        case NonStandardArgKind::PInvokeTarget:
+            return "PInvokeTarget";
+        case NonStandardArgKind::PInvokeCookie:
+            return "PInvokeCookie";
+        case NonStandardArgKind::WrapperDelegateCell:
+            return "WrapperDelegateCell";
+        case NonStandardArgKind::ShiftLow:
+            return "ShiftLow";
+        case NonStandardArgKind::ShiftHigh:
+            return "ShiftHigh";
+        case NonStandardArgKind::FixedRetBuffer:
+            return "FixedRetBuffer";
+        case NonStandardArgKind::VirtualStubCell:
+            return "VirtualStubCell";
+        case NonStandardArgKind::R2RIndirectionCell:
+            return "R2RIndirectionCell";
+        default:
+            unreached();
+    }
+}
+
 void fgArgTabEntry::Dump() const
 {
     printf("fgArgTabEntry[arg %u", argNum);
@@ -909,41 +938,7 @@ void fgArgTabEntry::Dump() const
     }
     if (nonStandardArgKind != NonStandardArgKind::None)
     {
-        const char* kind;
-        switch (nonStandardArgKind)
-        {
-            case NonStandardArgKind::PInvokeFrame:
-                kind = "PInvokeFrame";
-                break;
-            case NonStandardArgKind::PInvokeTarget:
-                kind = "PInvokeTarget";
-                break;
-            case NonStandardArgKind::PInvokeCookie:
-                kind = "PInvokeCookie";
-                break;
-            case NonStandardArgKind::WrapperDelegateCell:
-                kind = "WrapperDelegateCell";
-                break;
-            case NonStandardArgKind::ShiftLow:
-                kind = "ShiftLow";
-                break;
-            case NonStandardArgKind::ShiftHigh:
-                kind = "ShiftHigh";
-                break;
-            case NonStandardArgKind::RetBuffer:
-                kind = "RetBuffer";
-                break;
-            case NonStandardArgKind::VirtualStubCell:
-                kind = "VirtualStubCell";
-                break;
-            case NonStandardArgKind::R2RIndirectionCell:
-                kind = "R2RIndirectionCell";
-                break;
-            default:
-                kind = "Unknown";
-                break;
-        }
-        printf(", nonStandard[%s]", kind);
+        printf(", nonStandard[%s]", getNonStandardArgKindName(nonStandardArgKind));
     }
     if (isStruct)
     {
@@ -2599,7 +2594,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             GenTree* node;           // The tree node representing this non-standard argument.
                                      //   Note that this must be updated if the tree node changes due to morphing!
             regNumber          reg;  // The register to be assigned to this non-standard argument.
-            NonStandardArgKind kind; // The kind of the nonstandard arg
+            NonStandardArgKind kind; // The kind of the non-standard arg
         };
 
         ArrayStack<NonStandardArg> args;
@@ -2648,28 +2643,28 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
 
         //-----------------------------------------------------------------------------
-        // FindReg: Look for a GenTree node in the non-standard arguments set. If found,
+        // Find: Look for a GenTree node in the non-standard arguments set. If found,
         // set the register to use for the node.
         //
         // Arguments:
         //    node - a GenTree node to look for
         //    pReg - an OUT argument. *pReg is set to the non-standard register to use if
         //           'node' is found in the non-standard argument set.
+        //    pKind - an OUT argument. *pKind is set to the kind of the non-standard arg.
         //
         // Return Value:
-        //    'true' if 'node' is a non-standard argument. In this case, *pReg is set to the
-        //          register to use.
-        //    'false' otherwise (in this case, *pReg is unmodified).
+        //    'true' if 'node' is a non-standard argument. In this case, *pReg and *pKing are set.
+        //    'false' otherwise (in this case, *pReg and *pKind are unmodified).
         //
-        bool Find(GenTree* node, regNumber* pReg, NonStandardArgKind* kind)
+        bool Find(GenTree* node, regNumber* pReg, NonStandardArgKind* pKind)
         {
             for (int i = 0; i < args.Height(); i++)
             {
                 NonStandardArg& nsa = args.TopRef(i);
                 if (node == nsa.node)
                 {
-                    *pReg = nsa.reg;
-                    *kind = nsa.kind;
+                    *pReg  = nsa.reg;
+                    *pKind = nsa.kind;
                     return true;
                 }
             }
@@ -2804,7 +2799,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         // We don't increment numArgs here, since we already counted this argument above.
 
-        nonStandardArgs.Add(argx, theFixedRetBuffReg(), NonStandardArgKind::RetBuffer);
+        nonStandardArgs.Add(argx, theFixedRetBuffReg(), NonStandardArgKind::FixedRetBuffer);
     }
 
     // We are allowed to have a Fixed Return Buffer argument combined
@@ -3121,11 +3116,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
 #endif
-        unsigned           size               = 0;
-        unsigned           byteSize           = 0;
-        bool               isRegArg           = false;
-        NonStandardArgKind nonStandardArgKind = NonStandardArgKind::None;
-        regNumber          nonStdRegNum       = REG_NA;
+        unsigned size     = 0;
+        unsigned byteSize = 0;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
@@ -3380,6 +3372,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         //
         // Figure out if the argument will be passed in a register.
         //
+        bool               isRegArg           = false;
+        NonStandardArgKind nonStandardArgKind = NonStandardArgKind::None;
+        regNumber          nonStdRegNum       = REG_NA;
 
         if (isRegParamType(genActualType(argx->TypeGet()))
 #ifdef UNIX_AMD64_ABI
@@ -8129,20 +8124,13 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // can't do that in an assert.
     // assert(!fgCanFastTailCall(call, nullptr));
 
-    bool virtualCall = call->IsVirtual();
-
-    // If VSD then get rid of arg to VSD since we turn this into a direct call.
-    // The extra arg will be the first arg so this needs to be done before we
-    // handle the retbuf below.
-    if (call->IsVirtualStub())
-    {
-        JITDUMP("This is a VSD\n");
-#if FEATURE_FASTTAILCALL
-        call->ResetArgInfo();
-#endif
-
-        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-    }
+    // We might or might not have called fgInitArgInfo before this point: in
+    // builds with FEATURE_FASTTAILCALL we will have called it when checking if
+    // we could do a fast tailcall, so it is possible we have added extra IR
+    // for non-standard args that we must get rid of. Get rid of that IR here
+    // and do this first as it will 'expose' the retbuf as the first arg, which
+    // we rely upon in fgCreateCallDispatcherAndGetResult.
+    call->ResetArgInfo();
 
     GenTree* callDispatcherAndGetResult = fgCreateCallDispatcherAndGetResult(call, help.hCallTarget, help.hDispatcher);
 
@@ -8150,11 +8138,9 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     if (call->HasRetBufArg())
     {
         JITDUMP("Removing retbuf");
+
         call->gtCallArgs = call->gtCallArgs->GetNext();
         call->gtCallMoreFlags &= ~GTF_CALL_M_RETBUFFARG;
-
-        // We changed args so recompute info.
-        call->fgArgInfo = nullptr;
     }
 
     const bool stubNeedsTargetFnPtr = (help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0;
@@ -8176,7 +8162,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         //      the stub also needs "this" in order to evalute the target.
 
         const bool callNeedsNullCheck = call->NeedsNullCheck();
-        const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && virtualCall;
+        const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && call->IsVirtual();
 
         // TODO-Review: The following transformation is implemented under assumption that
         // both conditions can be true. However, I could not construct such example
@@ -8247,7 +8233,6 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         // in the right execution order.
         assert(thisPtr != nullptr);
         call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
-        call->fgArgInfo  = nullptr;
     }
 
     // We may need to pass the target, for instance for calli or generic methods
@@ -8256,7 +8241,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     {
         JITDUMP("Adding target since VM requested it\n");
         GenTree* target;
-        if (!virtualCall)
+        if (!call->IsVirtual())
         {
             if (call->gtCallType == CT_INDIRECT)
             {
@@ -8306,8 +8291,6 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         }
 
         *newArgSlot = gtNewCallArgs(target);
-
-        call->fgArgInfo = nullptr;
     }
 
     // This is now a direct call to the store args stub and not a tailcall.
@@ -12605,14 +12588,9 @@ DONE_MORPHING_CHILDREN:
                     {
                         cns1 = op1->AsOp()->gtOp2;
                         cns2 = op2->AsOp()->gtOp2;
-                        cns1->AsIntCon()->gtIconVal += cns2->AsIntCon()->gtIconVal;
-#ifdef TARGET_64BIT
-                        if (cns1->TypeGet() == TYP_INT)
-                        {
-                            // we need to properly re-sign-extend or truncate after adding two int constants above
-                            cns1->AsIntCon()->TruncateOrSignExtend32();
-                        }
-#endif // TARGET_64BIT
+
+                        ssize_t value = cns1->AsIntCon()->IconValue() + cns2->AsIntCon()->IconValue();
+                        cns1->AsIntCon()->SetValueTruncating(value);
 
                         tree->AsOp()->gtOp2 = cns1;
                         DEBUG_DESTROY_NODE(cns2);
@@ -13996,6 +13974,12 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 
     if (addr->OperIs(GT_ADDR) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
+        // If struct promotion was undone, adjust the annotations
+        if (fgGlobalMorph && fgMorphImplicitByRefArgs(addr))
+        {
+            return ind;
+        }
+
         // If `return` retypes LCL_VAR as a smaller struct it should not set `doNotEnregister` on that
         // LclVar.
         // Example: in `Vector128:AsVector2` we have RETURN SIMD8(OBJ SIMD8(ADDR byref(LCL_VAR SIMD16))).
@@ -14235,18 +14219,11 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     oper = GT_ADD;
                     tree->ChangeOper(oper);
 
-                    op2->AsIntCon()->gtIconVal = iadd * imul;
+                    op2->AsIntCon()->SetValueTruncating(iadd * imul);
 
                     op1->ChangeOper(GT_MUL);
 
-                    add->AsIntCon()->gtIconVal = imul;
-#ifdef TARGET_64BIT
-                    if (add->gtType == TYP_INT)
-                    {
-                        // we need to properly re-sign-extend or truncate after multiplying two int constants above
-                        add->AsIntCon()->TruncateOrSignExtend32();
-                    }
-#endif // TARGET_64BIT
+                    add->AsIntCon()->SetIconValue(imul);
                 }
             }
 
@@ -14286,17 +14263,10 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     /* Change "(val + iadd) << ishf" into "(val<<ishf + iadd<<ishf)" */
 
                     tree->ChangeOper(GT_ADD);
-                    ssize_t result = iadd << ishf;
-                    op2->AsIntConCommon()->SetIconValue(result);
-#ifdef TARGET_64BIT
-                    if (op1->gtType == TYP_INT)
-                    {
-                        op2->AsIntCon()->TruncateOrSignExtend32();
-                    }
-#endif // TARGET_64BIT
 
                     // we are reusing the shift amount node here, but the type we want is that of the shift result
                     op2->gtType = op1->gtType;
+                    op2->AsIntConCommon()->SetValueTruncating(iadd << ishf);
 
                     if (cns->gtOper == GT_CNS_INT && cns->AsIntCon()->gtFieldSeq != nullptr &&
                         cns->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
@@ -17661,6 +17631,8 @@ void Compiler::fgRetypeImplicitByRefArgs()
 
 void Compiler::fgMarkDemotedImplicitByRefArgs()
 {
+    JITDUMP("\n*************** In fgMarkDemotedImplicitByRefArgs()\n");
+
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64)
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
@@ -17669,6 +17641,8 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
 
         if (lvaIsImplicitByRefLocal(lclNum))
         {
+            JITDUMP("Clearing annotation for V%02d\n", lclNum);
+
             if (varDsc->lvPromoted)
             {
                 // The parameter is simply a pointer now, so clear lvPromoted.  It was left set
@@ -17695,7 +17669,8 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
                 LclVarDsc* structVarDsc     = &lvaTable[structLclNum];
                 structVarDsc->lvAddrExposed = false;
 #ifdef DEBUG
-                structVarDsc->lvUnusedStruct = true;
+                structVarDsc->lvUnusedStruct          = true;
+                structVarDsc->lvUndoneStructPromotion = true;
 #endif // DEBUG
 
                 unsigned fieldLclStart = structVarDsc->lvFieldLclStart;
@@ -17704,6 +17679,8 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
 
                 for (unsigned fieldLclNum = fieldLclStart; fieldLclNum < fieldLclStop; ++fieldLclNum)
                 {
+                    JITDUMP("Fixing pointer for field V%02d from V%02d to V%02d\n", fieldLclNum, lclNum, structLclNum);
+
                     // Fix the pointer to the parent local.
                     LclVarDsc* fieldVarDsc = &lvaTable[fieldLclNum];
                     assert(fieldVarDsc->lvParentLcl == lclNum);

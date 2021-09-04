@@ -2080,8 +2080,8 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
                 comp->lvaSetStruct(tmpLclNum, comp->lvaGetStruct(lclNum), false);
             }
             GenTreeLclVar* storeLclVar = comp->gtNewStoreLclVar(tmpLclNum, value);
-            ContainCheckRange(value, storeLclVar);
             BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeLclVar));
+            ContainCheckRange(value, storeLclVar);
             LowerNode(storeLclVar);
         }
 

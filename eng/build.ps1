@@ -127,17 +127,18 @@ if ($subset -eq 'help') {
 }
 
 if ($vs) {
+  $archToOpen = $arch[0]
+  $configToOpen = $configuration[0]
+  $repoRoot = Split-Path $PSScriptRoot -Parent
+  if ($runtimeConfiguration) {
+    $configToOpen = $runtimeConfiguration
+  }
+
   if ($vs -ieq "coreclr.sln") {
     # If someone passes in coreclr.sln (case-insensitive),
     # launch the generated CMake solution.
-    $archToOpen = $arch[0]
-    $configToOpen = $configuration[0]
-    if ($runtimeConfiguration) {
-      $configToOpen = $runtimeConfiguration
-    }
     $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
     if (-Not (Test-Path $vs)) {
-      $repoRoot = Split-Path $PSScriptRoot -Parent
       Invoke-Expression "& `"$repoRoot/src/coreclr/build-runtime.cmd`" -configureonly -$archToOpen -$configToOpen -msbuild"
       if ($lastExitCode -ne 0) {
         Write-Error "Failed to generate the CoreCLR solution file."
@@ -145,6 +146,19 @@ if ($vs) {
       }
       if (-Not (Test-Path $vs)) {
         Write-Error "Unable to find the CoreCLR solution file at $vs."
+      }
+    }
+  }
+  elseif ($vs -ieq "corehost.sln") {
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
+    if (-Not (Test-Path $vs)) {
+      Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false"
+      if ($lastExitCode -ne 0) {
+        Write-Error "Failed to generate the CoreHost solution file."
+        exit 1
+      }
+      if (-Not (Test-Path $vs)) {
+        Write-Error "Unable to find the CoreHost solution file at $vs."
       }
     }
   }

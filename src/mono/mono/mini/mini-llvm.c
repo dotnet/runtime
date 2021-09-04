@@ -11447,25 +11447,29 @@ emit_method_inner (EmitContext *ctx)
 		}
 	}
 	if (cfg->method->wrapper_type) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
-
-		switch (info->subtype) {
-		case WRAPPER_SUBTYPE_GSHAREDVT_IN:
-		case WRAPPER_SUBTYPE_GSHAREDVT_OUT:
-		case WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG:
-		case WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG:
-			/* Arguments are not used after the call */
+		if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
 			requires_safepoint = FALSE;
-			break;
+		} else {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+
+			switch (info->subtype) {
+			case WRAPPER_SUBTYPE_GSHAREDVT_IN:
+			case WRAPPER_SUBTYPE_GSHAREDVT_OUT:
+			case WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG:
+			case WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG:
+				/* Arguments are not used after the call */
+				requires_safepoint = FALSE;
+				break;
+			}
 		}
 	}
 	ctx->has_safepoints = requires_safepoint;
 
 	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
-		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC) {
+		if (!cfg->compile_aot) {
 			LLVMSetGC (method, "coreclr");
 			emit_gc_safepoint_poll (ctx->module, ctx->lmodule, cfg);
-		} else if (cfg->compile_aot) {
+		} else {
 			LLVMSetGC (method, "coreclr");
 		}
 	}

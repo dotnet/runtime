@@ -502,6 +502,9 @@ public:
     unsigned char lvUnusedStruct : 1; // All references to this promoted struct are through its field locals.
                                       // I.e. there is no longer any reference to the struct directly.
                                       // In this case we can simply remove this struct local.
+
+    unsigned char lvUndoneStructPromotion : 1; // The struct promotion was undone and hence there should be no
+                                               // reference to the fields of this struct.
 #endif
 
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
@@ -1461,7 +1464,7 @@ struct FuncInfoDsc
     // that isn't shared between the main function body and funclets.
 };
 
-enum class NonStandardArgKind
+enum class NonStandardArgKind : unsigned
 {
     None,
     PInvokeFrame,
@@ -1470,10 +1473,16 @@ enum class NonStandardArgKind
     WrapperDelegateCell,
     ShiftLow,
     ShiftHigh,
-    RetBuffer,
+    FixedRetBuffer,
     VirtualStubCell,
     R2RIndirectionCell,
+
+    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate below
 };
+
+#ifdef DEBUG
+const char* getNonStandardArgKindName(NonStandardArgKind kind);
+#endif
 
 struct fgArgTabEntry
 {
@@ -1542,7 +1551,8 @@ public:
     bool isBackFilled : 1; // True when the argument fills a register slot skipped due to alignment requirements of
                            // previous arguments.
     NonStandardArgKind nonStandardArgKind : 4; // The non-standard arg kind. Non-standard args are args that are forced
-                                               // to be in certain registers.
+                                               // to be in certain registers or on the stack, regardless of where they
+                                               // appear in the arg list.
     bool isStruct : 1;                         // True if this is a struct arg
     bool _isVararg : 1;                        // True if the argument is in a vararg context.
     bool passedByRef : 1;                      // True iff the argument is passed by reference.
@@ -1574,6 +1584,29 @@ public:
     bool isNonStandard() const
     {
         return nonStandardArgKind != NonStandardArgKind::None;
+    }
+
+    // Returns true if the IR node for this non-standarg arg is added by fgInitArgInfo.
+    // In this case, it must be removed by GenTreeCall::ResetArgInfo.
+    bool isNonStandardArgAddedLate() const
+    {
+        switch (nonStandardArgKind)
+        {
+            case NonStandardArgKind::None:
+            case NonStandardArgKind::PInvokeFrame:
+            case NonStandardArgKind::ShiftLow:
+            case NonStandardArgKind::ShiftHigh:
+            case NonStandardArgKind::FixedRetBuffer:
+                return false;
+            case NonStandardArgKind::WrapperDelegateCell:
+            case NonStandardArgKind::VirtualStubCell:
+            case NonStandardArgKind::PInvokeCookie:
+            case NonStandardArgKind::PInvokeTarget:
+            case NonStandardArgKind::R2RIndirectionCell:
+                return true;
+            default:
+                unreached();
+        }
     }
 
     bool isLateArg() const
@@ -3073,6 +3106,8 @@ public:
 
     GenTree* gtUnusedValNode(GenTree* expr);
 
+    GenTree* gtNewKeepAliveNode(GenTree* op);
+
     GenTreeCast* gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
 
     GenTreeCast* gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
@@ -4201,6 +4236,8 @@ protected:
                                      bool                 readonlyCall,
                                      CorInfoIntrinsics    intrinsicID);
     GenTree* impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig);
+
+    GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
     GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 

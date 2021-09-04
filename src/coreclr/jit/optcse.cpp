@@ -106,7 +106,7 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
     }
 
     // make sure it's been initialized
-    noway_assert(optCSEweight <= BB_MAX_WEIGHT);
+    noway_assert(optCSEweight >= 0);
 
     // Is this a CSE use?
     if (IS_CSE_USE(tree->gtCSEnum))
@@ -3452,6 +3452,7 @@ void Compiler::optOptimizeValnumCSEs()
 #endif
 
     optValnumCSE_phase = true;
+    optCSEweight       = -1.0f;
 
     optValnumCSE_Init();
 
