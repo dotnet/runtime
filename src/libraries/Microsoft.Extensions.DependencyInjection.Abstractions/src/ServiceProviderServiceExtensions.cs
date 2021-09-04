@@ -47,12 +47,16 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
+            object? service = null;
             if (provider is ISupportRequiredService requiredServiceSupportingProvider)
             {
-                return requiredServiceSupportingProvider.GetRequiredService(serviceType);
+                service = requiredServiceSupportingProvider.GetRequiredService(serviceType);
             }
-
-            object? service = provider.GetService(serviceType);
+            else
+            {
+                service = provider.GetService(serviceType);
+            }
+            
             if (service == null)
             {
                 throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
