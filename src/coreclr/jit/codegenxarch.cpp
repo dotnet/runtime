@@ -5458,7 +5458,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 #endif // DEBUG
 
     CORINFO_METHOD_HANDLE methHnd;
-    GenTree* target = getCallTarget(call, &methHnd);
+    GenTree*              target = getCallTarget(call, &methHnd);
     if (target != nullptr)
     {
 #ifdef TARGET_X86
@@ -5574,8 +5574,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 #ifdef FEATURE_READYTORUN
     else if (call->gtEntryPoint.addr != nullptr)
     {
-        emitter::EmitCallType type = (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN
-            : emitter::EC_FUNC_TOKEN_INDIR;
+        emitter::EmitCallType type =
+            (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;
         // clang-format off
         genEmitCall(type,
                     methHnd,

@@ -2390,7 +2390,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (call->HasMultiRegRetVal())
         {
-            const ReturnTypeDesc* pRetTypeDesc  = call->GetReturnTypeDesc();
+            const ReturnTypeDesc* pRetTypeDesc = call->GetReturnTypeDesc();
             assert(pRetTypeDesc != nullptr);
             unsigned regCount = pRetTypeDesc->GetReturnRegCount();
 
@@ -2516,7 +2516,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 #endif // DEBUG
     CORINFO_METHOD_HANDLE methHnd;
-    GenTree* target = getCallTarget(call, &methHnd);
+    GenTree*              target = getCallTarget(call, &methHnd);
 
     if (target != nullptr)
     {

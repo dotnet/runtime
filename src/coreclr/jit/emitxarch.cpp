@@ -2345,7 +2345,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     instruction ins      = id->idIns();
     emitAttr    attrSize = id->idOpSize();
     /* The displacement field is in an unusual place for (tail-)calls */
-    ssize_t        dsp       = (ins == INS_call) || (ins == INS_tail_i_jmp) ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
+    ssize_t        dsp = (ins == INS_call) || (ins == INS_tail_i_jmp) ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
     bool           dspInByte = ((signed char)dsp == (ssize_t)dsp);
     bool           dspIsZero = (dsp == 0);
     UNATIVE_OFFSET size;
@@ -4351,8 +4351,7 @@ bool emitter::IsJccInstruction(instruction ins)
 //
 bool emitter::IsJmpInstruction(instruction ins)
 {
-    return
-        (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp) || (ins == INS_tail_i_jmp);
+    return (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp) || (ins == INS_tail_i_jmp);
 }
 
 //----------------------------------------------------------------------------------------
@@ -7541,7 +7540,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     if (isJump)
     {
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR || callType == EC_INDIR_ARD || callType == EC_INDIR_R);
+        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR || callType == EC_INDIR_ARD ||
+               callType == EC_INDIR_R);
         if (callType == EC_FUNC_TOKEN)
         {
             ins = INS_l_jmp;
