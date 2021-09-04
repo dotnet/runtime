@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -44,9 +45,11 @@ namespace System
             _objectName = info.GetString("ObjectName");
         }
 
+        [DoesNotReturn]
         public static void Throw(object instance) =>
             Throw(instance.GetType());
 
+        [DoesNotReturn]
         public static void Throw(Type type) =>
             throw new ObjectDisposedException(type.FullName);
 

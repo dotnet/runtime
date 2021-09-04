@@ -4935,8 +4935,10 @@ namespace System
         public ObjectDisposedException(string? objectName, string? message) { }
         public override string Message { get { throw null; } }
         public string ObjectName { get { throw null; } }
-        public static void Throw(System.Object instance) { }
-        public static void Throw(System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
+        public static void Throw(System.Object instance) => throw null;
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
+        public static void Throw(System.Type type) => throw null;
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
