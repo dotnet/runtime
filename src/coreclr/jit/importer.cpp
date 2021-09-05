@@ -22256,7 +22256,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     }
 
     // Array's type is not sealed but we know its exact type
-    if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) && 
+    if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) &&
         (info.compCompHnd->compareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState::Must))
     {
         JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
