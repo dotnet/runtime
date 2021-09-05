@@ -11053,6 +11053,60 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     return op1;
 }
 
+//------------------------------------------------------------------------------
+// fgMorphOpCast : Try to simplify "(T)x op (T)y" to "(T)(x op y)".
+// https://github.com/dotnet/runtime/issues/13816
+//
+// Arguments:
+//       tree - node to fold
+//
+// return value:
+//       A folded GenTree* instance, or the same GenTree* if it couldn't be folded
+//
+
+GenTree* Compiler::fgMorphOpCast(GenTreeOp* tree)
+{
+    assert(varTypeIsIntegralOrI(tree->TypeGet()));
+    assert(tree->OperIs(GT_OR, GT_AND, GT_XOR));
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+    genTreeOps oper = tree->OperGet();
+
+    // see whether both ops are casts, with matching to and from types
+    if (op1->OperIs(GT_CAST) && op2->OperIs(GT_CAST))
+    {
+        var_types fromType = op1->CastFromType();
+        var_types toType = op1->CastToType();
+        GenTreeFlags gtf_unsigned = op1->gtFlags & GTF_UNSIGNED;
+
+        if (op2->CastFromType() != fromType || op2->CastToType() != toType || (op2->gtFlags & GTF_UNSIGNED) != gtf_unsigned)
+        {
+            return tree;
+        }
+
+        //     tree             CAST
+        //     /   \             |
+        //   CAST  CAST   ==>   tree
+        //    |     |          /   \
+        //   op1   op2        op1  op2
+
+        tree->gtOp1 = op1->AsCast()->CastOp();
+        tree->gtOp2 = op2->AsCast()->CastOp();
+        tree->gtType = fromType;
+
+        GenTree* result = gtNewCastNode(toType, tree, gtf_unsigned != 0, toType);
+
+        DEBUG_DESTROY_NODE(op1);
+        DEBUG_DESTROY_NODE(op2);
+        INDEBUG(result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        return result;
+    }
+
+    return tree;
+}
+
 /*****************************************************************************
  *
  *  Transform the given GTK_SMPOP tree for code generation.
@@ -12731,6 +12785,17 @@ DONE_MORPHING_CHILDREN:
                 tree = fgRecognizeAndMorphBitwiseRotation(tree);
 
                 // fgRecognizeAndMorphBitwiseRotation may return a new tree
+                oper = tree->OperGet();
+                typ  = tree->TypeGet();
+                op1  = tree->AsOp()->gtOp1;
+                op2  = tree->AsOp()->gtOp2;
+            }
+
+            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_AND, GT_OR, GT_XOR))
+            {
+                tree = fgMorphOpCast(tree->AsOp());
+
+                // fgMorphOpCast may return a new tree
                 oper = tree->OperGet();
                 typ  = tree->TypeGet();
                 op1  = tree->AsOp()->gtOp1;
