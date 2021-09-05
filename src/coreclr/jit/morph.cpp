@@ -13007,6 +13007,7 @@ DONE_MORPHING_CHILDREN:
                 if (op1SideEffects)
                 {
                     // Replace the left hand side with the side effect list.
+                    op1                 = op1SideEffects;
                     tree->AsOp()->gtOp1 = op1SideEffects;
                     gtUpdateNodeSideEffects(tree);
                 }
@@ -13018,8 +13019,9 @@ DONE_MORPHING_CHILDREN:
                     return op2;
                 }
 
-                /* If the right operand is just a void nop node, throw it away */
-                if (op2->IsNothingNode() && op1->gtType == TYP_VOID)
+                // If the right operand is just a void nop node, throw it away. Unless this is a
+                // comma throw, in which case we want the top-level morphing loop to recognize it.
+                if (op2->IsNothingNode() && op1->TypeIs(TYP_VOID) && !fgIsCommaThrow(tree))
                 {
                     op1->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
                     DEBUG_DESTROY_NODE(tree);
@@ -13075,154 +13077,26 @@ DONE_MORPHING_CHILDREN:
 
     assert(oper == tree->gtOper);
 
+    // Propagate comma throws.
     // If we are in the Valuenum CSE phase then don't morph away anything as these
     // nodes may have CSE defs/uses in them.
-    //
-    if (!optValnumCSE_phase && (oper != GT_ASG) && (oper != GT_COLON) && !tree->OperIsAnyList())
+    if (fgGlobalMorph && (oper != GT_ASG) && (oper != GT_COLON) && !tree->OperIsAnyList())
     {
-        /* Check for op1 as a GT_COMMA with a unconditional throw node */
-        if (op1 && fgIsCommaThrow(op1, true))
+        if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
         {
-            if ((op1->gtFlags & GTF_COLON_COND) == 0)
+            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op1->AsOp(), GTF_EMPTY);
+            if (propagatedThrow != nullptr)
             {
-                /* We can safely throw out the rest of the statements */
-                fgRemoveRestOfBlock = true;
-            }
-
-            GenTree* throwNode = op1->AsOp()->gtOp1;
-
-            if (oper == GT_COMMA)
-            {
-                /* Both tree and op1 are GT_COMMA nodes */
-                /* Change the tree's op1 to the throw node: op1->AsOp()->gtOp1 */
-                tree->AsOp()->gtOp1 = throwNode;
-
-                // Possibly reset the assignment flag
-                if (((throwNode->gtFlags & GTF_ASG) == 0) && ((op2 == nullptr) || ((op2->gtFlags & GTF_ASG) == 0)))
-                {
-                    tree->gtFlags &= ~GTF_ASG;
-                }
-
-                return tree;
-            }
-            else if (oper != GT_NOP)
-            {
-                if (genActualType(typ) == genActualType(op1->gtType))
-                {
-                    /* The types match so, return the comma throw node as the new tree */
-                    return op1;
-                }
-                else
-                {
-                    if (typ == TYP_VOID)
-                    {
-                        // Return the throw node
-                        return throwNode;
-                    }
-                    else
-                    {
-                        GenTree* commaOp2 = op1->AsOp()->gtOp2;
-
-                        // need type of oper to be same as tree
-                        if (typ == TYP_LONG)
-                        {
-                            /* Change the types of oper and commaOp2 to TYP_LONG */
-                            commaOp2->BashToConst(0LL);
-                            op1->gtType = TYP_LONG;
-                        }
-                        else if (varTypeIsFloating(typ))
-                        {
-                            /* Change the types of oper and commaOp2 to TYP_DOUBLE */
-                            commaOp2->BashToConst(0.0);
-                            op1->gtType = TYP_DOUBLE;
-                        }
-                        else
-                        {
-                            /* Change the types of oper and commaOp2 to TYP_INT */
-                            commaOp2->BashToConst(0);
-                            op1->gtType = TYP_INT;
-                        }
-
-                        /* Return the GT_COMMA node as the new tree */
-                        return op1;
-                    }
-                }
+                return propagatedThrow;
             }
         }
 
-        /* Check for op2 as a GT_COMMA with a unconditional throw */
-
-        if (op2 && fgIsCommaThrow(op2, true))
+        if ((op2 != nullptr) && fgIsCommaThrow(op2, true))
         {
-            if ((op2->gtFlags & GTF_COLON_COND) == 0)
+            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op2->AsOp(), op1->gtFlags & GTF_ALL_EFFECT);
+            if (propagatedThrow != nullptr)
             {
-                /* We can safely throw out the rest of the statements */
-                fgRemoveRestOfBlock = true;
-            }
-
-            // If op1 has no side-effects
-            if ((op1->gtFlags & GTF_ALL_EFFECT) == 0)
-            {
-                // If tree is an asg node
-                if (tree->OperIs(GT_ASG))
-                {
-                    /* Return the throw node as the new tree */
-                    return op2->AsOp()->gtOp1;
-                }
-
-                if (tree->OperGet() == GT_ARR_BOUNDS_CHECK)
-                {
-                    /* Return the throw node as the new tree */
-                    return op2->AsOp()->gtOp1;
-                }
-
-                // If tree is a comma node
-                if (tree->OperGet() == GT_COMMA)
-                {
-                    /* Return the throw node as the new tree */
-                    return op2->AsOp()->gtOp1;
-                }
-
-                /* for the shift nodes the type of op2 can differ from the tree type */
-                if ((typ == TYP_LONG) && (genActualType(op2->gtType) == TYP_INT))
-                {
-                    noway_assert(GenTree::OperIsShiftOrRotate(oper));
-
-                    GenTree* commaOp2 = op2->AsOp()->gtOp2;
-
-                    /* Change the types of oper and commaOp2 to TYP_LONG */
-                    commaOp2->BashToConst(0LL);
-                    op2->gtType = TYP_LONG;
-                }
-
-                if ((genActualType(typ) == TYP_INT) &&
-                    (genActualType(op2->gtType) == TYP_LONG || varTypeIsFloating(op2->TypeGet())))
-                {
-                    // An example case is comparison (say GT_GT) of two longs or floating point values.
-
-                    GenTree* commaOp2 = op2->AsOp()->gtOp2;
-
-                    /* Change the types of oper and commaOp2 to TYP_INT */
-                    commaOp2->BashToConst(0);
-                    op2->gtType = TYP_INT;
-                }
-
-                if ((typ == TYP_BYREF) && (genActualType(op2->gtType) == TYP_I_IMPL))
-                {
-                    noway_assert(tree->OperGet() == GT_ADD);
-
-                    GenTree* commaOp2 = op2->AsOp()->gtOp2;
-
-                    /* Change the types of oper and commaOp2 to TYP_BYREF */
-                    commaOp2->BashToConst(0, TYP_BYREF);
-                    op2->gtType = commaOp2->gtType = TYP_BYREF;
-                }
-
-                /* types should now match */
-                noway_assert((genActualType(typ) == genActualType(op2->gtType)));
-
-                /* Return the GT_COMMA node as the new tree */
-                return op2;
+                return propagatedThrow;
             }
         }
     }
@@ -13800,6 +13674,66 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
     }
 
     return cmp;
+}
+
+//------------------------------------------------------------------------
+// fgPropagateCommaThrow: propagate a "comma throw" up the tree.
+//
+// "Comma throws" in the compiler represent the canonical form of an always
+// throwing expression. They have the shape of COMMA(THROW, ZERO), to satsify
+// the semantic that the original expression produced some value and are
+// generated by "gtFoldExprConst" when it encounters checked arithmetic that
+// will determinably overflow.
+//
+// In the global morphing phase, "comma throws" are "propagated" up the tree,
+// in post-order, to eliminate nodes that will never execute. This method,
+// called by "fgMorphSmpOp", encapsulates this optimization.
+//
+// Arguments:
+//   parent               - the node currently being processed.
+//   commaThrow           - the comma throw in question, "parent"'s operand.
+//   precedingSideEffects - side effects of nodes preceding "comma" in execution order.
+//
+// Return Value:
+//   If "parent" is to be replaced with a comma throw, i. e. the propagation was successful,
+//   the new "parent", otherwise "nullptr", guaranteeing no state change, with one exception:
+//   the "fgRemoveRestOfBlock" "global" may be set. Note that the new returned tree does not
+//   have to be a "comma throw", it can be "bare" throw call if the "parent" node did not
+//   produce any value.
+//
+// Notes:
+//   "Comma throws" are very rare.
+//
+GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects)
+{
+    // Comma throw propagation does not preserve VNs, and deletes nodes.
+    assert(fgGlobalMorph);
+    assert(fgIsCommaThrow(commaThrow));
+
+    if ((commaThrow->gtFlags & GTF_COLON_COND) == 0)
+    {
+        fgRemoveRestOfBlock = true;
+    }
+
+    if ((precedingSideEffects & GTF_ALL_EFFECT) == 0)
+    {
+        if (parent->TypeIs(TYP_VOID))
+        {
+            // Return the throw node as the new tree.
+            return commaThrow->gtGetOp1();
+        }
+
+        // Fix up the COMMA's type if needed.
+        if (genActualType(parent) != genActualType(commaThrow))
+        {
+            commaThrow->gtGetOp2()->BashToZeroConst(genActualType(parent));
+            commaThrow->ChangeType(genActualType(parent));
+        }
+
+        return commaThrow;
+    }
+
+    return nullptr;
 }
 
 //----------------------------------------------------------------------------------------------

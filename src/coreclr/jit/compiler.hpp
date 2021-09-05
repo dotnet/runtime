@@ -1524,6 +1524,28 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
     }
 }
 
+//------------------------------------------------------------------------
+// BashToZeroConst: Bash the node to a constant representing "zero" of "type".
+//
+// Arguments:
+//    type  - Type the bashed node will have, currently only integers,
+//            GC types and floating point types are supported.
+//
+inline void GenTree::BashToZeroConst(var_types type)
+{
+    if (varTypeIsFloating(type))
+    {
+        BashToConst(0.0, type);
+    }
+    else
+    {
+        assert(varTypeIsIntegral(type) || varTypeIsGC(type));
+
+        // "genActualType" so that we do not create CNS_INT(small type).
+        BashToConst(0, genActualType(type));
+    }
+}
+
 /*****************************************************************************
  *
  * Returns true if the node is of the "ovf" variety, for example, add.ovf.i1.

@@ -6294,6 +6294,7 @@ private:
     GenTree* fgOptimizeCast(GenTree* tree);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
