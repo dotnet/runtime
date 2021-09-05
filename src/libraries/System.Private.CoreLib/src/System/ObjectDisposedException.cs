@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
@@ -45,13 +46,14 @@ namespace System
             _objectName = info.GetString("ObjectName");
         }
 
+        [StackTraceHidden]
         [DoesNotReturn]
-        public static void Throw(object instance) =>
-            Throw(instance.GetType());
+        public static void Throw(object? instance) =>
+            Throw(instance?.GetType());
 
         [DoesNotReturn]
-        public static void Throw(Type type) =>
-            throw new ObjectDisposedException(type.FullName);
+        public static void Throw(Type? type) =>
+            throw new ObjectDisposedException(type?.FullName);
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
