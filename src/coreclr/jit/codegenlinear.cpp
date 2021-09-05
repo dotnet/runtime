@@ -2306,6 +2306,11 @@ void CodeGen::genEmitCall(int                   callType,
 #if !defined(TARGET_X86)
     int argSize = 0;
 #endif // !defined(TARGET_X86)
+
+    // This should have been put in volatile registers to ensure it does not
+    // get overridden by epilog sequence during tailcall.
+    noway_assert(!isJump || (base == REG_NA) || ((RBM_INT_CALLEE_TRASH & genRegMask(base)) != 0));
+
     GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
                                INDEBUG_LDISASM_COMMA(sigInfo)
@@ -2338,6 +2343,15 @@ void CodeGen::genEmitCallIndir(int                   callType,
 #if !defined(TARGET_X86)
     int argSize = 0;
 #endif // !defined(TARGET_X86)
+
+    regNumber iReg = (indir->Base()  != nullptr) ? indir->Base()->GetRegNum() : REG_NA;
+    regNumber xReg = (indir->Index() != nullptr) ? indir->Index()->GetRegNum() : REG_NA;
+
+    // These should have been put in volatile registers to ensure they do not
+    // get overridden by epilog sequence during tailcall.
+    noway_assert(!isJump || (iReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(iReg)) != 0));
+    noway_assert(!isJump || (xReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(xReg)) != 0));
+
     GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
                                INDEBUG_LDISASM_COMMA(sigInfo)
@@ -2349,8 +2363,8 @@ void CodeGen::genEmitCallIndir(int                   callType,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
                                ilOffset,
-                               (indir->Base()  != nullptr) ? indir->Base()->GetRegNum()  : REG_NA,
-                               (indir->Index() != nullptr) ? indir->Index()->GetRegNum() : REG_NA,
+                               iReg,
+                               xReg,
                                indir->Scale(),
                                indir->Offset(),
                                isJump);
