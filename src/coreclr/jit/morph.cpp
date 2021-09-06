@@ -11054,54 +11054,63 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------------
-// fgMorphOpCast : Try to simplify "(T)x op (T)y" to "(T)(x op y)".
-// https://github.com/dotnet/runtime/issues/13816
+// fgMorphCastedBitwiseOp : Try to simplify "(T)x op (T)y" to "(T)(x op y)".
 //
 // Arguments:
-//       tree - node to fold
+//     tree - node to fold
 //
-// return value:
-//       A folded GenTree* instance, or the same GenTree* if it couldn't be folded
-//
-
-GenTree* Compiler::fgMorphOpCast(GenTreeOp* tree)
+// Return Value:
+//     A folded GenTree* instance, or the same GenTree* if it couldn't be folded
+GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
 {
-    assert(varTypeIsIntegralOrI(tree->TypeGet()));
+    assert(varTypeIsIntegralOrI(tree));
     assert(tree->OperIs(GT_OR, GT_AND, GT_XOR));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
     genTreeOps oper = tree->OperGet();
 
-    // see whether both ops are casts, with matching to and from types
+    // see whether both ops are casts, with matching to and from types.
     if (op1->OperIs(GT_CAST) && op2->OperIs(GT_CAST))
     {
-        var_types fromType = op1->CastFromType();
-        var_types toType = op1->CastToType();
-        GenTreeFlags gtf_unsigned = op1->gtFlags & GTF_UNSIGNED;
-
-        if (op2->CastFromType() != fromType || op2->CastToType() != toType || (op2->gtFlags & GTF_UNSIGNED) != gtf_unsigned)
+        // bail if either operand is a checked cast
+        if (op1->gtOverflowEx() || op2->gtOverflowEx())
         {
             return tree;
         }
 
-        //     tree             CAST
+        var_types fromType = op1->AsCast()->CastOp()->TypeGet();
+        var_types toType = op1->AsCast()->gtCastType;
+        bool isUnsigned = op1->IsUnsigned();
+
+        if ((op2->CastFromType() != fromType) || (op2->CastToType() != toType) || (op2->IsUnsigned() != isUnsigned))
+        {
+            return tree;
+        }
+
+        // Reuse gentree nodes:
+        //
+        //     tree             op1
         //     /   \             |
-        //   CAST  CAST   ==>   tree
+        //   op1   op2   ==>   tree
         //    |     |          /   \
-        //   op1   op2        op1  op2
+        //    x     y         x     y
+        //
+        // (op2 becomes garbage)
 
         tree->gtOp1 = op1->AsCast()->CastOp();
         tree->gtOp2 = op2->AsCast()->CastOp();
         tree->gtType = fromType;
 
-        GenTree* result = gtNewCastNode(toType, tree, gtf_unsigned != 0, toType);
+        op1->gtType = genActualType(toType);
+        op1->AsCast()->gtOp1 = tree;
+        op1->AsCast()->gtCastType = toType;
+        // no need to update isUnsigned
 
-        DEBUG_DESTROY_NODE(op1);
         DEBUG_DESTROY_NODE(op2);
-        INDEBUG(result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-        return result;
+        return op1;
     }
 
     return tree;
@@ -12791,15 +12800,15 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->AsOp()->gtOp2;
             }
 
-            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_AND, GT_OR, GT_XOR))
+            if (fgGlobalMorph && (varTypeIsIntegralOrI(tree->TypeGet())) && (tree->OperIs(GT_AND, GT_OR, GT_XOR)))
             {
-                tree = fgMorphOpCast(tree->AsOp());
+                tree = fgMorphCastedBitwiseOp(tree->AsOp());
 
-                // fgMorphOpCast may return a new tree
+                // fgMorphCastedBitwiseOp may return a new tree
                 oper = tree->OperGet();
                 typ  = tree->TypeGet();
-                op1  = tree->AsOp()->gtOp1;
-                op2  = tree->AsOp()->gtOp2;
+                op1  = tree->AsOp()->gtGetOp1();
+                op2  = tree->AsOp()->gtGetOp2();
             }
 
             if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
