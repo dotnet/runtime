@@ -488,6 +488,23 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Returns the population count (number of bits set) of a mask.
+        /// Similar in behavior to the x86 instruction POPCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int PopCount(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return PopCount((ulong)value);
+            }
+
+            return PopCount((uint)value);
+        }
+
+        /// <summary>
         /// Count the number of trailing zero bits in an integer value.
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
