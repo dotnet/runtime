@@ -2457,7 +2457,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // For small allocations we will generate up to six push 0 inline
         size_t cntRegSizedWords = amount / REGSIZE_BYTES;
-        if (cntRegSizedWords <= 6)
+        if (compiler->info.compInitMem && (cntRegSizedWords <= 6))
         {
             for (; cntRegSizedWords != 0; cntRegSizedWords--)
             {
