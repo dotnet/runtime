@@ -22236,9 +22236,11 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         return true;
     }
 
-    // Check for T[] with T exact.
-    if (!impIsClassExact(arrayElementHandle))
+    const bool arrayTypeIsSealed = impIsClassExact(arrayElementHandle);
+
+    if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
     {
+        // Bail out if we don't know array's exact type
         return false;
     }
 
@@ -22246,7 +22248,16 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     bool                 valueIsNonNull = false;
     CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(value, &valueIsExact, &valueIsNonNull);
 
-    if (valueHandle == arrayElementHandle)
+    // Array's type is sealed and equals to value's type
+    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
+    {
+        JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
+        return true;
+    }
+
+    // Array's type is not sealed but we know its exact type
+    if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) &&
+        (info.compCompHnd->compareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState::Must))
     {
         JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
         return true;
