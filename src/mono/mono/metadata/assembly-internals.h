@@ -98,15 +98,12 @@ typedef struct MonoAssemblyByNameRequest {
 } MonoAssemblyByNameRequest;
 
 void                   mono_assembly_request_prepare_load (MonoAssemblyLoadRequest *req,
-							   MonoAssemblyContextKind asmctx,
 							   MonoAssemblyLoadContext *alc);
 
 void                   mono_assembly_request_prepare_open (MonoAssemblyOpenRequest *req,
-							   MonoAssemblyContextKind asmctx,
 							   MonoAssemblyLoadContext *alc);
 
 MONO_COMPONENT_API void mono_assembly_request_prepare_byname (MonoAssemblyByNameRequest *req,
-							     MonoAssemblyContextKind asmctx,
 							     MonoAssemblyLoadContext *alc);
 
 MonoAssembly*          mono_assembly_request_open (const char *filename,

@@ -1547,7 +1547,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoStackCrawlMark *stack_mark, 
 
 	if (info->assembly.name) {
 		MonoAssemblyByNameRequest req;
-		mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+		mono_assembly_request_prepare_byname (&req, alc);
 		req.requesting_assembly = assembly;
 		req.basedir = assembly ? assembly->basedir : NULL;
 		assembly = mono_assembly_request_byname (&info->assembly, &req, NULL);

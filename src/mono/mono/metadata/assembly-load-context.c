@@ -332,7 +332,8 @@ mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAs
 
 	MonoImageOpenStatus status;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, asmctx, alc);
+	mono_assembly_request_prepare_open (&req, alc);
+        req.request.no_invoke_search_hook = asmctx == MONO_ASMCTX_INDIVIDUAL;
 	req.requesting_assembly = executing_assembly;
 	ass = mono_assembly_request_open (filename, &req, &status);
 	if (!ass) {
@@ -380,7 +381,8 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 		mono_debug_open_image_from_memory (image, raw_symbol_data, raw_symbol_len);
 
 	MonoAssemblyLoadRequest req;
-	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_INDIVIDUAL, alc);
+	mono_assembly_request_prepare_load (&req, alc);
+        req.no_invoke_search_hook = TRUE;
 	ass = mono_assembly_request_load_from (image, "", &req, &status);
 
 	if (!ass) {
