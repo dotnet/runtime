@@ -23,20 +23,11 @@ namespace System.IO.Hashing
     ///     compatible with the cyclic redundancy check described in ITU-T I.363.5.
     ///   </para>
     /// </remarks>
-    public sealed partial class Crc32 : NonCryptographicHashAlgorithm
+    public sealed partial class Crc32 : NonCryptographicHashAlgorithm32
     {
         private const uint InitialState = 0xFFFF_FFFFu;
-        private const int Size = sizeof(uint);
 
         private uint _crc = InitialState;
-
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="Crc32"/> class.
-        /// </summary>
-        public Crc32()
-            : base(Size)
-        {
-        }
 
         /// <summary>
         ///   Appends the contents of <paramref name="source"/> to the data already
@@ -56,6 +47,13 @@ namespace System.IO.Hashing
             _crc = InitialState;
         }
 
+        /// <inheritdoc/>
+        protected override int GetHash()
+        {
+            // The finalization step of the CRC is to perform the ones' complement.
+            return (int)~_crc;
+        }
+
         /// <summary>
         ///   Writes the computed hash value to <paramref name="destination"/>
         ///   without modifying accumulated state.
@@ -63,8 +61,7 @@ namespace System.IO.Hashing
         /// <param name="destination">The buffer that receives the computed hash value.</param>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
-            // The finalization step of the CRC is to perform the ones' complement.
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, ~_crc);
+            BinaryPrimitives.WriteInt32LittleEndian(destination, GetHash());
         }
 
         /// <summary>
@@ -73,7 +70,7 @@ namespace System.IO.Hashing
         /// </summary>
         protected override void GetHashAndResetCore(Span<byte> destination)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, ~_crc);
+            BinaryPrimitives.WriteInt32LittleEndian(destination, GetHash());
             _crc = InitialState;
         }
 

@@ -3,7 +3,7 @@
 
 namespace System.IO.Hashing
 {
-    public sealed partial class Crc64 : NonCryptographicHashAlgorithm
+    public sealed partial class Crc64
     {
         // Pre-computed CRC-64 transition table.
         private static readonly ulong[] s_crcLookup = GenerateTable(0x42F0E1EBA9EA3693);

@@ -22,20 +22,11 @@ namespace System.IO.Hashing
     ///     compatible with the cyclic redundancy check described in ISO 3309.
     ///   </para>
     /// </remarks>
-    public sealed partial class Crc64 : NonCryptographicHashAlgorithm
+    public sealed partial class Crc64 : NonCryptographicHashAlgorithm64
     {
         private const ulong InitialState = 0UL;
-        private const int Size = sizeof(ulong);
 
         private ulong _crc = InitialState;
-
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="Crc64"/> class.
-        /// </summary>
-        public Crc64()
-            : base(Size)
-        {
-        }
 
         /// <summary>
         ///   Appends the contents of <paramref name="source"/> to the data already
@@ -55,6 +46,12 @@ namespace System.IO.Hashing
             _crc = InitialState;
         }
 
+        /// <inheritdoc/>
+        protected override long GetHash()
+        {
+            return (long)_crc;
+        }
+
         /// <summary>
         ///   Writes the computed hash value to <paramref name="destination"/>
         ///   without modifying accumulated state.
@@ -62,7 +59,7 @@ namespace System.IO.Hashing
         /// <param name="destination">The buffer that receives the computed hash value.</param>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
-            BinaryPrimitives.WriteUInt64BigEndian(destination, _crc);
+            BinaryPrimitives.WriteInt64BigEndian(destination, GetHash());
         }
 
         /// <summary>
@@ -71,7 +68,7 @@ namespace System.IO.Hashing
         /// </summary>
         protected override void GetHashAndResetCore(Span<byte> destination)
         {
-            BinaryPrimitives.WriteUInt64BigEndian(destination, _crc);
+            BinaryPrimitives.WriteInt64BigEndian(destination, GetHash());
             _crc = InitialState;
         }
 

@@ -11,9 +11,8 @@ namespace System.IO.Hashing
     /// <summary>
     ///   Provides an implementation of the XxHash32 algorithm.
     /// </summary>
-    public sealed partial class XxHash32 : NonCryptographicHashAlgorithm
+    public sealed partial class XxHash32 : NonCryptographicHashAlgorithm32
     {
-        private const int HashSize = sizeof(uint);
         private const int StripeSize = 4 * sizeof(uint);
 
         private readonly uint _seed;
@@ -41,7 +40,6 @@ namespace System.IO.Hashing
         ///   The hash seed value for computations from this instance.
         /// </param>
         public XxHash32(int seed)
-            : base(HashSize)
         {
             _seed = (uint)seed;
             Reset();
@@ -104,11 +102,8 @@ namespace System.IO.Hashing
             }
         }
 
-        /// <summary>
-        ///   Writes the computed hash value to <paramref name="destination"/>
-        ///   without modifying accumulated state.
-        /// </summary>
-        protected override void GetCurrentHashCore(Span<byte> destination)
+        /// <inheritdoc/>
+        protected override int GetHash()
         {
             int remainingLength = _length & 0x0F;
             ReadOnlySpan<byte> remaining = ReadOnlySpan<byte>.Empty;
@@ -118,8 +113,16 @@ namespace System.IO.Hashing
                 remaining = new ReadOnlySpan<byte>(_holdback, 0, remainingLength);
             }
 
-            uint acc = _state.Complete(_length, remaining);
-            BinaryPrimitives.WriteUInt32BigEndian(destination, acc);
+            return (int)_state.Complete(_length, remaining);
+        }
+
+        /// <summary>
+        ///   Writes the computed hash value to <paramref name="destination"/>
+        ///   without modifying accumulated state.
+        /// </summary>
+        protected override void GetCurrentHashCore(Span<byte> destination)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(destination, GetHash());
         }
 
         /// <summary>
@@ -163,7 +166,7 @@ namespace System.IO.Hashing
         /// <returns>The XxHash32 hash of the provided data.</returns>
         public static byte[] Hash(ReadOnlySpan<byte> source, int seed = 0)
         {
-            byte[] ret = new byte[HashSize];
+            byte[] ret = new byte[Size];
             StaticHash(source, ret, seed);
             return ret;
         }
@@ -183,7 +186,7 @@ namespace System.IO.Hashing
         /// </returns>
         public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int seed = 0)
         {
-            if (destination.Length < HashSize)
+            if (destination.Length < Size)
             {
                 bytesWritten = 0;
                 return false;
@@ -204,7 +207,7 @@ namespace System.IO.Hashing
         /// </returns>
         public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination, int seed = 0)
         {
-            if (destination.Length < HashSize)
+            if (destination.Length < Size)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             return StaticHash(source, destination, seed);
@@ -223,7 +226,7 @@ namespace System.IO.Hashing
 
             uint val = state.Complete(totalLength, source);
             BinaryPrimitives.WriteUInt32BigEndian(destination, val);
-            return HashSize;
+            return Size;
         }
     }
 }

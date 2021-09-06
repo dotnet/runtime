@@ -3,7 +3,7 @@
 
 namespace System.IO.Hashing
 {
-    public sealed partial class Crc32 : NonCryptographicHashAlgorithm
+    public sealed partial class Crc32
     {
         // Pre-computed CRC-32 transition table.
         // While this implementation is based on the standard CRC-32 polynomial,
