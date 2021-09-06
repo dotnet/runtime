@@ -198,7 +198,6 @@ typedef enum MonoAssemblyContextKind {
 } MonoAssemblyContextKind;
 
 typedef struct _MonoAssemblyContext {
-	MonoAssemblyContextKind kind;
         /* Don't fire managed load event for this assembly */
         guint8 no_managed_load_event : 1;
 } MonoAssemblyContext;
@@ -1098,9 +1097,6 @@ mono_type_in_image (MonoType *type, MonoImage *image);
 
 gboolean
 mono_type_is_valid_generic_argument (MonoType *type);
-
-MonoAssemblyContextKind
-mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
 
 void
 mono_metadata_get_class_guid (MonoClass* klass, uint8_t* guid, MonoError *error);

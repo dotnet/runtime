@@ -104,9 +104,6 @@ mono_assembly_invoke_search_hook_internal (MonoAssemblyLoadContext *alc, MonoAss
 static MonoAssembly *
 invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gchar **apath);
 
-static const char *
-mono_asmctx_get_name (const MonoAssemblyContext *asmctx);
-
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
 {
@@ -1264,8 +1261,8 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (image->assembly) {
 		if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
 			char *aname_str = mono_stringify_assembly_name (&aname);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s asmctx %s, looking for %s",
-				    index, image->name, mono_asmctx_get_name (&image->assembly->context),
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s (%s), looking for %s",
+				    index, image->name, mono_alc_is_default (mono_image_get_alc (image)) ? "default ALC" : "custom ALC" ,
 				    aname_str);
 			g_free (aname_str);
 		}
@@ -2219,7 +2216,6 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 */
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
-	ass->context.kind = asmctx;
         ass->context.no_managed_load_event = req->no_managed_load_event;
 	ass->image = image;
 
@@ -2239,7 +2235,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	/* Add a non-temporary reference because of ass->image */
 	mono_image_addref (image);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Image addref %s[%p] (asmctx %s) -> %s[%p]: %d", ass->aname.name, ass, mono_asmctx_get_name (&ass->context), image->name, image, image->ref_count);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Image addref %s[%p] (%s) -> %s[%p]: %d", ass->aname.name, ass, mono_alc_is_default (mono_image_get_alc (image)) ? "default ALC" : "custom ALC", image->name, image, image->ref_count);
 
 	/* 
 	 * The load hooks might take locks so we can't call them while holding the
@@ -3559,24 +3555,6 @@ mono_assembly_has_skip_verification (MonoAssembly *assembly)
 
 	MONO_SECMAN_FLAG_SET_VALUE (assembly->skipverification, FALSE);
 	return FALSE;
-}
-
-MonoAssemblyContextKind
-mono_asmctx_get_kind (const MonoAssemblyContext *ctx)
-{
-	return ctx->kind;
-}
-
-static const char *
-mono_asmctx_get_name (const MonoAssemblyContext *asmctx)
-{
-	static const char* names [] = {
-		"DEFAULT",
-		"<UNUSED>",
-		"INDIVIDIUAL",
-	};
-	g_assert (asmctx->kind >= 0 && asmctx->kind <= MONO_ASMCTX_LAST);
-	return names [asmctx->kind];
 }
 
 /**
