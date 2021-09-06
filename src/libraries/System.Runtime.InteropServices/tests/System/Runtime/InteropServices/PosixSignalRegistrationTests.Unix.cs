@@ -3,6 +3,7 @@
 
 using Xunit;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -62,7 +63,7 @@ namespace System.Tests
                 using var process = Process.Start(new ProcessStartInfo
                     {
                         FileName = "kill",
-                        ArgumentList = { "-s", signalStr, Environment.ProcessId.ToString() }
+                        ArgumentList = { "-s", signalStr, Environment.ProcessId.ToString(CultureInfo.InvariantCulture) }
                     });
                 process.WaitForExit();
                 Assert.Equal(0, process.ExitCode);
