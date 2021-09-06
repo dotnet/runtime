@@ -154,7 +154,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 if (exceptionError == sPauseOnUncaught)
                                 {
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                                    context.PauseOnExceptions = PauseOnExceptionsKind.Uncaught;
+                                    if (context.PauseOnExceptions == PauseOnExceptionsKind.Unset)
+                                        context.PauseOnExceptions = PauseOnExceptionsKind.Uncaught;
                                     return true;
                                 }
                                 if (exceptionError == sPauseOnCaught)
