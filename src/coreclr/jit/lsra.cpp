@@ -4949,6 +4949,7 @@ void LinearScan::allocateRegisters()
             {
                 // For RefTypeZeroInit which is a write thru, there is no need to allocate register
                 // right away. It can be assigned when actually definition occurs.
+                // In future, see if avoiding allocation for RefTypeZeroInit gives any benefit in general.
                 allocate = false;
             }
             if (!allocate)
