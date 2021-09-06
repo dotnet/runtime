@@ -2210,7 +2210,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return array;
         }
-        public async Task<bool> EnableExceptions(SessionId sessionId, string state, CancellationToken token)
+        public async Task<bool> EnableExceptions(SessionId sessionId, PauseOnExceptionsKind state, CancellationToken token)
         {
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
@@ -2219,14 +2219,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)1);
             commandParamsWriter.Write((byte)ModifierKind.ExceptionOnly);
             commandParamsWriter.Write(0); //exc_class
-            if (state == "all")
+            if (state == PauseOnExceptionsKind.All)
                 commandParamsWriter.Write((byte)1); //caught
             else
                 commandParamsWriter.Write((byte)0); //caught
-            if (state == "uncaught" || state == "all")
+
+            if (state == PauseOnExceptionsKind.Uncaught || state == PauseOnExceptionsKind.All)
                 commandParamsWriter.Write((byte)1); //uncaught
             else
                 commandParamsWriter.Write((byte)0); //uncaught
+
             commandParamsWriter.Write((byte)1);//subclasses
             commandParamsWriter.Write((byte)0);//not_filtered_feature
             commandParamsWriter.Write((byte)0);//everything_else

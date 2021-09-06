@@ -267,6 +267,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         Out
     }
 
+    internal enum PauseOnExceptionsKind
+    {
+        Unset,
+        None,
+        Uncaught,
+        All
+    }
+
     internal class ExecutionContext
     {
         public string DebugId { get; set; }
@@ -279,8 +287,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; set; }
         public object AuxData { get; set; }
 
-        public bool PauseOnUncaught { get; set; }
-        public bool PauseOnCaught { get; set; }
+        public PauseOnExceptionsKind PauseOnExceptions { get; set; }
 
         public List<Frame> CallStack { get; set; }
 
