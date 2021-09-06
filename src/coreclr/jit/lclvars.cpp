@@ -4154,7 +4154,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
                 // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
                 // we filter lot of interesting variables that would benefit otherwise with EH var enregistration.
-                //bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem || varTypeIsGC(varDsc->TypeGet()));
+                // bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem ||
+                // varTypeIsGC(varDsc->TypeGet()));
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
 
                 if (varDsc->lvSingleDefRegCandidate || needsExplicitZeroInit)
