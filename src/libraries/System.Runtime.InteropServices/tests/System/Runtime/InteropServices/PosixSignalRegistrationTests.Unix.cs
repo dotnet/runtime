@@ -59,11 +59,12 @@ namespace System.Tests
                     semaphore.Release();
                 });
 
-                // Use 'kill' executable with signal name to validate the signal pal mapping.
+                // Use 'kill' command with signal name to validate the signal pal mapping.
+                string sigArg = signalStr.StartsWith("SIG") ? signalStr.Substring(3) : signalStr;
                 using var process = Process.Start(new ProcessStartInfo
                     {
-                        FileName = "kill",
-                        ArgumentList = { "-s", signalStr, Environment.ProcessId.ToString(CultureInfo.InvariantCulture) }
+                        FileName = "/bin/sh", // Use a shell because not all platforms include a 'kill' executable.
+                        ArgumentList = { "-c", $"kill -s {sigArg} {Environment.ProcessId.ToString(CultureInfo.InvariantCulture)}" }
                     });
                 process.WaitForExit();
                 Assert.Equal(0, process.ExitCode);
