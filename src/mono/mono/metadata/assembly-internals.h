@@ -80,6 +80,8 @@ typedef struct MonoAssemblyLoadRequest {
 	MonoAssemblyCandidatePredicate predicate;
 	/* user_data for predicate. Optional. */
 	gpointer predicate_ud;
+        /* Don't fire managed assembly loaded event. Optional. */
+        gboolean no_managed_load_event;
 } MonoAssemblyLoadRequest;
 
 typedef struct MonoAssemblyOpenRequest {

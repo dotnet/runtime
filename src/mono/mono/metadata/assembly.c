@@ -2308,6 +2308,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
 	ass->context.kind = asmctx;
+        ass->context.no_managed_load_event = req->no_managed_load_event;
 	ass->image = image;
 
 	MONO_PROFILER_RAISE (assembly_loading, (ass));
@@ -3661,7 +3662,6 @@ mono_asmctx_get_name (const MonoAssemblyContext *asmctx)
 		"DEFAULT",
 		"LOADFROM",
 		"INDIVIDIUAL",
-		"INTERNAL"
 	};
 	g_assert (asmctx->kind >= 0 && asmctx->kind <= MONO_ASMCTX_LAST);
 	return names [asmctx->kind];

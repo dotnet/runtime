@@ -598,7 +598,7 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	if (!MONO_BOOL (domain->domain))
 		goto leave; // This can happen during startup
 
-	if (!mono_runtime_get_no_exec () && assembly->context.kind != MONO_ASMCTX_INTERNAL)
+	if (!mono_runtime_get_no_exec () && !assembly->context.no_managed_load_event)
 		mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
 leave:
