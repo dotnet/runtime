@@ -334,6 +334,23 @@ namespace System.Numerics
 
         /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.
+        /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int Log2(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return Log2((ulong)value);
+            }
+
+            return Log2((uint)value);
+        }
+
+        /// <summary>
+        /// Returns the integer (floor) log of the specified value, base 2.
         /// Note that by convention, input value 0 returns 0 since Log(0) is undefined.
         /// Does not directly use any hardware intrinsics, nor does it incur branching.
         /// </summary>
