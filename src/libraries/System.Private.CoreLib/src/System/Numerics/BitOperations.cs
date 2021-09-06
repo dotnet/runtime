@@ -147,6 +147,26 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Round the given integral value up to a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static nuint RoundUpToPowerOf2(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return (nuint)RoundUpToPowerOf2((ulong)value);
+            }
+
+            return (nuint)RoundUpToPowerOf2((uint)value);
+        }
+
+        /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
