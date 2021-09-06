@@ -76,6 +76,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
         public static bool IsPow2(nint value) => (value & (value - 1)) == 0 && value > 0;
 
         /// <summary>
@@ -83,6 +84,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
         public static bool IsPow2(nuint value) => (value & (value - 1)) == 0 && value != 0;
 
         /// <summary>Round the given integral value up to a power of 2.</summary>
