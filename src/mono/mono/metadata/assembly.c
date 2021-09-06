@@ -107,9 +107,6 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 static const char *
 mono_asmctx_get_name (const MonoAssemblyContext *asmctx);
 
-static gboolean
-assembly_loadfrom_asmctx_from_path (const char *filename, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
-
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
 {
@@ -642,8 +639,6 @@ mono_assemblies_init (void)
 	check_path_env ();
 
 	mono_os_mutex_init_recursive (&assemblies_mutex);
-
-	mono_install_assembly_asmctx_from_path_hook (assembly_loadfrom_asmctx_from_path, NULL);
 }
 
 gboolean
@@ -1689,66 +1684,6 @@ mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer 
 	}
 }
 
-typedef struct AssemblyAsmCtxFromPathHook AssemblyAsmCtxFromPathHook;
-struct AssemblyAsmCtxFromPathHook {
-	AssemblyAsmCtxFromPathHook *next;
-	MonoAssemblyAsmCtxFromPathFunc func;
-	gpointer user_data;
-};
-
-static AssemblyAsmCtxFromPathHook *assembly_asmctx_from_path_hook = NULL;
-
-/**
- * mono_install_assembly_asmctx_from_path_hook:
- *
- * \param func Hook function
- * \param user_data User data
- *
- * Installs a hook function \p func that when called with an absolute path name
- * returns \c TRUE and writes to \c out_asmctx if an assembly that name would
- * be found by that asmctx.  The hooks are called in the order from most
- * recently added to oldest.
- *
- */
-void
-mono_install_assembly_asmctx_from_path_hook (MonoAssemblyAsmCtxFromPathFunc func, gpointer user_data)
-{
-	g_return_if_fail (func != NULL);
-
-	AssemblyAsmCtxFromPathHook *hook = g_new0 (AssemblyAsmCtxFromPathHook, 1);
-	hook->func = func;
-	hook->user_data = user_data;
-	hook->next = assembly_asmctx_from_path_hook;
-	assembly_asmctx_from_path_hook = hook;
-}
-
-/**
- * mono_assembly_invoke_asmctx_from_path_hook:
- *
- * \param absfname absolute path name
- * \param requesting_assembly the \c MonoAssembly that requested the load, may be \c NULL
- * \param out_asmctx assembly context kind, written on output
- *
- * Invokes hooks to find the assembly context that would have searched for the
- * given assembly name.  Writes to \p out_asmctx the assembly context kind from
- * the first hook to return \c TRUE.  \returns \c TRUE if any hook wrote to \p
- * out_asmctx, or \c FALSE otherwise.
- */
-static gboolean
-assembly_invoke_asmctx_from_path_hook (const char *absfname, MonoAssembly *requesting_assembly, MonoAssemblyContextKind *out_asmctx)
-{
-	g_assert (absfname);
-	g_assert (out_asmctx);
-	AssemblyAsmCtxFromPathHook *hook;
-
-	for (hook = assembly_asmctx_from_path_hook; hook; hook = hook->next) {
-		*out_asmctx = MONO_ASMCTX_INDIVIDUAL;
-		if (hook->func (absfname, requesting_assembly, hook->user_data, out_asmctx))
-			return TRUE;
-	}
-	return FALSE;
-}
-
 static gchar *
 absolute_dir (const gchar *filename)
 {
@@ -1923,19 +1858,6 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	return res;
 }
 
-static gboolean
-assembly_loadfrom_asmctx_from_path (const char *filename, MonoAssembly *requesting_assembly,
-				    gpointer user_data, MonoAssemblyContextKind *out_asmctx)
-{
-	if (requesting_assembly && mono_asmctx_get_kind (&requesting_assembly->context) == MONO_ASMCTX_LOADFROM) {
-		if (mono_path_filename_in_basedir (filename, requesting_assembly->basedir)) {
-			*out_asmctx = MONO_ASMCTX_LOADFROM;
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 MonoAssembly *
 mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest *open_req,
 			    MonoImageOpenStatus *status)
@@ -1961,16 +1883,6 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 			"Assembly Loader probing location: '%s'.", fname);
 
-	{
-		MonoAssemblyContextKind out_asmctx;
-		/* If the path belongs to the appdomain base dir or the
-		 * base dir of the requesting assembly, load the
-		 * assembly in the corresponding asmctx.
-		 */
-		if (assembly_invoke_asmctx_from_path_hook (fname, open_req->requesting_assembly, &out_asmctx))
-			load_req.asmctx = out_asmctx;
-	}
-	
 	image = NULL;
 
 	// If VM built with mkbundle
@@ -3660,7 +3572,7 @@ mono_asmctx_get_name (const MonoAssemblyContext *asmctx)
 {
 	static const char* names [] = {
 		"DEFAULT",
-		"LOADFROM",
+		"<UNUSED>",
 		"INDIVIDIUAL",
 	};
 	g_assert (asmctx->kind >= 0 && asmctx->kind <= MONO_ASMCTX_LAST);
