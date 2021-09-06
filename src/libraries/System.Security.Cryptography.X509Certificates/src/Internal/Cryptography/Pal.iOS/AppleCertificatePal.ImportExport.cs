@@ -114,10 +114,16 @@ namespace Internal.Cryptography.Pal
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                // TODO:
-                // We ignore keyStorageFlags which is tracked in https://github.com/dotnet/runtime/issues/52434.
-                // The keys are always imported as ephemeral and never persisted. Exportability is ignored for
-                // the moment and it needs to be investigated how to map it to iOS keychain primitives.
+                if ((keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable)
+                {
+                    throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_ExportableNotSupported);
+                }
+
+                if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
+                {
+                    throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
+                }
+
                 return ImportPkcs12(rawData, password, ephemeralSpecified);
             }
 

@@ -196,8 +196,8 @@ namespace Internal.TypeSystem.Ecma
 
         public static PInvokeFlags GetDelegatePInvokeFlags(this EcmaType type)
         {
-            PInvokeFlags flags = new PInvokeFlags();
-
+            PInvokeFlags flags = new PInvokeFlags(PInvokeAttributes.PreserveSig);
+            
             if (!type.IsDelegate)
             {
                 return flags;

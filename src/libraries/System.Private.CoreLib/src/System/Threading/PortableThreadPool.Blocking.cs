@@ -12,7 +12,7 @@ namespace System.Threading
             get
             {
                 _threadAdjustmentLock.VerifyIsLocked();
-                return Math.Min(_separated.numThreadsGoal, TargetThreadsGoalForBlockingAdjustment);
+                return Math.Min(_separated.counts.NumThreadsGoal, TargetThreadsGoalForBlockingAdjustment);
             }
         }
 
@@ -44,7 +44,7 @@ namespace System.Threading
                 Debug.Assert(_numBlockedThreads > 0);
 
                 if (_pendingBlockingAdjustment != PendingBlockingAdjustment.WithDelayIfNecessary &&
-                    _separated.numThreadsGoal < TargetThreadsGoalForBlockingAdjustment)
+                    _separated.counts.NumThreadsGoal < TargetThreadsGoalForBlockingAdjustment)
                 {
                     if (_pendingBlockingAdjustment == PendingBlockingAdjustment.None)
                     {
@@ -79,7 +79,7 @@ namespace System.Threading
 
                 if (_pendingBlockingAdjustment != PendingBlockingAdjustment.Immediately &&
                     _numThreadsAddedDueToBlocking > 0 &&
-                    _separated.numThreadsGoal > TargetThreadsGoalForBlockingAdjustment)
+                    _separated.counts.NumThreadsGoal > TargetThreadsGoalForBlockingAdjustment)
                 {
                     wakeGateThread = true;
                     _pendingBlockingAdjustment = PendingBlockingAdjustment.Immediately;
@@ -126,7 +126,8 @@ namespace System.Threading
             addWorker = false;
 
             short targetThreadsGoal = TargetThreadsGoalForBlockingAdjustment;
-            short numThreadsGoal = _separated.numThreadsGoal;
+            ThreadCounts counts = _separated.counts;
+            short numThreadsGoal = counts.NumThreadsGoal;
             if (numThreadsGoal == targetThreadsGoal)
             {
                 return 0;
@@ -144,7 +145,8 @@ namespace System.Threading
 
                 short toSubtract = Math.Min((short)(numThreadsGoal - targetThreadsGoal), _numThreadsAddedDueToBlocking);
                 _numThreadsAddedDueToBlocking -= toSubtract;
-                _separated.numThreadsGoal = numThreadsGoal -= toSubtract;
+                numThreadsGoal -= toSubtract;
+                _separated.counts.InterlockedSetNumThreadsGoal(numThreadsGoal);
                 HillClimbing.ThreadPoolHillClimber.ForceChange(
                     numThreadsGoal,
                     HillClimbing.StateOrTransition.CooperativeBlocking);
@@ -158,7 +160,6 @@ namespace System.Threading
             {
                 // Calculate how many threads can be added without a delay. Threads that were already created but may be just
                 // waiting for work can be released for work without a delay, but creating a new thread may need a delay.
-                ThreadCounts counts = _separated.counts;
                 short maxThreadsGoalWithoutDelay =
                     Math.Max(configuredMaxThreadsWithoutDelay, Math.Min(counts.NumExistingThreads, _maxThreads));
                 short targetThreadsGoalWithoutDelay = Math.Min(targetThreadsGoal, maxThreadsGoalWithoutDelay);
@@ -225,7 +226,7 @@ namespace System.Threading
                 } while (false);
 
                 _numThreadsAddedDueToBlocking += (short)(newNumThreadsGoal - numThreadsGoal);
-                _separated.numThreadsGoal = newNumThreadsGoal;
+                counts = _separated.counts.InterlockedSetNumThreadsGoal(newNumThreadsGoal);
                 HillClimbing.ThreadPoolHillClimber.ForceChange(
                     newNumThreadsGoal,
                     HillClimbing.StateOrTransition.CooperativeBlocking);

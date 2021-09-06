@@ -66,7 +66,6 @@ add_executable_clr(ildasm
 set(ILDASM_LINK_LIBRARIES
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     utilcodestaticnohost
-    mdhotdata_full
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks

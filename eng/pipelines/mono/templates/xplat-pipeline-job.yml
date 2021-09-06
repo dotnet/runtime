@@ -73,7 +73,7 @@ jobs:
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: managedGenericTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+      value: 'MonoManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
 
     - name: microsoftNetSdkIlFolderPath
       value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'

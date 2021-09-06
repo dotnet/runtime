@@ -12,15 +12,13 @@ namespace System.Text.Json.Nodes
         /// <returns>JSON representation of current instance.</returns>
         public string ToJsonString(JsonSerializerOptions? options = null)
         {
-            using (var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault))
+            using var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
+            using (var writer = new Utf8JsonWriter(output, options == null ? default(JsonWriterOptions) : options.GetWriterOptions()))
             {
-                using (var writer = new Utf8JsonWriter(output, options == null ? default(JsonWriterOptions) : options.GetWriterOptions()))
-                {
-                    WriteTo(writer, options);
-                }
-
-                return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
+                WriteTo(writer, options);
             }
+
+            return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
         }
 
         /// <summary>
@@ -44,15 +42,13 @@ namespace System.Text.Json.Nodes
                 }
             }
 
-            using (var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault))
+            using var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
+            using (var writer = new Utf8JsonWriter(output, new JsonWriterOptions { Indented = true }))
             {
-                using (var writer = new Utf8JsonWriter(output, new JsonWriterOptions { Indented = true }))
-                {
-                    WriteTo(writer);
-                }
-
-                return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
+                WriteTo(writer);
             }
+
+            return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
         }
 
         /// <summary>

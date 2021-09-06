@@ -21,16 +21,12 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #include "../binder/inc/textualidentityparser.hpp"
 #include "../binder/inc/assemblyidentity.hpp"
 #include "../binder/inc/assembly.hpp"
 #include "../binder/inc/assemblyname.hpp"
 
-#include "../binder/inc/coreclrbindercommon.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
 STDAPI BinderAddRefPEImage(PEImage *pPEImage)
@@ -72,14 +68,9 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     EEFileLoadException::Throw(name, hr);
 }
 
-// See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
-// and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
-// for an example of how they're used.
 VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
                          BOOL            fThrowOnFileNotFound,
-                         CoreBindResult *pResult,
-                         BOOL fNgenExplicitBind /* = FALSE */,
-                         BOOL fExplicitBindToNativeImage /* = FALSE */)
+                         CoreBindResult *pResult)
 {
     CONTRACTL
     {
@@ -97,12 +88,12 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     pResult->Reset();
 
     // Have a default binding context setup
-    ICLRPrivBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
+    AssemblyBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
 
     // Get the reference to the TPABinder context
-    CLRPrivBinderCoreCLR *pTPABinder = pAppDomain->GetTPABinderContext();
+    DefaultAssemblyBinder *pTPABinder = pAppDomain->GetTPABinderContext();
 
-    ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
+    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
     if (m_wszCodeBase == NULL && IsCoreLibSatellite())
@@ -122,12 +113,10 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
             tmpString.ConvertToUnicode(sCultureName);
         }
 
-        hr = CCoreCLRBinderHelper::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
+        hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
     else if (m_wszCodeBase == NULL)
     {
-        // For name based binding these arguments shouldn't have been changed from default
-        _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
         hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
@@ -136,8 +125,6 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     {
         hr = pTPABinder->Bind(m_wszCodeBase,
                               GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
-                              fNgenExplicitBind,
-                              fExplicitBindToNativeImage,
                               &pPrivAsm);
     }
 
@@ -146,7 +133,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     {
         _ASSERTE(pPrivAsm != nullptr);
 
-        result = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pPrivAsm.Extract());
+        result = pPrivAsm.Extract();
         _ASSERTE(result != nullptr);
 
         pResult->Init(result);
@@ -160,8 +147,6 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
 
 STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
                             PEImage           **ppPEImage,
-                            PEImage           **ppNativeImage,
-                            BOOL                fExplicitBindToNativeImage,
                             BundleFileLocation  bundleFileLocation)
 {
     HRESULT hr = S_OK;
@@ -170,40 +155,17 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
 
     EX_TRY
     {
-        PEImageHolder pImage = NULL;
-        PEImageHolder pNativeImage = NULL;
+        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
-#ifdef FEATURE_PREJIT
-        // fExplicitBindToNativeImage is set on Phone when we bind to a list of native images and have no IL on device for an assembly
-        if (fExplicitBindToNativeImage)
+        // Make sure that the IL image can be opened if the native image is not available.
+        hr=pImage->TryOpenFile();
+        if (FAILED(hr))
         {
-            pNativeImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_TrustedNativeImage, bundleFileLocation);
-
-            // Make sure that the IL image can be opened if the native image is not available.
-            hr=pNativeImage->TryOpenFile();
-            if (FAILED(hr))
-            {
-                goto Exit;
-            }
-        }
-        else
-#endif
-        {
-            pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
-
-            // Make sure that the IL image can be opened if the native image is not available.
-            hr=pImage->TryOpenFile();
-            if (FAILED(hr))
-            {
-                goto Exit;
-            }
+            goto Exit;
         }
 
         if (pImage)
             *ppPEImage = pImage.Extract();
-
-        if (ppNativeImage)
-            *ppNativeImage = pNativeImage.Extract();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -211,40 +173,9 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
     return hr;
 }
 
-STDAPI BinderHasNativeHeader(PEImage *pPEImage, BOOL* result)
-{
-    HRESULT hr = S_OK;
-
-    _ASSERTE(pPEImage != NULL);
-    _ASSERTE(result != NULL);
-
-    EX_TRY
-    {
-        *result = pPEImage->HasNativeHeader();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr))
-    {
-        *result = false;
-
-#if defined(TARGET_UNIX)
-        // PAL_LOADLoadPEFile may fail while loading IL masquerading as NI.
-        // This will result in a ThrowHR(E_FAIL).  Suppress the error.
-        if(hr == E_FAIL)
-        {
-            hr = S_OK;
-        }
-#endif // defined(TARGET_UNIX)
-    }
-
-    return hr;
-}
-
 STDAPI BinderAcquireImport(PEImage                  *pPEImage,
                            IMDInternalImport       **ppIAssemblyMetaDataImport,
-                           DWORD                    *pdwPAFlags,
-                           BOOL                      bNativeImage)
+                           DWORD                    *pdwPAFlags)
 {
     HRESULT hr = S_OK;
 
@@ -263,23 +194,12 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
         if (!pLayout->CheckFormat())
             IfFailGo(COR_E_BADIMAGEFORMAT);
 
-#ifdef FEATURE_PREJIT
-        if (bNativeImage && pPEImage->IsNativeILILOnly())
-        {
-            pPEImage->GetNativeILPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
-        }
-        else
-#endif
-        {
-            pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
-        }
+        pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
 
         *ppIAssemblyMetaDataImport = pPEImage->GetMDImport();
         if (!*ppIAssemblyMetaDataImport)
         {
-            // Some native images don't contain metadata, to reduce size
-            if (!bNativeImage)
-                IfFailGo(COR_E_BADIMAGEFORMAT);
+            IfFailGo(COR_E_BADIMAGEFORMAT);
         }
         else
             (*ppIAssemblyMetaDataImport)->AddRef();
@@ -312,13 +232,13 @@ HRESULT BaseAssemblySpec::ParseName()
         _ASSERTE(pDomain);
 
         BINDER_SPACE::ApplicationContext *pAppContext = NULL;
-        CLRPrivBinderCoreCLR *pBinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pBinder = pDomain->GetTPABinderContext();
         if (pBinder != NULL)
         {
             pAppContext = pBinder->GetAppContext();
         }
 
-        hr = CCoreCLRBinderHelper::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
+        hr = BINDER_SPACE::AssemblyBinderCommon::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
 
         if (FAILED(hr))
         {

@@ -4,6 +4,12 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <IsPackable>true</IsPackable>
+    <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
+    <PackageDescription>Provides support for code-page based encodings, including Windows-1252, Shift-JIS, and GB2312.
+
+Commonly Used Types:
+System.Text.CodePagesEncodingProvider</PackageDescription>
   </PropertyGroup>
   <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->
   <PropertyGroup>

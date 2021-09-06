@@ -31,7 +31,7 @@ ReleaseOnDetach::~ReleaseOnDetach()
 
     fflush(stdout);
 
-    NotifyManagedCodeViaCallback();
+    NotifyManagedCodeViaCallback(pCorProfilerInfo);
 }
 
 GUID ReleaseOnDetach::GetClsid()

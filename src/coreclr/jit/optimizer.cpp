@@ -4467,7 +4467,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Note "next" is the loop top block, not bTest's bbNext,
         // we'll call this latter block "after".
         //
-        BasicBlock::weight_t const testToNextLikelihood  = weightNext / weightTest;
+        BasicBlock::weight_t const testToNextLikelihood  = min(1.0f, weightNext / weightTest);
         BasicBlock::weight_t const testToAfterLikelihood = 1.0f - testToNextLikelihood;
 
         // Adjust edges out of bTest (which now has weight weightNext)
@@ -5462,7 +5462,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
     return 0;
 }
 
-void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
+void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsigned lnum)
 {
 #ifdef DEBUG
     if (verbose)
@@ -5475,6 +5475,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
         printf("\n");
     }
 #endif
+
+    assert(exprBb != nullptr);
 
     // This loop has to be in a form that is approved for hoisting.
     assert(optLoopTable[lnum].lpFlags & LPFLG_HOISTABLE);
@@ -5511,6 +5513,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     // (or in this case, will contain) the expression.
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
+
+    preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
 
     Statement* hoistStmt = gtNewStmt(hoist);
     hoistStmt->SetCompilerAdded();
@@ -5955,7 +5959,7 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
     int loopVarCount;
     int varInOutCount;
 
-    if (varTypeIsFloating(tree->TypeGet()))
+    if (varTypeIsFloating(tree))
     {
         hoistedExprCount = pLoopDsc->lpHoistedFPExprCount;
         loopVarCount     = pLoopDsc->lpLoopVarFPCount;
@@ -6067,15 +6071,41 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 
     // Find the loop associated with this memory VN.
     //
-    unsigned const updateLoopNum = vnStore->LoopOfVN(memoryVN);
+    unsigned updateLoopNum = vnStore->LoopOfVN(memoryVN);
 
-    if (updateLoopNum == BasicBlock::NOT_IN_LOOP)
+    if (updateLoopNum >= BasicBlock::MAX_LOOP_NUM)
     {
+        // There should be only two special non-loop loop nums.
+        //
+        assert((updateLoopNum == BasicBlock::MAX_LOOP_NUM) || (updateLoopNum == BasicBlock::NOT_IN_LOOP));
+
         // memoryVN defined outside of any loop, we can ignore.
         //
         JITDUMP("      ==> Not updating loop memory dependence of [%06u], memory " FMT_VN " not defined in a loop\n",
                 dspTreeID(tree), memoryVN);
         return;
+    }
+
+    // If the loop was removed, then record the dependence in the nearest enclosing loop, if any.
+    //
+    while ((optLoopTable[updateLoopNum].lpFlags & LPFLG_REMOVED) != 0)
+    {
+        unsigned const updateParentLoopNum = optLoopTable[updateLoopNum].lpParent;
+
+        if (updateParentLoopNum == BasicBlock::NOT_IN_LOOP)
+        {
+            // Memory VN was defined in a loop, but no longer.
+            //
+            JITDUMP("      ==> Not updating loop memory dependence of [%06u], memory " FMT_VN
+                    " no longer defined in a loop\n",
+                    dspTreeID(tree), memoryVN);
+            break;
+        }
+
+        JITDUMP("      ==> " FMT_LP " removed, updating dependence to parent " FMT_LP "\n", updateLoopNum,
+                updateParentLoopNum);
+
+        updateLoopNum = updateParentLoopNum;
     }
 
     // If the update block is not the the header of a loop containing
@@ -6117,7 +6147,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
     // we know of. Update the map.
     //
     JITDUMP("      ==> Updating loop memory dependence of [%06u] to " FMT_LP "\n", dspTreeID(tree), updateLoopNum);
-    map->Set(tree, optLoopTable[updateLoopNum].lpEntry);
+    map->Set(tree, optLoopTable[updateLoopNum].lpEntry, NodeToLoopMemoryBlockMap::Overwrite);
 }
 
 //------------------------------------------------------------------------
@@ -6179,6 +6209,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         bool              m_beforeSideEffect;
         unsigned          m_loopNum;
         LoopHoistContext* m_hoistContext;
+        BasicBlock*       m_currentBlock;
 
         bool IsNodeHoistable(GenTree* node)
         {
@@ -6271,11 +6302,13 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             , m_beforeSideEffect(true)
             , m_loopNum(loopNum)
             , m_hoistContext(hoistContext)
+            , m_currentBlock(nullptr)
         {
         }
 
         void HoistBlock(BasicBlock* block)
         {
+            m_currentBlock = block;
             for (Statement* const stmt : block->NonPhiStatements())
             {
                 WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -6283,7 +6316,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
                 if (m_valueStack.TopRef().m_hoistable)
                 {
-                    m_compiler->optHoistCandidate(stmt->GetRootNode(), m_loopNum, m_hoistContext);
+                    m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loopNum, m_hoistContext);
                 }
 
                 m_valueStack.Reset();
@@ -6314,7 +6347,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // To be invariant a LclVar node must not be the LHS of an assignment ...
                 bool isInvariant = !user->OperIs(GT_ASG) || (user->AsOp()->gtGetOp1() != tree);
                 // and the variable must be in SSA ...
-                isInvariant = isInvariant && m_compiler->lvaInSsa(lclNum);
+                isInvariant = isInvariant && m_compiler->lvaInSsa(lclNum) && lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
                 isInvariant = isInvariant &&
                               !m_compiler->optLoopTable[m_loopNum].lpContains(
@@ -6586,7 +6619,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         value.m_hoistable = false;
                         value.m_invariant = false;
 
-                        m_compiler->optHoistCandidate(value.Node(), m_loopNum, m_hoistContext);
+                        m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
                     }
                 }
             }
@@ -6628,7 +6661,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
     }
 }
 
-void Compiler::optHoistCandidate(GenTree* tree, unsigned lnum, LoopHoistContext* hoistCtxt)
+void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     assert(lnum != BasicBlock::NOT_IN_LOOP);
     assert((optLoopTable[lnum].lpFlags & LPFLG_HOISTABLE) != 0);
@@ -6653,7 +6686,7 @@ void Compiler::optHoistCandidate(GenTree* tree, unsigned lnum, LoopHoistContext*
     }
 
     // Expression can be hoisted
-    optPerformHoistExpr(tree, lnum);
+    optPerformHoistExpr(tree, treeBb, lnum);
 
     // Increment lpHoistedExprCount or lpHoistedFPExprCount
     if (!varTypeIsFloating(tree->TypeGet()))
@@ -6843,8 +6876,9 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
             {
                 BasicBlock::weight_t loopEnteredCount;
                 BasicBlock::weight_t loopSkippedCount;
+                bool                 useEdgeWeights = fgHaveValidEdgeWeights;
 
-                if (fgHaveValidEdgeWeights)
+                if (useEdgeWeights)
                 {
                     flowList* edgeToNext = fgGetPredForBlock(head->bbNext, head);
                     flowList* edgeToJump = fgGetPredForBlock(head->bbJumpDest, head);
@@ -6853,21 +6887,23 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
                     loopEnteredCount = (edgeToNext->edgeWeightMin() + edgeToNext->edgeWeightMax()) / 2.0f;
                     loopSkippedCount = (edgeToJump->edgeWeightMin() + edgeToJump->edgeWeightMax()) / 2.0f;
+
+                    // Watch out for cases where edge weights were not properly maintained
+                    // so that it appears no profile flow enters the loop.
+                    //
+                    useEdgeWeights = !fgProfileWeightsConsistent(loopEnteredCount, BB_ZERO_WEIGHT);
                 }
-                else
+
+                if (!useEdgeWeights)
                 {
                     loopEnteredCount = head->bbNext->bbWeight;
                     loopSkippedCount = head->bbJumpDest->bbWeight;
                 }
 
-                JITDUMP("%s; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT "\n",
-                        fgHaveValidEdgeWeights ? "valid edge weights" : "no edge weights", loopEnteredCount,
-                        loopSkippedCount);
-
                 BasicBlock::weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
 
-                JITDUMP("%s; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
-                        fgHaveValidEdgeWeights ? "valid edge weights" : "no edge weights", loopEnteredCount,
+                JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
+                        fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
                         loopSkippedCount, loopTakenRatio);
 
                 // Calculate a good approximation of the preHead's block weight
@@ -7218,7 +7254,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         // If it's a local byref for which we recorded a value number, use that...
                         GenTreeLclVar* argLcl = arg->AsLclVar();
-                        if (lvaInSsa(argLcl->GetLclNum()))
+                        if (lvaInSsa(argLcl->GetLclNum()) && argLcl->HasSsaName())
                         {
                             ValueNum argVN =
                                 lvaTable[argLcl->GetLclNum()].GetPerSsaData(argLcl->GetSsaNum())->m_vnPair.GetLiberal();
@@ -7308,7 +7344,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     if (rhsVN != ValueNumStore::NoVN)
                     {
                         rhsVN = vnStore->VNNormalValue(rhsVN);
-                        if (lvaInSsa(lhsLcl->GetLclNum()))
+                        if (lvaInSsa(lhsLcl->GetLclNum()) && lhsLcl->HasSsaName())
                         {
                             lvaTable[lhsLcl->GetLclNum()]
                                 .GetPerSsaData(lhsLcl->GetSsaNum())

@@ -39,3 +39,8 @@ void SystemNative_Log (uint8_t* buffer, int32_t length)
     }
     [msg release];
 }
+
+void SystemNative_LogError (uint8_t* buffer, int32_t length)
+{
+    SystemNative_Log (buffer, length);
+}

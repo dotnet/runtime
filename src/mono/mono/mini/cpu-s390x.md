@@ -96,7 +96,7 @@ fcall_membase: dest:g src1:b len:14 clob:c
 fcall_reg: dest:g src1:i len:10 clob:c
 fcompare: src1:f src2:f len:14
 rcompare: src1:f src2:f len:14
-float_add: dest:f src1:f src2:f len:6
+float_add: dest:f src1:f src2:f len:8
 
 float_beq: len:10
 float_bge: len:10
@@ -129,14 +129,14 @@ float_conv_to_u2: dest:i src1:f len:72
 float_conv_to_u4: dest:i src1:f len:72
 float_conv_to_u8: dest:i src1:f len:72
 float_conv_to_u: dest:i src1:f len:36
-float_div: dest:f src1:f src2:f len:6
-float_div_un: dest:f src1:f src2:f len:6
-float_mul: dest:f src1:f src2:f len:6
-float_neg: dest:f src1:f len:6
-float_not: dest:f src1:f len:6
-float_rem: dest:f src1:f src2:f len:16
-float_rem_un: dest:f src1:f src2:f len:16
-float_sub: dest:f src1:f src2:f len:6
+float_div: dest:f src1:f src2:f len:24
+float_div_un: dest:f src1:f src2:f len:30
+float_mul: dest:f src1:f src2:f len:8
+float_neg: dest:f src1:f len:8
+float_not: dest:f src1:f len:8
+float_rem: dest:f src1:f src2:f len:24
+float_rem_un: dest:f src1:f src2:f len:30
+float_sub: dest:f src1:f src2:f len:24
 
 # R4 opcodes
 r4_conv_to_i1: dest:i src1:f len:32
@@ -144,16 +144,17 @@ r4_conv_to_u1: dest:i src1:f len:32
 r4_conv_to_i2: dest:i src1:f len:32
 r4_conv_to_u2: dest:i src1:f len:32
 r4_conv_to_i4: dest:i src1:f len:16
+r4_conv_to_i: dest:i src1:f len:16
 r4_conv_to_u4: dest:i src1:f len:32
 r4_conv_to_i8: dest:i src1:f len:32
 r4_conv_to_r8: dest:f src1:f len:17
 r4_conv_to_u8: dest:i src1:f len:17
 r4_conv_to_r4: dest:f src1:f len:17
-r4_add: dest:f src1:f src2:f clob:1 len:5
-r4_sub: dest:f src1:f src2:f clob:1 len:5
-r4_mul: dest:f src1:f src2:f clob:1 len:5
-r4_div: dest:f src1:f src2:f clob:1 len:5
-r4_rem: dest:f src1:f src2:f clob:1 len:12
+r4_add: dest:f src1:f src2:f clob:1 len:8
+r4_sub: dest:f src1:f src2:f clob:1 len:20
+r4_mul: dest:f src1:f src2:f clob:1 len:8
+r4_div: dest:f src1:f src2:f clob:1 len:20
+r4_rem: dest:f src1:f src2:f clob:1 len:24
 r4_neg: dest:f src1:f clob:1 len:23
 r4_ceq: dest:i src1:f src2:f len:35
 r4_cgt: dest:i src1:f src2:f len:35
@@ -163,6 +164,7 @@ r4_clt_un: dest:i src1:f src2:f len:42
 r4_cneq: dest:i src1:f src2:f len:42
 r4_cge: dest:i src1:f src2:f len:35
 r4_cle: dest:i src1:f src2:f len:35
+rmove: dest:f src1:f len:4
 
 fmove: dest:f src1:f len:4
 move_f_to_i4: dest:i src1:f len:14

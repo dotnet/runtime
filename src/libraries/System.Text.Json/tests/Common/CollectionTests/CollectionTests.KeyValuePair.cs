@@ -8,20 +8,19 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-#if !BUILDING_SOURCE_GENERATOR_TESTS
     public abstract partial class CollectionTests
     {
         [Fact]
-        public async Task ReadSimpleKeyValuePairFail()
+        public virtual async Task ReadSimpleKeyValuePairPartialData()
         {
             // Invalid form: no Value
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": 123}"));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""123""}"));
 
             // Invalid form: extra property
             await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Value"": 123, ""Value2"": 456}"));
 
             // Invalid form: does not contain both Key and Value properties
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Val"": 123"));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Val"": 123}"));
         }
 
         [Fact]
@@ -302,7 +301,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task HonorNamingPolicy_CaseInsensitive()
+        public virtual async Task HonorNamingPolicy_CaseInsensitive()
         {
             const string json = @"{""key"":""Hello, World!"",""value"":1}";
 
@@ -321,7 +320,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task HonorCLRProperties()
+        public virtual async Task HonorCLRProperties()
         {
             var options = new JsonSerializerOptions
             {
@@ -352,7 +351,7 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options));
         }
 
-        private class LeadingUnderscorePolicy : JsonNamingPolicy
+        public class LeadingUnderscorePolicy : JsonNamingPolicy
         {
             public override string ConvertName(string name) => "_" + name;
         }
@@ -397,19 +396,19 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = (JsonNamingPolicy)Activator.CreateInstance(policyType)
             };
 
-            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, string>>("", options));
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, string>>("{}", options));
             string exAsStr = ex.ToString();
             Assert.Contains(offendingProperty, exAsStr);
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new KeyValuePair<string, string>("", ""), options));
         }
 
-        private class KeyNameNullPolicy : JsonNamingPolicy
+        public class KeyNameNullPolicy : JsonNamingPolicy
         {
             public override string ConvertName(string name) => name == "Key" ? null : name;
         }
 
-        private class ValueNameNullPolicy : JsonNamingPolicy
+        public class ValueNameNullPolicy : JsonNamingPolicy
         {
             public override string ConvertName(string name) => name == "Value" ? null : name;
         }
@@ -420,21 +419,31 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("[")]
         [InlineData("}")]
         [InlineData("{")]
-        [InlineData("{}")]
         [InlineData("{Key")]
         [InlineData("{0")]
         [InlineData(@"{""Random"":")]
-        [InlineData(@"{""Value"":1}")]
         [InlineData(@"{null:1}")]
         [InlineData(@"{""Value"":1,2")]
         [InlineData(@"{""Value"":1,""Random"":")]
-        [InlineData(@"{""Key"":1,""Key"":1}")]
         [InlineData(@"{null:1,""Key"":1}")]
+        [InlineData(@"{""Value"":1,null:1}")]
+        public async Task InvalidJsonFail(string json)
+        {
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json));
+        }
+
+        [Theory]
+        [InlineData("{}")]
+        [InlineData(@"{""Value"":1}")]
+        [InlineData(@"{""Key"":1,""Key"":1}")]
         [InlineData(@"{""Key"":1,""Key"":2}")]
         [InlineData(@"{""Value"":1,""Value"":1}")]
-        [InlineData(@"{""Value"":1,null:1}")]
         [InlineData(@"{""Value"":1,""Value"":2}")]
-        public async Task InvalidJsonFail(string json)
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Souce generated code-paths use object converter (not KVP converter), " +
+            "which doesn't enforce that the JSON contains Key/Value props exactly.")]
+#endif
+        public async Task InvalidJsonFail_WellFormed(string json)
         {
             await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json));
         }
@@ -442,12 +451,27 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(@"{""Key"":""1"",""Value"":2}", "$.Key")]
         [InlineData(@"{""Key"":1,""Value"":""2""}", "$.Value")]
+        public async Task JsonPathIsAccurate(string json, string expectedPath)
+        {
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json));
+            Assert.Contains(expectedPath, ex.ToString());
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json));
+            Assert.Contains(expectedPath, ex.ToString());
+        }
+
+        [Theory]
         [InlineData(@"{""key"":1,""Value"":2}", "$.key")]
         [InlineData(@"{""Key"":1,""value"":2}", "$.value")]
         [InlineData(@"{""Extra"":3,""Key"":1,""Value"":2}", "$.Extra")]
         [InlineData(@"{""Key"":1,""Extra"":3,""Value"":2}", "$.Extra")]
         [InlineData(@"{""Key"":1,""Value"":2,""Extra"":3}", "$.Extra")]
-        public async Task JsonPathIsAccurate(string json, string expectedPath)
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Souce generated code-paths use object converter (not KVP converter), " +
+            "which doesn't enforce that the JSON contains Key/Value props exactly.")]
+#endif
+        public async Task JsonPathIsAccurate_WellFormed(string json, string expectedPath)
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json));
             Assert.Contains(expectedPath, ex.ToString());
@@ -477,5 +501,4 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(expectedPath, ex.ToString());
         }
     }
-#endif
 }

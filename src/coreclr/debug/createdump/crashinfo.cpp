@@ -16,7 +16,8 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_gatherFrames(gatherFrames),
     m_crashThread(crashThread),
     m_signal(signal),
-    m_moduleInfos(&ModuleInfoCompare)
+    m_moduleInfos(&ModuleInfoCompare),
+    m_mainModule(nullptr)
 {
     g_crashInfo = this;
 #ifdef __APPLE__

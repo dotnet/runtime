@@ -3904,6 +3904,114 @@ void emitter::emitRecomputeIGoffsets()
 #endif
 }
 
+//----------------------------------------------------------------------------------------
+// emitDispCommentForHandle:
+//    Displays a comment for a handle, e.g. displays a raw string for GTF_ICON_STR_HDL
+//    or a class name for GTF_ICON_CLASS_HDL
+//
+// Arguments:
+//    handle - a constant value to display a comment for
+//    flags  - a flag that the describes the handle
+//
+void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
+{
+#ifdef DEBUG
+    if (handle == 0)
+    {
+        return;
+    }
+
+#ifdef TARGET_XARCH
+    const char* commentPrefix = "      ;";
+#else
+    const char* commentPrefix = "      //";
+#endif
+
+    flag &= GTF_ICON_HDL_MASK;
+    const char* str = nullptr;
+
+    if (flag == GTF_ICON_STR_HDL)
+    {
+        const WCHAR* wstr = emitComp->eeGetCPString(handle);
+        // NOTE: eGetCPString always returns nullptr on Linux/ARM
+        if (wstr == nullptr)
+        {
+            str = "string handle";
+        }
+        else
+        {
+            const size_t actualLen = wcslen(wstr);
+            const size_t maxLength = 63;
+            const size_t newLen    = min(maxLength, actualLen);
+
+            // +1 for null terminator
+            WCHAR buf[maxLength + 1] = {0};
+            wcsncpy(buf, wstr, newLen);
+            for (size_t i = 0; i < newLen; i++)
+            {
+                // Escape \n and \r symbols
+                if (buf[i] == L'\n' || buf[i] == L'\r')
+                {
+                    buf[i] = L' ';
+                }
+            }
+            if (actualLen > maxLength)
+            {
+                // Append "..." for long strings
+                buf[maxLength - 3] = L'.';
+                buf[maxLength - 2] = L'.';
+                buf[maxLength - 1] = L'.';
+            }
+            printf("%s \"%S\"", commentPrefix, buf);
+        }
+    }
+    else if (flag == GTF_ICON_CLASS_HDL)
+    {
+        str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
+    }
+#ifndef TARGET_XARCH
+    // These are less useful for xarch:
+    else if (flag == GTF_ICON_CONST_PTR)
+    {
+        str = "const ptr";
+    }
+    else if (flag == GTF_ICON_GLOBAL_PTR)
+    {
+        str = "global ptr";
+    }
+    else if (flag == GTF_ICON_FIELD_HDL)
+    {
+        str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
+    }
+    else if (flag == GTF_ICON_STATIC_HDL)
+    {
+        str = "static handle";
+    }
+    else if (flag == GTF_ICON_METHOD_HDL)
+    {
+        str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
+    }
+    else if (flag == GTF_ICON_FTN_ADDR)
+    {
+        str = "function address";
+    }
+    else if (flag == GTF_ICON_TOKEN_HDL)
+    {
+        str = "token handle";
+    }
+    else
+    {
+        str = "unknown";
+    }
+#endif // TARGET_XARCH
+
+    if (str != nullptr)
+    {
+        printf("%s %s", commentPrefix, str);
+    }
+#endif // DEBUG
+}
+
 /*****************************************************************************
  *  Bind targets of relative jumps to choose the smallest possible encoding.
  *  X86 and AMD64 have a small and large encoding.
@@ -8735,11 +8843,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 
         if (ig->igOffs == offs)
         {
-            // Found it!
-            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%s", emitLabelString(ig));
-            retbuf = buf[curBuf];
-            curBuf = (curBuf + 1) % 4;
-            return retbuf;
+            return emitLabelString(ig);
         }
         else if (ig->igOffs > offs)
         {

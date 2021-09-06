@@ -1,15 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessModuleTests : ProcessTestBase
+    public partial class ProcessModuleTests : ProcessTestBase
     {
         [Fact]
         public void TestModuleProperties()
@@ -90,34 +88,6 @@ namespace System.Diagnostics.Tests
 
             process.Dispose();
             Assert.Equal(expectedCount, disposedCount);
-        }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/335059")]
-        [ConditionalFact(typeof(PathFeatures), nameof(PathFeatures.AreAllLongPathsAvailable))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void LongModuleFileNamesAreSupported()
-        {
-            // To be able to test Long Path support for ProcessModule.FileName we need a .dll that has a path >= 260 chars.
-            // Since Long Paths support can be disabled (see the ConditionalFact attribute usage above),
-            // we just copy "LongName.dll" from bin to a temp directory with a long name and load it from there.
-            // Loading from new path is possible because the type exposed by the assembly is not referenced in any explicit way.
-            const string libraryName = "LongPath.dll";
-
-            string testBinPath = Path.GetDirectoryName(typeof(ProcessModuleTests).Assembly.Location);
-            string libraryToCopy = Path.Combine(testBinPath, libraryName);
-            Assert.True(File.Exists(libraryToCopy), $"{libraryName} was not present in bin folder '{testBinPath}'");
-
-            string directoryWithLongName = Path.Combine(TestDirectory, new string('a', Math.Max(1, 261 - TestDirectory.Length)));
-            Directory.CreateDirectory(directoryWithLongName);
-
-            string longNamePath = Path.Combine(directoryWithLongName, libraryName);
-            Assert.True(longNamePath.Length > 260);
-
-            File.Copy(libraryToCopy, longNamePath);
-
-            Assembly loaded = Assembly.LoadFile(longNamePath);
-
-            Assert.Contains(Process.GetCurrentProcess().Modules.Cast<ProcessModule>(), module => module.FileName == longNamePath);
         }
     }
 }
