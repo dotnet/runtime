@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode))
                 {
-                    Preallocate(fullPath, preallocationSize, fileHandle);
+                    Preallocate(fullPath, preallocationSize, fileHandle, mode);
                 }
 
                 if ((options & FileOptions.Asynchronous) != 0)
@@ -106,35 +106,45 @@ namespace Microsoft.Win32.SafeHandles
             return fileHandle;
         }
 
-        private static unsafe void Preallocate(string fullPath, long preallocationSize, SafeFileHandle fileHandle)
+        // preallocationSize must be ignored for non-seekable files, unsupported file systems
+        // and other failures other than ERROR_DISK_FULL and ERROR_FILE_TOO_LARGE
+        private static unsafe void Preallocate(string fullPath, long preallocationSize, SafeFileHandle fileHandle, FileMode mode)
         {
-            var allocationInfo = new Interop.Kernel32.FILE_ALLOCATION_INFO
+            if (mode == FileMode.OpenOrCreate)
             {
-                AllocationSize = preallocationSize
+                Interop.Kernel32.FILE_STANDARD_INFO info;
+                if (!Interop.Kernel32.GetFileInformationByHandleEx(fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO))
+                    || info.EndOfFile >= preallocationSize) // existing files must NOT be shrinked
+                {
+                    return;
+                }
+            }
+
+            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
+            {
+                EndOfFile = preallocationSize
             };
 
             if (!Interop.Kernel32.SetFileInformationByHandle(
                 fileHandle,
-                Interop.Kernel32.FileAllocationInfo,
-                &allocationInfo,
-                (uint)sizeof(Interop.Kernel32.FILE_ALLOCATION_INFO)))
+                Interop.Kernel32.FileEndOfFileInfo,
+                &eofInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
             {
                 int errorCode = Marshal.GetLastPInvokeError();
+                if (errorCode != Interop.Errors.ERROR_DISK_FULL && errorCode != Interop.Errors.ERROR_FILE_TOO_LARGE)
+                {
+                    return;
+                }
 
                 // we try to mimic the atomic NtCreateFile here:
                 // if preallocation fails, close the handle and delete the file
                 fileHandle.Dispose();
                 Interop.Kernel32.DeleteFile(fullPath);
 
-                switch (errorCode)
-                {
-                    case Interop.Errors.ERROR_DISK_FULL:
-                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
-                    case Interop.Errors.ERROR_FILE_TOO_LARGE:
-                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
-                }
+                throw errorCode == Interop.Errors.ERROR_DISK_FULL
+                    ? new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize))
+                    : new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
             }
         }
 
