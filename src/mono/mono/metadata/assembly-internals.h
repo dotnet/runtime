@@ -68,13 +68,13 @@ mono_assembly_invoke_load_hook_internal (MonoAssemblyLoadContext *alc, MonoAssem
 typedef gboolean (*MonoAssemblyCandidatePredicate)(MonoAssembly *, gpointer);
 
 typedef struct MonoAssemblyLoadRequest {
-	/* Assembly Load context that is requesting an assembly. */
-	MonoAssemblyContextKind asmctx;
 	MonoAssemblyLoadContext *alc;
 	/* Predicate to apply to candidate assemblies. Optional. */
 	MonoAssemblyCandidatePredicate predicate;
 	/* user_data for predicate. Optional. */
 	gpointer predicate_ud;
+        /* Don't invoke the search hooks to find the assembly. Optional */
+        gboolean no_invoke_search_hook;
         /* Don't fire managed assembly loaded event. Optional. */
         gboolean no_managed_load_event;
 } MonoAssemblyLoadRequest;

@@ -317,7 +317,7 @@ void
 mono_assembly_request_prepare_load (MonoAssemblyLoadRequest *req, MonoAssemblyContextKind asmctx, MonoAssemblyLoadContext *alc)
 {
 	memset (req, 0, sizeof (MonoAssemblyLoadRequest));
-	req->asmctx = asmctx;
+        req->no_invoke_search_hook = asmctx == MONO_ASMCTX_INDIVIDUAL; /* FIXME: do this in the callers */
 	req->alc = alc;
 }
 
@@ -333,7 +333,7 @@ void
 mono_assembly_request_prepare_open (MonoAssemblyOpenRequest *req, MonoAssemblyContextKind asmctx, MonoAssemblyLoadContext *alc)
 {
 	memset (req, 0, sizeof (MonoAssemblyOpenRequest));
-	req->request.asmctx = asmctx;
+        req->request.no_invoke_search_hook = asmctx == MONO_ASMCTX_INDIVIDUAL; /* FIXME: do this in the callers */
 	req->request.alc = alc;
 }
 
@@ -349,7 +349,7 @@ void
 mono_assembly_request_prepare_byname (MonoAssemblyByNameRequest *req, MonoAssemblyContextKind asmctx, MonoAssemblyLoadContext *alc)
 {
 	memset (req, 0, sizeof (MonoAssemblyByNameRequest));
-	req->request.asmctx = asmctx;
+        req->request.no_invoke_search_hook = asmctx == MONO_ASMCTX_INDIVIDUAL; /* FIXME: do this in the callers */
 	req->request.alc = alc;
 }
 
@@ -2174,7 +2174,6 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 				 const MonoAssemblyLoadRequest *req,
 				   MonoImageOpenStatus *status)
 {
-	MonoAssemblyContextKind asmctx;
 	MonoAssemblyCandidatePredicate predicate;
 	gpointer user_data;
 
@@ -2183,7 +2182,6 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 
 	g_assert (status != NULL);
 
-	asmctx = req->asmctx;
 	predicate = req->predicate;
 	user_data = req->predicate_ud;
 
@@ -2241,7 +2239,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 * The load hooks might take locks so we can't call them while holding the
 	 * assemblies lock.
 	 */
-	if (ass->aname.name && asmctx != MONO_ASMCTX_INDIVIDUAL) {
+	if (ass->aname.name && !req->no_invoke_search_hook) {
 		/* FIXME: I think individual context should probably also look for an existing MonoAssembly here, we just need to pass the asmctx to the search hook so that it does a filename match (I guess?) */
 		ass2 = mono_assembly_invoke_search_hook_internal (req->alc, NULL, &ass->aname, FALSE);
 		if (ass2) {
@@ -2289,7 +2287,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 * new MonoAssembly, even if another assembly with the same name has
 	 * already been loaded.
 	 */
-	if (image->assembly && asmctx != MONO_ASMCTX_INDIVIDUAL) {
+	if (image->assembly && !req->no_invoke_search_hook) {
 		/*
 		 * This means another thread has already loaded the assembly, but not yet
 		 * called the load hooks so the search hook can't find the assembly.
