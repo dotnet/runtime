@@ -598,6 +598,32 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Count the number of trailing zero bits in a mask.
+        /// Similar in behavior to the x86 instruction TZCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int TrailingZeroCount(nint value)
+            => TrailingZeroCount((nuint)value);
+
+        /// <summary>
+        /// Count the number of trailing zero bits in a mask.
+        /// Similar in behavior to the x86 instruction TZCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int TrailingZeroCount(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return TrailingZeroCount((ulong)value);
+            }
+
+            return TrailingZeroCount((uint)value);
+        }
+
+        /// <summary>
         /// Rotates the specified value left by the specified number of bits.
         /// Similar in behavior to the x86 instruction ROL.
         /// </summary>
