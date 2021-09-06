@@ -14,7 +14,7 @@ public:
         _failures(0)
     {}
 
-	virtual GUID GetClsid();
+	static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE ObjectAllocated(ObjectID objectId, ClassID classId);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();

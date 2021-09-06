@@ -39,7 +39,7 @@ typedef PTR_VOID HashDatum;
 
 typedef Pair< Module*, mdToken > RidMapLogData;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 #define IBCLOGGER_ENABLED
 #endif
 
@@ -473,9 +473,6 @@ public:                                                 \
     // Implemented by : code:IBCLogger.LogMethodGCInfoAccessHelper
     LOGACCESS_PTR(MethodGCInfo, MethodDesc)
 
-// The accesses to individual datastructures matter for fragile NGen only
-#ifndef FEATURE_PREJIT
-
 #undef LOGACCESS_PTR
 #undef LOGACCESS_VALUE
 
@@ -486,8 +483,6 @@ public:                                                 \
 #define LOGACCESS_VALUE(name, type)                     \
 public:                                                 \
     void Log##name##Access(type p) { SUPPORTS_DAC; }    \
-
-#endif // FEATURE_PREJIT
 
     // Log access to method desc (which adds the method desc to the required list)
     // Implemented by : code:IBCLogger.LogMethodDescAccessHelper

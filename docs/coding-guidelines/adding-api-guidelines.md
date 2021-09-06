@@ -29,12 +29,6 @@ should be added to `net5.0`. [More Information on TargetFrameworks](https://docs
 
 ## Making the changes in repo
 
-**Update pkg**
- - If changing the target framework
-    - Update `SupportedFramework` metadata on the ref ProjectReference to declare the set of concrete platforms you expect your library to support. (see [Specific platform mappings][net-standard table]). Generally will be a combination of netcoreapp2.x, netfx46x, and/or `$(AllXamarinFrameworks)`.
-  - If assembly or package version is updated the package index needs to be updated by running
-    `dotnet build <Library>/pkg/<Library>.pkgproj /t:UpdatePackageIndex`
-
 **Update tests**
   - Add new `TargetFramework` to the ```TargetFrameworks```.
   - Add new test code following [conventions](project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
@@ -52,10 +46,6 @@ Once the dotnet-api-docs change is merged, your comments will start showing up i
 Once the documentation is official, any subsequent updates to it must be made directly in https://github.com/dotnet/dotnet-api-docs/. It's fine to make updates to the triple slash comments later, they just won't automatically flow into the official docs.
 
 ## FAQ
-_**How do I consume APIs from another package that aren't yet published?**_
-
-If you are adding APIs across multiple packages at the same time. You can temporarily add a direct
-ProjectReference from the ref\csproj to the ref\csproj, src\csproj to the ref\csproj, and/or tests\csproj to pkg\pkgproj. Once a new set of packages have been published these ProjectReferences should be removed.
 
 _**What to do if you are moving types down into a lower contract?**_
 

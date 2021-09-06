@@ -25,10 +25,13 @@ namespace System.Text.RegularExpressions
         /// <summary>The original string</summary>
         internal string Text { get; set; }
 
-        /// <summary>
-        /// Returns the value of this Regex Capture.
-        /// </summary>
+        /// <summary>Gets the captured substring from the input string.</summary>
+        /// <value>The substring that is captured by the match.</value>
         public string Value => Text.Substring(Index, Length);
+
+        /// <summary>Gets the captured span from the input string.</summary>
+        /// <value>The span that is captured by the match.</value>
+        public ReadOnlySpan<char> ValueSpan => Text.AsSpan(Index, Length);
 
         /// <summary>Returns the substring that was matched.</summary>
         public override string ToString() => Value;

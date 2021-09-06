@@ -12,6 +12,9 @@ Profiler *Profiler::Instance = nullptr;
 std::atomic<bool> ShutdownGuard::s_preventHooks(false);
 std::atomic<int> ShutdownGuard::s_hooksInProgress(0);
 
+ProfilerCallback Profiler::s_callback;
+ManualEvent Profiler::s_callbackSet;
+
 Profiler::Profiler() : refCount(0), pCorProfilerInfo(nullptr)
 {
     Profiler::Instance = this;
@@ -532,9 +535,16 @@ HRESULT STDMETHODCALLTYPE Profiler::EventPipeProviderCreated(EVENTPIPE_PROVIDER 
     return S_OK;
 }
 
+HRESULT STDMETHODCALLTYPE Profiler::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+{
+    *pbNotificationOnly = FALSE;
+    return S_OK;
+}
+
 HRESULT STDMETHODCALLTYPE Profiler::QueryInterface(REFIID riid, void **ppvObject)
 {
-    if (riid == __uuidof(ICorProfilerCallback10) ||
+    if (riid == __uuidof(ICorProfilerCallback11) ||
+        riid == __uuidof(ICorProfilerCallback10) ||
         riid == __uuidof(ICorProfilerCallback9) ||
         riid == __uuidof(ICorProfilerCallback8) ||
         riid == __uuidof(ICorProfilerCallback7) ||
@@ -771,13 +781,13 @@ String Profiler::GetModuleIDName(ModuleID modId)
 void Profiler::SetCallback(ProfilerCallback cb)
 {
     assert(cb != NULL);
-    callback = cb;
-    callbackSet.Signal();
+    s_callback = cb;
+    s_callbackSet.Signal();
 }
 
-void Profiler::NotifyManagedCodeViaCallback()
+void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo11 *pCorProfilerInfo)
 {
-    callbackSet.Wait();
+    s_callbackSet.Wait();
 
     thread callbackThread([&]()
     {
@@ -785,7 +795,7 @@ void Profiler::NotifyManagedCodeViaCallback()
         // some crst order asserts if we call back in to managed code. Spin up
         // a new thread to avoid that.
         pCorProfilerInfo->InitializeCurrentThread();
-        callback();
+        s_callback();
     });
 
     callbackThread.join();
@@ -793,7 +803,7 @@ void Profiler::NotifyManagedCodeViaCallback()
 
 extern "C" EXPORT void STDMETHODCALLTYPE PassCallbackToProfiler(ProfilerCallback callback)
 {
-    Profiler::Instance->SetCallback(callback);
+    Profiler::SetCallback(callback);
 }
 
 #ifndef WIN32

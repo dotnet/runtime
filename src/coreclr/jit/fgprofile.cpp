@@ -73,6 +73,37 @@ bool Compiler::fgHaveSufficientProfileData()
 }
 
 //------------------------------------------------------------------------
+// fgHaveTrustedProfileData: check if profile data source is one
+//   that can be trusted to faithfully represent the current program
+//   behavior.
+//
+// Returns:
+//   true if so
+//
+// Note:
+//   See notes for fgHaveProfileData.
+//
+bool Compiler::fgHaveTrustedProfileData()
+{
+    if (!fgHaveProfileData())
+    {
+        return false;
+    }
+
+    // We allow Text to be trusted so we can use it to stand in
+    // for Dynamic results.
+    //
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Text:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
 // fgApplyProfileScale: scale inlinee counts by appropriate scale factor
 //
 void Compiler::fgApplyProfileScale()
@@ -459,7 +490,7 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
 
     GenTree* arg;
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
@@ -1796,6 +1827,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             default:
+                JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
+                        fgPgoSchema[iSchema].InstrumentationKind, iSchema, fgPgoSchema[iSchema].ILOffset,
+                        fgPgoSchema[iSchema].Count, fgPgoSchema[iSchema].Other);
                 otherRecords++;
                 break;
         }
@@ -2195,6 +2229,14 @@ public:
 //
 void EfficientEdgeCountReconstructor::Prepare()
 {
+#ifdef DEBUG
+    // If we're going to assign random counts we want to make sure
+    // at least one BBJ_RETURN block has nonzero counts.
+    //
+    unsigned nReturns     = 0;
+    unsigned nZeroReturns = 0;
+#endif
+
     // Create per-block info, and set up the key to block map.
     //
     for (BasicBlock* const block : m_comp->Blocks())
@@ -2207,6 +2249,13 @@ void EfficientEdgeCountReconstructor::Prepare()
         //
         m_blocks++;
         m_unknownBlocks++;
+
+#ifdef DEBUG
+        if (block->bbJumpKind == BBJ_RETURN)
+        {
+            nReturns++;
+        }
+#endif
     }
 
     // Create edges for schema entries with edge counts, and set them up in
@@ -2220,17 +2269,6 @@ void EfficientEdgeCountReconstructor::Prepare()
             case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
             case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
             {
-                // Optimization TODO: if profileCount is zero, we can just ignore this edge
-                // and the right things will happen.
-                //
-                uint64_t const profileCount =
-                    schemaEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount
-                        ? *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset)
-                        : *(uint64_t*)(m_comp->fgPgoData + schemaEntry.Offset);
-                BasicBlock::weight_t const weight = (BasicBlock::weight_t)profileCount;
-
-                m_allWeightsZero &= (profileCount == 0);
-
                 // Find the blocks.
                 //
                 BasicBlock* sourceBlock = nullptr;
@@ -2256,6 +2294,68 @@ void EfficientEdgeCountReconstructor::Prepare()
                     Mismatch();
                     continue;
                 }
+
+                // Optimization TODO: if profileCount is zero, we can just ignore this edge
+                // and the right things will happen.
+                //
+                uint64_t profileCount =
+                    schemaEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount
+                        ? *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset)
+                        : *(uint64_t*)(m_comp->fgPgoData + schemaEntry.Offset);
+
+#ifdef DEBUG
+                // Optional stress mode to use a random count. Because edge profile counters have
+                // little redundancy, random count assignments should generally lead to a consistent
+                // set of block counts.
+                //
+                const bool useRandom = (JitConfig.JitRandomEdgeCounts() != 0) && (nReturns > 0);
+
+                if (useRandom)
+                {
+                    // Reuse the random inliner's random state.
+                    // Config setting will serve as the random seed, if no other seed has been supplied already.
+                    //
+                    CLRRandom* const random =
+                        m_comp->impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomEdgeCounts());
+
+                    const bool isReturn = sourceBlock->bbJumpKind == BBJ_RETURN;
+
+                    // We simulate the distribution of counts seen in StdOptimizationData.Mibc.
+                    //
+                    const double rval = random->NextDouble();
+
+                    // Ensure at least one return has nonzero counts.
+                    //
+                    if ((rval <= 0.5) && (!isReturn || (nZeroReturns < (nReturns - 1))))
+                    {
+                        profileCount = 0;
+                        if (isReturn)
+                        {
+                            nZeroReturns++;
+                        }
+                    }
+                    else if (rval <= 0.85)
+                    {
+                        profileCount = random->Next(1, 101);
+                    }
+                    else if (rval <= 0.96)
+                    {
+                        profileCount = random->Next(101, 10001);
+                    }
+                    else if (rval <= 0.995)
+                    {
+                        profileCount = random->Next(10001, 100001);
+                    }
+                    else
+                    {
+                        profileCount = random->Next(100001, 1000001);
+                    }
+                }
+#endif
+
+                BasicBlock::weight_t const weight = (BasicBlock::weight_t)profileCount;
+
+                m_allWeightsZero &= (profileCount == 0);
 
                 Edge* const edge = new (m_allocator) Edge(sourceBlock, targetBlock);
 
@@ -3000,6 +3100,8 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
 void flowList::setEdgeWeights(BasicBlock::weight_t theMinWeight, BasicBlock::weight_t theMaxWeight, BasicBlock* bDst)
 {
     assert(theMinWeight <= theMaxWeight);
+    assert(theMinWeight >= 0.0f);
+    assert(theMaxWeight >= 0.0f);
 
     JITDUMP("Setting edge weights for " FMT_BB " -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n", getBlock()->bbNum,
             bDst->bbNum, theMinWeight, theMaxWeight);

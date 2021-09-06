@@ -312,7 +312,7 @@ CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSch
 
             // Choose an entry at random.
             //
-            unsigned                  randomEntryIndex = random->Next(0, h.countHistogramElements - 1);
+            unsigned                  randomEntryIndex = random->Next(0, h.countHistogramElements);
             LikelyClassHistogramEntry randomEntry      = h.HistogramEntryAt(randomEntryIndex);
 
             if (ICorJitInfo::IsUnknownTypeHandle(randomEntry.m_mt))

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,14 +20,14 @@ public class PInvokeTableGenerator : Task
     public ITaskItem[]? Modules { get; set; }
     [Required]
     public ITaskItem[]? Assemblies { get; set; }
-    [Required]
+
+    [Required, NotNull]
     public string? OutputPath { get; set; }
 
     private static char[] s_charsToReplace = new[] { '.', '-', };
 
     public override bool Execute()
     {
-        Log.LogMessage(MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
         GenPInvokeTable(Modules!.Select(item => item.ItemSpec).ToArray(), Assemblies!.Select(item => item.ItemSpec).ToArray());
         return true;
     }
@@ -49,11 +50,19 @@ public class PInvokeTableGenerator : Task
                 CollectPInvokes(pinvokes, callbacks, type);
         }
 
-        using (var w = File.CreateText(OutputPath!))
+        string tmpFileName = Path.GetTempFileName();
+        using (var w = File.CreateText(tmpFileName))
         {
             EmitPInvokeTable(w, modules, pinvokes);
             EmitNativeToInterp(w, callbacks);
         }
+
+        if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
+            Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{OutputPath}'.");
+        else
+            Log.LogMessage(MessageImportance.Low, $"PInvoke table in {OutputPath} is unchanged.");
+
+        File.Delete(tmpFileName);
     }
 
     private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, Type type)
@@ -92,12 +101,21 @@ public class PInvokeTableGenerator : Task
         foreach (var pinvoke in pinvokes.OrderBy(l => l.EntryPoint))
         {
             if (modules.ContainsKey(pinvoke.Module)) {
-                var decl = GenPInvokeDecl(pinvoke);
-                if (decls.Contains(decl))
-                    continue;
+                try
+                {
+                    var decl = GenPInvokeDecl(pinvoke);
+                    if (decls.Contains(decl))
+                        continue;
 
-                w.WriteLine(decl);
-                decls.Add(decl);
+                    w.WriteLine(decl);
+                    decls.Add(decl);
+                }
+                catch (NotSupportedException)
+                {
+                    // See the FIXME in GenPInvokeDecl
+                    Log.LogWarning($"Cannot handle function pointer arguments/return value in pinvoke method '{pinvoke.Method}' in type '{pinvoke.Method.DeclaringType}'.");
+                    pinvoke.Skip = true;
+                }
             }
         }
 
@@ -107,10 +125,10 @@ public class PInvokeTableGenerator : Task
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
 
             var assemblies_pinvokes = pinvokes.
-                Where(l => l.Module == module).
+                Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct()));
+                Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct().OrderBy(n => n)));
 
             foreach (var pinvoke in assemblies_pinvokes) {
                 w.WriteLine (pinvoke);
@@ -340,6 +358,7 @@ internal class PInvoke
     public string EntryPoint;
     public string Module;
     public MethodInfo Method;
+    public bool Skip;
 }
 
 internal class PInvokeCallback

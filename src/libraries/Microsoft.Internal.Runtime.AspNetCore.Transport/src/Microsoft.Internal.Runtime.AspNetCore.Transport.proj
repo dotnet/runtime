@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsShipping>false</IsShipping>
+    <!-- Reference the outputs to have them available as build outputs. -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <!-- Enable when the package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageDescription>Internal transport package to provide aspnetcore with the assemblies from dotnet/runtime that make up the Microsoft.AspNetCore.App shared framework.</PackageDescription>
+    <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
+    <NoWarn>$(NoWarn);NU5131</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items. Also share System.Net.Quic which isn't part of aspnetcore's shared framework but which is needed by them. -->
+    <ProjectReference Include="@(AspNetCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj');
+                               $(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj" PrivateAssets="all" Pack="true" Private="true" IncludeReferenceAssemblyInPackage="true" />
+    <!-- TODO: Find a better way to include source generators without hardcoding them. -->
+    <AnalyzerReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.csproj" />
+  </ItemGroup>
+</Project>

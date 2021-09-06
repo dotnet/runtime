@@ -3534,7 +3534,17 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		else
 			code_len = amodule->llvm_code_end - code;
 	} else {
-		code_len = (guint8*)methods [pos + 1] - (guint8*)methods [pos];
+		guint8* code_end = (guint8*)methods [pos + 1];
+
+		if (code >= amodule->jit_code_start && code < amodule->jit_code_end && code_end > amodule->jit_code_end) {
+			code_end = amodule->jit_code_end;
+		}
+
+		if (code >= amodule->llvm_code_start && code < amodule->llvm_code_end && code_end > amodule->llvm_code_end) {
+			code_end = amodule->llvm_code_end;
+		}
+
+		code_len = code_end - code;
 	}
 #endif
 

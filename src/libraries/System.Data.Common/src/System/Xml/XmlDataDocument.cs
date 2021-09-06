@@ -16,7 +16,7 @@ namespace System.Xml
     /// Represents an entire document. An XmlDataDocument can contain XML
     /// data or relational data (DataSet).
     /// </summary>
-    [Obsolete("XmlDataDocument class will be removed in a future release.")]
+    [Obsolete("XmlDataDocument has been deprecated and is not supported.")]
     public class XmlDataDocument : XmlDocument
     {
         private const string RequiresUnreferencedCodeMessage = "XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.";

@@ -11,6 +11,8 @@ namespace System.IO.Tests
         [Fact]
         public static void LegacySwitchIsHonored()
         {
+            Assert.True(PlatformDetection.IsNet5CompatFileStreamEnabled);
+
             string filePath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
 
             using (FileStream fileStream = File.Create(filePath))

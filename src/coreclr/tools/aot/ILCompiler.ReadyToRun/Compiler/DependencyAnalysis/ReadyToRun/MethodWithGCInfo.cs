@@ -301,7 +301,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(_debugVarInfos == null);
             // Process the debug info from JIT format to R2R format immediately as it is large
             // and not used in the rest of the process except to emit.
-            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos);
+            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos, _method.Context.Target);
         }
 
         public void InitializeDebugEHClauseInfos(DebugEHClauseInfo[] debugEHClauseInfos)
@@ -325,5 +325,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int Offset => 0;
         public override bool IsShareable => throw new NotImplementedException();
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
+
+        public override string ToString() => _method.ToString();
     }
 }

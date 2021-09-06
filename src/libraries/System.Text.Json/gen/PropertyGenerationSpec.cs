@@ -32,6 +32,8 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string RuntimePropertyName { get; init; }
 
+        public string PropertyNameVarName { get; init; }
+
         /// <summary>
         /// Whether the property has a set method.
         /// </summary>
@@ -87,5 +89,7 @@ namespace System.Text.Json.SourceGeneration
         /// Source code to instantiate design-time specified custom converter.
         /// </summary>
         public string? ConverterInstantiationLogic { get; init; }
+
+        public bool HasFactoryConverter { get; init; }
     }
 }

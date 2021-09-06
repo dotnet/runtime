@@ -7,6 +7,13 @@
     <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
     <NoWarn>$(NoWarn);CS3011;CS3019</NoWarn>
     <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides types for encoding and escaping strings for use in JavaScript, HyperText Markup Language (HTML), and uniform resource locators (URL).
+
+Commonly Used Types:
+System.Text.Encodings.Web.HtmlEncoder
+System.Text.Encodings.Web.UrlEncoder
+System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\TextWriterExtensions.cs" />

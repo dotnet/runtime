@@ -3453,9 +3453,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
                        s390_ldebr (code, ins->dreg, ins->sreg1);
                        break;
 		case OP_FMOVE:
-			if (ins->dreg != ins->sreg1) {
+			if (ins->dreg != ins->sreg1)
 				s390_ldr   (code, ins->dreg, ins->sreg1);
-			}
+			break;
+		case OP_RMOVE:
+			if (ins->dreg != ins->sreg1)
+				s390_ldr   (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I8: 
 			s390_lgdr (code, ins->dreg, ins->sreg1);
@@ -3696,46 +3699,45 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->flags & MONO_INST_INIT)
 					s390_lgr  (code, s390_r0, s390_r1);	
 
-				s390_lgr (code, s390_r0, s390_r1);
-				s390_risbg (code, s390_r2, s390_r1, 0, 0xb3, 0);
-				s390_sgrk (code, s390_r2, STK_BASE, s390_r2);
+				s390_risbg (code, ins->dreg, s390_r1, 0, 0xb3, 0);
+				s390_sgrk (code, ins->dreg, STK_BASE, ins->dreg);
 
-				s390_cgr (code, STK_BASE, s390_r2);			/* L0: */
+				s390_cgr (code, STK_BASE, ins->dreg);			/* L0: */
 				s390_je (code, 9);					/* je L1 */
 				s390_aghi (code, STK_BASE, -4096);
 				s390_mvghi (code, s390_r15, 0, 0);
 				s390_j (code, -9);					/* j L0 */
 
-				s390_risbg (code, s390_r2, s390_r1, 0x34, 0xbf, 0);	/* L1: */
-				s390_ltgr (code, s390_r2, s390_r2);
+				s390_risbg (code, ins->dreg, s390_r1, 0x34, 0xbf, 0);	/* L1: */
+				s390_ltgr (code, ins->dreg, ins->dreg);
 				s390_jz (code, 13);					/* jz L2: */
 
-				s390_sgr (code, STK_BASE, s390_r2);
+				s390_sgr (code, STK_BASE, ins->dreg);
 				s390_risbg (code, s390_r1, s390_r1, 0x34, 0xbf, 0);
 				s390_lay (code, s390_r1, s390_r1, STK_BASE, -8);
 				s390_mvghi (code, s390_r1, 0, 0);
 											/* L2: */
 			} else {
-				s390_lgr (code, s390_r2, s390_r1);
-				s390_nill (code, s390_r2, 0xf000);
+				s390_lgr (code, ins->dreg, s390_r1);
+				s390_nill (code, ins->dreg, 0xf000);
 				s390_lgr (code, s390_r0, STK_BASE);
-				s390_sgr (code, s390_r0, s390_r2);
-				s390_lgr (code, s390_r2, s390_r0);
+				s390_sgr (code, s390_r0, ins->dreg);
+				s390_lgr (code, ins->dreg, s390_r0);
 
-				s390_cgr (code, STK_BASE, s390_r2);			/* L0: */
+				s390_cgr (code, STK_BASE, ins->dreg);			/* L0: */
 				s390_je (code, 11);					/* je L1 */
 				s390_aghi (code, STK_BASE, -4096);
 				s390_lghi (code, s390_r0, 0);
 				s390_stg (code, s390_r0, 0, STK_BASE, 4088);
 				s390_j (code, -11);					/* j L0 */
 				 
-				s390_lghi (code, s390_r2, 4095);			/* L1: */
-				s390_ngr (code, s390_r2, s390_r1);
-				s390_ltgr (code, s390_r2, s390_r2);
+				s390_lghi (code, ins->dreg, 4095);			/* L1: */
+				s390_ngr (code, ins->dreg, s390_r1);
+				s390_ltgr (code, ins->dreg, ins->dreg);
 				s390_jz (code, 7);					/* jz L2 */
 
-				s390_sgr (code, STK_BASE, s390_r2);
-				s390_stg (code, s390_r2, s390_r1, STK_BASE, -8);
+				s390_sgr (code, STK_BASE, ins->dreg);
+				s390_stg (code, ins->dreg, s390_r1, STK_BASE, -8);
 											/* L2: */
 				if (ins->flags & MONO_INST_INIT)
 					s390_lgr  (code, s390_r0, s390_r1);	
@@ -4337,11 +4339,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_RCONV_TO_I4:
 		case OP_RCONV_TO_I:
-			s390_cgebr (code, ins->dreg, 5, ins->sreg1);
+			s390_cfebr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_RCONV_TO_U4:
 			if (mono_hwcap_s390x_has_fpe) {
-				s390_clgebr (code, ins->dreg, 5, ins->sreg1, 0);
+				s390_clfebr (code, ins->dreg, 5, ins->sreg1, 0);
 			} else {
 				code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);
 			}
@@ -5706,7 +5708,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
     			   cfg->rgctx_var->inst_offset);
 	}
 
-#if 1
+#if 0
 char *methodName = getenv("MONO_TRACE_METHOD");
 if (methodName != NULL) {
 printf("ns: %s k: %s m: %s\n",method->klass->name_space,method->klass->name,method->name);fflush(stdout);

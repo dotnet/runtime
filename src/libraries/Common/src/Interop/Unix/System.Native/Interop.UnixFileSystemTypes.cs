@@ -28,6 +28,7 @@ internal static partial class Interop
             befs = 0x42465331,
             bdevfs = 0x62646576,
             bfs = 0x1BADFACE,
+            bpf_fs = 0xCAFE4A11,
             binfmt_misc = 0x42494E4D,
             bootfs = 0xA56D3FF9,
             btrfs = 0x9123683E,
@@ -38,8 +39,11 @@ internal static partial class Interop
             coda = 0x73757245,
             coherent = 0x012FF7B7,
             configfs = 0x62656570,
+            cpuset = 0x01021994, // same as tmpfs
             cramfs = 0x28CD3D45,
+            ctfs = 0x01021994, // same as tmpfs
             debugfs = 0x64626720,
+            dev = 0x1373, // same as devfs
             devfs = 0x1373,
             devpts = 0x1CD1,
             ecryptfs = 0xF15F,
@@ -50,6 +54,7 @@ internal static partial class Interop
             ext2 = 0xEF53,
             ext3 = 0xEF53,
             ext4 = 0xEF53,
+            f2fs = 0xF2F52010,
             fat = 0x4006,
             fd = 0xF00D1E,
             fhgfs = 0x19830326,
@@ -81,6 +86,7 @@ internal static partial class Interop
             minix2 = 0x2468, /* minix V2 */
             minix2v2 = 0x2478, /* MINIX V2, 30 char names */
             minix3 = 0x4D5A,
+            mntfs = 0x01021994, // same as tmpfs
             mqueue = 0x19800202,
             msdos = 0x4D44,
             nfs = 0x6969,
@@ -88,8 +94,9 @@ internal static partial class Interop
             nilfs = 0x3434,
             novell = 0x564C,
             ntfs = 0x5346544E,
-            openprom = 0x9FA1,
+            objfs = 0x01021994, // same as tmpfs
             ocfs2 = 0x7461636F,
+            openprom = 0x9FA1,
             omfs = 0xC2993D87,
             overlay = 0x794C7630,
             overlayfs = 0x794C764F,
@@ -107,6 +114,8 @@ internal static partial class Interop
             samba = 0x517B,
             securityfs = 0x73636673,
             selinux = 0xF97CFF8C,
+            sffs = 0x786F4256, // same as vboxfs
+            sharefs = 0x01021994, // same as tmpfs
             smb = 0x517B,
             smb2 = 0xFE534D42,
             sockfs = 0x534F434B,
@@ -115,6 +124,7 @@ internal static partial class Interop
             sysv2 = 0x012FF7B6,
             sysv4 = 0x012FF7B5,
             tmpfs = 0x01021994,
+            tracefs = 0x74726163,
             ubifs = 0x24051905,
             udf = 0x15013346,
             ufs = 0x00011954,
@@ -122,6 +132,8 @@ internal static partial class Interop
             ufs2 = 0x19540119,
             usbdevice = 0x9FA2,
             v9fs = 0x01021997,
+            vagrant = 0x786F4256, // same as vboxfs
+            vboxfs = 0x786F4256,
             vmhgfs = 0xBACBACBC,
             vxfs = 0xA501FCF5,
             vzfs = 0x565A4653,
@@ -129,6 +141,7 @@ internal static partial class Interop
             xenix = 0x012FF7B4,
             xfs = 0x58465342,
             xia = 0x012FD16D,
+            udev = 0x01021994, // same as tmpfs
             zfs = 0x2FC12FC1,
         }
 
