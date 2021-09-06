@@ -76,14 +76,14 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsPow2(nint value) => (value & (value - 1)) == 0 && value > 0;
+        public static bool IsPow2(nint value) => (value & (value - 1)) == 0 && value > 0;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsPow2(nuint value) => (value & (value - 1)) == 0 && value != 0;
+        public static bool IsPow2(nuint value) => (value & (value - 1)) == 0 && value != 0;
 
         /// <summary>Round the given integral value up to a power of 2.</summary>
         /// <param name="value">The value.</param>
@@ -105,7 +105,7 @@ namespace System.Numerics
 #endif
             }
 
-            // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+            // Based on
             --value;
             value |= value >> 1;
             value |= value >> 2;
@@ -114,7 +114,6 @@ namespace System.Numerics
             value |= value >> 16;
             return value + 1;
         }
-
 
         /// <summary>
         /// Round the given integral value up to a power of 2.
