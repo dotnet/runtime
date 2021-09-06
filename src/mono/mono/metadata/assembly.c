@@ -1973,13 +1973,6 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 	
 	image = NULL;
 
-	/* for LoadFrom(string), LoadFile(string) and Load(byte[]), allow them
-	 * to load problematic images.  Not sure if ReflectionOnlyLoad(string)
-	 * and ReflectionOnlyLoadFrom(string) should also be allowed - let's
-	 * say, yes.
-	 */
-	const gboolean load_from_context = load_req.asmctx == MONO_ASMCTX_LOADFROM || load_req.asmctx == MONO_ASMCTX_INDIVIDUAL;
-
 	// If VM built with mkbundle
 	loaded_from_bundle = FALSE;
 	if (bundles != NULL || satellite_bundles != NULL) {
@@ -1989,7 +1982,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 	}
 
 	if (!image)
-		image = mono_image_open_a_lot (load_req.alc, fname, status, load_from_context);
+		image = mono_image_open_a_lot (load_req.alc, fname, status);
 
 	if (!image){
 		if (*status == MONO_IMAGE_OK)
