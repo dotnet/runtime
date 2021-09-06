@@ -26,6 +26,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
@@ -69,6 +70,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataAndSerializationContext.Default.ObjectArray.Serialize);
             Assert.Null(MetadataAndSerializationContext.Default.SampleEnum.Serialize);
             Assert.Null(MetadataAndSerializationContext.Default.String.Serialize);
+            Assert.NotNull(MetadataAndSerializationContext.Default.ValueTupleStringInt32Boolean.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverter);
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverter);
