@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 abstract class BenchTask
 {
@@ -11,10 +12,13 @@ abstract class BenchTask
     readonly List<Result> results = new();
     public Regex pattern;
 
-    public string RunBatch(List<Result> results, int measurementIdx, int milliseconds = 5000)
+    public async Task<string> RunBatch(List<Result> results, int measurementIdx, int milliseconds = 5000)
     {
-        var result = Measurements[measurementIdx].RunBatch(this, milliseconds);
+        var measurement = Measurements[measurementIdx];
+        await measurement.BeforeBatch();
+        var result = measurement.RunBatch(this, milliseconds);
         results.Add(result);
+        await measurement.AfterBatch();
 
         return result.ToString ();
     }
@@ -30,7 +34,7 @@ abstract class BenchTask
         public string taskName;
         public string measurementName;
 
-        public override string ToString() => $"{taskName}, {measurementName} count: {steps} per call: {span.TotalMilliseconds/steps}ms total: {span.TotalSeconds}s";
+        public override string ToString() => $"{taskName}, {measurementName} count: {steps}, per call: {span.TotalMilliseconds/steps}ms, total: {span.TotalSeconds}s";
     }
 
     public abstract class Measurement {
@@ -38,6 +42,10 @@ abstract class BenchTask
 
         public virtual int InitialSamples { get { return 10; } }
         public virtual int NumberOfRuns { get { return 5; } }
+
+        public virtual Task BeforeBatch() { return Task.CompletedTask; }
+
+        public virtual Task AfterBatch() { return Task.CompletedTask; }
 
         public abstract void RunStep();
 
