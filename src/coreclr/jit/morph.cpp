@@ -11060,7 +11060,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
 //     tree - node to fold
 //
 // Return Value:
-//     A folded GenTree* instance, or the same GenTree* if it couldn't be folded
+//     A folded GenTree* instance, or nullptr if it couldn't be folded
 GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
 {
     assert(varTypeIsIntegralOrI(tree));
@@ -11076,7 +11076,7 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
         // bail if either operand is a checked cast
         if (op1->gtOverflowEx() || op2->gtOverflowEx())
         {
-            return tree;
+            return nullptr;
         }
 
         var_types fromType = op1->AsCast()->CastOp()->TypeGet();
@@ -11085,7 +11085,7 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
 
         if ((op2->CastFromType() != fromType) || (op2->CastToType() != toType) || (op2->IsUnsigned() != isUnsigned))
         {
-            return tree;
+            return nullptr;
         }
 
         // Reuse gentree nodes:
@@ -11113,7 +11113,7 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
         return op1;
     }
 
-    return tree;
+    return nullptr;
 }
 
 /*****************************************************************************
@@ -12802,13 +12802,16 @@ DONE_MORPHING_CHILDREN:
 
             if (fgGlobalMorph && (varTypeIsIntegralOrI(tree->TypeGet())) && (tree->OperIs(GT_AND, GT_OR, GT_XOR)))
             {
-                tree = fgMorphCastedBitwiseOp(tree->AsOp());
-
-                // fgMorphCastedBitwiseOp may return a new tree
-                oper = tree->OperGet();
-                typ  = tree->TypeGet();
-                op1  = tree->AsOp()->gtGetOp1();
-                op2  = tree->AsOp()->gtGetOp2();
+                GenTree* result = fgMorphCastedBitwiseOp(tree->AsOp());
+                if (result != nullptr)
+                {
+                    // tree got folded to a unary (cast) op
+                    tree = result;
+                    oper = tree->OperGet();
+                    typ  = tree->TypeGet();
+                    op1  = tree->AsOp()->gtGetOp1();
+                    op2  = nullptr;
+                }
             }
 
             if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
