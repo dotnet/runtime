@@ -12800,11 +12800,13 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->AsOp()->gtOp2;
             }
 
-            if (fgGlobalMorph && (varTypeIsIntegralOrI(tree->TypeGet())) && (tree->OperIs(GT_AND, GT_OR, GT_XOR)))
+            if (fgGlobalMorph && (varTypeIsIntegralOrI(tree)) && (tree->OperIs(GT_AND, GT_OR, GT_XOR)))
             {
                 GenTree* result = fgMorphCastedBitwiseOp(tree->AsOp());
                 if (result != nullptr)
                 {
+                    assert(result->OperIs(GT_CAST));
+                    assert(result->gtOp2 == nullptr);
                     // tree got folded to a unary (cast) op
                     tree = result;
                     oper = tree->OperGet();
