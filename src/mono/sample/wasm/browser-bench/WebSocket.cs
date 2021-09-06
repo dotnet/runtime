@@ -55,45 +55,68 @@ namespace Sample
 
         public abstract class WebSocketReceiveMeasurement : WebSocketMeasurement
         {
+            protected const int Max_length = 130_000;
             public override async Task BeforeBatch()
             {
                 await base.BeforeBatch();
-                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[64_000]);
+                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[Max_length]);
+
+                for (int i = 0; i < 30000; i++)
+                {
+                    buffer[i] = (byte)(i & 0xff);
+                }
+                buffer[60_000] = 255;
+
                 await client.SendAsync(buffer, WebSocketMessageType.Binary, true, CancellationToken.None);
 
                 // make sure that message arrived to receive buffer
-                await Task.Delay(1000);
+                await Task.Delay(3000);
             }
         }
 
         public class ShortPartialSendMeasurement : WebSocketMeasurement
         {
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            {
+                return 250_000;
+            }
+            public override int InitialSamples => 1000;
             public override string Name => "ShortPartialSend";
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[2]);
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1]);
+            int step = 0;
 
             public override void RunStep()
             {
-                for (int i = 0; i < 30000; i++)
-                {
-                    buffer[0] = (byte)(i & 0xff);
-                    client.SendAsync(buffer, WebSocketMessageType.Binary, false, CancellationToken.None);
-                }
+                buffer[0] = (byte)(step & 0xff);
+                client.SendAsync(buffer, WebSocketMessageType.Binary, false, CancellationToken.None);
+                step++;
             }
         }
 
         public class LongPartialSendMeasurement : WebSocketMeasurement
         {
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            {
+                return 5000;
+            }
+            public override int InitialSamples => 1000;
             public override string Name => "LongPartialSend";
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[64_000]);
-
-            public override void RunStep()
+            int step = 0;
+            public LongPartialSendMeasurement()
             {
                 for (int i = 0; i < 30000; i++)
                 {
-                    buffer[0] = (byte)(i & 0xff);
+                    buffer[i] = (byte)(i & 0xff);
                 }
                 buffer[60_000] = 255;
+            }
+
+            public override void RunStep()
+            {
+                buffer[0] = (byte)(step & 0xff);
                 client.SendAsync(buffer, WebSocketMessageType.Binary, false, CancellationToken.None);
+                step++;
             }
         }
 
@@ -118,21 +141,28 @@ namespace Sample
 
         public class LongPartialReceiveMeasurement : WebSocketReceiveMeasurement
         {
+            public override int InitialSamples => 1;
             public override string Name => "LongPartialReceive";
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[30_0000]);
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[10_000]);
+            int step = 0;
+
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            {
+                return (Max_length / 10_000) - InitialSamples - 1;
+            }
 
             public override void RunStep()
             {
                 var task = client.ReceiveAsync(buffer, CancellationToken.None);
 #if DEBUG
-                if (!task.IsCompleted) throw new InvalidOperationException("Expected Completed");
-                if (task.Result.Count != 30_0000) throw new InvalidOperationException("Expected full buffer");
-
-                for (int i = 0; i < 30000; i++)
-                {
-                    if (buffer[0] != (byte)(i & 0xff)) throw new InvalidOperationException("Expected data");
-                }
+                if (!task.IsCompleted) throw new InvalidOperationException("LongPartialReceive: Expected Completed " + step);
+                if (task.Result.Count != buffer.Count) throw new InvalidOperationException("LongPartialReceive: Expected full buffer" + step);
+                if (step == 0) for (int i = 0; i < 10_000; i++)
+                    {
+                        if (buffer[i] != (byte)(i & 0xff)) throw new InvalidOperationException("LongPartialReceive: Expected data at " + i + " " + step);
+                    }
 #endif
+                step++;
             }
         }
 

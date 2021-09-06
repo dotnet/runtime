@@ -49,6 +49,11 @@ abstract class BenchTask
 
         public abstract void RunStep();
 
+        protected virtual int CalculateSteps(int milliseconds, TimeSpan initTs)
+        {
+            return (int)(milliseconds * InitialSamples / Math.Max(1.0, initTs.TotalMilliseconds));
+        }
+
         public Result RunBatch(BenchTask task, int milliseconds)
         {
             DateTime start;
@@ -64,7 +69,7 @@ abstract class BenchTask
             end = DateTime.Now;
 
             var initTs = end - start;
-            int steps = (int)(milliseconds * InitialSamples / Math.Max(1.0, initTs.TotalMilliseconds));
+            int steps = CalculateSteps(milliseconds, initTs);
 
             start = DateTime.Now;
             for (int i = 0; i < steps; i++)
