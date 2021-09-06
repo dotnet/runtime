@@ -64,7 +64,7 @@ namespace System.Tests
                 using var process = Process.Start(new ProcessStartInfo
                     {
                         FileName = "/bin/sh", // Use a shell because not all platforms include a 'kill' executable.
-                        ArgumentList = { "-c", $"kill -s {sigArg} {Environment.ProcessId.ToString(CultureInfo.InvariantCulture)}" }
+                        ArgumentList = { "-c", $"kill -s {sigArg} {Environment.ProcessId.ToString()}" }
                     });
                 process.WaitForExit();
                 Assert.Equal(0, process.ExitCode);
