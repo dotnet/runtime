@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -57,7 +58,15 @@ namespace System.Tests
                     semaphore.Release();
                 });
 
-                kill(signal);
+                // Use 'kill' executable with signal name to validate the signal pal mapping.
+                using var process = Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "kill",
+                        ArgumentList = { "-s", signalStr, Environment.ProcessId.ToString() }
+                    });
+                process.WaitForExit();
+                Assert.Equal(0, process.ExitCode);
+
                 bool entered = semaphore.Wait(SuccessTimeout);
                 Assert.True(entered);
             }, s.ToString()).Dispose();
