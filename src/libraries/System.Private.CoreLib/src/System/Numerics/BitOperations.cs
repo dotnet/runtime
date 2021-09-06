@@ -240,6 +240,23 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Count the number of leading zero bits in a mask.
+        /// Similar in behavior to the x86 instruction LZCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int LeadingZeroCount(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return LeadingZeroCount((ulong)value);
+            }
+
+            return LeadingZeroCount((uint)value);
+        }
+
+        /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.
         /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
         /// </summary>
