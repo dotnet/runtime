@@ -375,9 +375,9 @@ void CodeGen::genCodeForBBlist()
         siBeginBlock(block);
 
         // BBF_INTERNAL blocks don't correspond to any single IL instruction.
-        if (compiler->opts.compDbgInfo && (block->bbFlags & BBF_INTERNAL) &&
-            !compiler->fgBBisScratch(block) && !block->isBBCallAlwaysPairTail()) // If the block is the distinguished first scratch block, then no need to
-                                             // emit a NO_MAPPING entry, immediately after the prolog.
+        if (compiler->opts.compDbgInfo && (block->bbFlags & BBF_INTERNAL) && !compiler->fgBBisScratch(block) &&
+            !block->isBBCallAlwaysPairTail()) // If the block is the distinguished first scratch block, then no need to
+                                              // emit a NO_MAPPING entry, immediately after the prolog.
         {
             genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::NO_MAPPING, true);
         }

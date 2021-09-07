@@ -10174,8 +10174,8 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
             continue;
         }
 
-        auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start, UNATIVE_OFFSET end)
-        {
+        auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start,
+                                                                   UNATIVE_OFFSET end) {
             if (varDsc->lvIsParam && (start == end))
             {
                 // If the length is zero, it means that the prolog is empty. In that case,
@@ -10189,9 +10189,9 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
             liveRangeIndex++;
         };
 
-        siVarLoc* curLoc = nullptr;
+        siVarLoc*      curLoc   = nullptr;
         UNATIVE_OFFSET curStart = 0;
-        UNATIVE_OFFSET curEnd = 0;
+        UNATIVE_OFFSET curEnd   = 0;
 
         for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
         {
@@ -10225,9 +10225,9 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
                 }
 
                 // Start a new range.
-                curLoc = &liveRange.m_VarLocation;
+                curLoc   = &liveRange.m_VarLocation;
                 curStart = startOffs;
-                curEnd = endOffs;
+                curEnd   = endOffs;
             }
         }
 
