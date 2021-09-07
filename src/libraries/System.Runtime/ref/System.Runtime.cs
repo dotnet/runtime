@@ -3287,21 +3287,21 @@ namespace System
         static System.Half IFloatingPoint<System.Half>.Truncate(System.Half x) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IFloatingPoint<Half>.IsFinite(Half x) { throw null; }
+        static bool IFloatingPoint<System.Half>.IsFinite(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IFloatingPoint<Half>.IsInfinity(Half x) { throw null; }
+        static bool IFloatingPoint<System.Half>.IsInfinity(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IFloatingPoint<Half>.IsNaN(Half x) { throw null; }
+        static bool IFloatingPoint<System.Half>.IsNaN(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IFloatingPoint<Half>.IsNegative(Half x) { throw null; }
+        static bool IFloatingPoint<System.Half>.IsNegative(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IFloatingPoint<Half>.IsNegativeInfinity(Half x) { throw null; }
+        static bool IFloatingPoint<System.Half>.IsNegativeInfinity(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IFloatingPoint<Half>.IsNormal(Half x) { throw null; }
+        static bool IFloatingPoint<System.Half>.IsNormal(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IFloatingPoint<Half>.IsPositiveInfinity(Half x) { throw null; }
+        static bool IFloatingPoint<System.Half>.IsPositiveInfinity(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static bool IFloatingPoint<Half>.IsSubnormal(Half x) { throw null; }
+        static bool IFloatingPoint<System.Half>.IsSubnormal(System.Half x) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IIncrementOperators<System.Half>.operator ++(System.Half value) { throw null; }
