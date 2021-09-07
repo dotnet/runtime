@@ -5187,7 +5187,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
                                           // MemoryStore semantics, false otherwise
 
-    unsigned GetOverwrittenOpNumForFMA(GenTree* op1, GenTree* op2, GenTree* op3);
+    unsigned GetOverwrittenOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
 #if DEBUGGABLE_GENTREE
     GenTreeHWIntrinsic() : GenTreeJitIntrinsic()

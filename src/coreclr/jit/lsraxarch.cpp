@@ -2334,7 +2334,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
-                unsigned overwrittenOpNum = intrinsicTree->GetOverwrittenOpNumForFMA(op1, op2, op3);
+                unsigned overwrittenOpNum = 0;
+                LIR::Use use;
+                if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
+                {
+                    overwrittenOpNum = intrinsicTree->GetOverwrittenOpNumForFMA(use.User(), op1, op2, op3);
+                }
 
                 // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
                 assert(!copiesUpperBits || !op1->isContained());
@@ -2361,7 +2366,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 else
                 {
-                    // 213 form: op1 = (op2 * op1) + [op3]
+                    // op2 = op1 * op2 + op3
+                    // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
                     assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
 
                     tgtPrefUse = BuildUse(op1);

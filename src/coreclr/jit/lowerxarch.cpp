@@ -6314,8 +6314,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     if ((intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar))
                     {
                         bool supportsRegOptional = false;
+                        unsigned overwrittenOpNum    = 0;
+                        LIR::Use use;
 
-                        unsigned overwrittenOpNum = node->GetOverwrittenOpNumForFMA(op1, op2, op3);
+                        if (BlockRange().TryGetUse(node, &use))
+                        {
+                            overwrittenOpNum = node->GetOverwrittenOpNumForFMA(use.User(), op1, op2, op3);
+                        }
+
 
                         switch (overwrittenOpNum)
                         {

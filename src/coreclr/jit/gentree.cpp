@@ -19798,22 +19798,24 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
 // Return Value:
 //     The operand number or 0 if not overwritten.
 //
-unsigned GenTreeHWIntrinsic::GetOverwrittenOpNumForFMA(GenTree* op1, GenTree* op2, GenTree* op3)
+unsigned GenTreeHWIntrinsic::GetOverwrittenOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
     // only FMA intrinsic node should call into this function
     assert(HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) == InstructionSet_FMA);
-    GenTreeLclVarCommon* overwritten = gtNext->AsLclVarCommon();
-    assert(overwritten->OperIs(GT_STORE_LCL_VAR, GT_LCL_VAR));
+    if (!use->OperIs(GT_STORE_LCL_VAR))
+        return 0;
+    GenTreeLclVarCommon* overwritten = use->AsLclVarCommon();
+    unsigned overwrittenLclNum = overwritten->GetLclNum();
     unsigned overwrittenOpNum = 0; // 1->op1, 2->op2, 3->op3
-    if (op1->IsLocal() && op1->AsLclVarCommon()->GetLclNum() == overwritten->GetLclNum())
+    if (op1->IsLocal() && op1->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
     {
         overwrittenOpNum = 1;
     }
-    else if (op2->IsLocal() && op2->AsLclVarCommon()->GetLclNum() == overwritten->GetLclNum())
+    else if (op2->IsLocal() && op2->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
     {
         overwrittenOpNum = 2;
     }
-    else if (op3->IsLocal() && op3->AsLclVarCommon()->GetLclNum() == overwritten->GetLclNum())
+    else if (op3->IsLocal() && op3->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
     {
         overwrittenOpNum = 3;
     }
