@@ -32,6 +32,9 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
+            private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
+            private const string JsonSerializerAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
+            private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
             private readonly Compilation _compilation;
             private readonly SourceProductionContext _sourceProductionContext;
@@ -145,9 +148,9 @@ namespace System.Text.Json.SourceGeneration
             public SourceGenerationSpec? GetGenerationSpec(ImmutableArray<ClassDeclarationSyntax> classDeclarationSyntaxList)
             {
                 Compilation compilation = _compilation;
-                INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerContext");
-                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
-                INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute");
+                INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
+                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerAttributeFullName);
+                INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSourceGenerationOptionsAttributeFullName);
 
                 if (jsonSerializerContextSymbol == null || jsonSerializableAttributeSymbol == null || jsonSourceGenerationOptionsAttributeSymbol == null)
                 {
