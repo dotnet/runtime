@@ -5016,7 +5016,17 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     else
     {
         genConsumeAddress(addr);
-        emit->emitInsLoadInd(ins_Load(targetType), emitTypeSize(tree), tree->GetRegNum(), tree);
+        instruction loadIns = ins_Load(targetType);
+        if (tree->DontExtend())
+        {
+            assert(varTypeIsSmall(tree));
+            // The user of this IND does not need
+            // the upper bits to be set, so we don't need to use longer
+            // INS_movzx/INS_movsx and can use INS_mov instead.
+            // It usually happens when the real type is a small struct.
+            loadIns = INS_mov;
+        }
+        emit->emitInsLoadInd(loadIns, emitTypeSize(tree), tree->GetRegNum(), tree);
     }
 
     genProduceReg(tree);
