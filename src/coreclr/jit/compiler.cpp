@@ -2015,10 +2015,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     }
 #endif // DEBUG
 
-    vnStore               = nullptr;
-    m_opAsgnVarDefSsaNums = nullptr;
-    fgSsaPassesCompleted  = 0;
-    fgVNPassesCompleted   = 0;
+    vnStore                    = nullptr;
+    m_opAsgnVarDefSsaNums      = nullptr;
+    m_nodeToLoopMemoryBlockMap = nullptr;
+    fgSsaPassesCompleted       = 0;
+    fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
 
@@ -5387,6 +5388,7 @@ void Compiler::RecomputeLoopInfo()
     for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_LOOP_FLAGS;
+        block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
     }
     fgComputeReachability();
     // Rebuild the loop tree annotations themselves

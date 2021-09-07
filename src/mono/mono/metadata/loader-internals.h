@@ -269,6 +269,19 @@ mono_alc_get_ambient (void)
 	return mono_alc_get_default ();
 }
 
+static inline MonoGCHandle
+mono_alc_get_gchandle_for_resolving (MonoAssemblyLoadContext *alc)
+{
+	/* for the default ALC, pass NULL to ask for the Default ALC - see
+	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
+	 * will create the managed ALC object if it hasn't been created yet
+	 */
+	if (alc->gchandle == mono_alc_get_default ()->gchandle)
+		return NULL;
+	else
+		return GUINT_TO_POINTER (alc->gchandle);
+}
+
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
 

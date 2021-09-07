@@ -100,7 +100,7 @@ For example:
 
 This will create a new RID for `myLinuxDistro` where `myLinuxDistro` should be the string used for the `ID=` value in the `/etc/os-release` file.
 
-Whenever modifying the `runtimeGroups.props` you should rebuild the project with `/p:UpdateRuntimeFiles=true` so that your changes will be regenerated in the checked-in `runtime.json`.
+Whenever modifying the `runtimeGroups.props` make sure to pack the project via the `dotnet pack` command and inspect if the generated package contains the desired changes.
 
 RuntimeGroup items have the following format:
 - `Identity`: the base string for the RID, without version architecture, or qualifiers.

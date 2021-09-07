@@ -45,7 +45,11 @@ namespace ILCompiler
             {
                 // Parse MIbc Data
 
-                string onlyParseItemsDefinedInAssembly = nonLocalGenericsHome == null ? inputModules.First().Assembly.GetName().Name : null;
+                string onlyParseItemsDefinedInAssembly = null;
+                if (nonLocalGenericsHome == null && !compilationGroup.IsCompositeBuildMode)
+                {
+                    onlyParseItemsDefinedInAssembly = inputModules.First().Assembly.GetName().Name;
+                }
                 HashSet<string> versionBubbleModuleStrings = new HashSet<string>();
                 foreach (ModuleDesc versionBubbleModule in versionBubble)
                 {

@@ -84,60 +84,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
-        {
-            if (!SupportsMultiConnect)
-                return;
-
-            int port;
-            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
-            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.True(client.DualMode);
-
-                Task connectTask = MultiConnectAsync(client, new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, port);
-                await connectTask;
-
-                var localEndPoint = client.LocalEndPoint as IPEndPoint;
-                Assert.NotNull(localEndPoint);
-                Assert.Equal(IPAddress.Loopback.MapToIPv6(), localEndPoint.Address);
-
-                var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
-                Assert.NotNull(remoteEndPoint);
-                Assert.Equal(IPAddress.Loopback.MapToIPv6(), remoteEndPoint.Address);
-            }
-        }
-
-        [Fact]
-        public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
-        {
-            var localhostAddresses = Dns.GetHostAddresses("localhost");
-            if (Array.IndexOf(localhostAddresses, IPAddress.Loopback) == -1 ||
-                Array.IndexOf(localhostAddresses, IPAddress.IPv6Loopback) == -1)
-            {
-                return;
-            }
-
-            int port;
-            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
-            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.True(client.DualMode);
-
-                Task connectTask = ConnectAsync(client, new DnsEndPoint("localhost", port));
-                await connectTask;
-
-                var localEndPoint = client.LocalEndPoint as IPEndPoint;
-                Assert.NotNull(localEndPoint);
-                Assert.True(localEndPoint.Address.Equals(IPAddress.IPv6Loopback) || localEndPoint.Address.Equals(IPAddress.Loopback.MapToIPv6()));
-
-                var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
-                Assert.NotNull(remoteEndPoint);
-                Assert.Equal(IPAddress.Loopback.MapToIPv6(), remoteEndPoint.Address);
-            }
-        }
-
-        [Fact]
         public async Task Connect_OnConnectedSocket_Fails()
         {
             int port;
@@ -394,5 +340,109 @@ namespace System.Net.Sockets.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t);
             }
         }
+
+        [Fact]
+        public async Task FailedConnect_ConnectedReturnsFalse()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            // Connect to port 1 where we expect no server to be listening.
+            SocketException se = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(socket, new IPEndPoint(IPAddress.Loopback, 1)));
+
+            if (se.SocketErrorCode != SocketError.ConnectionRefused)
+            {
+                Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
+
+                // Give the non-blocking connect some time to complete.
+                socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
+            }
+
+            Assert.False(socket.Connected);
+        }
+    }
+
+    // The test class is declared non-parallel because of possible IPv4/IPv6 port-collision on Unix:
+    // When running these tests in parallel with other tests, there is some chance that the DualMode client
+    // will connect to an IPv4 server of a parallel test case.
+    [Collection(nameof(NoParallelTests))]
+    public abstract class Connect_NonParallel<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    {
+        protected Connect_NonParallel(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        [Fact]
+        public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
+        {
+            if (!SupportsMultiConnect)
+                return;
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.True(client.DualMode);
+
+                await MultiConnectAsync(client, new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, port);
+
+                CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
+                CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
+            }
+        }
+
+        [Fact]
+        public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
+        {
+            var localhostAddresses = Dns.GetHostAddresses("localhost");
+            if (Array.IndexOf(localhostAddresses, IPAddress.Loopback) == -1 ||
+                Array.IndexOf(localhostAddresses, IPAddress.IPv6Loopback) == -1)
+            {
+                return;
+            }
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.True(client.DualMode);
+
+                await ConnectAsync(client, new DnsEndPoint("localhost", port));
+
+                CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
+                CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
+            }
+        }
+
+        private static void CheckIsIpv6LoopbackEndPoint(EndPoint endPoint)
+        {
+            IPEndPoint ep = endPoint as IPEndPoint;
+            Assert.NotNull(ep);
+            Assert.True(ep.Address.Equals(IPAddress.IPv6Loopback) || ep.Address.Equals(IPAddress.Loopback.MapToIPv6()));
+        }
+    }
+
+    public sealed class ConnectSync_NonParallel : Connect_NonParallel<SocketHelperArraySync>
+    {
+        public ConnectSync_NonParallel(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ConnectSyncForceNonBlocking_NonParallel : Connect_NonParallel<SocketHelperSyncForceNonBlocking>
+    {
+        public ConnectSyncForceNonBlocking_NonParallel(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ConnectApm_NonParallel : Connect_NonParallel<SocketHelperApm>
+    {
+        public ConnectApm_NonParallel(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ConnectTask_NonParallel : Connect_NonParallel<SocketHelperTask>
+    {
+        public ConnectTask_NonParallel(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ConnectEap_NonParallel : Connect_NonParallel<SocketHelperEap>
+    {
+        public ConnectEap_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 }

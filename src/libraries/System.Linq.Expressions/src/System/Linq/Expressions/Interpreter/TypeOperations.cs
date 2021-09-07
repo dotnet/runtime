@@ -151,18 +151,19 @@ namespace System.Linq.Expressions.Interpreter
             public GetValueOrDefault(MethodInfo mi)
             {
                 Debug.Assert(mi.ReturnType.IsValueType, "Nullable is only allowed on value types.");
+                Debug.Assert(!mi.ReturnType.IsNullableType());
 
                 _defaultValueType = mi.ReturnType;
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-                Justification = "_defaultValueType is a ValueType. You can always create an instance of a ValueType.")]
+                Justification = "_defaultValueType is a ValueType. You can always get an uninitialized ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 if (frame.Peek() == null)
                 {
                     frame.Pop();
-                    frame.Push(Activator.CreateInstance(_defaultValueType));
+                    frame.Push(RuntimeHelpers.GetUninitializedObject(_defaultValueType));
                 }
                 return 1;
             }

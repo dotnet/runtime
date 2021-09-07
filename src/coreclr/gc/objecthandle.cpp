@@ -1254,7 +1254,7 @@ bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext)
 
 // Perform a scan of dependent handles for the purpose of clearing any that haven't had their primary
 // promoted.
-void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
+void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 {
     LOG((LF_GC, LL_INFO10000, "Clearing dead dependent handles in generation %u\n", condemned));
     uint32_t type = HNDTYPE_DEPENDENT;
@@ -1271,7 +1271,7 @@ void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, Sc
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
                 if (hTable)
                 {
-                    HndScanHandlesForGC(hTable, ClearDependentHandle, uintptr_t(sc), uintptr_t(fn), &type, 1, condemned, maxgen, flags );
+                    HndScanHandlesForGC(hTable, ClearDependentHandle, uintptr_t(sc), 0, &type, 1, condemned, maxgen, flags );
                 }
             }
         }
@@ -1379,9 +1379,9 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
     uint32_t types[] =
     {
         HNDTYPE_WEAK_SHORT
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         , HNDTYPE_WEAK_NATIVE_COM
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
     };
     uint32_t flags = (((ScanContext*) lp1)->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 

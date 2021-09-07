@@ -160,6 +160,17 @@ namespace System.Diagnostics
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
+    // These suppressions can go away with https://github.com/mono/linker/issues/2175
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
+        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                        "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
+                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115:ReflectionToDynamicallyAccessedMembers",
+        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                        "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
+                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
         public static DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
@@ -1013,6 +1024,9 @@ namespace System.Diagnostics
                 }
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             public List<KeyValuePair<string, string?>> Morph(object? args)
             {
@@ -1094,6 +1108,9 @@ namespace System.Diagnostics
 
             // Given a type generate all the implicit transforms for type (that is for every field
             // generate the spec that fetches it).
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             private static TransformSpec? MakeImplicitTransforms(Type type)
             {
@@ -1189,6 +1206,9 @@ namespace System.Diagnostics
             /// if the spec is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3 and the ultimate value of PROP3 is
             /// 10 then the return key value pair is  KeyValuePair("OUTSTR","10")
             /// </summary>
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             public KeyValuePair<string, string?> Morph(object? obj)
             {
@@ -1240,6 +1260,9 @@ namespace System.Diagnostics
                 /// Given an object fetch the property that this PropertySpec represents.
                 /// obj may be null when IsStatic is true, otherwise it must be non-null.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                    Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
                 public object? Fetch(object? obj)
                 {
@@ -1283,6 +1306,9 @@ namespace System.Diagnostics
                     /// <summary>
                     /// Create a property fetcher for a propertyName
                     /// </summary>
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                        "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
@@ -1319,7 +1345,19 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            PropertyInfo? propertyInfo = typeInfo.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                            PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
+                            if (propertyInfo == null)
+                            {
+                                foreach (PropertyInfo pi in typeInfo.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+                                {
+                                    if (pi.Name == propertyName)
+                                    {
+                                        propertyInfo = pi;
+                                        break;
+                                    }
+                                }
+                            }
+
                             if (propertyInfo == null)
                             {
                                 Log.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");

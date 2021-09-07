@@ -344,6 +344,19 @@ namespace System.Linq.Expressions.Tests
         }
     }
 
+    public struct ValueTypeWithParameterlessConstructor
+    {
+        public readonly bool ConstructorWasRun;
+        public ValueTypeWithParameterlessConstructor() { ConstructorWasRun = true; }
+    }
+
+    public struct ValueTypeWithParameterlessConstructorThatThrows
+    {
+        public readonly object Value;
+        public ValueTypeWithParameterlessConstructorThatThrows() { throw new InvalidOperationException(); }
+        public ValueTypeWithParameterlessConstructorThatThrows(object value) { Value = value; }
+    }
+
     public enum ByteEnum : byte { A = byte.MaxValue }
     public enum SByteEnum : sbyte { A = sbyte.MaxValue }
     public enum Int16Enum : short { A = short.MaxValue }

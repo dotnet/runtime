@@ -19,7 +19,6 @@ namespace System.Collections.ObjectModel.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SerializeDeserialize_Roundtrips_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50933", TestPlatforms.Android)]
         public void SerializeDeserialize_Roundtrips(ObservableCollection<int> c)
         {
             ObservableCollection<int> clone = BinaryFormatterHelpers.Clone(c);
@@ -28,6 +27,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void OnDeserialized_MonitorNotInitialized_ExpectSuccess()
         {
             var observableCollection = new ObservableCollection<int>();

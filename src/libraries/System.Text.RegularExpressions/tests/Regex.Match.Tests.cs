@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -129,6 +128,12 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
             yield return new object[] { @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
             yield return new object[] { @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
+            yield return new object[] { @"^(\d{2,3}){2}$", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"(\d{2,3}){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"((\d{2,3})){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "123" };
+            yield return new object[] { @"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "123" };
+            yield return new object[] { @"(abc\d{2,3}){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc456" };
             foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
             {
                 yield return new object[] { @".*", "abc", lineOption, 1, 2, true, "bc" };
@@ -385,7 +390,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
             }
 
-            // .* Perf Optimization: Case sensitive
+            // .* : Case sensitive
             foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
             {
                 yield return new object[] { @".*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
@@ -403,7 +408,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", options, 0, 20, false, "" };
             }
 
-            // .* Perf Optimization: Case insensitive
+            // .* : Case insensitive
             foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase, RegexOptions.IgnoreCase | RegexOptions.Compiled })
             {
                 yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };
@@ -413,7 +418,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { @".*\dfoo", "1fooThis1FOO should 1foo match", options, 4, 9, true, "This1FOO" };
             }
 
-            // .* Perf Optimization: RTL, Case-sensitive
+            // .* : RTL, Case-sensitive
             foreach (RegexOptions options in new[] { RegexOptions.None | RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
             {
                 yield return new object[] { @".*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
@@ -431,7 +436,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", options, 0, 20, false, "" };
             }
 
-            // .* Perf Optimization: RTL, case insensitive
+            // .* : RTL, case insensitive
             foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase | RegexOptions.RightToLeft, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft })
             {
                 yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };
@@ -550,12 +555,12 @@ namespace System.Text.RegularExpressions.Tests
         private static void VerifyMatch(Match match, bool expectedSuccess, string expectedValue)
         {
             Assert.Equal(expectedSuccess, match.Success);
-            Assert.Equal(expectedValue, match.Value);
+            RegexAssert.Equal(expectedValue, match);
 
             // Groups can never be empty
             Assert.True(match.Groups.Count >= 1);
             Assert.Equal(expectedSuccess, match.Groups[0].Success);
-            Assert.Equal(expectedValue, match.Groups[0].Value);
+            RegexAssert.Equal(expectedValue, match.Groups[0]);
         }
 
         [Theory]
@@ -577,7 +582,7 @@ namespace System.Text.RegularExpressions.Tests
             Match m = r.Match(input);
 
             Assert.True(m.Success);
-            Assert.Equal(input, m.Value);
+            RegexAssert.Equal(input, m);
             Assert.Equal(count + 1, m.Groups.Count);
         }
 
@@ -587,7 +592,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex regex = new Regex(@"\p{Lu}", RegexOptions.IgnoreCase, TimeSpan.FromHours(1));
             Match match = regex.Match("abc");
             Assert.True(match.Success);
-            Assert.Equal("a", match.Value);
+            RegexAssert.Equal("a", match);
         }
 
         [Theory]
@@ -1058,12 +1063,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             Assert.Equal(expectedSuccess, match.Success);
 
-            Assert.Equal(expected[0].Value, match.Value);
+            RegexAssert.Equal(expected[0].Value, match);
             Assert.Equal(expected[0].Index, match.Index);
             Assert.Equal(expected[0].Length, match.Length);
 
             Assert.Equal(1, match.Captures.Count);
-            Assert.Equal(expected[0].Value, match.Captures[0].Value);
+            RegexAssert.Equal(expected[0].Value, match.Captures[0]);
             Assert.Equal(expected[0].Index, match.Captures[0].Index);
             Assert.Equal(expected[0].Length, match.Captures[0].Length);
 
@@ -1072,14 +1077,14 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Assert.Equal(expectedSuccess, match.Groups[i].Success);
 
-                Assert.Equal(expected[i].Value, match.Groups[i].Value);
+                RegexAssert.Equal(expected[i].Value, match.Groups[i]);
                 Assert.Equal(expected[i].Index, match.Groups[i].Index);
                 Assert.Equal(expected[i].Length, match.Groups[i].Length);
 
                 Assert.Equal(expected[i].Captures.Length, match.Groups[i].Captures.Count);
                 for (int j = 0; j < match.Groups[i].Captures.Count; j++)
                 {
-                    Assert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j].Value);
+                    RegexAssert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j]);
                     Assert.Equal(expected[i].Captures[j].Index, match.Groups[i].Captures[j].Index);
                     Assert.Equal(expected[i].Captures[j].Length, match.Groups[i].Captures[j].Length);
                 }
@@ -1214,10 +1219,10 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // take too long due to backtracking
         [Theory]
-        [InlineData(@"(\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
-        [InlineData(@"(a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
-        [InlineData(@"(x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
-        public void IsMatch_SucceedQuicklyDueToAutoAtomicity(string regex, string input, bool expected)
+        [InlineData(@"(?:\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(?:a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(?:x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
+        public void IsMatch_SucceedQuicklyDueToLoopReduction(string regex, string input, bool expected)
         {
             Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.None));
             Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.Compiled));
@@ -1228,12 +1233,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             var m = new Regex("abc").Match("abc");
             Assert.True(m.Success);
-            Assert.Equal("abc", m.Value);
+            RegexAssert.Equal("abc", m);
 
             var m2 = System.Text.RegularExpressions.Match.Synchronized(m);
             Assert.Same(m, m2);
             Assert.True(m2.Success);
-            Assert.Equal("abc", m2.Value);
+            RegexAssert.Equal("abc", m2);
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
         }

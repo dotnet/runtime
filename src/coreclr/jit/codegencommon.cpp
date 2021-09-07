@@ -1799,7 +1799,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     {
         // Ngen case - GS cookie constant needs to be accessed through an indirection.
         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr,
-                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_GSCookieCheck) DEBUGARG(0));
+                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_GSCookieCheck) DEBUGARG(GTF_EMPTY));
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0);
     }
     // Load this method's GS value from the stack frame
@@ -7562,8 +7562,6 @@ void CodeGen::genFnProlog()
      * Take care of register arguments first
      */
 
-    RegState* regState;
-
     // Update the arg initial register locations.
     compiler->lvaUpdateArgsWithInitialReg();
 
@@ -7572,8 +7570,7 @@ void CodeGen::genFnProlog()
     //
     if (!compiler->opts.IsOSR())
     {
-        FOREACH_REGISTER_FILE(regState)
-        {
+        auto assignIncomingRegisterArgs = [this, initReg, &initRegZeroed](RegState* regState) {
             if (regState->rsCalleeRegArgMaskLiveIn)
             {
                 // If we need an extra register to shuffle around the incoming registers
@@ -7600,7 +7597,14 @@ void CodeGen::genFnProlog()
                     initRegZeroed = false;
                 }
             }
-        }
+        };
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+        assignIncomingRegisterArgs(&intRegState);
+        assignIncomingRegisterArgs(&floatRegState);
+#else
+        assignIncomingRegisterArgs(&intRegState);
+#endif
     }
 
     // Home the incoming arguments.
@@ -12195,9 +12199,9 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
 {
     noway_assert(varDsc != nullptr);
 
-    // Only the variables that exists in the IL, "this", and special arguments
-    // are reported.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount)
+    // Only the variables that exists in the IL, "this", and special arguments are reported, as long as they were
+    // allocated.
+    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && (varDsc->lvIsInReg() || varDsc->lvOnFrame))
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =
@@ -12233,7 +12237,8 @@ void CodeGenInterface::VariableLiveKeeper::siEndVariableLiveRange(unsigned int v
     // a valid IG so we don't report the close of a "VariableLiveRange" after code is
     // emitted.
 
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmited)
+    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmited &&
+        m_vlrLiveDsc[varNum].hasVariableLiveRangeOpen())
     {
         // this variable live range is no longer valid from this point
         m_vlrLiveDsc[varNum].endLiveRangeAtEmitter(m_Compiler->GetEmitter());
@@ -12641,7 +12646,23 @@ void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
     }
     else
     {
-        genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
+#ifdef TARGET_ARM
+        if (compiler->opts.compUseSoftFP && (targetType == TYP_LONG))
+        {
+            // This is a special arm-softFP case when a TYP_LONG node was introduced during lowering
+            // for a call argument,  so it was not handled by decomposelongs phase as all other TYP_LONG nodes.
+            // Example foo(double LclVar V01), LclVar V01 has to be passed in general registers r0, r1,
+            // so lowering will add `BITCAST long(LclVar double V01)` and codegen has to support it here.
+            const regNumber srcReg   = op1->GetRegNum();
+            const regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
+            assert(otherReg != REG_NA);
+            inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, srcReg, EA_8BYTE);
+        }
+        else
+#endif // TARGET_ARM
+        {
+            genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
+        }
     }
     genProduceReg(treeNode);
 }

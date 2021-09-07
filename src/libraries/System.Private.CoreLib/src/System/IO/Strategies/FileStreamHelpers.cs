@@ -13,14 +13,14 @@ namespace System.IO.Strategies
 
         internal static bool UseNet5CompatStrategy { get; } = AppContextConfigHelper.GetBooleanConfig("System.IO.UseNet5CompatFileStream", "DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             // The .NET 5 Compat strategy does not support bufferSize == 0.
             // To minimize the risk of introducing bugs to it, we just pass 1 to disable the buffering.
 
             FileStreamStrategy strategy = UseNet5CompatStrategy ?
                 new Net5CompatFileStreamStrategy(handle, access, bufferSize == 0 ? 1 : bufferSize, isAsync) :
-                EnableBufferingIfNeeded(ChooseStrategyCore(handle, access, share, isAsync), bufferSize);
+                EnableBufferingIfNeeded(ChooseStrategyCore(handle, access, isAsync), bufferSize);
 
             return WrapIfDerivedType(fileStream, strategy);
         }

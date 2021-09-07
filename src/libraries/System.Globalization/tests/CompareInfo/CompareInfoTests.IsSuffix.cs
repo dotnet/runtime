@@ -42,9 +42,13 @@ namespace System.Globalization.Tests
 
             // Turkish
             yield return new object[] { s_turkishCompare, "Hi", "I", CompareOptions.None, false, 0 };
-            yield return new object[] { s_turkishCompare, "Hi", "I", CompareOptions.IgnoreCase, false, 0 };
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "Hi", "I", CompareOptions.IgnoreCase, false, 0 };
+                yield return new object[] { s_turkishCompare, "Hi", "\u0130", CompareOptions.IgnoreCase, true, 1 };
+            }
             yield return new object[] { s_turkishCompare, "Hi", "\u0130", CompareOptions.None, false, 0 };
-            yield return new object[] { s_turkishCompare, "Hi", "\u0130", CompareOptions.IgnoreCase, true, 1 };
             yield return new object[] { s_invariantCompare, "Hi", "I", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "Hi", "I", CompareOptions.IgnoreCase, true, 1 };
             yield return new object[] { s_invariantCompare, "Hi", "\u0130", CompareOptions.None, false, 0 };
@@ -112,7 +116,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsSuffix_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void IsSuffix(CompareInfo compareInfo, string source, string value, CompareOptions options, bool expected, int expectedMatchLength)
         {
             if (options == CompareOptions.None)

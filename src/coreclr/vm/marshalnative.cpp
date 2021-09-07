@@ -809,7 +809,7 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownNative, IUnknown* pUnk
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT);
+    GetObjectRefFromComIP(&oref, pUnk, NULL, ObjFromComIP::UNIQUE_OBJECT);
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(oref);

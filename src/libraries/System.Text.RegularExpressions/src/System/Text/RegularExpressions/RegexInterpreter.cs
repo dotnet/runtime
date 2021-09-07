@@ -20,7 +20,6 @@ namespace System.Text.RegularExpressions
         private int _codepos;
         private bool _rightToLeft;
         private bool _caseInsensitive;
-        private int _maxBacktrackPosition = -1;
 
         public RegexInterpreter(RegexCode code, CultureInfo culture)
         {
@@ -224,20 +223,6 @@ namespace System.Text.RegularExpressions
             {
                 if (runtextend - runtextpos < c)
                 {
-                    // If MatchString was called after a greedy op such as a .*, we would have zipped runtextpos to the end without really examining any characters. Reset to maxBacktrackPos here as an optimization
-                    if (!_caseInsensitive && _maxBacktrackPosition != -1 && runtextpos > _maxBacktrackPosition)
-                    {
-                        // If lastIndexOf is -1, we backtrack to the max extent possible.
-                        runtextpos = _maxBacktrackPosition;
-                        ReadOnlySpan<char> runtextSpan = runtext.AsSpan(_maxBacktrackPosition, runtextend - _maxBacktrackPosition);
-                        int lastIndexOf = runtextSpan.LastIndexOf(str);
-                        if (lastIndexOf > -1)
-                        {
-                            // Found the next position to match. Move runtextpos here
-                            runtextpos = _maxBacktrackPosition + lastIndexOf;
-                        }
-                    }
-
                     return false;
                 }
 
@@ -1200,7 +1185,6 @@ namespace System.Text.RegularExpressions
                             int len = Math.Min(Operand(1), Forwardchars());
                             char ch = (char)Operand(0);
                             int i;
-                            int tempMaxBacktrackPosition = runtextpos;
 
                             if (!_rightToLeft && !_caseInsensitive)
                             {
@@ -1233,7 +1217,6 @@ namespace System.Text.RegularExpressions
                             if (len > i && _operator == RegexCode.Notoneloop)
                             {
                                 TrackPush(len - i - 1, runtextpos - Bump());
-                                _maxBacktrackPosition = tempMaxBacktrackPosition;
                             }
                         }
                         advance = 2;
@@ -1278,16 +1261,6 @@ namespace System.Text.RegularExpressions
                         {
                             int i = TrackPeek();
                             int pos = TrackPeek(1);
-                            if (!_caseInsensitive && _maxBacktrackPosition != -1 && pos > _maxBacktrackPosition && runtextpos < pos && _operator == (RegexCode.Notoneloop | RegexCode.Back) && !_rightToLeft)
-                            {
-                                // The Multi node has bumped us along already
-                                int difference = pos - _maxBacktrackPosition;
-                                Debug.Assert(difference > 0);
-                                pos = runtextpos;
-                                i -= difference;
-                                // We shouldn't be backtracking anymore.
-                                _maxBacktrackPosition = -1;
-                            }
                             runtextpos = pos;
                             if (i > 0)
                             {

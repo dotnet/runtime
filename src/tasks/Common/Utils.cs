@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -38,7 +39,7 @@ internal static class Utils
                                                     : ("/bin/sh", $"\"{scriptFileName}\"");
 
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
-        logger.LogMessage(debugMessageImportance, $"Running {command} via script {scriptFileName}:", msgPrefix);
+        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running {command} via script {scriptFileName}:", msgPrefix);
         logger.LogMessage(debugMessageImportance, File.ReadAllText(scriptFileName), msgPrefix);
 
         return TryRunProcess(logger,
@@ -111,7 +112,7 @@ internal static class Utils
         string? label=null)
     {
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
-        logger.LogMessage(debugMessageImportance, $"Running: {path} {args}", msgPrefix);
+        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running: {path} {args}");
         var outputBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
         {
@@ -126,12 +127,12 @@ internal static class Utils
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
 
-        logger.LogMessage(debugMessageImportance, $"Using working directory: {workingDir ?? Environment.CurrentDirectory}", msgPrefix);
+        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Using working directory: {workingDir ?? Environment.CurrentDirectory}", msgPrefix);
 
         if (envVars != null)
         {
             if (envVars.Count > 0)
-                logger.LogMessage(MessageImportance.Low, $"Setting environment variables for execution:", msgPrefix);
+                logger.LogMessage(MessageImportance.Low, $"{msgPrefix}Setting environment variables for execution:", msgPrefix);
 
             foreach (KeyValuePair<string, string> envVar in envVars)
             {
@@ -203,6 +204,30 @@ internal static class Utils
         sw.WriteLine(command);
 
         return file;
+    }
+
+    public static bool CopyIfDifferent(string src, string dst, bool useHash)
+    {
+        if (!File.Exists(src))
+            throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
+
+        bool areDifferent = !File.Exists(dst) ||
+                                (useHash && Utils.ComputeHash(src) != Utils.ComputeHash(dst)) ||
+                                (File.ReadAllText(src) != File.ReadAllText(dst));
+
+        if (areDifferent)
+            File.Copy(src, dst, true);
+
+        return areDifferent;
+    }
+
+    public static string ComputeHash(string filepath)
+    {
+        using var stream = File.OpenRead(filepath);
+        using HashAlgorithm hashAlgorithm = SHA512.Create();
+
+        byte[] hash = hashAlgorithm.ComputeHash(stream);
+        return Convert.ToBase64String(hash);
     }
 
 #if NETCOREAPP

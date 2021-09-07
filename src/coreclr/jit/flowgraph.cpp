@@ -910,12 +910,27 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
     result->gtFlags |= callFlags;
+
+    // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
+    // intrinsics, flag the helper call. Later during inlining, we can
+    // remove the helper call if the associated field lookup is unused.
+    if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    {
+        NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
+        if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
+            (ni == NI_System_Collections_Generic_Comparer_get_Default))
+        {
+            JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
+            result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
+        }
+    }
+
     return result;
 }
 
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -1129,7 +1144,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         assert(targetMethodHnd == nullptr);
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         if (IsTargetAbi(CORINFO_CORERT_ABI))
@@ -3617,13 +3632,12 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     }
 
     const static BBjumpKinds jumpKinds[] = {
-        BBJ_NONE,   // SCK_NONE
-        BBJ_THROW,  // SCK_RNGCHK_FAIL
-        BBJ_ALWAYS, // SCK_PAUSE_EXEC
-        BBJ_THROW,  // SCK_DIV_BY_ZERO
-        BBJ_THROW,  // SCK_ARITH_EXCP, SCK_OVERFLOW
-        BBJ_THROW,  // SCK_ARG_EXCPN
-        BBJ_THROW,  // SCK_ARG_RNG_EXCPN
+        BBJ_NONE,  // SCK_NONE
+        BBJ_THROW, // SCK_RNGCHK_FAIL
+        BBJ_THROW, // SCK_DIV_BY_ZERO
+        BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
+        BBJ_THROW, // SCK_ARG_EXCPN
+        BBJ_THROW, // SCK_ARG_RNG_EXCPN
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3687,9 +3701,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
             case SCK_RNGCHK_FAIL:
                 msg = " for RNGCHK_FAIL";
                 break;
-            case SCK_PAUSE_EXEC:
-                msg = " for PAUSE_EXEC";
-                break;
             case SCK_DIV_BY_ZERO:
                 msg = " for DIV_BY_ZERO";
                 break;
@@ -3749,9 +3760,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
         case SCK_ARG_RNG_EXCPN:
             helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
             break;
-
-        // case SCK_PAUSE_EXEC:
-        //     noway_assert(!"add code to pause exec");
 
         default:
             noway_assert(!"unexpected code addition kind");

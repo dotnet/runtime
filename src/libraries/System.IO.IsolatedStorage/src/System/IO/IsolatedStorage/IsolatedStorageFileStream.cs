@@ -322,7 +322,7 @@ namespace System.IO.IsolatedStorage
             _fs.EndWrite(asyncResult);
         }
 
-        [Obsolete("This property has been deprecated.  Please use IsolatedStorageFileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("IsolatedStorageFileStream.Handle has been deprecated. Use IsolatedStorageFileStream's SafeFileHandle property instead.")]
         public override IntPtr Handle
         {
             get { return _fs.Handle; }

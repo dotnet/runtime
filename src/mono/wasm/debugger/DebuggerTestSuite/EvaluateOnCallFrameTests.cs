@@ -476,23 +476,6 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id, ("this.PropertyThrowException", TString("System.Exception: error")));
             });
 
-        async Task EvaluateOnCallFrameAndCheck(string call_frame_id, params (string expression, JObject expected)[] args)
-        {
-            foreach (var arg in args)
-            {
-                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression);
-                try
-                {
-                    await CheckValue(eval_val, arg.expected, arg.expression);
-                }
-                catch
-                {
-                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
-                    throw;
-                }
-            }
-        }
-
         async Task EvaluateOnCallFrameFail(string call_frame_id, params (string expression, string class_name)[] args)
         {
             foreach (var arg in args)
@@ -513,7 +496,7 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
-                AssertEqual("Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'MyMethodWrong'", res.Error["message"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false );
                 AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
@@ -522,10 +505,10 @@ namespace DebuggerTests
                 AssertEqual("Unable to evaluate method 'CallMethodWithParm'", res.Error["message"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
-                AssertEqual("Object reference not set to an instance of an object.", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-                AssertEqual("Object reference not set to an instance of an object.", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
            });
 
         [Fact]
@@ -540,6 +523,7 @@ namespace DebuggerTests
                    ("this.CallMethod()", TNumber(1)),
                    ("this.CallMethod()", TNumber(1)),
                    ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
+                   ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
                    ("this.objToTest.MyMethod()", TString("methodOK")));
            });
 
@@ -601,6 +585,62 @@ namespace DebuggerTests
                 props = await GetObjectOnFrame(frame, "this");
                 CheckNumber(props, "a", 11);
            });
+
+        [Fact]
+        public async Task EvaluateStaticClass() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+           });
+
+        [Fact]
+        public async Task EvaluateStaticClassInvalidField() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+
+                var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass.StaticProperty2", expect_ok: false);
+                AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+
+                (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", expect_ok: false);
+                AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+           });
+
+         [Fact]
+         public async Task AsyncLocalsInContinueWithBlock() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithStaticAsync", 4, "<ContinueWithStaticAsync>b__3_0",
+            "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var frame_locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ($"t.Status", TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion")),
+                    ($"  t.Status", TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"))
+                );
+
+                await EvaluateOnCallFrameFail(id,
+                    ("str", "ReferenceError"),
+                    ("  str", "ReferenceError")
+                );
+            });
+
     }
 
 }

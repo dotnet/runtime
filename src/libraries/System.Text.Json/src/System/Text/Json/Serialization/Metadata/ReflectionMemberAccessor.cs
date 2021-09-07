@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
             return new ConstructorContext(type).CreateInstance;
         }
 
-        public override JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
         {
             Type type = typeof(T);
 

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 
@@ -45,6 +46,8 @@ namespace System.Text.Json.SourceGeneration
 
         public List<PropertyGenerationSpec>? PropertyGenSpecList { get; private set; }
 
+        public ParameterGenerationSpec[]? CtorParamGenSpecArray { get; private set; }
+
         public CollectionType CollectionType { get; private set; }
 
         public TypeGenerationSpec? CollectionKeyTypeMetadata { get; private set; }
@@ -56,6 +59,10 @@ namespace System.Text.Json.SourceGeneration
         public TypeGenerationSpec? NullableUnderlyingTypeMetadata { get; private set; }
 
         public string? ConverterInstantiationLogic { get; private set; }
+
+        // Only generate certain helper methods if necessary.
+        public bool HasPropertyFactoryConverters { get; private set; }
+        public bool HasTypeFactoryConverter { get; private set; }
 
         public string FastPathSerializeMethodName
         {
@@ -96,6 +103,7 @@ namespace System.Text.Json.SourceGeneration
             ClassType classType,
             JsonNumberHandling? numberHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
+            ParameterGenerationSpec[]? ctorParamGenSpecArray,
             CollectionType collectionType,
             TypeGenerationSpec? collectionKeyTypeMetadata,
             TypeGenerationSpec? collectionValueTypeMetadata,
@@ -103,7 +111,9 @@ namespace System.Text.Json.SourceGeneration
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? converterInstantiationLogic,
             bool implementsIJsonOnSerialized,
-            bool implementsIJsonOnSerializing)
+            bool implementsIJsonOnSerializing,
+            bool hasTypeFactoryConverter,
+            bool hasPropertyFactoryConverters)
         {
             GenerationMode = generationMode;
             TypeRef = type.GetCompilableName();
@@ -114,6 +124,7 @@ namespace System.Text.Json.SourceGeneration
             CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
             NumberHandling = numberHandling;
             PropertyGenSpecList = propertyGenSpecList;
+            CtorParamGenSpecArray = ctorParamGenSpecArray;
             CollectionType = collectionType;
             CollectionKeyTypeMetadata = collectionKeyTypeMetadata;
             CollectionValueTypeMetadata = collectionValueTypeMetadata;
@@ -122,6 +133,8 @@ namespace System.Text.Json.SourceGeneration
             ConverterInstantiationLogic = converterInstantiationLogic;
             ImplementsIJsonOnSerialized = implementsIJsonOnSerialized;
             ImplementsIJsonOnSerializing = implementsIJsonOnSerializing;
+            HasTypeFactoryConverter = hasTypeFactoryConverter;
+            HasPropertyFactoryConverters = hasPropertyFactoryConverters;
         }
 
         public bool TryFilterSerializableProps(
@@ -210,7 +223,10 @@ ReturnFalse:
             {
                 foreach (PropertyGenerationSpec property in PropertyGenSpecList)
                 {
-                    if (property.TypeGenerationSpec.Type.IsObjectType())
+                    if (property.TypeGenerationSpec.Type.IsObjectType() ||
+                        property.NumberHandling == JsonNumberHandling.AllowNamedFloatingPointLiterals ||
+                        property.NumberHandling == JsonNumberHandling.WriteAsString ||
+                        property.ConverterInstantiationLogic is not null)
                     {
                         return false;
                     }

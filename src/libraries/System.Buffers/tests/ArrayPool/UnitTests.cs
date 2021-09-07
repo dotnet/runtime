@@ -355,7 +355,6 @@ namespace System.Buffers.ArrayPool.Tests
         {
             var options = new RemoteInvokeOptions();
             options.StartInfo.UseShellExecute = false;
-            options.StartInfo.EnvironmentVariables.Add(TrimSwitchName, "false");
 
             RemoteExecutor.Invoke((lengthStr, expectPooledStr) =>
             {

@@ -165,4 +165,7 @@
   <data name="net_WebSockets_Argument_MessageFlagsHasDifferentCompressionOptions" xml:space="preserve">
     <value>The compression options for a continuation cannot be different than the options used to send the first fragment of the message.</value>
   </data>
+  <data name="net_Websockets_InvalidPayloadLength" xml:space="preserve">
+    <value>The WebSocket received a frame with an invalid payload length.</value>
+  </data>
 </root>

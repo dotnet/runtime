@@ -2585,13 +2585,6 @@ ClrDataModule::StartEnumExtents(
                 extent->type = CLRDATA_MODULE_PE_FILE;
                 extent++;
             }
-            if (file->HasNativeImage())
-            {
-                extent->base = TO_CDADDR(PTR_TO_TADDR(file->GetLoadedNative()->GetBase()));
-                extent->length = file->GetLoadedNative()->GetVirtualSize();
-                extent->type = CLRDATA_MODULE_PREJIT_FILE;
-                extent++;
-            }
 
             m_setExtents = true;
             m_extentsEnd = extent;
@@ -2835,12 +2828,6 @@ ClrDataModule::SetJITCompilerFlags(
         {
             hr = E_INVALIDARG;
         }
-#ifdef FEATURE_PREJIT
-        else if (m_module->HasNativeImage())
-        {
-            hr = CORDBG_E_CANT_CHANGE_JIT_SETTING_FOR_ZAP_MODULE;
-        }
-#endif
         else
         {
             _ASSERTE(m_module != NULL);

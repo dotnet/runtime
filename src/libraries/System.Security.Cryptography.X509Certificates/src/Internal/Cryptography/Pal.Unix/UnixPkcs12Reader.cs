@@ -167,6 +167,7 @@ namespace Internal.Cryptography.Pal
                 if (contentType == DecryptedSentinel)
                 {
                     ReadOnlyMemory<byte> content = rentedContents[i].Content;
+                    rentedContents[i].Content = default;
 
                     if (!MemoryMarshal.TryGetArray(content, out ArraySegment<byte> segment))
                     {
@@ -174,7 +175,6 @@ namespace Internal.Cryptography.Pal
                     }
 
                     CryptoPool.Return(segment);
-                    rentedContents[0].Content = default;
                 }
             }
 

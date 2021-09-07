@@ -72,6 +72,31 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void EnvironmentVariable_DotNetRootIsUsedOverInstallLocationIfSet()
+        {
+            var fixture = sharedTestState.PortableAppFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            var arch = fixture.RepoDirProvider.BuildArchitecture.ToUpper();
+            var dotnet = fixture.BuiltDotnet.BinPath;
+
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
+            {
+                registeredInstallLocationOverride.SetInstallLocation((arch, "some/install/location"));
+
+                Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .DotNetRoot(dotnet, arch)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveUsedDotNetRootInstallLocation(dotnet, fixture.CurrentRid, arch)
+                    .And.NotHaveStdErrContaining("Using global install location");
+            }
+        }
+
+        [Fact]
         public void EnvironmentVariable_DotnetRootPathDoesNotExist()
         {
             var fixture = sharedTestState.PortableAppFixture
@@ -122,7 +147,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_ArchSpecificLocationIsPickedFirst()
         {
             var fixture = sharedTestState.PortableAppFixture
@@ -142,15 +166,20 @@ namespace HostActivation.Tests
                     (arch2, path2)
                 });
 
-                Command.Create(appExe)
+                CommandResult result = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .DotNetRoot(null)
-                    .Execute()
-                    .Should().HaveFoundDefaultInstallLocationInConfigFile(path1)
-                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(path1, arch1)
-                    .And.HaveFoundArchSpecificInstallLocationInConfigFile(path2, arch2)
-                    .And.HaveUsedGlobalInstallLocation(path2);
+                    .Execute();
+
+                if (!OperatingSystem.IsWindows())
+                {
+                    result.Should().HaveFoundDefaultInstallLocationInConfigFile(path1)
+                        .And.HaveFoundArchSpecificInstallLocationInConfigFile(path1, arch1)
+                        .And.HaveFoundArchSpecificInstallLocationInConfigFile(path2, arch2);
+                }
+
+                result.Should().HaveUsedGlobalInstallLocation(path2);
             }
         }
 
@@ -202,6 +231,38 @@ namespace HostActivation.Tests
                     .Execute()
                     .Should().HaveFoundDefaultInstallLocationInConfigFile(reallyLongPath)
                     .And.HaveUsedConfigFileInstallLocation(reallyLongPath);
+            }
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
+        public void InstallLocationFile_MissingFile()
+        {
+            var fixture = sharedTestState.PortableAppFixture.Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            string testArtifactsPath = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "missingInstallLocation"));
+            using (new TestArtifact(testArtifactsPath))
+            using (var testOnlyProductBehavior = TestOnlyProductBehavior.Enable(appExe))
+            {
+                Directory.CreateDirectory(testArtifactsPath);
+
+                string directory = Path.Combine(testArtifactsPath, "installLocationOverride");
+                Directory.CreateDirectory(directory);
+                string nonExistentLocationFile = Path.Combine(directory, "install_location");
+                string defaultInstallLocation = Path.Combine(testArtifactsPath, "defaultInstallLocation");
+
+                Command.Create(appExe)
+                    .CaptureStdErr()
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.InstallLocationFilePath,
+                        nonExistentLocationFile)
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
+                        defaultInstallLocation)
+                    .DotNetRoot(null)
+                    .Execute()
+                    .Should().NotHaveStdErrContaining("The install_location file");
             }
         }
 

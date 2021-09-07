@@ -41,11 +41,7 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Returns the time the associated thread was started.</summary>
-        public DateTime StartTime
-        {
-            get { return Process.BootTimeToDateTime(Process.TicksToTimeSpan(GetStat().starttime)); }
-        }
+        private DateTime GetStartTime() => Process.BootTimeToDateTime(Process.TicksToTimeSpan(GetStat().starttime));
 
         /// <summary>
         /// Returns the amount of time the associated thread has spent utilizing the CPU.

@@ -1190,6 +1190,17 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         op1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, idx, tmp1, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
         BlockRange().InsertAfter(tmp1, op1);
         LowerNode(op1);
+
+        idx = comp->gtNewIconNode(0x03, TYP_INT);
+        BlockRange().InsertAfter(op2, idx);
+
+        tmp2 = comp->gtNewZeroConNode(TYP_FLOAT);
+        BlockRange().InsertAfter(idx, tmp2);
+        LowerNode(tmp2);
+
+        op2 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op2, idx, tmp2, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
+        BlockRange().InsertAfter(tmp2, op2);
+        LowerNode(op2);
     }
 
     // We will be constructing the following parts:
@@ -1555,9 +1566,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-#if 0
-    // TODO-ARMARCH-CQ: support contained bitcast under STORE_LCL_VAR/FLD,
-    // currently codegen does not expect it.
     if (op1->OperIs(GT_BITCAST))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
@@ -1570,7 +1578,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
             return;
         }
     }
-#endif
 
     const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
 

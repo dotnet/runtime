@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateDictionaryInfo<TCollection, TKey, TValue>(
             JsonSerializerOptions options,
-            Func<TCollection> createObjectFunc,
+            Func<TCollection>? createObjectFunc,
             JsonTypeInfo keyInfo,
             JsonTypeInfo valueInfo,
             JsonNumberHandling numberHandling,
@@ -113,7 +113,7 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         public static JsonTypeInfo<TCollection> CreateImmutableDictionaryInfo<TCollection, TKey, TValue>(
             JsonSerializerOptions options,
-            Func<TCollection> createObjectFunc,
+            Func<TCollection>? createObjectFunc,
             JsonTypeInfo keyInfo,
             JsonTypeInfo valueInfo,
             JsonNumberHandling numberHandling,
@@ -148,7 +148,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateIDictionaryInfo<TCollection, TKey, TValue>(
             JsonSerializerOptions options,
-            Func<TCollection> createObjectFunc,
+            Func<TCollection>? createObjectFunc,
             JsonTypeInfo keyInfo,
             JsonTypeInfo valueInfo,
             JsonNumberHandling numberHandling,
@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateIReadOnlyDictionaryInfo<TCollection, TKey, TValue>(
             JsonSerializerOptions options,
-            Func<TCollection> createObjectFunc,
+            Func<TCollection>? createObjectFunc,
             JsonTypeInfo keyInfo,
             JsonTypeInfo valueInfo,
             JsonNumberHandling numberHandling,

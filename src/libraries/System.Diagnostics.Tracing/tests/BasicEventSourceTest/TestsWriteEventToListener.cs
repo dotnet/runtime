@@ -448,5 +448,50 @@ namespace BasicEventSourceTests
 
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void Test_EventListenerThrows_ExceptionIsNotRethrownToCaller(bool setThrowOnEventWriteErrorsFlag)
+        {
+            TestUtilities.CheckNoEventSourcesRunning("Start");
+
+            using (var log = new EventSourceTest(throwOnEventWriteErrors: setThrowOnEventWriteErrorsFlag))
+            {
+                using (var listener = new EventListenerListener())
+                {
+                    listener.EventSourceSynchronousEnable(log);
+
+                    var thrownException = new Exception("Oops");
+                    string outOfBandMessage = null;
+
+                    listener.EventWritten += (_, e) =>
+                    {
+                        if (e.EventId == 0)
+                        {
+                            outOfBandMessage = e.Message;
+                        }
+
+                        throw thrownException;
+                    };
+
+                    try
+                    {
+                        log.Event0();
+                        Assert.False(setThrowOnEventWriteErrorsFlag);
+                    }
+                    catch (EventSourceException ex)
+                    {
+                        Assert.True(setThrowOnEventWriteErrorsFlag);
+                        Assert.Same(thrownException, ex.InnerException);
+                    }
+
+                    Assert.Contains(thrownException.Message, outOfBandMessage);
+                }
+            }
+
+            TestUtilities.CheckNoEventSourcesRunning("Stop");
+        }
     }
 }

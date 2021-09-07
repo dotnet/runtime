@@ -1147,11 +1147,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         assert((doubleAlignMask & RBM_ARG_REGS) == doubleAlignMask);
         if (doubleAlignMask != RBM_NONE && doubleAlignMask != RBM_ARG_REGS)
         {
-            // doubleAlignMask can only be 0011 and/or 1100 as 'double aligned types' can
-            // begin at r0 or r2.
-            assert(doubleAlignMask == 0x3 || doubleAlignMask == 0xC /* || 0xF is if'ed out */);
+            // 'double aligned types' can begin only at r0 or r2 and we always expect at least two registers to be used
+            // Note that in rare cases, we can have double-aligned structs of 12 bytes (if specified explicitly with
+            // attributes)
+            assert((doubleAlignMask == 0b0011) || (doubleAlignMask == 0b1100) ||
+                   (doubleAlignMask == 0b0111) /* || 0b1111 is if'ed out */);
 
-            // Now if doubleAlignMask is 0011 i.e., {r0,r1} and we prespill r2 or r3
+            // Now if doubleAlignMask is xyz1 i.e., the struct starts in r0, and we prespill r2 or r3
             // but not both, then the stack would be misaligned for r0. So spill both
             // r2 and r3.
             //
@@ -1160,7 +1162,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             // ; -8 r1    r1
             // ; -c r0    r0   <-- misaligned.
             // ; callee saved regs
-            if (doubleAlignMask == 0x3 && doubleAlignMask != codeGen->regSet.rsMaskPreSpillRegArg)
+            bool startsAtR0 = (doubleAlignMask & 1) == 1;
+            bool r2XorR3    = ((codeGen->regSet.rsMaskPreSpillRegArg & RBM_R2) == 0) !=
+                           ((codeGen->regSet.rsMaskPreSpillRegArg & RBM_R3) == 0);
+            if (startsAtR0 && r2XorR3)
             {
                 codeGen->regSet.rsMaskPreSpillAlign =
                     (~codeGen->regSet.rsMaskPreSpillRegArg & ~doubleAlignMask) & RBM_ARG_REGS;
@@ -1756,7 +1761,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     // or 8 Vector<T>/Vector128<T> fields on SSE2.
     const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * YMM_REGSIZE_BYTES;
 #elif defined(TARGET_ARM64)
-    const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
+    const int MaxOffset      = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #else  // !FEATURE_SIMD
     const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
@@ -2609,8 +2614,14 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             assert(varTypeIsStruct(varDsc));
             break;
         case DNER_IsStructArg:
-            JITDUMP("it is a struct arg\n");
-            assert(varTypeIsStruct(varDsc));
+            if (varTypeIsStruct(varDsc))
+            {
+                JITDUMP("it is a struct arg\n");
+            }
+            else
+            {
+                JITDUMP("it is reinterpreted as a struct arg\n");
+            }
             break;
         case DNER_BlockOp:
             JITDUMP("written in a block op\n");
@@ -3749,56 +3760,6 @@ size_t LclVarDsc::lvArgStackSize() const
     return stackSize;
 }
 
-/**********************************************************************************
-* Get type of a variable when passed as an argument.
-*/
-var_types LclVarDsc::lvaArgType()
-{
-    var_types type = TypeGet();
-
-#ifdef TARGET_AMD64
-#ifdef UNIX_AMD64_ABI
-    if (type == TYP_STRUCT)
-    {
-        NYI("lvaArgType");
-    }
-#else  //! UNIX_AMD64_ABI
-    if (type == TYP_STRUCT)
-    {
-        switch (lvExactSize)
-        {
-            case 1:
-                type = TYP_BYTE;
-                break;
-            case 2:
-                type = TYP_SHORT;
-                break;
-            case 4:
-                type = TYP_INT;
-                break;
-            case 8:
-                type = m_layout->GetGCPtrType(0);
-                break;
-            default:
-                type = TYP_BYREF;
-                break;
-        }
-    }
-#endif // !UNIX_AMD64_ABI
-#elif defined(TARGET_ARM64)
-    if (type == TYP_STRUCT)
-    {
-        NYI("lvaArgType");
-    }
-#elif defined(TARGET_X86)
-// Nothing to do; use the type as is.
-#else
-    NYI("lvaArgType");
-#endif // TARGET_AMD64
-
-    return type;
-}
-
 //------------------------------------------------------------------------
 // GetRegisterType: Determine register type for this local var.
 //
@@ -4069,6 +4030,16 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     /* Increment the reference counts */
 
     varDsc->incRefCnts(weight, this);
+
+#ifdef DEBUG
+    if (varDsc->lvIsStructField)
+    {
+        // If ref count was increased for struct field, ensure that the
+        // parent struct is still promoted.
+        LclVarDsc* parentStruct = &lvaTable[varDsc->lvParentLcl];
+        assert(!parentStruct->lvUndoneStructPromotion);
+    }
+#endif
 
     if (!isRecompute)
     {

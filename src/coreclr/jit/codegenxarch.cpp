@@ -28,7 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  Generate code that will set the given register to the integer constant.
  */
 
-void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags)
+void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags DEBUGARG(GenTreeFlags gtFlags))
 {
     // Reg cannot be a FP reg
     assert(!genIsValidFloatReg(reg));
@@ -45,7 +45,7 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
     else
     {
         // TODO-XArch-CQ: needs all the optimized cases
-        GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), reg, val);
+        GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), reg, val DEBUGARG(gtFlags));
     }
 }
 
@@ -79,7 +79,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     {
         noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
 #ifdef TARGET_AMD64
-        if ((int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
+        if ((size_t)(int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
         {
             // initReg = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = initReg
             genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
@@ -440,7 +440,7 @@ void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
                                      regNumber reg,
                                      ssize_t   imm,
-                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -505,7 +505,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
             else
             {
-                genSetRegToIcon(targetReg, cnsVal, targetType);
+                genSetRegToIcon(targetReg, cnsVal, targetType, INS_FLAGS_DONT_CARE DEBUGARG(tree->gtFlags));
             }
         }
         break;
@@ -2457,7 +2457,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // For small allocations we will generate up to six push 0 inline
         size_t cntRegSizedWords = amount / REGSIZE_BYTES;
-        if (cntRegSizedWords <= 6)
+        if (compiler->info.compInitMem && (cntRegSizedWords <= 6))
         {
             for (; cntRegSizedWords != 0; cntRegSizedWords--)
             {
@@ -2511,7 +2511,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             amount /= STACK_ALIGN;
         }
 
-        genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
+        genSetRegToIcon(regCnt, amount, ((size_t)(int)amount == amount) ? TYP_INT : TYP_LONG);
     }
 
     if (compiler->info.compInitMem)
@@ -4425,7 +4425,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
 #ifdef FEATURE_SIMD
     // storing of TYP_SIMD12 (i.e. Vector3) field
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (targetType == TYP_SIMD12)
     {
         genStoreLclTypeSIMD12(tree);
         return;
@@ -4436,7 +4436,32 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(genTypeSize(genActualType(targetType)) == genTypeSize(genActualType(op1->TypeGet())));
 
     genConsumeRegs(op1);
-    GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+
+    if (op1->OperIs(GT_BITCAST) && op1->isContained())
+    {
+        regNumber targetReg  = tree->GetRegNum();
+        GenTree*  bitCastSrc = op1->gtGetOp1();
+        var_types srcType    = bitCastSrc->TypeGet();
+        noway_assert(!bitCastSrc->isContained());
+
+        if (targetReg == REG_NA)
+        {
+            unsigned   lclNum = tree->GetLclNum();
+            LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+
+            GetEmitter()->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
+                                      emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, tree->GetLclOffs());
+            varDsc->SetRegNum(REG_STK);
+        }
+        else
+        {
+            genBitCast(targetType, targetReg, srcType, bitCastSrc->GetRegNum());
+        }
+    }
+    else
+    {
+        GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+    }
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
@@ -5358,7 +5383,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // clang-format on
         }
     }
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     else if (call->gtEntryPoint.addr != nullptr)
     {
         // clang-format off
@@ -5649,7 +5674,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         assert(varDsc->GetRegNum() != REG_STK);
 
         assert(!varDsc->lvIsStructField || (compiler->lvaTable[varDsc->lvParentLcl].lvFieldCnt == 1));
-        var_types storeType = genActualType(varDsc->lvaArgType()); // We own the memory and can use the full move.
+        var_types storeType = varDsc->GetActualRegisterType(); // We own the memory and can use the full move.
         GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->GetRegNum(), varNum, 0);
 
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
@@ -5764,7 +5789,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
             // Is register argument already in the right register?
             // If not load it from its stack location.
-            var_types loadType = varDsc->lvaArgType();
+            var_types loadType = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
             if (varTypeIsStruct(varDsc->TypeGet()))
@@ -5815,7 +5840,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         if (compiler->info.compIsVarArgs)
         {
             regNumber intArgReg;
-            var_types loadType = varDsc->lvaArgType();
+            var_types loadType = varDsc->GetRegisterType();
             regNumber argReg   = varDsc->GetArgReg(); // incoming arg register
 
             if (varTypeIsFloating(loadType))
@@ -8600,7 +8625,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                 continue;
             }
 
-            var_types storeType = varDsc->lvaArgType();
+            var_types storeType = varDsc->GetRegisterType();
             regNumber argReg    = varDsc->GetArgReg();
 
             instruction store_ins = ins_Store(storeType);
@@ -8670,7 +8695,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
             continue;
         }
 
-        var_types loadType = varDsc->lvaArgType();
+        var_types loadType = varDsc->GetRegisterType();
         regNumber argReg   = varDsc->GetArgReg();
 
         instruction load_ins = ins_Load(loadType);

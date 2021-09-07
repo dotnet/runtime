@@ -5,24 +5,22 @@
 #define _ASSEMBLYLOADCONTEXT_H
 
 #include "crst.h"
-#include <internalunknownimpl.h>
 #include <sarray.h>
-
+#include "assemblybinder.h"
 
 class NativeImage;
+class PEImage;
 class Module;
 class Assembly;
+class AssemblyLoaderAllocator;
 
 //
 // Unmanaged counter-part of System.Runtime.Loader.AssemblyLoadContext
 //
-class AssemblyLoadContext : public IUnknownCommon<ICLRPrivBinder, IID_ICLRPrivBinder>
+class AssemblyLoadContext : public AssemblyBinder
 {
 public:
     AssemblyLoadContext();
-
-    STDMETHOD(GetBinderID)(
-        /* [retval][out] */ UINT_PTR* pBinderId);
 
     NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName);
 

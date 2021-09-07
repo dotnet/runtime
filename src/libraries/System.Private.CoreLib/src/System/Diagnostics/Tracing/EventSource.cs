@@ -233,6 +233,16 @@ namespace System.Diagnostics.Tracing
     // The EnsureDescriptorsInitialized() method might need to access EventSource and its derived type
     // members and the trimmer ensures that these members are preserved.
     [DynamicallyAccessedMembers(ManifestMemberTypes)]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
+        Justification = "EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                        "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
+                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115:ReflectionToDynamicallyAccessedMembers",
+        Justification = "EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                        "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
+                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
 #endif
     public partial class EventSource : IDisposable
     {
@@ -361,6 +371,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="assemblyPathToIncludeInManifest">The manifest XML fragment contains the string name of the DLL name in
         /// which it is embedded.  This parameter specifies what name will be used</param>
         /// <returns>The XML data string</returns>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
+                            "access this member and is safe to call.")]
+#endif
         public static string? GenerateManifest(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -382,6 +398,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="flags">The flags to customize manifest generation. If flags has bit OnlyIfNeededForRegistration specified
         /// this returns null when the eventSourceType does not require explicit registration</param>
         /// <returns>The XML data string or null</returns>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
+                            "access this member and is safe to call.")]
+#endif
         public static string? GenerateManifest(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -1263,6 +1285,9 @@ namespace System.Diagnostics.Tracing
         /// </code>
         /// </remarks>
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         [CLSCompliant(false)]
@@ -1297,6 +1322,9 @@ namespace System.Diagnostics.Tracing
         /// </code>
         /// </remarks>
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         [CLSCompliant(false)]
@@ -1392,6 +1420,9 @@ namespace System.Diagnostics.Tracing
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         protected unsafe void WriteEvent(int eventId, params object?[] args)
@@ -1408,6 +1439,9 @@ namespace System.Diagnostics.Tracing
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         protected unsafe void WriteEventWithRelatedActivityId(int eventId, Guid relatedActivityId, params object?[] args)
@@ -1442,6 +1476,10 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
+
+            // Do not invoke Dispose under the lock as this can lead to a deadlock.
+            // See https://github.com/dotnet/runtime/issues/48342 for details.
+            Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
 
             if (disposing)
             {
@@ -1888,6 +1926,9 @@ namespace System.Diagnostics.Tracing
         }
 
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
@@ -2000,6 +2041,9 @@ namespace System.Diagnostics.Tracing
         }
 
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         private unsafe object?[] SerializeEventArgs(int eventId, object?[] args)
@@ -2121,7 +2165,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            if (lastThrownException != null)
+            if (lastThrownException != null && ThrowOnEventWriteErrors)
             {
                 throw new EventSourceException(lastThrownException);
             }
@@ -2459,6 +2503,9 @@ namespace System.Diagnostics.Tracing
             public TraceLoggingEventTypes TraceLoggingEventTypes
             {
 #if !ES_BUILD_STANDALONE
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
                 get
@@ -2813,27 +2860,21 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-#if !ES_BUILD_STANDALONE
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                    Justification = "Based on the annotation on EventSource class, Trimmer will see from its analysis members " +
-                                    "that are marked with RequiresUnreferencedCode and will warn." +
-                                    "This method will not access any of these members and is safe to call.")]
-                byte[]? GetCreateManifestAndDescriptorsViaLocalMethod(string name) => CreateManifestAndDescriptors(this.GetType(), name, this);
-                m_rawManifest = GetCreateManifestAndDescriptorsViaLocalMethod(Name);
-#else
                 m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
-#endif
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
-                Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
-                foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
+                if (!AllowDuplicateSourceNames)
                 {
-                    if (eventSourceRef.TryGetTarget(out EventSource? eventSource) && eventSource.Guid == m_guid && !eventSource.IsDisposed)
+                    Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
+                    foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
                     {
-                        if (eventSource != this)
+                        if (eventSourceRef.TryGetTarget(out EventSource? eventSource) && eventSource.Guid == m_guid && !eventSource.IsDisposed)
                         {
-                            throw new ArgumentException(SR.Format(SR.EventSource_EventSourceGuidInUse, m_guid));
+                            if (eventSource != this)
+                            {
+                                throw new ArgumentException(SR.Format(SR.EventSource_EventSourceGuidInUse, m_guid));
+                            }
                         }
                     }
                 }
@@ -2955,6 +2996,12 @@ namespace System.Diagnostics.Tracing
 
         // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
         // When that is the case, we have the build the custom assemblies on a member by hand.
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
+                            "access this member and is safe to call.")]
+#endif
         internal static Attribute? GetCustomAttributeHelper(
             MemberInfo member,
 #if !ES_BUILD_STANDALONE
@@ -3076,6 +3123,12 @@ namespace System.Diagnostics.Tracing
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
         // then the descriptors are not created, and just the manifest is generated.
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "has dynamically accessed members requirements, but its use of this method satisfies " +
+                            "these requirements because it passes in the result of GetType with the same annotations.")]
+#endif
         private static byte[]? CreateManifestAndDescriptors(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -3886,6 +3939,21 @@ namespace System.Diagnostics.Tracing
         internal const string s_ActivityStartSuffix = "Start";
         internal const string s_ActivityStopSuffix = "Stop";
 
+        // This switch controls an opt-in, off-by-default mechanism for allowing multiple EventSources to have the same
+        // name and by extension GUID. This is not considered a mainline scenario and is explicitly intended as a release
+        // valve for users that make heavy use of AssemblyLoadContext and experience exceptions from EventSource.
+        // This does not solve any issues that might arise from this configuration. For instance:
+        //
+        // * If multiple manifest-mode EventSources have the same name/GUID, it is ambiguous which manifest should be used by an ETW parser.
+        //   This can result in events being incorrectly parse. The data will still be there, but EventTrace (or other libraries) won't
+        //   know how to parse it.
+        // * Potential issues in parsing self-describing EventSources that use the same name/GUID, event name, and payload type from the same AssemblyLoadContext
+        //   but have different event IDs set.
+        //
+        // Most users should not turn this on.
+        internal const string DuplicateSourceNamesSwitch = "System.Diagnostics.Tracing.EventSource.AllowDuplicateSourceNames";
+        private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
+
         // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
         // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.
         // Rather than depending on initialized statics, use lazy initialization to ensure that the statics are initialized exactly when they are needed.
@@ -4277,15 +4345,25 @@ namespace System.Diagnostics.Tracing
 #endif
         {
             Debug.Assert(EventSource.IsSupported);
-
+            List<EventSource> sourcesToDispose = new List<EventSource>();
             lock (EventListenersLock)
             {
                 Debug.Assert(s_EventSources != null);
                 foreach (WeakReference<EventSource> esRef in s_EventSources)
                 {
                     if (esRef.TryGetTarget(out EventSource? es))
-                        es.Dispose();
+                    {
+                        sourcesToDispose.Add(es);
+                    }
                 }
+            }
+
+            // Do not invoke Dispose under the lock as this can lead to a deadlock.
+            // See https://github.com/dotnet/runtime/issues/48342 for details.
+            Debug.Assert(!Monitor.IsEntered(EventListenersLock));
+            foreach (EventSource es in sourcesToDispose)
+            {
+                es.Dispose();
             }
         }
 
