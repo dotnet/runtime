@@ -181,9 +181,10 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
         JITDUMP("Remove now-unreachable handler " FMT_BB "\n", firstBlock->bbNum);
 
-        // Handler block should now be unreferenced, since the only
-        // explicit references to it were in call finallys.
-        firstBlock->bbRefs = 0;
+        // Since the handler block has an explicit reference from the call-finallys,
+        // decrease the reference count of handler block.
+        noway_assert(firstBlock->countOfInEdges() > 0);
+        firstBlock->bbRefs--;
 
         // Remove the handler block.
         const bool unreachable = true;
