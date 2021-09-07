@@ -1008,11 +1008,27 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
 #endif
 }
 
-int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
+int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length, int32_t mode)
 {
     assert_msg(offset == 0, "Invalid offset value", (int)offset);
 
     int fileDescriptor = ToFileDescriptor(fd);
+#if !HAVE_POSIX_FALLOCATE64 && !HAVE_POSIX_FALLOCATE
+    // posix_fallocate does not allow for shrinking file
+    // when it's not available, we need to ensure that the file won't be shrinked
+    if (mode == 4) // OpenOrCreate
+    {
+        struct stat_ fileStat;
+        int fstatResult;
+        while ((fstatResult = fstat_(fileDescriptor, &fileStat)) < 0 && errno == EINTR);
+
+        if (fstatResult != 0 || (fileStat.st_mode & S_IFMT) != S_IFREG || (int64_t)fileStat.st_size >= length)
+        {
+            return 0;
+        }
+    }
+#endif
+
     int32_t result;
 #if HAVE_POSIX_FALLOCATE64 // 64-bit Linux
     while ((result = posix_fallocate64(fileDescriptor, (off64_t)offset, (off64_t)length)) == EINTR);
