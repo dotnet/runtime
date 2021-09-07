@@ -4945,6 +4945,13 @@ void LinearScan::allocateRegisters()
                 // it to a different register file.
                 allocate = false;
             }
+            else if ((currentInterval->isWriteThru) && (refType == RefTypeZeroInit))
+            {
+                // For RefTypeZeroInit which is a write thru, there is no need to allocate register
+                // right away. It can be assigned when actually definition occurs.
+                // In future, see if avoiding allocation for RefTypeZeroInit gives any benefit in general.
+                allocate = false;
+            }
             if (!allocate)
             {
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
