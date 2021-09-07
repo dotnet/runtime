@@ -474,16 +474,16 @@ public class C
 {
     [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
-    [RequiresAssemblyFiles(""Calls M1"")]
+    [RequiresAssemblyFiles(""Calls C.M1()"")]
     int M2() => M1();
 }
 class D
 {
-    [RequiresAssemblyFiles(""Calls M1"")]
+    [RequiresAssemblyFiles(""Calls C.M1()"")]
     public int M3(C c) => c.M1();
     public class E
     {
-        [RequiresAssemblyFiles(""Calls M1"")]
+        [RequiresAssemblyFiles(""Calls C.M1()"")]
         public int M4(C c) => c.M1();
     }
 }
@@ -578,7 +578,7 @@ public class C
     [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
-    [RequiresAssemblyFiles(""Calls M1"")]
+    [RequiresAssemblyFiles(""Calls C.M1()"")]
     int M2 => M1();
 }";
 			return VerifyRequiresAssemblyFilesCodeFix (
@@ -663,10 +663,10 @@ public class C
     [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
-    [RequiresAssemblyFiles(""Calls Wrapper"")]
+    [RequiresAssemblyFiles(""Calls Wrapper()"")]
     Action M2()
     {
-        [global::System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(""Calls M1"")] void Wrapper () => M1();
+        [global::System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(""Calls C.M1()"")] void Wrapper () => M1();
         return Wrapper;
     }
 }";
