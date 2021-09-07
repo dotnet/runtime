@@ -44,6 +44,7 @@ namespace System.Net.Http
 
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
+        private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support());
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;
@@ -1153,6 +1154,7 @@ namespace System.Net.Http
 
         private void SetSessionHandleTlsOptions(SafeWinHttpHandle sessionHandle)
         {
+            const SslProtocols Tls13 = (SslProtocols)12288; // enum is missing in .NET Standard
             uint optionData = 0;
             SslProtocols sslProtocols =
                 (_sslProtocols == SslProtocols.None) ? SecurityProtocol.DefaultSecurityProtocols : _sslProtocols;
@@ -1184,10 +1186,13 @@ namespace System.Net.Http
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
             }
 
-            // As of Win10RS5 there's no public constant for WinHTTP + TLS 1.3
-            // This library builds against netstandard, which doesn't define the Tls13 enum field.
+            // Set this only if supported by WinHttp version.
+            if (s_supportsTls13.Value && (sslProtocols & Tls13) != 0)
+            {
+                optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
+            }
 
-            // If only unknown values (e.g. TLS 1.3) were asked for, report ERROR_INVALID_PARAMETER.
+            // If only unknown values were asked for, report ERROR_INVALID_PARAMETER.
             if (optionData == 0)
             {
                 throw WinHttpException.CreateExceptionUsingError(
@@ -1196,6 +1201,30 @@ namespace System.Net.Http
             }
 
             SetWinHttpOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_SECURE_PROTOCOLS, ref optionData);
+        }
+
+        private static bool CheckTls13Support()
+        {
+            try
+            {
+                using (var handler = new WinHttpHandler())
+                using (SafeWinHttpHandle sessionHandle = Interop.WinHttp.WinHttpOpen(
+                            IntPtr.Zero,
+                            Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
+                            Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
+                            Interop.WinHttp.WINHTTP_NO_PROXY_BYPASS,
+                            (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC))
+                {
+                    uint optionData = Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
+
+                    handler.SetWinHttpOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_SECURE_PROTOCOLS, ref optionData);
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void SetSessionHandleTimeoutOptions(SafeWinHttpHandle sessionHandle)

@@ -3240,6 +3240,12 @@ gc_heap::dt_low_card_table_efficiency_p (gc_tuning_point tp)
 }
 
 inline BOOL
+gc_heap::dt_high_memory_load_p()
+{
+    return ((settings.entry_memory_load >= high_memory_load_th) || g_low_memory_status);
+}
+
+inline BOOL
 in_range_for_segment(uint8_t* add, heap_segment* seg)
 {
     return ((add >= heap_segment_mem (seg)) && (add < heap_segment_reserved (seg)));
@@ -11095,7 +11101,7 @@ void gc_heap::clear_region_info (heap_segment* region)
                         settings.gc_index, current_bgc_state,
                         seg_deleted);
 
-    if (settings.entry_memory_load >= high_memory_load_th || g_low_memory_status)
+    if (dt_high_memory_load_p())
     {
         decommit_mark_array_by_seg (region);
     }
@@ -11554,7 +11560,7 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                                                     uint8_t* new_committed)
 {
 #ifdef USE_REGIONS
-    if (settings.entry_memory_load < high_memory_load_th && !g_low_memory_status)
+    if (!dt_high_memory_load_p())
     {
         return 0;
     }
@@ -11589,7 +11595,7 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
 void gc_heap::decommit_heap_segment (heap_segment* seg)
 {
 #ifdef USE_REGIONS
-    if (settings.entry_memory_load < high_memory_load_th && !g_low_memory_status)
+    if (!dt_high_memory_load_p())
     {
         return;
     }
@@ -39611,7 +39617,7 @@ void reset_memory (uint8_t* o, size_t sizeo)
         size_t size = align_lower_page ((size_t)o + sizeo - size_to_skip - plug_skew) - page_start;
         // Note we need to compensate for an OS bug here. This bug would cause the MEM_RESET to fail
         // on write watched memory.
-        if (reset_mm_p && gc_heap::g_low_memory_status)
+        if (reset_mm_p && gc_heap::dt_high_memory_load_p())
         {
 #ifdef MULTIPLE_HEAPS
             bool unlock_p = true;

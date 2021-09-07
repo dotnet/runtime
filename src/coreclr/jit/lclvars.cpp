@@ -2614,8 +2614,14 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             assert(varTypeIsStruct(varDsc));
             break;
         case DNER_IsStructArg:
-            JITDUMP("it is a struct arg\n");
-            assert(varTypeIsStruct(varDsc));
+            if (varTypeIsStruct(varDsc))
+            {
+                JITDUMP("it is a struct arg\n");
+            }
+            else
+            {
+                JITDUMP("it is reinterpreted as a struct arg\n");
+            }
             break;
         case DNER_BlockOp:
             JITDUMP("written in a block op\n");
@@ -4025,6 +4031,16 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
     varDsc->incRefCnts(weight, this);
 
+#ifdef DEBUG
+    if (varDsc->lvIsStructField)
+    {
+        // If ref count was increased for struct field, ensure that the
+        // parent struct is still promoted.
+        LclVarDsc* parentStruct = &lvaTable[varDsc->lvParentLcl];
+        assert(!parentStruct->lvUndoneStructPromotion);
+    }
+#endif
+
     if (!isRecompute)
     {
         if (lvaVarAddrExposed(lclNum))
@@ -4092,8 +4108,10 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             {
                 bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                 bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
-                // TODO: Zero-inits in LSRA are created with below condition. Try to use similar condition here as well.
-                // if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
+                // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
+                // we filter lot of interesting variables that would benefit otherwise with EH var enregistration.
+                // bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem ||
+                // varTypeIsGC(varDsc->TypeGet()));
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
 
                 if (varDsc->lvSingleDefRegCandidate || needsExplicitZeroInit)
