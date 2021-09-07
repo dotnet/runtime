@@ -13,7 +13,9 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
+    <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project: https://github.com/NuGet/Home/issues/10368 -->
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.Security" />
