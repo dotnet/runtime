@@ -75,7 +75,8 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="section">The section to enumerate.</param>
         /// <returns><see langword="true" /> if the section has values or children; otherwise, <see langword="false" />.</returns>
-        public static bool Exists([NotNullWhen(true)] this IConfigurationSection? section)        {
+        public static bool Exists([NotNullWhen(true)] this IConfigurationSection? section)
+        {
             if (section == null)
             {
                 return false;
