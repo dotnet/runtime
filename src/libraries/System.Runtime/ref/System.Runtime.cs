@@ -6115,9 +6115,9 @@ namespace System
         static System.TimeSpan ISubtractionOperators<System.TimeOnly, System.TimeOnly, System.TimeSpan>.operator -(System.TimeOnly left, System.TimeOnly right) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MinValue { throw null; }
+        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MinValue { get { throw null; } }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MaxValue { throw null; }
+        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MaxValue { get { throw null; } }
 #endif // FEATURE_GENERIC_MATH
     }
     public partial class TimeoutException : System.SystemException
