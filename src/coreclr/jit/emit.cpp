@@ -1265,7 +1265,7 @@ void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacter
 //    CodeGen::genCodeForBBlist() as it walks the blocks.
 //    When we are in the prolog/epilog this value is nullptr.
 //
-BasicBlock::weight_t emitter::getCurrentBlockWeight()
+weight_t emitter::getCurrentBlockWeight()
 {
     // If we have a non-null compCurBB, then use it to get the current block weight
     if (emitComp->compCurBB != nullptr)
@@ -5641,7 +5641,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     //
     if (emitComp->fgHaveProfileData())
     {
-        const float scenarioHotWeight = 256.0f;
+        const weight_t scenarioHotWeight = 256.0;
         if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
         {
             allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
