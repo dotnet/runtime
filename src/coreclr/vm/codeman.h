@@ -1181,6 +1181,9 @@ class ExecutionManager
     {
         RangeSectionHandleArrayInitialSize = 100,
         RangeSectionHandleArrayExpansionFactor = 2
+#ifdef _DEBUG
+	,RangeSectionHandleArrayIncrement = 1
+#endif //(_DEBUG)
     };
 
     static int EncodeRangeSectionIndex(int index)

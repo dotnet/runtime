@@ -4657,7 +4657,11 @@ void ExecutionManager::AddRangeSection(RangeSection *pRS)
     if (m_RangeSectionArraySize == m_RangeSectionArrayCapacity)
     {
         //reallocate array
+#ifdef _DEBUG
+        m_RangeSectionArrayCapacity = (SIZE_T)m_RangeSectionArrayCapacity + RangeSectionHandleArrayIncrement;
+#elif //_DEBUG
         m_RangeSectionArrayCapacity = (SIZE_T)m_RangeSectionArrayCapacity * RangeSectionHandleArrayExpansionFactor;
+#endif //_DEBUG
         RangeSectionHandle *tmp = new RangeSectionHandle[m_RangeSectionArrayCapacity];
         memcpy(tmp, m_RangeSectionHandleArray, m_RangeSectionArraySize*sizeof(RangeSectionHandle));
         delete[] m_RangeSectionHandleArray;
