@@ -20378,7 +20378,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                 case GT_HWINTRINSIC:
                 {
                     // Enable for all parameterless (=invariant) hw intrinsics such as
-                    // Vector128<>.Empty and Vector256<>.AllBitSets. We might consider
+                    // Vector128<>.Zero and Vector256<>.AllBitSets. We might consider
                     // doing that for Vector.Create(cns) as well.
                     if ((argNode->gtGetOp1() == nullptr) && (argNode->gtGetOp2() == nullptr))
                     {
