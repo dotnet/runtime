@@ -667,7 +667,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_GatherWasmFilesToPublish">
     <ItemGroup>
-      <WasmAssembliesToBundle Include="%(ResolvedFileToPublish.FullPath)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll' AND %(FileName) != 'Microsoft.JSInterop.WebAssembly'" />
+      <WasmAssembliesToBundle Include="%(ResolvedFileToPublish.FullPath)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
+      <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'Microsoft.JSInterop.WebAssembly'" AOT_InternalForceInterpreter="true" />
     </ItemGroup>
   </Target>
 

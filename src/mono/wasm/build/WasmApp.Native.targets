@@ -433,7 +433,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssembliesInternal)" Exclude="@(_AOT_AssembliesForceToInterpret)">
+      <_AotInputAssemblies Include="@(_WasmAssembliesInternal)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
@@ -449,9 +449,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnlyInterp</AOTMode>
       <_AOTCompilerCacheFile>$(_WasmIntermediateOutputPath)aot_compiler_cache.json</_AOTCompilerCacheFile>
     </PropertyGroup>
-
-    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_AssembliesForceToInterpret) > 0"
-           Text="Builing in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. %40(_AOT_AssembliesForceToInterpret): @(_AOT_AssembliesForceToInterpret)" />
 
     <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
 
@@ -492,7 +489,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
       LLVMDebug="dwarfdebug"
-      LLVMPath="$(EmscriptenUpstreamBinPath)" >
+      LLVMPath="$(EmscriptenUpstreamBinPath)"
+      IntermediateOutputPath="$(_WasmIntermediateOutputPath)">
 
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
@@ -501,9 +499,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <ItemGroup>
       <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
       <_BitcodeFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
-
-      <!-- Add back the interpreter-only assemblies -->
-      <_WasmAssembliesInternal Include="@(_AOT_AssembliesForceToInterpret)" />
     </ItemGroup>
   </Target>
 
@@ -514,11 +509,10 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </PropertyGroup>
 
     <ItemGroup>
-      <_AOTedAssemblies Include="@(_WasmAssembliesInternal)" Exclude="@(_AOT_AssembliesForceToInterpret)" />
+      <_AOTedAssemblies Include="@(_WasmAssembliesInternal)" />
       <_WasmStrippedAssemblies
               Include="@(_AOTedAssemblies)"
               OriginalPath="%(_WasmAssembliesInternal.Identity)" />
-      <_WasmInterpOnlyAssembly Include="@(_AOT_AssembliesForceToInterpret)" />
     </ItemGroup>
 
     <!-- Run mono-cil-strip on the assemblies -->
@@ -528,7 +522,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
     <ItemGroup>
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
-      <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies);@(_WasmInterpOnlyAssembly)" />
+      <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies)" />
     </ItemGroup>
   </Target>
 
