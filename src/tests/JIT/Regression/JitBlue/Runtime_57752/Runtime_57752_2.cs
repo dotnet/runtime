@@ -13,12 +13,13 @@
 //     Image: D:\dev\Fuzzlyn\Fuzzlyn\publish\windows-x64\Fuzzlyn.exe
 // 
 // 
-public class Program
+public class Runtime_57752_2
 {
     internal static ulong s_46;
-    public static void Main()
+    public static int Main()
     {
         M53(ref s_46, ref s_46);
+        return 100;
     }
 
     internal static void M53(ref ulong arg0, ref ulong arg1)

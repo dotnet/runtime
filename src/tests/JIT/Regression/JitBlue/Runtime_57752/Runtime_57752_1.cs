@@ -12,22 +12,23 @@
 //     Image: D:\dev\Fuzzlyn\Fuzzlyn\publish\windows-x64\Fuzzlyn.exe
 // 
 // 
-public class Program
+public class Runtime_57752_1
 {
     internal static I s_rt;
     internal static long s_10;
-    internal static bool[] s_27;
+    internal static bool[] s_27 = new[]{true};
     internal static short s_28;
     internal static bool s_33;
     internal static bool s_53;
     internal static int[][] s_56;
-    public static void Main()
+    public static int Main()
     {
         s_rt = new C();
         var vr9 = new ushort[]{0};
         var vr10 = new bool[]{true};
         var vr11 = new int[]{0};
         M51(s_27, vr9, vr10, 0, vr11, ref s_28);
+        return 100;
     }
 
     internal static void M51(bool[] arg0, ushort[] arg5, bool[] arg9, ulong arg10, int[] arg11, ref short arg12)
