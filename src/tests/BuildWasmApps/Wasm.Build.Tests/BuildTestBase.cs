@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Xunit;
@@ -375,6 +376,17 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
         }
 
+        public string CreateBlazorWasmTemplateProject(string id)
+        {
+            InitBlazorWasmProjectDir(id);
+            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+                    .WithWorkingDirectory(_projectDir!)
+                    .ExecuteWithCapturedOutput("new blazorwasm")
+                    .EnsureSuccessful();
+
+            return Path.Combine(_projectDir!, $"{id}.csproj");
+        }
+
         static void AssertRuntimePackPath(string buildOutput)
         {
             var match = s_runtimePackPathRegex.Match(buildOutput);
@@ -487,6 +499,41 @@ namespace Wasm.Build.Tests
                 Assert.True(0 != result.exitCode, $"Build should have failed, but it didn't. Process exited with exitCode : {result.exitCode}");
 
             return result;
+        }
+
+        protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string? binFrameworkDir=null)
+        {
+            binFrameworkDir ??= Path.Combine(_projectDir!, "bin", config, "net6.0", isPublish ? "publish" : "", "wwwroot", "_framework");
+
+            AssertBlazorBootJson(config, isPublish, binFrameworkDir: binFrameworkDir);
+            AssertFile(Path.Combine(s_buildEnv.RuntimeNativeDir, "dotnet.wasm"),
+                       Path.Combine(binFrameworkDir, "dotnet.wasm"),
+                       "Expected dotnet.wasm to be same as the runtime pack",
+                       same: dotnetWasmFromRuntimePack);
+
+            string? dotnetJsPath = Directory.EnumerateFiles(binFrameworkDir, "dotnet.*.js").FirstOrDefault();
+            Assert.True(dotnetJsPath != null, $"Could not find blazor's dotnet*js in {binFrameworkDir}");
+
+            AssertFile(Path.Combine(s_buildEnv.RuntimeNativeDir, "dotnet.js"),
+                        dotnetJsPath!,
+                        "Expected dotnet.js to be same as the runtime pack",
+                        same: dotnetWasmFromRuntimePack);
+        }
+
+        protected void AssertBlazorBootJson(string config, bool isPublish, string? binFrameworkDir=null)
+        {
+            binFrameworkDir ??= Path.Combine(_projectDir!, "bin", config, "net6.0", isPublish ? "publish" : "", "wwwroot", "_framework");
+
+            string bootJson = File.ReadAllText(Path.Combine(binFrameworkDir, "blazor.boot.json"));
+            var bootJsonNode = JsonNode.Parse(bootJson);
+            var runtimeObj = bootJsonNode?["resources"]?["runtime"]?.AsObject();
+            Assert.NotNull(runtimeObj);
+
+            string msgPrefix=$"[{( isPublish ? "publish" : "build" )}]";
+            Assert.True(runtimeObj!.Where(kvp => kvp.Key == "dotnet.wasm").Any(), $"{msgPrefix} Could not find dotnet.wasm entry in blazor.boot.json");
+            Assert.True(runtimeObj!.Where(kvp => kvp.Key.StartsWith("dotnet.", StringComparison.OrdinalIgnoreCase) &&
+                                                    kvp.Key.EndsWith(".js", StringComparison.OrdinalIgnoreCase)).Any(),
+                                            $"{msgPrefix} Could not find dotnet.*js in {bootJson}");
         }
 
         protected string GetBinDir(string config, string targetFramework=s_targetFramework, string? baseDir=null)
@@ -618,26 +665,34 @@ namespace Wasm.Build.Tests
             }
         }
 
-        public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null)
+        public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null, string? atTheEnd=null)
         {
-            if (extraProperties == null && extraItems == null)
+            if (extraProperties == null && extraItems == null && atTheEnd == null)
                 return projectFile;
 
             XmlDocument doc = new();
             doc.Load(projectFile);
 
+            XmlNode root = doc.DocumentElement ?? throw new Exception();
             if (extraItems != null)
             {
                 XmlNode node = doc.CreateNode(XmlNodeType.Element, "ItemGroup", null);
                 node.InnerXml = extraItems;
-                doc.DocumentElement!.AppendChild(node);
+                root.AppendChild(node);
             }
 
             if (extraProperties != null)
             {
                 XmlNode node = doc.CreateNode(XmlNodeType.Element, "PropertyGroup", null);
                 node.InnerXml = extraProperties;
-                doc.DocumentElement!.AppendChild(node);
+                root.AppendChild(node);
+            }
+
+            if (atTheEnd != null)
+            {
+                XmlNode node = doc.CreateNode(XmlNodeType.DocumentFragment, "foo", null);
+                node.InnerXml = atTheEnd;
+                root.InsertAfter(node, root.LastChild);
             }
 
             doc.Save(projectFile);

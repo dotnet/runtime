@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,13 +19,32 @@ namespace Wasm.Build.Tests
             _enablePerTestCleanup = true;
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsNotUsingWorkloads))]
+        [InlineData("Debug")]
+        [InlineData("Release")]
+        public void DefaultTemplate_WithoutWorkload(string config)
+        {
+            string id = $"blz_no_workload_{config}";
+            CreateBlazorWasmTemplateProject(id);
+
+            // Build
+            BuildInternal(id, config, publish: false);
+            string binFrameworkDir = Path.Combine(_projectDir!, "bin", config, "net6.0", "wwwroot", "_framework");
+            AssertBlazorBootJson(config, isPublish: false, binFrameworkDir);
+
+            // Publish
+            BuildInternal(id, config, publish: true);
+            binFrameworkDir = Path.Combine(_projectDir!, "bin", config, "net6.0", "publish", "wwwroot", "_framework");
+            AssertBlazorBootJson(config, isPublish: true, binFrameworkDir);
+        }
+
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
-        public void DefaultTemplate(string config)
+        public void DefaultTemplate_NoAOT_WithWorkload(string config)
         {
             string id = $"blz_no_aot_{config}";
-            CreateTemplateProject(id);
+            CreateBlazorWasmTemplateProject(id);
 
             BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
             if (config == "Release")
@@ -46,7 +64,7 @@ namespace Wasm.Build.Tests
         public void DefaultTemplate_AOT_InProjectFile(string config)
         {
             string id = $"blz_aot_prj_file_{config}";
-            string projectFile = CreateTemplateProject(id);
+            string projectFile = CreateBlazorWasmTemplateProject(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
             // No relinking, no AOT
@@ -65,7 +83,7 @@ namespace Wasm.Build.Tests
         public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
         {
             string id = $"blz_aot_pub_{config}";
-            CreateTemplateProject(id);
+            CreateBlazorWasmTemplateProject(id);
 
             // No relinking, no AOT
             BlazorBuild(id, config, NativeFilesType.FromRuntimePack);
@@ -101,7 +119,7 @@ namespace Wasm.Build.Tests
         public void WithNativeReference_AOTOnCommandLine(string config)
         {
             string id = $"blz_nativeref_aot_{config}";
-            string projectFile = CreateProjectWithNativeReference(id);
+            CreateProjectWithNativeReference(id);
 
             BlazorBuild(id, config, expectedFileType: NativeFilesType.Relinked);
 
@@ -115,6 +133,7 @@ namespace Wasm.Build.Tests
         {
             var res = BuildInternal(id, config, publish: false, extraArgs);
             AssertDotNetNativeFiles(expectedFileType, config, forPublish: false);
+            AssertBlazorBundle(config, isPublish: false, dotnetWasmFromRuntimePack: expectedFileType == NativeFilesType.FromRuntimePack);
 
             return res;
         }
@@ -123,6 +142,7 @@ namespace Wasm.Build.Tests
         {
             var res = BuildInternal(id, config, publish: true, extraArgs);
             AssertDotNetNativeFiles(expectedFileType, config, forPublish: true);
+            AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: expectedFileType == NativeFilesType.FromRuntimePack);
             return res;
         }
 
@@ -184,7 +204,7 @@ namespace Wasm.Build.Tests
 
         private string CreateProjectWithNativeReference(string id)
         {
-            CreateTemplateProject(id);
+            CreateBlazorWasmTemplateProject(id);
 
             string extraItems = @$"
                 <PackageReference Include=""SkiaSharp"" Version=""2.80.3"" />
@@ -199,16 +219,6 @@ namespace Wasm.Build.Tests
             return projectFile;
         }
 
-        private string CreateTemplateProject(string id)
-        {
-            InitBlazorWasmProjectDir(id);
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
-                    .WithWorkingDirectory(_projectDir!)
-                    .ExecuteWithCapturedOutput("new blazorwasm")
-                    .EnsureSuccessful();
-
-            return Path.Combine(_projectDir!, $"{id}.csproj");
-        }
     }
 
     internal enum NativeFilesType { FromRuntimePack, Relinked, AOT };

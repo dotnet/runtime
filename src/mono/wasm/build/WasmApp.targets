@@ -83,12 +83,13 @@
     <_BeforeWasmBuildAppDependsOn />
 
     <IsWasmProject Condition="'$(IsWasmProject)' == '' and '$(OutputType)' != 'Library'">true</IsWasmProject>
-    <DisableAutoWasmBuildApp Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">true</DisableAutoWasmBuildApp>
-    <_WasmBuildAppAfterThisTarget Condition="'$(DisableAutoWasmBuildApp)' != 'true'">Build</_WasmBuildAppAfterThisTarget>
+    <!-- FIXME: tmp hack for blazor -->
+    <DisableAutoWasmBuildApp Condition="'$(DisableAutoWasmBuildApp)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">true</DisableAutoWasmBuildApp>
+    <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
 
     <!-- FIXME: tmp hack for blazor -->
-    <DisableAutoWasmPublishApp Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">true</DisableAutoWasmPublishApp>
-    <_WasmTriggerPublishAppAfterThisTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true' and '$(WasmBuildingForPublish)' != 'true'">Publish</_WasmTriggerPublishAppAfterThisTarget>
+    <DisableAutoWasmPublishApp Condition="'$(DisableAutoWasmPublishApp)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">true</DisableAutoWasmPublishApp>
+    <WasmTriggerPublishAppAfterThisTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true' and '$(WasmBuildingForPublish)' != 'true'">Publish</WasmTriggerPublishAppAfterThisTarget>
     <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
 
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
@@ -97,7 +98,7 @@
   <!-- PUBLISH -->
 
   <Target Name="WasmTriggerPublishApp"
-          AfterTargets="$(_WasmTriggerPublishAppAfterThisTarget)"
+          AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
           Condition="'$(IsWasmProject)' == 'true' and '$(WasmBuildingForPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
 
     <!-- Use a unique property, so the already run wasm targets can also run -->
@@ -147,7 +148,7 @@
 
   <!-- public target for Build -->
   <Target Name="WasmBuildApp"
-          AfterTargets="$(_WasmBuildAppAfterThisTarget)"
+          AfterTargets="$(WasmBuildAppAfterThisTarget)"
           DependsOnTargets="$(WasmBuildAppDependsOn)"
           Condition="'$(IsWasmProject)' == 'true' and '$(WasmBuildingForPublish)' == '' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'" />
 
