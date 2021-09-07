@@ -612,7 +612,7 @@ public:
         {
         public:
             emitLocation               m_StartEmitLocation; // first position from where "m_VarLocation" becomes valid
-            emitLocation               m_EndEmitLocation;   // last position where "m_VarLocation" is valid
+            emitLocation               m_EndEmitLocation;   // last position, i.e. first position where "m_VarLocation" is invalid
             CodeGenInterface::siVarLoc m_VarLocation;       // variable location
 
             VariableLiveRange(CodeGenInterface::siVarLoc varLocation,

@@ -260,7 +260,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     genPopRegs(pushedRegs, byrefPushedRegs, norefPushedRegs);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+void CodeGen::genCallFinally(BasicBlock* block)
 {
 #if defined(FEATURE_EH_FUNCLETS)
     // Generate a call to the finally, like this:
@@ -381,17 +381,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     inst_JMP(EJ_jmp, block->bbJumpDest);
 
 #endif // !FEATURE_EH_FUNCLETS
-
-    // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
-    // to the finally block. So just skip past the BBJ_ALWAYS unless the
-    // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallAlwaysPair());
-        block = block->bbNext;
-    }
-    return block;
 }
 
 #if defined(FEATURE_EH_FUNCLETS)

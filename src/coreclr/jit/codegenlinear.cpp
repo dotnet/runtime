@@ -376,7 +376,7 @@ void CodeGen::genCodeForBBlist()
 
         // BBF_INTERNAL blocks don't correspond to any single IL instruction.
         if (compiler->opts.compDbgInfo && (block->bbFlags & BBF_INTERNAL) &&
-            !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
+            !compiler->fgBBisScratch(block) && !block->isBBCallAlwaysPairTail()) // If the block is the distinguished first scratch block, then no need to
                                              // emit a NO_MAPPING entry, immediately after the prolog.
         {
             genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::NO_MAPPING, true);
@@ -537,10 +537,6 @@ void CodeGen::genCodeForBBlist()
         /* Is this the last block, and are there any open scopes left ? */
 
         bool isLastBlockProcessed = (block->bbNext == nullptr);
-        if (block->isBBCallAlwaysPair())
-        {
-            isLastBlockProcessed = (block->bbNext->bbNext == nullptr);
-        }
 
 #ifdef USING_VARIABLE_LIVE_RANGE
         if (compiler->opts.compDbgInfo && isLastBlockProcessed)
@@ -710,7 +706,7 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_CALLFINALLY:
-                block = genCallFinally(block);
+                genCallFinally(block);
                 break;
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -742,6 +738,11 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_ALWAYS:
+                if (block->isBBCallAlwaysPairTail())
+                {
+                    break;
+                }
+
                 inst_JMP(EJ_jmp, block->bbJumpDest);
                 FALLTHROUGH;
 

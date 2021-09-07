@@ -115,7 +115,7 @@ bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 //------------------------------------------------------------------------
 // genCallFinally: Generate a call to the finally block.
 //
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     BasicBlock* bbFinallyRet = nullptr;
 
@@ -139,11 +139,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
     // jump target using bbJumpDest - that is already used to point
-    // to the finally block. So just skip past the BBJ_ALWAYS unless the
-    // block is RETLESS.
+    // to the finally block.
     assert(!(block->bbFlags & BBF_RETLESS_CALL));
     assert(block->isBBCallAlwaysPair());
-    return block->bbNext;
 }
 
 //------------------------------------------------------------------------
