@@ -20,7 +20,7 @@ abstract class BenchTask
         results.Add(result);
         await measurement.AfterBatch();
 
-        return result.ToString ();
+        return result.ToString();
     }
 
     public virtual void Initialize() { }
@@ -34,10 +34,11 @@ abstract class BenchTask
         public string taskName;
         public string measurementName;
 
-        public override string ToString() => $"{taskName}, {measurementName} count: {steps}, per call: {span.TotalMilliseconds/steps}ms, total: {span.TotalSeconds}s";
+        public override string ToString() => $"{taskName}, {measurementName} count: {steps}, per call: {span.TotalMilliseconds / steps}ms, total: {span.TotalSeconds}s";
     }
 
-    public abstract class Measurement {
+    public abstract class Measurement
+    {
         public abstract string Name { get; }
 
         public virtual int InitialSamples { get { return 10; } }
@@ -56,31 +57,41 @@ abstract class BenchTask
 
         public Result RunBatch(BenchTask task, int milliseconds)
         {
-            DateTime start;
+            DateTime start = DateTime.Now;
             DateTime end;
-
-            // run one to eliminate possible startup overhead and do GC collection
-            RunStep();
-            GC.Collect();
-
-            start = DateTime.Now;
-            for (int i = 0; i < InitialSamples; i++)
-                RunStep();
-            end = DateTime.Now;
-
-            var initTs = end - start;
-            int steps = CalculateSteps(milliseconds, initTs);
-
-            start = DateTime.Now;
-            for (int i = 0; i < steps; i++)
+            int i = 0;
+            try
             {
+                // run one to eliminate possible startup overhead and do GC collection
                 RunStep();
+                GC.Collect();
+
+                start = DateTime.Now;
+                for (i = 0; i < InitialSamples; i++)
+                    RunStep();
+                end = DateTime.Now;
+
+                var initTs = end - start;
+                int steps = CalculateSteps(milliseconds, initTs);
+
+                start = DateTime.Now;
+                for (i = 0; i < steps; i++)
+                {
+                    RunStep();
+                }
+                end = DateTime.Now;
+
+                var ts = end - start;
+
+                return new Result { span = ts + initTs, steps = steps + InitialSamples, taskName = task.Name, measurementName = Name };
             }
-            end = DateTime.Now;
-
-            var ts = end - start;
-
-            return new Result { span = ts + initTs, steps = steps + InitialSamples, taskName = task.Name, measurementName = Name };
+            catch (Exception ex)
+            {
+                end = DateTime.Now;
+                var ts = end - start;
+                Console.WriteLine(ex);
+                return new Result { span = ts, steps = i + InitialSamples, taskName = task.Name, measurementName = Name + " " + ex.Message };
+            }
         }
     }
 }

@@ -26,21 +26,26 @@ namespace Sample
         public WebSocketTask()
         {
             measurements = new Measurement[] {
-                new ShortPartialSendMeasurement(),
-                new LongPartialSendMeasurement(),
-                new ShortPartialReceiveMeasurement(),
-                new LongPartialReceiveMeasurement(),
+                new PartialSend_1BMeasurement(),
+                new PartialSend_64KBMeasurement(),
+                new PartialSend_1MBMeasurement(),
+
+                new PartialReceive_1BMeasurement(),
+                new PartialReceive_10KBMeasurement(),
+                new PartialReceive_100KBMeasurement(),
             };
         }
 
         public abstract class WebSocketMeasurement : BenchTask.Measurement
         {
+            protected int step;
             protected ClientWebSocket client;
-            public WebSocketMeasurement()
-            {
-            }
+
+            public override string Name => GetType().Name.Replace("Measurement", "");
+
             public override async Task BeforeBatch()
             {
+                step = 0;
                 client = new ClientWebSocket();
                 await client.ConnectAsync(EchoServer, CancellationToken.None);
             }
@@ -61,30 +66,27 @@ namespace Sample
                 await base.BeforeBatch();
                 ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[Max_length]);
 
-                for (int i = 0; i < 30000; i++)
+                for (int i = 0; i < Max_length; i++)
                 {
                     buffer[i] = (byte)(i & 0xff);
                 }
-                buffer[60_000] = 255;
 
                 await client.SendAsync(buffer, WebSocketMessageType.Binary, true, CancellationToken.None);
 
                 // make sure that message arrived to receive buffer
-                await Task.Delay(3000);
+                await Task.Delay(3500);
             }
         }
 
-        public class ShortPartialSendMeasurement : WebSocketMeasurement
+        public class PartialSend_1BMeasurement : WebSocketMeasurement
         {
+            public override int InitialSamples => 1000;
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1]);
+
             protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
             {
                 return 250_000;
             }
-            public override int InitialSamples => 1000;
-            public override string Name => "ShortPartialSend";
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1]);
-            int step = 0;
-
             public override void RunStep()
             {
                 buffer[0] = (byte)(step & 0xff);
@@ -93,23 +95,21 @@ namespace Sample
             }
         }
 
-        public class LongPartialSendMeasurement : WebSocketMeasurement
+        public class PartialSend_64KBMeasurement : WebSocketMeasurement
         {
-            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
-            {
-                return 5000;
-            }
+            const int bufferSize = 64*1024;
             public override int InitialSamples => 1000;
-            public override string Name => "LongPartialSend";
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[64_000]);
-            int step = 0;
-            public LongPartialSendMeasurement()
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
+            public PartialSend_64KBMeasurement()
             {
-                for (int i = 0; i < 30000; i++)
+                for (int i = 0; i < bufferSize; i++)
                 {
                     buffer[i] = (byte)(i & 0xff);
                 }
-                buffer[60_000] = 255;
+            }
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            {
+                return 3000;
             }
 
             public override void RunStep()
@@ -120,51 +120,111 @@ namespace Sample
             }
         }
 
-        public class ShortPartialReceiveMeasurement : WebSocketReceiveMeasurement
+        public class PartialSend_1MBMeasurement : WebSocketMeasurement
         {
-            public override string Name => "ShortPartialReceive";
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[2]);
+            const int bufferSize = 1 * 1024 * 1024;
+            public override int InitialSamples => 10;
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
+            public PartialSend_1MBMeasurement()
+            {
+                for (int i = 0; i < bufferSize; i++)
+                {
+                    buffer[i] = (byte)(i & 0xff);
+                }
+            }
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            {
+                return 100;
+            }
 
             public override void RunStep()
             {
-                for (int i = 0; i < 30000; i++)
-                {
-                    var task = client.ReceiveAsync(buffer, CancellationToken.None);
-#if DEBUG
-                    if (!task.IsCompleted) throw new InvalidOperationException("Expected Completed");
-                    if (task.Result.Count != 2) throw new InvalidOperationException("Expected full buffer");
-                    if (buffer[0] != (byte)(i & 0xff)) throw new InvalidOperationException("Expected data");
-#endif
-                }
+                buffer[0] = (byte)(step & 0xff);
+                client.SendAsync(buffer, WebSocketMessageType.Binary, false, CancellationToken.None);
+                step++;
             }
         }
 
-        public class LongPartialReceiveMeasurement : WebSocketReceiveMeasurement
+        public class PartialReceive_1BMeasurement : WebSocketReceiveMeasurement
         {
-            public override int InitialSamples => 1;
-            public override string Name => "LongPartialReceive";
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[10_000]);
-            int step = 0;
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1]);
 
             protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
             {
-                return (Max_length / 10_000) - InitialSamples - 1;
+                return Max_length - InitialSamples - 100;
             }
 
             public override void RunStep()
             {
                 var task = client.ReceiveAsync(buffer, CancellationToken.None);
 #if DEBUG
-                if (!task.IsCompleted) throw new InvalidOperationException("LongPartialReceive: Expected Completed " + step);
-                if (task.Result.Count != buffer.Count) throw new InvalidOperationException("LongPartialReceive: Expected full buffer" + step);
-                if (step == 0) for (int i = 0; i < 10_000; i++)
+                if (!task.IsCompleted) throw new InvalidOperationException(Name + ": Expected Completed" + step);
+                if (task.Result.Count != 1) throw new InvalidOperationException(Name + ": Expected full buffer" + step);
+                if (buffer[0] != (byte)(step & 0xff)) throw new InvalidOperationException(Name + ": Expected data" + step);
+#endif
+                step++;
+            }
+        }
+
+        public class PartialReceive_10KBMeasurement : WebSocketReceiveMeasurement
+        {
+            const int bufferSize = 10*1024;
+            public override int InitialSamples => 1;
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
+            public override int NumberOfRuns => 15;
+
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            {
+                return (Max_length / bufferSize) - InitialSamples - 1;
+            }
+
+            public override void RunStep()
+            {
+                var task = client.ReceiveAsync(buffer, CancellationToken.None);
+#if DEBUG
+                if (!task.IsCompleted) throw new InvalidOperationException(Name + ": Expected Completed " + step);
+                if (task.Result.Count != buffer.Count) throw new InvalidOperationException(Name + ": Expected full buffer" + step);
+                if (step == 0) for (int i = 0; i < bufferSize; i++)
                     {
-                        if (buffer[i] != (byte)(i & 0xff)) throw new InvalidOperationException("LongPartialReceive: Expected data at " + i + " " + step);
+                        if (buffer[i] != (byte)(i & 0xff)) throw new InvalidOperationException(Name + ": Expected data at " + i + " " + step);
                     }
 #endif
                 step++;
             }
         }
 
+        public class PartialReceive_100KBMeasurement : WebSocketReceiveMeasurement
+        {
+            const int bufferSize = 100_000;
+            public override int InitialSamples => 1;
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
+            public override int NumberOfRuns => 15;
+
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            {
+                return 0;
+            }
+
+            public override void RunStep()
+            {
+                if (step == 0)
+                {
+                    // this is GC step
+                    client.ReceiveAsync(new ArraySegment<byte>(new byte[1]), CancellationToken.None);
+                    return;
+                }
+                Console.WriteLine("RunStep " + step);
+                var task = client.ReceiveAsync(buffer, CancellationToken.None);
+#if DEBUG
+                if (!task.IsCompleted) throw new InvalidOperationException(Name + ": Expected Completed " + step);
+                if (task.Result.Count != buffer.Count) throw new InvalidOperationException(Name + ": Expected full buffer" + step + " " + task.Result.Count + "!");
+                if (step == 0) for (int i = 0; i < bufferSize; i++)
+                    {
+                        if (buffer[i] != (byte)(i & 0xff)) throw new InvalidOperationException(Name + ": Expected data at " + i + " " + step);
+                    }
+#endif
+                step++;
+            }
+        }
     }
 }
