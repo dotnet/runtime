@@ -4075,6 +4075,16 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
     varDsc->incRefCnts(weight, this);
 
+#ifdef DEBUG
+    if (varDsc->lvIsStructField)
+    {
+        // If ref count was increased for struct field, ensure that the
+        // parent struct is still promoted.
+        LclVarDsc* parentStruct = &lvaTable[varDsc->lvParentLcl];
+        assert(!parentStruct->lvUndoneStructPromotion);
+    }
+#endif
+
     if (!isRecompute)
     {
         if (lvaVarAddrExposed(lclNum))
