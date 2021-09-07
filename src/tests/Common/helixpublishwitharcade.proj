@@ -352,7 +352,7 @@
       <TestGroup>%(PayloadGroup)</TestGroup>
       <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. -->
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
-      <PayloadZipFile>$(PayloadsRootDirectory)\%(PayloadGroup).zip)</PayloadZipFile>
+      <PayloadZipFile>$(PayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
     </Payloads>
 
     <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
