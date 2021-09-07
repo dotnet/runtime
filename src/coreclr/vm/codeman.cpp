@@ -4675,7 +4675,7 @@ void ExecutionManager::AddRangeSection(RangeSection *pRS)
         //reallocate array
 #ifdef _DEBUG
         m_RangeSectionArrayCapacity = (SIZE_T)m_RangeSectionArrayCapacity + RangeSectionHandleArrayIncrement;
-#elif //_DEBUG
+#else
         m_RangeSectionArrayCapacity = (SIZE_T)m_RangeSectionArrayCapacity * RangeSectionHandleArrayExpansionFactor;
 #endif //_DEBUG
         RangeSectionHandle *tmp = new RangeSectionHandle[m_RangeSectionArrayCapacity];
