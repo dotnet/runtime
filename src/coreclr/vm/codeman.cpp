@@ -4568,6 +4568,22 @@ PTR_Module ExecutionManager::FindModuleForGCRefMap(TADDR currentData)
     return dac_cast<PTR_Module>(pRS->pHeapListOrZapModule);
 }
 
+/*********************************************************************/
+// This function returns coded index: a number to be converted 
+// to an actual index of RangeSectionHandleArray. Coded index uses
+// non-negative values to store actual index of an element already
+// existed in the array or it uses negative values to code an index
+// to be used for placing a new element to the array. If value
+// returned from FindRangeSectionHandleHelper is not negative, it can
+// be immediately used to read an existing element like this:
+// pRS = RangeSectionHandleArray[non_negative].pRS;
+// If the value becomes negative then there is no element with
+// requested TADDR in the RangeSectionHandleArray, and the value
+// might be decoded to an actual index of RangeSectionHandleArray cell
+// to place new RangeSectionHandle (if intended).
+// The function to decode is DecodeRangeSectionIndex that takes
+// negative coded index and returns an actual index.
+//
 int ExecutionManager::FindRangeSectionHandleHelper(TADDR addr)
 {
     CONTRACTL {

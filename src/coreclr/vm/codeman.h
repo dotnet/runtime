@@ -1186,6 +1186,8 @@ class ExecutionManager
 #endif //(_DEBUG)
     };
 
+    static int FindRangeSectionHandleHelper(TADDR addr);
+
     static int EncodeRangeSectionIndex(int index)
     {
         return -(index+1);
@@ -1292,8 +1294,6 @@ public:
     static void           AddNativeImageRange(TADDR StartRange,
                                               SIZE_T Size,
                                               Module * pModule);
-
-    static int            FindRangeSectionHandleHelper(TADDR addr);
 
 #ifndef DACCESS_COMPILE
     static void            AddRangeSection(RangeSection *pRS);
