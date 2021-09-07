@@ -25,6 +25,7 @@ namespace System.Text.Json.SourceGeneration
             private const string SystemTextJsonNamespace = "System.Text.Json";
             private const string JsonConverterAttributeFullName = "System.Text.Json.Serialization.JsonConverterAttribute";
             private const string JsonElementFullName = "System.Text.Json.JsonElement";
+            private const string JsonConverterFactoryFullName = "System.Text.Json.Serialization.JsonConverterFactory";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
@@ -571,6 +572,8 @@ namespace System.Text.Json.SourceGeneration
                 string? converterInstatiationLogic = null;
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
+                bool hasTypeFactoryConverter = false;
+                bool hasPropertyFactoryConverters = false;
 
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(type);
                 foreach (CustomAttributeData attributeData in attributeDataList)
@@ -585,7 +588,11 @@ namespace System.Text.Json.SourceGeneration
                     else if (!foundDesignTimeCustomConverter && attributeType.GetCompatibleBaseClass(JsonConverterAttributeFullName) != null)
                     {
                         foundDesignTimeCustomConverter = true;
-                        converterInstatiationLogic = GetConverterInstantiationLogic(attributeData);
+                        converterInstatiationLogic = GetConverterInstantiationLogic(
+                            type,
+                            attributeData,
+                            forType: true,
+                            ref hasTypeFactoryConverter);
                     }
                 }
 
@@ -816,6 +823,8 @@ namespace System.Text.Json.SourceGeneration
 
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
+                            PropertyGenerationSpec spec;
+
                             foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
                             {
                                 bool isVirtual = propertyInfo.IsVirtual();
@@ -826,9 +835,8 @@ namespace System.Text.Json.SourceGeneration
                                     continue;
                                 }
 
-                                PropertyGenerationSpec spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
-                                CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
-                                propertyOrderSpecified |= spec.Order != 0;
+                                spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
+                                CacheMemberHelper();
                             }
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
@@ -838,9 +846,19 @@ namespace System.Text.Json.SourceGeneration
                                     continue;
                                 }
 
-                                PropertyGenerationSpec spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
+                                spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
+                                CacheMemberHelper();
+                            }
+
+                            void CacheMemberHelper()
+                            {
                                 CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
+
                                 propertyOrderSpecified |= spec.Order != 0;
+                                hasPropertyFactoryConverters |= spec.HasFactoryConverter;
+
+                                // The property type may be implicitly in the context, so add that as well.
+                                hasTypeFactoryConverter |= spec.TypeGenerationSpec.HasTypeFactoryConverter;
                             }
                         }
 
@@ -864,8 +882,10 @@ namespace System.Text.Json.SourceGeneration
                     constructionStrategy,
                     nullableUnderlyingTypeMetadata: nullableUnderlyingTypeGenSpec,
                     converterInstatiationLogic,
-                    implementsIJsonOnSerialized,
-                    implementsIJsonOnSerializing);
+                    implementsIJsonOnSerialized : implementsIJsonOnSerialized,
+                    implementsIJsonOnSerializing : implementsIJsonOnSerializing,
+                    hasTypeFactoryConverter : hasTypeFactoryConverter,
+                    hasPropertyFactoryConverters : hasPropertyFactoryConverters);
 
                 return typeMetadata;
             }
@@ -905,16 +925,95 @@ namespace System.Text.Json.SourceGeneration
 
             private PropertyGenerationSpec GetPropertyGenerationSpec(MemberInfo memberInfo, bool isVirtual, JsonSourceGenerationMode generationMode)
             {
+                Type memberCLRType = GetMemberClrType(memberInfo);
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(memberInfo);
 
-                bool hasJsonInclude = false;
-                JsonIgnoreCondition? ignoreCondition = null;
-                JsonNumberHandling? numberHandling = null;
-                string? jsonPropertyName = null;
+                ProcessCustomAttributes(
+                    attributeDataList,
+                    memberCLRType,
+                    out bool hasJsonInclude,
+                    out string? jsonPropertyName,
+                    out JsonIgnoreCondition? ignoreCondition,
+                    out JsonNumberHandling? numberHandling,
+                    out string? converterInstantiationLogic,
+                    out int order,
+                    out bool hasFactoryConverter);
+
+                ProcessMember(
+                    memberInfo,
+                    memberCLRType,
+                    hasJsonInclude,
+                    out bool isReadOnly,
+                    out bool isPublic,
+                    out bool canUseGetter,
+                    out bool canUseSetter,
+                    out bool getterIsVirtual,
+                    out bool setterIsVirtual);
+
+                string clrName = memberInfo.Name;
+                string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
+                string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
+
+                return new PropertyGenerationSpec
+                {
+                    ClrName = clrName,
+                    IsProperty = memberInfo.MemberType == MemberTypes.Property,
+                    IsPublic = isPublic,
+                    IsVirtual = isVirtual,
+                    JsonPropertyName = jsonPropertyName,
+                    RuntimePropertyName = runtimePropertyName,
+                    PropertyNameVarName = propertyNameVarName,
+                    IsReadOnly = isReadOnly,
+                    CanUseGetter = canUseGetter,
+                    CanUseSetter = canUseSetter,
+                    GetterIsVirtual = getterIsVirtual,
+                    SetterIsVirtual = setterIsVirtual,
+                    DefaultIgnoreCondition = ignoreCondition,
+                    NumberHandling = numberHandling,
+                    Order = order,
+                    HasJsonInclude = hasJsonInclude,
+                    TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
+                    DeclaringTypeRef = memberInfo.DeclaringType.GetCompilableName(),
+                    ConverterInstantiationLogic = converterInstantiationLogic,
+                    HasFactoryConverter = hasFactoryConverter
+                };
+            }
+
+            private Type GetMemberClrType(MemberInfo memberInfo)
+            {
+                if (memberInfo is PropertyInfo propertyInfo)
+                {
+                    return propertyInfo.PropertyType;
+                }
+
+                if (memberInfo is FieldInfo fieldInfo)
+                {
+                    return fieldInfo.FieldType;
+                }
+
+                throw new InvalidOperationException();
+            }
+
+            private void ProcessCustomAttributes(
+                IList<CustomAttributeData> attributeDataList,
+                Type memberCLRType,
+                out bool hasJsonInclude,
+                out string? jsonPropertyName,
+                out JsonIgnoreCondition? ignoreCondition,
+                out JsonNumberHandling? numberHandling,
+                out string? converterInstantiationLogic,
+                out int order,
+                out bool hasFactoryConverter)
+            {
+                hasJsonInclude = false;
+                jsonPropertyName = null;
+                ignoreCondition = default;
+                numberHandling = default;
+                converterInstantiationLogic = null;
+                order = 0;
 
                 bool foundDesignTimeCustomConverter = false;
-                string? converterInstantiationLogic = null;
-                int order = 0;
+                hasFactoryConverter = false;
 
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
@@ -923,7 +1022,11 @@ namespace System.Text.Json.SourceGeneration
                     if (!foundDesignTimeCustomConverter && attributeType.GetCompatibleBaseClass(JsonConverterAttributeFullName) != null)
                     {
                         foundDesignTimeCustomConverter = true;
-                        converterInstantiationLogic = GetConverterInstantiationLogic(attributeData);
+                        converterInstantiationLogic = GetConverterInstantiationLogic(
+                            memberCLRType,
+                            attributeData,
+                            forType: false,
+                            ref hasFactoryConverter);
                     }
                     else if (attributeType.Assembly.FullName == SystemTextJsonNamespace)
                     {
@@ -974,21 +1077,29 @@ namespace System.Text.Json.SourceGeneration
                         }
                     }
                 }
+            }
 
-                Type memberCLRType;
-                bool isReadOnly;
-                bool isPublic = false;
-                bool canUseGetter = false;
-                bool canUseSetter = false;
-                bool getterIsVirtual = false;
-                bool setterIsVirtual = false;
+            private static void ProcessMember(
+                MemberInfo memberInfo,
+                Type memberClrType,
+                bool hasJsonInclude,
+                out bool isReadOnly,
+                out bool isPublic,
+                out bool canUseGetter,
+                out bool canUseSetter,
+                out bool getterIsVirtual,
+                out bool setterIsVirtual)
+            {
+                isPublic = false;
+                canUseGetter = false;
+                canUseSetter = false;
+                getterIsVirtual = false;
+                setterIsVirtual = false;
 
                 switch (memberInfo)
                 {
                     case PropertyInfo propertyInfo:
                         {
-                            memberCLRType = propertyInfo.PropertyType;
-
                             MethodInfo? getMethod = propertyInfo.GetMethod;
                             MethodInfo? setMethod = propertyInfo.SetMethod;
 
@@ -1031,7 +1142,6 @@ namespace System.Text.Json.SourceGeneration
                         break;
                     case FieldInfo fieldInfo:
                         {
-                            memberCLRType = fieldInfo.FieldType;
                             isPublic = fieldInfo.IsPublic;
                             isReadOnly = fieldInfo.IsInitOnly;
 
@@ -1045,39 +1155,15 @@ namespace System.Text.Json.SourceGeneration
                     default:
                         throw new InvalidOperationException();
                 }
-
-                string clrName = memberInfo.Name;
-                string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
-                string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
-
-                return new PropertyGenerationSpec
-                {
-                    ClrName = clrName,
-                    IsProperty = memberInfo.MemberType == MemberTypes.Property,
-                    IsPublic = isPublic,
-                    IsVirtual = isVirtual,
-                    JsonPropertyName = jsonPropertyName,
-                    RuntimePropertyName = runtimePropertyName,
-                    PropertyNameVarName = propertyNameVarName,
-                    IsReadOnly = isReadOnly,
-                    CanUseGetter = canUseGetter,
-                    CanUseSetter = canUseSetter,
-                    GetterIsVirtual = getterIsVirtual,
-                    SetterIsVirtual = setterIsVirtual,
-                    DefaultIgnoreCondition = ignoreCondition,
-                    NumberHandling = numberHandling,
-                    Order = order,
-                    HasJsonInclude = hasJsonInclude,
-                    TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
-                    DeclaringTypeRef = memberInfo.DeclaringType.GetCompilableName(),
-                    ConverterInstantiationLogic = converterInstantiationLogic
-                };
             }
 
             private static bool PropertyAccessorCanBeReferenced(MethodInfo? accessor)
                 => accessor != null && (accessor.IsPublic || accessor.IsAssembly);
 
-            private string? GetConverterInstantiationLogic(CustomAttributeData attributeData)
+            private string? GetConverterInstantiationLogic(
+                Type type, CustomAttributeData attributeData,
+                bool forType, // whether for a type or a property
+                ref bool hasFactoryConverter)
             {
                 if (attributeData.AttributeType.FullName != JsonConverterAttributeFullName)
                 {
@@ -1090,6 +1176,20 @@ namespace System.Text.Json.SourceGeneration
                 if (converterType == null || converterType.GetConstructor(Type.EmptyTypes) == null || converterType.IsNestedPrivate)
                 {
                     return null;
+                }
+
+                if (converterType.GetCompatibleBaseClass(JsonConverterFactoryFullName) != null)
+                {
+                    hasFactoryConverter = true;
+
+                    if (forType)
+                    {
+                        return $"{Emitter.GetConverterFromFactoryMethodName}(typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
+                    }
+                    else
+                    {
+                        return $"{Emitter.JsonContextVarName}.{Emitter.GetConverterFromFactoryMethodName}<{type.GetCompilableName()}>(new {converterType.GetCompilableName()}())";
+                    }
                 }
 
                 return $"new {converterType.GetCompilableName()}()";

@@ -33,8 +33,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
         public JsonTypeInfo<StructWithCustomConverter> StructWithCustomConverter { get; }
+        public JsonTypeInfo<ClassWithCustomConverterFactory> ClassWithCustomConverterFactory { get; }
+        public JsonTypeInfo<StructWithCustomConverterFactory> StructWithCustomConverterFactory { get; }
         public JsonTypeInfo<ClassWithCustomConverterProperty> ClassWithCustomConverterProperty { get; }
         public JsonTypeInfo<StructWithCustomConverterProperty> StructWithCustomConverterProperty { get; }
+        public JsonTypeInfo<ClassWithCustomConverterPropertyFactory> ClassWithCustomConverterPropertyFactory { get; }
+        public JsonTypeInfo<StructWithCustomConverterPropertyFactory> StructWithCustomConverterPropertyFactory { get; }
         public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
         public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
     }
