@@ -10210,6 +10210,7 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
                 UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(GetEmitter());
                 UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(GetEmitter());
 
+                assert(startOffs <= endOffs);
                 assert(startOffs >= curEnd);
                 if ((curLoc != nullptr) && (startOffs == curEnd) && siVarLoc::Equals(curLoc, &liveRange.m_VarLocation))
                 {

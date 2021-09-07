@@ -740,6 +740,7 @@ void CodeGen::genCodeForBBlist()
             case BBJ_ALWAYS:
                 if (block->isBBCallAlwaysPairTail())
                 {
+                    // Code for this is generated in genCallFinally
                     break;
                 }
 
