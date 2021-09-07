@@ -113,7 +113,7 @@ public:
                              DWORD dwStubFlags,
                              MethodDesc* pMD);
 
-    static MethodDesc*      GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwNGenStubFlags);
+    static MethodDesc*      GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
 
@@ -140,7 +140,7 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL     = 0x00000200,
     NDIRECTSTUB_FL_STRUCT_MARSHAL           = 0x00000400,
     NDIRECTSTUB_FL_UNMANAGED_CALLI          = 0x00000800,
-    NDIRECTSTUB_FL_TRIGGERCCTOR             = 0x00001000,
+    // unused                               = 0x00001000,
 #ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_FIELDGETTER              = 0x00002000, // COM->CLR field getter
     NDIRECTSTUB_FL_FIELDSETTER              = 0x00004000, // COM->CLR field setter
@@ -202,7 +202,6 @@ inline bool SF_IsHRESULTSwapping       (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsReverseStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)); }
 inline bool SF_IsDebuggableStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL)); }
 inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_UNMANAGED_CALLI)); }
-inline bool SF_IsStubWithCctorTrigger  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_TRIGGERCCTOR)); }
 inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
 inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION)); }

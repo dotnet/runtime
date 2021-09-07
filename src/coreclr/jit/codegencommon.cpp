@@ -12199,9 +12199,9 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
 {
     noway_assert(varDsc != nullptr);
 
-    // Only the variables that exists in the IL, "this", and special arguments
-    // are reported.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount)
+    // Only the variables that exists in the IL, "this", and special arguments are reported, as long as they were
+    // allocated.
+    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && (varDsc->lvIsInReg() || varDsc->lvOnFrame))
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =
@@ -12237,7 +12237,8 @@ void CodeGenInterface::VariableLiveKeeper::siEndVariableLiveRange(unsigned int v
     // a valid IG so we don't report the close of a "VariableLiveRange" after code is
     // emitted.
 
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmited)
+    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmited &&
+        m_vlrLiveDsc[varNum].hasVariableLiveRangeOpen())
     {
         // this variable live range is no longer valid from this point
         m_vlrLiveDsc[varNum].endLiveRangeAtEmitter(m_Compiler->GetEmitter());

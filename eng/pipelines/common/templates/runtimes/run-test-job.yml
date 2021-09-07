@@ -283,6 +283,15 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
 
+    # Overwrite coreclr runtime binaries with mono ones
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      - script: $(_msbuildCommand)
+                $(Build.SourcesDirectory)/src/mono/mono.proj
+                /t:PatchCoreClrCoreRoot
+                /p:Configuration=$(buildConfigUpper)
+                /p:TargetArchitecture=$(archType)
+        displayName: "Patch dotnet with mono"
+
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
       - ${{ if eq(parameters.archType, 'arm64') }}:
@@ -296,16 +305,6 @@ jobs:
                   /p:MonoAOTEnableLLVM=true
                   /p:MonoAOTLLVMUseCxx11Abi=true
           displayName: "Build Mono LLVM AOT cross compiler"
-
-
-    # Overwrite coreclr runtime binaries with mono ones
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      - script: $(_msbuildCommand)
-                $(Build.SourcesDirectory)/src/mono/mono.proj
-                /t:PatchCoreClrCoreRoot
-                /p:Configuration=$(buildConfigUpper)
-                /p:TargetArchitecture=$(archType)
-        displayName: "Patch dotnet with mono"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
       - ${{ if eq(parameters.archType, 'x64') }}:
@@ -372,8 +371,7 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
           - normal
-          - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-            - no_tiered_compilation
+          - no_tiered_compilation
 
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:
@@ -480,6 +478,9 @@ jobs:
           - defaultpgo
           - dynamicpgo
           - fullpgo
+          - fullpgo_random_gdv
+          - fullpgo_random_edge
+          - fullpgo_random_gdv_edge
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:

@@ -3604,38 +3604,6 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 }
 
 //*******************************************************************************
-BOOL MethodDesc::HasUnmanagedCallConvAttribute()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    MethodDesc* tgt = this;
-    if (IsILStub())
-    {
-        // From the IL stub, determine if the actual target has been
-        // marked with UnmanagedCallConv.
-        PTR_DynamicMethodDesc ilStubMD = AsDynamicMethodDesc();
-        PTR_ILStubResolver ilStubResolver = ilStubMD->GetILStubResolver();
-        tgt = ilStubResolver->GetStubTargetMethodDesc();
-        if (tgt == nullptr)
-            return FALSE;
-    }
-
-    _ASSERTE(tgt != nullptr);
-    HRESULT hr = tgt->GetCustomAttribute(
-        WellKnownAttribute::UnmanagedCallConv,
-        nullptr,
-        nullptr);
-
-    return (hr == S_OK) ? TRUE : FALSE;
-}
-
-//*******************************************************************************
 BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
 {
     CONTRACTL

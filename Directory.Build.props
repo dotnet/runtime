@@ -29,6 +29,7 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm'">arm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'armel'">armel</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm64'">arm64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 's390x'">s390x</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'Browser'">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
@@ -78,6 +79,7 @@
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
     <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'RuntimeConfigParser', 'Debug', '$(NetCoreAppToolCurrent)'))</RuntimeConfigParserDir>
     <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'JsonToItemsTaskFactory', 'Debug', '$(NetCoreAppToolCurrent)'))</JsonToItemsTaskFactoryDir>
+    <ILStripTaskDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILStrip', 'Debug', '$(NetCoreAppToolCurrent)'))</ILStripTaskDir>
 
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', 'net461', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
@@ -91,6 +93,7 @@
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <RuntimeConfigParserTasksAssemblyPath>$([MSBuild]::NormalizePath('$(RuntimeConfigParserDir)', 'RuntimeConfigParser.dll'))</RuntimeConfigParserTasksAssemblyPath>
     <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
+    <ILStripTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ILStripTaskDir)', 'ILStrip.dll'))</ILStripTasksAssemblyPath>
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</ILAsmToolPath>
   </PropertyGroup>
 

@@ -365,6 +365,25 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     {
         ucol_setAttribute(pClonedCollator, UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, pErr);
 
+#if !defined(STATIC_ICU)
+    if (ucol_setMaxVariable_ptr != NULL)
+    {
+        // by default, ICU alternate shifted handling only ignores punctuation, but
+        // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
+        // to include all symbols and currency
+        ucol_setMaxVariable(pClonedCollator, UCOL_REORDER_CODE_CURRENCY, pErr);
+    }
+    else
+    {
+        assert(ucol_setVariableTop_ptr != NULL);
+        // 0xfdfc is the last currency character before the first digit character
+        // in http://source.icu-project.org/repos/icu/icu/tags/release-52-1/source/data/unidata/FractionalUCA.txt
+        const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
+        ucol_setVariableTop_ptr(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
+    }
+
+#else // !defined(STATIC_ICU)
+
         // by default, ICU alternate shifted handling only ignores punctuation, but
         // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
         // to include all symbols and currency
@@ -376,6 +395,8 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
         const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
         ucol_setVariableTop(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
 #endif
+
+#endif //!defined(STATIC_ICU)
     }
 
     ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);

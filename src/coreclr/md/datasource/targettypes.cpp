@@ -390,7 +390,6 @@ HRESULT Target_CMiniMdRW::ReadFrom(DataTargetReader & reader)
     IfFailRet(reader.ReadPointer(&m_pMemberDefHash));
     for (int i = 0; i < TBL_COUNT; i++)
         IfFailRet(reader.ReadPointer(&m_pLookUpHashs[i]));
-    IfFailRet(reader.Read(&m_StringPoolOffsetHash));
     IfFailRet(reader.ReadPointer(&m_pNamedItemHash));
     IfFailRet(reader.Read32(&m_maxRid));
     IfFailRet(reader.Read32(&m_limRid));

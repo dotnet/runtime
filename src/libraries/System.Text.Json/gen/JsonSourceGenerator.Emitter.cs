@@ -19,17 +19,19 @@ namespace System.Text.Json.SourceGeneration
         private sealed partial class Emitter
         {
             // Literals in generated source
-            private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
-            private const string OptionsInstanceVariableName = "Options";
-            private const string PropInitMethodNameSuffix = "PropInit";
-            private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
-            private const string SerializeMethodNameSuffix = "Serialize";
             private const string CreateValueInfoMethodName = "CreateValueInfo";
+            private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
-            private const string WriterVarName = "writer";
-            private const string ValueVarName = "value";
+            internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
             private const string JsonSerializerContextName = "JsonSerializerContext";
+            internal const string JsonContextVarName = "jsonContext";
+            private const string OptionsInstanceVariableName = "Options";
+            private const string PropInitMethodNameSuffix = "PropInit";
+            private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
+            private const string SerializeMethodNameSuffix = "Serialize";
+            private const string ValueVarName = "value";
+            private const string WriterVarName = "writer";
 
             private static AssemblyName _assemblyName = typeof(Emitter).Assembly.GetName();
             private static readonly string s_generatedCodeAttributeSource = $@"
@@ -79,15 +81,17 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-            private readonly GeneratorExecutionContext _executionContext;
+            private readonly SourceProductionContext _sourceProductionContext;
 
             private ContextGenerationSpec _currentContext = null!;
 
             private readonly SourceGenerationSpec _generationSpec = null!;
 
-            public Emitter(in GeneratorExecutionContext executionContext, SourceGenerationSpec generationSpec)
+            private readonly HashSet<string> _emittedPropertyFileNames = new();
+
+            public Emitter(in SourceProductionContext sourceProductionContext, SourceGenerationSpec generationSpec)
             {
-                _executionContext = executionContext;
+                _sourceProductionContext = sourceProductionContext;
                 _generationSpec = generationSpec;
             }
 
@@ -97,15 +101,24 @@ namespace System.Text.Json.SourceGeneration
                 {
                     _currentContext = contextGenerationSpec;
 
+                    bool generateGetConverterMethodForTypes = false;
+                    bool generateGetConverterMethodForProperties = false;
+
                     foreach (TypeGenerationSpec typeGenerationSpec in _currentContext.RootSerializableTypes)
                     {
                         GenerateTypeInfo(typeGenerationSpec);
+
+                        generateGetConverterMethodForTypes |= typeGenerationSpec.HasTypeFactoryConverter;
+                        generateGetConverterMethodForProperties |= typeGenerationSpec.HasPropertyFactoryConverters;
                     }
 
                     string contextName = _currentContext.ContextType.Name;
 
                     // Add root context implementation.
-                    AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(), isRootContextDef: true);
+                    AddSource(
+                        $"{contextName}.g.cs",
+                        GetRootJsonContextImplementation(generateGetConverterMethodForTypes, generateGetConverterMethodForProperties),
+                        isRootContextDef: true);
 
                     // Add GetJsonTypeInfo override implementation.
                     AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation());
@@ -166,7 +179,7 @@ namespace {@namespace}
                     sb.AppendLine("}");
                 }
 
-                _executionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
+                _sourceProductionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
             }
 
             private void GenerateTypeInfo(TypeGenerationSpec typeGenerationSpec)
@@ -243,7 +256,7 @@ namespace {@namespace}
                         break;
                     case ClassType.TypeUnsupportedBySourceGen:
                         {
-                            _executionContext.ReportDiagnostic(
+                            _sourceProductionContext.ReportDiagnostic(
                                 Diagnostic.Create(TypeNotSupported, Location.None, new string[] { typeGenerationSpec.TypeRef }));
                             return;
                         }
@@ -253,13 +266,16 @@ namespace {@namespace}
                         }
                 }
 
-                try
+                // Don't add a duplicate file, but instead raise a diagnostic to say the duplicate has been skipped.
+                // Workaround https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
+                string propertyFileName = $"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs";
+                if (_emittedPropertyFileNames.Add(propertyFileName))
                 {
-                    AddSource($"{_currentContext.ContextType.Name}.{typeGenerationSpec.TypeInfoPropertyName}.g.cs", source);
+                    AddSource(propertyFileName, source);
                 }
-                catch (ArgumentException)
+                else
                 {
-                    _executionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
+                    _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
                 }
             }
 
@@ -278,54 +294,42 @@ namespace {@namespace}
                 string typeCompilableName = typeMetadata.TypeRef;
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
 
-                string metadataInitSource;
-
                 // TODO (https://github.com/dotnet/runtime/issues/52218): consider moving this verification source to common helper.
+                StringBuilder metadataInitSource = new(
+                    $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
+                    {TypeTypeRef} typeToConvert = typeof({typeCompilableName});");
+
                 if (typeMetadata.IsValueType)
                 {
-                    metadataInitSource = $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
-                    {TypeTypeRef} typeToConvert = typeof({typeCompilableName});
-                    if (!converter.CanConvert(typeToConvert))
-                    {{
-                        {TypeTypeRef}? underlyingType = {NullableTypeRef}.GetUnderlyingType(typeToConvert);
-                        if (underlyingType != null && converter.CanConvert(underlyingType))
+                    metadataInitSource.Append($@"
+                        if (!converter.CanConvert(typeToConvert))
                         {{
-                            {JsonConverterTypeRef}? actualConverter = converter;
-
-                            if (converter is {JsonConverterFactoryTypeRef} converterFactory)
+                            {TypeTypeRef}? underlyingType = {NullableTypeRef}.GetUnderlyingType(typeToConvert);
+                            if (underlyingType != null && converter.CanConvert(underlyingType))
                             {{
-                                actualConverter = converterFactory.CreateConverter(underlyingType, {OptionsInstanceVariableName});
-
-                                if (actualConverter == null || actualConverter is {JsonConverterFactoryTypeRef})
-                                {{
-                                    throw new {InvalidOperationExceptionTypeRef}($""JsonConverterFactory '{{converter}} cannot return a 'null' or 'JsonConverterFactory' value."");
-                                }}
+                                // Allow nullable handling to forward to the underlying type's converter.
+                                converter = {JsonMetadataServicesTypeRef}.GetNullableConverter<{typeCompilableName}>(this.{typeFriendlyName})!;
+                                converter = (({ JsonConverterFactoryTypeRef })converter).CreateConverter(typeToConvert, { OptionsInstanceVariableName })!;
                             }}
-
-                            // Allow nullable handling to forward to the underlying type's converter.
-                            converter = {JsonMetadataServicesTypeRef}.GetNullableConverter<{typeCompilableName}>(this.{typeFriendlyName});
-                        }}
-                        else
-                        {{
-                            throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
-                        }}
-                    }}
-
-                    _{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, converter);";
+                            else
+                            {{
+                                throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
+                            }}
+                        }}");
                 }
                 else
                 {
-                    metadataInitSource = $@"{JsonConverterTypeRef} converter = {typeMetadata.ConverterInstantiationLogic};
-                    {TypeTypeRef} typeToConvert = typeof({typeCompilableName});
-                    if (!converter.CanConvert(typeToConvert))
-                    {{
-                        throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
-                    }}
-
-                    _{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, converter);";
+                    metadataInitSource.Append($@"
+                        if (!converter.CanConvert(typeToConvert))
+                        {{
+                            throw new {InvalidOperationExceptionTypeRef}($""The converter '{{converter.GetType()}}' is not compatible with the type '{{typeToConvert}}'."");
+                        }}");
                 }
 
-                return GenerateForType(typeMetadata, metadataInitSource);
+                metadataInitSource.Append($@"
+                    _{typeFriendlyName} = { JsonMetadataServicesTypeRef }.{ GetCreateValueInfoMethodRef(typeCompilableName)} ({ OptionsInstanceVariableName}, converter); ");
+
+                return GenerateForType(typeMetadata, metadataInitSource.ToString());
             }
 
             private string GenerateForNullable(TypeGenerationSpec typeMetadata)
@@ -479,7 +483,7 @@ namespace {@namespace}
 
                 Type elementType = valueTypeGenerationSpec.Type;
                 string? writerMethodToCall = GetWriterMethod(elementType);
-                
+
                 string iterationLogic;
                 string valueToWrite;
 
@@ -633,7 +637,6 @@ namespace {@namespace}
             private string GeneratePropMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 const string PropVarName = "properties";
-                const string JsonContextVarName = "jsonContext";
 
                 List<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecList!;
 
@@ -678,12 +681,14 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                         ? @$"jsonPropertyName: ""{memberMetadata.JsonPropertyName}"""
                         : "jsonPropertyName: null";
 
-                    string getterNamedArg = memberMetadata.CanUseGetter
+                    string getterNamedArg = memberMetadata.CanUseGetter &&
+                        memberMetadata.DefaultIgnoreCondition != JsonIgnoreCondition.Always
                         ? $"getter: static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}"
                         : "getter: null";
 
                     string setterNamedArg;
-                    if (memberMetadata.CanUseSetter)
+                    if (memberMetadata.CanUseSetter &&
+                        memberMetadata.DefaultIgnoreCondition != JsonIgnoreCondition.Always)
                     {
                         string propMutation = typeGenerationSpec.IsValueType
                             ? @$"{UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value!"
@@ -785,7 +790,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
                     out bool castingRequiredForProps))
                 {
-                    string exceptionMessage = @$"""Invalid serializable-property configuration specified for type '{typeRef}'. For more information, use 'JsonSourceGenerationMode.Serialization'.""";
+                    string exceptionMessage = @$"""Invalid serializable-property configuration specified for type '{typeRef}'. For more information, see 'JsonSourceGenerationMode.Serialization'.""";
 
                     return GenerateFastPathFuncForType(
                         serializeMethodName,
@@ -1086,7 +1091,9 @@ public {typeInfoPropertyTypeRef} {typeFriendlyName}
                 }}";
             }
 
-            private string GetRootJsonContextImplementation()
+            private string GetRootJsonContextImplementation(
+                bool generateGetConverterMethodForTypes,
+                bool generateGetConverterMethodForProperties)
             {
                 string contextTypeRef = _currentContext.ContextTypeRef;
                 string contextTypeName = _currentContext.ContextType.Name;
@@ -1107,6 +1114,16 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} options) : base(options,
 }}
 
 {GetFetchLogicForRuntimeSpecifiedCustomConverter()}");
+
+                if (generateGetConverterMethodForProperties)
+                {
+                    sb.Append(GetFetchLogicForGetCustomConverter_PropertiesWithFactories());
+                }
+
+                if (generateGetConverterMethodForProperties || generateGetConverterMethodForTypes)
+                {
+                    sb.Append(GetFetchLogicForGetCustomConverter_TypesWithFactories());
+                }
 
                 return sb.ToString();
             }
@@ -1163,6 +1180,32 @@ private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ g
     }}
 
     return null;
+}}";
+            }
+
+            private string GetFetchLogicForGetCustomConverter_PropertiesWithFactories()
+            {
+                return @$"
+
+private {JsonConverterTypeRef}<T> {GetConverterFromFactoryMethodName}<T>({JsonConverterFactoryTypeRef} factory)
+{{
+    return ({JsonConverterTypeRef}<T>) {GetConverterFromFactoryMethodName}(typeof(T), factory);
+}}";
+            }
+
+            private string GetFetchLogicForGetCustomConverter_TypesWithFactories()
+            {
+                return @$"
+
+private {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({TypeTypeRef} type, {JsonConverterFactoryTypeRef} factory)
+{{
+    {JsonConverterTypeRef}? converter = factory.CreateConverter(type, {Emitter.OptionsInstanceVariableName});
+    if (converter == null || converter is {JsonConverterFactoryTypeRef})
+    {{
+        throw new {InvalidOperationExceptionTypeRef}($""The converter '{{factory.GetType()}}' cannot return null or a JsonConverterFactory instance."");
+    }}
+     
+    return converter;
 }}";
             }
 

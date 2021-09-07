@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Http.Logging
 {
+    /// <summary>
+    /// Handles logging of the lifecycle for an HTTP request.
+    /// </summary>
     public class LoggingHttpMessageHandler : DelegatingHandler
     {
         private ILogger _logger;
@@ -17,6 +20,11 @@ namespace Microsoft.Extensions.Http.Logging
 
         private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LoggingHttpMessageHandler"/> class with a specified logger.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
         public LoggingHttpMessageHandler(ILogger logger)
         {
             if (logger == null)
@@ -27,6 +35,12 @@ namespace Microsoft.Extensions.Http.Logging
             _logger = logger;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LoggingHttpMessageHandler"/> class with a specified logger and options.
+        /// </summary>
+        /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
+        /// <param name="options">The <see cref="HttpClientFactoryOptions"/> used to configure the <see cref="LoggingHttpMessageHandler"/> instance.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
         public LoggingHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
         {
             if (logger == null)
@@ -43,6 +57,8 @@ namespace Microsoft.Extensions.Http.Logging
             _options = options;
         }
 
+        /// <inheritdoc />
+        /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
         protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request == null)

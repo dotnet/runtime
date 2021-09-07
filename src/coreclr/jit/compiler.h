@@ -502,6 +502,9 @@ public:
     unsigned char lvUnusedStruct : 1; // All references to this promoted struct are through its field locals.
                                       // I.e. there is no longer any reference to the struct directly.
                                       // In this case we can simply remove this struct local.
+
+    unsigned char lvUndoneStructPromotion : 1; // The struct promotion was undone and hence there should be no
+                                               // reference to the fields of this struct.
 #endif
 
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
@@ -987,8 +990,6 @@ public:
         }
     }
 
-    var_types lvaArgType();
-
     // Returns true if this variable contains GC pointers (including being a GC pointer itself).
     bool HasGCPtr() const
     {
@@ -1463,6 +1464,26 @@ struct FuncInfoDsc
     // that isn't shared between the main function body and funclets.
 };
 
+enum class NonStandardArgKind : unsigned
+{
+    None,
+    PInvokeFrame,
+    PInvokeTarget,
+    PInvokeCookie,
+    WrapperDelegateCell,
+    ShiftLow,
+    ShiftHigh,
+    FixedRetBuffer,
+    VirtualStubCell,
+    R2RIndirectionCell,
+
+    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate below
+};
+
+#ifdef DEBUG
+const char* getNonStandardArgKindName(NonStandardArgKind kind);
+#endif
+
 struct fgArgTabEntry
 {
     GenTreeCall::Use* use;     // Points to the argument's GenTreeCall::Use in gtCallArgs or gtCallThisArg.
@@ -1523,17 +1544,18 @@ public:
                        // struct is passed as a scalar type, this is that type.
                        // Note that if a struct is passed by reference, this will still be the struct type.
 
-    bool needTmp : 1;       // True when we force this argument's evaluation into a temp LclVar
-    bool needPlace : 1;     // True when we must replace this argument with a placeholder node
-    bool isTmp : 1;         // True when we setup a temp LclVar for this argument due to size issues with the struct
-    bool processed : 1;     // True when we have decided the evaluation order for this argument in the gtCallLateArgs
-    bool isBackFilled : 1;  // True when the argument fills a register slot skipped due to alignment requirements of
-                            // previous arguments.
-    bool isNonStandard : 1; // True if it is an arg that is passed in a reg other than a standard arg reg, or is forced
-                            // to be on the stack despite its arg list position.
-    bool isStruct : 1;      // True if this is a struct arg
-    bool _isVararg : 1;     // True if the argument is in a vararg context.
-    bool passedByRef : 1;   // True iff the argument is passed by reference.
+    bool needTmp : 1;      // True when we force this argument's evaluation into a temp LclVar
+    bool needPlace : 1;    // True when we must replace this argument with a placeholder node
+    bool isTmp : 1;        // True when we setup a temp LclVar for this argument due to size issues with the struct
+    bool processed : 1;    // True when we have decided the evaluation order for this argument in the gtCallLateArgs
+    bool isBackFilled : 1; // True when the argument fills a register slot skipped due to alignment requirements of
+                           // previous arguments.
+    NonStandardArgKind nonStandardArgKind : 4; // The non-standard arg kind. Non-standard args are args that are forced
+                                               // to be in certain registers or on the stack, regardless of where they
+                                               // appear in the arg list.
+    bool isStruct : 1;                         // True if this is a struct arg
+    bool _isVararg : 1;                        // True if the argument is in a vararg context.
+    bool passedByRef : 1;                      // True iff the argument is passed by reference.
 #ifdef FEATURE_ARG_SPLIT
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
@@ -1557,6 +1579,34 @@ public:
 #else
         NOWAY_MSG("SetHfaElemKind");
 #endif
+    }
+
+    bool isNonStandard() const
+    {
+        return nonStandardArgKind != NonStandardArgKind::None;
+    }
+
+    // Returns true if the IR node for this non-standarg arg is added by fgInitArgInfo.
+    // In this case, it must be removed by GenTreeCall::ResetArgInfo.
+    bool isNonStandardArgAddedLate() const
+    {
+        switch (nonStandardArgKind)
+        {
+            case NonStandardArgKind::None:
+            case NonStandardArgKind::PInvokeFrame:
+            case NonStandardArgKind::ShiftLow:
+            case NonStandardArgKind::ShiftHigh:
+            case NonStandardArgKind::FixedRetBuffer:
+                return false;
+            case NonStandardArgKind::WrapperDelegateCell:
+            case NonStandardArgKind::VirtualStubCell:
+            case NonStandardArgKind::PInvokeCookie:
+            case NonStandardArgKind::PInvokeTarget:
+            case NonStandardArgKind::R2RIndirectionCell:
+                return true;
+            default:
+                unreached();
+        }
     }
 
     bool isLateArg() const
@@ -3056,6 +3106,8 @@ public:
 
     GenTree* gtUnusedValNode(GenTree* expr);
 
+    GenTree* gtNewKeepAliveNode(GenTree* op);
+
     GenTreeCast* gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
 
     GenTreeCast* gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
@@ -4184,6 +4236,8 @@ protected:
                                      bool                 readonlyCall,
                                      CorInfoIntrinsics    intrinsicID);
     GenTree* impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig);
+
+    GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
     GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 

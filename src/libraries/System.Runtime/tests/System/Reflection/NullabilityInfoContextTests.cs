@@ -480,8 +480,8 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.Nullable, nullability.WriteState);
             Assert.Equal(typeof(string), nullability.Type);
 
-            Type lisNontNull = typeof(List<string>);
-            MethodInfo addNotNull = lisNontNull.GetMethod("Add")!;
+            Type listNotNull = typeof(List<string>);
+            MethodInfo addNotNull = listNotNull.GetMethod("Add")!;
             nullability = nullabilityContext.Create(addNotNull.GetParameters()[0]);
             Assert.Equal(NullabilityState.Nullable, nullability.ReadState);
             Assert.Equal(typeof(string), nullability.Type);
@@ -812,6 +812,34 @@ namespace System.Reflection.Tests
             Assert.Equal(paramReadState, paramNullability.ReadState);
             Assert.Equal(paramWriteState, paramNullability.WriteState);
         }
+
+        public static IEnumerable<object[]> ValueTupleTestData()
+        {
+            // public (int, string) UnknownValueTuple; [0]
+            yield return new object[] { "UnknownValueTuple", NullabilityState.NotNull, NullabilityState.Unknown, NullabilityState.NotNull };
+            // public (string?, object) NullNonNonValueTuple; [0, 2, 1]
+            yield return new object[] { "Null_Non_Non_ValueTuple", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.NotNull };
+            // public (string?, object)? Null_Non_Null_ValueTuple; [0, 2, 1]
+            yield return new object[] { "Null_Non_Null_ValueTuple", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable };
+            // public (int, int?)? Non_Null_Null_ValueTuple; [0]
+            yield return new object[] { "Non_Null_Null_ValueTuple", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.Nullable };
+            // public (int, string) Non_Non_Non_ValueTuple; [0, 1]
+            yield return new object[] { "Non_Non_Non_ValueTuple", NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.NotNull };
+            // public (int, string?) Non_Null_Non_ValueTuple; [0, 2]
+            yield return new object[] { "Non_Null_Non_ValueTuple", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull };
+        }
+
+        [Theory]
+        [MemberData(nameof(ValueTupleTestData))]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void TestValueTupleGenericTypeParameters(string fieldName, NullabilityState param1, NullabilityState param2, NullabilityState fieldState)
+        {
+            var tupleInfo = nullabilityContext.Create(testType.GetField(fieldName)!);
+
+            Assert.Equal(fieldState, tupleInfo.ReadState);
+            Assert.Equal(param1, tupleInfo.GenericTypeArguments[0].ReadState);
+            Assert.Equal(param2, tupleInfo.GenericTypeArguments[1].ReadState);
+        }
     }
 
 #pragma warning disable CS0649, CS0067, CS0414
@@ -865,6 +893,7 @@ namespace System.Reflection.Tests
         protected Tuple<string, string, string> PropertyTupleUnknown { get; set; }
         protected internal IDictionary<Type, string[]> PropertyDictionaryUnknown { get; set; }
 
+        public (int, string) UnknownValueTuple;
         internal TypeWithNotNullContext FieldUnknown;
         public int FieldValueTypeUnknown;
 
@@ -915,6 +944,11 @@ namespace System.Reflection.Tests
         private IDictionary<Type, string[]>? PropertyDictionaryNonNonNonNull { get; set; }
         public IDictionary<Type, string[]> PropertyDictionaryNonNonNonNon { get; set; } = null!;
 
+        public (string?, object) Null_Non_Non_ValueTuple;
+        public (string?, object)? Null_Non_Null_ValueTuple;
+        public (int, int?)? Non_Null_Null_ValueTuple;
+        public (int, string) Non_Non_Non_ValueTuple;
+        public (int, string?) Non_Null_Non_ValueTuple;
         private const string? FieldNullable = null;
         protected static NullabilityInfoContextTests FieldNonNullable = null!;
         public static double FieldValueTypeNotNull;
@@ -969,14 +1003,14 @@ namespace System.Reflection.Tests
         public Tuple<T?, string?, string?>? PropertyTupleNullNullNullNull { get; set; }
         public Tuple<T, T?, string> PropertyTupleNonNullNonNon { get; set; } = null!;
         Tuple<string?, T, T?>? PropertyTupleNullNonNullNull { get; set; }
-        public Tuple<T, string?, string>? PropertyTupleNonNullNonNull { get; set; }
-        public Tuple<string, string, T> PropertyTupleNonNonNonNon { get; set; } = null!;
+        public Tuple<T, int?, string>? PropertyTupleNonNullNonNull { get; set; }
+        public Tuple<int, string, T> PropertyTupleNonNonNonNon { get; set; } = null!;
         private IDictionary<T?, string?[]?> PropertyDictionaryNullNullNullNon { get; set; } = null!;
         static IDictionary<Type, T?[]>? PropertyDictionaryNonNullNonNull { get; set; }
         public static IDictionary<T?, T[]>? PropertyDictionaryNullNonNonNull { get; set; }
         public IDictionary<Type, T?[]> PropertyDictionaryNonNullNonNon { get; set; } = null!;
         protected IDictionary<T, T[]>? PropertyDictionaryNonNonNonNull { get; set; }
-        public IDictionary<T, string[]> PropertyDictionaryNonNonNonNon { get; set; } = null!;
+        public IDictionary<T, int[]> PropertyDictionaryNonNonNonNon { get; set; } = null!;
 
         static T? FieldNullable = default;
         public T FieldNonNullable = default!;

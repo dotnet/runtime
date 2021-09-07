@@ -372,88 +372,6 @@ struct VASigCookieBlock
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
 
-// This lookup table persists the information about boxed statics into the ngen'ed image
-// which allows one to the type static initialization without touching expensive EEClasses. Note
-// that since the persisted info is stored at ngen time as opposed to class layout time,
-// in jitted scenarios we would still touch EEClasses. This imples that the variables which store
-// this info in the EEClasses are still present.
-
-// We used this table to store more data require to run cctors in the past (it explains the name),
-// but we are only using it for boxed statics now. Boxed statics are rare. The complexity may not
-// be worth the gains. We should consider removing this cache and avoid the complexity.
-
-typedef DPTR(struct ClassCtorInfoEntry) PTR_ClassCtorInfoEntry;
-struct ClassCtorInfoEntry
-{
-    DWORD firstBoxedStaticOffset;
-    DWORD firstBoxedStaticMTIndex;
-    WORD numBoxedStatics;
-    WORD hasFixedAddressVTStatics; // This is WORD avoid padding in the datastructure. It is really bool.
-};
-
-#define MODULE_CTOR_ELEMENTS 256
-struct ModuleCtorInfo
-{
-    DWORD                   numElements;
-    DWORD                   numLastAllocated;
-    DWORD                   numElementsHot;
-    DPTR(PTR_MethodTable)   ppMT; // size is numElements
-    PTR_ClassCtorInfoEntry  cctorInfoHot;   // size is numElementsHot
-    PTR_ClassCtorInfoEntry  cctorInfoCold;  // size is numElements-numElementsHot
-
-    PTR_DWORD               hotHashOffsets;  // Indices to the start of each "hash region" in the hot part of the ppMT array.
-    PTR_DWORD               coldHashOffsets; // Indices to the start of each "hash region" in the cold part of the ppMT array.
-    DWORD                   numHotHashes;
-    DWORD                   numColdHashes;
-
-    ArrayDPTR(PTR_MethodTable) ppHotGCStaticsMTs;            // hot table
-    ArrayDPTR(PTR_MethodTable) ppColdGCStaticsMTs;           // cold table
-
-    DWORD                   numHotGCStaticsMTs;
-    DWORD                   numColdGCStaticsMTs;
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-    typedef enum {HOT, COLD} REGION;
-    FORCEINLINE DWORD GenerateHash(PTR_MethodTable pMT, REGION region)
-    {
-        SUPPORTS_DAC;
-
-        DWORD tmp1  = pMT->GetTypeDefRid();
-        DWORD tmp2  = pMT->GetNumVirtuals();
-        DWORD tmp3  = pMT->GetNumInterfaces();
-
-        tmp1        = (tmp1 << 7) + (tmp1 << 0); // 10000001
-        tmp2        = (tmp2 << 6) + (tmp2 << 1); // 01000010
-        tmp3        = (tmp3 << 4) + (tmp3 << 3); // 00011000
-
-        tmp1       ^= (tmp1 >> 4);               // 10001001 0001
-        tmp2       ^= (tmp2 >> 4);               // 01000110 0010
-        tmp3       ^= (tmp3 >> 4);               // 00011001 1000
-
-        DWORD hashVal = tmp1 + tmp2 + tmp3;
-
-        if (region == HOT)
-            hashVal     &= (numHotHashes - 1);   // numHotHashes is required to be a power of two
-        else
-            hashVal     &= (numColdHashes - 1);  // numColdHashes is required to be a power of two
-
-        return hashVal;
-    };
-
-    ArrayDPTR(PTR_MethodTable) GetGCStaticMTs(DWORD index);
-
-    PTR_MethodTable GetMT(DWORD i)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return ppMT[i];
-    }
-
-};
-
-
 // For IBC Profiling we collect signature blobs for instantiated types.
 // For such instantiated types and methods we create our own ibc token
 //
@@ -773,89 +691,6 @@ public:
 typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 
-
-#ifdef FEATURE_COMINTEROP
-
-//---------------------------------------------------------------------------------------
-//
-// The type of each entry in the Guid to MT hash
-//
-typedef DPTR(GUID) PTR_GUID;
-typedef DPTR(struct GuidToMethodTableEntry) PTR_GuidToMethodTableEntry;
-struct GuidToMethodTableEntry
-{
-    PTR_GUID        m_Guid;
-    PTR_MethodTable m_pMT;
-};
-
-//---------------------------------------------------------------------------------------
-//
-// The hash type itself
-//
-typedef DPTR(class GuidToMethodTableHashTable) PTR_GuidToMethodTableHashTable;
-class GuidToMethodTableHashTable : public NgenHashTable<GuidToMethodTableHashTable, GuidToMethodTableEntry, 4>
-{
-public:
-    typedef NgenHashTable<GuidToMethodTableHashTable, GuidToMethodTableEntry, 4> Base_t;
-    friend class Base_t;
-
-#ifndef DACCESS_COMPILE
-
-private:
-    GuidToMethodTableHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets)
-        : Base_t(pModule, pHeap, cInitialBuckets)
-    { LIMITED_METHOD_CONTRACT; }
-
-public:
-    static GuidToMethodTableHashTable* Create(Module* pModule, DWORD cInitialBuckets, AllocMemTracker *pamTracker);
-
-    GuidToMethodTableEntry * InsertValue(PTR_GUID pGuid, PTR_MethodTable pMT, BOOL bReplaceIfFound, AllocMemTracker *pamTracker);
-
-#endif // !DACCESS_COMPILE
-
-public:
-    typedef Base_t::LookupContext LookupContext;
-
-    PTR_MethodTable GetValue(const GUID * pGuid, LookupContext *pContext);
-    GuidToMethodTableEntry * FindItem(const GUID * pGuid, LookupContext *pContext);
-
-private:
-    BOOL CompareKeys(PTR_GuidToMethodTableEntry pEntry, const GUID * pGuid);
-    static DWORD Hash(const GUID * pGuid);
-
-public:
-    // An iterator for the table
-    struct Iterator
-    {
-    public:
-        Iterator() : m_pTable(NULL), m_fIterating(false)
-        { LIMITED_METHOD_DAC_CONTRACT; }
-        Iterator(GuidToMethodTableHashTable * pTable) : m_pTable(pTable), m_fIterating(false)
-        { LIMITED_METHOD_DAC_CONTRACT; }
-
-    private:
-        friend class GuidToMethodTableHashTable;
-
-        GuidToMethodTableHashTable * m_pTable;
-        BaseIterator              m_sIterator;
-        bool                      m_fIterating;
-    };
-
-    BOOL FindNext(Iterator *it, GuidToMethodTableEntry **ppEntry);
-    DWORD GetCount();
-
-#ifdef DACCESS_COMPILE
-    // do not save this in mini-/heap-dumps
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-    { SUPPORTS_DAC; }
-    void EnumMemoryRegionsForEntry(GuidToMethodTableEntry *pEntry, CLRDataEnumMemoryFlags flags)
-    { SUPPORTS_DAC; }
-#endif // DACCESS_COMPILE
-};
-
-#endif // FEATURE_COMINTEROP
-
-
 //Hash for MemberRef to Desc tables (fieldDesc or MethodDesc)
 typedef DPTR(struct MemberRefToDescHashEntry) PTR_MemberRefToDescHashEntry;
 
@@ -868,14 +703,13 @@ typedef DPTR(class MemberRefToDescHashTable) PTR_MemberRefToDescHashTable;
 
 #define MEMBERREF_MAP_INITIAL_SIZE 10
 
-class MemberRefToDescHashTable: public NgenHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>
+class MemberRefToDescHashTable: public DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>
 {
-	friend class NgenHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>;
 #ifndef DACCESS_COMPILE
 
 private:
     MemberRefToDescHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets):
-       NgenHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>(pModule, pHeap, cInitialBuckets)
+       DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>(pModule, pHeap, cInitialBuckets)
     { LIMITED_METHOD_CONTRACT; }
 
 public:
@@ -887,22 +721,9 @@ public:
 #endif //!DACCESS_COMPILE
 
 public:
-    typedef NgenHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>::LookupContext LookupContext;
+    typedef DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>::LookupContext LookupContext;
 
     PTR_MemberRef GetValue(mdMemberRef token, BOOL *pfIsMethod);
-
-#ifdef DACCESS_COMPILE
-
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-    {
-        WRAPPER_NO_CONTRACT;
-        BaseEnumMemoryRegions(flags);
-    }
-
-    void EnumMemoryRegionsForEntry(MemberRefToDescHashEntry *pEntry, CLRDataEnumMemoryFlags flags)
-    { SUPPORTS_DAC; }
-
-#endif
 };
 
 #ifdef FEATURE_READYTORUN
@@ -1242,11 +1063,6 @@ private:
 
     } *m_tokenProfileData;
 
-
-protected:
-
-    void CreateDomainThunks();
-
 protected:
     void DoInit(AllocMemTracker *pamTracker, LPCWSTR szName);
 
@@ -1261,8 +1077,6 @@ protected:
 #ifdef _DEBUG
     void DebugLogRidMapOccupancy();
 #endif // _DEBUG
-
-    static HRESULT VerifyFile(PEFile *file, BOOL fZap);
 
  public:
     static Module *Create(Assembly *pAssembly, mdFile kFile, PEFile *pFile, AllocMemTracker *pamTracker);
@@ -1667,9 +1481,6 @@ protected:
             AssemblyBinder      *pBindingContextForLoadedAssembly = NULL
             );
 
-private:
-    // Helper function used by GetAssemblyIfLoaded. Do not call directly.
-    Assembly *GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(mdAssemblyRef kAssemblyRef, BOOL *pfDiscoveredAssemblyRefMatchesTargetDefExactly);
 public:
 
     DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
@@ -2153,8 +1964,6 @@ public:
     static void  TokenDefinitionHelper(void* pModuleContext, Module *pReferencedModule, DWORD index, mdToken* token);
 
 public:
-    MethodTable* MapZapType(UINT32 typeID);
-
     void SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride);
     TADDR GetDynamicIL(mdToken token, BOOL fAllowTemporary);
 
