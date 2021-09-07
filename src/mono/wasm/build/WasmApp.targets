@@ -83,12 +83,8 @@
     <_BeforeWasmBuildAppDependsOn />
 
     <IsWasmProject Condition="'$(IsWasmProject)' == '' and '$(OutputType)' != 'Library'">true</IsWasmProject>
-    <!-- FIXME: tmp hack for blazor -->
-    <DisableAutoWasmBuildApp Condition="'$(DisableAutoWasmBuildApp)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">true</DisableAutoWasmBuildApp>
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
 
-    <!-- FIXME: tmp hack for blazor -->
-    <DisableAutoWasmPublishApp Condition="'$(DisableAutoWasmPublishApp)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">true</DisableAutoWasmPublishApp>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true' and '$(WasmBuildingForPublish)' != 'true'">Publish</WasmTriggerPublishAppAfterThisTarget>
     <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
 
