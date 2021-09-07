@@ -16,8 +16,8 @@ namespace Internal.Cryptography
 {
     internal static partial class Pbkdf2Implementation
     {
-        // For Windows 7 we will use BCryptDeriveKeyPBKDF2. For Windows 8+ we will use BCryptKeyDerivation
-        // since it has better performance.
+        // For Windows 7 we will use BCryptDeriveKeyPBKDF2. For Windows 8+ (seen as version 6.2.0) we will
+        // use BCryptKeyDerivation since it has better performance.
         private static readonly bool s_useKeyDerivation = OperatingSystem.IsWindowsVersionAtLeast(6, 2);
 
         // A cached instance of PBKDF2 for Windows 8, where pseudo handles are not supported.
