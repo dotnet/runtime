@@ -53,6 +53,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the cookie container to be used.
+        /// </summary>
         [AllowNull]
         public CookieContainer CookieContainer
         {
