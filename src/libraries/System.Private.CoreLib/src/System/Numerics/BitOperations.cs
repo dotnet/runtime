@@ -247,12 +247,11 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static int LeadingZeroCount(nuint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return LeadingZeroCount((ulong)value);
-            }
-
+#if TARGET_64BIT
+            return LeadingZeroCount((ulong)value);
+#else
             return LeadingZeroCount((uint)value);
+#endif
         }
 
         /// <summary>
