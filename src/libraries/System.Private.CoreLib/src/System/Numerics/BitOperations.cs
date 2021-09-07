@@ -495,7 +495,7 @@ namespace System.Numerics
         public static int PopCount(nuint value)
         {
 #if TARGET_64BIT
-                return PopCount((ulong)value);
+            return PopCount((ulong)value);
 #else
             return PopCount((uint)value);
 #endif
