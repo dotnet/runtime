@@ -26,7 +26,7 @@ namespace System.IO
             // setattrlist()", so we fall back to the method used on other unix
             // platforms, otherwise we throw an error if we get one, or invalidate
             // the cache if successful because otherwise it has invalid information.
-            Interop.Error result = (Interop.Error)Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW));
+            Interop.Error result = (Interop.Error)Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), default(CULong));
             if (result == Interop.Error.ENOTSUP)
             {
                 SetCreationTime_StandardUnixImpl(path, time);

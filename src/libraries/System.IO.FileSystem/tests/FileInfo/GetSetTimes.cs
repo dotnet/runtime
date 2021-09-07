@@ -103,16 +103,6 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        protected override FileInfo CreateSymlinkToItem(FileInfo item)
-        {
-            var link = new FileInfo(item.FullName + ".link");
-            if (link.Exists) link.Delete();
-            bool failed = !MountHelper.CreateSymbolicLink(link.FullName, item.FullName, false);
-            link.Refresh();
-            if (failed || !link.Exists) throw new Exception("Could not create symlink.");
-            return link;
-        }
-
         [ConditionalFact(nameof(HighTemporalResolution))]
         public void CopyToMillisecondPresent()
         {

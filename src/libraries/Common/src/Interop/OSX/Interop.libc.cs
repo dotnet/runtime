@@ -25,7 +25,5 @@ internal static partial class Interop
 
         [DllImport(Libraries.libc, EntryPoint = "setattrlist", SetLastError = true)]
         internal static unsafe extern int setattrlist(string path, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options);
-
-        internal const uint FSOPT_NOFOLLOW = 0x00000001;
     }
 }

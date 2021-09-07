@@ -23,7 +23,6 @@ namespace System.IO.Tests
 
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
-        protected abstract T CreateSymlinkToItem(T item);
 
         protected abstract string GetItemPath(T item);
 
@@ -127,40 +126,6 @@ namespace System.IO.Tests
                 DateTime result2 = function2.Getter(item);
                 Assert.Equal(dt3, result1);
                 Assert.Equal(dt2, result2);
-            });
-        }
-
-        [Fact]
-        [PlatformSpecific(~(TestPlatforms.Browser | TestPlatforms.Windows))]
-        public void SettingUpdatesPropertiesOnSymlink()
-        {
-            // Browser is excluded as there is only 1 effective time store.
-            
-            // This test makes sure that the times are set on the symlink itself.
-            // It is needed as on OSX for example, the default for most APIs is
-            // to follow the symlink to completion and set the time on that entry
-            // instead (eg. the setattrlist will do this without the flag set).
-            T item = CreateSymlinkToItem(GetExistingItem());
-
-            Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
-            {
-                // Checking that milliseconds are not dropped after setter on supported platforms.
-                DateTime dt = new DateTime(2004, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
-                function.Setter(item, dt);
-                DateTime result = function.Getter(item);
-                Assert.Equal(dt, result);
-                Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
-
-                // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
-                // ToUniversalTime treats it as local.
-                if (function.Kind == DateTimeKind.Unspecified)
-                {
-                    Assert.Equal(dt, result.ToUniversalTime());
-                }
-                else
-                {
-                    Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
-                }
             });
         }
 

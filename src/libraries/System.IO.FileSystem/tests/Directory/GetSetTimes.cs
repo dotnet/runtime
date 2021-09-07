@@ -51,13 +51,5 @@ namespace System.IO.Tests
                 ((path) => Directory.GetLastWriteTimeUtc(path)),
                 DateTimeKind.Utc);
         }
-
-        protected override string CreateSymlinkToItem(string item)
-        {
-            var link = item + ".link";
-            if (Directory.Exists(link)) Directory.Delete(link);
-            if (!MountHelper.CreateSymbolicLink(link, item, true) || !Directory.Exists(link)) throw new Exception("Could not create symlink.");
-            return link;
-        }
     }
 }

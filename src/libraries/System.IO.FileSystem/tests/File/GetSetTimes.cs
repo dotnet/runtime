@@ -103,14 +103,6 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        protected override string CreateSymlinkToItem(string item)
-        {
-            var link = item + ".link";
-            if (File.Exists(link)) File.Delete(link);
-            if (!MountHelper.CreateSymbolicLink(link, item, false) || !File.Exists(link)) throw new Exception("Could not create symlink.");
-            return link;
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
         [PlatformSpecific(TestPlatforms.Windows)]
         public void PageFileHasTimes()
