@@ -12806,7 +12806,7 @@ DONE_MORPHING_CHILDREN:
                 if (result != nullptr)
                 {
                     assert(result->OperIs(GT_CAST));
-                    assert(result->gtOp2 == nullptr);
+                    assert(result->AsOp()->gtOp2 == nullptr);
                     // tree got folded to a unary (cast) op
                     tree = result;
                     oper = tree->OperGet();
