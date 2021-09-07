@@ -3,13 +3,23 @@
   <file datatype="xml" source-language="en" target-language="ja" original="../Strings.resx">
     <body>
       <trans-unit id="ContextClassesMustBePartialMessageFormat">
-        <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
-        <target state="translated">派生した 'JsonSerializerContext'型 '{0}' は、JSON シリアル化可能な型を指定します。ソース生成を開始するには、型と含まれているすべての型を部分的にする必要があります。</target>
+        <source>Derived 'JsonSerializerContext' type '{0}' and all containing types must be made partial to kick off source generation.</source>
+        <target state="needs-review-translation">派生した 'JsonSerializerContext'型 '{0}' は、JSON シリアル化可能な型を指定します。ソース生成を開始するには、型と含まれているすべての型を部分的にする必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="ContextClassesMustBePartialTitle">
         <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
         <target state="translated">派生した 'JsonSerializerContext' 型と含まれているすべての型は部分的である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextClassesMustIndicateSerializableTypesMessageFormat">
+        <source>Derived 'JsonSerializerContext' type '{0}' must indicate at least one serializable type using 'JsonSerializableAttribute'.</source>
+        <target state="new">Derived 'JsonSerializerContext' type '{0}' must indicate at least one serializable type using 'JsonSerializableAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextClassesMustIndicateSerializableTypesTitle">
+        <source>Derived 'JsonSerializerContext' type '{0}' must indicate serializable types.</source>
+        <target state="new">Derived 'JsonSerializerContext' type '{0}' must indicate serializable types.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">

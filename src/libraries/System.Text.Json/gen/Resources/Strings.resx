@@ -130,7 +130,7 @@
     <value>Did not generate serialization metadata for type.</value>
   </data>
   <data name="ContextClassesMustBePartialMessageFormat" xml:space="preserve">
-    <value>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</value>
+    <value>Derived 'JsonSerializerContext' type '{0}' and all containing types must be made partial to kick off source generation.</value>
   </data>
   <data name="ContextClassesMustBePartialTitle" xml:space="preserve">
     <value>Derived 'JsonSerializerContext' types and all containing types must be partial.</value>
@@ -140,5 +140,11 @@
   </data>
   <data name="MultipleJsonConstructorAttributeTitle" xml:space="preserve">
     <value>Type has multiple constructors annotated with JsonConstructorAttribute.</value>
+  </data>
+  <data name="ContextClassesMustIndicateSerializableTypesMessageFormat" xml:space="preserve">
+    <value>Derived 'JsonSerializerContext' type '{0}' must indicate at least one serializable type using 'JsonSerializableAttribute'.</value>
+  </data>
+  <data name="ContextClassesMustIndicateSerializableTypesTitle" xml:space="preserve">
+    <value>Derived 'JsonSerializerContext' type '{0}' must indicate serializable types.</value>
   </data>
 </root>

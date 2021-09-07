@@ -3,13 +3,23 @@
   <file datatype="xml" source-language="en" target-language="it" original="../Strings.resx">
     <body>
       <trans-unit id="ContextClassesMustBePartialMessageFormat">
-        <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
-        <target state="translated">Il tipo 'JsonSerializerContext 'derivato '{0}' specifica i tipi serializzabili JSON. Il tipo e tutti i tipi contenenti devono essere parziali per iniziare la generazione dell'origine.</target>
+        <source>Derived 'JsonSerializerContext' type '{0}' and all containing types must be made partial to kick off source generation.</source>
+        <target state="needs-review-translation">Il tipo 'JsonSerializerContext 'derivato '{0}' specifica i tipi serializzabili JSON. Il tipo e tutti i tipi contenenti devono essere parziali per iniziare la generazione dell'origine.</target>
         <note />
       </trans-unit>
       <trans-unit id="ContextClassesMustBePartialTitle">
         <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
         <target state="translated">I tipi derivati 'JsonSerializerContext' e tutti i tipi contenenti devono essere parziali.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextClassesMustIndicateSerializableTypesMessageFormat">
+        <source>Derived 'JsonSerializerContext' type '{0}' must indicate at least one serializable type using 'JsonSerializableAttribute'.</source>
+        <target state="new">Derived 'JsonSerializerContext' type '{0}' must indicate at least one serializable type using 'JsonSerializableAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextClassesMustIndicateSerializableTypesTitle">
+        <source>Derived 'JsonSerializerContext' type '{0}' must indicate serializable types.</source>
+        <target state="new">Derived 'JsonSerializerContext' type '{0}' must indicate serializable types.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">

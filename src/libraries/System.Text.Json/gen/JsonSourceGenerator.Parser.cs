@@ -33,7 +33,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
             private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
-            private const string JsonSerializerAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
+            private const string JsonSerializableAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
             private readonly Compilation _compilation;
@@ -94,6 +94,14 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
+            private static DiagnosticDescriptor ContextClassesMustIndicateSerializableTypes { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1032",
+                title: new LocalizableResourceString(nameof(SR.ContextClassesMustIndicateSerializableTypesTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.ContextClassesMustIndicateSerializableTypesMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
             private static DiagnosticDescriptor MultipleJsonConstructorAttribute { get; } = new DiagnosticDescriptor(
                 id: "SYSLIB1033",
                 title: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
@@ -149,7 +157,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 Compilation compilation = _compilation;
                 INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
-                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerAttributeFullName);
+                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializableAttributeFullName);
                 INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSourceGenerationOptionsAttributeFullName);
 
                 if (jsonSerializerContextSymbol == null || jsonSerializableAttributeSymbol == null || jsonSourceGenerationOptionsAttributeSymbol == null)
@@ -193,19 +201,27 @@ namespace System.Text.Json.SourceGeneration
                         }
                     }
 
+                    INamedTypeSymbol contextTypeSymbol = (INamedTypeSymbol)compilationSemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
+                    Debug.Assert(contextTypeSymbol != null);
+                    string[] diagnosticMessageArgs = new string[] { contextTypeSymbol.Name };
+
                     if (serializableAttributeList == null)
                     {
                         // No types were indicated with [JsonSerializable]
+
+                        // If there are no members on the context, assume that the user wanted source generation and notify them that there are no serializable types.
+                        if (!contextTypeSymbol.MemberNames.Any())
+                        {
+                            _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustIndicateSerializableTypes, Location.None, diagnosticMessageArgs));
+                        }
+
                         continue;
                     }
-
-                    INamedTypeSymbol contextTypeSymbol = (INamedTypeSymbol)compilationSemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
-                    Debug.Assert(contextTypeSymbol != null);
 
                     if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
                     {
                         // Class or one of its containing types is not partial so we can't add to it.
-                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
+                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, diagnosticMessageArgs));
                         continue;
                     }
 
@@ -407,31 +423,25 @@ namespace System.Text.Json.SourceGeneration
                 return typeGenerationSpec;
             }
 
-            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : > 0 } } };
+            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { BaseList: { Types : { Count : > 0 } } };
 
             internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
             {
                 var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
 
-                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
+                foreach (BaseTypeSyntax baseTypeSyntax in classDeclarationSyntax.BaseList.Types)
                 {
-                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    INamedTypeSymbol? baseTypeSymbol = context.SemanticModel.GetSymbolInfo(baseTypeSyntax.Type).Symbol as INamedTypeSymbol;
+                    if (baseTypeSymbol == null)
                     {
-                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
-                        if (attributeSymbol == null)
-                        {
-                            continue;
-                        }
-
-                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
-                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
-
-                        if (fullName == "System.Text.Json.Serialization.JsonSerializableAttribute")
-                        {
-                            return classDeclarationSyntax;
-                        }
+                        continue;
                     }
 
+                    string fullName = baseTypeSymbol.ToDisplayString();
+                    if (fullName == JsonSerializerContextFullName)
+                    {
+                        return classDeclarationSyntax;
+                    }
                 }
 
                 return null;

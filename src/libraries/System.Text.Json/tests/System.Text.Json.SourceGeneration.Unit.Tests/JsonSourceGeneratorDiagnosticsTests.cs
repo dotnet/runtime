@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Xunit;
 
@@ -189,6 +190,47 @@ public class Program
             CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
             CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
             CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+        }
+
+        [Fact]
+        public void ContextTypeNoSerializableTypes_EmptyContext()
+        {
+            string source = @"
+            using System.Text.Json.Serialization;
+
+            internal partial class JsonContext : JsonSerializerContext
+            {
+            }";
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+
+            string[] expectedWarningDiagnostics = new string[] { "Derived 'JsonSerializerContext' type 'JsonContext' must indicate at least one serializable type using 'JsonSerializableAttribute'." };
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
+        }
+
+        [Fact]
+        public void ContextTypeNoSerializableTypes_ContextWithMembers()
+        {
+            string source = @"
+            using System.Text.Json.Serialization;
+
+            internal partial class JsonContext : JsonSerializerContext
+            {
+            }
+
+            internal partial class JsonContext : JsonSerializerContext
+            {
+                private bool _dummy;
+            }";
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
         }
     }
 }
