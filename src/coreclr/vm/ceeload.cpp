@@ -3395,7 +3395,7 @@ Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pMDImportOverride,  // = NULL
     BOOL                fDoNotUtilizeExtraChecks, // = FALSE
-    AssemblyBinder      *pBindingContextForLoadedAssembly // = NULL
+    AssemblyBinder      *pBinderForLoadedAssembly // = NULL
 )
 {
     CONTRACT(Assembly *)
@@ -3473,10 +3473,10 @@ Module::GetAssemblyIfLoaded(
 
                 // If we have been passed the binding context for the loaded assembly that is being looked up in the
                 // cache, then set it up in the AssemblySpec for the cache lookup to use it below.
-                if (pBindingContextForLoadedAssembly != NULL)
+                if (pBinderForLoadedAssembly != NULL)
                 {
                     _ASSERTE(spec.GetBinder() == NULL);
-                    spec.SetBinder(pBindingContextForLoadedAssembly);
+                    spec.SetBinder(pBinderForLoadedAssembly);
                 }
                 DomainAssembly * pDomainAssembly = nullptr;
 
@@ -3583,10 +3583,10 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
-        AssemblyBinder *pBindingContext = pFile->GetBinder();
-        if (pBindingContext != NULL)
+        AssemblyBinder *pBinder = pFile->GetBinder();
+        if (pBinder != NULL)
         {
-            spec.SetBinder(pBindingContext);
+            spec.SetBinder(pBinder);
         }
         pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pFile, FILE_LOADED);
     }

@@ -319,17 +319,17 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
         PEFile *pManifestFile = pAssembly->GetManifestFile();
-        PTR_AssemblyBinder pBindingContext = pManifestFile->GetBinder();
+        PTR_AssemblyBinder pBinder = pManifestFile->GetBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
         //        The Binding Context can be null or an overridden TPA context
-        if (pBindingContext == NULL)
+        if (pBinder == NULL)
         {
             // If we do not have any binder associated, then return to the default resolution mechanism.
             return NULL;
         }
 
-        AssemblyBinder *pCurrentBinder = pBindingContext;
+        AssemblyBinder *pCurrentBinder = pBinder;
 
         // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
         if (pCurrentBinder->IsDefault())

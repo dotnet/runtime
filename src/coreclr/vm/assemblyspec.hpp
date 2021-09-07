@@ -50,7 +50,7 @@ class AssemblySpec  : public BaseAssemblySpec
                 mdAssemblyRef       kAssemblyRef,
                 IMDInternalImport * pMDImportOverride,
                 BOOL                fDoNotUtilizeExtraChecks,
-                AssemblyBinder      *pBindingContextForLoadedAssembly);
+                AssemblyBinder      *pBinderForLoadedAssembly);
 
   public:
 

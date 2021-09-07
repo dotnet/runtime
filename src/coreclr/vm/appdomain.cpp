@@ -3695,12 +3695,12 @@ PEAssembly * AppDomain::BindAssemblySpec(
         {
 
             {
-                ReleaseHolder<BINDER_SPACE::Assembly> bindResult;
-                hrBindResult = pSpec->Bind(this, &bindResult);
+                ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
+                hrBindResult = pSpec->Bind(this, &boundAssembly);
 
-                if (bindResult)
+                if (boundAssembly)
                 {
-                    if (SystemDomain::SystemFile() && bindResult->GetAssemblyName()->IsCoreLib())
+                    if (SystemDomain::SystemFile() && boundAssembly->GetAssemblyName()->IsCoreLib())
                     {
                         // Avoid rebinding to another copy of CoreLib
                         result = SystemDomain::SystemFile();
@@ -3709,7 +3709,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     else
                     {
                         // IsSystem on the PEFile should be false, even for CoreLib satellites
-                        result = PEAssembly::Open(bindResult, FALSE);
+                        result = PEAssembly::Open(boundAssembly, FALSE);
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec

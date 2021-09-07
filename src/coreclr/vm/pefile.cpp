@@ -347,10 +347,10 @@ BOOL PEFile::Equals(PEFile *pFile)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pFile->HasHostAssembly() && this->HasHostAssembly())
     {
-        AssemblyBinder* fileBinderId = pFile->GetHostAssembly()->GetBinder();
-        AssemblyBinder* thisBinderId = this->GetHostAssembly()->GetBinder();
+        AssemblyBinder* fileBinder = pFile->GetHostAssembly()->GetBinder();
+        AssemblyBinder* thisBinder = this->GetHostAssembly()->GetBinder();
 
-        if (fileBinderId != thisBinderId || fileBinderId == NULL)
+        if (fileBinder != thisBinder || fileBinder == NULL)
             return FALSE;
     }
 
@@ -1381,10 +1381,10 @@ void PEFile::EnsureImageOpened()
 
 void PEFile::SetupAssemblyLoadContext()
 {
-    PTR_AssemblyBinder pBindingContext = GetBinder();
+    PTR_AssemblyBinder pBinder = GetBinder();
 
-    m_pAssemblyBinder = (pBindingContext != NULL) ?
-        pBindingContext :
+    m_pAssemblyBinder = (pBinder != NULL) ?
+        pBinder :
         AppDomain::GetCurrentDomain()->CreateBinderContext();
 }
 
@@ -1491,7 +1491,7 @@ PTR_AssemblyBinder PEFile::GetBinder()
 {
     LIMITED_METHOD_CONTRACT;
 
-    PTR_AssemblyBinder pBindingContext = NULL;
+    PTR_AssemblyBinder pBinder = NULL;
 
     // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
     // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
@@ -1500,7 +1500,7 @@ PTR_AssemblyBinder PEFile::GetBinder()
         BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
         if (pHostAssembly)
         {
-            pBindingContext = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+            pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
         }
         else
         {
@@ -1509,10 +1509,10 @@ PTR_AssemblyBinder PEFile::GetBinder()
             // binder reference.
             if (IsDynamic())
             {
-                pBindingContext = GetFallbackBinder();
+                pBinder = GetFallbackBinder();
             }
         }
     }
 
-    return pBindingContext;
+    return pBinder;
 }

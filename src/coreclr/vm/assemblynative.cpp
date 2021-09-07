@@ -54,12 +54,12 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
-    AssemblyBinder *pBinderContext = NULL;
+    AssemblyBinder *pBinder = NULL;
 
     if (assemblyLoadContext.Get() != NULL)
     {
         INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
-        pBinderContext = reinterpret_cast<AssemblyBinder*>(nativeAssemblyLoadContext);
+        pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyLoadContext);
     }
 
     AssemblySpec spec;
@@ -77,7 +77,7 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
     {
         pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
     }
-    else if (pBinderContext == NULL)
+    else if (pBinder == NULL)
     {
         pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
     }
@@ -99,9 +99,9 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 
     // Have we been passed the reference to the binder against which this load should be triggered?
     // If so, then use it to set the fallback load context binder.
-    if (pBinderContext != NULL)
+    if (pBinder != NULL)
     {
-        spec.SetFallbackBinderForRequestingAssembly(pBinderContext);
+        spec.SetFallbackBinderForRequestingAssembly(pBinder);
         spec.SetPreferFallbackBinder();
     }
     else if (pRefAssembly != NULL)
@@ -381,7 +381,7 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
 
     BOOL prohibitAsmQualifiedName = TRUE;
 
-    AssemblyBinder * pPrivHostBinder = NULL;
+    AssemblyBinder * pBinder = NULL;
 
     if (*pAssemblyLoadContext.m_ppObject != NULL)
     {
@@ -390,11 +390,11 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
 
         INT_PTR nativeAssemblyLoadContext = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
 
-        pPrivHostBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyLoadContext);
+        pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyLoadContext);
     }
 
     // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), (OBJECTREF*)keepAlive.m_ppObject, pPrivHostBinder);
+    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), (OBJECTREF*)keepAlive.m_ppObject, pBinder);
 
     if (!retTypeHandle.IsNull())
     {

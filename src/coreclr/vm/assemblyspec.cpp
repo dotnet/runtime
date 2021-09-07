@@ -991,20 +991,20 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    AssemblyBinder *pBinderContextForLookup = NULL;
+    AssemblyBinder *pBinderForLookup = NULL;
     bool fGetBindingContextFromParent = true;
 
     // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
     // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
     if(!pSpec->IsAssemblySpecForCoreLib())
-        pBinderContextForLookup = pSpec->GetBinder();
+        pBinderForLookup = pSpec->GetBinder();
     else
     {
         // For System.Private.Corelib Binding context is either not set or if set then it should be TPA
         _ASSERTE(pSpec->GetBinder() == NULL || pSpec->GetBinder()->IsDefault());
     }
 
-    if (pBinderContextForLookup != NULL)
+    if (pBinderForLookup != NULL)
     {
         // We are working with the actual binding context in which the assembly was expected to be loaded.
         // Thus, we don't need to get it from the parent assembly.
@@ -1017,14 +1017,14 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
         // using its AssemblySpec hash.
         if (!pSpec->IsAssemblySpecForCoreLib())
         {
-            pBinderContextForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
-            pSpec->SetBinder(pBinderContextForLookup);
+            pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+            pSpec->SetBinder(pBinderForLookup);
         }
     }
 
-    if (pBinderContextForLookup)
+    if (pBinderForLookup)
     {
-        key = key ^ (UPTR)pBinderContextForLookup;
+        key = key ^ (UPTR)pBinderForLookup;
     }
 
     AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
