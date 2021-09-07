@@ -14229,7 +14229,9 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
             switch (hw->gtHWIntrinsicId)
             {
+                case NI_SSE_Xor:
                 case NI_SSE2_Xor:
+                case NI_AVX_Xor:
                 case NI_AVX2_Xor:
                 {
                     // Transform XOR(X, 0) to X for vectors
