@@ -122,9 +122,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>d6c7cf7d70f2f6a61c22c494aedb9c18de85ad53</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.CilStrip.Sources" Version="7.0.0-beta.21430.2">
+    <Dependency Name="Microsoft.DotNet.CilStrip.Sources" Version="7.0.0-beta.21457.4">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d6c7cf7d70f2f6a61c22c494aedb9c18de85ad53</Sha>
+      <Sha>1d113f16de55a39b39a3389f09c243cb6c44199b</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="11.1.0-alpha.1.21430.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
