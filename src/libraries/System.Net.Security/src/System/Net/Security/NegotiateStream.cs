@@ -473,7 +473,7 @@ namespace System.Net.Security
             return WriteAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), new ReadOnlyMemory<byte>(buffer, offset, count));
         }
 
-        /// <returns>A <see cref="ValueTask"/> of void.</returns>
+        /// <returns>A <see cref="ValueTask"/> that represents the asynchronous read operation.</returns>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfFailed(authSuccessCheck: true);
@@ -485,7 +485,6 @@ namespace System.Net.Security
             return new ValueTask(WriteAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), buffer));
         }
 
-        /// <returns>A <see cref="Task"/> of void.</returns>
         private async Task WriteAsync<TAdapter>(TAdapter adapter, ReadOnlyMemory<byte> buffer) where TAdapter : IReadWriteAdapter
         {
             if (Interlocked.Exchange(ref _writeInProgress, 1) == 1)
