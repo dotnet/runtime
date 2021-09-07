@@ -72,6 +72,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <DisableAutoWasmPublishApp>true</DisableAutoWasmPublishApp>
     <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
     <WasmNestedPublishAppDependsOn>ComputeFilesToPublish;_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
+    <_ScrambleDotnetJsFileNameAfterThisTarget Condition="'$(UsingBrowserRuntimeWorkload)' != 'true'">ResolveRuntimePackAssets</_ScrambleDotnetJsFileNameAfterThisTarget>
+    <_ScrambleDotnetJsFileNameAfterThisTarget Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'">WasmBuildApp</_ScrambleDotnetJsFileNameAfterThisTarget>
   </PropertyGroup>
 
   <ItemGroup>
@@ -157,7 +159,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_ScrambleDotnetJsFileName" AfterTargets="WasmBuildApp">
+  <Target Name="_ScrambleDotnetJsFileName" AfterTargets="$(_ScrambleDotnetJsFileNameAfterThisTarget)">
     <!--
       We want the dotnet.js file output to have a version to better work with caching. We'll append the runtime version to the file name as soon as file has been discovered.
     -->
@@ -211,13 +213,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <Target Name="_BlazorWasmNativeForBuild" DependsOnTargets="_GatherWasmFilesToBuild;WasmBuildApp" Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" />
+
   <Target Name="_GatherWasmFilesToBuild">
     <ItemGroup>
       <WasmAssembliesToBundle Include="@(ReferenceCopyLocalPaths);@(MainAssembly)" Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dll'" />
     </ItemGroup>
   </Target>
 
-  <Target Name="_ResolveBlazorWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_GatherWasmFilesToBuild;WasmBuildApp" BeforeTargets="_RazorPrepareForRun">
+  <Target Name="_ResolveBlazorWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_BlazorWasmNativeForBuild" BeforeTargets="_RazorPrepareForRun">
     <!--
       Calculates the outputs and the paths for Blazor WASM. This target is invoked frequently and should perform minimal work.
     -->
