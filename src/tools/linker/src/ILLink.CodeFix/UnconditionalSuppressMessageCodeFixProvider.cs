@@ -11,7 +11,6 @@ using ILLink.CodeFixProvider;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 
 namespace ILLink.CodeFix
@@ -19,6 +18,7 @@ namespace ILLink.CodeFix
 	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (UnconditionalSuppressMessageCodeFixProvider)), Shared]
 	public class UnconditionalSuppressMessageCodeFixProvider : BaseAttributeCodeFixProvider
 	{
+		const string Justification = nameof (Justification);
 		const string UnconditionalSuppressMessageAttribute = nameof (UnconditionalSuppressMessageAttribute);
 		public const string FullyQualifiedUnconditionalSuppressMessageAttribute = "System.Diagnostics.CodeAnalysis." + UnconditionalSuppressMessageAttribute;
 
@@ -37,22 +37,24 @@ namespace ILLink.CodeFix
 
 		public sealed override Task RegisterCodeFixesAsync (CodeFixContext context) => BaseRegisterCodeFixesAsync (context);
 
-		protected override SyntaxNode[] GetAttributeArguments (SemanticModel semanticModel, SyntaxNode targetNode, CSharpSyntaxNode containingDecl, SyntaxGenerator generator, Diagnostic diagnostic)
+		protected override SyntaxNode[] GetAttributeArguments (ISymbol attributableSymbol, ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, Diagnostic diagnostic)
 		{
-			// UnconditionalSuppressMessage("Rule Category", "Rule Id", Justification = "<Pending>")
-			var category = generator.LiteralExpression (diagnostic.Descriptor.Category);
-			var categoryArgument = generator.AttributeArgument (category);
+			// Category of the attribute
+			var ruleCategory = syntaxGenerator.AttributeArgument (
+				syntaxGenerator.LiteralExpression (diagnostic.Descriptor.Category));
 
-			var title = diagnostic.Descriptor.Title.ToString (CultureInfo.CurrentUICulture);
-			var ruleIdText = string.IsNullOrWhiteSpace (title) ? diagnostic.Id : string.Format ("{0}:{1}", diagnostic.Id, title);
-			var ruleId = generator.LiteralExpression (ruleIdText);
-			var ruleIdArgument = generator.AttributeArgument (ruleId);
+			// Identifier of the analysis rule the attribute applies to
+			var ruleTitle = diagnostic.Descriptor.Title.ToString (CultureInfo.CurrentUICulture);
+			var ruleId = syntaxGenerator.AttributeArgument (
+				syntaxGenerator.LiteralExpression (
+					string.IsNullOrWhiteSpace (ruleTitle) ? diagnostic.Id : $"{diagnostic.Id}:{ruleTitle}"));
 
-			var justificationExpr = generator.LiteralExpression ("<Pending>");
-			var justificationArgument = generator.AttributeArgument ("Justification", justificationExpr);
+			// The user should provide a justification for the suppression
+			var suppressionJustification = syntaxGenerator.AttributeArgument (Justification,
+				syntaxGenerator.LiteralExpression ("<Pending>"));
 
-			return new[] { categoryArgument, ruleIdArgument, justificationArgument };
+			// [UnconditionalSuppressWarning (category, id, Justification = "<Pending>")]
+			return new[] { ruleCategory, ruleId, suppressionJustification };
 		}
-
 	}
 }
