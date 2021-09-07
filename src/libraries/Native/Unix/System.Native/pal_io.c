@@ -1027,6 +1027,8 @@ int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length,
             return 0;
         }
     }
+#else
+    (void)mode;
 #endif
 
     int32_t result;
