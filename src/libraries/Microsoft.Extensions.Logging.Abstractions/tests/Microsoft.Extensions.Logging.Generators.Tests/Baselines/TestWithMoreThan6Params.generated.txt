@@ -5,7 +5,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
     partial class TestWithMoreThan6Params 
     {
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
         private readonly struct __Method9Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
         {
             private readonly global::System.Int32 _p1;
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
         public static partial void Method9(global::Microsoft.Extensions.Logging.ILogger logger, global::System.Int32 p1, global::System.Int32 p2, global::System.Int32 p3, global::System.Int32 p4, global::System.Int32 p5, global::System.Int32 p6, global::System.Collections.Generic.IEnumerable<global::System.Int32> p7)
         {
             if (logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
     }
 }
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
+[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
 internal static class __LoggerMessageGenerator
 {
     public static string Enumerate(global::System.Collections.IEnumerable? enumerable)

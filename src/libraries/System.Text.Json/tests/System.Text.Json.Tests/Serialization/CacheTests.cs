@@ -168,6 +168,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(WriteSuccessCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58204", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static async Task MultipleTypes(ITestClass testObj)
         {
             Type type = testObj.GetType();

@@ -33,7 +33,7 @@
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                 DefaultAssemblyBinder *pTPABinder,
+                                                 DefaultAssemblyBinder *pDefaultBinder,
                                                  BINDER_SPACE::Assembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE)
@@ -619,10 +619,10 @@ namespace BINDER_SPACE
 
     /* static */
     HRESULT AssemblyBinderCommon::BindLocked(ApplicationContext *pApplicationContext,
-                                       AssemblyName       *pAssemblyName,
-                                       bool                skipVersionCompatibilityCheck,
-                                       bool                excludeAppPaths,
-                                       BindResult         *pBindResult)
+                                             AssemblyName       *pAssemblyName,
+                                             bool                skipVersionCompatibilityCheck,
+                                             bool                excludeAppPaths,
+                                             BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
 
@@ -688,8 +688,8 @@ namespace BINDER_SPACE
 
     /* static */
     HRESULT AssemblyBinderCommon::FindInExecutionContext(ApplicationContext  *pApplicationContext,
-                                                   AssemblyName        *pAssemblyName,
-                                                   ContextEntry       **ppContextEntry)
+                                                         AssemblyName        *pAssemblyName,
+                                                         ContextEntry       **ppContextEntry)
     {
         _ASSERTE(pApplicationContext != NULL);
         _ASSERTE(pAssemblyName != NULL);
@@ -759,10 +759,10 @@ namespace BINDER_SPACE
 
             ReleaseHolder<Assembly> pAssembly;
             hr = AssemblyBinderCommon::GetAssembly(relativePath,
-                                             FALSE /* fIsInTPA */,
-                                             &pAssembly,
-                                             NULL,  // szMDAssemblyPath
-                                             bundleFileLocation);
+                                                   FALSE /* fIsInTPA */,
+                                                   &pAssembly,
+                                                   NULL,  // szMDAssemblyPath
+                                                   bundleFileLocation);
 
             BinderTracing::PathProbed(relativePath, BinderTracing::PathSource::Bundle, hr);
 
@@ -808,8 +808,8 @@ namespace BINDER_SPACE
                 CombinePath(fileName, relativePath, fileName);
 
                 hr = AssemblyBinderCommon::GetAssembly(fileName,
-                                                 FALSE /* fIsInTPA */,
-                                                 &pAssembly);
+                                                       FALSE /* fIsInTPA */,
+                                                       &pAssembly);
                 BinderTracing::PathProbed(fileName, pathSource, hr);
 
                 // Missing files are okay and expected when probing
@@ -979,9 +979,9 @@ namespace BINDER_SPACE
      */
     /* static */
     HRESULT AssemblyBinderCommon::BindByTpaList(ApplicationContext  *pApplicationContext,
-                                          AssemblyName        *pRequestedAssemblyName,
-                                          bool                 excludeAppPaths,
-                                          BindResult          *pBindResult)
+                                                AssemblyName        *pRequestedAssemblyName,
+                                                bool                 excludeAppPaths,
+                                                BindResult          *pBindResult)
     {
         HRESULT hr = S_OK;
 
@@ -1152,7 +1152,6 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::GetAssembly(SString            &assemblyPath,
                                               BOOL               fIsInTPA,
                                               Assembly           **ppAssembly,
-  
                                               // If assemblyPath refers to a native image without metadata,
                                               // szMDAssemblyPath gives the alternative file to get metadata.
                                               LPCTSTR            szMDAssemblyPath,
@@ -1210,7 +1209,7 @@ namespace BINDER_SPACE
 
     /* static */
     HRESULT AssemblyBinderCommon::Register(ApplicationContext *pApplicationContext,
-                                     BindResult         *pBindResult)
+                                           BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
 
@@ -1242,9 +1241,9 @@ namespace BINDER_SPACE
 
     /* static */
     HRESULT AssemblyBinderCommon::RegisterAndGetHostChosen(ApplicationContext *pApplicationContext,
-                                                     LONG                kContextVersion,
-                                                     BindResult         *pBindResult,
-                                                     BindResult         *pHostBindResult)
+                                                           LONG                kContextVersion,
+                                                           BindResult         *pBindResult,
+                                                           BindResult         *pHostBindResult)
     {
         HRESULT hr = S_OK;
 
@@ -1264,7 +1263,7 @@ namespace BINDER_SPACE
                 if (kContextVersion != pApplicationContext->GetVersion())
                 {
                     IF_FAIL_GO(AssemblyBinderCommon::OtherBindInterfered(pApplicationContext,
-                                                                   pBindResult));
+                                                                         pBindResult));
 
                     if (hr == S_FALSE)
                     {
@@ -1325,9 +1324,9 @@ namespace BINDER_SPACE
 
 #if !defined(DACCESS_COMPILE)
 HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
-                                                      /* in */ AssemblyName       *pAssemblyName,
-                                                      /* in */ DefaultAssemblyBinder *pTPABinder,
-                                                      /* out */ Assembly           **ppAssembly)
+                                                            /* in */ AssemblyName       *pAssemblyName,
+                                                            /* in */ DefaultAssemblyBinder *pDefaultBinder,
+                                                            /* out */ Assembly           **ppAssembly)
 {
     HRESULT hr = E_FAIL;
 
@@ -1336,7 +1335,7 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CustomAssemblyBinder::BindAssemblyByName.
     BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
     hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
-                                           pAssemblyName, pTPABinder, &pLoadedAssembly);
+                                           pAssemblyName, pDefaultBinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);
@@ -1348,11 +1347,11 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
 
 /* static */
 HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder,
-                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
-                                         /* in */  PEImage            *pPEImage,
-                                         /* in */  PEKIND              peKind,
-                                         /* in */  IMDInternalImport  *pIMetaDataAssemblyImport,
-                                         /* [retval] [out] */  Assembly **ppAssembly)
+                                               /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
+                                               /* in */  PEImage            *pPEImage,
+                                               /* in */  PEKIND              peKind,
+                                               /* in */  IMDInternalImport  *pIMetaDataAssemblyImport,
+                                               /* [retval] [out] */  Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
 
@@ -1460,12 +1459,12 @@ Exit:
     return hr;
 }
 
-HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** ppTPABinder)
+HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** ppDefaultBinder)
 {
     HRESULT hr = S_OK;
     EX_TRY
     {
-        if (ppTPABinder != NULL)
+        if (ppDefaultBinder != NULL)
         {
             NewHolder<DefaultAssemblyBinder> pBinder;
             SAFE_NEW(pBinder, DefaultAssemblyBinder);
@@ -1475,7 +1474,7 @@ HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** 
             if (SUCCEEDED(hr))
             {
                 pBinder->SetManagedAssemblyLoadContext(NULL);
-                *ppTPABinder = pBinder.Extract();
+                *ppDefaultBinder = pBinder.Extract();
             }
         }
     }
@@ -1485,9 +1484,9 @@ Exit:
     return hr;
 }
 
-HRESULT AssemblyBinderCommon::GetAssemblyIdentity(LPCSTR     szTextualIdentity,
-    BINDER_SPACE::ApplicationContext* pApplicationContext,
-    NewHolder<AssemblyIdentityUTF8>& assemblyIdentityHolder)
+HRESULT AssemblyBinderCommon::GetAssemblyIdentity(LPCSTR szTextualIdentity,
+                                                  BINDER_SPACE::ApplicationContext* pApplicationContext,
+                                                  NewHolder<AssemblyIdentityUTF8>& assemblyIdentityHolder)
 {
     HRESULT hr = S_OK;
     _ASSERTE(szTextualIdentity != NULL);

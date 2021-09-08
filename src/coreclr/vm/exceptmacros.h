@@ -508,8 +508,12 @@ template <typename T>
 NOINLINE
 VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(__in_z const char *cond))
 {
+#ifdef DACCESS_COMPILE
+    ThrowBadFormatWorker(resID, nullptr DEBUGARG(cond));
+#else
     LPCWSTR tmpStr = GetPathForErrorMessagesT(pImgObj);
     ThrowBadFormatWorker(resID, tmpStr DEBUGARG(cond));
+#endif
 }
 
 

@@ -567,5 +567,11 @@ namespace ILCompiler
         {
             return method.IsPInvoke && (method is Internal.IL.Stubs.PInvokeTargetNativeMethod);
         }
+
+        public static bool IsDynamicInterfaceCastableImplementation(this MetadataType interfaceType)
+        {
+            Debug.Assert(interfaceType.IsInterface);
+            return interfaceType.HasCustomAttribute("System.Runtime.InteropServices", "DynamicInterfaceCastableImplementationAttribute");
+        }
     }
 }
