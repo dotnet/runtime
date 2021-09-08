@@ -59,6 +59,8 @@
       COMPlus_JitInlinePolicyProfile;
       COMPlus_JitClassProfiling;
       COMPlus_JitEdgeProfiling;
+      COMPlus_JitRandomGuardedDevirtualization;
+      COMPlus_JitRandomEdgeCounts;
       RunningIlasmRoundTrip
     </COMPlusVariables>
   </PropertyGroup>
@@ -157,6 +159,9 @@
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />
     <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
+    <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1"/>
+    <TestEnvironment Include="fullpgo_random_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomEdgeCounts="1"/>
+    <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>

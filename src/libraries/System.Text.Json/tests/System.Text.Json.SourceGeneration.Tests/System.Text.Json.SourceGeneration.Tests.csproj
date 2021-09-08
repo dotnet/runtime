@@ -71,12 +71,13 @@
     <Compile Include="MetadataAndSerializationContextTests.cs" />
     <Compile Include="MetadataContextTests.cs" />
     <Compile Include="MixedModeContextTests.cs" />
+    <Compile Include="RealWorldContextTests.cs" />
     <Compile Include="SerializationContextTests.cs" />
     <Compile Include="SerializationLogicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="TestClasses.cs" />
-    <Compile Include="RealWorldContextTests.cs" />
+    <Compile Include="TestClasses.CustomConverters.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

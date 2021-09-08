@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.Serialization;
 using Interlocked = System.Threading.Interlocked;
 
@@ -2075,16 +2076,7 @@ namespace System.Collections.Generic
         }
 
         // Used for set checking operations (using enumerables) that rely on counting
-        private static int Log2(int value)
-        {
-            int result = 0;
-            while (value > 0)
-            {
-                result++;
-                value >>= 1;
-            }
-            return result;
-        }
+        private static int Log2(int value) => BitOperations.Log2((uint) value);
 
         #endregion
     }
