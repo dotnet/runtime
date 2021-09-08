@@ -217,6 +217,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_GatherWasmFilesToBuild">
     <ItemGroup>
+      <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
       <WasmAssembliesToBundle Include="@(ReferenceCopyLocalPaths);@(MainAssembly)" Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dll'" />
     </ItemGroup>
   </Target>
@@ -667,6 +668,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_GatherWasmFilesToPublish">
     <ItemGroup>
+      <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
       <WasmAssembliesToBundle Include="%(ResolvedFileToPublish.FullPath)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll' AND %(FileName) != 'Microsoft.JSInterop.WebAssembly'" />
     </ItemGroup>
   </Target>
