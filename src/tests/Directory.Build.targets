@@ -400,6 +400,12 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
+
+        <RunTimeDependencyCopyLocal
+           Include="$(EMSDK)\**"
+           TargetDir="emsdk/"
+        />
+
     </ItemGroup>
 
     <Message Text="!!!naricc_debug!!! RunTimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal)" Importance="High" />
