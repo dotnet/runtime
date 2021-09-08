@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
@@ -745,10 +746,8 @@ namespace Mono.Linker.Dataflow
 										}
 									}
 									if (hasUncheckedAnnotation) {
-										reflectionContext.RecordUnrecognizedPattern (
-												2055,
-												$"Call to '{calledMethodDefinition.GetDisplayName ()}' can not be statically analyzed. " +
-												$"It's not possible to guarantee the availability of requirements of the generic type.");
+										reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.MakeGenericType,
+											new DiagnosticString (DiagnosticId.MakeGenericType).GetMessage (calledMethodDefinition.GetDisplayName ()));
 									}
 								}
 
@@ -758,10 +757,8 @@ namespace Mono.Linker.Dataflow
 								reflectionContext.RecordHandledPattern ();
 							else {
 								// We have no way to "include more" to fix this if we don't know, so we have to warn
-								reflectionContext.RecordUnrecognizedPattern (
-									2055,
-									$"Call to '{calledMethodDefinition.GetDisplayName ()}' can not be statically analyzed. " +
-									$"It's not possible to guarantee the availability of requirements of the generic type.");
+								reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.MakeGenericType,
+											new DiagnosticString (DiagnosticId.MakeGenericType).GetMessage (calledMethodDefinition.GetDisplayName ()));
 							}
 						}
 
@@ -853,9 +850,8 @@ namespace Mono.Linker.Dataflow
 										if (hasTypeArguments) {
 											// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
 											// that the method may have requirements which we can't fullfil -> warn.
-											reflectionContext.RecordUnrecognizedPattern (
-												2060, string.Format (Resources.Strings.IL2060,
-													DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
+											reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.MakeGenericMethod,
+												new DiagnosticString (DiagnosticId.MakeGenericMethod).GetMessage (DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
 										}
 
 										RequireDynamicallyAccessedMembers (
@@ -869,9 +865,8 @@ namespace Mono.Linker.Dataflow
 								if (hasTypeArguments) {
 									// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
 									// that the method may have requirements which we can't fullfil -> warn.
-									reflectionContext.RecordUnrecognizedPattern (
-										2060, string.Format (Resources.Strings.IL2060,
-											DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
+									reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.MakeGenericMethod,
+										new DiagnosticString (DiagnosticId.MakeGenericMethod).GetMessage (DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
 								}
 
 								RequireDynamicallyAccessedMembers (
@@ -1718,9 +1713,8 @@ namespace Mono.Linker.Dataflow
 							} else {
 								// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
 								// that the method may have requirements which we can't fullfil -> warn.
-								reflectionContext.RecordUnrecognizedPattern (
-									2060, string.Format (Resources.Strings.IL2060,
-										DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
+								reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.MakeGenericMethod,
+									new DiagnosticString (DiagnosticId.MakeGenericMethod).GetMessage (DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
 							}
 						}
 
@@ -2403,9 +2397,8 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (!AnalyzeGenericInstatiationTypeArray (genericParametersArray, ref reflectionContext, reflectionMethod, genericMethod.GenericParameters)) {
-				reflectionContext.RecordUnrecognizedPattern (
-					2060,
-					string.Format (Resources.Strings.IL2060, DiagnosticUtilities.GetMethodSignatureDisplayName (reflectionMethod)));
+				reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.MakeGenericMethod,
+					new DiagnosticString (DiagnosticId.MakeGenericMethod).GetMessage (DiagnosticUtilities.GetMethodSignatureDisplayName (reflectionMethod)));
 			} else {
 				reflectionContext.RecordHandledPattern ();
 			}

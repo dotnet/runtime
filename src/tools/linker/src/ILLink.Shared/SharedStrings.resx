@@ -171,6 +171,12 @@
   <data name="DynamicTypeInvocationTitle" xml:space="preserve">
     <value>Using dynamic types might cause types or members to be removed by trimmer.</value>
   </data>
+  <data name="MakeGenericMethodMessage" xml:space="preserve">
+    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</value>
+  </data>
+  <data name="MakeGenericTypeMessage" xml:space="preserve">
+    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.</value>
+  </data>
   <data name="RequiresUnreferencedCodeOnStaticConstructorMessage" xml:space="preserve">
     <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor '{0}', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.</value>
   </data>
