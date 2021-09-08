@@ -614,11 +614,7 @@ struct RangeSectionHandle
 {
     TADDR LowAddress;
     TADDR  HighAddress;
-#ifndef DACCESS_COMPILE
-    Volatile<RangeSection *> pRS;
-#else
     PTR_RangeSection pRS;
-#endif
 
     RangeSectionHandle()
     {
