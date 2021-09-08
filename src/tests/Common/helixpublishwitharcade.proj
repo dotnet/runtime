@@ -188,18 +188,6 @@
     <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
   </Target>
 
-  <Target Name="ZipPayloadDirectory" AfterTargets="PreparePayloadDirectory" Condition="'$(TargetOS)' == 'Android'">
-    <ItemGroup>
-      <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
-      <Payloads Update="@(Payloads)">
-        <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
-        <PayloadDirectory>%(FullPath)</PayloadDirectory>
-      </Payloads>
-    </ItemGroup>
-
-    <ZipDirectory SourceDirectory="@(Payloads->Metadata('PayloadDirectory'))" DestinationFile="$(PayloadsRootDirectory)\%(Payloads.PayloadGroup).zip" />
-  </Target>
-
   <Target Name="PrepareCorrelationPayloadDirectory">
     <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
 
@@ -246,6 +234,18 @@
     </ItemGroup>
 
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
+  </Target>
+
+  <Target Name="ZipPayloadDirectory" AfterTargets="PreparePayloadsDirectories" Condition="'$(TargetOS)' == 'Android'">
+    <ItemGroup>
+      <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
+      <Payloads Update="@(Payloads)">
+        <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+        <PayloadDirectory>%(FullPath)</PayloadDirectory>
+      </Payloads>
+    </ItemGroup>
+
+    <ZipDirectory SourceDirectory="@(Payloads->Metadata('PayloadDirectory'))" DestinationFile="$(PayloadsRootDirectory)\%(Payloads.PayloadGroup).zip" />
   </Target>
 
   <PropertyGroup>
