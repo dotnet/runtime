@@ -23,7 +23,7 @@ namespace System.Text.Json.Reflection
 
         public Type? Resolve(string fullyQualifiedMetadataName)
         {
-            INamedTypeSymbol? typeSymbol = _compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
+            INamedTypeSymbol? typeSymbol = _compilation.GetBestTypeByMetadataName(fullyQualifiedMetadataName);
             return typeSymbol.AsType(this);
         }
 

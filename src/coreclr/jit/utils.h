@@ -659,7 +659,7 @@ public:
  * Used when outputting strings.
  */
 unsigned CountDigits(unsigned num, unsigned base = 10);
-unsigned CountDigits(float num, unsigned base = 10);
+unsigned CountDigits(double num, unsigned base = 10);
 
 #endif // DEBUG
 
@@ -686,6 +686,8 @@ public:
     static bool hasPreciseReciprocal(double x);
 
     static bool hasPreciseReciprocal(float x);
+
+    static double infinite_double();
 
     static float infinite_float();
 };
