@@ -155,8 +155,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <typeparam name="T">The generic definition for the type.</typeparam>
         /// <returns></returns>
-        public static JsonConverter<T> GetDisallowedTypeConverter<T>()
-            => new DisallowedTypeConverter<T>();
+        public static JsonConverter<T> GetUnsupportedTypeConverter<T>()
+            => new UnsupportedTypeConverter<T>();
 
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T"/> values.

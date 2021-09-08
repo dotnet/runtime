@@ -91,7 +91,7 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly HashSet<Type> _numberTypes = new();
             private readonly HashSet<Type> _knownTypes = new();
-            private readonly HashSet<Type> _knownTypesWithoutConverter = new();
+            private readonly HashSet<Type> _knownUnsupportedTypes = new();
 
             /// <summary>
             /// Type information for member types in input object graphs.
@@ -790,10 +790,10 @@ namespace System.Text.Json.SourceGeneration
                         collectionValueType = _objectType;
                     }
                 }
-                else if (_knownTypesWithoutConverter.Contains(type) ||
+                else if (_knownUnsupportedTypes.Contains(type) ||
                     ImplementsIAsyncEnumerableInterface(type))
                 {
-                    classType = ClassType.DisallowedType;
+                    classType = ClassType.KnownUnsupportedType;
                 }
                 else
                 {
@@ -1311,7 +1311,7 @@ namespace System.Text.Json.SourceGeneration
 
                 Debug.Assert(_knownTypes != null);
                 Debug.Assert(_numberTypes != null);
-                Debug.Assert(_knownTypesWithoutConverter != null);
+                Debug.Assert(_knownUnsupportedTypes != null);
 
                 _knownTypes.UnionWith(_numberTypes);
                 _knownTypes.Add(_booleanType);
@@ -1326,19 +1326,19 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_versionType);
                 _knownTypes.Add(_jsonElementType);
 
-                _knownTypesWithoutConverter.Add(_typeType);
-                _knownTypesWithoutConverter.Add(_serializationInfoType);
-                _knownTypesWithoutConverter.Add(_intPtrType);
-                _knownTypesWithoutConverter.Add(_uIntPtrType);
+                _knownUnsupportedTypes.Add(_typeType);
+                _knownUnsupportedTypes.Add(_serializationInfoType);
+                _knownUnsupportedTypes.Add(_intPtrType);
+                _knownUnsupportedTypes.Add(_uIntPtrType);
 
                 if (_dateOnlyType != null)
                 {
-                    _knownTypesWithoutConverter.Add(_dateOnlyType);
+                    _knownUnsupportedTypes.Add(_dateOnlyType);
                 }
 
                 if (_timeOnlyType != null)
                 {
-                    _knownTypesWithoutConverter.Add(_timeOnlyType);
+                    _knownUnsupportedTypes.Add(_timeOnlyType);
                 }
             }
         }
