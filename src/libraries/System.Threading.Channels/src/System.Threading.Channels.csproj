@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types for passing data between producers and consumers.
@@ -22,11 +22,11 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\Channel.cs" />
     <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
     <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs"
-             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs"
-             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
     <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
     <Compile Include="System\Threading\Channels\Channel_1.cs" />
@@ -53,7 +53,7 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <!-- Using a csproj extension to get the correct multi-targeting behavior. -->
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0</TargetFrameworks>
     <!-- Reference the outputs for the dependency nodes calculation. -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <IsPackable>true</IsPackable>
@@ -40,7 +40,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition.Registration\src\System.ComponentModel.Composition.Registration.csproj" />
   </ItemGroup>
 
