@@ -1388,8 +1388,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             // see https://github.com/mono/mono/issues/19549 for background
             if (sessions.Add(sessionId))
             {
-                string checkUncaughtExceptions = "";
-                string checkCaughtExceptions = "";
+                string checkUncaughtExceptions = string.Empty;
+                string checkCaughtExceptions = string.Empty;
 
                 //we only need this check if it's a non-vs debugging
                 if (sessionId == SessionId.Null)
