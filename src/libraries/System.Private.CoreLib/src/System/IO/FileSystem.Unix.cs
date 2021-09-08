@@ -277,15 +277,14 @@ namespace System.IO
             Debug.Assert(fullPath.Length > 0);
             Debug.Assert(PathInternal.IsDirectorySeparator(fullPath[0]));
 
-            int length = fullPath.Length;
-            if (length == 1)
+            if (fullPath.Length == 1)
             {
                 // fullPath is '/'.
                 return;
             }
 
-            string errorString = fullPath;
-            int result = Interop.Sys.MkDir(fullPath, (int)Interop.Sys.Permissions.Mask);
+            string mkdirPath = fullPath;
+            int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
             if (result == 0)
             {
                 // Created directory.
@@ -305,32 +304,34 @@ namespace System.IO
             {
                 // Some parts of the path don't exist yet.
 
-                // Trim trailling separator for parent directory lookup.
-                // The smallest path with trailing separator has length 3, for example '/a/'.
-                if (length >= 3 && Path.EndsInDirectorySeparator(fullPath))
-                {
-                    length--;
-                }
+                // Try create parents bottom to top and track those that could not
+                // be created due to missing parents. Then create them top to bottom.
 
-                // Try create parents bottom to top, track those that don't exist to create them later.
                 List<string> stackDir = new List<string>();
+
                 stackDir.Add(fullPath);
-                int i = length - 1;
+
+                int i = fullPath.Length - 1;
+                // Trim trailing separator.
+                if (PathInternal.IsDirectorySeparator(fullPath[i]))
+                {
+                    i--;
+                }
                 do
                 {
+                    // Find the end of the parent directory.
                     Debug.Assert(!PathInternal.IsDirectorySeparator(fullPath[i]));
-
                     while (!PathInternal.IsDirectorySeparator(fullPath[i]))
                     {
                         i--;
                     }
-                    string parentDir = fullPath.Substring(0, i);
 
-                    errorString = parentDir;
-                    result = Interop.Sys.MkDir(parentDir, (int)Interop.Sys.Permissions.Mask);
+                    // Try create it.
+                    mkdirPath = fullPath.Substring(0, i);
+                    result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
                     if (result == 0)
                     {
-                        // Created parentDir.
+                        // Created parent.
                         break;
                     }
 
@@ -340,13 +341,13 @@ namespace System.IO
                         // Some parts of the path don't exist yet.
                         // We'll try to create its parent on the next iteration.
 
-                        // Track this path for creation.
-                        stackDir.Add(parentDir);
+                        // Track this path for later creation.
+                        stackDir.Add(mkdirPath);
                     }
                     else if (errorInfo.Error == Interop.Error.EEXIST)
                     {
                         // Parent exists.
-                        // If it's not a directory, MkDir will fail when we create a child directory.
+                        // If it is not a directory, MkDir will fail when we create a child directory.
                         result = 0;
                         break;
                     }
@@ -360,12 +361,11 @@ namespace System.IO
 
                 if (result == 0)
                 {
+                    // Create directories that had missing parents.
                     for (i = stackDir.Count - 1; i >= 0; i--)
                     {
-                        string name = stackDir[i];
-
-                        errorString = name;
-                        result = Interop.Sys.MkDir(name, (int)Interop.Sys.Permissions.Mask);
+                        mkdirPath = stackDir[i];
+                        result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
                         if (result < 0)
                         {
                             errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -375,13 +375,14 @@ namespace System.IO
                                 // Path was created since we last checked.
                                 // Continue, and for the last item, which is fullPath,
                                 // verify it is actually a directory.
-                                if (i == 0 && DirectoryExists(name))
+                                if (i == 0 && DirectoryExists(mkdirPath))
                                 {
                                     return;
                                 }
                             }
                             else
                             {
+                                // Fail.
                                 break;
                             }
                         }
@@ -391,7 +392,7 @@ namespace System.IO
 
             if (result < 0)
             {
-                throw Interop.GetExceptionForIoErrno(errorInfo, errorString, isDirectory: true);
+                throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath, isDirectory: true);
             }
         }
 
