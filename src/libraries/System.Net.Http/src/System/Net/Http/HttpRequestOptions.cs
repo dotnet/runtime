@@ -6,10 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
-    /// <summary>
-    /// Represents a collection of options for an HTTP request.
-    /// This class cannot be inherited.
-    /// </summary>
     public sealed class HttpRequestOptions : IDictionary<string, object?>
     {
         private Dictionary<string, object?> Options { get; } = new Dictionary<string, object?>();
@@ -40,13 +36,6 @@ namespace System.Net.Http
         bool IDictionary<string, object?>.Remove(string key) => Options.Remove(key);
         bool ICollection<KeyValuePair<string, object?>>.Remove(KeyValuePair<string, object?> item) => ((IDictionary<string, object?>)Options).Remove(item);
         bool IDictionary<string, object?>.TryGetValue(string key, out object? value) => Options.TryGetValue(key, out value);
-
-        /// <summary>
-        /// Gets the value of a given option.
-        /// </summary>
-        /// <param name="key">The key to get the value of.</param>
-        /// <param name="value">When this method returns, contains the value of the option. This parameter is treated as uninitialized.</param>
-        /// <returns>True, if an item is retrieved.</returns>
         public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value)
         {
             if (Options.TryGetValue(key.Key, out object? _value) && _value is TValue tvalue)
@@ -59,12 +48,6 @@ namespace System.Net.Http
             return false;
         }
 
-        /// <summary>
-        /// Sets the value of a given option.
-        /// </summary>
-        /// <param name="key">The key for the option.</param>
-        /// <param name="value">The value to set the option to</param>
-        /// <typeparam name="TValue">The type of the value to set the option to.</typeparam>
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value)
         {
             Options[key.Key] = value;

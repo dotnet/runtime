@@ -53,9 +53,6 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>
-        /// Gets or sets the cookie container to be used.
-        /// </summary>
         [AllowNull]
         public CookieContainer CookieContainer
         {
@@ -421,6 +418,9 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets a property bag that can be used for ...
+        /// </summary>
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
