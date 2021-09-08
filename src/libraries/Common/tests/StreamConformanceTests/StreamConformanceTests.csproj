@@ -4,7 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\IO\*" />
+    <Compile Include="System\IO\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="System\IO\ConnectedStreams.cs" />

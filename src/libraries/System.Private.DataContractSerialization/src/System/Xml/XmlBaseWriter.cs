@@ -1769,7 +1769,7 @@ namespace System.Xml
             while (true)
             {
                 int prefixId = _elements![_depth].PrefixId++;
-                prefix = string.Concat("d", _depth.ToString(CultureInfo.InvariantCulture), "p", prefixId.ToString(CultureInfo.InvariantCulture));
+                prefix = string.Create(CultureInfo.InvariantCulture, $"d{_depth}p{prefixId}");
 
                 if (_nsMgr.LookupNamespace(prefix) == null)
                 {

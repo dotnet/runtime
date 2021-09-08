@@ -98,52 +98,52 @@ Volatile<LONGLONG> ETW::GCLog::s_l64LastClientSequenceNumber = 0;
         { FireEtwMethodLoad_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodUnloadVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodUnloadVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodUnloadVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
+        { FireEtwMethodUnloadVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
     else \
-        { FireEtwMethodUnloadVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodUnloadVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodUnload_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodUnload_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodUnload_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
+        { FireEtwMethodUnload_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
     else \
-        { FireEtwMethodUnload_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodUnload_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCStartVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCStartVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCStartVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
+        { FireEtwMethodDCStartVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID); } \
     else \
-        { FireEtwMethodDCStartVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCStartVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCStart_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCStart_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCStart_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
+        { FireEtwMethodDCStart_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID); } \
     else \
-        { FireEtwMethodDCStart_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCStart_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCEndVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCEndVerbose_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCEndVerbose_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID);  } \
+        { FireEtwMethodDCEndVerbose_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID);  } \
     else \
-        { FireEtwMethodDCEndVerbose_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCEndVerbose_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, szDtraceOutput1, szDtraceOutput2, szDtraceOutput3, clrInstanceID, nativeCodeId); } \
 }
 
-#define FireEtwMethodDCEnd_V1_or_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
+#define FireEtwMethodDCEnd_V1_or_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId) \
 {   \
     if (nativeCodeId == 0)   \
-        { FireEtwMethodDCEnd_V1(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID);  } \
+        { FireEtwMethodDCEnd_V1(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID);  } \
     else \
-        { FireEtwMethodDCEnd_V2(ullMethodIdentifier, ullModuleID, ullColdMethodStartAddress, ulColdMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
+        { FireEtwMethodDCEnd_V2(ullMethodIdentifier, ullModuleID, ullMethodStartAddress, ulMethodSize, ulMethodToken, ulColdMethodFlags, clrInstanceID, nativeCodeId); } \
 }
 
 // Module load / unload events:
@@ -2616,8 +2616,6 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
         GetClrInstanceId());
 }
 
-
-
 #ifndef FEATURE_REDHAWK
 
 // TypeSystemLog implementation
@@ -4169,6 +4167,12 @@ VOID ETW::EnumerationLog::EndRundown()
             MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
             TRACE_LEVEL_INFORMATION,
             CLR_RUNDOWNTHREADING_KEYWORD);
+
+        BOOL bIsGCRundownEnabled = ETW_TRACING_CATEGORY_ENABLED(
+            MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
+            TRACE_LEVEL_INFORMATION,
+            CLR_RUNDOWNGC_KEYWORD);
+
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_RUNDOWNJIT_KEYWORD)
@@ -4186,6 +4190,8 @@ VOID ETW::EnumerationLog::EndRundown()
            bIsPerfTrackRundownEnabled
            ||
            bIsThreadingRundownEnabled
+           ||
+           bIsGCRundownEnabled
         )
         {
             // begin marker event will go to the rundown provider
@@ -4225,6 +4231,11 @@ VOID ETW::EnumerationLog::EndRundown()
             if (bIsThreadingRundownEnabled)
             {
                 SendThreadRundownEvent();
+            }
+
+            if (bIsGCRundownEnabled)
+            {
+                SendGCRundownEvent();
             }
 
             // end marker event will go to the rundown provider
@@ -4416,6 +4427,12 @@ VOID EtwCallbackCommon(
     if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)
     {
         ETW::TypeSystemLog::OnKeywordsChanged();
+    }
+
+    if (g_fEEStarted && !g_fEEShutDown)
+    {
+        // Emit the YieldProcessor measured values at the beginning of the trace
+        YieldProcessorNormalization::FireMeasurementEvents();
     }
 }
 
@@ -5045,7 +5062,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
         {
             PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
             UINT8 startupMode = 0;
-            UINT startupFlags = 0;
+            UINT startupFlags = CorHost2::GetStartupFlags();
             PathString dllPath;
             UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 
@@ -5642,7 +5659,7 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
                 for (; iter.IsValid(); iter.Next())
                 {
                     MethodDesc *pMD = (MethodDesc *)(iter.GetMethodDesc());
-                    if(pMD && pMD->IsRestored() && pMD->GetMethodTable_NoLogging() == pMethodTable)
+                    if(pMD && pMD->GetMethodTable_NoLogging() == pMethodTable)
                         ETW::MethodLog::SendMethodEvent(pMD, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
                 }
             }
@@ -5970,6 +5987,49 @@ VOID ETW::EnumerationLog::SendThreadRundownEvent()
 #endif // !DACCESS_COMPILE
 }
 
+/********************************************************/
+/* This routine is used to send GC rundown events */
+/********************************************************/
+VOID ETW::EnumerationLog::SendGCRundownEvent()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    if (GCHeapUtilities::IsGCHeapInitialized())
+    {
+        EtwGCSettingsInfo gcSettingsInfo;
+        GCHeapUtilities::GetGCHeap()->DiagGetGCSettings(&gcSettingsInfo);
+
+        DWORD dwEtwGCSettingFlags = 0;
+        if (gcSettingsInfo.concurrent_gc_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagConcurrent;
+
+        if (gcSettingsInfo.use_large_pages_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagLargePages;
+
+        if (gcSettingsInfo.use_frozen_segments_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagFrozenSegs;
+
+        if (gcSettingsInfo.hard_limit_config_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagHardLimitConfig;
+
+        if (gcSettingsInfo.no_affinitize_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagNoAffinitize;
+
+        FireEtwGCSettingsRundown (
+            gcSettingsInfo.heap_hard_limit,
+            gcSettingsInfo.loh_threshold,
+            gcSettingsInfo.physical_memory_from_config,
+            gcSettingsInfo.gen0_min_budget_from_config,
+            gcSettingsInfo.gen0_max_budget_from_config,
+            gcSettingsInfo.high_mem_percent_from_config,
+            dwEtwGCSettingFlags,
+            GetClrInstanceId());
+    }
+}
+
 /****************************************************************************/
 /* This routine is used to send an assembly load/unload or rundown event ****/
 /****************************************************************************/
@@ -5987,14 +6047,12 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
     PCWSTR szDtraceOutput1=W("");
     BOOL bIsDynamicAssembly = pAssembly->IsDynamic();
     BOOL bIsCollectibleAssembly = pAssembly->IsCollectible();
-    BOOL bHasNativeImage = pAssembly->GetManifestFile()->HasNativeImage();
-    BOOL bIsReadyToRun = pAssembly->GetManifestFile()->IsILImageReadyToRun();
+    BOOL bIsReadyToRun = pAssembly->GetManifestFile()->IsReadyToRun();
 
     ULONGLONG ullAssemblyId = (ULONGLONG)pAssembly;
     ULONGLONG ullDomainId = (ULONGLONG)pAssembly->GetDomain();
     ULONGLONG ullBindingID = 0;
     ULONG ulAssemblyFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicAssembly : 0) |
-                             (bHasNativeImage ? ETW::LoaderLog::LoaderStructs::NativeAssembly : 0) |
                              (bIsCollectibleAssembly ? ETW::LoaderLog::LoaderStructs::CollectibleAssembly : 0) |
                              (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunAssembly : 0));
 
@@ -6039,60 +6097,6 @@ ETW_INLINE
 {
     ULONG Result = ERROR_SUCCESS;
 
-#ifdef FEATURE_PREJIT
-    // do not fire the ETW event when:
-    // 1. We did not load the native image
-    // 2. We do not have IBC data for the native image
-    if( !pModule || !pModule->HasNativeImage() || !pModule->IsIbcOptimized() )
-    {
-        return Result;
-    }
-
-    // get information about the hot sections from the native image that has been loaded
-    COUNT_T cbSizeOfSectionTable;
-    CORCOMPILE_VIRTUAL_SECTION_INFO* pVirtualSectionsTable = (CORCOMPILE_VIRTUAL_SECTION_INFO* )pModule->GetNativeImage()->GetVirtualSectionsTable(&cbSizeOfSectionTable);
-
-    COUNT_T RangeCount = cbSizeOfSectionTable/sizeof(CORCOMPILE_VIRTUAL_SECTION_INFO);
-
-    // if we do not have any hot ranges, we do not fire the ETW event
-
-    // Figure out the rest of the event data
-    UINT16 ClrInstanceId = GetClrInstanceId();
-    UINT64 ModuleID = (ULONGLONG)(TADDR) pModule;
-
-    for (COUNT_T i = 0; i < RangeCount; ++i)
-    {
-        DWORD rangeBegin = pVirtualSectionsTable[i].VirtualAddress;
-        DWORD rangeSize = pVirtualSectionsTable[i].Size;
-        DWORD sectionType = pVirtualSectionsTable[i].SectionType;
-
-        UINT8 ibcType = VirtualSectionData::IBCType(sectionType);
-        UINT8 rangeType = VirtualSectionData::RangeType(sectionType);
-        UINT16 virtualSectionType = VirtualSectionData::VirtualSectionType(sectionType);
-        BOOL isIBCProfiledColdSection = VirtualSectionData::IsIBCProfiledColdSection(sectionType);
-        if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeLoad(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCStart)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeDCStart(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCEnd)
-        {
-            if (isIBCProfiledColdSection)
-                Result &= FireEtwModuleRangeDCEnd(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType);
-        }
-        // Fire private events if they are requested.
-        if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate)
-        {
-            Result &= FireEtwModuleRangeLoadPrivate(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType, ibcType, virtualSectionType);
-        }
-    }
-#endif
-
     return Result;
 }
 
@@ -6135,11 +6139,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
     _ASSERTE(pPEFile != NULL);
 
     PTR_PEImageLayout pLayout = NULL;
-    if (pPEFile->HasNativeImage())
-    {
-        pLayout = pPEFile->GetLoadedNative();
-    }
-    else if (pPEFile->HasOpenedILimage())
+    if (pPEFile->HasOpenedILimage())
     {
         pLayout = pPEFile->GetLoadedIL();
     }
@@ -6301,19 +6301,11 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
-    BOOL bHasNativeImage = FALSE;
-#ifdef FEATURE_PREJIT
-    bHasNativeImage = pModule->HasNativeImage();
-#endif // FEATURE_PREJIT
     BOOL bIsManifestModule = pModule->IsManifest();
     ULONGLONG ullAppDomainId = 0; // This is used only with DomainModule events
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
-    if(bHasNativeImage)
-    {
-        bIsIbcOptimized = pModule->IsIbcOptimized();
-    }
     BOOL bIsReadyToRun = pModule->IsReadyToRun();
     BOOL bIsPartialReadyToRun = FALSE;
     if (bIsReadyToRun)
@@ -6321,8 +6313,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
         bIsPartialReadyToRun = pModule->GetReadyToRunInfo()->IsPartial();
     }
     ULONG ulReservedFlags = 0;
-    ULONG ulFlags = ((bHasNativeImage ? ETW::LoaderLog::LoaderStructs::NativeModule : 0) |
-                     (bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicModule : 0) |
+    ULONG ulFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicModule : 0) |
                      (bIsManifestModule ? ETW::LoaderLog::LoaderStructs::ManifestModule : 0) |
                      (bIsIbcOptimized ? ETW::LoaderLog::LoaderStructs::IbcOptimized : 0) |
                      (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunModule : 0) |
@@ -6349,11 +6340,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     {
         ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetManifestFile()->GetILimage()->GetPath().GetUnicode();
         ModuleNativePath = (PWCHAR)pEmptyString;
-
-#ifdef FEATURE_PREJIT
-        if(bHasNativeImage)
-            ModuleNativePath = (PWCHAR)pModule->GetNativeImage()->GetPath().GetUnicode();
-#endif // FEATURE_PREJIT
     }
 
     // if we do not have a module path yet, we put the module name
@@ -6520,10 +6506,6 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
     if(pMethodDesc) {
         pModule = pMethodDesc->GetModule_NoLogging();
 
-        if(!pMethodDesc->IsRestored()) {
-                return;
-        }
-
         SendMethodDetailsEvent(pMethodDesc);
 
         bool bIsDynamicMethod = pMethodDesc->IsDynamicMethod();
@@ -6590,10 +6572,10 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
 
     Module *pModule = NULL;
     Module *pLoaderModule = NULL; // This must not be used except for getting the ModuleID
-    ULONGLONG ullMethodStartAddress=0, ullColdMethodStartAddress=0, ullModuleID=0, ullMethodIdentifier=0;
-    ULONG ulMethodSize=0, ulColdMethodSize=0, ulMethodToken=0, ulMethodFlags=0, ulColdMethodFlags=0;
+    ULONGLONG ullMethodStartAddress=0, ullModuleID=0, ullMethodIdentifier=0;
+    ULONG ulMethodSize=0, ulMethodToken=0, ulMethodFlags=0, ulColdMethodFlags=0;
     PWCHAR pMethodName=NULL, pNamespaceName=NULL, pMethodSignature=NULL;
-    BOOL bHasNativeImage = FALSE, bShowVerboseOutput = FALSE, bIsDynamicMethod = FALSE, bHasSharedGenericCode = FALSE, bIsGenericMethod = FALSE;
+    BOOL bShowVerboseOutput = FALSE, bIsDynamicMethod = FALSE, bHasSharedGenericCode = FALSE, bIsGenericMethod = FALSE;
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W(""),szDtraceOutput3=W("");
 
     BOOL bIsRundownProvider = ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCStart) ||
@@ -6609,24 +6591,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     if (pMethodDesc == NULL)
         return;
 
-    if(!pMethodDesc->IsRestored())
-    {
-        // Forcibly restoring ngen methods can cause all sorts of deadlocks and contract violations
-        // These events are therefore put under the private provider
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context,
-                                        TRACE_LEVEL_INFORMATION,
-                                        CLR_PRIVATENGENFORCERESTORE_KEYWORD))
-        {
-            PERMANENT_CONTRACT_VIOLATION(GCViolation, ReasonNonShippingCode);
-            pMethodDesc->CheckRestore();
-        }
-        else
-        {
-            return;
-        }
-    }
-
-
     if(bIsRundownProvider)
     {
         bShowVerboseOutput = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
@@ -6641,9 +6605,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     }
 
     pModule = pMethodDesc->GetModule_NoLogging();
-#ifdef FEATURE_PREJIT
-    bHasNativeImage = pModule->HasNativeImage();
-#endif // FEATURE_PREJIT
     bIsDynamicMethod = (BOOL)pMethodDesc->IsDynamicMethod();
     bHasSharedGenericCode = pMethodDesc->IsSharedByGenericInstantiations();
 
@@ -6716,12 +6677,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     else
         ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
 
-    if(bHasNativeImage)
-    {
-        ullColdMethodStartAddress = (ULONGLONG)methodRegionInfo.coldStartAddress;
-        ulColdMethodSize = (ULONG)methodRegionInfo.coldSize; // methodRegionInfo.coldSize is size_t and info.MethodLoadInfo.MethodSize is 32 bit; will give incorrect values on a 64-bit machine
-    }
-
     SString tNamespace, tMethodName, tMethodSignature;
 
     // if verbose method load info needed, only then
@@ -6739,8 +6694,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
         pMethodName = (PWCHAR)methodName->GetUnicode();
         pMethodSignature = (PWCHAR)methodSignature->GetUnicode();
     }
-
-    BOOL bFireEventForColdSection = (bHasNativeImage && ullColdMethodStartAddress && ulColdMethodSize);
 
     /* prepare events args for ETW and ETM */
     szDtraceOutput1 = (PCWSTR)pNamespaceName;
@@ -6777,34 +6730,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
                 GetClrInstanceId(),
                 nativeCodeId);
         }
-        if(bFireEventForColdSection)
-        {
-            if(bShowVerboseOutput)
-            {
-                FireEtwMethodLoadVerbose_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    szDtraceOutput1,
-                    szDtraceOutput2,
-                    szDtraceOutput3,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-            else
-            {
-                FireEtwMethodLoad_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-        }
     }
     else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnload) ||
         (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::NgenMethodUnload))
@@ -6833,34 +6758,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
                 ulMethodFlags,
                 GetClrInstanceId(),
                 nativeCodeId);
-        }
-        if(bFireEventForColdSection)
-        {
-            if(bShowVerboseOutput)
-            {
-                FireEtwMethodUnloadVerbose_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    szDtraceOutput1,
-                    szDtraceOutput2,
-                    szDtraceOutput3,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-            else
-            {
-                FireEtwMethodUnload_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
         }
     }
     else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCStart) ||
@@ -6891,34 +6788,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
                 GetClrInstanceId(),
                 nativeCodeId);
         }
-        if(bFireEventForColdSection)
-        {
-            if(bShowVerboseOutput)
-            {
-                FireEtwMethodDCStartVerbose_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    szDtraceOutput1,
-                    szDtraceOutput2,
-                    szDtraceOutput3,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-            else
-            {
-                FireEtwMethodDCStart_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-        }
     }
     else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCEnd) ||
         (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::NgenMethodDCEnd))
@@ -6947,34 +6816,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
                 ulMethodFlags,
                 GetClrInstanceId(),
                 nativeCodeId);
-        }
-        if(bFireEventForColdSection)
-        {
-            if(bShowVerboseOutput)
-            {
-                FireEtwMethodDCEndVerbose_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    szDtraceOutput1,
-                    szDtraceOutput2,
-                    szDtraceOutput3,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
-            else
-            {
-                FireEtwMethodDCEnd_V1_or_V2(ullMethodIdentifier,
-                    ullModuleID,
-                    ullColdMethodStartAddress,
-                    ulColdMethodSize,
-                    ulMethodToken,
-                    ulColdMethodFlags,
-                    GetClrInstanceId(),
-                    nativeCodeId);
-            }
         }
     }
     else
@@ -7127,19 +6968,6 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
         return;
     }
 #endif // FEATURE_READYTORUN
-
-#ifdef FEATURE_PREJIT
-    if (pModule->HasNativeImage())
-    {
-        MethodIterator mi(pModule);
-
-        while (mi.Next())
-        {
-            MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc();
-            ETW::MethodLog::SendMethodEvent(hotDesc, dwEventOptions, FALSE);
-        }
-    }
-#endif // FEATURE_PREJIT
 }
 
 // Called be ETW::MethodLog::SendEventsForJitMethods

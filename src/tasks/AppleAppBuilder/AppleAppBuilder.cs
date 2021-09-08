@@ -50,9 +50,11 @@ public class AppleAppBuilderTask : Task
     public string MonoRuntimeHeaders { get; set; } = ""!;
 
     /// <summary>
-    /// This library will be used as an entry-point (e.g. TestRunner.dll)
+    /// This library will be used as an entry point (e.g. TestRunner.dll). Can
+    /// be empty. If empty, the entry point of the app must be specified in an
+    /// environment variable named "MONO_APPLE_APP_ENTRY_POINT_LIB_NAME" when
+    /// running the resulting app.
     /// </summary>
-    [Required]
     public string MainLibraryFileName { get; set; } = ""!;
 
     /// <summary>
@@ -153,15 +155,17 @@ public class AppleAppBuilderTask : Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
         bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
-        if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
+        if (!string.IsNullOrEmpty(MainLibraryFileName))
         {
-            throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
+            if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
+            {
+                throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
+            }
         }
 
-        if (ProjectName.Contains(" "))
+        if (ProjectName.Contains(' '))
         {
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }
@@ -205,11 +209,6 @@ public class AppleAppBuilderTask : Task
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
-        if (TargetOS != TargetNames.MacCatalyst && ForceInterpreter && ForceAOT)
-        {
-            throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
-        }
-
         if (!string.IsNullOrEmpty(DiagnosticPorts))
         {
             bool validDiagnosticsConfig = false;
@@ -227,7 +226,7 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            Xcode generator = new Xcode(TargetOS, Arch);
+            Xcode generator = new Xcode(Log, TargetOS, Arch);
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
             generator.DiagnosticPorts = DiagnosticPorts;
 
@@ -239,7 +238,7 @@ public class AppleAppBuilderTask : Task
                 if (isDevice && string.IsNullOrEmpty(DevTeamProvisioning))
                 {
                     // DevTeamProvisioning shouldn't be empty for arm64 builds
-                    Utils.LogInfo("DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
+                    Log.LogMessage(MessageImportance.High, "DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
                 }
                 else
                 {

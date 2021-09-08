@@ -22,28 +22,28 @@ namespace System.Text.RegularExpressions.Tests
             while (match.Success)
             {
                 string expected = "abracadabra";
-                Assert.Equal(expected, match.Value);
+                RegexAssert.Equal(expected, match);
 
                 Assert.Equal(3, match.Groups.Count);
                 for (int i = 0; i < match.Groups.Count; i++)
                 {
-                    Assert.Equal(expectedGroupValues[i], match.Groups[i].Value);
+                    RegexAssert.Equal(expectedGroupValues[i], match.Groups[i]);
                     if (i == 1)
                     {
                         Assert.Equal(2, match.Groups[i].Captures.Count);
                         for (int j = 0; j < match.Groups[i].Captures.Count; j++)
                         {
-                            Assert.Equal(expectedGroupCaptureValues[j], match.Groups[i].Captures[j].Value);
+                            RegexAssert.Equal(expectedGroupCaptureValues[j], match.Groups[i].Captures[j]);
                         }
                     }
                     else if (i == 2)
                     {
                         Assert.Equal(1, match.Groups[i].Captures.Count);
-                        Assert.Equal("cad", match.Groups[i].Captures[0].Value);
+                        RegexAssert.Equal("cad", match.Groups[i].Captures[0]);
                     }
                 }
                 Assert.Equal(1, match.Captures.Count);
-                Assert.Equal("abracadabra", match.Captures[0].Value);
+                RegexAssert.Equal("abracadabra", match.Captures[0]);
                 match = match.NextMatch();
             }
         }
@@ -334,16 +334,16 @@ namespace System.Text.RegularExpressions.Tests
         private static void VerifyMatch(Match match, CaptureData expected)
         {
             Assert.True(match.Success);
-            Assert.Equal(expected.Value, match.Value);
+            RegexAssert.Equal(expected.Value, match);
             Assert.Equal(expected.Index, match.Index);
             Assert.Equal(expected.Length, match.Length);
 
-            Assert.Equal(expected.Value, match.Groups[0].Value);
+            RegexAssert.Equal(expected.Value, match.Groups[0]);
             Assert.Equal(expected.Index, match.Groups[0].Index);
             Assert.Equal(expected.Length, match.Groups[0].Length);
 
             Assert.Equal(1, match.Captures.Count);
-            Assert.Equal(expected.Value, match.Captures[0].Value);
+            RegexAssert.Equal(expected.Value, match.Captures[0]);
             Assert.Equal(expected.Index, match.Captures[0].Index);
             Assert.Equal(expected.Length, match.Captures[0].Length);
         }

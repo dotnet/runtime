@@ -143,8 +143,7 @@ void Compiler::optAddCopies()
         BlockSet paramImportantUseDom(BlockSetOps::MakeFull(this));
 
         // This will be threshold for determining heavier-than-average uses
-        BasicBlock::weight_t paramAvgWtdRefDiv2 =
-            (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
+        weight_t paramAvgWtdRefDiv2 = (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
 
         bool paramFoundImportantUse = false;
 
@@ -307,9 +306,9 @@ void Compiler::optAddCopies()
             /* dominates all the uses of the local variable         */
 
             /* Our default is to use the first block */
-            BasicBlock*          bestBlock  = fgFirstBB;
-            BasicBlock::weight_t bestWeight = bestBlock->getBBWeight(this);
-            BasicBlock*          block      = bestBlock;
+            BasicBlock* bestBlock  = fgFirstBB;
+            weight_t    bestWeight = bestBlock->getBBWeight(this);
+            BasicBlock* block      = bestBlock;
 
 #ifdef DEBUG
             if (verbose)
@@ -558,7 +557,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
 }
 
 #ifdef DEBUG
-void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex assertionIndex /* =0 */)
+void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex assertionIndex /* = 0 */)
 {
     if (curAssertion->op1.kind == O1K_EXACT_TYPE)
     {
@@ -590,10 +589,6 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         printf("?assertion classification? ");
     }
     printf("Assertion: ");
-    if (!optLocalAssertionProp)
-    {
-        printf("(%d, %d) ", curAssertion->op1.vn, curAssertion->op2.vn);
-    }
 
     if (!optLocalAssertionProp)
     {
@@ -767,7 +762,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 break;
 
             case O2K_SUBRANGE:
-                printf("[%d..%d]", curAssertion->op2.u2.loBound, curAssertion->op2.u2.hiBound);
+                printf("[%u..%u]", curAssertion->op2.u2.loBound, curAssertion->op2.u2.hiBound);
                 break;
 
             default:
@@ -778,12 +773,67 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 
     if (assertionIndex > 0)
     {
-        printf(" index=#%02u, mask=", assertionIndex);
-        printf("%s", BitVecOps::ToString(apTraits, BitVecOps::MakeSingleton(apTraits, assertionIndex - 1)));
+        printf(", index = ");
+        optPrintAssertionIndex(assertionIndex);
     }
     printf("\n");
 }
+
+void Compiler::optPrintAssertionIndex(AssertionIndex index)
+{
+    if (index == NO_ASSERTION_INDEX)
+    {
+        printf("#NA");
+        return;
+    }
+
+    printf("#%02u", index);
+}
+
+void Compiler::optPrintAssertionIndices(ASSERT_TP assertions)
+{
+    if (BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        optPrintAssertionIndex(NO_ASSERTION_INDEX);
+        return;
+    }
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        bitIndex = 0;
+    if (iter.NextElem(&bitIndex))
+    {
+        optPrintAssertionIndex(static_cast<AssertionIndex>(bitIndex + 1));
+        while (iter.NextElem(&bitIndex))
+        {
+            printf(" ");
+            optPrintAssertionIndex(static_cast<AssertionIndex>(bitIndex + 1));
+        }
+    }
+}
 #endif // DEBUG
+
+/* static */
+void Compiler::optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer /* = nullptr */)
+{
+#ifdef DEBUG
+    Compiler* compiler = JitTls::GetCompiler();
+    if (compiler->verbose)
+    {
+        printf(header);
+        compiler->optPrintAssertionIndices(assertions);
+        if (footer != nullptr)
+        {
+            printf(footer);
+        }
+    }
+#endif // DEBUG
+}
+
+/* static */
+void Compiler::optDumpAssertionIndices(ASSERT_TP assertions, const char* footer /* = nullptr */)
+{
+    optDumpAssertionIndices("", assertions, footer);
+}
 
 /******************************************************************************
  *
@@ -1197,13 +1247,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     toType = op2->gtType;
                     goto SUBRANGE_COMMON;
 
-                case GT_ARR_ELEM:
-
-                    /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
-
-                    toType = op2->gtType;
-                    goto SUBRANGE_COMMON;
-
                 case GT_LCL_FLD:
 
                     /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
@@ -1227,6 +1270,19 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
 
                     toType = op2->CastToType();
+
+                    // Casts to TYP_UINT produce the same ranges as casts to TYP_INT,
+                    // except in overflow cases which we do not yet handle. To avoid
+                    // issues with the propagation code dropping, e. g., CAST_OVF(uint <- int)
+                    // based on an assertion created from CAST(uint <- ulong), normalize the
+                    // type for the range here. Note that TYP_ULONG theoretically has the same
+                    // problem, but we do not create assertions for it.
+                    // TODO-Cleanup: this assertion is not useful - this code exists to preserve
+                    // previous behavior. Refactor it to stop generating such assertions.
+                    if (toType == TYP_UINT)
+                    {
+                        toType = TYP_INT;
+                    }
                 SUBRANGE_COMMON:
                     if ((assertionKind != OAK_SUBRANGE) && (assertionKind != OAK_EQUAL))
                     {
@@ -2281,7 +2337,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 /*****************************************************************************
  *
  *  Given a lclNum, a fromType and a toType, return assertion index of the assertion that
- *  claims that a variable's value is always a valid subrange of the formType.
+ *  claims that a variable's value is always a valid subrange of the fromType.
  *  Thus we can discard or omit a cast to fromType. Returns NO_ASSERTION_INDEX
  *  if one such assertion could not be found in "assertions."
  */
@@ -2906,7 +2962,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
 
     // Extract the matching lclNum and ssaNum.
     const unsigned copyLclNum = (op1.lcl.lclNum == lclNum) ? op2.lcl.lclNum : op1.lcl.lclNum;
-    unsigned       copySsaNum = BAD_VAR_NUM;
+    unsigned       copySsaNum = SsaConfig::RESERVED_SSA_NUM;
     if (!optLocalAssertionProp)
     {
         // Extract the ssaNum of the matching lclNum.
@@ -2934,8 +2990,8 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
         return nullptr;
     }
 
-    tree->SetSsaNum(copySsaNum);
     tree->SetLclNum(copyLclNum);
+    tree->SetSsaNum(copySsaNum);
 
 #ifdef DEBUG
     if (verbose)
@@ -3337,6 +3393,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
                 assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
                 printf("null\n");
             }
+            else if (op1->TypeGet() == TYP_BYREF)
+            {
+                printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+            }
             else
             {
                 printf("??unknown\n");
@@ -3391,6 +3451,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             // The only constant of TYP_REF that ValueNumbering supports is 'null'
             noway_assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
             op1->AsIntCon()->gtIconVal = 0;
+        }
+        else if (op1->TypeGet() == TYP_BYREF)
+        {
+            op1->ChangeOperConst(GT_CNS_INT);
+            op1->AsIntCon()->gtIconVal = static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns));
         }
         else
         {
@@ -4511,7 +4576,7 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
             if (verbose)
             {
                 AssertionDsc* firstAssertion = optGetAssertion(1);
-                printf("\nCompiler::optImpliedByConstAssertion: constAssertion #%02d , implies assertion #%02d",
+                printf("Compiler::optImpliedByConstAssertion: const assertion #%02d implies assertion #%02d\n",
                        (constAssertion - firstAssertion) + 1, (impAssertion - firstAssertion) + 1);
             }
 #endif
@@ -4721,8 +4786,12 @@ public:
     // At the start of the merge function of the dataflow equations, initialize premerge state (to detect change.)
     void StartMerge(BasicBlock* block)
     {
-        JITDUMP("AssertionPropCallback::StartMerge: " FMT_BB " in -> %s\n", block->bbNum,
-                BitVecOps::ToString(apTraits, block->bbAssertionIn));
+        if (VerboseDataflow())
+        {
+            JITDUMP("StartMerge: " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "\n");
+        }
+
         BitVecOps::Assign(apTraits, preMergeOut, block->bbAssertionOut);
         BitVecOps::Assign(apTraits, preMergeJumpDestOut, mJumpDestOut[block->bbNum]);
     }
@@ -4743,11 +4812,14 @@ public:
                 assert(predBlock->bbNext == block);
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
-                JITDUMP("AssertionPropCallback::Merge     : Duplicate flow, " FMT_BB " in -> %s, predBlock " FMT_BB
-                        " out1 -> %s, out2 -> %s\n",
-                        block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
-                        BitVecOps::ToString(apTraits, mJumpDestOut[predBlock->bbNum]),
-                        BitVecOps::ToString(apTraits, predBlock->bbAssertionOut));
+                if (VerboseDataflow())
+                {
+                    JITDUMP("Merge     : Duplicate flow, " FMT_BB " ", block->bbNum);
+                    Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
+                    JITDUMP("pred " FMT_BB " ", predBlock->bbNum);
+                    Compiler::optDumpAssertionIndices("out1 -> ", mJumpDestOut[predBlock->bbNum], "; ");
+                    Compiler::optDumpAssertionIndices("out2 -> ", predBlock->bbAssertionOut, "\n");
+                }
             }
         }
         else
@@ -4755,9 +4827,14 @@ public:
             pAssertionOut = predBlock->bbAssertionOut;
         }
 
-        JITDUMP("AssertionPropCallback::Merge     : " FMT_BB " in -> %s, predBlock " FMT_BB " out -> %s\n",
-                block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
-                BitVecOps::ToString(apTraits, pAssertionOut));
+        if (VerboseDataflow())
+        {
+            JITDUMP("Merge     : " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
+            JITDUMP("pred " FMT_BB " ", predBlock->bbNum);
+            Compiler::optDumpAssertionIndices("out -> ", pAssertionOut, "\n");
+        }
+
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, pAssertionOut);
     }
 
@@ -4774,6 +4851,15 @@ public:
     //   It means we can propagate only assertions that are valid for the whole try region.
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
+        if (VerboseDataflow())
+        {
+            JITDUMP("Merge     : " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
+            JITDUMP("firstTryBlock " FMT_BB " ", firstTryBlock->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", firstTryBlock->bbAssertionIn, "; ");
+            JITDUMP("lastTryBlock " FMT_BB " ", lastTryBlock->bbNum);
+            Compiler::optDumpAssertionIndices("out -> ", lastTryBlock->bbAssertionOut, "\n");
+        }
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, firstTryBlock->bbAssertionIn);
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, lastTryBlock->bbAssertionOut);
     }
@@ -4781,8 +4867,11 @@ public:
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
     bool EndMerge(BasicBlock* block)
     {
-        JITDUMP("AssertionPropCallback::EndMerge  : " FMT_BB " in -> %s\n\n", block->bbNum,
-                BitVecOps::ToString(apTraits, block->bbAssertionIn));
+        if (VerboseDataflow())
+        {
+            JITDUMP("EndMerge  : " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "\n\n");
+        }
 
         BitVecOps::DataFlowD(apTraits, block->bbAssertionOut, block->bbAssertionGen, block->bbAssertionIn);
         BitVecOps::DataFlowD(apTraits, mJumpDestOut[block->bbNum], mJumpDestGen[block->bbNum], block->bbAssertionIn);
@@ -4790,23 +4879,34 @@ public:
         bool changed = (!BitVecOps::Equal(apTraits, preMergeOut, block->bbAssertionOut) ||
                         !BitVecOps::Equal(apTraits, preMergeJumpDestOut, mJumpDestOut[block->bbNum]));
 
-        if (changed)
+        if (VerboseDataflow())
         {
-            JITDUMP("AssertionPropCallback::Changed   : " FMT_BB " before out -> %s; after out -> %s;\n"
-                    "\t\tjumpDest before out -> %s; jumpDest after out -> %s;\n\n",
-                    block->bbNum, BitVecOps::ToString(apTraits, preMergeOut),
-                    BitVecOps::ToString(apTraits, block->bbAssertionOut),
-                    BitVecOps::ToString(apTraits, preMergeJumpDestOut),
-                    BitVecOps::ToString(apTraits, mJumpDestOut[block->bbNum]));
-        }
-        else
-        {
-            JITDUMP("AssertionPropCallback::Unchanged  : " FMT_BB " out -> %s; \t\tjumpDest out -> %s\n\n",
-                    block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionOut),
-                    BitVecOps::ToString(apTraits, mJumpDestOut[block->bbNum]));
+            if (changed)
+            {
+                JITDUMP("Changed   : " FMT_BB " ", block->bbNum);
+                Compiler::optDumpAssertionIndices("before out -> ", preMergeOut, "; ");
+                Compiler::optDumpAssertionIndices("after out -> ", block->bbAssertionOut, ";\n        ");
+                Compiler::optDumpAssertionIndices("jumpDest before out -> ", preMergeJumpDestOut, "; ");
+                Compiler::optDumpAssertionIndices("jumpDest after out -> ", mJumpDestOut[block->bbNum], ";\n\n");
+            }
+            else
+            {
+                JITDUMP("Unchanged : " FMT_BB " ", block->bbNum);
+                Compiler::optDumpAssertionIndices("out -> ", block->bbAssertionOut, "; ");
+                Compiler::optDumpAssertionIndices("jumpDest out -> ", mJumpDestOut[block->bbNum], "\n\n");
+            }
         }
 
         return changed;
+    }
+
+    // Can be enabled to get detailed debug output about dataflow for assertions.
+    bool VerboseDataflow()
+    {
+#if 0
+        return VERBOSE;
+#endif
+        return false;
     }
 };
 
@@ -4863,8 +4963,8 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                 }
                 else // is jump edge assertion
                 {
-                    valueAssertionIndex    = optFindComplementary(info.GetAssertionIndex());
                     jumpDestAssertionIndex = info.GetAssertionIndex();
+                    valueAssertionIndex    = optFindComplementary(jumpDestAssertionIndex);
                 }
 
                 if (valueAssertionIndex != NO_ASSERTION_INDEX)
@@ -4894,16 +4994,28 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 #ifdef DEBUG
         if (verbose)
         {
-            printf(FMT_BB " valueGen = %s", block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionGen));
+            if (block == fgFirstBB)
+            {
+                printf("\n");
+            }
+
+            printf(FMT_BB " valueGen = ", block->bbNum);
+            optPrintAssertionIndices(block->bbAssertionGen);
             if (block->bbJumpKind == BBJ_COND)
             {
-                printf(" => " FMT_BB " valueGen = %s,", block->bbJumpDest->bbNum,
-                       BitVecOps::ToString(apTraits, jumpDestGen[block->bbNum]));
+                printf(" => " FMT_BB " valueGen = ", block->bbJumpDest->bbNum);
+                optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
+
+            if (block == fgLastBB)
+            {
+                printf("\n");
+            }
         }
 #endif
     }
+
     return jumpDestGen;
 }
 
@@ -5408,6 +5520,10 @@ void Compiler::optAssertionPropMain()
     // Modified dataflow algorithm for available expressions.
     DataFlow                  flow(this);
     AssertionPropFlowCallback ap(this, bbJtrueAssertionOut, jumpDestGen);
+    if (ap.VerboseDataflow())
+    {
+        JITDUMP("AssertionPropFlowCallback:\n\n")
+    }
     flow.ForwardAnalysis(ap);
 
     for (BasicBlock* const block : Blocks())
@@ -5419,16 +5535,15 @@ void Compiler::optAssertionPropMain()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n");
         for (BasicBlock* const block : Blocks())
         {
-            printf("\n" FMT_BB, block->bbNum);
-            printf(" valueIn  = %s", BitVecOps::ToString(apTraits, block->bbAssertionIn));
-            printf(" valueOut = %s", BitVecOps::ToString(apTraits, block->bbAssertionOut));
+            printf(FMT_BB ":\n", block->bbNum);
+            optDumpAssertionIndices(" in   = ", block->bbAssertionIn, "\n");
+            optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
             if (block->bbJumpKind == BBJ_COND)
             {
-                printf(" => " FMT_BB, block->bbJumpDest->bbNum);
-                printf(" valueOut= %s", BitVecOps::ToString(apTraits, bbJtrueAssertionOut[block->bbNum]));
+                printf(" " FMT_BB " = ", block->bbJumpDest->bbNum);
+                optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }
         printf("\n");
@@ -5473,9 +5588,11 @@ void Compiler::optAssertionPropMain()
                                                        // and thus we must morph, set order, re-link
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
-                JITDUMP("Propagating %s assertions for " FMT_BB ", stmt " FMT_STMT ", tree [%06d], tree -> %d\n",
-                        BitVecOps::ToString(apTraits, assertions), block->bbNum, stmt->GetID(), dspTreeID(tree),
-                        tree->GetAssertionInfo().GetAssertionIndex());
+                optDumpAssertionIndices("Propagating ", assertions, " ");
+                JITDUMP("for " FMT_BB ", stmt " FMT_STMT ", tree [%06d]", block->bbNum, stmt->GetID(), dspTreeID(tree));
+                JITDUMP(", tree -> ");
+                JITDUMPEXEC(optPrintAssertionIndex(tree->GetAssertionInfo().GetAssertionIndex()));
+                JITDUMP("\n");
 
                 GenTree* newTree = optAssertionProp(assertions, tree, stmt, block);
                 if (newTree)

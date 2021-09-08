@@ -46,7 +46,7 @@ namespace System.Diagnostics
                 }, this);
             }
 
-            GC.KeepAlive(DiagnosticSourceEventSource.Logger);
+            GC.KeepAlive(DiagnosticSourceEventSource.Log);
         }
 
         /// <summary>
@@ -300,7 +300,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Add a listener to the <see cref="Activity"/> starting and stopping events.
         /// </summary>
-        /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listeneing to the <see cref="Activity"/> events.</param>
+        /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listening to the <see cref="Activity"/> events.</param>
         public static void AddActivityListener(ActivityListener listener)
         {
             if (listener == null)

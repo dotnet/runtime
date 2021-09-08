@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using Xunit;
 
 namespace System.IO.Tests
@@ -213,11 +214,23 @@ namespace System.IO.Tests
         [Theory, MemberData(nameof(StreamSpecifiers))]
         public virtual void FileModeAppend(string streamSpecifier)
         {
-            using (FileStream fs = CreateFileStream(GetTestFilePath() + streamSpecifier, FileMode.Append))
+            string fileName = GetTestFilePath() + streamSpecifier;
+            using (FileStream fs = CreateFileStream(fileName, FileMode.Append))
             {
                 Assert.False(fs.CanRead);
                 Assert.True(fs.CanWrite);
+
+                fs.Write(Encoding.ASCII.GetBytes("abcde"));
+                Assert.Equal(5, fs.Length);
+                Assert.Equal(5, fs.Position);
+                Assert.Equal(1, fs.Seek(1, SeekOrigin.Begin));
+
+                fs.Write(Encoding.ASCII.GetBytes("xyz"));
+                Assert.Equal(4, fs.Position);
+                Assert.Equal(5, fs.Length);
             }
+
+            Assert.Equal("axyze", File.ReadAllText(fileName));
         }
 
         [Theory, MemberData(nameof(StreamSpecifiers))]
@@ -226,20 +239,35 @@ namespace System.IO.Tests
             string fileName = GetTestFilePath() + streamSpecifier;
             using (FileStream fs = CreateFileStream(fileName, FileMode.Create))
             {
-                fs.WriteByte(0);
+                fs.WriteByte((byte)'s');
             }
 
+            string initialContents = File.ReadAllText(fileName);
             using (FileStream fs = CreateFileStream(fileName, FileMode.Append))
             {
                 // Ensure that the file was re-opened and position set to end
                 Assert.Equal(Math.Max(1L, InitialLength), fs.Length);
-                Assert.Equal(fs.Length, fs.Position);
+
+                long position = fs.Position;
+                Assert.Equal(fs.Length, position);
+
                 Assert.False(fs.CanRead);
                 Assert.True(fs.CanSeek);
                 Assert.True(fs.CanWrite);
+
                 Assert.Throws<IOException>(() => fs.Seek(-1, SeekOrigin.Current));
+                Assert.Throws<IOException>(() => fs.Seek(0, SeekOrigin.Begin));
                 Assert.Throws<NotSupportedException>(() => fs.ReadByte());
+
+                fs.Write(Encoding.ASCII.GetBytes("abcde"));
+                Assert.Equal(position + 5, fs.Position);
+
+                Assert.Equal(position, fs.Seek(position, SeekOrigin.Begin));
+                Assert.Equal(position + 1, fs.Seek(1, SeekOrigin.Current));
+                fs.Write(Encoding.ASCII.GetBytes("xyz"));
             }
+
+            Assert.Equal(initialContents + "axyze", File.ReadAllText(fileName));
         }
     }
 }

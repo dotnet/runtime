@@ -569,7 +569,7 @@ namespace System.Xml.Xsl.Xslt
                         default                         : nodeType = null       ;  break;
                         }
 
-                        Debug.Assert(nodeType != null, "Unexpected nodeKind: " + nodeKind);
+                        Debug.Assert(nodeType != null, $"Unexpected nodeKind: {nodeKind}");
                         QilNode typeNameCheck = f.IsType(it, nodeType);
 
                         if (qname != null) {

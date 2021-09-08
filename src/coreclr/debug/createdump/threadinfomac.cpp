@@ -6,8 +6,16 @@
 ThreadInfo::ThreadInfo(CrashInfo& crashInfo, pid_t tid, mach_port_t port) :
     m_crashInfo(crashInfo),
     m_tid(tid),
+    m_ppid(0),
+    m_tgid(0),
+    m_managed(false),
+    m_exceptionObject(0),
+    m_exceptionHResult(0),
+    m_repeatedFrames(0),
     m_port(port)
 {
+    m_beginRepeat = m_frames.end();
+    m_endRepeat = m_frames.end();
 }
 
 ThreadInfo::~ThreadInfo()

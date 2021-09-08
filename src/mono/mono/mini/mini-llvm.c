@@ -15,6 +15,7 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-time.h>
@@ -108,6 +109,7 @@ typedef struct {
 	LLVMContextRef context;
 	LLVMValueRef sentinel_exception;
 	LLVMValueRef gc_safe_point_flag_var;
+	LLVMValueRef interrupt_flag_var;
 	void *di_builder, *cu;
 	GHashTable *objc_selector_to_var;
 	GPtrArray *cfgs;
@@ -257,6 +259,11 @@ mini_llvm_ins_info[] = {
 enum {
 	MAX_VECTOR_ELEMS = 32, // 2 vectors * 128 bits per vector / 8 bits per element
 	ARM64_MAX_VECTOR_ELEMS = 16,
+};
+
+const int mask_0_incr_1 [] = {
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+	17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
 };
 
 static LLVMIntPredicate cond_to_llvm_cond [] = {
@@ -1904,15 +1911,6 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 	guint32 got_offset;
 	LLVMValueRef load;
 
-	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
-		const char *symbol = "mono_polling_required";
-		if (!module->gc_safe_point_flag_var) {
-			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
-			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
-		}
-		return module->gc_safe_point_flag_var;
-	}
-
 	MonoJumpInfo tmp_ji;
 	tmp_ji.type = type;
 	tmp_ji.data.target = data;
@@ -1927,6 +1925,23 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 
 	if (out_got_offset)
 		*out_got_offset = got_offset;
+
+	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
+		if (!module->gc_safe_point_flag_var) {
+			const char *symbol = "mono_polling_required";
+			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
+		}
+		return module->gc_safe_point_flag_var;
+	}
+	if (module->static_link && type == MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG) {
+		if (!module->interrupt_flag_var) {
+			const char *symbol = "mono_thread_interruption_request_flag";
+			module->interrupt_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->interrupt_flag_var, LLVMExternalLinkage);
+		}
+		return module->interrupt_flag_var;
+	}
 
 	LLVMValueRef const_var = g_hash_table_lookup (module->aotconst_vars, GINT_TO_POINTER (got_offset));
 	if (!const_var) {
@@ -7225,6 +7240,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			MonoClass *klass = ins->klass;
 			LLVMValueRef src = NULL, dst, args [5];
 			gboolean done = FALSE;
+			gboolean is_volatile = FALSE;
 
 			if (!klass) {
 				// FIXME:
@@ -7280,15 +7296,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (done)
 				break;
 
+#ifdef TARGET_WASM
+			is_volatile = m_class_has_references (klass);
+#endif
+
 			int aindex = 0;
 			args [aindex ++] = dst;
 			args [aindex ++] = src;
 			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
+
 #if LLVM_API_VERSION < 900
 			// FIXME: Alignment
 			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 #endif
-			args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+			args [aindex ++] = LLVMConstInt (LLVMInt1Type (), is_volatile ? 1 : 0, FALSE);
 			call_intrins (ctx, INTRINS_MEMCPY, args, "");
 			break;
 		}
@@ -7625,12 +7646,50 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		case OP_XCAST: {
 			LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
-
 			values [ins->dreg] = LLVMBuildBitCast (builder, lhs, t, "");
 			break;
 		}
 		case OP_XCONCAT: {
 			values [ins->dreg] = concatenate_vectors (ctx, lhs, rhs);
+			break;
+		}
+		case OP_XINSERT_LOWER:
+		case OP_XINSERT_UPPER: {
+			const char *oname = ins->opcode == OP_XINSERT_LOWER ? "xinsert_lower" : "xinsert_upper";
+			int ix = ins->opcode == OP_XINSERT_LOWER ? 0 : 1;
+			LLVMTypeRef src_t = LLVMTypeOf (lhs);
+			unsigned int width = mono_llvm_get_prim_size_bits (src_t);
+			LLVMTypeRef int_t = LLVMIntType (width / 2);
+			LLVMTypeRef intvec_t = LLVMVectorType (int_t, 2);
+			LLVMValueRef insval = LLVMBuildBitCast (builder, rhs, int_t, oname);
+			LLVMValueRef val = LLVMBuildBitCast (builder, lhs, intvec_t, oname);
+			val = LLVMBuildInsertElement (builder, val, insval, const_int32 (ix), oname);
+			val = LLVMBuildBitCast (builder, val, src_t, oname);
+			values [ins->dreg] = val;
+			break;
+		}
+		case OP_XLOWER:
+		case OP_XUPPER: {
+			const char *oname = ins->opcode == OP_XLOWER ? "xlower" : "xupper";
+			LLVMTypeRef src_t = LLVMTypeOf (lhs);
+			unsigned int elems = LLVMGetVectorSize (src_t);
+			g_assert (elems >= 2 && elems <= MAX_VECTOR_ELEMS);
+			unsigned int ret_elems = elems / 2;
+			int startix = ins->opcode == OP_XLOWER ? 0 : ret_elems;
+			LLVMValueRef val = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (src_t), create_const_vector_i32 (&mask_0_incr_1 [startix], ret_elems), oname);
+			values [ins->dreg] = val;
+			break;
+		}
+		case OP_XWIDEN:
+		case OP_XWIDEN_UNSAFE: {
+			const char *oname = ins->opcode == OP_XWIDEN ? "xwiden" : "xwiden_unsafe";
+			LLVMTypeRef src_t = LLVMTypeOf (lhs);
+			unsigned int elems = LLVMGetVectorSize (src_t);
+			g_assert (elems <= MAX_VECTOR_ELEMS / 2);
+			unsigned int ret_elems = elems * 2;
+			LLVMValueRef upper = ins->opcode == OP_XWIDEN ? LLVMConstNull (src_t) : LLVMGetUndef (src_t);
+			LLVMValueRef val = LLVMBuildShuffleVector (builder, lhs, upper, create_const_vector_i32 (mask_0_incr_1, ret_elems), oname);
+			values [ins->dreg] = val;
 			break;
 		}
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
@@ -9101,18 +9160,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				value = LLVMBuildBitCast (ctx->builder, lhs, vec_type, "");
 			}
 
-			const int mask_values [] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 			LLVMValueRef mask_vec;
 			LLVMTypeRef dst_type;
 			if (ins->inst_c0 == MONO_TYPE_I2) {
-				mask_vec = create_const_vector_i32 (mask_values, 8);
+				mask_vec = create_const_vector_i32 (mask_0_incr_1, 8);
 				dst_type = sse_i2_t;
 			} else if (ins->inst_c0 == MONO_TYPE_I4) {
-				mask_vec = create_const_vector_i32 (mask_values, 4);
+				mask_vec = create_const_vector_i32 (mask_0_incr_1, 4);
 				dst_type = sse_i4_t;
 			} else {
 				g_assert (ins->inst_c0 == MONO_TYPE_I8);
-				mask_vec = create_const_vector_i32 (mask_values, 2);
+				mask_vec = create_const_vector_i32 (mask_0_incr_1, 2);
 				dst_type = sse_i8_t;
 			}
 
@@ -9501,18 +9559,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_EXT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
 			unsigned int elems = LLVMGetVectorSize (ret_t);
-			const int unrolled_mask [MAX_VECTOR_ELEMS] = {
-				0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-				16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-			};
-			enum { ARM64_EXT_MAX_INDEX = MAX_VECTOR_ELEMS / 2 };
-			int max_index = elems;
+			g_assert (elems <= ARM64_MAX_VECTOR_ELEMS);
 			LLVMValueRef index = arg3;
 			LLVMValueRef default_value = lhs;
-			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, index, ret_t, "arm64_ext");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, elems, index, ret_t, "arm64_ext");
 			int i = 0;
 			while (immediate_unroll_next (&ictx, &i)) {
-				LLVMValueRef mask = create_const_vector_i32 (&unrolled_mask [i], elems);
+				LLVMValueRef mask = create_const_vector_i32 (&mask_0_incr_1 [i], elems);
 				LLVMValueRef result = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "arm64_ext");
 				immediate_unroll_commit (&ictx, i, result);
 			}
@@ -11394,25 +11447,29 @@ emit_method_inner (EmitContext *ctx)
 		}
 	}
 	if (cfg->method->wrapper_type) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
-
-		switch (info->subtype) {
-		case WRAPPER_SUBTYPE_GSHAREDVT_IN:
-		case WRAPPER_SUBTYPE_GSHAREDVT_OUT:
-		case WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG:
-		case WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG:
-			/* Arguments are not used after the call */
+		if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
 			requires_safepoint = FALSE;
-			break;
+		} else {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+
+			switch (info->subtype) {
+			case WRAPPER_SUBTYPE_GSHAREDVT_IN:
+			case WRAPPER_SUBTYPE_GSHAREDVT_OUT:
+			case WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG:
+			case WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG:
+				/* Arguments are not used after the call */
+				requires_safepoint = FALSE;
+				break;
+			}
 		}
 	}
 	ctx->has_safepoints = requires_safepoint;
 
 	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
-		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC) {
+		if (!cfg->compile_aot) {
 			LLVMSetGC (method, "coreclr");
 			emit_gc_safepoint_poll (ctx->module, ctx->lmodule, cfg);
-		} else if (cfg->compile_aot) {
+		} else {
 			LLVMSetGC (method, "coreclr");
 		}
 	}

@@ -53,7 +53,6 @@ internal class Test
     {
         A a = new A();
         a.F();
-        a = null;
 
         // Testcase 3
         Console.WriteLine();
@@ -63,6 +62,7 @@ internal class Test
             Console.WriteLine("Testcase 3 FAILED");
             return -1;
         }
+        GC.KeepAlive(a);
         return 100;
     }
 

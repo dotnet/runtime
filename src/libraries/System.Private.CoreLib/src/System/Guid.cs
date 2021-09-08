@@ -19,6 +19,12 @@ namespace System
     [NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct Guid : ISpanFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001
+        , IComparisonOperators<Guid, Guid>,
+          ISpanParseable<Guid>
+#pragma warning restore SA1001
+#endif // FEATURE_GENERIC_MATH
     {
         public static readonly Guid Empty;
 
@@ -191,6 +197,13 @@ namespace System
             {
                 return Unsafe.As<GuidResult, Guid>(ref Unsafe.AsRef(in this));
             }
+
+            public void ReverseAbcEndianness()
+            {
+                _a = BinaryPrimitives.ReverseEndianness(_a);
+                _b = BinaryPrimitives.ReverseEndianness(_b);
+                _c = BinaryPrimitives.ReverseEndianness(_c);
+            }
         }
 
         // Creates a new guid based on the value in the string.  The value is made up
@@ -361,12 +374,6 @@ namespace System
             };
         }
 
-        // Two helpers used for parsing components:
-        // - Number.TryParseUInt32HexNumberStyle(..., NumberStyles.AllowHexSpecifier, ...)
-        //       Used when we expect the entire provided span to be filled with and only with hex digits and no overflow is possible
-        // - TryParseHex
-        //       Used when the component may have an optional '+' and "0x" prefix, when it may overflow, etc.
-
         private static bool TryParseExactB(ReadOnlySpan<char> guidString, ref GuidResult result)
         {
             // e.g. "{d85b1407-351d-4694-9392-03acc5870eb1}"
@@ -384,57 +391,86 @@ namespace System
         {
             // e.g. "d85b1407-351d-4694-9392-03acc5870eb1"
 
-            // Compat notes due to the previous implementation's implementation details.
-            // - Components may begin with "0x" or "0x+", but the expected length of each component
+            if ((uint)guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
+            {
+                result.SetFailure(overflow: false, guidString.Length != 36 ? nameof(SR.Format_GuidInvLen) : nameof(SR.Format_GuidDashes));
+                return false;
+            }
+
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            int invalidIfNegative = 0;
+            bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfNegative);
+            bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfNegative);
+            bytes[2] = DecodeByte(guidString[2],   guidString[3],  ref invalidIfNegative);
+            bytes[3] = DecodeByte(guidString[0],   guidString[1],  ref invalidIfNegative);
+            bytes[4] = DecodeByte(guidString[11],  guidString[12], ref invalidIfNegative);
+            bytes[5] = DecodeByte(guidString[9],   guidString[10], ref invalidIfNegative);
+            bytes[6] = DecodeByte(guidString[16],  guidString[17], ref invalidIfNegative);
+            bytes[7] = DecodeByte(guidString[14],  guidString[15], ref invalidIfNegative);
+            bytes[8] = DecodeByte(guidString[19],  guidString[20], ref invalidIfNegative);
+            bytes[9] = DecodeByte(guidString[21],  guidString[22], ref invalidIfNegative);
+            bytes[10] = DecodeByte(guidString[24], guidString[25], ref invalidIfNegative);
+            bytes[11] = DecodeByte(guidString[26], guidString[27], ref invalidIfNegative);
+            bytes[12] = DecodeByte(guidString[28], guidString[29], ref invalidIfNegative);
+            bytes[13] = DecodeByte(guidString[30], guidString[31], ref invalidIfNegative);
+            bytes[14] = DecodeByte(guidString[32], guidString[33], ref invalidIfNegative);
+            bytes[15] = DecodeByte(guidString[34], guidString[35], ref invalidIfNegative);
+
+            if (invalidIfNegative >= 0)
+            {
+                if (!BitConverter.IsLittleEndian)
+                {
+                    result.ReverseAbcEndianness();
+                }
+
+                return true;
+            }
+
+            // The 'D' format has some undesirable behavior leftover from its original implementation:
+            // - Components may begin with "0x" and/or "+", but the expected length of each component
             //   needs to include those prefixes, e.g. a four digit component could be "1234" or
             //   "0x34" or "+0x4" or "+234", but not "0x1234" nor "+1234" nor "+0x1234".
             // - "0X" is valid instead of "0x"
-
-            if ((uint)guidString.Length != 36)
+            // We continue to support these but expect them to be incredibly rare.  As such, we
+            // optimize for correctly formed strings where all the digits are valid hex, and only
+            // fall back to supporting these other forms if parsing fails.
+            if (guidString.IndexOfAny('X', 'x', '+') != -1 && TryCompatParsing(guidString, ref result))
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
-                return false;
-            }
-
-            if (guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
-            {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidDashes));
-                return false;
-            }
-
-            if (TryParseHex(guidString.Slice(0, 8), out result._a) && // _a
-                TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
-            {
-                result._b = (ushort)uintTmp;
-
-                if (TryParseHex(guidString.Slice(14, 4), out uintTmp)) // _c
-                {
-                    result._c = (ushort)uintTmp;
-
-                    if (TryParseHex(guidString.Slice(19, 4), out uintTmp)) // _d, _e
-                    {
-                        // _d, _e must be stored as a big-endian ushort
-                        result._de = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
-
-                        if (TryParseHex(guidString.Slice(24, 4), out uintTmp)) // _f, _g
-                        {
-                            // _f, _g must be stored as a big-endian ushort
-                            result._fg = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
-
-                            if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
-                            {
-                                // _h, _i, _j, _k must be stored as a big-endian uint
-                                result._hijk = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
-
-                                return true;
-                            }
-                        }
-                    }
-                }
+                return true;
             }
 
             result.SetFailure(overflow: false, nameof(SR.Format_GuidInvalidChar));
             return false;
+
+            static bool TryCompatParsing(ReadOnlySpan<char> guidString, ref GuidResult result)
+            {
+                if (TryParseHex(guidString.Slice(0, 8), out result._a) && // _a
+                    TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
+                {
+                    result._b = (ushort)uintTmp;
+                    if (TryParseHex(guidString.Slice(14, 4), out uintTmp)) // _c
+                    {
+                        result._c = (ushort)uintTmp;
+                        if (TryParseHex(guidString.Slice(19, 4), out uintTmp)) // _d, _e
+                        {
+                            result._de = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
+                            if (TryParseHex(guidString.Slice(24, 4), out uintTmp)) // _f, _g
+                            {
+                                result._fg = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
+
+                                // Unlike the other components, this one never allowed 0x or +, so we can parse it as straight hex.
+                                if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
+                                {
+                                    result._hijk = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return false;
+            }
         }
 
         private static bool TryParseExactN(ReadOnlySpan<char> guidString, ref GuidResult result)
@@ -447,28 +483,33 @@ namespace System
                 return false;
             }
 
-            if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, out result._a) == Number.ParsingStatus.OK && // _a
-                Number.TryParseUInt32HexNumberStyle(guidString.Slice(8, 8), NumberStyles.AllowHexSpecifier, out uint uintTmp) == Number.ParsingStatus.OK) // _b, _c
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            int invalidIfNegative = 0;
+            bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfNegative);
+            bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfNegative);
+            bytes[2] = DecodeByte(guidString[2], guidString[3], ref invalidIfNegative);
+            bytes[3] = DecodeByte(guidString[0], guidString[1], ref invalidIfNegative);
+            bytes[4] = DecodeByte(guidString[10], guidString[11], ref invalidIfNegative);
+            bytes[5] = DecodeByte(guidString[8], guidString[9], ref invalidIfNegative);
+            bytes[6] = DecodeByte(guidString[14], guidString[15], ref invalidIfNegative);
+            bytes[7] = DecodeByte(guidString[12], guidString[13], ref invalidIfNegative);
+            bytes[8] = DecodeByte(guidString[16], guidString[17], ref invalidIfNegative);
+            bytes[9] = DecodeByte(guidString[18], guidString[19], ref invalidIfNegative);
+            bytes[10] = DecodeByte(guidString[20], guidString[21], ref invalidIfNegative);
+            bytes[11] = DecodeByte(guidString[22], guidString[23], ref invalidIfNegative);
+            bytes[12] = DecodeByte(guidString[24], guidString[25], ref invalidIfNegative);
+            bytes[13] = DecodeByte(guidString[26], guidString[27], ref invalidIfNegative);
+            bytes[14] = DecodeByte(guidString[28], guidString[29], ref invalidIfNegative);
+            bytes[15] = DecodeByte(guidString[30], guidString[31], ref invalidIfNegative);
+
+            if (invalidIfNegative >= 0)
             {
-                // _b, _c are independently in machine-endian order
-                if (BitConverter.IsLittleEndian) { uintTmp = BitOperations.RotateRight(uintTmp, 16); }
-                result._bc = uintTmp;
-
-                if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(16, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _d, _e, _f, _g
+                if (!BitConverter.IsLittleEndian)
                 {
-                    // _d, _e, _f, _g must be stored as a big-endian uint
-                    if (BitConverter.IsLittleEndian) { uintTmp = BinaryPrimitives.ReverseEndianness(uintTmp); }
-                    result._defg = uintTmp;
-
-                    if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(24, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
-                    {
-                        // _h, _i, _j, _k must be stored as big-endian uint
-                        if (BitConverter.IsLittleEndian) { uintTmp = BinaryPrimitives.ReverseEndianness(uintTmp); }
-                        result._hijk = uintTmp;
-
-                        return true;
-                    }
+                    result.ReverseAbcEndianness();
                 }
+
+                return true;
             }
 
             result.SetFailure(overflow: false, nameof(SR.Format_GuidInvalidChar));
@@ -651,6 +692,32 @@ namespace System
             }
 
             return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static byte DecodeByte(nuint ch1, nuint ch2, ref int invalidIfNegative)
+        {
+            // TODO https://github.com/dotnet/runtime/issues/13464:
+            // Replace the Unsafe.Add with HexConverter.FromChar once the bounds checks are eliminated.
+
+            ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
+
+            int h1 = -1;
+            if (ch1 < (nuint)lookup.Length)
+            {
+                h1 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch1);
+            }
+            h1 <<= 4;
+
+            int h2 = -1;
+            if (ch2 < (nuint)lookup.Length)
+            {
+                h2 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch2);
+            }
+
+            int result = h1 | h2;
+            invalidIfNegative |= result;
+            return (byte)result;
         }
 
         private static bool TryParseHex(ReadOnlySpan<char> guidString, out ushort result, ref bool overflow)
@@ -1161,5 +1228,291 @@ namespace System
             // Like with the IFormattable implementation, provider is ignored.
             return TryFormat(destination, out charsWritten, format);
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Guid, Guid>.operator <(Guid left, Guid right)
+        {
+            if (left._a != right._a)
+            {
+                return (uint)left._a < (uint)right._a;
+            }
+
+            if (left._b != right._b)
+            {
+                return (uint)left._b < (uint)right._b;
+            }
+
+            if (left._c != right._c)
+            {
+                return (uint)left._c < (uint)right._c;
+            }
+
+            if (left._d != right._d)
+            {
+                return left._d < right._d;
+            }
+
+            if (left._e != right._e)
+            {
+                return left._e < right._e;
+            }
+
+            if (left._f != right._f)
+            {
+                return left._f < right._f;
+            }
+
+            if (left._g != right._g)
+            {
+                return left._g < right._g;
+            }
+
+            if (left._h != right._h)
+            {
+                return left._h < right._h;
+            }
+
+            if (left._i != right._i)
+            {
+                return left._i < right._i;
+            }
+
+            if (left._j != right._j)
+            {
+                return left._j < right._j;
+            }
+
+            if (left._k != right._k)
+            {
+                return left._k < right._k;
+            }
+
+            return false;
+        }
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Guid, Guid>.operator <=(Guid left, Guid right)
+        {
+            if (left._a != right._a)
+            {
+                return (uint)left._a < (uint)right._a;
+            }
+
+            if (left._b != right._b)
+            {
+                return (uint)left._b < (uint)right._b;
+            }
+
+            if (left._c != right._c)
+            {
+                return (uint)left._c < (uint)right._c;
+            }
+
+            if (left._d != right._d)
+            {
+                return left._d < right._d;
+            }
+
+            if (left._e != right._e)
+            {
+                return left._e < right._e;
+            }
+
+            if (left._f != right._f)
+            {
+                return left._f < right._f;
+            }
+
+            if (left._g != right._g)
+            {
+                return left._g < right._g;
+            }
+
+            if (left._h != right._h)
+            {
+                return left._h < right._h;
+            }
+
+            if (left._i != right._i)
+            {
+                return left._i < right._i;
+            }
+
+            if (left._j != right._j)
+            {
+                return left._j < right._j;
+            }
+
+            if (left._k != right._k)
+            {
+                return left._k < right._k;
+            }
+
+            return true;
+        }
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Guid, Guid>.operator >(Guid left, Guid right)
+        {
+            if (left._a != right._a)
+            {
+                return (uint)left._a > (uint)right._a;
+            }
+
+            if (left._b != right._b)
+            {
+                return (uint)left._b > (uint)right._b;
+            }
+
+            if (left._c != right._c)
+            {
+                return (uint)left._c > (uint)right._c;
+            }
+
+            if (left._d != right._d)
+            {
+                return left._d > right._d;
+            }
+
+            if (left._e != right._e)
+            {
+                return left._e > right._e;
+            }
+
+            if (left._f != right._f)
+            {
+                return left._f > right._f;
+            }
+
+            if (left._g != right._g)
+            {
+                return left._g > right._g;
+            }
+
+            if (left._h != right._h)
+            {
+                return left._h > right._h;
+            }
+
+            if (left._i != right._i)
+            {
+                return left._i > right._i;
+            }
+
+            if (left._j != right._j)
+            {
+                return left._j > right._j;
+            }
+
+            if (left._k != right._k)
+            {
+                return left._k > right._k;
+            }
+
+            return false;
+        }
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Guid, Guid>.operator >=(Guid left, Guid right)
+        {
+            if (left._a != right._a)
+            {
+                return (uint)left._a > (uint)right._a;
+            }
+
+            if (left._b != right._b)
+            {
+                return (uint)left._b > (uint)right._b;
+            }
+
+            if (left._c != right._c)
+            {
+                return (uint)left._c > (uint)right._c;
+            }
+
+            if (left._d != right._d)
+            {
+                return left._d > right._d;
+            }
+
+            if (left._e != right._e)
+            {
+                return left._e > right._e;
+            }
+
+            if (left._f != right._f)
+            {
+                return left._f > right._f;
+            }
+
+            if (left._g != right._g)
+            {
+                return left._g > right._g;
+            }
+
+            if (left._h != right._h)
+            {
+                return left._h > right._h;
+            }
+
+            if (left._i != right._i)
+            {
+                return left._i > right._i;
+            }
+
+            if (left._j != right._j)
+            {
+                return left._j > right._j;
+            }
+
+            if (left._k != right._k)
+            {
+                return left._k > right._k;
+            }
+
+            return true;
+        }
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Guid, Guid>.operator ==(Guid left, Guid right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Guid, Guid>.operator !=(Guid left, Guid right)
+            => left != right;
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static Guid IParseable<Guid>.Parse(string s, IFormatProvider? provider)
+            => Parse(s);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<Guid>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Guid result)
+            => TryParse(s, out result);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static Guid ISpanParseable<Guid>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<Guid>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result)
+            => TryParse(s, out result);
+#endif // FEATURE_GENERIC_MATH
     }
 }

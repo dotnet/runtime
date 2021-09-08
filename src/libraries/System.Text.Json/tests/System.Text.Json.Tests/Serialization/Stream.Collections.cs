@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -19,6 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58204", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task HandleCollectionsAsync()
         {
             await RunTestAsync<string>();

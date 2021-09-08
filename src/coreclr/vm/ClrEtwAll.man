@@ -139,6 +139,8 @@
                             <opcode name="GCGlobalHeapHistory" message="$(string.RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage)" symbol="CLR_GC_GCGLOBALHEAPHISTORY_OPCODE" value="205"> </opcode>
                             <opcode name="GenAwareBegin" message="$(string.RuntimePublisher.GenAwareBeginOpcodeMessage)" symbol="CLR_GC_GENAWAREBEGIN_OPCODE" value="206"> </opcode>
                             <opcode name="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndOpcodeMessage)" symbol="CLR_GC_GENAWAREEND_OPCODE" value="207"> </opcode>
+                            <opcode name="GCLOHCompact" message="$(string.RuntimePublisher.GCLOHCompactOpcodeMessage)" symbol="CLR_GC_GCLOHCOMPACT_OPCODE" value="208"> </opcode>
+                            <opcode name="GCFitBucketInfo" message="$(string.RuntimePublisher.GCFitBucketInfoOpcodeMessage)" symbol="CLR_GC_GCFITBUCKETINFO_OPCODE" value="209"> </opcode>
                         </opcodes>
                     </task>
 
@@ -438,7 +440,13 @@
                             <opcode name="Profiler" message="$(string.RuntimePublisher.ProfilerOpcodeMessage)" symbol="CLR_PROFILER_OPCODE" value="11"/>
                         </opcodes>
                     </task>
-                <!--Next available ID is 37-->
+                    <task name="YieldProcessorMeasurement" symbol="CLR_YIELD_PROCESSOR_MEASUREMENT_TASK"
+                          value="37" eventGUID="{B4AFC324-DECE-4B02-86DC-AAB8F22BC1B1}"
+                          message="$(string.RuntimePublisher.YieldProcessorMeasurementTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 38-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -447,10 +455,16 @@
                         <map value="0x0" message="$(string.RuntimePublisher.GCSegment.SmallObjectHeapMapMessage)"/>
                         <map value="0x1" message="$(string.RuntimePublisher.GCSegment.LargeObjectHeapMapMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.GCSegment.ReadOnlyHeapMapMessage)"/>
+                        <map value="0x3" message="$(string.RuntimePublisher.GCSegment.PinnedObjectHeapMapMessage)"/>
                     </valueMap>
                     <valueMap name="GCAllocationKindMap">
                         <map value="0x0" message="$(string.RuntimePublisher.GCAllocation.SmallMapMessage)"/>
                         <map value="0x1" message="$(string.RuntimePublisher.GCAllocation.LargeMapMessage)"/>
+                        <map value="0x2" message="$(string.RuntimePublisher.GCAllocation.PinnedMapMessage)"/>
+                    </valueMap>
+                    <valueMap name="GCBucketKindMap">
+                        <map value="0x0" message="$(string.RuntimePublisher.GCBucket.FLItemMapMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.GCBucket.PlugMessage)"/>
                     </valueMap>
                     <valueMap name="GCTypeMap">
                         <map value="0x0" message="$(string.RuntimePublisher.GCType.NonConcurrentGCMapMessage)"/>
@@ -505,6 +519,10 @@
                         <map value="3" message="$(string.RuntimePublisher.GCRootKind.Older)"/>
                         <map value="4" message="$(string.RuntimePublisher.GCRootKind.SizedRef)"/>
                         <map value="5" message="$(string.RuntimePublisher.GCRootKind.Overflow)"/>
+                        <map value="6" message="$(string.RuntimePublisher.GCRootKind.DependentHandle)"/>
+                        <map value="7" message="$(string.RuntimePublisher.GCRootKind.NewFQ)"/>
+                        <map value="8" message="$(string.RuntimePublisher.GCRootKind.Steal)"/>
+                        <map value="9" message="$(string.RuntimePublisher.GCRootKind.BGC)"/>
                     </valueMap>
                     <valueMap name="GCHandleKindMap">
                         <map value="0x0" message="$(string.RuntimePublisher.GCHandleKind.WeakShortMessage)"/>
@@ -519,7 +537,7 @@
                     </valueMap>
                     <valueMap name="KnownPathSourceMap">
                         <map value="0x0" message="$(string.RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage)"/>
-                        <map value="0x1" message="$(string.RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.KnownPathSource.UnusedMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.KnownPathSource.AppPathsMessage)"/>
                         <map value="0x3" message="$(string.RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage)"/>
                         <map value="0x4" message="$(string.RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage)"/>
@@ -1127,6 +1145,32 @@
                       </UserData>
                   </template>
 
+                    <template tid="GCAllocationTick_V4">
+                      <data name="AllocationAmount" inType="win:UInt32" outType="win:HexInt32" />
+                      <data name="AllocationKind" inType="win:UInt32" map="GCAllocationKindMap" />
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <data name="AllocationAmount64" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="TypeID" inType="win:Pointer" />
+                      <data name="TypeName" inType="win:UnicodeString" />
+                      <data name="HeapIndex" inType="win:UInt32" />
+                      <data name="Address" inType="win:Pointer" />
+                      <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
+
+                      <UserData>
+                        <GCAllocationTick_V4 xmlns="myNs">
+                          <AllocationAmount> %1 </AllocationAmount>
+                          <AllocationKind> %2 </AllocationKind>
+                          <ClrInstanceID> %3 </ClrInstanceID>
+                          <AllocationAmount64> %4 </AllocationAmount64>
+                          <TypeID> %5 </TypeID>
+                          <TypeName> %6 </TypeName>
+                          <HeapIndex> %7 </HeapIndex>
+                          <Address> %8 </Address>
+                          <ObjectSize> %9 </ObjectSize>
+                        </GCAllocationTick_V4>
+                      </UserData>
+                  </template>
+
                   <template tid="GCCreateConcurrentThread">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
@@ -1213,31 +1257,31 @@
 
                     <template tid="GCPerHeapHistory_V3">
                         <data name="ClrInstanceID" inType="win:UInt16" />
-     					<data name="FreeListAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="FreeListRejected" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="EndOfSegAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="CondemnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="PinnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="PinnedAllocatedAdvance" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="RunningFreeListEfficiency" inType="win:UInt32" />
-     					<data name="CondemnReasons0" inType="win:UInt32" />
-     					<data name="CondemnReasons1" inType="win:UInt32" />
-     					<data name="CompactMechanisms" inType="win:UInt32" />
-     					<data name="ExpandMechanisms" inType="win:UInt32" />
-     					<data name="HeapIndex" inType="win:UInt32" />
-     					<data name="ExtraGen0Commit" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="FreeListAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="FreeListRejected" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="EndOfSegAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="CondemnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="PinnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="PinnedAllocatedAdvance" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="RunningFreeListEfficiency" inType="win:UInt32" />
+                        <data name="CondemnReasons0" inType="win:UInt32" />
+                        <data name="CondemnReasons1" inType="win:UInt32" />
+                        <data name="CompactMechanisms" inType="win:UInt32" />
+                        <data name="ExpandMechanisms" inType="win:UInt32" />
+                        <data name="HeapIndex" inType="win:UInt32" />
+                        <data name="ExtraGen0Commit" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="Count" inType="win:UInt32"    />
                         <struct name="Values"   count="Count"  >
-							<data name="SizeBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeListBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeObjBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="SizeAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeListAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeObjAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="In" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="PinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="NonePinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="NewAllocation" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="SizeBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeListBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeObjBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="SizeAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeListAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeObjAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="In" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="PinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="NonePinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="NewAllocation" inType="win:Pointer" outType="win:HexInt64" />
                         </struct>
                         <UserData>
                             <GCPerHeapHistory_V3 xmlns="myNs">
@@ -1313,6 +1357,81 @@
                                 <CondemnReasons0> %10 </CondemnReasons0>
                                 <CondemnReasons1> %11 </CondemnReasons1>
                             </GCGlobalHeap_V3>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCGlobalHeap_V4">
+                        <data name="FinalYoungestDesired" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="NumHeaps" inType="win:Int32" />
+                        <data name="CondemnedGeneration" inType="win:UInt32" />
+                        <data name="Gen0ReductionCount" inType="win:UInt32" />
+                        <data name="Reason" inType="win:UInt32" />
+                        <data name="GlobalMechanisms" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="PauseMode" inType="win:UInt32" />
+                        <data name="MemoryPressure" inType="win:UInt32" />
+                        <data name="CondemnReasons0" inType="win:UInt32" />
+                        <data name="CondemnReasons1" inType="win:UInt32" />
+                        <data name="Count" inType="win:UInt32"  />
+                        <struct name="Values"   count="Count"  >
+                            <data name="Time" inType="win:UInt32" />
+                        </struct>
+
+                        <UserData>
+                            <GCGlobalHeap_V4 xmlns="myNs">
+                                <FinalYoungestDesired> %1 </FinalYoungestDesired>
+                                <NumHeaps> %2 </NumHeaps>
+                                <CondemnedGeneration> %3 </CondemnedGeneration>
+                                <Gen0ReductionCount> %4 </Gen0ReductionCount>
+                                <Reason> %5 </Reason>
+                                <GlobalMechanisms> %6 </GlobalMechanisms>
+                                <ClrInstanceID> %7 </ClrInstanceID>
+                                <PauseMode> %8 </PauseMode>
+                                <MemoryPressure> %9 </MemoryPressure>
+                                <CondemnReasons0> %10 </CondemnReasons0>
+                                <CondemnReasons1> %11 </CondemnReasons1>
+                                <Count> %12 </Count>
+                            </GCGlobalHeap_V4>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCLOHCompact">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="Count" inType="win:UInt16"  />
+                        <struct name="Values"   count="Count"  >
+                            <data name="TimePlan" inType="win:UInt32" />
+                            <data name="TimeCompact" inType="win:UInt32" />
+                            <data name="TimeRelocate" inType="win:UInt32" />
+                            <data name="TotalRefs" inType="win:Pointer" />
+                            <data name="ZeroRefs" inType="win:Pointer" />
+                        </struct>
+
+                        <UserData>
+                            <GCLOHCompact xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <Count> %2 </Count>
+                            </GCLOHCompact>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCFitBucketInfo">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="BucketKind" inType="win:UInt16" map="GCBucketKindMap" />
+                        <data name="TotalSize" inType="win:UInt64" />
+                        <data name="Count" inType="win:UInt16"  />
+                        <struct name="Values"   count="Count"  >
+                            <data name="Index" inType="win:UInt16" />
+                            <data name="Count" inType="win:UInt32" />
+                            <data name="Size" inType="win:Pointer" outType="win:HexInt64" /> 
+                        </struct>
+
+                        <UserData>
+                            <GCFitBucketInfo xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <BucketKind> %2 </BucketKind>
+                                <TotalSize> %3 </TotalSize>
+                                <Count> %4 </Count>
+                            </GCFitBucketInfo>
                         </UserData>
                     </template>
 
@@ -2916,6 +3035,19 @@
                         </Settings>
                       </UserData>
                     </template>
+
+                    <template tid="YieldProcessorMeasurement">
+                      <data name="ClrInstanceID" inType="win:UInt16"/>
+                      <data name="NsPerYield" inType="win:Double"/>
+                      <data name="EstablishedNsPerYield" inType="win:Double"/>
+                      <UserData>
+                        <Settings xmlns="myNs">
+                          <ClrInstanceID> %1 </ClrInstanceID>
+                          <NsPerYield> %2 </NsPerYield>
+                          <EstablishedNsPerYield> %3 </EstablishedNsPerYield>
+                        </Settings>
+                      </UserData>
+                    </template>
                 </templates>
 
                 <events>
@@ -3041,6 +3173,11 @@
                            keywords="GCKeyword"  opcode="GCAllocationTick"
                            task="GarbageCollection"
                            symbol="GCAllocationTick_V3" message="$(string.RuntimePublisher.GCAllocationTick_V3EventMessage)"/>
+
+                    <event value="10" version="4" level="win:Verbose"  template="GCAllocationTick_V4"
+                           keywords="GCKeyword"  opcode="GCAllocationTick"
+                           task="GarbageCollection"
+                           symbol="GCAllocationTick_V4" message="$(string.RuntimePublisher.GCAllocationTick_V4EventMessage)"/>
 
                     <event value="11" version="0" level="win:Informational"
                            keywords ="GCKeyword"  opcode="GCCreateConcurrentThread"
@@ -3313,6 +3450,10 @@
                            keywords ="ThreadingKeyword"  opcode="Wait"
                            task="ThreadPoolWorkerThread"
                            symbol="ThreadPoolWorkerThreadWait" message="$(string.RuntimePublisher.ThreadPoolWorkerThreadEventMessage)"/>
+                  
+                    <event value="58" version="0" level="win:Informational" template="YieldProcessorMeasurement"
+                           keywords="ThreadingKeyword" task="YieldProcessorMeasurement" opcode="win:Info"
+                           symbol="YieldProcessorMeasurement" message="$(string.RuntimePublisher.YieldProcessorMeasurementEventMessage)"/>
 
                     <!-- CLR private ThreadPool events -->
                     <event value="60" version="0" level="win:Verbose"  template="ThreadPoolWorkingThreadCount"
@@ -3840,6 +3981,11 @@
                            task="GarbageCollection"
                            symbol="GCGlobalHeapHistory_V3" message="$(string.RuntimePublisher.GCGlobalHeap_V3EventMessage)"/>
 
+                    <event value="205" version="4" level="win:Informational"  template="GCGlobalHeap_V4"
+                           keywords ="GCKeyword"  opcode="GCGlobalHeapHistory"
+                           task="GarbageCollection"
+                           symbol="GCGlobalHeapHistory_V4" message="$(string.RuntimePublisher.GCGlobalHeap_V4EventMessage)"/>
+
                     <event value="206" version="0" level="win:Informational"  template="GenAwareTemplate"
                            keywords ="GCHeapDumpKeyword"  opcode="GenAwareBegin"
                            task="GarbageCollection"
@@ -3849,6 +3995,16 @@
                            keywords ="GCHeapDumpKeyword"  opcode="GenAwareEnd"
                            task="GarbageCollection"
                            symbol="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndEventMessage)"/>
+
+                    <event value="208" version="0" level="win:Informational"  template="GCLOHCompact"
+                           keywords ="GCKeyword"  opcode="GCLOHCompact"
+                           task="GarbageCollection"
+                           symbol="GCLOHCompact" message="$(string.RuntimePublisher.GCLOHCompactEventMessage)"/>
+
+                    <event value="209" version="0" level="win:Verbose"  template="GCFitBucketInfo"
+                           keywords ="GCKeyword"  opcode="GCFitBucketInfo"
+                           task="GarbageCollection"
+                           symbol="GCFitBucketInfo" message="$(string.RuntimePublisher.GCFitBucketInfoEventMessage)"/>
 
                     <!-- CLR Debugger events 240-249 -->
                     <event value="240" version="0" level="win:Informational"
@@ -3963,6 +4119,8 @@
 
                 <!--Keywords-->
                 <keywords>
+                    <keyword name="GCRundownKeyword" mask="0x1"
+                             message="$(string.RundownPublisher.GCKeywordMessage)" symbol="CLR_RUNDOWNGC_KEYWORD"/>
                     <keyword name="LoaderRundownKeyword" mask="0x8"
                              message="$(string.RundownPublisher.LoaderKeywordMessage)" symbol="CLR_RUNDOWNLOADER_KEYWORD"/>
                     <keyword name="JitRundownKeyword" mask="0x10"
@@ -4064,6 +4222,14 @@
                             <opcode name="ExecutionCheckpointDCEnd" message="$(string.RundownPublisher.ExecutionCheckpointDCEndOpcodeMessage)" symbol="CLR_EXECUTIONCHECKPOINT_DCSTART_OPCODE" value="11"/>
                         </opcodes>
                     </task>
+                    
+                    <task name="CLRGCRundown" symbol="CLR_GC_RUNDOWN_TASK"
+                          value="40" eventGUID="{51B6C146-777F-4375-A0F8-1349D076E215}"
+                          message="$(string.RundownPublisher.GCTaskMessage)">
+                        <opcodes>
+                            <opcode name="GCSettingsRundown" message="$(string.RundownPublisher.GCSettingsOpcodeMessage)" symbol="CLR_GC_GCSETTINGS_OPCODE" value="10"> </opcode>
+                        </opcodes>
+                    </task>                    
                 </tasks>
 
                 <maps>
@@ -4144,6 +4310,29 @@
 
                 <!--Templates-->
                 <templates>
+                    <template tid="GCSettingsRundown">
+                        <data name="HardLimit" inType="win:UInt64" />
+                        <data name="LOHThreshold" inType="win:UInt64" />
+                        <data name="PhysicalMemoryConfig" inType="win:UInt64" />
+                        <data name="Gen0MinBudgetConfig" inType="win:UInt64" />
+                        <data name="Gen0MaxBudgetConfig" inType="win:UInt64" />
+                        <data name="HighMemPercentConfig" inType="win:UInt32" />
+                        <data name="BitSettings" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <GCSettingsRundown xmlns="myNs">
+                                <HardLimit> %1 </HardLimit>
+                                <LOHThreshold> %2 </LOHThreshold>
+                                <PhysicalMemoryConfig> %3 </PhysicalMemoryConfig>
+                                <Gen0MinBudgetConfig> %4 </Gen0MinBudgetConfig>
+                                <Gen0MaxBudgetConfig> %5 </Gen0MaxBudgetConfig>
+                                <HighMemPercentConfig> %6 </HighMemPercentConfig>
+                                <BitSettings> %7 </BitSettings>
+                                <ClrInstanceID> %8 </ClrInstanceID>
+                            </GCSettingsRundown>
+                        </UserData>
+                    </template>
                     <template tid="RuntimeInformationRundown">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="Sku" inType="win:UInt16" map="RuntimeSkuMap" />
@@ -4620,6 +4809,12 @@
                            task="CLRStackRundown"
                            symbol="CLRStackWalkDCStart" message="$(string.RundownPublisher.StackEventMessage)"/>
 
+                    <!-- CLR GC events for rundown -->
+                    <event value="10" version="0" level="win:Informational"  template="GCSettingsRundown"
+                           opcode="GCSettingsRundown"
+                           task="CLRGCRundown"
+                           symbol="GCSettingsRundown" message="$(string.RundownPublisher.GCSettingsRundownEventMessage)"/>
+
                     <!-- CLR Method Rundown Events -->
                     <event value="141" version="0" level="win:Informational"  template="MethodLoadUnloadRundown"
                            keywords ="JitRundownKeyword NGenRundownKeyword" opcode="MethodDCStart"
@@ -4984,7 +5179,7 @@
                     <keyword name="PerfTrackPrivateKeyword" mask="0x20000000"
                       message="$(string.PrivatePublisher.PerfTrackKeywordMessage)" symbol="CLR_PERFTRACK_PRIVATE_KEYWORD"/>
 
-	            <!-- NOTE: This is not used anymore. They are kept around for backcompat with traces that might have already contained these -->
+                <!-- NOTE: This is not used anymore. They are kept around for backcompat with traces that might have already contained these -->
                     <keyword name="DynamicTypeUsageKeyword" mask="0x00000020"
                              message="$(string.PrivatePublisher.DynamicTypeUsageMessage)" symbol="CLR_PRIVATE_DYNAMICTYPEUSAGE_KEYWORD"/>
                 </keywords>
@@ -7052,6 +7247,953 @@
                 </events>
             </provider>
 
+            <!-- Mono Profiler Publisher-->
+            <provider name="Microsoft-DotNETRuntimeMonoProfiler"
+                      guid="{7F442D82-0F1D-5155-4B8C-1529EB2E31C2}"
+                      symbol="MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER"
+                      resourceFileName="%INSTALL_PATH%\clretwrc.dll"
+                      messageFileName="%INSTALL_PATH%\clretwrc.dll">
+
+                <!--Keywords-->
+                <keywords>
+                    <keyword name="GCKeyword" mask="0x1"
+                             message="$(string.MonoProfilerPublisher.GCKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_KEYWORD" />
+                    <keyword name="GCHandleKeyword" mask="0x2"
+                             message="$(string.MonoProfilerPublisher.GCHandleKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HANDLE_KEYWORD" />
+                    <keyword name="LoaderKeyword" mask="0x8"
+                             message="$(string.MonoProfilerPublisher.LoaderKeywordMessage)" symbol="CLR_MONO_PROFILER_LOADER_KEYWORD" />
+                    <keyword name="JitKeyword" mask="0x10"
+                             message="$(string.MonoProfilerPublisher.JitKeywordMessage)" symbol="CLR_MONO_PROFILER_JIT_KEYWORD" />
+                    <keyword name="ContentionKeyword" mask="0x4000"
+                             message="$(string.MonoProfilerPublisher.ContentionKeywordMessage)" symbol="CLR_MONO_PROFILER_CONTENTION_KEYWORD"/>
+                    <keyword name="ExceptionKeyword" mask="0x8000"
+                             message="$(string.MonoProfilerPublisher.ExceptionKeywordMessage)" symbol="CLR_MONO_PROFILER_EXCEPTION_KEYWORD" />
+                    <keyword name="ThreadingKeyword" mask="0x10000"
+                             message="$(string.MonoProfilerPublisher.ThreadingKeywordMessage)" symbol="CLR_MONO_PROFILER_THREADING_KEYWORD"/>
+                    <keyword name="GCHeapDumpKeyword" mask="0x100000"
+                             message="$(string.MonoProfilerPublisher.GCHeapDumpKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPDUMP_KEYWORD" />
+                    <keyword name="GCAllocationKeyword" mask="0x200000"
+                             message="$(string.MonoProfilerPublisher.GCAllocationKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ALLOCATION_KEYWORD" />
+                    <keyword name="GCMovesKeyword" mask="0x400000"
+                             message="$(string.MonoProfilerPublisher.GCMovesKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_MOVES_KEYWORD" />
+                    <keyword name="GCHeapCollectKeyword" mask="0x800000"
+                             message="$(string.MonoProfilerPublisher.GCHeapCollectKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPCOLLECT_KEYWORD" />
+                    <keyword name="GCFinalizationKeyword" mask="0x1000000"
+                             message="$(string.MonoProfilerPublisher.GCFinalizationKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_FINALIZATION_KEYWORD" />
+                    <keyword name="GCResizeKeyword" mask="0x2000000"
+                             message="$(string.MonoProfilerPublisher.GCResizeKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_RESIZE_KEYWORD" />
+                    <keyword name="GCRootKeyword" mask="0x4000000"
+                             message="$(string.MonoProfilerPublisher.GCRootKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_ROOT_KEYWORD" />
+                    <keyword name="GCHeapDumpVTableClassReferenceKeyword" mask="0x8000000"
+                             message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceKeywordMessage)" symbol="CLR_MONO_PROFILER_GC_HEAPDUMP_VTABLE_CLASS_REFERENCE_KEYWORD" />
+                    <keyword name="MethodTracingKeyword" mask="0x20000000"
+                             message="$(string.MonoProfilerPublisher.MethodTracingKeywordMessage)" symbol="CLR_MONO_PROFILER_METHOD_TRACING_KEYWORD" />
+                    <keyword name="TypeLoadingKeyword" mask="0x8000000000"
+                             message="$(string.MonoProfilerPublisher.TypeLoadingKeywordMessage)" symbol="CLR_MONO_PROFILER_TYPE_LOADING_KEYWORD" />
+                    <keyword name="MonitorKeyword" mask="0x10000000000"
+                             message="$(string.MonoProfilerPublisher.MonitorKeywordMessage)" symbol="CLR_MONO_PROFILER_MONITOR_KEYWORD" />
+                </keywords>
+
+                <!--Tasks-->
+                <tasks>
+                    <task name="MonoProfiler" symbol="CLR_MONO_PROFILER_TASK"
+                          value="1" eventGUID="{7EC39CC6-C9E3-4328-9B32-CA6C5EC0EF31}"
+                          message="$(string.MonoProfilerPublisher.MonoProfilerTaskMessage)">
+                        <opcodes>
+                            <opcode name="ContextLoaded" message="$(string.MonoProfilerPublisher.ContextLoadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_CONTEXT_LOADED_OPCODE" value="18" />
+                            <opcode name="ContextUnloaded" message="$(string.MonoProfilerPublisher.ContextUnloadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_CONTEXT_UNLOADED_OPCODE" value="19" />
+                            <opcode name="AppDomainLoading" message="$(string.MonoProfilerPublisher.AppDomainLoadingOpcodeMessage)" symbol="CLR_MONO_PROFILER_APP_DOMAIN_LOADING_OPCODE" value="20" />
+                            <opcode name="AppDomainLoaded" message="$(string.MonoProfilerPublisher.AppDomainLoadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_APP_DOMAIN_LOADED_OPCODE" value="21" />
+                            <opcode name="AppDomainUnloading" message="$(string.MonoProfilerPublisher.AppDomainUnloadingOpcodeMessage)" symbol="CLR_MONO_PROFILER_APP_DOMAIN_UNLOADING_OPCODE" value="22" />
+                            <opcode name="AppDomainUnloaded" message="$(string.MonoProfilerPublisher.AppDomainUnloadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_APP_DOMAIN_UNLOADED_OPCODE" value="23" />
+                            <opcode name="AppDomainName" message="$(string.MonoProfilerPublisher.AppDomainNameOpcodeMessage)" symbol="CLR_MONO_PROFILER_APP_DOMAIN_NAME_OPCODE" value="24" />
+                            <opcode name="JitBegin" message="$(string.MonoProfilerPublisher.JitBeginOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_BEGIN_OPCODE" value="25" />
+                            <opcode name="JitFailed" message="$(string.MonoProfilerPublisher.JitFailedOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_FAILED_OPCODE" value="26" />
+                            <opcode name="JitDone" message="$(string.MonoProfilerPublisher.JitDoneOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_DONE_OPCODE" value="27" />
+                            <opcode name="JitChunkCreated" message="$(string.MonoProfilerPublisher.JitChunkCreatedOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_CHUNK_CREATED_OPCODE" value="28" />
+                            <opcode name="JitChunkDestroyed" message="$(string.MonoProfilerPublisher.JitChunkDestroyedOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_CHUNK_DESTROYED_OPCODE" value="29" />
+                            <opcode name="JitCodeBuffer" message="$(string.MonoProfilerPublisher.JitCodeBufferOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_CODE_BUFFER_OPCODE" value="30" />
+                            <opcode name="ClassLoading" message="$(string.MonoProfilerPublisher.ClassLoadingOpcodeMessage)" symbol="CLR_MONO_PROFILER_CLASS_LOADING_OPCODE" value="31" />
+                            <opcode name="ClassFailed" message="$(string.MonoProfilerPublisher.ClassFailedOpcodeMessage)" symbol="CLR_MONO_PROFILER_CLASS_FAILED_OPCODE" value="32" />
+                            <opcode name="ClassLoaded" message="$(string.MonoProfilerPublisher.ClassLoadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_CLASS_LOADED_OPCODE" value="33" />
+                            <opcode name="VTableLoading" message="$(string.MonoProfilerPublisher.VTableLoadingOpcodeMessage)" symbol="CLR_MONO_PROFILER_VTABLE_LOADING_OPCODE" value="34" />
+                            <opcode name="VTableFailed" message="$(string.MonoProfilerPublisher.VTableFailedOpcodeMessage)" symbol="CLR_MONO_PROFILER_VTABLE_FAILED_OPCODE" value="35" />
+                            <opcode name="VTableLoaded" message="$(string.MonoProfilerPublisher.VTableLoadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_VTABLE_LOADED_OPCODE" value="36" />
+                            <opcode name="ModuleLoading" message="$(string.MonoProfilerPublisher.ModuleLoadingOpcodeMessage)" symbol="CLR_MONO_PROFILER_MODULE_LOADING_OPCODE" value="37" />
+                            <opcode name="ModuleFailed" message="$(string.MonoProfilerPublisher.ModuleFailedOpcodeMessage)" symbol="CLR_MONO_PROFILER_MODULE_FAILED_OPCODE" value="38" />
+                            <opcode name="ModuleLoaded" message="$(string.MonoProfilerPublisher.ModuleLoadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_MODULE_LOADED_OPCODE" value="39" />
+                            <opcode name="ModuleUnloading" message="$(string.MonoProfilerPublisher.ModuleUnloadingOpcodeMessage)" symbol="CLR_MONO_PROFILER_MODULE_UNLOADING_OPCODE" value="40" />
+                            <opcode name="ModuleUnloaded" message="$(string.MonoProfilerPublisher.ModuleUnloadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_MODULE_UNLOADED_OPCODE" value="41" />
+                            <opcode name="AssemblyLoading" message="$(string.MonoProfilerPublisher.AssemblyLoadingOpcodeMessage)" symbol="CLR_MONO_PROFILER_ASSEMBLY_LOADING_OPCODE" value="42" />
+                            <opcode name="AssemblyLoaded" message="$(string.MonoProfilerPublisher.AssemblyLoadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_ASSEMBLY_LOADED_OPCODE" value="43" />
+                            <opcode name="AssemblyUnloading" message="$(string.MonoProfilerPublisher.AssemblyUnloadingOpcodeMessage)" symbol="CLR_MONO_PROFILER_ASSEMBLY_UNLOADING_OPCODE" value="44" />
+                            <opcode name="AssemblyUnloaded" message="$(string.MonoProfilerPublisher.AssemblyUnloadedOpcodeMessage)" symbol="CLR_MONO_PROFILER_ASSEMBLY_UNLOADED_OPCODE" value="45" />
+                            <opcode name="MethodEnter" message="$(string.MonoProfilerPublisher.MethodEnterOpcodeMessage)" symbol="CLR_MONO_PROFILER_METHOD_ENTER_OPCODE" value="46" />
+                            <opcode name="MethodLeave" message="$(string.MonoProfilerPublisher.MethodLeaveOpcodeMessage)" symbol="CLR_MONO_PROFILER_METHOD_LEAVE_OPCODE" value="47" />
+                            <opcode name="MethodTailCall" message="$(string.MonoProfilerPublisher.MethodTailCallOpcodeMessage)" symbol="CLR_MONO_PROFILER_METHOD_TAIL_CALL_OPCODE" value="48" />
+                            <opcode name="MethodExceptionLeave" message="$(string.MonoProfilerPublisher.MethodExceptionLeaveOpcodeMessage)" symbol="CLR_MONO_PROFILER_METHOD_EXCEPTION_LEAVE_OPCODE" value="49" />
+                            <opcode name="MethodFree" message="$(string.MonoProfilerPublisher.MethodFreeOpcodeMessage)" symbol="CLR_MONO_PROFILER_METHOD_FREE_OPCODE" value="50" />
+                            <opcode name="MethodBeginInvoke" message="$(string.MonoProfilerPublisher.MethodBeginInvokeOpcodeMessage)" symbol="CLR_MONO_PROFILER_METHOD_BEGIN_INVOKE_OPCODE" value="51" />
+                            <opcode name="MethodEndInvoke" message="$(string.MonoProfilerPublisher.MethodEndInvokeOpcodeMessage)" symbol="CLR_MONO_PROFILER_METHOD_END_INVOKE_OPCODE" value="52" />
+                            <opcode name="ExceptionThrow" message="$(string.MonoProfilerPublisher.ExceptionThrowOpcodeMessage)" symbol="CLR_MONO_PROFILER_EXCEPTION_THROW_OPCODE" value="53" />
+                            <opcode name="ExceptionClause" message="$(string.MonoProfilerPublisher.ExceptionClauseOpcodeMessage)" symbol="CLR_MONO_PROFILER_EXCEPTION_CLAUSE_OPCODE" value="54" />
+                            <opcode name="GCEvent" message="$(string.MonoProfilerPublisher.GCEventOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_EVENT_OPCODE" value="55" />
+                            <opcode name="GCAllocation" message="$(string.MonoProfilerPublisher.GCAllocationOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_ALLOCATION_OPCODE" value="56" />
+                            <opcode name="GCMoves" message="$(string.MonoProfilerPublisher.GCMovesOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_MOVES_OPCODE" value="57" />
+                            <opcode name="GCResize" message="$(string.MonoProfilerPublisher.GCResizeOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_RESIZE_OPCODE" value="58" />
+                            <opcode name="GCHandleCreated" message="$(string.MonoProfilerPublisher.GCHandleCreatedOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HANDLE_CREATED_OPCODE" value="59" />
+                            <opcode name="GCHandleDeleted" message="$(string.MonoProfilerPublisher.GCHandleDeletedOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HANDLE_DELETED_OPCODE" value="60" />
+                            <opcode name="GCFinalizing" message="$(string.MonoProfilerPublisher.GCFinalizingOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_FINALIZING_OPCODE" value="61" />
+                            <opcode name="GCFinalized" message="$(string.MonoProfilerPublisher.GCFinalizedOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_FINALIZED_OPCODE" value="62" />
+                            <opcode name="GCFinalizingObject" message="$(string.MonoProfilerPublisher.GCFinalizingObjectOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_FINALIZING_OBJECT_OPCODE" value="63" />
+                            <opcode name="GCFinalizedObject" message="$(string.MonoProfilerPublisher.GCFinalizedObjectOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_FINALIZED_OBJECT_OPCODE" value="64" />
+                            <opcode name="GCRootRegister" message="$(string.MonoProfilerPublisher.GCRootRegisterOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_ROOT_REGISTER_OPCODE" value="65" />
+                            <opcode name="GCRootUnregister" message="$(string.MonoProfilerPublisher.GCRootUnregisterOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_ROOT_UNREGISTER_OPCODE" value="66" />
+                            <opcode name="GCRoots" message="$(string.MonoProfilerPublisher.GCRootsOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_ROOTS_OPCODE" value="67" />
+                            <opcode name="GCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HEAP_DUMP_START_OPCODE" value="68" />
+                            <opcode name="GCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStopOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HEAP_DUMP_STOP_OPCODE" value="69" />
+                            <opcode name="GCHeapDumpObjectReference" message="$(string.MonoProfilerPublisher.GCHeapDumpObjectReferenceOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HEAP_DUMP_OBJECT_REFERENCE_OPCODE" value="70" />
+                            <opcode name="MonitorContention" message="$(string.MonoProfilerPublisher.MonitorContentionOpcodeMessage)" symbol="CLR_MONO_PROFILER_MONITOR_CONTENTION_OPCODE" value="71" />
+                            <opcode name="MonitorFailed" message="$(string.MonoProfilerPublisher.MonitorFailedOpcodeMessage)" symbol="CLR_MONO_PROFILER_MONITOR_FAILED_OPCODE" value="72" />
+                            <opcode name="MonitorAquired" message="$(string.MonoProfilerPublisher.MonitorAquiredOpcodeMessage)" symbol="CLR_MONO_PROFILER_MONITOR_AQUIRED_OPCODE" value="73" />
+                            <opcode name="ThreadStarted" message="$(string.MonoProfilerPublisher.ThreadStartedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_STARTED_OPCODE" value="74" />
+                            <opcode name="ThreadStopping" message="$(string.MonoProfilerPublisher.ThreadStoppingOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_STOPPING_OPCODE" value="75" />
+                            <opcode name="ThreadStopped" message="$(string.MonoProfilerPublisher.ThreadStoppedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_STOPPED_OPCODE" value="76" />
+                            <opcode name="ThreadExited" message="$(string.MonoProfilerPublisher.ThreadExitedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_EXITED_OPCODE" value="77" />
+                            <opcode name="ThreadName" message="$(string.MonoProfilerPublisher.ThreadNameOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_NAME_OPCODE" value="78" />
+                            <opcode name="JitDoneVerbose" message="$(string.MonoProfilerPublisher.JitDoneVerboseOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_DONE_VERBOSE_OPCODE" value="79" />
+                            <opcode name="GCHeapDumpVTableClassReference" message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HEAP_DUMP_VTABLE_CLASS_REFERENCE_OPCODE" value="80" />
+                        </opcodes>
+                    </task>
+                </tasks>
+
+                <maps>
+                    <valueMap name="JitCodeBufferTypeMap">
+                        <map value="0x0" message="$(string.MonoProfilerPublisher.CodeBufferTypeMap.MethodMessage)"/>
+                        <map value="0x1" message="$(string.MonoProfilerPublisher.CodeBufferTypeMap.MethodTrampolineMessage)"/>
+                        <map value="0x2" message="$(string.MonoProfilerPublisher.CodeBufferTypeMap.UnboxTrampolineMessage)"/>
+                        <map value="0x3" message="$(string.MonoProfilerPublisher.CodeBufferTypeMap.IMTTrampolineMessage)"/>
+                        <map value="0x4" message="$(string.MonoProfilerPublisher.CodeBufferTypeMap.GenericsTrampolineMessage)"/>
+                        <map value="0x5" message="$(string.MonoProfilerPublisher.CodeBufferTypeMap.SpecificTrampolineMessage)"/>
+                        <map value="0x6" message="$(string.MonoProfilerPublisher.CodeBufferTypeMap.HelperMessage)"/>
+                    </valueMap>
+                    <valueMap name="ExceptionClauseTypeMap">
+                        <map value="0x0" message="$(string.MonoProfilerPublisher.ExceptionClauseTypeMap.NoneMessage)"/>
+                        <map value="0x1" message="$(string.MonoProfilerPublisher.ExceptionClauseTypeMap.FilterMessage)"/>
+                        <map value="0x2" message="$(string.MonoProfilerPublisher.ExceptionClauseTypeMap.FinallyMessage)"/>
+                        <map value="0x3" message="$(string.MonoProfilerPublisher.ExceptionClauseTypeMap.FaultMessage)"/>
+                    </valueMap>
+                    <valueMap name="GCEventTypeMap">
+                        <map value="0x0" message="$(string.MonoProfilerPublisher.GCEventTypeMap.StartMessage)"/>
+                        <map value="0x5" message="$(string.MonoProfilerPublisher.GCEventTypeMap.EndMessage)"/>
+                        <map value="0x6" message="$(string.MonoProfilerPublisher.GCEventTypeMap.PreStopWorldMessage)"/>
+                        <map value="0x7" message="$(string.MonoProfilerPublisher.GCEventTypeMap.PostStopWorldMessage)"/>
+                        <map value="0x8" message="$(string.MonoProfilerPublisher.GCEventTypeMap.PreStartWorldMessage)"/>
+                        <map value="0x9" message="$(string.MonoProfilerPublisher.GCEventTypeMap.PostStartWorldMessage)"/>
+                        <map value="0xA" message="$(string.MonoProfilerPublisher.GCEventTypeMap.PreStopWorldLockedMessage)"/>
+                        <map value="0xB" message="$(string.MonoProfilerPublisher.GCEventTypeMap.PostStartWorldUnlockedMessage)"/>
+                    </valueMap>
+                    <valueMap name="GCHandleTypeMap">
+                        <map value="0x0" message="$(string.MonoProfilerPublisher.GCHandleTypeMap.WeakMessage)"/>
+                        <map value="0x1" message="$(string.MonoProfilerPublisher.GCHandleTypeMap.WeakTrackResurrectionMessage)"/>
+                        <map value="0x2" message="$(string.MonoProfilerPublisher.GCHandleTypeMap.NormalMessage)"/>
+                        <map value="0x3" message="$(string.MonoProfilerPublisher.GCHandleTypeMap.PinnedMessage)"/>
+                    </valueMap>
+                    <valueMap name="GCRootTypeMap">
+                        <map value="0x0" message="$(string.MonoProfilerPublisher.GCRootTypeMap.ExternalMessage)"/>
+                        <map value="0x1" message="$(string.MonoProfilerPublisher.GCRootTypeMap.StackMessage)"/>
+                        <map value="0x2" message="$(string.MonoProfilerPublisher.GCRootTypeMap.FinalizerQueueMessage)"/>
+                        <map value="0x3" message="$(string.MonoProfilerPublisher.GCRootTypeMap.StaticMessage)"/>
+                        <map value="0x4" message="$(string.MonoProfilerPublisher.GCRootTypeMap.ThreadStaticMessage)"/>
+                        <map value="0x5" message="$(string.MonoProfilerPublisher.GCRootTypeMap.ContextStaticMessage)"/>
+                        <map value="0x6" message="$(string.MonoProfilerPublisher.GCRootTypeMap.GCHandleMessage)"/>
+                        <map value="0x7" message="$(string.MonoProfilerPublisher.GCRootTypeMap.JitMessage)"/>
+                        <map value="0x8" message="$(string.MonoProfilerPublisher.GCRootTypeMap.ThreadingMessage)"/>
+                        <map value="0x9" message="$(string.MonoProfilerPublisher.GCRootTypeMap.DomainMessage)"/>
+                        <map value="0xA" message="$(string.MonoProfilerPublisher.GCRootTypeMap.ReflectionMessage)"/>
+                        <map value="0xB" message="$(string.MonoProfilerPublisher.GCRootTypeMap.MarshalMessage)"/>
+                        <map value="0xC" message="$(string.MonoProfilerPublisher.GCRootTypeMap.ThreadPoolMessage)"/>
+                        <map value="0xD" message="$(string.MonoProfilerPublisher.GCRootTypeMap.DebuggerMessage)"/>
+                        <map value="0xE" message="$(string.MonoProfilerPublisher.GCRootTypeMap.HandleMessage)"/>
+                        <map value="0xF" message="$(string.MonoProfilerPublisher.GCRootTypeMap.EphemeronMessage)"/>
+                        <map value="0x10" message="$(string.MonoProfilerPublisher.GCRootTypeMap.ToggleRefMessage)"/>
+                    </valueMap>
+                </maps>
+
+                <templates>
+                    <template tid="ContextLoadedUnloaded">
+                        <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ContextID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <ContextLoadedUnloaded xmlns="myNs">
+                                <ObjectID> %1 </ObjectID>
+                                <AppDomainID> %2 </AppDomainID>
+                                <ContextID> %3 </ContextID>
+                            </ContextLoadedUnloaded>
+                        </UserData>
+                    </template>
+
+                    <template tid="AppDomainLoadUnload">
+                        <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <AppDomainLoadUnload xmlns="myNs">
+                                <AppDomainID> %1 </AppDomainID>
+                            </AppDomainLoadUnload>
+                        </UserData>
+                    </template>
+
+                    <template tid="AppDomainName">
+                        <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="AppDomainName" inType="win:UnicodeString" />
+                        <UserData>
+                            <AppDomainName xmlns="myNs">
+                                <AppDomainID> %1 </AppDomainID>
+                                <AppDomainName> %2 </AppDomainName>
+                            </AppDomainName>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitBeginFailedDone">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
+                        <UserData>
+                            <JitBeginFailedDone xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <ModuleID> %2 </ModuleID>
+                                <MethodToken> %3 </MethodToken>
+                            </JitBeginFailedDone>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitChunkCreated">
+                        <data name="ChunkID" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="ChunkSize" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <JitChunkCreated xmlns="myNs">
+                                <ChunkID> %1 </ChunkID>
+                                <ChunkSize> %2 </ChunkSize>
+                            </JitChunkCreated>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitChunkDestroyed">
+                        <data name="ChunkID" inType="win:Pointer" outType="win:HexInt64" />
+                        <UserData>
+                            <JitChunkDestroyed xmlns="myNs">
+                                <ChunkID> %1 </ChunkID>
+                            </JitChunkDestroyed>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitCodeBuffer">
+                        <data name="BufferID" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="BufferSize" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="BufferType" inType="win:UInt8" map="JitCodeBufferTypeMap" />
+                        <UserData>
+                            <JitCodeBuffer xmlns="myNs">
+                                <BufferID> %1 </BufferID>
+                                <BufferSize> %2 </BufferSize>
+                                <BufferType> %3 </BufferType>
+                            </JitCodeBuffer>
+                        </UserData>
+                    </template>
+
+                    <template tid="ClassLoadingFailed">
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <ClassLoadingFailed xmlns="myNs">
+                                <ClassID> %1 </ClassID>
+                                <ModuleID> %2 </ModuleID>
+                            </ClassLoadingFailed>
+                        </UserData>
+                    </template>
+
+                    <template tid="ClassLoaded">
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassName" inType="win:UnicodeString" />
+                        <UserData>
+                            <ClassLoaded xmlns="myNs">
+                                <ClassID> %1 </ClassID>
+                                <ModuleID> %2 </ModuleID>
+                                <ClassName> %3 </ClassName>
+                            </ClassLoaded>
+                        </UserData>
+                    </template>
+
+                    <template tid="VTableLoadingFailedLoaded">
+                        <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <VTableLoadingFailedLoaded xmlns="myNs">
+                                <VTableID> %1 </VTableID>
+                                <ClassID> %2 </ClassID>
+                                <AppDomainID> %3 </AppDomainID>
+                            </VTableLoadingFailedLoaded>
+                        </UserData>
+                    </template>
+
+                    <template tid="ModuleLoadingUnloadingFailed">
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <ModuleLoadingUnloadingFailed xmlns="myNs">
+                                <ModuleID> %1 </ModuleID>
+                            </ModuleLoadingUnloadingFailed>
+                        </UserData>
+                    </template>
+
+                    <template tid="ModuleLoadedUnloaded">
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleName" inType="win:UnicodeString" />
+                        <data name="ModuleSignature" inType="win:UnicodeString" />
+                        <UserData>
+                            <ModuleLoadedUnloaded xmlns="myNs">
+                                <ModuleID> %1 </ModuleID>
+                                <ModuleName> %2 </ModuleName>
+                                <ModuleSignature> %3 </ModuleSignature>
+                            </ModuleLoadedUnloaded>
+                        </UserData>
+                    </template>
+
+                    <template tid="AssemblyLoadingUnloading">
+                        <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <AssemblyLoadingUnloading xmlns="myNs">
+                                <AssemblyID> %1 </AssemblyID>
+                                <ModuleID> %2 </ModuleID>
+                            </AssemblyLoadingUnloading>
+                        </UserData>
+                    </template>
+
+                    <template tid="AssemblyLoadedUnloaded">
+                        <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="AssemblyName" inType="win:UnicodeString" />
+                        <UserData>
+                            <AssemblyLoadedUnloaded xmlns="myNs">
+                                <AssemblyID> %1 </AssemblyID>
+                                <ModuleID> %2 </ModuleID>
+                                <AssemblyName> %3 </AssemblyName>
+                            </AssemblyLoadedUnloaded>
+                        </UserData>
+                    </template>
+
+                    <template tid="MethodTracing">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <MethodTracing xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                            </MethodTracing>
+                        </UserData>
+                    </template>
+
+                    <template tid="ExceptionThrow">
+                        <data name="TypeID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        <UserData>
+                            <ExceptionThrow xmlns="myNs">
+                                <TypeID> %1 </TypeID>
+                                <ObjectID> %2 </ObjectID>
+                            </ExceptionThrow>
+                        </UserData>
+                    </template>
+
+                    <template tid="ExceptionClause">
+                        <data name="ClauseType" inType="win:UInt8" map="ExceptionClauseTypeMap" />
+                        <data name="ClauseIdx" inType="win:UInt32" />
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TypeID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        <UserData>
+                            <ExceptionClause xmlns="myNs">
+                                <ClauseType> %1 </ClauseType>
+                                <ClauseIdx> %2 </ClauseIdx>
+                                <MethodID> %3 </MethodID>
+                                <TypeID> %4 </TypeID>
+                                <ObjectID> %5 </ObjectID>
+                            </ExceptionClause>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCEvent">
+                        <data name="GCEventType" inType="win:UInt8" map="GCEventTypeMap" />
+                        <data name="GCGeneration" inType="win:UInt32" />
+                        <UserData>
+                            <GCEvent xmlns="myNs">
+                                <GCEventType> %1 </GCEventType>
+                                <GCGeneration> %2 </GCGeneration>
+                            </GCEvent>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCAllocation">
+                        <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <GCAllocation xmlns="myNs">
+                                <VTableID> %1 </VTableID>
+                                <ObjectID> %2 </ObjectID>
+                                <ObjectSize> %3 </ObjectSize>
+                            </GCAllocation>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCMoves">
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="AddressID" inType="win:Pointer" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <GCMoves xmlns="myNs">
+                                <Count> %1 </Count>
+                            </GCMoves>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCResize">
+                        <data name="NewSize" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <GCResize xmlns="myNs">
+                                <NewSize> %1 </NewSize>
+                            </GCResize>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCHandleCreated">
+                        <data name="HandleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="HandleType" inType="win:UInt8" map="GCHandleTypeMap" />
+                        <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        <UserData>
+                            <GCHandleCreated xmlns="myNs">
+                                <HandleID> %1 </HandleID>
+                                <HandleType> %2 </HandleType>
+                                <ObjectID> %3 </ObjectID>
+                            </GCHandleCreated>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCHandleDeleted">
+                        <data name="HandleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="HandleType" inType="win:UInt8" map="GCHandleTypeMap" />
+                        <UserData>
+                            <GCHandleDeleted xmlns="myNs">
+                                <HandleID> %1 </HandleID>
+                                <HandleType> %2 </HandleType>
+                            </GCHandleDeleted>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCFinalizingFinalizedObject">
+                        <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        <UserData>
+                            <GCFinalizingFinalizedObject xmlns="myNs">
+                                <ObjectID> %1 </ObjectID>
+                            </GCFinalizingFinalizedObject>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCRootRegister">
+                        <data name="RootID" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="RootSize" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="RootType" inType="win:UInt8" map="GCRootTypeMap" />
+                        <data name="RootKeyID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="RootKeyName" inType="win:UnicodeString" />
+                        <UserData>
+                            <GCRootRegister xmlns="myNs">
+                                <RootID> %1 </RootID>
+                                <RootSize> %2 </RootSize>
+                                <RootType> %3 </RootType>
+                                <RootKeyID> %4 </RootKeyID>
+                                <RootKeyName> %5 </RootKeyName>
+                            </GCRootRegister>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCRootUnregister">
+                        <data name="RootID" inType="win:Pointer" outType="win:HexInt64" />
+                        <UserData>
+                            <GCRootUnregister xmlns="myNs">
+                                <RootID> %1 </RootID>
+                            </GCRootUnregister>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCRoots">
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="AddressID" inType="win:Pointer" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <GCRoots xmlns="myNs">
+                                <Count> %1 </Count>
+                            </GCRoots>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCHeapDumpStart">
+                        <data name="HeapCollectParam" inType="win:UnicodeString" />
+                        <UserData>
+                            <GCHeapDumpStart xmlns="myNs">
+                                <HeapCollectParam> %1 </HeapCollectParam>
+                            </GCHeapDumpStart>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCHeapDumpObjectReference">
+                        <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ObjectGeneration" inType="win:UInt8" />
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="ReferenceOffset" inType="win:UInt32" />
+                            <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <GCHeapDumpObjectReference xmlns="myNs">
+                                <ObjectID> %1 </ObjectID>
+                                <VTableID> %2 </VTableID>
+                                <ObjectSize> %3 </ObjectSize>
+                                <ObjectGeneration> %4 </ObjectGeneration>
+                                <Count> %5 </Count>
+                            </GCHeapDumpObjectReference>
+                        </UserData>
+                    </template>
+
+                    <template tid="MonitorContentionFailedAcquired">
+                        <data name="ObjectID" inType="win:Pointer" outType="win:HexInt64" />
+                        <UserData>
+                            <MonitorContentionFailedAcquired xmlns="myNs">
+                                <ObjectID> %1 </ObjectID>
+                            </MonitorContentionFailedAcquired>
+                        </UserData>
+                    </template>
+
+                    <template tid="ThreadStartedStoppingStoppedExited">
+                        <data name="ThreadID" inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <ThreadStartedStoppingStoppedExited xmlns="myNs">
+                                <ThreadID> %1 </ThreadID>
+                            </ThreadStartedStoppingStoppedExited>
+                        </UserData>
+                    </template>
+
+                    <template tid="ThreadName">
+                        <data name="ThreadID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ThreadName" inType="win:UnicodeString" />
+                        <UserData>
+                            <ThreadName xmlns="myNs">
+                                <ThreadID> %1 </ThreadID>
+                                <ThreadName> %2 </ThreadName>
+                            </ThreadName>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitDoneVerbose">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodNamespace" inType="win:UnicodeString" />
+                        <data name="MethodName" inType="win:UnicodeString" />
+                        <data name="MethodSignature" inType="win:UnicodeString" />
+                        <UserData>
+                            <JitDoneVerbose xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <MethodNamespace> %2 </MethodNamespace>
+                                <MethodName> %3 </MethodName>
+                                <MethodSignature> %4 </MethodSignature>
+                            </JitDoneVerbose>
+                        </UserData>
+                    </template>
+
+                    <template tid="JitDone_V1">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="Type" inType="win:UInt8" />
+                            <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <JitDone_V1 xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <ModuleID> %2 </ModuleID>
+                                <MethodToken> %3 </MethodToken>
+                                <Count> %4 </Count>
+                            </JitDone_V1>
+                        </UserData>
+                    </template>
+
+                    <template tid="ClassLoaded_V1">
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassName" inType="win:UnicodeString" />
+                        <data name="Count" inType="win:UInt32" outType="win:HexInt32" />
+                        <struct name="Values" count="Count">
+                            <data name="Type" inType="win:UInt8" />
+                            <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        </struct>
+                        <UserData>
+                            <ClassLoaded_V1 xmlns="myNs">
+                                <ClassID> %1 </ClassID>
+                                <ModuleID> %2 </ModuleID>
+                                <ClassName> %3 </ClassName>
+                                <Count> %4 </Count>
+                            </ClassLoaded_V1>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCHeapDumpVTableClassReference">
+                        <data name="VTableID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassName" inType="win:UnicodeString" />
+                        <UserData>
+                            <GCHeapDumpVTableClassReference xmlns="myNs">
+                                <VTableID> %1 </VTableID>
+                                <ClassID> %2 </ClassID>
+                                <ModuleID> %3 </ModuleID>
+                                <ClassName> %4 </ClassName>
+                            </GCHeapDumpVTableClassReference>
+                        </UserData>
+                    </template>
+
+                </templates>
+
+                <events>
+                    <event value="1" version="0" level="win:Informational"  template="ContextLoadedUnloaded"
+                           keywords ="LoaderKeyword" opcode="ContextLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerContextLoaded" message="$(string.MonoProfilerPublisher.ContextLoadedUnloadedEventMessage)" />
+
+                    <event value="2" version="0" level="win:Informational"  template="ContextLoadedUnloaded"
+                           keywords ="LoaderKeyword" opcode="ContextUnloaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerContextUnloaded" message="$(string.MonoProfilerPublisher.ContextLoadedUnloadedEventMessage)" />
+
+                    <event value="3" version="0" level="win:Verbose"  template="AppDomainLoadUnload"
+                           keywords ="LoaderKeyword" opcode="AppDomainLoading"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAppDomainLoading" message="$(string.MonoProfilerPublisher.AppDomainLoadUnloadEventMessage)" />
+
+                    <event value="4" version="0" level="win:Informational"  template="AppDomainLoadUnload"
+                           keywords ="LoaderKeyword" opcode="AppDomainLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAppDomainLoaded" message="$(string.MonoProfilerPublisher.AppDomainLoadUnloadEventMessage)" />
+
+                    <event value="5" version="0" level="win:Verbose"  template="AppDomainLoadUnload"
+                           keywords ="LoaderKeyword" opcode="AppDomainUnloading"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAppDomainUnloading" message="$(string.MonoProfilerPublisher.AppDomainLoadUnloadEventMessage)" />
+
+                    <event value="6" version="0" level="win:Informational"  template="AppDomainLoadUnload"
+                           keywords ="LoaderKeyword" opcode="AppDomainUnloaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAppDomainUnloaded" message="$(string.MonoProfilerPublisher.AppDomainLoadUnloadEventMessage)" />
+
+                    <event value="7" version="0" level="win:Verbose"  template="AppDomainName"
+                           keywords ="LoaderKeyword" opcode="AppDomainName"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAppDomainName" message="$(string.MonoProfilerPublisher.AppDomainNameEventMessage)" />
+
+                    <event value="8" version="0" level="win:Informational"  template="JitBeginFailedDone"
+                           keywords ="JitKeyword" opcode="JitBegin"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitBegin" message="$(string.MonoProfilerPublisher.JitBeginFailedDoneEventMessage)" />
+
+                    <event value="9" version="0" level="win:Informational"  template="JitBeginFailedDone"
+                           keywords ="JitKeyword" opcode="JitFailed"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitFailed" message="$(string.MonoProfilerPublisher.JitBeginFailedDoneEventMessage)" />
+
+                    <event value="10" version="0" level="win:Informational"  template="JitBeginFailedDone"
+                           keywords ="JitKeyword" opcode="JitDone"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitDone" message="$(string.MonoProfilerPublisher.JitBeginFailedDoneEventMessage)" />
+
+                    <event value="10" version="1" level="win:Informational"  template="JitDone_V1"
+                           keywords ="JitKeyword" opcode="JitDone"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitDone_V1" message="$(string.MonoProfilerPublisher.JitDone_V1EventMessage)" />
+
+                    <event value="11" version="0" level="win:Informational"  template="JitChunkCreated"
+                           keywords ="JitKeyword" opcode="JitChunkCreated"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitChunkCreated" message="$(string.MonoProfilerPublisher.JitChunkCreatedEventMessage)" />
+
+                    <event value="12" version="0" level="win:Informational"  template="JitChunkDestroyed"
+                           keywords ="JitKeyword" opcode="JitChunkDestroyed"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitChunkDestroyed" message="$(string.MonoProfilerPublisher.JitChunkDestroyedEventMessage)" />
+
+                    <event value="13" version="0" level="win:Informational"  template="JitCodeBuffer"
+                           keywords ="JitKeyword" opcode="JitCodeBuffer"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitCodeBuffer" message="$(string.MonoProfilerPublisher.JitCodeBufferEventMessage)" />
+
+                    <event value="14" version="0" level="win:Verbose"  template="ClassLoadingFailed"
+                           keywords ="TypeLoadingKeyword" opcode="ClassLoading"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerClassLoading" message="$(string.MonoProfilerPublisher.ClassLoadingFailedEventMessage)" />
+
+                    <event value="15" version="0" level="win:Informational"  template="ClassLoadingFailed"
+                           keywords ="TypeLoadingKeyword" opcode="ClassFailed"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerClassFailed" message="$(string.MonoProfilerPublisher.ClassLoadingFailedEventMessage)" />
+
+                    <event value="16" version="0" level="win:Informational"  template="ClassLoaded"
+                           keywords ="TypeLoadingKeyword" opcode="ClassLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerClassLoaded" message="$(string.MonoProfilerPublisher.ClassLoadedEventMessage)" />
+
+                    <event value="16" version="1" level="win:Informational"  template="ClassLoaded_V1"
+                           keywords ="TypeLoadingKeyword" opcode="ClassLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerClassLoaded_V1" message="$(string.MonoProfilerPublisher.ClassLoaded_V1EventMessage)" />
+
+                    <event value="17" version="0" level="win:Verbose"  template="VTableLoadingFailedLoaded"
+                           keywords ="TypeLoadingKeyword" opcode="VTableLoading"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerVTableLoading" message="$(string.MonoProfilerPublisher.VTableLoadingFailedLoadedEventMessage)" />
+
+                    <event value="18" version="0" level="win:Informational"  template="VTableLoadingFailedLoaded"
+                           keywords ="TypeLoadingKeyword" opcode="VTableFailed"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerVTableFailed" message="$(string.MonoProfilerPublisher.VTableLoadingFailedLoadedEventMessage)" />
+
+                    <event value="19" version="0" level="win:Informational"  template="VTableLoadingFailedLoaded"
+                           keywords ="TypeLoadingKeyword" opcode="VTableLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerVTableLoaded" message="$(string.MonoProfilerPublisher.VTableLoadingFailedLoadedEventMessage)" />
+
+                    <event value="20" version="0" level="win:Verbose"  template="ModuleLoadingUnloadingFailed"
+                           keywords ="LoaderKeyword" opcode="ModuleLoading"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerModuleLoading" message="$(string.MonoProfilerPublisher.ModuleLoadingUnloadingFailedEventMessage)" />
+
+                    <event value="21" version="0" level="win:Informational"  template="ModuleLoadingUnloadingFailed"
+                           keywords ="LoaderKeyword" opcode="ModuleFailed"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerModuleFailed" message="$(string.MonoProfilerPublisher.ModuleLoadingUnloadingFailedEventMessage)" />
+                    
+                    <event value="22" version="0" level="win:Informational"  template="ModuleLoadedUnloaded"
+                           keywords ="LoaderKeyword" opcode="ModuleLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerModuleLoaded" message="$(string.MonoProfilerPublisher.ModuleLoadedUnloadedEventMessage)" />
+
+                    <event value="23" version="0" level="win:Verbose"  template="ModuleLoadingUnloadingFailed"
+                           keywords ="LoaderKeyword" opcode="ModuleUnloading"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerModuleUnloading" message="$(string.MonoProfilerPublisher.ModuleLoadingUnloadingFailedEventMessage)" />
+                    
+                    <event value="24" version="0" level="win:Informational"  template="ModuleLoadedUnloaded"
+                           keywords ="LoaderKeyword" opcode="ModuleUnloaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerModuleUnloaded" message="$(string.MonoProfilerPublisher.ModuleLoadedUnloadedEventMessage)" />
+
+                    <event value="25" version="0" level="win:Verbose"  template="AssemblyLoadingUnloading"
+                           keywords ="LoaderKeyword" opcode="AssemblyLoading"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAssemblyLoading" message="$(string.MonoProfilerPublisher.AssemblyLoadingUnloadingEventMessage)" />
+                    
+                    <event value="26" version="0" level="win:Informational"  template="AssemblyLoadedUnloaded"
+                           keywords ="LoaderKeyword" opcode="AssemblyLoaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAssemblyLoaded" message="$(string.MonoProfilerPublisher.AssemblyLoadedUnloadedEventMessage)" />
+                    
+                    <event value="27" version="0" level="win:Verbose"  template="AssemblyLoadingUnloading"
+                           keywords ="LoaderKeyword" opcode="AssemblyUnloading"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAssemblyUnloading" message="$(string.MonoProfilerPublisher.AssemblyLoadingUnloadingEventMessage)" />
+                    
+                    <event value="28" version="0" level="win:Informational"  template="AssemblyLoadedUnloaded"
+                           keywords ="LoaderKeyword" opcode="AssemblyUnloaded"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerAssemblyUnloaded" message="$(string.MonoProfilerPublisher.AssemblyLoadedUnloadedEventMessage)" />
+
+                    <event value="29" version="0" level="win:Informational"  template="MethodTracing"
+                           keywords ="MethodTracingKeyword" opcode="MethodEnter"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMethodEnter" message="$(string.MonoProfilerPublisher.MethodTracingEventMessage)" />
+
+                    <event value="30" version="0" level="win:Informational"  template="MethodTracing"
+                           keywords ="MethodTracingKeyword" opcode="MethodLeave"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMethodLeave" message="$(string.MonoProfilerPublisher.MethodTracingEventMessage)" />
+
+                    <event value="31" version="0" level="win:Informational"  template="MethodTracing"
+                           keywords ="MethodTracingKeyword" opcode="MethodTailCall"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMethodTailCall" message="$(string.MonoProfilerPublisher.MethodTracingEventMessage)" />
+
+                    <event value="32" version="0" level="win:Informational"  template="MethodTracing"
+                           keywords ="MethodTracingKeyword" opcode="MethodExceptionLeave"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMethodExceptionLeave" message="$(string.MonoProfilerPublisher.MethodTracingEventMessage)" />
+
+                    <event value="33" version="0" level="win:Informational"  template="MethodTracing"
+                           keywords ="MethodTracingKeyword" opcode="MethodFree"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMethodFree" message="$(string.MonoProfilerPublisher.MethodTracingEventMessage)" />
+
+                    <event value="34" version="0" level="win:Informational"  template="MethodTracing"
+                           keywords ="MethodTracingKeyword" opcode="MethodBeginInvoke"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMethodBeginInvoke" message="$(string.MonoProfilerPublisher.MethodTracingEventMessage)" />
+
+                    <event value="35" version="0" level="win:Informational"  template="MethodTracing"
+                           keywords ="MethodTracingKeyword" opcode="MethodEndInvoke"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMethodEndInvoke" message="$(string.MonoProfilerPublisher.MethodTracingEventMessage)" />
+
+                    <event value="36" version="0" level="win:Informational"  template="ExceptionThrow"
+                           keywords ="ExceptionKeyword" opcode="ExceptionThrow"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerExceptionThrow" message="$(string.MonoProfilerPublisher.ExceptionThrowEventMessage)" />
+
+                    <event value="37" version="0" level="win:Informational"  template="ExceptionClause"
+                           keywords ="ExceptionKeyword" opcode="ExceptionClause"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerExceptionClause" message="$(string.MonoProfilerPublisher.ExceptionClauseEventMessage)" />
+
+                    <event value="38" version="0" level="win:Informational"  template="GCEvent"
+                           keywords ="GCKeyword" opcode="GCEvent"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCEvent" message="$(string.MonoProfilerPublisher.GCEventEventMessage)" />
+
+                    <event value="39" version="0" level="win:Informational"  template="GCAllocation"
+                           keywords ="GCAllocationKeyword" opcode="GCAllocation"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCAllocation" message="$(string.MonoProfilerPublisher.GCAllocationEventMessage)" />
+
+                    <event value="40" version="0" level="win:Informational"  template="GCMoves"
+                           keywords ="GCMovesKeyword" opcode="GCMoves"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCMoves" message="$(string.MonoProfilerPublisher.GCMovesEventMessage)" />
+
+                    <event value="41" version="0" level="win:Informational"  template="GCResize"
+                           keywords ="GCResizeKeyword" opcode="GCResize"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCResize" message="$(string.MonoProfilerPublisher.GCResizeEventMessage)" />
+
+                    <event value="42" version="0" level="win:Informational"  template="GCHandleCreated"
+                           keywords ="GCHandleKeyword" opcode="GCHandleCreated"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCHandleCreated" message="$(string.MonoProfilerPublisher.GCHandleCreatedEventMessage)" />
+
+                    <event value="43" version="0" level="win:Informational"  template="GCHandleDeleted"
+                           keywords ="GCHandleKeyword" opcode="GCHandleDeleted"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCHandleDeleted" message="$(string.MonoProfilerPublisher.GCHandleDeletedEventMessage)" />
+
+                    <event value="44" version="0" level="win:Informational"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizing"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCFinalizing" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedEventMessage)" />
+
+                    <event value="45" version="0" level="win:Informational"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalized"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCFinalized" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedEventMessage)" />
+
+                    <event value="46" version="0" level="win:Informational"  template="GCFinalizingFinalizedObject"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizingObject"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCFinalizingObject" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage)" />
+
+                    <event value="47" version="0" level="win:Informational"  template="GCFinalizingFinalizedObject"
+                           keywords ="GCFinalizationKeyword" opcode="GCFinalizedObject"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCFinalizedObject" message="$(string.MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage)" />
+
+                    <event value="48" version="0" level="win:Informational"  template="GCRootRegister"
+                           keywords ="GCRootKeyword" opcode="GCRootRegister"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCRootRegister" message="$(string.MonoProfilerPublisher.GCRootRegisterEventMessage)" />
+
+                    <event value="49" version="0" level="win:Informational"  template="GCRootUnregister"
+                           keywords ="GCRootKeyword" opcode="GCRootUnregister"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCRootUnregister" message="$(string.MonoProfilerPublisher.GCRootUnregisterEventMessage)" />
+
+                    <event value="50" version="0" level="win:Informational"  template="GCRoots"
+                           keywords ="GCRootKeyword" opcode="GCRoots"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCRoots" message="$(string.MonoProfilerPublisher.GCRootsEventMessage)" />
+
+                    <event value="51" version="0" level="win:Informational"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStart" template="GCHeapDumpStart"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCHeapDumpStart" message="$(string.MonoProfilerPublisher.GCHeapDumpStartEventMessage)" />
+
+                    <event value="52" version="0" level="win:Informational"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpStop"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCHeapDumpStop" message="$(string.MonoProfilerPublisher.GCHeapDumpStopEventMessage)" />
+
+                    <event value="53" version="0" level="win:Informational"  template="GCHeapDumpObjectReference"
+                           keywords ="GCHeapDumpKeyword" opcode="GCHeapDumpObjectReference"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCHeapDumpObjectReference" message="$(string.MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage)" />
+
+                    <event value="54" version="0" level="win:Informational"  template="MonitorContentionFailedAcquired"
+                           keywords ="MonitorKeyword ContentionKeyword" opcode="MonitorContention"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMonitorContention" message="$(string.MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage)" />
+
+                    <event value="55" version="0" level="win:Informational"  template="MonitorContentionFailedAcquired"
+                           keywords ="MonitorKeyword" opcode="MonitorFailed"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMonitorFailed" message="$(string.MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage)" />
+
+                    <event value="56" version="0" level="win:Informational"  template="MonitorContentionFailedAcquired"
+                           keywords ="MonitorKeyword" opcode="MonitorAquired"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerMonitorAcquired" message="$(string.MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage)" />
+
+                    <event value="57" version="0" level="win:Informational"  template="ThreadStartedStoppingStoppedExited"
+                           keywords ="ThreadingKeyword" opcode="ThreadStarted"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerThreadStarted" message="$(string.MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage)" />
+
+                    <event value="58" version="0" level="win:Verbose"  template="ThreadStartedStoppingStoppedExited"
+                           keywords ="ThreadingKeyword" opcode="ThreadStopping"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerThreadStopping" message="$(string.MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage)" />
+
+                    <event value="59" version="0" level="win:Informational"  template="ThreadStartedStoppingStoppedExited"
+                           keywords ="ThreadingKeyword" opcode="ThreadStopped"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerThreadStopped" message="$(string.MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage)" />
+
+                    <event value="60" version="0" level="win:Informational"  template="ThreadStartedStoppingStoppedExited"
+                           keywords ="ThreadingKeyword" opcode="ThreadExited"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerThreadExited" message="$(string.MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage)" />
+
+                    <event value="61" version="0" level="win:Verbose"  template="ThreadName"
+                           keywords ="ThreadingKeyword" opcode="ThreadName"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerThreadName" message="$(string.MonoProfilerPublisher.ThreadNameEventMessage)" />
+
+                    <event value="62" version="0" level="win:Verbose"  template="JitDoneVerbose"
+                           keywords ="JitKeyword" opcode="JitDoneVerbose"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitDoneVerbose" message="$(string.MonoProfilerPublisher.JitDoneVerboseEventMessage)" />
+
+                    <event value="63" version="0" level="win:Informational"  template="GCHeapDumpVTableClassReference"
+                           keywords ="GCHeapDumpVTableClassReferenceKeyword" opcode="GCHeapDumpVTableClassReference"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerGCHeapDumpVTableClassReference" message="$(string.MonoProfilerPublisher.GCHeapDumpVTableClassReferenceEventMessage)" />
+                </events>
+            </provider>
         </events>
     </instrumentation>
 
@@ -7084,6 +8226,7 @@
                 <string id="RuntimePublisher.GCAllocationTick_V1EventMessage" value="Amount=%1;%nKind=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.GCAllocationTick_V2EventMessage" value="Amount=%1;%nKind=%2;%nClrInstanceID=%3;Amount64=%4;%nTypeID=%5;%nTypeName=%6;%nHeapIndex=%7" />
                 <string id="RuntimePublisher.GCAllocationTick_V3EventMessage" value="Amount=%1;%nKind=%2;%nClrInstanceID=%3;Amount64=%4;%nTypeID=%5;%nTypeName=%6;%nHeapIndex=%7;%nAddress=%8" />
+                <string id="RuntimePublisher.GCAllocationTick_V4EventMessage" value="Amount=%1;%nKind=%2;%nClrInstanceID=%3;Amount64=%4;%nTypeID=%5;%nTypeName=%6;%nHeapIndex=%7;%nAddress=%8;%nObjectSize=%9" />
                 <string id="RuntimePublisher.GCCreateConcurrentThreadEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GCCreateConcurrentThread_V1EventMessage" value="ClrInstanceID=%1" />
                 <string id="RuntimePublisher.GCTerminateConcurrentThreadEventMessage" value="NONE" />
@@ -7112,9 +8255,12 @@
                 <string id="RuntimePublisher.GCMarkOlderGenerationRootsEventMessage" value="HeapNum=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.GCMarkWithTypeEventMessage" value="HeapNum=%1;%nClrInstanceID=%2;%nType=%3;%nBytes=%4"/>
                 <string id="RuntimePublisher.GCJoin_V2EventMessage" value="Heap=%1;%nJoinTime=%2;%nJoinType=%3;%nClrInstanceID=%4;%nJoinID=%5"/>
-                <string id="RuntimePublisher.GCPerHeapHistory_V3EventMessage" value="ClrInstanceID=%1;%nFreeListAllocated=%2;%nFreeListRejected=%3;%nEndOfSegAllocated=%4;%nCondemnedAllocated=%5;%nPinnedAllocated=%6;%nPinnedAllocatedAdvance=%7;%RunningFreeListEfficiency=%8;%nCondemnReasons0=%9;%nCondemnReasons1=%10;%nCompactMechanisms=%11;%nExpandMechanisms=%12;%nHeapIndex=%13;%nExtraGen0Commit=%14;%nCount=%15"/>
+                <string id="RuntimePublisher.GCPerHeapHistory_V3EventMessage" value="ClrInstanceID=%1;%nFreeListAllocated=%2;%nFreeListRejected=%3;%nEndOfSegAllocated=%4;%nCondemnedAllocated=%5;%nPinnedAllocated=%6;%nPinnedAllocatedAdvance=%7;%nRunningFreeListEfficiency=%8;%nCondemnReasons0=%9;%nCondemnReasons1=%10;%nCompactMechanisms=%11;%nExpandMechanisms=%12;%nHeapIndex=%13;%nExtraGen0Commit=%14;%nCount=%15"/>
                 <string id="RuntimePublisher.GCGlobalHeap_V2EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9"/>
-                <string id="RuntimePublisher.GCGlobalHeap_V3EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9;%CondemnReasons0=%10;%CondemnReasons1=%11"/>
+                <string id="RuntimePublisher.GCGlobalHeap_V3EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9;%nCondemnReasons0=%10;%nCondemnReasons1=%11"/>
+                <string id="RuntimePublisher.GCGlobalHeap_V4EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9;%nCondemnReasons0=%10;%nCondemnReasons1=%11;%nCount=%12"/>
+                <string id="RuntimePublisher.GCLOHCompactEventMessage" value="ClrInstanceID=%1;%nCount=%2" />
+                <string id="RuntimePublisher.GCFitBucketInfoEventMessage" value="ClrInstanceID=%1;%nBucketKind=%2;%nTotalSize=%3;%nCount=%4" />
                 <string id="RuntimePublisher.FinalizeObjectEventMessage" value="TypeID=%1;%nObjectID=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.GCTriggeredEventMessage" value="Reason=%1" />
                 <string id="RuntimePublisher.PinObjectAtGCTimeEventMessage" value="HandleID=%1;%nObjectID=%2;%nObjectSize=%3;%nTypeName=%4;%n;%nClrInstanceID=%5" />
@@ -7125,6 +8271,7 @@
                 <string id="RuntimePublisher.WorkerThreadRetirementRetireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.WorkerThreadRetirementUnretireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreadCount=%2;%nClrInstanceID=%3" />
+                <string id="RuntimePublisher.YieldProcessorMeasurementEventMessage" value="ClrInstanceID=%1;%nNsPerYield=%2;%nEstablishedNsPerYield=%3" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentSampleEventMessage" value="Throughput=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentAdjustmentEventMessage" value="AverageThroughput=%1;%nNewWorkerThreadCount=%2;%nReason=%3;%nClrInstanceID=%4" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentStatsEventMessage" value="Duration=%1;%nThroughput=%2;%nThreadWave=%3;%nThroughputWave=%4;%nThroughputErrorEstimate=%5;%nAverageThroughputErrorEstimate=%6;%nThroughputRatio=%7;%nConfidence=%8;%nNewControlSetting=%9;%nNewThreadWaveMagnitude=%10;%nClrInstanceID=%11" />
@@ -7283,6 +8430,7 @@
                 <string id="RundownPublisher.ThreadCreatedEventMessage" value="ManagedThreadID=%1;%nAppDomainID=%2;%nFlags=%3;%nManagedThreadIndex=%4;%nOSThreadID=%5;%nClrInstanceID=%6" />
                 <string id="RundownPublisher.RuntimeInformationEventMessage" value="ClrInstanceID=%1;%nSKU=%2;%nBclMajorVersion=%3;%nBclMinorVersion=%4;%nBclBuildNumber=%5;%nBclQfeNumber=%6;%nVMMajorVersion=%7;%nVMMinorVersion=%8;%nVMBuildNumber=%9;%nVMQfeNumber=%10;%nStartupFlags=%11;%nStartupMode=%12;%nCommandLine=%13;%nComObjectGUID=%14;%nRuntimeDllPath=%15"/>
                 <string id="RundownPublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
+                <string id="RundownPublisher.GCSettingsRundownEventMessage" value="HardLimit=%1;%nLOHThreshold=%2;%nPhysicalMemoryConfig=%3;%nGen0MinBudgetConfig=%4;%nGen0MaxBudgetConfig=%5;%nHighMemPercentConfig=%6;%nBitSettings=%7;%nClrInstanceID=%8" />                
                 <string id="RundownPublisher.ModuleRangeDCStartEventMessage" value="ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.ModuleRangeDCEndEventMessage" value= "ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.TieredCompilationSettingsDCStartEventMessage" value="ClrInstanceID=%1;%nFlags=%2" />
@@ -7410,7 +8558,9 @@
                 <string id="RuntimePublisher.JitInstrumentationDataTaskMessage" value="JitInstrumentationData" />
                 <string id="RuntimePublisher.ExecutionCheckpointTaskMessage" value="ExecutionCheckpoint" />
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
+                <string id="RuntimePublisher.YieldProcessorMeasurementTaskMessage" value="YieldProcessorMeasurement" />
 
+                <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
                 <string id="RundownPublisher.LoaderTaskMessage" value="Loader" />
@@ -7461,8 +8611,12 @@
                 <string id="RuntimePublisher.GCSegment.SmallObjectHeapMapMessage" value="SmallObjectHeap" />
                 <string id="RuntimePublisher.GCSegment.LargeObjectHeapMapMessage" value="LargeObjectHeap" />
                 <string id="RuntimePublisher.GCSegment.ReadOnlyHeapMapMessage" value="ReadOnlyHeap" />
+                <string id="RuntimePublisher.GCSegment.PinnedObjectHeapMapMessage" value="PinnedHeap" />
                 <string id="RuntimePublisher.GCAllocation.SmallMapMessage" value="Small" />
                 <string id="RuntimePublisher.GCAllocation.LargeMapMessage" value="Large" />
+                <string id="RuntimePublisher.GCAllocation.PinnedMapMessage" value="Pinned" />
+                <string id="RuntimePublisher.GCBucket.FLItemMapMessage" value="FLItem" />
+                <string id="RuntimePublisher.GCBucket.PlugMessage" value="Plug" />
                 <string id="RuntimePublisher.GCType.NonConcurrentGCMapMessage" value="NonConcurrentGC" />
                 <string id="RuntimePublisher.GCType.BackgroundGCMapMessage" value="BackgroundGC" />
                 <string id="RuntimePublisher.GCType.ForegroundGCMapMessage" value="ForegroundGC" />
@@ -7522,6 +8676,10 @@
                 <string id="RuntimePublisher.GCRootKind.Older" value="Older" />
                 <string id="RuntimePublisher.GCRootKind.SizedRef" value="SizedRef" />
                 <string id="RuntimePublisher.GCRootKind.Overflow" value="Overflow" />
+                <string id="RuntimePublisher.GCRootKind.DependentHandle" value="DependentHandle" />
+                <string id="RuntimePublisher.GCRootKind.NewFQ" value="NewFQ" />
+                <string id="RuntimePublisher.GCRootKind.Steal" value="Steal" />
+                <string id="RuntimePublisher.GCRootKind.BGC" value="BGC" />
                 <string id="RuntimePublisher.Startup.CONCURRENT_GCMapMessage" value="CONCURRENT_GC" />
                 <string id="RuntimePublisher.Startup.LOADER_OPTIMIZATION_SINGLE_DOMAINMapMessage" value="LOADER_OPTIMIZATION_SINGLE_DOMAIN" />
                 <string id="RuntimePublisher.Startup.LOADER_OPTIMIZATION_MULTI_DOMAINMapMessage" value="LOADER_OPTIMIZATION_MULTI_DOMAIN" />
@@ -7572,7 +8730,7 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
                 <string id="RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage" value="ApplicationAssemblies" />
-                <string id="RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage" value="AppNativeImagePaths" />
+                <string id="RuntimePublisher.KnownPathSource.UnusedMessage" value="Unused" />
                 <string id="RuntimePublisher.KnownPathSource.AppPathsMessage" value="AppPaths" />
                 <string id="RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage" value="PlatformResourceRoots" />
                 <string id="RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage" value="SatelliteSubdirectory" />
@@ -7742,6 +8900,7 @@
                 <string id="RuntimePublisher.ProfilerKeywordMessage" value="Profiler" />
                 <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
+                <string id="RundownPublisher.GCKeywordMessage" value="GC" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
@@ -7803,6 +8962,8 @@
                 <string id="RuntimePublisher.GCMarkOpcodeMessage" value="Mark" />
                 <string id="RuntimePublisher.GCJoinOpcodeMessage" value="GCJoin" />
                 <string id="RuntimePublisher.GCPerHeapHistoryOpcodeMessage" value="PerHeapHistory" />
+                <string id="RuntimePublisher.GCLOHCompactOpcodeMessage" value="GCLOHCompact" />
+                <string id="RuntimePublisher.GCFitBucketInfoOpcodeMessage" value="GCFitBucketInfo" />
                 <string id="RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage" value="GlobalHeapHistory" />
                 <string id="RuntimePublisher.GenAwareBeginOpcodeMessage" value="GenAwareBegin" />
                 <string id="RuntimePublisher.GenAwareEndOpcodeMessage" value="GenAwareEnd" />
@@ -7884,6 +9045,8 @@
                 <string id="RuntimePublisher.ExecutionCheckpointOpcodeMessage" value="ExecutionCheckpoint" />
 
                 <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
+
+                <string id="RundownPublisher.GCSettingsOpcodeMessage" value="GCSettingsRundown" />
 
                 <string id="RundownPublisher.MethodDCStartOpcodeMessage" value="DCStart" />
                 <string id="RundownPublisher.MethodDCEndOpcodeMessage" value="DCStop" />
@@ -8044,6 +9207,202 @@
 
                 <string id="PrivatePublisher.LoaderHeapPrivateAllocRequestMessage" value="LoaderHeapAllocRequest" />
                 <string id="PrivatePublisher.ModuleRangeLoadOpcodeMessage" value="ModuleRangeLoad" />
+
+                <string id="MonoProfilerPublisher.MonoProfilerTaskMessage" value="MonoProfiler" />
+
+                <string id="MonoProfilerPublisher.GCKeywordMessage" value="GC" />
+                <string id="MonoProfilerPublisher.GCHandleKeywordMessage" value="GCHandle" />
+                <string id="MonoProfilerPublisher.LoaderKeywordMessage" value="Loader" />
+                <string id="MonoProfilerPublisher.JitKeywordMessage" value="Jit" />
+                <string id="MonoProfilerPublisher.ContentionKeywordMessage" value="Contention" />
+                <string id="MonoProfilerPublisher.ExceptionKeywordMessage" value="Exception" />
+                <string id="MonoProfilerPublisher.ThreadingKeywordMessage" value="Threading" />
+                <string id="MonoProfilerPublisher.GCHeapDumpKeywordMessage" value="GCHeapDump" />
+                <string id="MonoProfilerPublisher.GCAllocationKeywordMessage" value="GCAllocation" />
+                <string id="MonoProfilerPublisher.GCMovesKeywordMessage" value="GCMoves" />
+                <string id="MonoProfilerPublisher.GCHeapCollectKeywordMessage" value="GCHeapCollect" />
+                <string id="MonoProfilerPublisher.GCResizeKeywordMessage" value="GCResize" />
+                <string id="MonoProfilerPublisher.GCRootKeywordMessage" value="GCRoot" />
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceKeywordMessage" value="GCHeapDumpVTableClassReference" />
+                <string id="MonoProfilerPublisher.GCFinalizationKeywordMessage" value="GCFinalization" />
+                <string id="MonoProfilerPublisher.MethodTracingKeywordMessage" value="PerfTrack" />
+                <string id="MonoProfilerPublisher.TypeLoadingKeywordMessage" value="TypeLoading" />
+                <string id="MonoProfilerPublisher.MonitorKeywordMessage" value="Monitor" />
+
+                <string id="MonoProfilerPublisher.ContextLoadedOpcodeMessage" value="ContextLoaded" />
+                <string id="MonoProfilerPublisher.ContextUnloadedOpcodeMessage" value="ContextUnloaded" />
+
+                <string id="MonoProfilerPublisher.AppDomainLoadingOpcodeMessage" value="AppDomainLoading" />
+                <string id="MonoProfilerPublisher.AppDomainLoadedOpcodeMessage" value="AppDomainLoaded" />
+                <string id="MonoProfilerPublisher.AppDomainUnloadingOpcodeMessage" value="AppDomainUnloading" />
+                <string id="MonoProfilerPublisher.AppDomainUnloadedOpcodeMessage" value="AppDomainUnloaded" />
+                <string id="MonoProfilerPublisher.AppDomainNameOpcodeMessage" value="AppDomainName" />
+
+                <string id="MonoProfilerPublisher.JitBeginOpcodeMessage" value="JitBegin" />
+                <string id="MonoProfilerPublisher.JitFailedOpcodeMessage" value="JitFailed" />
+                <string id="MonoProfilerPublisher.JitDoneOpcodeMessage" value="JitDone" />
+                <string id="MonoProfilerPublisher.JitChunkCreatedOpcodeMessage" value="JitChunkCreated" />
+                <string id="MonoProfilerPublisher.JitChunkDestroyedOpcodeMessage" value="JitChunkDestroyed" />
+                <string id="MonoProfilerPublisher.JitCodeBufferOpcodeMessage" value="JitCodeBuffer" />
+
+                <string id="MonoProfilerPublisher.ClassLoadingOpcodeMessage" value="ClassLoading" />
+                <string id="MonoProfilerPublisher.ClassFailedOpcodeMessage" value="ClassFailed" />
+                <string id="MonoProfilerPublisher.ClassLoadedOpcodeMessage" value="ClassLoaded" />
+
+                <string id="MonoProfilerPublisher.VTableLoadingOpcodeMessage" value="VTableLoading" />
+                <string id="MonoProfilerPublisher.VTableFailedOpcodeMessage" value="VTableFailed" />
+                <string id="MonoProfilerPublisher.VTableLoadedOpcodeMessage" value="VTableLoaded" />
+
+                <string id="MonoProfilerPublisher.ModuleLoadingOpcodeMessage" value="ModuleLoading" />
+                <string id="MonoProfilerPublisher.ModuleFailedOpcodeMessage" value="ModuleFailed" />
+                <string id="MonoProfilerPublisher.ModuleLoadedOpcodeMessage" value="ModuleLoaded" />
+                <string id="MonoProfilerPublisher.ModuleUnloadingOpcodeMessage" value="ModuleUnloading" />
+                <string id="MonoProfilerPublisher.ModuleUnloadedOpcodeMessage" value="ModuleUnloaded" />
+
+                <string id="MonoProfilerPublisher.AssemblyLoadingOpcodeMessage" value="AssemblyLoading" />
+                <string id="MonoProfilerPublisher.AssemblyLoadedOpcodeMessage" value="AssemblyLoaded" />
+                <string id="MonoProfilerPublisher.AssemblyUnloadingOpcodeMessage" value="AssemblyUnloading" />
+                <string id="MonoProfilerPublisher.AssemblyUnloadedOpcodeMessage" value="AssemblyUnloaded" />
+
+                <string id="MonoProfilerPublisher.MethodEnterOpcodeMessage" value="MethodEnter" />
+                <string id="MonoProfilerPublisher.MethodLeaveOpcodeMessage" value="MethodLeave" />
+                <string id="MonoProfilerPublisher.MethodTailCallOpcodeMessage" value="MethodTailCall" />
+                <string id="MonoProfilerPublisher.MethodExceptionLeaveOpcodeMessage" value="MethodExceptionLeave" />
+                <string id="MonoProfilerPublisher.MethodFreeOpcodeMessage" value="MethodFree" />
+                <string id="MonoProfilerPublisher.MethodBeginInvokeOpcodeMessage" value="MethodBeginInvoke" />
+                <string id="MonoProfilerPublisher.MethodEndInvokeOpcodeMessage" value="MethodEndInvoke" />
+
+                <string id="MonoProfilerPublisher.ExceptionThrowOpcodeMessage" value="ExceptionThrow" />
+                <string id="MonoProfilerPublisher.ExceptionClauseOpcodeMessage" value="ExceptionClause" />
+
+                <string id="MonoProfilerPublisher.GCEventOpcodeMessage" value="GCEvent" />
+                <string id="MonoProfilerPublisher.GCAllocationOpcodeMessage" value="GCAllocation" />
+                <string id="MonoProfilerPublisher.GCMovesOpcodeMessage" value="GCMoves" />
+                <string id="MonoProfilerPublisher.GCResizeOpcodeMessage" value="GCResize" />
+                <string id="MonoProfilerPublisher.GCHandleCreatedOpcodeMessage" value="GCHandleCreated" />
+                <string id="MonoProfilerPublisher.GCHandleDeletedOpcodeMessage" value="GCHandleDeleted" />
+                <string id="MonoProfilerPublisher.GCFinalizingOpcodeMessage" value="GCFinalizing" />
+                <string id="MonoProfilerPublisher.GCFinalizedOpcodeMessage" value="GCFinalized" />
+                <string id="MonoProfilerPublisher.GCFinalizingObjectOpcodeMessage" value="GCFinalizingObject" />
+                <string id="MonoProfilerPublisher.GCFinalizedObjectOpcodeMessage" value="GCFinalizedObject" />
+                <string id="MonoProfilerPublisher.GCRootRegisterOpcodeMessage" value="GCRootRegister" />
+                <string id="MonoProfilerPublisher.GCRootUnregisterOpcodeMessage" value="GCRootUnregister" />
+                <string id="MonoProfilerPublisher.GCRootsOpcodeMessage" value="GCRoots" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStartOpcodeMessage" value="GCHeapDumpStart" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStopOpcodeMessage" value="GCHeapDumpStop" />
+                <string id="MonoProfilerPublisher.GCHeapDumpObjectReferenceOpcodeMessage" value="GCHeapDumpObjectReference" />
+
+                <string id="MonoProfilerPublisher.MonitorContentionOpcodeMessage" value="MonitorContention" />
+                <string id="MonoProfilerPublisher.MonitorFailedOpcodeMessage" value="MonitorFailed" />
+                <string id="MonoProfilerPublisher.MonitorAquiredOpcodeMessage" value="MonitorAquired" />
+
+                <string id="MonoProfilerPublisher.ThreadStartedOpcodeMessage" value="ThreadStarted" />
+                <string id="MonoProfilerPublisher.ThreadStoppingOpcodeMessage" value="ThreadStopping" />
+                <string id="MonoProfilerPublisher.ThreadStoppedOpcodeMessage" value="ThreadStopped" />
+                <string id="MonoProfilerPublisher.ThreadExitedOpcodeMessage" value="ThreadExited" />
+                <string id="MonoProfilerPublisher.ThreadNameOpcodeMessage" value="ThreadName" />
+
+                <string id="MonoProfilerPublisher.JitDoneVerboseOpcodeMessage" value="JitDoneVerbose" />
+
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceOpcodeMessage" value="GCHeapDumpVTableClassReference" />
+
+                <string id="MonoProfilerPublisher.CodeBufferTypeMap.MethodMessage" value="Method" />
+                <string id="MonoProfilerPublisher.CodeBufferTypeMap.MethodTrampolineMessage" value="MethodTrampoline" />
+                <string id="MonoProfilerPublisher.CodeBufferTypeMap.UnboxTrampolineMessage" value="UnboxTrampoline" />
+                <string id="MonoProfilerPublisher.CodeBufferTypeMap.IMTTrampolineMessage" value="IMTTrampoline" />
+                <string id="MonoProfilerPublisher.CodeBufferTypeMap.GenericsTrampolineMessage" value="GenericsTrampoline" />
+                <string id="MonoProfilerPublisher.CodeBufferTypeMap.SpecificTrampolineMessage" value="SpecificTrampoline" />
+                <string id="MonoProfilerPublisher.CodeBufferTypeMap.HelperMessage" value="Helper" />
+
+                <string id="MonoProfilerPublisher.ExceptionClauseTypeMap.NoneMessage" value="None" />
+                <string id="MonoProfilerPublisher.ExceptionClauseTypeMap.FilterMessage" value="Filter" />
+                <string id="MonoProfilerPublisher.ExceptionClauseTypeMap.FinallyMessage" value="Finally" />
+                <string id="MonoProfilerPublisher.ExceptionClauseTypeMap.FaultMessage" value="Fault" />
+
+                <string id="MonoProfilerPublisher.GCEventTypeMap.StartMessage" value="Start" />
+                <string id="MonoProfilerPublisher.GCEventTypeMap.EndMessage" value="End" />
+                <string id="MonoProfilerPublisher.GCEventTypeMap.PreStopWorldMessage" value="PreStopWorld" />
+                <string id="MonoProfilerPublisher.GCEventTypeMap.PostStopWorldMessage" value="PostStopWorld" />
+                <string id="MonoProfilerPublisher.GCEventTypeMap.PreStartWorldMessage" value="PreStartWorld" />
+                <string id="MonoProfilerPublisher.GCEventTypeMap.PostStartWorldMessage" value="PostStartWorld" />
+                <string id="MonoProfilerPublisher.GCEventTypeMap.PreStopWorldLockedMessage" value="PreStopWorldLocked" />
+                <string id="MonoProfilerPublisher.GCEventTypeMap.PostStartWorldUnlockedMessage" value="PostStartWorldUnlocked" />
+
+                <string id="MonoProfilerPublisher.GCHandleTypeMap.WeakMessage" value="Weak" />
+                <string id="MonoProfilerPublisher.GCHandleTypeMap.WeakTrackResurrectionMessage" value="WeakTrackResurrection" />
+                <string id="MonoProfilerPublisher.GCHandleTypeMap.NormalMessage" value="Normal" />
+                <string id="MonoProfilerPublisher.GCHandleTypeMap.PinnedMessage" value="Pinned" />
+
+                <string id="MonoProfilerPublisher.GCRootTypeMap.ExternalMessage" value="External" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.StackMessage" value="Stack" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.FinalizerQueueMessage" value="FinalizerQueue" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.StaticMessage" value="Static" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.ThreadStaticMessage" value="ThreadStatic" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.ContextStaticMessage" value="ContextStatic" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.GCHandleMessage" value="GCHandle" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.JitMessage" value="Jit" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.ThreadingMessage" value="Threading" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.DomainMessage" value="Domain" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.ReflectionMessage" value="Reflection" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.MarshalMessage" value="Marshal" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.ThreadPoolMessage" value="ThreadPool" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.DebuggerMessage" value="Debugger" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.HandleMessage" value="Handle" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.EphemeronMessage" value="Ephemeron" />
+                <string id="MonoProfilerPublisher.GCRootTypeMap.ToggleRefMessage" value="ToggleRef" />
+
+                <string id="MonoProfilerPublisher.ContextLoadedUnloadedEventMessage" value="ObjectID=%1;%nAppDomainId=%2;%nContextID=%3" />
+
+                <string id="MonoProfilerPublisher.AppDomainLoadUnloadEventMessage" value="AppDomainId=%1" />
+                <string id="MonoProfilerPublisher.AppDomainNameEventMessage" value="AppDomainId=%1;%nAppDomainName=%2" />
+
+                <string id="MonoProfilerPublisher.JitBeginFailedDoneEventMessage" value="MethodId=%1;%nModuleID=%2;%nMethodToken=%3" />
+                <string id="MonoProfilerPublisher.JitDone_V1EventMessage" value="MethodId=%1;%nModuleID=%2;%nMethodToken=%3;%nCount=%4" />
+
+                <string id="MonoProfilerPublisher.JitChunkCreatedEventMessage" value="ChunkID=%1;%nChunkSize=%2" />
+                <string id="MonoProfilerPublisher.JitChunkDestroyedEventMessage" value="ChunkID=%1" />
+                <string id="MonoProfilerPublisher.JitCodeBufferEventMessage" value="BufferID=%1;%nBufferSize=%2;%nBufferType=%3" />
+
+                <string id="MonoProfilerPublisher.ClassLoadingFailedEventMessage" value="ClassID=%1;%nModuleID=%2" />
+                <string id="MonoProfilerPublisher.ClassLoadedEventMessage" value="ClassID=%1;%nModuleID=%2;%nClassName=%3" />
+                <string id="MonoProfilerPublisher.ClassLoaded_V1EventMessage" value="ClassID=%1;%nModuleID=%2;%nClassName=%3;%nCount=%4" />
+
+                <string id="MonoProfilerPublisher.VTableLoadingFailedLoadedEventMessage" value="VTableID=%1;%nClassID=%2;%nAppDomainID=%3" />
+
+                <string id="MonoProfilerPublisher.ModuleLoadingUnloadingFailedEventMessage" value="ModuleID=%1" />
+                <string id="MonoProfilerPublisher.ModuleLoadedUnloadedEventMessage" value="ModuleID=%1;%nModuleName=%2;%nModuleSignature=%3" />
+
+                <string id="MonoProfilerPublisher.AssemblyLoadingUnloadingEventMessage" value="AssemblyID=%1;%nModuleID=%2" />
+                <string id="MonoProfilerPublisher.AssemblyLoadedUnloadedEventMessage" value="%nAssemblyID=%1;%nModuleID=%2;%nAssemblyName=%3" />
+
+                <string id="MonoProfilerPublisher.MethodTracingEventMessage" value="MethodID=%1" />
+
+                <string id="MonoProfilerPublisher.ExceptionThrowEventMessage" value="TypeID=%1;%nObjectID=%2" />
+                <string id="MonoProfilerPublisher.ExceptionClauseEventMessage" value="ClauseType=%1;%nClauseID=%2;%nMethodID=%3;%nTypeID=%4;%nObjectID=%5" />
+
+                <string id="MonoProfilerPublisher.GCEventEventMessage" value="GCEventType=%1;%nGCGeneration=%2" />
+                <string id="MonoProfilerPublisher.GCAllocationEventMessage" value="VTableID=%1;%nObjectID=%2;%nObjectSize=%3" />
+                <string id="MonoProfilerPublisher.GCMovesEventMessage" value="Count=%1" />
+                <string id="MonoProfilerPublisher.GCResizeEventMessage" value="NewSize=%1" />
+                <string id="MonoProfilerPublisher.GCHandleCreatedEventMessage" value="HandleID=%1;%nHandleType=%2;%nObjectID=%3" />
+                <string id="MonoProfilerPublisher.GCHandleDeletedEventMessage" value="HandleID=%1;%nHandleType=%2" />
+                <string id="MonoProfilerPublisher.GCFinalizingFinalizedEventMessage" value="NONE" />
+                <string id="MonoProfilerPublisher.GCFinalizingFinalizedObjectEventMessage" value="ObjectID=%1" />
+                <string id="MonoProfilerPublisher.GCRootRegisterEventMessage" value="RootID=%1;%nRootSize=%2;%nRootType=%3;%nRootKeyID=%4;%nRootKeyName=%5" />
+                <string id="MonoProfilerPublisher.GCRootUnregisterEventMessage" value="RootID=%1" />
+                <string id="MonoProfilerPublisher.GCRootsEventMessage" value="Count=%1" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStartEventMessage" value="HeapCollectParam=%1" />
+                <string id="MonoProfilerPublisher.GCHeapDumpStopEventMessage" value="NONE" />
+                <string id="MonoProfilerPublisher.GCHeapDumpObjectReferenceEventMessage" value="ObjectID=%1;%nVTableID=%2;%nObjectSize=%3;%nObjectGeneration=%4;%nCount=%5" />
+
+                <string id="MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage" value="ObjectID=%1" />
+
+                <string id="MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage" value="ThreadID=%1" />
+                <string id="MonoProfilerPublisher.ThreadNameEventMessage" value="ThreadID=%1;%nThreadName=%2" />
+
+                <string id="MonoProfilerPublisher.JitDoneVerboseEventMessage" value="MethodId=%1;%nMethodNamespace=%2;%nMethodName=%3;%nMethodSignature=%4" />
+
+                <string id="MonoProfilerPublisher.GCHeapDumpVTableClassReferenceEventMessage" value="VTableID=%1;%nClassID=%2;%nModuleID=%3;%nClassName=%4" />
             </stringTable>
         </resources>
     </localization>

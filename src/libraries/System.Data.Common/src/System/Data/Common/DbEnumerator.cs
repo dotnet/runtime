@@ -128,14 +128,14 @@ namespace System.Data.Common
 
             public override bool CanResetValue(object component) => false;
 
-            public override object GetValue(object component) => ((IDataRecord)component)[_ordinal];
+            public override object? GetValue(object? component) => ((IDataRecord)component!)[_ordinal];
 
             public override void ResetValue(object component)
             {
                 throw ADP.NotSupported();
             }
 
-            public override void SetValue(object component, object value)
+            public override void SetValue(object? component, object? value)
             {
                 throw ADP.NotSupported();
             }

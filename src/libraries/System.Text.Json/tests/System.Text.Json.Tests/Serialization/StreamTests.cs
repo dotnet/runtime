@@ -5,12 +5,12 @@ namespace System.Text.Json.Serialization.Tests
 {
     public sealed class StreamTests_Async : StreamTests
     {
-        public StreamTests_Async() : base(JsonSerializationWrapperForStream.AsyncStreamSerializer) { }
+        public StreamTests_Async() : base(JsonSerializerWrapperForStream.AsyncStreamSerializer) { }
     }
 
     public sealed class StreamTests_Sync : StreamTests
     {
-        public StreamTests_Sync() : base(JsonSerializationWrapperForStream.SyncStreamSerializer) { }
+        public StreamTests_Sync() : base(JsonSerializerWrapperForStream.SyncStreamSerializer) { }
     }
 
     public abstract partial class StreamTests
@@ -18,9 +18,9 @@ namespace System.Text.Json.Serialization.Tests
         /// <summary>
         /// Wrapper for JsonSerializer's Serialize() and Deserialize() methods.
         /// </summary>
-        private JsonSerializationWrapperForStream Serializer { get; }
+        private JsonSerializerWrapperForStream Serializer { get; }
 
-        public StreamTests(JsonSerializationWrapperForStream serializer)
+        public StreamTests(JsonSerializerWrapperForStream serializer)
         {
             Serializer = serializer;
         }

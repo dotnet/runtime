@@ -27,7 +27,7 @@ protected:
     DWORD                       m_dwFlags;             // CorAssemblyFlags
     LPCWSTR                     m_wszCodeBase;         // URL to the code
     int                         m_ownedFlags;
-    ICLRPrivBinder             *m_pBindingContext;
+    AssemblyBinder             *m_pBindingContext;
 
 public:
     enum
@@ -63,14 +63,14 @@ public:
     VOID    CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHeap, AllocMemTracker *pamTracker);
     VOID    CloneFieldsToStackingAllocator(StackingAllocator* alloc);
 
-    inline void SetBindingContext(ICLRPrivBinder *pBindingContext)
+    inline void SetBindingContext(AssemblyBinder *pBindingContext)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_pBindingContext = pBindingContext;
     }
 
-    inline ICLRPrivBinder* GetBindingContext()
+    inline AssemblyBinder* GetBindingContext()
     {
         LIMITED_METHOD_CONTRACT;
 

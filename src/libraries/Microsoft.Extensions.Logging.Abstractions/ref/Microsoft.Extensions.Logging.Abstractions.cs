@@ -48,6 +48,11 @@ namespace Microsoft.Extensions.Logging
     {
         void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider);
     }
+    public partial class LogDefineOptions
+    {
+        public LogDefineOptions() { }
+        public bool SkipEnabledCheck { get { throw null; } set { } }
+    }
     public static partial class LoggerExtensions
     {
         public static System.IDisposable BeginScope(this Microsoft.Extensions.Logging.ILogger logger, string messageFormat, params object?[] args) { throw null; }
@@ -94,7 +99,7 @@ namespace Microsoft.Extensions.Logging
     public static partial class LoggerMessage
     {
         public static System.Action<Microsoft.Extensions.Logging.ILogger, System.Exception?> Define(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
-        public static System.Action<Microsoft.Extensions.Logging.ILogger, System.Exception?> Define(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, bool skipEnabledCheck) { throw null; }
+        public static System.Action<Microsoft.Extensions.Logging.ILogger, System.Exception?> Define(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Func<Microsoft.Extensions.Logging.ILogger, System.IDisposable> DefineScope(string formatString) { throw null; }
         public static System.Func<Microsoft.Extensions.Logging.ILogger, T1, System.IDisposable> DefineScope<T1>(string formatString) { throw null; }
         public static System.Func<Microsoft.Extensions.Logging.ILogger, T1, T2, System.IDisposable> DefineScope<T1, T2>(string formatString) { throw null; }
@@ -103,17 +108,17 @@ namespace Microsoft.Extensions.Logging
         public static System.Func<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, System.IDisposable> DefineScope<T1, T2, T3, T4, T5>(string formatString) { throw null; }
         public static System.Func<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, T6, System.IDisposable> DefineScope<T1, T2, T3, T4, T5, T6>(string formatString) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, System.Exception?> Define<T1>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
-        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, System.Exception?> Define<T1>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, bool skipEnabledCheck) { throw null; }
+        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, System.Exception?> Define<T1>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, System.Exception?> Define<T1, T2>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
-        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, System.Exception?> Define<T1, T2>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, bool skipEnabledCheck) { throw null; }
+        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, System.Exception?> Define<T1, T2>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, System.Exception?> Define<T1, T2, T3>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
-        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, System.Exception?> Define<T1, T2, T3>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, bool skipEnabledCheck) { throw null; }
+        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, System.Exception?> Define<T1, T2, T3>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, System.Exception?> Define<T1, T2, T3, T4>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
-        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, System.Exception?> Define<T1, T2, T3, T4>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, bool skipEnabledCheck) { throw null; }
+        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, System.Exception?> Define<T1, T2, T3, T4>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, System.Exception?> Define<T1, T2, T3, T4, T5>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
-        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, System.Exception?> Define<T1, T2, T3, T4, T5>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, bool skipEnabledCheck) { throw null; }
+        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, System.Exception?> Define<T1, T2, T3, T4, T5>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
         public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, T6, System.Exception?> Define<T1, T2, T3, T4, T5, T6>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
-        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, T6, System.Exception?> Define<T1, T2, T3, T4, T5, T6>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, bool skipEnabledCheck) { throw null; }
+        public static System.Action<Microsoft.Extensions.Logging.ILogger, T1, T2, T3, T4, T5, T6, System.Exception?> Define<T1, T2, T3, T4, T5, T6>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, Microsoft.Extensions.Logging.LogDefineOptions? options) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
     public sealed partial class LoggerMessageAttribute : System.Attribute

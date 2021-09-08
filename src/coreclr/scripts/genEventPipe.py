@@ -72,10 +72,18 @@ def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     sig_pieces.append(")")
     return ''.join(sig_pieces)
 
+def includeProvider(providerName, runtimeFlavor):
+    if runtimeFlavor.coreclr and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
+        return False
+    else:
+        return True
+
 def includeEvent(inclusionList, providerName, eventName):
     if len(inclusionList) == 0:
         return True
     if providerName in inclusionList and eventName in inclusionList[providerName]:
+        return True
+    elif providerName in inclusionList and "*" in inclusionList[providerName]:
         return True
     elif "*" in inclusionList and eventName in inclusionList["*"]:
         return True
@@ -340,6 +348,10 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             pack_list.append(
                     "    success &= write_buffer_double_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+        elif parameter.winType == "win:Pointer" and runtimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_uintptr_t((uintptr_t)%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
         elif runtimeFlavor.mono:
             pack_list.append(
                 "    success &= write_buffer((const uint8_t *)%s, sizeof(%s), &buffer, &offset, &size, &fixedBuffer);" %
@@ -581,7 +593,6 @@ write_buffer (
     size_t *size,
     bool *fixed_buffer)
 {
-    EP_ASSERT (value != NULL);
     EP_ASSERT (buffer != NULL);
     EP_ASSERT (offset != NULL);
     EP_ASSERT (size != NULL);
@@ -669,16 +680,17 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
 
             for providerNode in tree.getElementsByTagName('provider'):
                 providerName = providerNode.getAttribute('name')
-                providerPrettyName = providerName.replace("Windows-", '')
-                providerPrettyName = providerPrettyName.replace("Microsoft-", '')
-                providerPrettyName = providerPrettyName.replace('-', '_')
-                if extern: helper.write(
-                    'extern "C" '
-                )
-                helper.write(
-                    "void Init" +
-                    providerPrettyName +
-                    "(void);\n\n")
+                if includeProvider(providerName, runtimeFlavor):
+                    providerPrettyName = providerName.replace("Windows-", '')
+                    providerPrettyName = providerPrettyName.replace("Microsoft-", '')
+                    providerPrettyName = providerPrettyName.replace('-', '_')
+                    if extern: helper.write(
+                        'extern "C" '
+                    )
+                    helper.write(
+                        "void Init" +
+                        providerPrettyName +
+                        "(void);\n\n")
 
             if extern: helper.write(
                 'extern "C" '
@@ -687,10 +699,11 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
             helper.write("void InitProvidersAndEvents(void)\n{\n")
             for providerNode in tree.getElementsByTagName('provider'):
                 providerName = providerNode.getAttribute('name')
-                providerPrettyName = providerName.replace("Windows-", '')
-                providerPrettyName = providerPrettyName.replace("Microsoft-", '')
-                providerPrettyName = providerPrettyName.replace('-', '_')
-                helper.write("    Init" + providerPrettyName + "();\n")
+                if includeProvider(providerName, runtimeFlavor):
+                    providerPrettyName = providerName.replace("Windows-", '')
+                    providerPrettyName = providerPrettyName.replace("Microsoft-", '')
+                    providerPrettyName = providerPrettyName.replace('-', '_')
+                    helper.write("    Init" + providerPrettyName + "();\n")
             helper.write("}\n")
 
             if runtimeFlavor.coreclr:
@@ -894,6 +907,19 @@ write_buffer_bool_t (
 
 static
 inline
+bool
+write_buffer_uintptr_t (
+    uintptr_t value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer ((const uint8_t *)&value, sizeof (uintptr_t), buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
 EventPipeEvent *
 provider_add_event (
     EventPipeProvider *provider,
@@ -949,6 +975,8 @@ def generateEventPipeImplFiles(
 
     for providerNode in tree.getElementsByTagName('provider'):
         providerName = providerNode.getAttribute('name')
+        if not includeProvider(providerName, runtimeFlavor):
+            continue
 
         providerPrettyName = providerName.replace("Windows-", '')
         providerPrettyName = providerPrettyName.replace("Microsoft-", '')

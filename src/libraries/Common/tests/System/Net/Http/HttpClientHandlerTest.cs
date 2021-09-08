@@ -262,9 +262,9 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
-            from useSsl in BoolValues 
+            from useSsl in BoolValues
             // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-            where PlatformDetection.IsNotBrowser || !useSsl 
+            where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
         [Theory]
@@ -429,10 +429,10 @@ namespace System.Net.Http.Functional.Tests
                     if (PlatformDetection.IsNotBrowser)
                     {
                         request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                        request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     }
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     request.Headers.Date = DateTimeOffset.Parse("Tue, 15 Nov 1994 08:12:31 GMT");
-                    request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
                     request.Headers.Add("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43");
                     request.Headers.Add("From", "User Name <user@example.com>");
                     request.Headers.Host = "en.wikipedia.org:8080";
@@ -577,7 +577,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54655", TestPlatforms.Browser)]
         public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(string newline, string fold, bool dribble)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -934,11 +933,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [InlineData(null)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54159", TestPlatforms.Browser)]
-        public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(null, false)]
+        public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
@@ -951,15 +951,19 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion30 && (chunked is null || chunked is false))
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
-                return;
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                if (PlatformDetection.IsBrowser)
+                {
+                    if (enableWasmStreaming)
+                    {
+#if !NETFRAMEWORK
+                        request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+#endif
+                    }
+                }
+
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
                 {
@@ -970,21 +974,24 @@ namespace System.Net.Http.Functional.Tests
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
                         Assert.False(responseStream.CanWrite);
-                        Assert.False(responseStream.CanSeek);
+                        Assert.Equal(PlatformDetection.IsBrowser && !enableWasmStreaming, responseStream.CanSeek);
 
                         // Not supported operations
                         Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
-                        Assert.Throws<NotSupportedException>(() => responseStream.Length);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Position);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        if (!responseStream.CanSeek)
+                        {
+                            Assert.Throws<NotSupportedException>(() => responseStream.Length);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Position);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        }
                         Assert.Throws<NotSupportedException>(() => responseStream.SetLength(0));
                         Assert.Throws<NotSupportedException>(() => responseStream.Write(new byte[1], 0, 1));
 #if !NETFRAMEWORK
                         Assert.Throws<NotSupportedException>(() => responseStream.Write(new Span<byte>(new byte[1])));
-                        Assert.Throws<NotSupportedException>(() => { responseStream.WriteAsync(new Memory<byte>(new byte[1])); });
+                        await Assert.ThrowsAsync<NotSupportedException>(async () => await responseStream.WriteAsync(new Memory<byte>(new byte[1])));
 #endif
-                        Assert.Throws<NotSupportedException>(() => { responseStream.WriteAsync(new byte[1], 0, 1); });
+                        await Assert.ThrowsAsync<NotSupportedException>(async () => await responseStream.WriteAsync(new byte[1], 0, 1));
                         Assert.Throws<NotSupportedException>(() => responseStream.WriteByte(1));
 
                         // Invalid arguments
@@ -998,11 +1005,14 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Throws<ArgumentOutOfRangeException>(() => { responseStream.CopyToAsync(Stream.Null, -1, default); });
                         Assert.Throws<NotSupportedException>(() => { responseStream.CopyToAsync(nonWritableStream, 100, default); });
                         Assert.Throws<ObjectDisposedException>(() => { responseStream.CopyToAsync(disposedStream, 100, default); });
-                        Assert.Throws<ArgumentNullException>(() => responseStream.Read(null, 0, 100));
-                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], -1, 1));
-                        Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 2, 1));
-                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], 0, -1));
-                        Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 0, 2));
+                        if (PlatformDetection.IsNotBrowser)
+                        {
+                            Assert.Throws<ArgumentNullException>(() => responseStream.Read(null, 0, 100));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], -1, 1));
+                            Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 2, 1));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], 0, -1));
+                            Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 0, 2));
+                        }
                         Assert.Throws<ArgumentNullException>(() => responseStream.BeginRead(null, 0, 100, null, null));
                         Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.BeginRead(new byte[1], -1, 1, null, null));
                         Assert.ThrowsAny<ArgumentException>(() => responseStream.BeginRead(new byte[1], 2, 1, null, null));
@@ -1018,62 +1028,99 @@ namespace System.Net.Http.Functional.Tests
                         // Various forms of reading
                         var buffer = new byte[1];
 
-                        Assert.Equal('h', responseStream.ReadByte());
+                        if (PlatformDetection.IsBrowser)
+                        {
+#if !NETFRAMEWORK
+                            Assert.Equal('h', await responseStream.ReadByteAsync());
+                            Assert.Equal('e', await responseStream.ReadByteAsync());
+                            Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+                            Assert.Equal((byte)'l', buffer[0]);
 
-                        Assert.Equal(1, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
-                        Assert.Equal((byte)'e', buffer[0]);
+                            Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
+                            Assert.Equal((byte)'l', buffer[0]);
+
+                            Assert.Equal(1, await responseStream.ReadAsync(buffer));
+                            Assert.Equal((byte)'o', buffer[0]);
+
+                            Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
+                            Assert.Equal((byte)' ', buffer[0]);
+
+                            // Doing any of these 0-byte reads causes the connection to fail.
+                            Assert.Equal(0, await responseStream.ReadAsync(Memory<byte>.Empty));
+                            Assert.Equal(0, await responseStream.ReadAsync(Array.Empty<byte>(), 0, 0));
+
+                            // And copying
+                            var ms = new MemoryStream();
+                            await responseStream.CopyToAsync(ms);
+                            Assert.Equal("world", Encoding.ASCII.GetString(ms.ToArray()));
+
+                            // Read and copy again once we've exhausted all data
+                            ms = new MemoryStream();
+                            await responseStream.CopyToAsync(ms);
+                            Assert.Equal(0, ms.Length);
+                            Assert.Equal(0, await responseStream.ReadAsync(buffer, 0, 1));
+                            Assert.Equal(0, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+#endif
+                        }
+                        else
+                        {
+                            Assert.Equal('h', responseStream.ReadByte());
+                            Assert.Equal(1, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
+                            Assert.Equal((byte)'e', buffer[0]);
+
 
 #if !NETFRAMEWORK
-                        Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+                            Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
 #else
-                        Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
+                            Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
 #endif
-                        Assert.Equal((byte)'l', buffer[0]);
+                            Assert.Equal((byte)'l', buffer[0]);
 
-                        Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
-                        Assert.Equal((byte)'l', buffer[0]);
+                            Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
+                            Assert.Equal((byte)'l', buffer[0]);
 
 #if !NETFRAMEWORK
-                        Assert.Equal(1, responseStream.Read(new Span<byte>(buffer)));
+                            Assert.Equal(1, responseStream.Read(new Span<byte>(buffer)));
 #else
-                        Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
+                            Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
 #endif
-                        Assert.Equal((byte)'o', buffer[0]);
+                            Assert.Equal((byte)'o', buffer[0]);
 
-                        Assert.Equal(1, responseStream.Read(buffer, 0, 1));
-                        Assert.Equal((byte)' ', buffer[0]);
+                            Assert.Equal(1, responseStream.Read(buffer, 0, 1));
+                            Assert.Equal((byte)' ', buffer[0]);
 
-                        // Doing any of these 0-byte reads causes the connection to fail.
-                        Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, Array.Empty<byte>(), 0, 0, null));
+                            // Doing any of these 0-byte reads causes the connection to fail.
+                            Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, Array.Empty<byte>(), 0, 0, null));
 #if !NETFRAMEWORK
-                        Assert.Equal(0, await responseStream.ReadAsync(Memory<byte>.Empty));
+                            Assert.Equal(0, await responseStream.ReadAsync(Memory<byte>.Empty));
 #endif
-                        Assert.Equal(0, await responseStream.ReadAsync(Array.Empty<byte>(), 0, 0));
+                            Assert.Equal(0, await responseStream.ReadAsync(Array.Empty<byte>(), 0, 0));
 #if !NETFRAMEWORK
-                        Assert.Equal(0, responseStream.Read(Span<byte>.Empty));
+                            Assert.Equal(0, responseStream.Read(Span<byte>.Empty));
 #endif
-                        Assert.Equal(0, responseStream.Read(Array.Empty<byte>(), 0, 0));
+                            Assert.Equal(0, responseStream.Read(Array.Empty<byte>(), 0, 0));
 
-                        // And copying
-                        var ms = new MemoryStream();
-                        await responseStream.CopyToAsync(ms);
-                        Assert.Equal("world", Encoding.ASCII.GetString(ms.ToArray()));
+                            // And copying
+                            var ms = new MemoryStream();
+                            await responseStream.CopyToAsync(ms);
+                            Assert.Equal("world", Encoding.ASCII.GetString(ms.ToArray()));
 
-                        // Read and copy again once we've exhausted all data
-                        ms = new MemoryStream();
-                        await responseStream.CopyToAsync(ms);
-                        responseStream.CopyTo(ms);
-                        Assert.Equal(0, ms.Length);
-                        Assert.Equal(-1, responseStream.ReadByte());
-                        Assert.Equal(0, responseStream.Read(buffer, 0, 1));
+                            // Read and copy again once we've exhausted all data
+                            ms = new MemoryStream();
+                            await responseStream.CopyToAsync(ms);
+                            responseStream.CopyTo(ms);
+                            Assert.Equal(0, ms.Length);
+                            Assert.Equal(-1, responseStream.ReadByte());
+                            Assert.Equal(0, responseStream.Read(buffer, 0, 1));
 #if !NETFRAMEWORK
-                        Assert.Equal(0, responseStream.Read(new Span<byte>(buffer)));
+                            Assert.Equal(0, responseStream.Read(new Span<byte>(buffer)));
 #endif
-                        Assert.Equal(0, await responseStream.ReadAsync(buffer, 0, 1));
+                            Assert.Equal(0, await responseStream.ReadAsync(buffer, 0, 1));
 #if !NETFRAMEWORK
-                        Assert.Equal(0, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+                            Assert.Equal(0, await responseStream.ReadAsync(new Memory<byte>(buffer)));
 #endif
-                        Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
+                            Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
+                        }
                     }
                 }
             }, async server =>
@@ -1103,7 +1150,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54159", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1123,14 +1169,17 @@ namespace System.Net.Http.Functional.Tests
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
                         Assert.False(responseStream.CanWrite);
-                        Assert.False(responseStream.CanSeek);
+                        Assert.Equal(PlatformDetection.IsBrowser, responseStream.CanSeek);
 
                         // Not supported operations
                         Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
-                        Assert.Throws<NotSupportedException>(() => responseStream.Length);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Position);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
-                        Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        if (!responseStream.CanSeek)
+                        {
+                            Assert.Throws<NotSupportedException>(() => responseStream.Length);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Position);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
+                            Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        }
                         Assert.Throws<NotSupportedException>(() => responseStream.SetLength(0));
                         Assert.Throws<NotSupportedException>(() => responseStream.Write(new byte[1], 0, 1));
 #if !NETFRAMEWORK
@@ -1314,7 +1363,7 @@ namespace System.Net.Http.Functional.Tests
 #region Post Methods Tests
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53876", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1492,6 +1541,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1587,6 +1637,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1893,6 +1944,24 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(invalidUri));
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(invalidUri));
             }
+        }
+
+        // HttpRequestMessage ctor guards against such Uris before .NET 6. We allow passing relative/unknown Uris to BrowserHttpHandler.
+        public static bool InvalidRequestUriTest_IsSupported => PlatformDetection.IsNotNetFramework && PlatformDetection.IsNotBrowser;
+
+        [ConditionalFact(nameof(InvalidRequestUriTest_IsSupported))]
+        public async Task SendAsync_InvalidRequestUri_Throws()
+        {
+            using var invoker = new HttpMessageInvoker(CreateHttpClientHandler());
+
+            var request = new HttpRequestMessage(HttpMethod.Get, (Uri)null);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => invoker.SendAsync(request, CancellationToken.None));
+
+            request = new HttpRequestMessage(HttpMethod.Get, new Uri("/relative", UriKind.Relative));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => invoker.SendAsync(request, CancellationToken.None));
+
+            request = new HttpRequestMessage(HttpMethod.Get, new Uri("foo://foo.bar"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => invoker.SendAsync(request, CancellationToken.None));
         }
     }
 }

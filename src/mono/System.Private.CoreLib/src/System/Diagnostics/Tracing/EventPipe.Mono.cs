@@ -76,7 +76,8 @@ namespace System.Diagnostics.Tracing
             GC_LARGE_OBJECT_SIZE_BYTES,
             GC_LAST_PERCENT_TIME_IN_GC,
             JIT_IL_BYTES_JITTED,
-            JIT_METHODS_JITTED
+            JIT_METHODS_JITTED,
+            JIT_TICKS_IN_JIT
         }
 
 #if FEATURE_PERFTRACING

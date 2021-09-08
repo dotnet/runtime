@@ -318,6 +318,9 @@
   <data name="FormatDateTimeOffset" xml:space="preserve">
     <value>The JSON value is not in a supported DateTimeOffset format.</value>
   </data>
+  <data name="FormatTimeSpan" xml:space="preserve">
+    <value>The JSON value is not in a supported TimeSpan format.</value>
+  </data>
   <data name="FormatGuid" xml:space="preserve">
     <value>The JSON value is not in a supported Guid format.</value>
   </data>
@@ -349,7 +352,7 @@
     <value>The data extension property '{0}.{1}' does not match the required signature of 'IDictionary&lt;string, JsonElement&gt;', 'IDictionary&lt;string, object&gt;' or 'JsonObject'.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
-    <value>The type '{0}' cannot have more than one property that has the attribute '{1}'.</value>
+    <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
   </data>
   <data name="SerializationNotSupportedType" xml:space="preserve">
     <value>The type '{0}' is not supported.</value>
@@ -462,13 +465,13 @@
     <value>Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references by setting ReferenceHandler to null.</value>
   </data>
   <data name="MultipleMembersBindWithConstructorParameter" xml:space="preserve">
-    <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in constructor '{4}' on deserialization.</value>
+    <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in the deserialization constructor.</value>
   </data>
   <data name="ConstructorParamIncompleteBinding" xml:space="preserve">
-    <value>Each parameter in constructor '{0}' on type '{1}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. The match can be case-insensitive.</value>
+    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. The match can be case-insensitive.</value>
   </data>
   <data name="ConstructorMaxOf64Parameters" xml:space="preserve">
-    <value>The constructor '{0}' on type '{1}' may not have more than 64 parameters for deserialization.</value>
+    <value>The deserialization constructor on type '{0}' may not have more than 64 parameters for deserialization.</value>
   </data>
   <data name="ObjectWithParameterizedCtorRefMetadataNotHonored" xml:space="preserve">
     <value>Reference metadata is not honored when deserializing types using parameterized constructors. See type '{0}'.</value>
@@ -480,7 +483,7 @@
     <value>The unsupported member type is located on type '{0}'.</value>
   </data>
   <data name="ExtensionDataCannotBindToCtorParam" xml:space="preserve">
-    <value>The extension data property '{0}' on type '{1}' cannot bind with a parameter in constructor '{2}'.</value>
+    <value>The extension data property '{0}' on type '{1}' cannot bind with a parameter in the deserialization constructor.</value>
   </data>
   <data name="BufferMaximumSizeExceeded" xml:space="preserve">
     <value>Cannot allocate a buffer of size {0}.</value>
@@ -515,13 +518,10 @@
   <data name="IgnoreConditionOnValueTypeInvalid" xml:space="preserve">
     <value>The ignore condition 'JsonIgnoreCondition.WhenWritingNull' is not valid on value-type member '{0}' on type '{1}'. Consider using 'JsonIgnoreCondition.WhenWritingDefault'.</value>
   </data>
-  <data name="NumberHandlingConverterMustBeBuiltIn" xml:space="preserve">
-    <value>'JsonNumberHandlingAttribute' cannot be placed on a property, field, or type that is handled by a custom converter. See usage(s) of converter '{0}' on type '{1}'.</value>
+  <data name="NumberHandlingOnPropertyInvalid" xml:space="preserve">
+    <value>'JsonNumberHandlingAttribute' is only valid on a number or a collection of numbers when applied to a property or field. See member '{0}' on type '{1}'.</value>
   </data>
-  <data name="NumberHandlingOnPropertyTypeMustBeNumberOrCollection" xml:space="preserve">
-    <value>When 'JsonNumberHandlingAttribute' is placed on a property or field, the property or field must be a number or a collection of numbers. See member '{0}' on type '{1}'.</value>
-  </data>
-  <data name="ConverterCanConvertNullableRedundant" xml:space="preserve">
+  <data name="ConverterCanConvertMultipleTypes" xml:space="preserve">
     <value>The converter '{0}' handles type '{1}' but is being asked to convert type '{2}'. Either create a separate converter for type '{2}' or change the converter's 'CanConvert' method to only return 'true' for a single type.</value>
   </data>
   <data name="MetadataReferenceOfTypeCannotBeAssignedToType" xml:space="preserve">
@@ -596,13 +596,25 @@
   <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
     <value>A custom converter for JsonObject is not allowed on an extension property.</value>
   </data>
-  <data name="PropInitAndSerializeFuncsNull" xml:space="preserve">
-    <value>'propInitFunc' and 'serializeFunc' cannot both be 'null'. </value>
+  <data name="MetadataInitFuncsNull" xml:space="preserve">
+    <value>Invalid configuration provided for 'propInitFunc', 'ctorParamInitFunc' and 'serializeFunc'.</value>
   </data>
   <data name="NoMetadataForTypeProperties" xml:space="preserve">
     <value>'JsonSerializerContext' '{0}' did not provide property metadata for type '{1}'.</value>
   </data>
   <data name="NoDefaultOptionsForContext" xml:space="preserve">
     <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
+  </data>
+  <data name="FieldCannotBeVirtual" xml:space="preserve">
+    <value>A 'field' member cannot be 'virtual'. See arguments for the '{0}' and '{1}' parameters. </value>
+  </data>
+  <data name="MissingFSharpCoreMember" xml:space="preserve">
+    <value>Could not locate required member '{0}' from FSharp.Core. This might happen because your application has enabled member-level trimming.</value>
+  </data>
+  <data name="FSharpDiscriminatedUnionsNotSupported" xml:space="preserve">
+    <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
+  </data>
+  <data name="NoMetadataForTypeCtorParams" xml:space="preserve">
+    <value>'JsonSerializerContext' '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
   </data>
 </root>

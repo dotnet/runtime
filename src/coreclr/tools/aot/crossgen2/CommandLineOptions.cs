@@ -2,16 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
+using System.Text;
 
 using Internal.CommandLine;
+using Internal.TypeSystem;
 
 namespace ILCompiler
 {
     internal class CommandLineOptions
     {
+        public const int DefaultPerfMapFormatVersion = 0;
+
         public bool Help;
         public string HelpText;
 
@@ -56,6 +62,7 @@ namespace ILCompiler
         public string PdbPath;
         public bool PerfMap;
         public string PerfMapPath;
+        public int PerfMapFormatVersion;
         public int Parallelism;
         public int CustomPESectionAlignment;
         public string MethodLayout;
@@ -70,6 +77,8 @@ namespace ILCompiler
 
         public IReadOnlyList<string> CodegenOptions;
 
+        public string MakeReproPath;
+
         public bool CompositeOrInputBubble => Composite || InputBubble;
 
         public CommandLineOptions(string[] args)
@@ -81,8 +90,26 @@ namespace ILCompiler
             MibcFilePaths = Array.Empty<string>();
             CodegenOptions = Array.Empty<string>();
 
+            PerfMapFormatVersion = DefaultPerfMapFormatVersion;
             Parallelism = Environment.ProcessorCount;
             SingleMethodGenericArg = null;
+
+            bool forceHelp = false;
+            if (args.Length == 0)
+            {
+                forceHelp = true;
+            }
+
+            foreach (string arg in args)
+            {
+                if (arg == "-?")
+                    forceHelp = true;
+            }
+
+            if (forceHelp)
+            {
+                args = new string[] {"--help"};
+            }
 
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
@@ -139,11 +166,14 @@ namespace ILCompiler
                 syntax.DefineOption("pdb-path", ref PdbPath, SR.PdbFilePathOption);
                 syntax.DefineOption("perfmap", ref PerfMap, SR.PerfMapFileOption);
                 syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
+                syntax.DefineOption("perfmap-format-version", ref PerfMapFormatVersion, SR.PerfMapFormatVersionOption);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);
                 syntax.DefineOption("verify-type-and-field-layout", ref VerifyTypeAndFieldLayout, SR.VerifyTypeAndFieldLayoutOption);
                 syntax.DefineOption("callchain-profile", ref CallChainProfileFile, SR.CallChainProfileFile);
+
+                syntax.DefineOption("make-repro-path", ref MakeReproPath, SR.MakeReproPathHelp);
 
                 syntax.DefineOption("h|help", ref Help, SR.HelpOption);
 
@@ -152,7 +182,215 @@ namespace ILCompiler
 
             if (Help)
             {
+                List<string> extraHelp = new List<string>();
+                extraHelp.Add(SR.OptionPassingHelp);
+                extraHelp.Add("");
+                extraHelp.Add(SR.DashDashHelp);
+                extraHelp.Add("");
+
+                string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64"};
+                string[] ValidOS = new string[] {"windows", "linux", "osx"};
+                TargetOS defaultOs;
+                TargetArchitecture defaultArch;
+                Program.ComputeDefaultOptions(out defaultOs, out defaultArch);
+
+                extraHelp.Add(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), defaultOs.ToString().ToLowerInvariant()));
+
+                extraHelp.Add("");
+
+                extraHelp.Add(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), defaultArch.ToString().ToLowerInvariant()));
+
+                extraHelp.Add("");
+
+                extraHelp.Add(SR.InstructionSetHelp);
+                foreach (string arch in ValidArchitectures)
+                {
+                    StringBuilder archString = new StringBuilder();
+
+                    archString.Append(arch);
+                    archString.Append(": ");
+
+                    TargetArchitecture targetArch = Program.GetTargetArchitectureFromArg(arch, out _);
+                    bool first = true;
+                    foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                    {
+                        // Only instruction sets with are specifiable should be printed to the help text
+                        if (instructionSet.Specifiable)
+                        {
+                            if (first)
+                            {
+                                first = false;
+                            }
+                            else
+                            {
+                                archString.Append(", ");
+                            }
+                            archString.Append(instructionSet.Name);
+                        }
+                    }
+
+                    extraHelp.Add(archString.ToString());
+                }
+
+                argSyntax.ExtraHelpParagraphs = extraHelp;
+
                 HelpText = argSyntax.GetHelpText();
+            }
+
+            if (MakeReproPath != null)
+            {
+                // Create a repro package in the specified path
+                // This package will have the set of input files needed for compilation
+                // + the original command line arguments
+                // + a rsp file that should work to directly run out of the zip file
+
+                string makeReproPath = MakeReproPath;
+                Directory.CreateDirectory(makeReproPath);
+
+                List<string> crossgenDetails = new List<string>();
+                crossgenDetails.Add("CrossGen2 version");
+                try
+                {
+                    crossgenDetails.Add(Environment.GetCommandLineArgs()[0]);
+                } catch  {}
+                try
+                {
+                    crossgenDetails.Add(System.Diagnostics.FileVersionInfo.GetVersionInfo(Environment.GetCommandLineArgs()[0]).ToString());
+                } catch  {}
+
+                crossgenDetails.Add("------------------------");
+                crossgenDetails.Add("Actual Command Line Args");
+                crossgenDetails.Add("------------------------");
+                crossgenDetails.AddRange(args);
+                foreach (string arg in args)
+                {
+                    if (arg.StartsWith('@'))
+                    {
+                        string rspFileName = arg.Substring(1);
+                        crossgenDetails.Add("------------------------");
+                        crossgenDetails.Add(rspFileName);
+                        crossgenDetails.Add("------------------------");
+                        try
+                        {
+                            crossgenDetails.AddRange(File.ReadAllLines(rspFileName));
+                        } catch  {}
+                    }
+                }
+
+                HashCode hashCodeOfArgs = new HashCode();
+                foreach (string s in crossgenDetails)
+                    hashCodeOfArgs.Add(s);
+
+                string zipFileName = ((uint)hashCodeOfArgs.ToHashCode()).ToString();
+
+                if (OutputFilePath != null)
+                    zipFileName = zipFileName + "_" + Path.GetFileName(OutputFilePath);
+
+                zipFileName = Path.Combine(MakeReproPath, Path.ChangeExtension(zipFileName, ".zip"));
+
+                Console.WriteLine($"Creating {zipFileName}");
+                using (var archive = ZipFile.Open(zipFileName, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry commandEntry = archive.CreateEntry("crossgen2command.txt");
+                    using (StreamWriter writer = new StreamWriter(commandEntry.Open()))
+                    {
+                        foreach (string s in crossgenDetails)
+                            writer.WriteLine(s);
+                    }
+
+                    HashSet<string> inputOptionNames = new HashSet<string>();
+                    inputOptionNames.Add("-r");
+                    inputOptionNames.Add("-u");
+                    inputOptionNames.Add("-m");
+                    inputOptionNames.Add("--inputbubbleref");
+                    Dictionary<string, string> inputToReproPackageFileName = new Dictionary<string, string>();
+
+                    List<string> rspFile = new List<string>();
+                    foreach (var option in argSyntax.GetOptions())
+                    {
+                        if (option.GetDisplayName() == "--make-repro-path")
+                        {
+                            continue;
+                        }
+
+                        if (option.Value != null && !option.Value.Equals(option.DefaultValue))
+                        {
+                            if (option.IsList)
+                            {
+                                if (inputOptionNames.Contains(option.GetDisplayName()))
+                                {
+                                    Dictionary<string, string> dictionary = new Dictionary<string, string>();
+                                    foreach (string optInList in (IEnumerable)option.Value)
+                                    {
+                                        Helpers.AppendExpandedPaths(dictionary, optInList, false);
+                                    }
+                                    foreach (string inputFile in dictionary.Values)
+                                    {
+                                        rspFile.Add($"{option.GetDisplayName()}:{ConvertFromInputPathToReproPackagePath(inputFile)}");
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (object optInList in (IEnumerable)option.Value)
+                                    {
+                                        rspFile.Add($"{option.GetDisplayName()}:{optInList}");
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                rspFile.Add($"{option.GetDisplayName()}:{option.Value}");
+                            }
+                        }
+                    }
+
+                    foreach (var parameter in argSyntax.GetParameters())
+                    {
+                        if (parameter.Value != null)
+                        {
+                            if (parameter.IsList)
+                            {
+                                foreach (object optInList in (IEnumerable)parameter.Value)
+                                {
+                                    rspFile.Add($"{ConvertFromInputPathToReproPackagePath((string)optInList)}");
+                                }
+                            }
+                            else
+                            {
+                                rspFile.Add($"{ConvertFromInputPathToReproPackagePath((string)parameter.Value.ToString())}");
+                            }
+                        }
+                    }
+
+                    ZipArchiveEntry rspEntry = archive.CreateEntry("crossgen2repro.rsp");
+                    using (StreamWriter writer = new StreamWriter(rspEntry.Open()))
+                    {
+                        foreach (string s in rspFile)
+                            writer.WriteLine(s);
+                    }
+
+                    string ConvertFromInputPathToReproPackagePath(string inputPath)
+                    {
+                        if (inputToReproPackageFileName.TryGetValue(inputPath, out string reproPackagePath))
+                        {
+                            return reproPackagePath;
+                        }
+
+                        try
+                        {
+                            string inputFileDir = inputToReproPackageFileName.Count.ToString();
+                            reproPackagePath = Path.Combine(inputFileDir, Path.GetFileName(inputPath));
+                            archive.CreateEntryFromFile(inputPath, reproPackagePath);
+                            inputToReproPackageFileName.Add(inputPath, reproPackagePath);
+
+                            return reproPackagePath;
+                        }
+                        catch
+                        {
+                            return inputPath;
+                        }
+                    }
+                }
             }
         }
     }

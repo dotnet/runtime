@@ -49,6 +49,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
     assembly.cpp
+    assemblybinder.cpp
     assemblyloadcontext.cpp
     binder.cpp
     bundle.cpp
@@ -136,7 +137,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     versionresilienthashcode.cpp
     virtualcallstub.cpp
     win32threadpool.cpp
-    yieldprocessornormalized.cpp
     zapsig.cpp
 )
 
@@ -148,6 +148,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     appdomain.inl
     array.h
     assembly.hpp
+    assemblybinder.h
     assemblyloadcontext.h
     binder.h
     castcache.h
@@ -366,7 +367,6 @@ set(VM_SOURCES_WKS
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
-    profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
@@ -389,6 +389,7 @@ set(VM_SOURCES_WKS
     threadsuspend.cpp
     typeparse.cpp
     weakreferencenative.cpp
+    yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
 
@@ -472,7 +473,6 @@ set(VM_HEADERS_WKS
     olevariant.h
     pendingload.h
     profdetach.h
-    profilermetadataemitvalidator.h
     profilingenumerators.h
     profilinghelper.h
     proftoeeinterfaceimpl.h
@@ -562,23 +562,22 @@ list(APPEND VM_SOURCES_WKS
 list(APPEND VM_HEADERS_WKS
     interoplibinterface.h
 )
-if(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
-    if (FEATURE_COMWRAPPERS)
-        list(APPEND VM_SOURCES_WKS
-            interoplibinterface.cpp
-            rcwrefcache.cpp
-        )
-        list(APPEND VM_HEADERS_WKS
-            rcwrefcache.h
-        )
-    endif (FEATURE_COMWRAPPERS)
 
-    if (FEATURE_OBJCMARSHAL)
-        list(APPEND VM_SOURCES_WKS
-            interoplibinterface_objc.cpp
-        )
-    endif (FEATURE_OBJCMARSHAL)
-endif(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
+if(FEATURE_COMWRAPPERS)
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_comwrappers.cpp
+        rcwrefcache.cpp
+    )
+    list(APPEND VM_HEADERS_WKS
+        rcwrefcache.h
+    )
+endif(FEATURE_COMWRAPPERS)
+
+if(FEATURE_OBJCMARSHAL)
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_objc.cpp
+    )
+endif(FEATURE_OBJCMARSHAL)
 
 if(CLR_CMAKE_TARGET_WIN32)
 
@@ -833,7 +832,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/exceparm.cpp
         ${ARCH_SOURCES_DIR}/stubs.cpp
-        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
     )
 
     set(VM_HEADERS_DAC_AND_WKS_ARCH
@@ -844,6 +842,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
@@ -855,7 +854,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/stubs.cpp
         exceptionhandling.cpp
-        gcinfodecoder.cpp
     )
 
     set(VM_HEADERS_DAC_AND_WKS_ARCH
@@ -865,10 +863,11 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        gcinfodecoder.cpp
     )
 
     if(CLR_CMAKE_HOST_UNIX)
-        list(APPEND VM_SOURCES_DAC_AND_WKS_ARCH
+        list(APPEND VM_SOURCES_WKS_ARCH
             ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
         )
     endif(CLR_CMAKE_HOST_UNIX)

@@ -201,7 +201,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         public override int MetadataToken

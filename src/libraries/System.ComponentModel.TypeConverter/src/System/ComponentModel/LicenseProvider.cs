@@ -12,6 +12,6 @@ namespace System.ComponentModel
         /// When overridden in a derived class, gets a license for an <paramref name="instance "/>or <paramref name="type "/>
         /// of component.
         /// </summary>
-        public abstract License GetLicense(LicenseContext context, Type type, object instance, bool allowExceptions);
+        public abstract License? GetLicense(LicenseContext context, Type type, object? instance, bool allowExceptions);
     }
 }

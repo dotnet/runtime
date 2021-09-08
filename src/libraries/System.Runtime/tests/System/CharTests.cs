@@ -1089,8 +1089,12 @@ namespace System.Tests
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
-                yield return new object[] { '\u0131', 'I', "tr-TR" };
-                yield return new object[] { 'i', '\u0130', "tr-TR" };
+                // Android has issues w/ tr-TR, see https://github.com/dotnet/runtime/issues/37069
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { '\u0131', 'I', "tr-TR" };
+                    yield return new object[] { 'i', '\u0130', "tr-TR" };
+                }
                 yield return new object[] { '\u0660', '\u0660', "en-US" };
             }
         }

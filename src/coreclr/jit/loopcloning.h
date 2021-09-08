@@ -220,14 +220,8 @@ struct ArrIndex
     }
 
 #ifdef DEBUG
-    void Print(unsigned dim = -1)
-    {
-        printf("V%02d", arrLcl);
-        for (unsigned i = 0; i < ((dim == (unsigned)-1) ? rank : dim); ++i)
-        {
-            printf("[V%02d]", indLcls.GetRef(i));
-        }
-    }
+    void Print(unsigned dim = -1);
+    void PrintBoundsCheckNodes(unsigned dim = -1);
 #endif
 };
 
@@ -260,9 +254,8 @@ struct LcOptInfo
 #include "loopcloningopts.h"
     };
 
-    void*   optInfo;
     OptType optType;
-    LcOptInfo(void* optInfo, OptType optType) : optInfo(optInfo), optType(optType)
+    LcOptInfo(OptType optType) : optType(optType)
     {
     }
 
@@ -270,6 +263,7 @@ struct LcOptInfo
     {
         return optType;
     }
+
 #define LC_OPT(en)                                                                                                     \
     en##OptInfo* As##en##OptInfo()                                                                                     \
     {                                                                                                                  \
@@ -292,7 +286,7 @@ struct LcMdArrayOptInfo : public LcOptInfo
     ArrIndex* index;         // "index" cached computation in the form of an ArrIndex representation.
 
     LcMdArrayOptInfo(GenTreeArrElem* arrElem, unsigned dim)
-        : LcOptInfo(this, LcMdArray), arrElem(arrElem), dim(dim), index(nullptr)
+        : LcOptInfo(LcMdArray), arrElem(arrElem), dim(dim), index(nullptr)
     {
     }
 
@@ -325,7 +319,7 @@ struct LcJaggedArrayOptInfo : public LcOptInfo
     Statement* stmt;     // "stmt" where the optimization opportunity occurs.
 
     LcJaggedArrayOptInfo(ArrIndex& arrIndex, unsigned dim, Statement* stmt)
-        : LcOptInfo(this, LcJaggedArray), dim(dim), arrIndex(arrIndex), stmt(stmt)
+        : LcOptInfo(LcJaggedArray), dim(dim), arrIndex(arrIndex), stmt(stmt)
     {
     }
 };
@@ -678,30 +672,24 @@ struct LoopCloneContext
     CompAllocator alloc; // The allocator
 
     // The array of optimization opportunities found in each loop. (loop x optimization-opportunities)
-    JitExpandArrayStack<LcOptInfo*>** optInfo;
+    jitstd::vector<JitExpandArrayStack<LcOptInfo*>*> optInfo;
 
     // The array of conditions that influence which path to take for each loop. (loop x cloning-conditions)
-    JitExpandArrayStack<LC_Condition>** conditions;
+    jitstd::vector<JitExpandArrayStack<LC_Condition>*> conditions;
 
     // The array of dereference conditions found in each loop. (loop x deref-conditions)
-    JitExpandArrayStack<LC_Array>** derefs;
+    jitstd::vector<JitExpandArrayStack<LC_Array>*> derefs;
 
     // The array of block levels of conditions for each loop. (loop x level x conditions)
-    JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>** blockConditions;
+    jitstd::vector<JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>*> blockConditions;
 
-    LoopCloneContext(unsigned loopCount, CompAllocator alloc) : alloc(alloc)
+    LoopCloneContext(unsigned loopCount, CompAllocator alloc)
+        : alloc(alloc), optInfo(alloc), conditions(alloc), derefs(alloc), blockConditions(alloc)
     {
-        optInfo         = new (alloc) JitExpandArrayStack<LcOptInfo*>*[loopCount];
-        conditions      = new (alloc) JitExpandArrayStack<LC_Condition>*[loopCount];
-        derefs          = new (alloc) JitExpandArrayStack<LC_Array>*[loopCount];
-        blockConditions = new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>*[loopCount];
-        for (unsigned i = 0; i < loopCount; ++i)
-        {
-            optInfo[i]         = nullptr;
-            conditions[i]      = nullptr;
-            derefs[i]          = nullptr;
-            blockConditions[i] = nullptr;
-        }
+        optInfo.resize(loopCount, nullptr);
+        conditions.resize(loopCount, nullptr);
+        derefs.resize(loopCount, nullptr);
+        blockConditions.resize(loopCount, nullptr);
     }
 
     // Evaluate conditions into a JTRUE stmt and put it in the block. Reverse condition if 'reverse' is true.
@@ -739,6 +727,7 @@ struct LoopCloneContext
 #ifdef DEBUG
     // Print the block conditions for the loop.
     void PrintBlockConditions(unsigned loopNum);
+    void PrintBlockLevelConditions(unsigned level, JitExpandArrayStack<LC_Condition>* levelCond);
 #endif
 
     // Does the loop have block conditions?

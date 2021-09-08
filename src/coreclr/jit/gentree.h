@@ -49,13 +49,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //   GenTreeOps nodes, for which codegen will generate the branch
 //     - it will use the appropriate kind based on the opcode, though it's not
 //       clear why SCK_OVERFLOW == SCK_ARITH_EXCPN
-// SCK_PAUSE_EXEC is not currently used.
 //
 enum SpecialCodeKind
 {
     SCK_NONE,
     SCK_RNGCHK_FAIL,                // target when range check fails
-    SCK_PAUSE_EXEC,                 // target to stop (e.g. to allow GC)
     SCK_DIV_BY_ZERO,                // target for divide by zero (Not used on X86/X64)
     SCK_ARITH_EXCPN,                // target on arithmetic exception
     SCK_OVERFLOW = SCK_ARITH_EXCPN, // target on overflow
@@ -494,6 +492,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
     GTF_INX_STRING_LAYOUT       = 0x40000000, // GT_INDEX -- this uses the special string array layout
+    GTF_INX_NOFAULT             = 0x20000000, // GT_INDEX -- the INDEX does not throw an exception (morph to GTF_IND_NONFAULTING)
 
     GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
     GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
@@ -1250,7 +1249,7 @@ public:
         return OperIsInitVal(OperGet());
     }
 
-    bool IsConstInitVal()
+    bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
     }
@@ -3053,6 +3052,9 @@ struct GenTreeIntConCommon : public GenTree
     inline void SetIconValue(ssize_t val);
     inline INT64 IntegralValue() const;
 
+    template <typename T>
+    inline void SetValueTruncating(T value);
+
     GenTreeIntConCommon(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
         : GenTree(oper, type DEBUGARG(largeNode))
     {
@@ -3168,20 +3170,6 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     void FixupInitBlkValue(var_types asgType);
 
-#ifdef TARGET_64BIT
-    void TruncateOrSignExtend32()
-    {
-        if (gtFlags & GTF_UNSIGNED)
-        {
-            gtIconVal = UINT32(gtIconVal);
-        }
-        else
-        {
-            gtIconVal = INT32(gtIconVal);
-        }
-    }
-#endif // TARGET_64BIT
-
 #if DEBUGGABLE_GENTREE
     GenTreeIntCon() : GenTreeIntConCommon()
     {
@@ -3258,6 +3246,43 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
 #else
     return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
 #endif // TARGET_64BIT
+}
+
+//------------------------------------------------------------------------
+// SetValueTruncating: Set the value, truncating to TYP_INT if necessary.
+//
+// The function will truncate the supplied value to a 32 bit signed
+// integer if the node's type is not TYP_LONG, otherwise setting it
+// as-is. Note that this function intentionally does not check for
+// small types (such nodes are created in lowering) for TP reasons.
+//
+// This function is intended to be used where its truncating behavior is
+// desirable. One example is folding of ADD(CNS_INT, CNS_INT) performed in
+// wider integers, which is typical when compiling on 64 bit hosts, as
+// most aritmetic is done in ssize_t's aka int64_t's in that case, while
+// the node itself can be of a narrower type.
+//
+// Arguments:
+//    value - Value to set, truncating to TYP_INT if the node is not of TYP_LONG
+//
+// Notes:
+//    This function is templated so that it works well with compiler warnings of
+//    the form "Operation may overflow before being assigned to a wider type", in
+//    case "value" is of type ssize_t, which is common.
+//
+template <typename T>
+inline void GenTreeIntConCommon::SetValueTruncating(T value)
+{
+    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
+
+    if (TypeIs(TYP_LONG))
+    {
+        SetLngValue(value);
+    }
+    else
+    {
+        SetIconValue(static_cast<int32_t>(value));
+    }
 }
 
 /* gtDblCon -- double  constant (GT_CNS_DBL) */
@@ -3647,7 +3672,7 @@ struct GenTreeField : public GenTree
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
     bool                 gtFldMayOverlap;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
@@ -3659,7 +3684,7 @@ struct GenTreeField : public GenTree
             gtFlags |= (obj->gtFlags & GTF_ALL_EFFECT);
         }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
 #endif
     }
@@ -4424,12 +4449,12 @@ struct GenTreeCall final : public GenTree
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
         bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
         return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
 #else
         return false;
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
     }
 
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
@@ -4597,7 +4622,7 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     bool IsR2RRelativeIndir() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0;
@@ -4610,7 +4635,7 @@ struct GenTreeCall final : public GenTree
             gtCallMoreFlags |= GTF_CALL_M_R2R_REL_INDIRECT;
         }
     }
-#endif // FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN
 
     bool IsVarargs() const
     {
@@ -4740,7 +4765,7 @@ struct GenTreeCall final : public GenTree
         GenTree*              gtCallAddr;    // CT_INDIRECT
     };
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
@@ -4920,13 +4945,13 @@ struct GenTreeFptrVal : public GenTree
 {
     CORINFO_METHOD_HANDLE gtFptrMethod;
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
     GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth)
     {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         gtEntryPoint.addr       = nullptr;
         gtEntryPoint.accessType = IAT_VALUE;
 #endif
@@ -4960,7 +4985,7 @@ struct GenTreeIntrinsic : public GenTreeOp
     NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
@@ -5368,9 +5393,9 @@ struct GenTreeBoundsChk : public GenTree
     }
 };
 
-// gtArrElem -- general array element (GT_ARR_ELEM), for non "SZ_ARRAYS"
-//              -- multidimensional arrays, or 1-d arrays with non-zero lower bounds.
-
+// GenTreeArrElem - bounds checked address (byref) of a general array element,
+//    for multidimensional arrays, or 1-d arrays with non-zero lower bounds.
+//
 struct GenTreeArrElem : public GenTree
 {
     GenTree* gtArrObj;
@@ -5386,7 +5411,7 @@ struct GenTreeArrElem : public GenTree
                                  // This has caused VSW 571394.
     var_types gtArrElemType;     // The array element type
 
-    // Requires that "inds" is a pointer to an array of "rank" GenTreePtrs for the indices.
+    // Requires that "inds" is a pointer to an array of "rank" nodes for the indices.
     GenTreeArrElem(
         var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, var_types elemType, GenTree** inds)
         : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize), gtArrElemType(elemType)
@@ -6802,6 +6827,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 
     GenTreeCopyOrReload(genTreeOps oper, var_types type, GenTree* op1) : GenTreeUnOp(oper, type, op1)
     {
+        assert(type != TYP_STRUCT || op1->IsMultiRegNode());
         SetRegNum(REG_NA);
         ClearOtherRegs();
     }
@@ -6820,7 +6846,7 @@ struct GenTreeAllocObj final : public GenTreeUnOp
     unsigned int         gtNewHelper; // Value returned by ICorJitInfo::getNewHelper
     bool                 gtHelperHasSideEffects;
     CORINFO_CLASS_HANDLE gtAllocObjClsHnd;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
@@ -6832,7 +6858,7 @@ struct GenTreeAllocObj final : public GenTreeUnOp
         , gtHelperHasSideEffects(helperHasSideEffects)
         , gtAllocObjClsHnd(clsHnd)
     {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         gtEntryPoint.addr = nullptr;
 #endif
     }

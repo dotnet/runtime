@@ -676,7 +676,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     }
     CONTRACTL_END
 
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG)
     Thread * pThread = GetThreadNULLOk();
     _ASSERTE(!g_fEEStarted || (pThread == NULL) || (pThread->PreemptiveGCDisabled()));
 #endif

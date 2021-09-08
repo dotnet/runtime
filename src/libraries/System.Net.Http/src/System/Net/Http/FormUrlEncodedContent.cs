@@ -12,7 +12,12 @@ namespace System.Net.Http
 {
     public class FormUrlEncodedContent : ByteArrayContent
     {
-        public FormUrlEncodedContent(IEnumerable<KeyValuePair<string?, string?>> nameValueCollection)
+        public FormUrlEncodedContent(
+            IEnumerable<KeyValuePair<
+                #nullable disable
+                string, string
+                #nullable restore
+            >> nameValueCollection)
             : base(GetContentByteArray(nameValueCollection))
         {
             Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");

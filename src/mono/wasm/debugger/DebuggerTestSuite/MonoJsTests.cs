@@ -21,18 +21,18 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method('[debugger-test] Math:IntAdd', 1, 2); })",
                 null, -1, -1, "IntAdd");
 
-            var var_ids = new[]
+            var varIds = new[]
             {
                     new { index = 0, name = "one" },
                 };
 
-            var scope_id = "-12";
-            var expression = $"MONO.mono_wasm_get_variables({scope_id}, {JsonConvert.SerializeObject(var_ids)})";
+            var scopeId = "-12";
+            var expression = $"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject(varIds)})";
             var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), token);
             Assert.False(res.IsOk);
 
-            scope_id = "30000";
-            expression = $"MONO.mono_wasm_get_variables({scope_id}, {JsonConvert.SerializeObject(var_ids)})";
+            scopeId = "30000";
+            expression = $"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject(varIds)})";
             res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), token);
             Assert.False(res.IsOk);
         }

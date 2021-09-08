@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -209,7 +210,7 @@ namespace System.Text.Json.Serialization.Tests
             objCopy = JsonSerializer.Deserialize<ClassWithUnicodeProperty>(json, optionsWithEncoder);
             Assert.Equal(1, objCopy.A\u0467);
 
-            // We want to go over StackallocThreshold=256 to force a pooled allocation, so this property is 400 chars and 401 bytes.
+            // We want to go over StackallocByteThreshold=256 to force a pooled allocation, so this property is 400 chars and 401 bytes.
             obj = new ClassWithUnicodeProperty
             {
                 A\u046734567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890 = 1
@@ -398,7 +399,7 @@ namespace System.Text.Json.Serialization.Tests
             objCopy = JsonSerializer.Deserialize<Dictionary<string, int>>(json, optionsWithEncoder);
             Assert.Equal(1, objCopy["A\u0467"]);
 
-            // We want to go over StackallocThreshold=256 to force a pooled allocation, so this property is 200 chars and 400 bytes.
+            // We want to go over StackallocByteThreshold=256 to force a pooled allocation, so this property is 200 chars and 400 bytes.
             const int charsInProperty = 200;
             string longPropertyName = new string('\u0467', charsInProperty);
             obj = new Dictionary<string, int> { { $"{longPropertyName}", 1 } };
@@ -780,6 +781,56 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("$.Sibling", ex.Path);
         }
 
+        [Fact]
+        public static void BoxedStructReferencePreservation_NestedStructObject()
+        {
+            IBoxedStructWithObjectProperty value = new StructWithObjectProperty();
+            value.Property = new object[] { value };
+
+            string json = JsonSerializer.Serialize(value, new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve });
+            Assert.Equal(@"{""$id"":""1"",""Property"":[{""$ref"":""1""}]}", json);
+        }
+
+        [Fact]
+        public static void BoxedStructReferencePreservation_NestedStructCollection()
+        {
+            IBoxedStructWithObjectProperty value = new StructCollection();
+            value.Property = new object[] { value };
+
+            string json = JsonSerializer.Serialize(value, s_serializerOptionsPreserve);
+            Assert.Equal(@"{""$id"":""1"",""Property"":[{""$ref"":""1""}]}", json);
+        }
+
+        [Fact]
+        public static void BoxedStructReferencePreservation_SiblingStructObjects()
+        {
+            object box = new StructWithObjectProperty { Property = 42 };
+            var array = new object[] { box, box };
+
+            string json = JsonSerializer.Serialize(array, s_serializerOptionsPreserve);
+            Assert.Equal(@"[{""$id"":""1"",""Property"":42},{""$ref"":""1""}]", json);
+        }
+
+        [Fact]
+        public static void BoxedStructReferencePreservation_SiblingStructCollections()
+        {
+            object box = new StructCollection { Property = 42 };
+            var array = new object[] { box, box };
+
+            string json = JsonSerializer.Serialize(array, s_serializerOptionsPreserve);
+            Assert.Equal(@"[{""$id"":""1"",""$values"":[42]},{""$ref"":""1""}]", json);
+        }
+
+        [Fact]
+        public static void BoxedStructReferencePreservation_SiblingPrimitiveValues()
+        {
+            object box = 42;
+            var array = new object[] { box, box };
+
+            string json = JsonSerializer.Serialize(array, s_serializerOptionsPreserve);
+            Assert.Equal(@"[42,42]", json);
+        }
+
         private class ClassWithObjectProperty
         {
             public ClassWithObjectProperty Child { get; set; }
@@ -791,5 +842,28 @@ namespace System.Text.Json.Serialization.Tests
             public ClassWithListOfObjectProperty Child { get; set; }
             public List<object> ListOfObjects { get; set; }
         }
+
+        private interface IBoxedStructWithObjectProperty
+        {
+            object? Property { get; set; }
+        }
+
+        private struct StructWithObjectProperty : IBoxedStructWithObjectProperty
+        {
+            public object? Property { get; set; }
+        }
+
+        private struct StructCollection : IBoxedStructWithObjectProperty, IEnumerable<object?>
+        {
+            public object? Property { get; set; }
+
+            public IEnumerator<object?> GetEnumerator()
+            {
+                yield return Property;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
     }
 }

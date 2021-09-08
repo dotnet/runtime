@@ -140,6 +140,6 @@ namespace System.Drawing
 
         public override readonly int GetHashCode() => HashCode.Combine(X.GetHashCode(), Y.GetHashCode());
 
-        public override readonly string ToString() => "{X=" + x.ToString() + ", Y=" + y.ToString() + "}";
+        public override readonly string ToString() => $"{{X={x}, Y={y}}}";
     }
 }

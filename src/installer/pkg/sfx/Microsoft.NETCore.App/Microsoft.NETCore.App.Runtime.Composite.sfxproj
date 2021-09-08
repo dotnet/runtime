@@ -32,6 +32,9 @@
 
   <ItemGroup>
     <PublishReadyToRunCrossgen2ExtraArgsList Include="--compositekeyfile:$(AssemblyOriginatorKeyFile)"/>
+    <!-- Compile with avx2 on x64 -->
+    <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(TargetArchitecture)' == 'x64'" Include="--inputbubble" />
+    <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(TargetArchitecture)' == 'x64'" Include="--instruction-set:avx2" />
   </ItemGroup>
 
   <Import Project="ReadyToRun.targets" />

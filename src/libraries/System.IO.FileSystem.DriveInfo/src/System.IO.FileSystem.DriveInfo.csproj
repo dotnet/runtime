@@ -46,8 +46,6 @@
              Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs"
              Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
-             Link="Common\System\IO\PathInternal.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' And $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
     <Compile Include="System\IO\DriveInfo.UnixOrBrowser.cs" />
@@ -56,10 +54,10 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
+             Link="Common\Interop\Unix\Interop.UnixFileSystemTypes.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
-             Link="Common\System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs"

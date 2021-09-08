@@ -110,11 +110,11 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 // Return Value:
 //    None.
 //
-void Lowering::LowerStoreIndir(GenTreeIndir* node)
+void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     // Mark all GT_STOREIND nodes to indicate that it is not known
     // whether it represents a RMW memory op.
-    node->AsStoreInd()->SetRMWStatusDefault();
+    node->SetRMWStatusDefault();
 
     if (!varTypeIsFloating(node))
     {
@@ -130,10 +130,10 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             return;
         }
     }
-    else if (node->AsStoreInd()->Data()->OperIs(GT_CNS_DBL))
+    else if (node->Data()->IsCnsFltOrDbl())
     {
         // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
-        GenTree*  data   = node->AsStoreInd()->Data();
+        GenTree*  data   = node->Data();
         double    dblCns = data->AsDblCon()->gtDconVal;
         ssize_t   intCns = 0;
         var_types type   = TYP_UNKNOWN;
@@ -162,6 +162,13 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             node->ChangeType(type);
         }
     }
+
+    // Optimization: do not unnecessarily zero-extend the result of setcc.
+    if (varTypeIsByte(node) && (node->Data()->OperIsCompare() || node->Data()->OperIs(GT_SETCC)))
+    {
+        node->Data()->ChangeType(TYP_BYTE);
+    }
+
     ContainCheckStoreIndir(node);
 }
 
@@ -268,6 +275,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
             src->AsIndir()->Addr()->ClearContained();
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
@@ -439,10 +452,10 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         unsigned prevOffset        = putArgStk->GetStackByteSize();
         for (GenTreeFieldList::Use& use : fieldList->Uses())
         {
-            GenTree* const  fieldNode   = use.GetNode();
-            const var_types fieldType   = fieldNode->TypeGet();
-            const unsigned  fieldOffset = use.GetOffset();
-            assert(fieldType != TYP_LONG);
+            GenTree* const fieldNode   = use.GetNode();
+            const unsigned fieldOffset = use.GetOffset();
+
+            assert(!fieldNode->TypeIs(TYP_LONG));
 
             // We can treat as a slot any field that is stored at a slot boundary, where the previous
             // field is not in the same slot. (Note that we store the fields in reverse order.)
@@ -4582,17 +4595,18 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
+void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    GenTree* src = node->AsOp()->gtOp2;
+    GenTree* src = node->Data();
     if (IsContainableImmed(node, src) &&
-        (!src->IsIntegralConst(0) || varTypeIsSmall(node) || node->gtGetOp1()->OperGet() == GT_CLS_VAR_ADDR))
+        (!src->IsIntegralConst(0) || varTypeIsSmall(node) || node->Addr()->OperIs(GT_CLS_VAR_ADDR)))
     {
         MakeSrcContained(node, src);
     }
+
     ContainCheckIndir(node);
 }
 

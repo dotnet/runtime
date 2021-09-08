@@ -71,12 +71,6 @@
 /* Define to the home page for this package. */
 #cmakedefine PACKAGE_URL 1
 
-/* Version of the corlib-runtime interface */
-#cmakedefine MONO_CORLIB_VERSION "@MONO_CORLIB_VERSION@"
-
-/* Disables the IO portability layer */
-#cmakedefine DISABLE_PORTABILITY 1
-
 /* This platform does not support symlinks */
 #cmakedefine HOST_NO_SYMLINKS 1
 
@@ -1025,9 +1019,6 @@
 /* Enable private types checked build */
 #cmakedefine ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1
 
-/* Enable private types checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_CRASH_REPORTING 1
-
 /* Enable EventPipe library support */
 #cmakedefine ENABLE_PERFTRACING 1
 
@@ -1049,9 +1040,6 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #cmakedefine HAVE_DLFCN_H 1
 
-/* Disable crash reporting subsystem */
-#cmakedefine DISABLE_CRASH_REPORTING 1
-
 /* Enable lazy gc thread creation by the embedding host */
 #cmakedefine LAZY_GC_THREAD_CREATION 1
 
@@ -1072,6 +1060,9 @@
 
 /* Enable static linking of mono runtime components */
 #cmakedefine STATIC_COMPONENTS
+
+/* Enable perf jit dump support */
+#cmakedefine ENABLE_JIT_DUMP 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

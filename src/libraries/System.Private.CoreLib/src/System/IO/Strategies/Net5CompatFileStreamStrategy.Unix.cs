@@ -66,7 +66,7 @@ namespace System.IO.Strategies
             get
             {
                 // Get the length of the file as reported by the OS
-                long length = RandomAccess.GetFileLength(_fileHandle, _path);
+                long length = RandomAccess.GetFileLength(_fileHandle);
 
                 // But we may have buffered some data to be written that puts our length
                 // beyond what the OS is aware of.  Update accordingly.
@@ -78,6 +78,18 @@ namespace System.IO.Strategies
                 return length;
             }
         }
+
+        /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
+        /// <param name="position">The beginning of the range to lock.</param>
+        /// <param name="length">The range to be locked.</param>
+        internal override void Lock(long position, long length) =>
+            FileStreamHelpers.Lock(_fileHandle, CanWrite, position, length);
+
+        /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
+        /// <param name="position">The beginning of the range to unlock.</param>
+        /// <param name="length">The range to be unlocked.</param>
+        internal override void Unlock(long position, long length) =>
+            FileStreamHelpers.Unlock(_fileHandle, position, length);
 
         /// <summary>Releases the unmanaged resources used by the stream.</summary>
         /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
@@ -98,16 +110,6 @@ namespace System.IO.Strategies
                         // e.g. if this stream is wrapping a pipe and the pipe is now broken.
                     }
 
-                    // If DeleteOnClose was requested when constructed, delete the file now.
-                    // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
-                    if (_path != null && (_options & FileOptions.DeleteOnClose) != 0)
-                    {
-                        // Since we still have the file open, this will end up deleting
-                        // it (assuming we're the only link to it) once it's closed, but the
-                        // name will be removed immediately.
-                        Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
-                    }
-
                     // Closing the file handle can fail, e.g. due to out of disk space
                     // Throw these errors as exceptions when disposing
                     if (_fileHandle != null && !_fileHandle.IsClosed && disposing)
@@ -118,7 +120,7 @@ namespace System.IO.Strategies
 
                         if (SafeFileHandle.t_lastCloseErrorInfo != null)
                         {
-                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _path, isDirectory: false);
+                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _fileHandle.Path, isDirectory: false);
                         }
                     }
                 }
@@ -149,26 +151,6 @@ namespace System.IO.Strategies
             }
 
             return base.DisposeAsync();
-        }
-
-        /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
-        private void FlushOSBuffer()
-        {
-            if (Interop.Sys.FSync(_fileHandle) < 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                switch (errorInfo.Error)
-                {
-                    case Interop.Error.EROFS:
-                    case Interop.Error.EINVAL:
-                    case Interop.Error.ENOTSUP:
-                        // Ignore failures due to the FileStream being bound to a special file that
-                        // doesn't support synchronization.  In such cases there's nothing to flush.
-                        break;
-                    default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                }
-            }
         }
 
         private void FlushWriteBufferForWriteByte()
@@ -599,29 +581,9 @@ namespace System.IO.Strategies
             return pos;
         }
 
-        /// <summary>Sets the current position of this stream to the given value.</summary>
-        /// <param name="fileHandle">The file handle on which to seek.</param>
-        /// <param name="offset">The point relative to origin from which to begin seeking. </param>
-        /// <param name="origin">
-        /// Specifies the beginning, the end, or the current position as a reference
-        /// point for offset, using a value of type SeekOrigin.
-        /// </param>
-        /// <param name="closeInvalidHandle">not used in Unix implementation</param>
-        /// <returns>The new position in the stream.</returns>
-        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
-        {
-            Debug.Assert(!fileHandle.IsInvalid);
-            Debug.Assert(fileHandle.CanSeek);
-            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
-
-            long pos = FileStreamHelpers.CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin), _path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
-            _filePosition = pos;
-            return pos;
-        }
-
         private int CheckFileCall(int result, bool ignoreNotSupported = false)
         {
-            FileStreamHelpers.CheckFileCall(result, _path, ignoreNotSupported);
+            FileStreamHelpers.CheckFileCall(result, _fileHandle?.Path, ignoreNotSupported);
 
             return result;
         }

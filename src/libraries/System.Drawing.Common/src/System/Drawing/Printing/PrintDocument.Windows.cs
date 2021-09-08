@@ -248,9 +248,6 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Provides some interesting information about the PrintDocument in String form.
         /// </summary>
-        public override string ToString()
-        {
-            return "[PrintDocument " + DocumentName + "]";
-        }
+        public override string ToString() => $"[PrintDocument {DocumentName}]";
     }
 }

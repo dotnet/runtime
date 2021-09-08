@@ -15,7 +15,7 @@ HRESULT GCBasicProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(0, 0x10)))
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(0, COR_PRF_HIGH_BASIC_GC)))
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
@@ -31,7 +31,7 @@ HRESULT GCBasicProfiler::Shutdown()
 
     if (_gcStarts == 0)
     {
-        printf("GCBasicProfiler::Shutdown: FAIL: Expected GarbaseCollectionStarted to be called\n");
+        printf("GCBasicProfiler::Shutdown: FAIL: Expected GarbageCollectionStarted to be called\n");
     }
     else if (_gcFinishes == 0)
     {

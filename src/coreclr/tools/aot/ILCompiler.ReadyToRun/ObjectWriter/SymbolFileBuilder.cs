@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Internal.TypeSystem;
 using ILCompiler.Diagnostics;
 
 namespace ILCompiler.PEWriter
@@ -28,12 +29,34 @@ namespace ILCompiler.PEWriter
             new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, _outputInfoBuilder.EnumerateMethods());
         }
 
-        public void SavePerfMap(string perfMapPath, string dllFileName, Guid? perfMapMvid)
+        public void SavePerfMap(string perfMapPath, int perfMapFormatVersion, string dllFileName, TargetOS targetOS, TargetArchitecture targetArch)
         {
-            string mvidComponent = (perfMapMvid.HasValue ? perfMapMvid.Value.ToString() : "composite");
-            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.{" + mvidComponent + "}.map");
+            string perfMapExtension;
+            if (perfMapFormatVersion == PerfMapWriter.LegacyCrossgen1FormatVersion)
+            {
+                string mvidComponent = null;
+                foreach (AssemblyInfo inputAssembly in _outputInfoBuilder.EnumerateInputAssemblies())
+                {
+                    if (mvidComponent == null)
+                    {
+                        mvidComponent = inputAssembly.Mvid.ToString();
+                    }
+                    else
+                    {
+                        mvidComponent = "composite";
+                        break;
+                    }
+                }
+                perfMapExtension = ".ni.{" + mvidComponent + "}.map";
+            }
+            else
+            {
+                perfMapExtension = ".ni.r2rmap";
+            }
+
+            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + perfMapExtension);
             Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
-            PerfMapWriter.Write(perfMapFileName, _outputInfoBuilder.EnumerateMethods());
+            PerfMapWriter.Write(perfMapFileName, perfMapFormatVersion, _outputInfoBuilder.EnumerateMethods(), _outputInfoBuilder.EnumerateInputAssemblies(), targetOS, targetArch);
         }
     }
 }

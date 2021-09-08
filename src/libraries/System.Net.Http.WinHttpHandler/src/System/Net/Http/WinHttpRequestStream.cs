@@ -33,6 +33,7 @@ namespace System.Net.Http
 
             // Take copy of handle from state.
             // The state's request handle will be set to null once the response stream starts.
+            Debug.Assert(_state.RequestHandle != null);
             _requestHandle = _state.RequestHandle;
         }
 

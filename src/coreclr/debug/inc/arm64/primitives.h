@@ -150,13 +150,13 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
 
-#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
+#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE) && defined(HOST_OSX)
     ExecutableWriterHolder<void> instructionWriterHolder((LPVOID)address, sizeof(PRD_TYPE));
 
     ULONGLONG ptraddr = dac_cast<ULONGLONG>(instructionWriterHolder.GetRW());
-#else // !DBI_COMPILE && !DACCESS_COMPILE
+#else // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX
     ULONGLONG ptraddr = dac_cast<ULONGLONG>(address);
-#endif // !DBI_COMPILE && !DACCESS_COMPILE
+#endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX
     *(PRD_TYPE *)ptraddr = instruction;
     FlushInstructionCache(GetCurrentProcess(),
                           address,

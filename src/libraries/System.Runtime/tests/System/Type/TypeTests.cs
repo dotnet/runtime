@@ -305,7 +305,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeArrayType_ByRef_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39001", TestRuntimes.Mono)]
         public void MakeArrayType_ByRef_ThrowsTypeLoadException(Type t)
         {
             Assert.Throws<TypeLoadException>(() => t.MakeArrayType());
@@ -528,6 +527,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
             MethodInfo method = typeof(Type).GetMethod("GetType", new[] { typeof(string) });
@@ -921,6 +921,16 @@ namespace System.Tests
         {
             Assert.True(!typeof(TypeTestsExtended).IsContextful);
             Assert.True(!typeof(ContextBoundClass).IsContextful);
+        }
+
+        [Fact]
+        public void MakeGenericType_NonRuntimeType()
+        {
+            foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
+            {
+                Type t = typeof(List<>).MakeGenericType(nonRuntimeType);
+                Assert.NotNull(t);
+            }
         }
 
 #region GetInterfaceMap tests

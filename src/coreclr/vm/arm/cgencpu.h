@@ -40,11 +40,7 @@ EXTERN_C void checkStack(void);
 
 #define THUMB_CODE      1
 
-#ifdef CROSSGEN_COMPILE
-#define GetEEFuncEntryPoint(pfn) 0x1001
-#else
 #define GetEEFuncEntryPoint(pfn) (GFN_TADDR(pfn) | THUMB_CODE)
-#endif
 
 //**********************************************************************
 
@@ -702,14 +698,12 @@ public:
         {
             // For values >= 4K (pageSize) must check for guard page
 
-#ifndef CROSSGEN_COMPILE
             // mov r4, value
             ThumbEmitMovConstant(ThumbReg(4), value);
             // mov r12, checkStack
             ThumbEmitMovConstant(ThumbReg(12), (int)checkStack);
             // bl r12
             ThumbEmitCallRegister(ThumbReg(12));
-#endif
 
             // sub sp,sp,r4
             Emit16((WORD)0xebad);
@@ -1004,12 +998,7 @@ struct HijackArgs
 
 inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 {
-#ifdef CROSSGEN_COMPILE
-    // The code won't be executed when we are cross-compiling so flush instruction cache is unnecessary
-    return TRUE;
-#else
     return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
-#endif
 }
 
 //
@@ -1069,6 +1058,7 @@ struct StubPrecode {
         return m_pTarget;
     }
 
+#ifndef DACCESS_COMPILE
     void ResetTargetInterlocked()
     {
         CONTRACTL
@@ -1095,10 +1085,8 @@ struct StubPrecode {
         return (TADDR)InterlockedCompareExchange(
             (LONG*)&precodeWriterHolder.GetRW()->m_pTarget, (LONG)target, (LONG)expected) == expected;
     }
+#endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image);
-#endif
 };
 typedef DPTR(StubPrecode) PTR_StubPrecode;
 
@@ -1136,9 +1124,6 @@ struct NDirectImportPrecode {
         return (LPVOID)(dac_cast<TADDR>(this) + THUMB_CODE);
     }
 
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image);
-#endif
 };
 typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
@@ -1167,6 +1152,13 @@ struct FixupPrecode {
         return dac_cast<TADDR>(this) + (m_PrecodeChunkIndex + 1) * sizeof(FixupPrecode);
     }
 
+    size_t GetSizeRW()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return GetBase() + sizeof(void*) - dac_cast<TADDR>(this);
+    }
+
     TADDR GetMethodDesc();
 
     PCODE GetTarget()
@@ -1175,6 +1167,7 @@ struct FixupPrecode {
         return m_pTarget;
     }
 
+#ifndef DACCESS_COMPILE
     void ResetTargetInterlocked()
     {
         CONTRACTL
@@ -1201,6 +1194,7 @@ struct FixupPrecode {
         return (TADDR)InterlockedCompareExchange(
             (LONG*)&precodeWriterHolder.GetRW()->m_pTarget, (LONG)target, (LONG)expected) == expected;
     }
+#endif // !DACCESS_COMPILE
 
     static BOOL IsFixupPrecodeByASM(PCODE addr)
     {
@@ -1211,13 +1205,6 @@ struct FixupPrecode {
            (pInstr[1] == 0xf8df) &&
            (pInstr[2] == 0xf004);
     }
-
-#ifdef FEATURE_PREJIT
-    // Partial initialization. Used to save regrouped chunks.
-    void InitForSave(int iPrecodeChunkIndex);
-
-    void Fixup(DataImage *image, MethodDesc * pMD);
-#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -1256,6 +1243,7 @@ struct ThisPtrRetBufPrecode {
         return m_pTarget;
     }
 
+#ifndef DACCESS_COMPILE
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
     {
         CONTRACTL
@@ -1268,6 +1256,7 @@ struct ThisPtrRetBufPrecode {
         ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode)); 
         return FastInterlockCompareExchange((LONG*)&precodeWriterHolder.GetRW()->m_pTarget, (LONG)target, (LONG)expected) == (LONG)expected;
     }
+#endif // !DACCESS_COMPILE
 };
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 

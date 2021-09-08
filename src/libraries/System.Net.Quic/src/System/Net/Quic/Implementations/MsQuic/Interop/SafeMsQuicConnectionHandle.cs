@@ -9,7 +9,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicConnectionHandle()
+        public SafeMsQuicConnectionHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         { }
 
@@ -22,6 +22,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         protected override bool ReleaseHandle()
         {
             MsQuicApi.Api.ConnectionCloseDelegate(handle);
+            SetHandle(IntPtr.Zero);
             return true;
         }
     }

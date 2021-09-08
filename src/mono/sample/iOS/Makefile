@@ -4,6 +4,7 @@ DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT?=false
 TARGET?=iOSSimulator
+DEPLOY_AND_RUN?=true
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
@@ -26,10 +27,12 @@ runtimepack:
 run: clean appbuilder
 	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
+	/p:TargetOS=iOS \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:ForceAOT=$(AOT) \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
+	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
 
 run-sim: clean appbuilder
@@ -40,10 +43,12 @@ run-sim: clean appbuilder
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:ForceAOT=$(AOT) \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
+	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
 
 build-appbundle: clean appbuilder
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetOS=$(TARGET) /p:TargetArchitecture=$(MONO_ARCH) \
+	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=$(AOT) /bl \
 
 run-catalyst:
@@ -51,6 +56,7 @@ run-catalyst:
 	-c $(MONO_CONFIG) \
 	/p:TargetOS=MacCatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
+	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	/p:UseLLVM=False \
 	/p:ForceAOT=True
 
@@ -62,6 +68,7 @@ run-sim-interp: clean appbuilder
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:ForceAOT=$(AOT) \
 	/p:MonoForceInterpreter=true \
+	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
 
@@ -71,6 +78,7 @@ run-catalyst-interp:
 	/p:TargetOS=MacCatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=False \
+	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	/p:ForceAOT=True \
 	/p:MonoForceInterpreter=true
 

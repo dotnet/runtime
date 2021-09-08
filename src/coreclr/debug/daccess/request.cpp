@@ -205,7 +205,7 @@ BOOL DacValidateMD(MethodDesc * pMD)
             retval = FALSE;
         }
 
-        if (retval && pMD->HasTemporaryEntryPoint())
+        if (retval)
         {
             MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
 
@@ -433,22 +433,10 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
             EEJitManager *eeJitManager = PTR_EEJitManager(PTR_HOST_TO_TADDR(managerPtr));
             currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pCodeHeap);
         }
-#ifdef FEATURE_PREJIT
-        if (count >= 2)
-        {
-            NativeImageJitManager * managerPtr = ExecutionManager::GetNativeImageJitManager();
-            DacpJitManagerInfo *currentPtr = &managers[1];
-            currentPtr->managerAddr = HOST_CDADDR(managerPtr);
-            currentPtr->codeType = managerPtr->GetCodeType();
-        }
-#endif
     }
     else if (pNeeded)
     {
         *pNeeded = 1;
-#ifdef FEATURE_PREJIT
-        (*pNeeded)++;
-#endif
     }
 
     SOSDacLeave();
@@ -747,10 +735,10 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
         if (data && count >= 1)
         {
-            DPTR(dac_generation) table = g_gcDacGlobals->generation_table;
+            DPTR(unused_generation) table = g_gcDacGlobals->generation_table;
             for (unsigned int i=0; i < *g_gcDacGlobals->max_gen + 2; i++)
             {
-                dac_generation entry = *GenerationTableIndex(table, i);
+                dac_generation entry = GenerationTableIndex(table, i);
                 data[0].allocData[i].allocBytes = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes;
                 data[0].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes_uoh;
             }
@@ -930,7 +918,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
             methodDescData->bHasNativeCode = FALSE;
             methodDescData->NativeCodeAddr = (CLRDATA_ADDRESS)-1;
         }
-        methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ? TO_CDADDR(pMD->GetAddrOfNativeCodeSlot()) : NULL;
+        methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ? TO_CDADDR(dac_cast<TADDR>(pMD->GetAddrOfNativeCodeSlot())) : NULL;
         methodDescData->MDToken = pMD->GetMemberDef();
         methodDescData->MethodDescPtr = methodDesc;
         methodDescData->MethodTablePtr = HOST_CDADDR(pMD->GetMethodTable());
@@ -1519,7 +1507,7 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
         PEFile *pPEFile = mt->GetModule()->GetFile();
-        if (pPEFile->GetNativeImage() == NULL && pPEFile->GetILimage() == NULL)
+        if (pPEFile->GetILimage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -1659,11 +1647,6 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Address = addr;
     ModuleData->File = HOST_CDADDR(pModule->GetFile());
     COUNT_T metadataSize = 0;
-    if (pModule->GetFile()->HasNativeImage())
-    {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)PTR_TO_TADDR(pModule->GetFile()->GetLoadedNative()->GetBase());
-    }
-    else
     if (!pModule->GetFile()->IsDynamic())
     {
         ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetFile()->GetIJWBase();
@@ -1788,7 +1771,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
         PEFile *pPEFile = pMT->GetModule()->GetFile();
-        if (pPEFile->GetNativeImage() == NULL && pPEFile->GetILimage() == NULL)
+        if (pPEFile->GetILimage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -2132,9 +2115,7 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base)
     PEFile* pPEFile = PTR_PEFile(TO_TADDR(addr));
 
     // More fields later?
-    if (pPEFile->HasNativeImage())
-        *base = TO_CDADDR(PTR_TO_TADDR(pPEFile->GetLoadedNative()->GetBase()));
-    else if (!pPEFile->IsDynamic())
+    if (!pPEFile->IsDynamic())
         *base = TO_CDADDR(pPEFile->GetIJWBase());
     else
         *base = NULL;
@@ -2772,19 +2753,24 @@ ClrDataAccess::GetGCHeapDetails(CLRDATA_ADDRESS heap, struct DacpGcHeapDetails *
 HRESULT
 ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
 {
+    // Make sure ClrDataAccess::ServerGCHeapDetails() is updated as well.
     if (detailsData == NULL)
+    {
         return E_INVALIDARG;
+    }
 
     SOSDacEnter();
 
+    detailsData->heapAddr = NULL;
+
     detailsData->lowest_address = PTR_CDADDR(g_lowest_address);
     detailsData->highest_address = PTR_CDADDR(g_highest_address);
-    detailsData->card_table = PTR_CDADDR(g_card_table);
-    detailsData->heapAddr = NULL;
+    detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
+
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
     detailsData->ephemeral_heap_segment = (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment;
+    detailsData->card_table = PTR_CDADDR(g_card_table);
     detailsData->mark_array = (CLRDATA_ADDRESS)*g_gcDacGlobals->mark_array;
-    detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
     detailsData->next_sweep_obj = (CLRDATA_ADDRESS)*g_gcDacGlobals->next_sweep_obj;
     if (g_gcDacGlobals->saved_sweep_ephemeral_seg != nullptr)
     {
@@ -2801,23 +2787,22 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_lowest_address;
     detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_highest_address;
 
-    for (unsigned int i=0; i < *g_gcDacGlobals->max_gen + 2; i++)
+    // get bounds for the different generations
+    for (unsigned int i=0; i < DAC_NUMBERGENERATIONS; i++)
     {
-        DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-        detailsData->generation_table[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
-
-        detailsData->generation_table[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
-
-        DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-        detailsData->generation_table[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
-        detailsData->generation_table[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+        dac_generation generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+        detailsData->generation_table[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation.start_segment);
+        detailsData->generation_table[i].allocation_start = (CLRDATA_ADDRESS) generation.allocation_start;
+        gc_alloc_context alloc_context = generation.allocation_context;
+        detailsData->generation_table[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context.alloc_ptr;
+        detailsData->generation_table[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context.alloc_limit;
     }
 
     if (g_gcDacGlobals->finalize_queue.IsValid())
     {
         DPTR(dac_finalize_queue) fq = Dereference(g_gcDacGlobals->finalize_queue);
         DPTR(uint8_t*) fillPointersTable = dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
-        for (unsigned int i = 0; i<(*g_gcDacGlobals->max_gen + 2 + dac_finalize_queue::ExtraSegCount); i++)
+        for (unsigned int i = 0; i < DAC_NUMBERGENERATIONS + 3; i++)
         {
             detailsData->finalization_fill_pointers[i] = (CLRDATA_ADDRESS)*TableIndex(fillPointersTable, i, sizeof(uint8_t*));
         }
@@ -3776,24 +3761,24 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
     Dereference(g_gcDacGlobals->finalize_queue).EnumMem();
 
     // Enumerate the entire generation table, which has variable size
-    size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
-    DacEnumMemoryRegion(dac_cast<TADDR>(g_gcDacGlobals->generation_table), gen_table_size);
+    EnumGenerationTable(dac_cast<TADDR>(g_gcDacGlobals->generation_table));
 
     if (g_gcDacGlobals->generation_table.IsValid())
     {
-            // enumerating the generations from max (which is normally gen2) to max+1 gives you
-            // the segment list for all the normal segements plus the large heap segment (max+1)
-            // this is the convention in the GC so it is repeated here
-            for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
+        ULONG first = IsRegion() ? 0 : (*g_gcDacGlobals->max_gen);
+        // enumerating the first to max + 2 gives you
+        // the segment list for all the normal segments plus the pinned heap segment (max + 2)
+        // this is the convention in the GC so it is repeated here
+        for (ULONG i = first; i <= *g_gcDacGlobals->max_gen + 2; i++)
+        {
+            dac_generation gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+            __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen.start_segment);
+            while (seg)
             {
-                dac_generation *gen = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-                __DPtr<dac_heap_segment> seg = dac_cast<TADDR>(gen->start_segment);
-                while (seg)
-                {
-                        DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
-                        seg = seg->next;
-                }
+                DacEnumMemoryRegion(dac_cast<TADDR>(seg), sizeof(dac_heap_segment));
+                seg = seg->next;
             }
+        }
     }
 }
 
@@ -3838,11 +3823,11 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
         if (oThrowable != NULL)
         {
             // Does the throwable have buckets?
-            if (((EXCEPTIONREF)oThrowable)->AreWatsonBucketsPresent())
+            U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
+            if (refWatsonBucketArray != NULL)
             {
                 // Get the watson buckets from the throwable for non-preallocated
                 // exceptions
-                U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
                 pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
             }
             else
@@ -4615,14 +4600,14 @@ HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct Dacp
         {
             for (unsigned int i = 0; i < numGenerationTableEntries; i++)
             {
-                DPTR(dac_generation) generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
-                pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation->start_segment);
+                dac_generation generation = GenerationTableIndex(g_gcDacGlobals->generation_table, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS) dac_cast<TADDR>(generation.start_segment);
 
-                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation->allocation_start;
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS) generation.allocation_start;
 
-                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context->alloc_ptr;
-                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context->alloc_limit;
+                gc_alloc_context alloc_context = generation.allocation_context;
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)alloc_context.alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)alloc_context.alloc_limit;
             }
         }
         else
@@ -4699,18 +4684,18 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
     }
     else
     {
-        DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
+        TADDR heapAddress = TO_TADDR(heapAddr);
 
-        if (pHeap.IsValid())
+        if (heapAddress != 0)
         {
             for (unsigned int i = 0; i < numGenerationTableEntries; ++i)
             {
-                DPTR(dac_generation) generation = ServerGenerationTableIndex(pHeap, i);
-                pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
-                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
-                DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
-                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+                dac_generation generation = ServerGenerationTableIndex(heapAddress, i);
+                pGenerationData[i].start_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation.start_segment);
+                pGenerationData[i].allocation_start = (CLRDATA_ADDRESS)(ULONG_PTR)generation.allocation_start;
+                gc_alloc_context alloc_context = generation.allocation_context;
+                pGenerationData[i].allocContextPtr = (CLRDATA_ADDRESS)(ULONG_PTR)alloc_context.alloc_ptr;
+                pGenerationData[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR)alloc_context.alloc_limit;
             }
         }
         else
@@ -4749,10 +4734,11 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
     }
     else
     {
-        DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
-
-        if (pHeap.IsValid())
+        TADDR heapAddress = TO_TADDR(heapAddr);
+        if (heapAddress != 0)
         {
+            dac_gc_heap heap = LoadGcHeapData(heapAddress);
+            dac_gc_heap* pHeap = &heap;
             DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
             DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
             for (unsigned int i = 0; i < numFillPointers; ++i)
@@ -5039,4 +5025,110 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
 #else // FEATURE_COMWRAPPERS
     return E_NOTIMPL;
 #endif // FEATURE_COMWRAPPERS
+}
+
+namespace
+{
+    BOOL TryReadTaggedMemoryState(
+        CLRDATA_ADDRESS objAddr,
+        ICorDebugDataTarget* target,
+        CLRDATA_ADDRESS *taggedMemory = NULL,
+        size_t *taggedMemorySizeInBytes = NULL)
+    {
+        BOOL hasTaggedMemory = FALSE;
+
+#ifdef FEATURE_OBJCMARSHAL
+        EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+        {
+            PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr), target);
+            if (pSyncBlk != NULL)
+            {
+                PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
+                if (pInfo != NULL)
+                {
+                    CLRDATA_ADDRESS taggedMemoryLocal = PTR_CDADDR(pInfo->GetTaggedMemory());
+                    if (taggedMemoryLocal != NULL)
+                    {
+                        hasTaggedMemory = TRUE;
+                        if (taggedMemory)
+                            *taggedMemory = taggedMemoryLocal;
+
+                        if (taggedMemorySizeInBytes)
+                            *taggedMemorySizeInBytes = pInfo->GetTaggedMemorySizeInBytes();
+                    }
+                }
+            }
+        }
+        EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
+#endif // FEATURE_OBJCMARSHAL
+
+        return hasTaggedMemory;
+    }
+}
+
+HRESULT ClrDataAccess::IsTrackedType(
+    CLRDATA_ADDRESS objAddr,
+    BOOL *isTrackedType,
+    BOOL *hasTaggedMemory)
+{
+    if (objAddr == 0
+        || isTrackedType == NULL
+        || hasTaggedMemory == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    *isTrackedType = FALSE;
+    *hasTaggedMemory = FALSE;
+
+    SOSDacEnter();
+
+    TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr), m_pTarget);
+    if (mtTADDR==NULL)
+        hr = E_INVALIDARG;
+
+    BOOL bFree = FALSE;
+    MethodTable *mt = NULL;
+    if (SUCCEEDED(hr))
+    {
+        mt = PTR_MethodTable(mtTADDR);
+        if (!DacValidateMethodTable(mt, bFree))
+            hr = E_INVALIDARG;
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        *isTrackedType = mt->IsTrackedReferenceWithFinalizer();
+        hr = *isTrackedType ? S_OK : S_FALSE;
+        *hasTaggedMemory = TryReadTaggedMemoryState(objAddr, m_pTarget);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetTaggedMemory(
+    CLRDATA_ADDRESS objAddr,
+    CLRDATA_ADDRESS *taggedMemory,
+    size_t *taggedMemorySizeInBytes)
+{
+    if (objAddr == 0
+        || taggedMemory == NULL
+        || taggedMemorySizeInBytes == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    *taggedMemory = NULL;
+    *taggedMemorySizeInBytes = 0;
+
+    SOSDacEnter();
+
+    if (FALSE == TryReadTaggedMemoryState(objAddr, m_pTarget, taggedMemory, taggedMemorySizeInBytes))
+    {
+        hr = S_FALSE;
+    }
+
+    SOSDacLeave();
+    return hr;
 }

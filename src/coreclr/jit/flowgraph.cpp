@@ -930,7 +930,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -948,13 +948,12 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 //------------------------------------------------------------------------------
 // fgAddrCouldBeNull : Check whether the address tree can represent null.
 //
-//
 // Arguments:
 //    addr     -  Address to check
 //
 // Return Value:
 //    True if address could be null; false otherwise
-
+//
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
@@ -1145,7 +1144,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         assert(targetMethodHnd == nullptr);
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         if (IsTargetAbi(CORINFO_CORERT_ABI))
@@ -2468,9 +2467,9 @@ private:
                     //
                     if (returnBlock->hasProfileWeight())
                     {
-                        BasicBlock::weight_t const oldWeight =
+                        weight_t const oldWeight =
                             mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : BB_ZERO_WEIGHT;
-                        BasicBlock::weight_t const newWeight = oldWeight + returnBlock->bbWeight;
+                        weight_t const newWeight = oldWeight + returnBlock->bbWeight;
 
                         JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to const return " FMT_BB "\n",
                                 returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);
@@ -2603,8 +2602,8 @@ void Compiler::fgAddInternal()
     noway_assert(!compIsForInlining());
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Create it here.
-    if (compMethodRequiresPInvokeFrame())
+    // required. Similarly, we need a scratch BB for poisoning. Create it here.
+    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
@@ -3633,13 +3632,12 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     }
 
     const static BBjumpKinds jumpKinds[] = {
-        BBJ_NONE,   // SCK_NONE
-        BBJ_THROW,  // SCK_RNGCHK_FAIL
-        BBJ_ALWAYS, // SCK_PAUSE_EXEC
-        BBJ_THROW,  // SCK_DIV_BY_ZERO
-        BBJ_THROW,  // SCK_ARITH_EXCP, SCK_OVERFLOW
-        BBJ_THROW,  // SCK_ARG_EXCPN
-        BBJ_THROW,  // SCK_ARG_RNG_EXCPN
+        BBJ_NONE,  // SCK_NONE
+        BBJ_THROW, // SCK_RNGCHK_FAIL
+        BBJ_THROW, // SCK_DIV_BY_ZERO
+        BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
+        BBJ_THROW, // SCK_ARG_EXCPN
+        BBJ_THROW, // SCK_ARG_RNG_EXCPN
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3703,9 +3701,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
             case SCK_RNGCHK_FAIL:
                 msg = " for RNGCHK_FAIL";
                 break;
-            case SCK_PAUSE_EXEC:
-                msg = " for PAUSE_EXEC";
-                break;
             case SCK_DIV_BY_ZERO:
                 msg = " for DIV_BY_ZERO";
                 break;
@@ -3765,9 +3760,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
         case SCK_ARG_RNG_EXCPN:
             helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
             break;
-
-        // case SCK_PAUSE_EXEC:
-        //     noway_assert(!"add code to pause exec");
 
         default:
             noway_assert(!"unexpected code addition kind");

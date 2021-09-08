@@ -38,7 +38,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
-#include "mono/metadata/security-manager.h"
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32process.h>
@@ -1524,6 +1523,9 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				vt_slot ++;
 				continue;
 			}
+
+			if (m_method_is_static (method))
+				continue;
 
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
@@ -4145,7 +4147,7 @@ mono_unhandled_exception_internal (MonoObject *exc_raw)
 void
 mono_unhandled_exception (MonoObject *exc)
 {
-	MONO_EXTERNAL_ONLY_VOID (mono_unhandled_exception_internal (exc));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_unhandled_exception_internal (exc));
 }
 
 static MonoObjectHandle
@@ -5680,6 +5682,39 @@ mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_
 
 	return array;
 }
+
+static MonoArray*
+mono_array_new_jagged_helper (MonoClass *klass, int n, uintptr_t *lengths, int index, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoArray *ret = mono_array_new_full_checked (klass, &lengths [index], NULL, error);
+	goto_if_nok (error, exit);
+
+	MONO_HANDLE_PIN (ret);
+
+	if (index < (n - 1)) {
+		// We have a new dimension argument. This means the elements in the allocated array
+		// are also arrays and we allocate each one of them.
+		MonoClass *element_class = m_class_get_element_class (klass);
+		g_assert (m_class_get_rank (element_class) == 1);
+		for (int i = 0; i < lengths [index]; i++) {
+			MonoArray *o = mono_array_new_jagged_helper (element_class, n, lengths, index + 1, error);
+			goto_if_nok (error, exit);
+			mono_array_setref_fast (ret, i, o);
+		}
+	}
+
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
+}
+
+MonoArray *
+mono_array_new_jagged_checked (MonoClass *klass, int n, uintptr_t *lengths, MonoError *error)
+{
+	return mono_array_new_jagged_helper (klass, n, lengths, 0, error);
+}
+
 
 /**
  * mono_array_new:

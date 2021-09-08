@@ -16,6 +16,7 @@ namespace System.Linq.Tests
         /// preserve the corresponding Enumerable method when trimming.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50712", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void QueryableMethodsContainCorrectDynamicDependency()
         {
             IEnumerable<MethodInfo> dependentMethods =

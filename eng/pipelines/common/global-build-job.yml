@@ -83,6 +83,12 @@ jobs:
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
+      - name: _buildDarwinFrameworksParameter
+        ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'MacCatalyst')}}:
+          value: /p:BuildDarwinFrameworks=true
+        ${{ if notin(parameters.osGroup, 'iOS', 'tvOS', 'MacCatalyst')}}:
+          value: ''
+
       - name: _richCodeNavigationParam
         ${{ if eq(parameters.enableRichCodeNavigation, true) }}:
           value: /p:EnableRichCodeNavigation=true
@@ -134,7 +140,7 @@ jobs:
         displayName: Install native dependencies
 
     # Build
-    - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam)
+    - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
       displayName: Build product
       ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
         continueOnError: ${{ parameters.shouldContinueOnError }}

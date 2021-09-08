@@ -339,7 +339,7 @@ struct _MonoImage {
 	guint8 idx_guid_wide : 1;
 	guint8 idx_blob_wide : 1;
 
-	/* Whenever this image is considered as platform code for the CoreCLR security model */
+	/* NOT SUPPORTED: Whenever this image is considered as platform code for the CoreCLR security model */
 	guint8 core_clr_platform_code : 1;
 
 	/* Whether a #JTD stream was present. Indicates that this image was a minimal delta and its heaps only include the new heap entries */
@@ -720,7 +720,7 @@ table_info_get_rows (const MonoTableInfo *table)
 }
 
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
-guint mono_aligned_addr_hash (gconstpointer ptr);
+MONO_COMPONENT_API guint mono_aligned_addr_hash (gconstpointer ptr);
 
 void
 mono_image_check_for_module_cctor (MonoImage *image);
@@ -802,14 +802,22 @@ mono_metadata_has_updates (void)
 	return mono_metadata_update_data_private.has_updates != 0;
 }
 
+/* components can't call the inline function directly since the private data isn't exported */
+MONO_COMPONENT_API
+gboolean
+mono_metadata_has_updates_api (void);
+
 void
 mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
+
+gboolean
+mono_metadata_update_has_modified_rows (const MonoTableInfo *t);
 
 static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 	if (G_UNLIKELY (mono_metadata_has_updates ())) {
-		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)))) {
+		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)) || mono_metadata_update_has_modified_rows (*t))) {
 			mono_image_effective_table_slow (t, idx);
 		}
 	}
@@ -818,8 +826,13 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
-void
-mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+enum MonoEnCDeltaOrigin {
+        MONO_ENC_DELTA_API = 0,
+        MONO_ENC_DELTA_DBG = 1,
+};
+
+MONO_COMPONENT_API void
+mono_image_load_enc_delta (int delta_origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error);
 
 gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);
@@ -916,7 +929,7 @@ mono_metadata_parse_generic_inst            (MonoImage             *image,
 					     const char           **rptr,
 						 MonoError *error);
 
-MonoGenericInst *
+MONO_COMPONENT_API MonoGenericInst *
 mono_metadata_get_generic_inst              (int 		    type_argc,
 					     MonoType 		  **type_argv);
 
@@ -1052,7 +1065,7 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 MonoMethodSignature*
 mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error);
 	
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error);
 
 guint32
@@ -1085,7 +1098,7 @@ mono_loader_set_strict_assembly_name_check (gboolean enabled);
 gboolean
 mono_loader_get_strict_assembly_name_check (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_type_in_image (MonoType *type, MonoImage *image);
 
 gboolean

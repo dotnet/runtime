@@ -144,7 +144,7 @@ namespace System.Diagnostics
 
             // Touch DiagnosticSourceEventSource.Logger so we ensure that the
             // DiagnosticSourceEventSource has been constructed (and thus is responsive to ETW requests to be enabled).
-            GC.KeepAlive(DiagnosticSourceEventSource.Logger);
+            GC.KeepAlive(DiagnosticSourceEventSource.Log);
         }
 
         /// <summary>

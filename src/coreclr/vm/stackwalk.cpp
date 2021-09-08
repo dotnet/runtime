@@ -713,14 +713,12 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     // get our caller's PSP, or our caller's caller's SP.
     while (!ExecutionManager::IsManagedCode(uControlPc))
     {
-#ifdef FEATURE_WRITEBARRIER_COPY
         if (IsIPInWriteBarrierCodeCopy(uControlPc))
         {
             // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
             uControlPc = AdjustWriteBarrierIP(uControlPc);
             SetIP(pContext, uControlPc);
         }
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
         uControlPc = VirtualUnwindCallFrame(pContext);

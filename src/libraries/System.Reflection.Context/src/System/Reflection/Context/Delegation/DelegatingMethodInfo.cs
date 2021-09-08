@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Context.Delegation
 {
@@ -32,7 +33,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingMethod.ContainsGenericParameters; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return UnderlyingMethod.DeclaringType; }
         }
@@ -82,7 +83,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingMethod.Name; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return UnderlyingMethod.ReflectedType; }
         }
@@ -134,7 +135,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingMethod.GetGenericMethodDefinition();
         }
 
-        public override MethodBody GetMethodBody()
+        public override MethodBody? GetMethodBody()
         {
             return UnderlyingMethod.GetMethodBody();
         }
@@ -149,7 +150,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingMethod.GetParameters();
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             return UnderlyingMethod.Invoke(obj, invokeAttr, binder, parameters, culture);
         }
@@ -159,6 +160,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingMethod.IsDefined(attributeType, inherit);
         }
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             return UnderlyingMethod.MakeGenericMethod(typeArguments);
@@ -169,12 +171,12 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingMethod.CreateDelegate(delegateType);
         }
 
-        public override Delegate CreateDelegate(Type delegateType, object target)
+        public override Delegate CreateDelegate(Type delegateType, object? target)
         {
             return UnderlyingMethod.CreateDelegate(delegateType, target);
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return UnderlyingMethod.ToString();
         }

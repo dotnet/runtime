@@ -88,9 +88,6 @@ namespace
             return;
         }
 
-#ifdef CROSSGEN_COMPILE
-        alcName.Set(W("Custom"));
-#else // CROSSGEN_COMPILE
         OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(managedALC);
 
         GCX_COOP();
@@ -108,37 +105,22 @@ namespace
         gc.alcName->GetSString(alcName);
 
         GCPROTECT_END();
-#endif // CROSSGEN_COMPILE
     }
 
-    void GetAssemblyLoadContextNameFromBinderID(UINT_PTR binderID, AppDomain *domain, /*out*/ SString &alcName)
+    void GetAssemblyLoadContextNameFromBindContext(AssemblyBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
     {
-        ICLRPrivBinder *binder = reinterpret_cast<ICLRPrivBinder *>(binderID);
-        if (AreSameBinderInstance(binder, domain->GetTPABinderContext()))
+        _ASSERTE(bindContext != nullptr);
+
+        if (bindContext == domain->GetTPABinderContext())
         {
             alcName.Set(W("Default"));
         }
         else
         {
-#ifdef CROSSGEN_COMPILE
-            GetAssemblyLoadContextNameFromManagedALC(0, alcName);
-#else // CROSSGEN_COMPILE
-            CLRPrivBinderAssemblyLoadContext *alcBinder = static_cast<CLRPrivBinderAssemblyLoadContext *>(binder);
+            CustomAssemblyBinder* alcBinder = static_cast<CustomAssemblyBinder*>(bindContext);
 
             GetAssemblyLoadContextNameFromManagedALC(alcBinder->GetManagedAssemblyLoadContext(), alcName);
-#endif // CROSSGEN_COMPILE
         }
-    }
-
-    void GetAssemblyLoadContextNameFromBindContext(ICLRPrivBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
-    {
-        _ASSERTE(bindContext != nullptr);
-
-        UINT_PTR binderID = 0;
-        HRESULT hr = bindContext->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
-        if (SUCCEEDED(hr))
-            GetAssemblyLoadContextNameFromBinderID(binderID, domain, alcName);
     }
 
     void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString &alcName)
@@ -146,7 +128,7 @@ namespace
         _ASSERTE(spec != nullptr);
 
         AppDomain *domain = spec->GetAppDomain();
-        ICLRPrivBinder* bindContext = spec->GetBindingContext();
+        AssemblyBinder* bindContext = spec->GetBindingContext();
         if (bindContext == nullptr)
             bindContext = spec->GetBindingContextFromParentAssembly(domain);
 
@@ -172,7 +154,7 @@ namespace
             peAssembly->GetDisplayName(request.RequestingAssembly);
 
             AppDomain *domain = parentAssembly->GetAppDomain();
-            ICLRPrivBinder *bindContext = peAssembly->GetBindingContext();
+            AssemblyBinder *bindContext = peAssembly->GetBindingContext();
             if (bindContext == nullptr)
                 bindContext = domain->GetTPABinderContext(); // System.Private.CoreLib returns null
 
@@ -196,6 +178,8 @@ bool BinderTracing::IsEnabled()
 
 namespace BinderTracing
 {
+    static thread_local bool t_AssemblyLoadStartInProgress = false;
+
     AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const WCHAR *assemblyPath)
         : m_bindRequest { assemblySpec, nullptr, assemblyPath }
         , m_populatedBindRequest { false }
@@ -209,6 +193,7 @@ namespace BinderTracing
         if (!BinderTracing::IsEnabled() || ShouldIgnoreBind())
             return;
 
+        t_AssemblyLoadStartInProgress = true;
         PopulateBindRequest(m_bindRequest);
         m_populatedBindRequest = true;
         FireAssemblyLoadStart(m_bindRequest);
@@ -218,6 +203,8 @@ namespace BinderTracing
     {
         if (BinderTracing::IsEnabled() && !ShouldIgnoreBind())
         {
+            t_AssemblyLoadStartInProgress = false;
+
             // Make sure the bind request is populated. Tracing may have been enabled mid-bind.
             if (!m_populatedBindRequest)
                 PopulateBindRequest(m_bindRequest);
@@ -244,9 +231,9 @@ namespace BinderTracing
         if (m_checkedIgnoreBind)
             return m_ignoreBind;
 
-        // ActivityTracker or EventSource may have triggered the system satellite load.
-        // Don't track system satellite binding to avoid potential infinite recursion.
-        m_ignoreBind = m_bindRequest.AssemblySpec->IsCoreLibSatellite();
+        // ActivityTracker or EventSource may have triggered the system satellite load, or load of System.Private.CoreLib
+        // Don't track such bindings to avoid potential infinite recursion.
+        m_ignoreBind = t_AssemblyLoadStartInProgress && (m_bindRequest.AssemblySpec->IsCoreLib() || m_bindRequest.AssemblySpec->IsCoreLibSatellite());
         m_checkedIgnoreBind = true;
         return m_ignoreBind;
     }
@@ -254,14 +241,14 @@ namespace BinderTracing
 
 namespace BinderTracing
 {
-    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, INT_PTR managedALC, const HRESULT& hr)
+    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, AssemblyBinder* bindContext, INT_PTR managedALC, const HRESULT& hr)
         : m_hr { hr }
         , m_stage { Stage::NotYetStarted }
         , m_tracingEnabled { BinderTracing::IsEnabled() }
         , m_assemblyNameObject { assemblyName }
         , m_pFoundAssembly { nullptr }
     {
-        _ASSERTE(binderID != 0 || managedALC != 0);
+        _ASSERTE(bindContext != nullptr || managedALC != 0);
 
         if (!m_tracingEnabled)
             return;
@@ -277,7 +264,7 @@ namespace BinderTracing
         }
         else
         {
-            GetAssemblyLoadContextNameFromBinderID(binderID, GetAppDomain(), m_assemblyLoadContextName);
+            GetAssemblyLoadContextNameFromBindContext(bindContext, GetAppDomain(), m_assemblyLoadContextName);
         }
     }
 

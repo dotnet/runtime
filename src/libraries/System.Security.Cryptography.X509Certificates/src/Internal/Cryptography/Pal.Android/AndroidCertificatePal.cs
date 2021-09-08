@@ -52,6 +52,7 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
 
+            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
 
             switch (contentType)
@@ -62,7 +63,12 @@ namespace Internal.Cryptography.Pal
                     // We don't support determining this on Android right now, so we throw.
                     throw new CryptographicException(SR.Cryptography_X509_PKCS7_NoSigner);
                 case X509ContentType.Pkcs12:
-                    return ReadPkcs12(rawData, password);
+                    if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
+                    {
+                        throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
+                    }
+
+                    return ReadPkcs12(rawData, password, ephemeralSpecified);
                 case X509ContentType.Cert:
                 default:
                 {
@@ -104,11 +110,11 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        private static ICertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password)
+        private static ICertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool ephemeralSpecified)
         {
             using (var reader = new AndroidPkcs12Reader(rawData))
             {
-                reader.Decrypt(password);
+                reader.Decrypt(password, ephemeralSpecified);
 
                 UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
                 AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;

@@ -4,6 +4,15 @@
     <NoWarn>$(NoWarn);0618</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>Provides access to a rich set of management information and management events about the system, devices, and applications instrumented to the Windows Management Instrumentation (WMI) infrastructure.
+
+Commonly Used Types:
+System.Management.ManagementClass
+System.Management.ManagementObject
+System.Management.SelectQuery</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -22,14 +31,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoGetObjectContext.cs"
              Link="Common\Interop\Windows\Ole32\Interop.CoGetObjectContext.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoMarshalInterface.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.CoMarshalInterface.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoUnmarshalInterface.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.CoUnmarshalInterface.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CreateStreamOnHGlobal.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.CreateStreamOnHGlobal.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="System\Management\ManagementBaseObject.cs" />

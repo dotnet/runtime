@@ -4,6 +4,20 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0</TargetFrameworks>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>Provides easy access to Active Directory Domain Services.
+
+Commonly Used Types:
+System.DirectoryServices.DirectoryEntry
+System.DirectoryServices.DirectorySearcher
+System.DirectoryServices.ActiveDirectory.ActiveDirectorySite
+System.DirectoryServices.ActiveDirectory.ApplicationPartition
+System.DirectoryServices.ActiveDirectory.DirectoryContext
+System.DirectoryServices.ActiveDirectory.DirectoryServer
+System.DirectoryServices.ActiveDirectory.Domain
+System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

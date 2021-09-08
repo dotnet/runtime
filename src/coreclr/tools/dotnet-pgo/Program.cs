@@ -378,7 +378,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
-                return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                int result = MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                if (result == 0 && commandLineOptions.InheritTimestamp)
+                {
+                    commandLineOptions.OutputFileName.CreationTimeUtc = commandLineOptions.InputFilesToMerge.Max(fi => fi.CreationTimeUtc);
+                    commandLineOptions.OutputFileName.LastWriteTimeUtc = commandLineOptions.InputFilesToMerge.Max(fi => fi.LastWriteTimeUtc);
+                }
+
+                return result;
             }
             finally
             {
@@ -577,7 +584,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         PrintBar($">{(int)proportion,2}%", ref curIndex, d => d * 100 > proportion, true);
                     PrintBar("0%", ref curIndex, d => true, false);
 
-                    var wtf = sorted.Where(t => double.IsNaN(t.Overlap)).ToList();
                     PrintOutput(FormattableString.Invariant($"The average overlap is {sorted.Average(t => t.Overlap)*100:F2}% for the {sorted.Count} methods with matching flow graphs and profile data"));
                     double mse = sorted.Sum(t => (100 - t.Overlap*100) * (100 - t.Overlap*100)) / sorted.Count;
                     PrintOutput(FormattableString.Invariant($"The mean squared error is {mse:F2}"));
@@ -1000,13 +1006,23 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     foreach (FileInfo fileReference in commandLineOptions.Reference)
                     {
-                        if (!File.Exists(fileReference.FullName))
+                        try
                         {
-                            PrintError($"Unable to find reference '{fileReference.FullName}'");
-                            filePathError = true;
+                            if (!File.Exists(fileReference.FullName))
+                            {
+                                PrintError($"Unable to find reference '{fileReference.FullName}'");
+                                filePathError = true;
+                            }
+                            else
+                                tsc.GetModuleFromPath(fileReference.FullName);
                         }
-                        else
-                            tsc.GetModuleFromPath(fileReference.FullName);
+                        catch (Internal.TypeSystem.TypeSystemException.BadImageFormatException)
+                        {
+                            // Ignore BadImageFormat in order to allow users to use '-r *.dll'
+                            // in a folder with native dynamic libraries (which have the same extension on Windows).
+
+                            // We don't need to log a warning here - it's already logged in GetModuleFromPath
+                        }
                     }
                 }
 

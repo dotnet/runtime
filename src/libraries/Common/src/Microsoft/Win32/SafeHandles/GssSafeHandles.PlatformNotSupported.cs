@@ -18,7 +18,8 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         protected override bool ReleaseHandle() => throw new PlatformNotSupportedException();
-        private SafeGssNameHandle()
+
+        public SafeGssNameHandle()
             : base(IntPtr.Zero, true)
         {
         }
@@ -27,7 +28,7 @@ namespace Microsoft.Win32.SafeHandles
     [UnsupportedOSPlatform("tvos")]
     internal sealed class SafeGssCredHandle : SafeHandle
     {
-        private SafeGssCredHandle()
+        public SafeGssCredHandle()
             : base(IntPtr.Zero, true)
         {
         }
@@ -43,7 +44,7 @@ namespace Microsoft.Win32.SafeHandles
     [UnsupportedOSPlatform("tvos")]
     internal sealed class SafeGssContextHandle : SafeHandle
     {
-        private SafeGssContextHandle()
+        public SafeGssContextHandle()
             : base(IntPtr.Zero, true)
         {
         }

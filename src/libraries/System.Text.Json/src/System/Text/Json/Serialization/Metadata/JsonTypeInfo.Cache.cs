@@ -48,19 +48,16 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonSerializerContext, JsonPropertyInfo[]>? PropInitFunc;
 
+        internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
+
         internal static JsonPropertyInfo AddProperty(
             MemberInfo memberInfo,
             Type memberType,
             Type parentClassType,
+            bool isVirtual,
             JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
-            JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
-            if (ignoreCondition == JsonIgnoreCondition.Always)
-            {
-                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(memberInfo, options);
-            }
-
             JsonConverter converter = GetConverter(
                 memberType,
                 parentClassType,
@@ -68,11 +65,18 @@ namespace System.Text.Json.Serialization.Metadata
                 out Type runtimeType,
                 options);
 
+            JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
+            if (ignoreCondition == JsonIgnoreCondition.Always)
+            {
+                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(converter, memberInfo, memberType, isVirtual, options);
+            }
+
             return CreateProperty(
                 declaredPropertyType: memberType,
                 runtimePropertyType: runtimeType,
                 memberInfo,
                 parentClassType,
+                isVirtual,
                 converter,
                 options,
                 parentTypeNumberHandling,
@@ -84,6 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type? runtimePropertyType,
             MemberInfo? memberInfo,
             Type parentClassType,
+            bool isVirtual,
             JsonConverter converter,
             JsonSerializerOptions options,
             JsonNumberHandling? parentTypeNumberHandling = null,
@@ -98,6 +103,7 @@ namespace System.Text.Json.Serialization.Metadata
                 runtimePropertyType,
                 runtimeClassType: converter.ConverterStrategy,
                 memberInfo,
+                isVirtual,
                 converter,
                 ignoreCondition,
                 parentTypeNumberHandling,
@@ -108,7 +114,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         /// <summary>
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// See <seealso cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
+        /// See <seealso cref="PropertyInfoForTypeInfo"/>.
         /// </summary>
         internal static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
@@ -121,8 +127,9 @@ namespace System.Text.Json.Serialization.Metadata
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 memberInfo: null, // Not a real property so this is null.
-                parentClassType: JsonTypeInfo.ObjectType, // a dummy value (not used)
-                converter: converter,
+                parentClassType: ObjectType, // a dummy value (not used)
+                isVirtual: false,
+                converter,
                 options,
                 parentTypeNumberHandling: numberHandling);
 
@@ -570,30 +577,67 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializePropCache()
         {
+            Debug.Assert(PropertyCache == null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
             JsonSerializerContext? context = Options._context;
             Debug.Assert(context != null);
 
-            if (PropInitFunc == null)
+            JsonPropertyInfo[] array;
+            if (PropInitFunc == null || (array = PropInitFunc(context)) == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
                 return;
             }
 
-            JsonPropertyInfo[] array = PropInitFunc(context);
-            var properties = new JsonPropertyDictionary<JsonPropertyInfo>(Options.PropertyNameCaseInsensitive, array.Length);
+            Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
+            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive, array.Length);
+
             for (int i = 0; i < array.Length; i++)
             {
-                JsonPropertyInfo property = array[i];
-                if (!properties.TryAdd(property.NameAsString, property))
+                JsonPropertyInfo jsonPropertyInfo = array[i];
+                bool hasJsonInclude = jsonPropertyInfo.SrcGen_HasJsonInclude;
+
+                if (!jsonPropertyInfo.SrcGen_IsPublic)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, property);
+                    if (hasJsonInclude)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName!, jsonPropertyInfo.DeclaringType);
+                    }
+
+                    continue;
                 }
+
+                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !hasJsonInclude && !Options.IncludeFields)
+                {
+                    continue;
+                }
+
+                CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 
-            // Avoid threading issues by populating a local cache, and assigning it to the global cache after completion.
-            PropertyCache = properties;
+            // Avoid threading issues by populating a local cache and assigning it to the global cache after completion.
+            PropertyCache = propertyCache;
+        }
+
+        internal void InitializeParameterCache()
+        {
+            Debug.Assert(ParameterCache == null);
+            Debug.Assert(PropertyCache != null);
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
+            JsonSerializerContext? context = Options._context;
+            Debug.Assert(context != null);
+
+            JsonParameterInfoValues[] array;
+            if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
+                return;
+            }
+
+            InitializeConstructorParameters(array);
+            Debug.Assert(ParameterCache != null);
         }
     }
 }

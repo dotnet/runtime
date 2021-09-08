@@ -2503,7 +2503,16 @@ ClrDataModule::GetFlags(
         {
             (*flags) |= CLRDATA_MODULE_IS_MEMORY_STREAM;
         }
-
+        PTR_Assembly pAssembly = m_module->GetAssembly();
+        PTR_BaseDomain pBaseDomain = pAssembly->GetDomain();
+        if (pBaseDomain->IsAppDomain())
+        {
+            AppDomain* pAppDomain = pBaseDomain->AsAppDomain();
+            if (pAssembly == pAppDomain->GetRootAssembly())
+            {
+                (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
+            }
+        }
         status = S_OK;
     }
     EX_CATCH
@@ -2574,13 +2583,6 @@ ClrDataModule::StartEnumExtents(
                 extent->base =
                     TO_CDADDR( PTR_TO_TADDR(file->GetLoadedImageContents(&extent->length)) );
                 extent->type = CLRDATA_MODULE_PE_FILE;
-                extent++;
-            }
-            if (file->HasNativeImage())
-            {
-                extent->base = TO_CDADDR(PTR_TO_TADDR(file->GetLoadedNative()->GetBase()));
-                extent->length = file->GetLoadedNative()->GetVirtualSize();
-                extent->type = CLRDATA_MODULE_PREJIT_FILE;
                 extent++;
             }
 
@@ -2826,12 +2828,6 @@ ClrDataModule::SetJITCompilerFlags(
         {
             hr = E_INVALIDARG;
         }
-#ifdef FEATURE_PREJIT
-        else if (m_module->HasNativeImage())
-        {
-            hr = CORDBG_E_CANT_CHANGE_JIT_SETTING_FOR_ZAP_MODULE;
-        }
-#endif
         else
         {
             _ASSERTE(m_module != NULL);

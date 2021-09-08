@@ -67,7 +67,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50919", TestPlatforms.Android)]
         public void FormattingTheContractPrintsConstraintKeysAndValues()
         {
             var mcd = new CompositionContract(typeof(AType), null, new Dictionary<string, object> { { "A", 1 }, { "B", "C" } });

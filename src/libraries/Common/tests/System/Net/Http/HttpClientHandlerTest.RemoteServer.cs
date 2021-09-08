@@ -178,7 +178,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53872", TestPlatforms.Browser)]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
             if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1709OrGreater)
@@ -608,7 +607,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(ExpectContinueVersion))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53876", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, Version version)
         {
             // Sync API supported only up to HTTP/1.1
@@ -928,6 +927,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
@@ -955,6 +955,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
@@ -982,6 +983,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttps_StatusCodeOK()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1003,6 +1005,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1025,6 +1028,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1050,6 +1054,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3, 2)]
         [InlineData(3, 3)]
         [InlineData(3, 4)]
+        [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
         public async Task GetAsync_MaxAutomaticRedirectionsNServerHops_ThrowsIfTooMany(int maxHops, int hops)
         {
             if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
@@ -1095,6 +1100,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithRelativeLocation(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1118,6 +1124,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [OuterLoop("Uses external servers")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1137,6 +1144,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [OuterLoop("Uses external servers")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1163,6 +1171,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
@@ -1228,8 +1237,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 yield return new object[] { remoteServer, remoteServer.GZipUri };
 
-                // Remote deflate endpoint isn't correctly following the deflate protocol.
-                //yield return new object[] { remoteServer, remoteServer.DeflateUri };
+                // Remote deflate endpoint isn't correctly following the deflate protocol,
+                // but SocketsHttpHandler makes it work, anyway.
+                yield return new object[] { remoteServer, remoteServer.DeflateUri };
             }
         }
 
@@ -1262,10 +1272,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // The remote server endpoint was written to use DeflateStream, which isn't actually a correct
-        // implementation of the deflate protocol (the deflate protocol requires the zlib wrapper around
-        // deflate).  Until we can get that updated (and deal with previous releases still testing it
-        // via a DeflateStream-based implementation), we utilize httpbin.org to help validate behavior.
         [OuterLoop("Uses external servers")]
         [Theory]
         [InlineData("http://httpbin.org/deflate", "\"deflated\": true")]

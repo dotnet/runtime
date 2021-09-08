@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
-            Assert.Contains("Argument 'foo' is not referenced from the logging message", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("foo", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -161,7 +161,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
-            Assert.Contains("Argument 'foo' is not referenced from the logging message", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("foo", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -177,7 +177,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.TemplateHasNoCorrespondingArgument.Id, diagnostics[0].Id);
-            Assert.Contains("Template 'foo' is not provided as argument to the logging method", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("foo", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -380,6 +380,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     public class Void {}
                     public class String {}
                     public struct DateTime {}
+                    public abstract class Attribute {}
                 }
                 namespace System.Collections
                 {
@@ -392,10 +393,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 namespace Microsoft.Extensions.Logging
                 {
-                    public class LoggerMessageAttribute {}
+                    public class LoggerMessageAttribute : System.Attribute {}
                 }
                 partial class C
                 {
+                    [Microsoft.Extensions.Logging.LoggerMessage]
+                    public static partial void Log(ILogger logger);
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
@@ -467,7 +470,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ShouldntReuseEventIds.Id, diagnostics[0].Id);
-            Assert.Contains("in class MyClass", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("MyClass", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -500,7 +503,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.MissingLoggerArgument.Id, diagnostics[0].Id);
-            Assert.Contains("One of the arguments to the static logging method 'M1' must implement the Microsoft.Extensions.Logging.ILogger interface", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            string message = diagnostics[0].GetMessage();
+            Assert.Contains("M1", message, StringComparison.InvariantCulture);
+            Assert.Contains("Microsoft.Extensions.Logging.ILogger", message, StringComparison.InvariantCulture);
         }
 
         [Fact]

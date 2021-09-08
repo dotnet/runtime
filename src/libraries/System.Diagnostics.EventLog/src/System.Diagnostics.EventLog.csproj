@@ -3,10 +3,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <NoWarn>$(NoWarn);CA1838;CA1847</NoWarn>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.
+
+Commonly Used Types:
+System.Diagnostics.EventLog</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'net461'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_EventLog</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -103,12 +108,13 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
     <Reference Include="netstandard" Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="Microsoft.Win32.Registry" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
@@ -133,15 +139,11 @@
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <!-- Ensure we run ResolveProjectReferences to add the message DLL to the package.
-       We do this here rather than in the pkgproj to ensure the package paths are in sync -->
+
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj"
                       ReferenceOutputAssembly="false"
-                      OutputItemType="AdditionalFileToPackage"  />
+                      OutputItemType="TfmRuntimeSpecificPackageFile"
+                      PrivateAssets="true" />
   </ItemGroup>
-  <Target Name="AddMessagesToPackage"
-          Condition="'$(TargetsWindows)' == 'true'"
-          DependsOnTargets="ResolveProjectReferences"
-          BeforeTargets="GetFilesToPackage" />
 </Project>

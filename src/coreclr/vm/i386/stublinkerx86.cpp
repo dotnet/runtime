@@ -40,10 +40,6 @@
 #include "notifyexternals.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 #include <psapi.h>
 #endif
@@ -2353,7 +2349,6 @@ static const X86Reg c_argRegs[] = {
 #endif
 
 
-#ifndef CROSSGEN_COMPILE
 
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
 void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount)
@@ -3069,7 +3064,7 @@ VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
 #ifdef _DEBUG
     // cmp dword ptr[frameReg-gsCookieOffset], gsCookie
     X86EmitCmpRegIndexImm32(frameReg, gsCookieOffset, GetProcessGSCookie());
-    
+
     CodeLabel * pLabel = NewCodeLabel();
     X86EmitCondJump(pLabel, X86CondCode::kJE);
 
@@ -3128,7 +3123,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         _ASSERTE((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK));
         int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
 
-        if (pEntry->srcofs & ShuffleEntry::FPREGMASK) 
+        if (pEntry->srcofs & ShuffleEntry::FPREGMASK)
         {
             // movdqa dstReg, srcReg
             X64EmitMovXmmXmm((X86Reg)(kXMM0 + dstRegIndex), (X86Reg)(kXMM0 + srcRegIndex));
@@ -3664,7 +3659,6 @@ VOID StubLinkerCPU::EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *p
 
 #endif // TARGET_X86
 
-#endif // CROSSGEN_COMPILE
 
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
@@ -3906,7 +3900,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 }
 
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_STUBS_AS_IL)
+#if !defined(FEATURE_STUBS_AS_IL)
 
 #if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 //===========================================================================
@@ -4100,9 +4094,9 @@ VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
 }
 #endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 
-#endif // !CROSSGEN_COMPILE && !FEATURE_STUBS_AS_IL
+#endif // !FEATURE_STUBS_AS_IL
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_ARRAYSTUB_AS_IL)
+#if !defined(FEATURE_ARRAYSTUB_AS_IL)
 
 // Little helper to generate code to move nbytes bytes of non Ref memory
 
@@ -4498,7 +4492,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             X86EmitR2ROp(0x85, typeReg, typeReg);
             X86EmitCondJump(Inner_passedTypeCheck, X86CondCode::kJZ);
 
-            // Compare MT against the MT of the array.                     
+            // Compare MT against the MT of the array.
             // cmp typeReg, [kArrayRefReg]
             X86EmitOp(0x3b, typeReg, kArrayRefReg, 0 AMD64_ARG(k64BitOp));
 
@@ -4829,7 +4823,7 @@ COPY_VALUE_CLASS:
                     X86EmitOp(0x8d, kEDX, elemBaseReg, elemOfs, elemScaledReg, elemScale);
 
                     // call JIT_Writeable_Thunks_Buf.WriteBarrierReg[0] (== EAX)
-                    X86EmitCall(NewExternalCodeLabel((LPVOID) &JIT_WriteBarrierEAX), 0);
+                    X86EmitCall(NewExternalCodeLabel((LPVOID) GetWriteBarrierCodeLocation(&JIT_WriteBarrierEAX)), 0);
                 }
                 else
 #else // TARGET_AMD64
@@ -5040,9 +5034,9 @@ COPY_VALUE_CLASS:
 #pragma warning(pop)
 #endif
 
-#endif // !CROSSGEN_COMPILE && !FEATURE_ARRAYSTUB_AS_IL
+#endif // !FEATURE_ARRAYSTUB_AS_IL
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_STUBS_AS_IL)
+#if !defined(FEATURE_STUBS_AS_IL)
 //===========================================================================
 // Emits code to break into debugger
 VOID StubLinkerCPU::EmitDebugBreak()
@@ -5116,7 +5110,7 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 
 #endif // FEATURE_COMINTEROP && TARGET_X86
 
-#endif // !CROSSGEN_COMPILE && !FEATURE_STUBS_AS_IL
+#endif // !FEATURE_STUBS_AS_IL
 
 #endif // !DACCESS_COMPILE
 
@@ -5329,7 +5323,7 @@ void FixupPrecode::ResetTargetInterlocked()
 
     _ASSERTE(IS_ALIGNED(this, sizeof(INT64)));
 
-    ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode)); 
+    ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
     FastInterlockExchangeLong((INT64*)precodeWriterHolder.GetRW(), *(INT64*)&newValue);
 }
 
@@ -5384,7 +5378,7 @@ BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     {
         dynamicMethodEntryJumpStubWriterHolder = ExecutableWriterHolder<void>((void*)GetDynamicMethodEntryJumpStub(), 12);
     }
-#endif    
+#endif
     *(INT32*)(&pNewValue[offsetof(FixupPrecode, m_rel32)]) =
 #ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
         pMD->IsLCGMethod() ?
@@ -5397,51 +5391,6 @@ BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
     return FastInterlockCompareExchangeLong((INT64*)precodeWriterHolder.GetRW(), newValue, oldValue) == oldValue;
 }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-// Partial initialization. Used to save regrouped chunks.
-void FixupPrecode::InitForSave(int iPrecodeChunkIndex)
-{
-    m_op   = X86_INSTR_CALL_REL32;       // call PrecodeFixupThunk
-    m_type = FixupPrecode::TypePrestub;
-
-    _ASSERTE(FitsInU1(iPrecodeChunkIndex));
-    m_PrecodeChunkIndex = static_cast<BYTE>(iPrecodeChunkIndex);
-
-    // The rest is initialized in code:FixupPrecode::Fixup
-}
-
-void FixupPrecode::Fixup(DataImage *image, MethodDesc * pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Note that GetMethodDesc() does not return the correct value because of
-    // regrouping of MethodDescs into hot and cold blocks. That's why the caller
-    // has to supply the actual MethodDesc
-
-    SSIZE_T mdChunkOffset;
-    ZapNode * pMDChunkNode = image->GetNodeForStructure(pMD, &mdChunkOffset);
-    ZapNode * pHelperThunk = image->GetHelperThunk(CORINFO_HELP_EE_PRECODE_FIXUP);
-
-    image->FixupFieldToNode(this, offsetof(FixupPrecode, m_rel32),
-                            pHelperThunk, 0, IMAGE_REL_BASED_REL32);
-
-    // Set the actual chunk index
-    FixupPrecode * pNewPrecode = (FixupPrecode *)image->GetImagePointer(this);
-
-    size_t mdOffset   = mdChunkOffset - sizeof(MethodDescChunk);
-    size_t chunkIndex = mdOffset / MethodDesc::ALIGNMENT;
-    _ASSERTE(FitsInU1(chunkIndex));
-    pNewPrecode->m_MethodDescChunkIndex = (BYTE) chunkIndex;
-
-    // Fixup the base of MethodDescChunk
-    if (m_PrecodeChunkIndex == 0)
-    {
-        image->FixupFieldToNode(this, (BYTE *)GetBase() - (BYTE *)this,
-            pMDChunkNode, sizeof(MethodDescChunk));
-    }
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 #endif // HAS_FIXUP_PRECODE
 

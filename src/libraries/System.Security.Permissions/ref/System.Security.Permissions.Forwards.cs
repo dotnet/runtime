@@ -13,10 +13,8 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityAttribute))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityPermissionAttribute))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityPermissionFlag))]
-#if NET6_0_OR_GREATER
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Policy.Evidence))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Policy.EvidenceBase))]
-#endif
 #if NETCOREAPP
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.IStackWalk))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.PermissionSet))]

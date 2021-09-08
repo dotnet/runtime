@@ -11,8 +11,8 @@ namespace System.ComponentModel.Design
     /// </summary>
     public class ServiceContainer : IServiceContainer, IDisposable
     {
-        private ServiceCollection<object> _services;
-        private readonly IServiceProvider _parentProvider;
+        private ServiceCollection<object?>? _services;
+        private readonly IServiceProvider? _parentProvider;
         private static readonly Type[] s_defaultServices = new Type[] { typeof(IServiceContainer), typeof(ServiceContainer) };
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Creates a new service object container.
         /// </summary>
-        public ServiceContainer(IServiceProvider parentProvider)
+        public ServiceContainer(IServiceProvider? parentProvider)
         {
             _parentProvider = parentProvider;
         }
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Retrieves the parent service container, or null if there is no parent container.
         /// </summary>
-        private IServiceContainer Container
+        private IServiceContainer? Container
         {
             get => _parentProvider?.GetService(typeof(IServiceContainer)) as IServiceContainer;
         }
@@ -50,7 +50,7 @@ namespace System.ComponentModel.Design
         /// Our collection of services. The service collection is demand
         /// created here.
         /// </summary>
-        private ServiceCollection<object> Services => _services ?? (_services = new ServiceCollection<object>());
+        private ServiceCollection<object?> Services => _services ?? (_services = new ServiceCollection<object?>());
 
         /// <summary>
         /// Adds the given service to the service container.
@@ -67,7 +67,7 @@ namespace System.ComponentModel.Design
         {
             if (promote)
             {
-                IServiceContainer container = Container;
+                IServiceContainer? container = Container;
                 if (container != null)
                 {
                     container.AddService(serviceType, serviceInstance, promote);
@@ -108,7 +108,7 @@ namespace System.ComponentModel.Design
         {
             if (promote)
             {
-                IServiceContainer container = Container;
+                IServiceContainer? container = Container;
                 if (container != null)
                 {
                     container.AddService(serviceType, callback, promote);
@@ -147,11 +147,11 @@ namespace System.ComponentModel.Design
         {
             if (disposing)
             {
-                ServiceCollection<object> serviceCollection = _services;
+                ServiceCollection<object?>? serviceCollection = _services;
                 _services = null;
                 if (serviceCollection != null)
                 {
-                    foreach (object o in serviceCollection.Values)
+                    foreach (object? o in serviceCollection.Values)
                     {
                         if (o is IDisposable)
                         {
@@ -165,9 +165,9 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Retrieves the requested service.
         /// </summary>
-        public virtual object GetService(Type serviceType)
+        public virtual object? GetService(Type serviceType)
         {
-            object service = null;
+            object? service = null;
 
             // Try locally. We first test for services we
             // implement and then look in our service collection.
@@ -189,8 +189,8 @@ namespace System.ComponentModel.Design
             // Is the service a creator delegate?
             if (service is ServiceCreatorCallback)
             {
-                service = ((ServiceCreatorCallback)service)(this, serviceType);
-                if (service != null && !service.GetType().IsCOMObject && !serviceType.IsInstanceOfType(service))
+                service = ((ServiceCreatorCallback)service)(this, serviceType!);
+                if (service != null && !service.GetType().IsCOMObject && !serviceType!.IsInstanceOfType(service))
                 {
                     // Callback passed us a bad service. NULL it, rather than throwing an exception.
                     // Callers here do not need to be prepared to handle bad callback implemetations.
@@ -198,12 +198,12 @@ namespace System.ComponentModel.Design
                 }
 
                 // And replace the callback with our new service.
-                Services[serviceType] = service;
+                Services[serviceType!] = service;
             }
 
             if (service == null && _parentProvider != null)
             {
-                service = _parentProvider.GetService(serviceType);
+                service = _parentProvider.GetService(serviceType!);
             }
 
             return service;
@@ -224,7 +224,7 @@ namespace System.ComponentModel.Design
         {
             if (promote)
             {
-                IServiceContainer container = Container;
+                IServiceContainer? container = Container;
                 if (container != null)
                 {
                     container.RemoveService(serviceType, promote);
@@ -254,9 +254,9 @@ namespace System.ComponentModel.Design
 
             private sealed class EmbeddedTypeAwareTypeComparer : IEqualityComparer<Type>
             {
-                public bool Equals(Type x, Type y) => x.IsEquivalentTo(y);
+                public bool Equals(Type? x, Type? y) => x!.IsEquivalentTo(y);
 
-                public int GetHashCode(Type obj) => obj.FullName.GetHashCode();
+                public int GetHashCode(Type obj) => obj.FullName!.GetHashCode();
             }
 
             public ServiceCollection() : base(s_serviceTypeComparer)

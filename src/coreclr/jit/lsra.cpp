@@ -179,10 +179,10 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 //
 // Returns:
 //    Weight of ref position.
-BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
+weight_t LinearScan::getWeight(RefPosition* refPos)
 {
-    BasicBlock::weight_t weight;
-    GenTree*             treeNode = refPos->treeNode;
+    weight_t weight;
+    GenTree* treeNode = refPos->treeNode;
 
     if (treeNode != nullptr)
     {
@@ -196,9 +196,9 @@ BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                if (varDsc->lvLiveInOutOfHndlr)
+                if (varDsc->lvLiveInOutOfHndlr || refPos->getInterval()->firstRefPosition->singleDefSpill)
                 {
-                    // An EH var is always spilled at defs, and we'll decrease the weight by half,
+                    // An EH-var/single-def is always spilled at defs, and we'll decrease the weight by half,
                     // since only the reload is needed.
                     weight = weight / 2;
                 }
@@ -353,7 +353,7 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 {
     // An interval can have no recentRefPosition if this is the initial assignment
     // of a parameter to its home register.
-    float cost     = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
+    weight_t cost  = (interval->recentRefPosition != nullptr) ? getWeight(interval->recentRefPosition) : 0;
     spillCost[reg] = cost;
 #ifdef TARGET_ARM
     if (interval->registerType == TYP_DOUBLE)
@@ -700,7 +700,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // after the first liveness analysis - either by optimizations or by Lowering, and the tracked
     // set won't be recomputed until after Lowering (and this constructor is called prior to Lowering),
     // so we don't want to check that yet.
-    enregisterLocalVars = ((compiler->opts.compFlags & CLFLG_REGVAR) != 0);
+    enregisterLocalVars = compiler->compEnregLocals();
 #ifdef TARGET_ARM64
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
 #else
@@ -1031,8 +1031,8 @@ int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block
 {
     if (useBlockWeights)
     {
-        BasicBlock::weight_t weight1 = block1->getBBWeight(compiler);
-        BasicBlock::weight_t weight2 = block2->getBBWeight(compiler);
+        weight_t weight1 = block1->getBBWeight(compiler);
+        weight_t weight2 = block2->getBBWeight(compiler);
 
         if (weight1 > weight2)
         {
@@ -1448,7 +1448,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     {
         return false;
     }
-    assert((compiler->opts.compFlags & CLFLG_REGVAR) != 0);
+    assert(compiler->compEnregLocals());
 
     if (!varDsc->lvTracked)
     {
@@ -1490,7 +1490,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
     // references when using the general GC encoding.
     unsigned lclNum = (unsigned)(varDsc - compiler->lvaTable);
-    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterable() ||
+    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterableType() ||
         (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
     {
 #ifdef DEBUG
@@ -1627,13 +1627,13 @@ void LinearScan::identifyCandidates()
     // This is defined as thresholdLargeVectorRefCntWtd, as we are likely to use the same mechanism
     // for vectors on Arm64, though the actual value may differ.
 
-    unsigned int         floatVarCount        = 0;
-    BasicBlock::weight_t thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
-    BasicBlock::weight_t maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
-    VARSET_TP            fpMaybeCandidateVars(VarSetOps::UninitVal());
+    unsigned int floatVarCount        = 0;
+    weight_t     thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    weight_t     maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
+    VARSET_TP    fpMaybeCandidateVars(VarSetOps::UninitVal());
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    unsigned int         largeVectorVarCount           = 0;
-    BasicBlock::weight_t thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
+    unsigned int largeVectorVarCount           = 0;
+    weight_t     thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (enregisterLocalVars)
     {
@@ -1645,13 +1645,13 @@ void LinearScan::identifyCandidates()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
 #if DOUBLE_ALIGN
-    unsigned             refCntStk       = 0;
-    unsigned             refCntReg       = 0;
-    BasicBlock::weight_t refCntWtdReg    = 0;
-    unsigned             refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
-    BasicBlock::weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
-    doDoubleAlign                        = false;
-    bool checkDoubleAlign                = true;
+    unsigned refCntStk       = 0;
+    unsigned refCntReg       = 0;
+    weight_t refCntWtdReg    = 0;
+    unsigned refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
+    weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
+    doDoubleAlign            = false;
+    bool checkDoubleAlign    = true;
     if (compiler->codeGen->isFramePointerRequired() || compiler->opts.MinOpts())
     {
         checkDoubleAlign = false;
@@ -1794,7 +1794,7 @@ void LinearScan::identifyCandidates()
 
             if (varDsc->lvLiveInOutOfHndlr)
             {
-                newInt->isWriteThru = varDsc->lvEhWriteThruCandidate;
+                newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
                 setIntervalAsSpilled(newInt);
             }
 
@@ -1809,11 +1809,11 @@ void LinearScan::identifyCandidates()
             // Additionally, when we are generating code for a target with partial SIMD callee-save
             // (AVX on non-UNIX amd64 and 16-byte vectors on arm64), we keep a separate set of the
             // LargeVectorType vars.
-            if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType))
+            if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
-                BasicBlock::weight_t refCntWtd = varDsc->lvRefCntWtd();
+                weight_t refCntWtd = varDsc->lvRefCntWtd();
                 if (refCntWtd >= thresholdLargeVectorRefCntWtd)
                 {
                     VarSetOps::AddElemD(compiler, largeVectorCalleeSaveCandidateVars, varDsc->lvVarIndex);
@@ -1824,7 +1824,7 @@ void LinearScan::identifyCandidates()
                 if (regType(type) == FloatRegisterType)
             {
                 floatVarCount++;
-                BasicBlock::weight_t refCntWtd = varDsc->lvRefCntWtd();
+                weight_t refCntWtd = varDsc->lvRefCntWtd();
                 if (varDsc->lvIsRegArg)
                 {
                     // Don't count the initial reference for register params.  In those cases,
@@ -1872,8 +1872,8 @@ void LinearScan::identifyCandidates()
         // the lclVars allocated to the frame pointer.
         // => Here, estimate of the EBP refCnt and weighted refCnt is a wild guess.
         //
-        unsigned             refCntEBP    = refCntReg / 8;
-        BasicBlock::weight_t refCntWtdEBP = refCntWtdReg / 8;
+        unsigned refCntEBP    = refCntReg / 8;
+        weight_t refCntWtdEBP = refCntWtdReg / 8;
 
         doDoubleAlign =
             compiler->shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
@@ -2853,11 +2853,11 @@ bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation)
 //
 // Note: This helper is designed to be used only from allocateReg() and getDoubleSpillWeight()
 //
-float LinearScan::getSpillWeight(RegRecord* physRegRecord)
+weight_t LinearScan::getSpillWeight(RegRecord* physRegRecord)
 {
     assert(physRegRecord->assignedInterval != nullptr);
     RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
-    float        weight            = BB_ZERO_WEIGHT;
+    weight_t     weight            = BB_ZERO_WEIGHT;
 
     // We shouldn't call this method if there is no recentAssignedRef.
     assert(recentAssignedRef != nullptr);
@@ -3273,6 +3273,24 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
             fromRefPosition->spillAfter = true;
         }
     }
+
+    // Only handle the singledef intervals whose firstRefPosition is RefTypeDef and is not yet marked as spillAfter.
+    // The singledef intervals whose firstRefPositions are already marked as spillAfter, no need to mark them as
+    // singleDefSpill because they will always get spilled at firstRefPosition.
+    // This helps in spilling the singleDef at definition
+    //
+    // Note: Only mark "singleDefSpill" for those intervals who ever get spilled. The intervals that are never spilled
+    // will not be marked as "singleDefSpill" and hence won't get spilled at the first definition.
+    if (interval->isSingleDef && RefTypeIsDef(interval->firstRefPosition->refType) &&
+        !interval->firstRefPosition->spillAfter)
+    {
+        // TODO-CQ: Check if it is beneficial to spill at def, meaning, if it is a hot block don't worry about
+        // doing the spill. Another option is to track number of refpositions and a interval has more than X
+        // refpositions
+        // then perform this optimization.
+        interval->firstRefPosition->singleDefSpill = true;
+    }
+
     assert(toRefPosition != nullptr);
 
 #ifdef DEBUG
@@ -3955,16 +3973,16 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
 //
 // Arguments:
 //    currentBlock   - the BasicBlock we are about to allocate registers for
-//    allocationPass - true if we are currently allocating registers (versus writing them back)
 //
 // Return Value:
 //    None
 //
 // Notes:
-//    During the allocation pass, we use the outVarToRegMap of the selected predecessor to
-//    determine the lclVar locations for the inVarToRegMap.
-//    During the resolution (write-back) pass, we only modify the inVarToRegMap in cases where
-//    a lclVar was spilled after the block had been completed.
+//    During the allocation pass (allocationPassComplete = false), we use the outVarToRegMap
+//    of the selected predecessor to determine the lclVar locations for the inVarToRegMap.
+//    During the resolution (write-back when allocationPassComplete = true) pass, we only
+//    modify the inVarToRegMap in cases where a lclVar was spilled after the block had been
+//    completed.
 void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 {
     // If we have no register candidates we should only call this method during allocation.
@@ -4925,6 +4943,13 @@ void LinearScan::allocateRegisters()
             {
                 // In the case of ABI mismatches, avoid allocating a register only to have to immediately move
                 // it to a different register file.
+                allocate = false;
+            }
+            else if ((currentInterval->isWriteThru) && (refType == RefTypeZeroInit))
+            {
+                // For RefTypeZeroInit which is a write thru, there is no need to allocate register
+                // right away. It can be assigned when actually definition occurs.
+                // In future, see if avoiding allocation for RefTypeZeroInit gives any benefit in general.
                 allocate = false;
             }
             if (!allocate)
@@ -5915,7 +5940,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             assert(currentRefPosition->refType == RefTypeExpUse);
         }
     }
-    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) &&
+    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) && (treeNode != nullptr) &&
              (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
@@ -5926,10 +5951,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         assert(interval->isSpilled);
         varDsc->SetRegNum(REG_STK);
         interval->physReg = REG_NA;
-        if (treeNode != nullptr)
-        {
-            writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
-        }
+        writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
     }
     else // Not reload and Not pure-def that's spillAfter
     {
@@ -6017,6 +6039,27 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                     treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
                 }
             }
+        }
+
+        if (currentRefPosition->singleDefSpill && (treeNode != nullptr))
+        {
+            // This is the first (and only) def of a single-def var (only defs are marked 'singleDefSpill').
+            // Mark it as GTF_SPILL, so it is spilled immediately to the stack at definition and
+            // GTF_SPILLED, so the variable stays live in the register.
+            //
+            // TODO: This approach would still create the resolution moves but during codegen, will check for
+            // `lvSpillAtSingleDef` to decide whether to generate spill or not. In future, see if there is some
+            // better way to avoid resolution moves, perhaps by updating the varDsc->SetRegNum(REG_STK) in this
+            // method?
+            treeNode->gtFlags |= GTF_SPILL;
+            treeNode->gtFlags |= GTF_SPILLED;
+
+            if (treeNode->IsMultiReg())
+            {
+                treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
+            }
+
+            varDsc->lvSpillAtSingleDef = true;
         }
     }
 
@@ -6144,10 +6187,21 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     }
     else
     {
-        // Create the new node, with "tree" as its only child.
-        var_types treeType = tree->TypeGet();
+        var_types regType = tree->TypeGet();
+        if ((regType == TYP_STRUCT) && !tree->IsMultiRegNode())
+        {
+            assert(compiler->compEnregStructLocals());
+            assert(tree->IsLocal());
+            const GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
+            const LclVarDsc*           varDsc = compiler->lvaGetDesc(lcl);
+            // We create struct copies with a primitive type so we don't bother copy node with parsing structHndl.
+            // Note that for multiReg node we keep each regType in the tree and don't need this.
+            regType = varDsc->GetRegisterType(lcl);
+            assert(regType != TYP_UNDEF);
+        }
 
-        GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, treeType, tree);
+        // Create the new node, with "tree" as its only child.
+        GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, regType, tree);
         assert(refPosition->registerAssignment != RBM_NONE);
         SetLsraAdded(newNode);
         newNode->SetRegNumByIdx(refPosition->assignedReg(), multiRegIdx);
@@ -6195,7 +6249,7 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     }
 
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()));
 
     // On Arm64, we must always have a register to save the upper half,
     // while on x86 we can spill directly to memory.
@@ -6276,7 +6330,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     // lclVar as spilled).
     assert(lclVarReg != REG_NA);
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()));
 
     GenTree* restoreLcl = nullptr;
     restoreLcl          = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
@@ -8168,7 +8222,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     if ((resolveType == ResolveJoin) && (compiler->compHndBBtabCount > 0))
     {
         VARSET_TP extraLiveSet(VarSetOps::Diff(compiler, block->bbLiveOut, toBlock->bbLiveIn));
-        VarSetOps::IntersectionD(compiler, extraLiveSet, registerCandidateVars);
+        VarSetOps::IntersectionD(compiler, extraLiveSet, exceptVars);
         VarSetOps::Iter iter(compiler, extraLiveSet);
         unsigned        extraVarIndex = 0;
         while (iter.NextElem(&extraVarIndex))
@@ -8599,8 +8653,8 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
 //
 void LinearScan::dumpLsraStats(FILE* file)
 {
-    unsigned             sumStats[LsraStat::COUNT] = {0};
-    BasicBlock::weight_t wtdStats[LsraStat::COUNT] = {0};
+    unsigned sumStats[LsraStat::COUNT] = {0};
+    weight_t wtdStats[LsraStat::COUNT] = {0};
 
     fprintf(file, "----------\n");
     fprintf(file, "LSRA Stats");
@@ -8791,8 +8845,8 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
 //
 void LinearScan::dumpLsraStatsSummary(FILE* file)
 {
-    unsigned             sumStats[LsraStat::STAT_FREE] = {0};
-    BasicBlock::weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
+    unsigned sumStats[LsraStat::STAT_FREE] = {0};
+    weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
 
     // Iterate for block 0
     for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
@@ -8935,6 +8989,10 @@ void RefPosition::dump(LinearScan* linearScan)
     if (this->spillAfter)
     {
         printf(" spillAfter");
+    }
+    if (this->singleDefSpill)
+    {
+        printf(" singleDefSpill");
     }
     if (this->writeThru)
     {
@@ -9678,12 +9736,12 @@ void LinearScan::dumpLsraAllocationEvent(
 
         case LSRA_EVENT_DONE_KILL_GC_REFS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Done       ");
+            printf("Done          ");
             break;
 
         case LSRA_EVENT_NO_GC_KILLS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("None       ");
+            printf("None          ");
             break;
 
         // Block boundaries
@@ -11235,9 +11293,9 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     // Apply the SPILL_COST heuristic and eliminate regs that can't be spilled.
 
     // The spill weight for 'refPosition' (the one we're allocating now).
-    float thisSpillWeight = linearScan->getWeight(refPosition);
+    weight_t thisSpillWeight = linearScan->getWeight(refPosition);
     // The  spill weight for the best candidate we've found so far.
-    float bestSpillWeight = FloatingPointUtils::infinite_float();
+    weight_t bestSpillWeight = FloatingPointUtils::infinite_double();
     // True if we found registers with lower spill weight than this refPosition.
     bool foundLowerSpillWeight = false;
 
@@ -11247,11 +11305,12 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         spillCandidates &= ~spillCandidateBit;
         regNumber  spillCandidateRegNum    = genRegNumFromMask(spillCandidateBit);
         RegRecord* spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
+        Interval*  assignedInterval        = spillCandidateRegRecord->assignedInterval;
 
         // Can and should the interval in this register be spilled for this one,
         // if we don't find a better alternative?
         if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == currentLocation) &&
-            !spillCandidateRegRecord->assignedInterval->getNextRefPosition()->RegOptional())
+            !assignedInterval->getNextRefPosition()->RegOptional())
         {
             continue;
         }
@@ -11260,18 +11319,16 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
             continue;
         }
 
-        float        currentSpillWeight = 0;
-        RefPosition* recentRefPosition  = spillCandidateRegRecord->assignedInterval != nullptr
-                                             ? spillCandidateRegRecord->assignedInterval->recentRefPosition
-                                             : nullptr;
-        if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional()) &&
-            !(currentInterval->isLocalVar && recentRefPosition->IsActualRef()))
+        weight_t     currentSpillWeight = 0;
+        RefPosition* recentRefPosition  = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
+        if ((recentRefPosition != nullptr) &&
+            (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
         {
             // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
             // is not an actual ref. In those cases, we will reload in future (next) refPosition.
             // For such cases, consider the spill cost of next refposition.
             // See notes in "spillInterval()".
-            RefPosition* reloadRefPosition = spillCandidateRegRecord->assignedInterval->getNextRefPosition();
+            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
             if (reloadRefPosition != nullptr)
             {
                 currentSpillWeight = linearScan->getWeight(reloadRefPosition);

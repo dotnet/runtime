@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
         /// </summary>
         private static int ParseWithoutValidation(string value, int startIndex, out object? parsedValue)
         {
-            if (HttpRuleParser.ContainsInvalidNewLine(value, startIndex))
+            if (HttpRuleParser.ContainsNewLine(value, startIndex))
             {
                 parsedValue = null;
                 return 0;

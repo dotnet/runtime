@@ -83,6 +83,7 @@ namespace System.Reflection
             return null;
         }
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase
         {
             get
@@ -321,7 +322,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         internal static RuntimeAssembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
@@ -371,6 +372,7 @@ namespace System.Reflection
 
         // Returns the file in the File table of the manifest that matches the
         // given name.  (Name should not include path.)
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream? GetFile(string name)
         {
             if (Location.Length == 0)
@@ -388,6 +390,7 @@ namespace System.Reflection
                                   FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize, false);
         }
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream[] GetFiles(bool getResourceModules)
         {
             if (Location.Length == 0)

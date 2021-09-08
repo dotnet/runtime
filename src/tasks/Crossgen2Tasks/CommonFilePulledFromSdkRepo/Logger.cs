@@ -65,6 +65,9 @@ namespace Microsoft.NET.Build.Tasks
         public void LogError(string format, params string[] args)
             => Log(CreateMessage(MessageLevel.Error, format, args));
 
+        public void LogNonSdkError(string code, string format, params string[] args)
+            => Log(new Message(MessageLevel.Error, string.Format(format, args), code));
+
         public void Log(in Message message)
         {
             HasLoggedErrors |= message.Level == MessageLevel.Error;

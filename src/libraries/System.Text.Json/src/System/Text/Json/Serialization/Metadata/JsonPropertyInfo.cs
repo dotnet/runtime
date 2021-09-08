@@ -40,19 +40,26 @@ namespace System.Text.Json.Serialization.Metadata
             return info;
         }
 
-        // Create a property that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
-        // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(MemberInfo memberInfo, JsonSerializerOptions options)
+        // Create a property that is ignored at run-time.
+        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(
+            JsonConverter converter,
+            MemberInfo memberInfo,
+            Type memberType,
+            bool isVirtual,
+            JsonSerializerOptions options)
         {
-            JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfo<sbyte>();
+            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
+
             jsonPropertyInfo.Options = options;
+            jsonPropertyInfo.ConverterBase = converter;
             jsonPropertyInfo.MemberInfo = memberInfo;
-            jsonPropertyInfo.DeterminePropertyName();
             jsonPropertyInfo.IsIgnored = true;
+            jsonPropertyInfo.DeclaredPropertyType = memberType;
+            jsonPropertyInfo.IsVirtual = isVirtual;
+            jsonPropertyInfo.DeterminePropertyName();
 
             Debug.Assert(!jsonPropertyInfo.ShouldDeserialize);
             Debug.Assert(!jsonPropertyInfo.ShouldSerialize);
-
             return jsonPropertyInfo;
         }
 
@@ -72,6 +79,12 @@ namespace System.Text.Json.Serialization.Metadata
                 DeterminePropertyName();
                 DetermineIgnoreCondition(ignoreCondition);
 
+                JsonPropertyOrderAttribute? orderAttr = GetAttribute<JsonPropertyOrderAttribute>(MemberInfo);
+                if (orderAttr != null)
+                {
+                    Order = orderAttr.Order;
+                }
+
                 JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
                 DetermineNumberHandlingForProperty(attribute?.Handling, declaringTypeNumberHandling);
             }
@@ -80,6 +93,8 @@ namespace System.Text.Json.Serialization.Metadata
         private void DeterminePropertyName()
         {
             Debug.Assert(MemberInfo != null);
+
+            ClrName = MemberInfo.Name;
 
             JsonPropertyNameAttribute? nameAttribute = GetAttribute<JsonPropertyNameAttribute>(MemberInfo);
             if (nameAttribute != null)
@@ -256,34 +271,32 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
+            Type potentialNumberType;
             if (!ConverterBase.IsInternalConverter ||
                 ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & ConverterStrategy) == 0)
             {
-                return false;
+                potentialNumberType = DeclaredPropertyType;
             }
-
-            Type? elementType = ConverterBase.ElementType;
-            Debug.Assert(elementType != null);
-
-            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
-
-            if (elementType == typeof(byte) ||
-                elementType == typeof(decimal) ||
-                elementType == typeof(double) ||
-                elementType == typeof(short) ||
-                elementType == typeof(int) ||
-                elementType == typeof(long) ||
-                elementType == typeof(sbyte) ||
-                elementType == typeof(float) ||
-                elementType == typeof(ushort) ||
-                elementType == typeof(uint) ||
-                elementType == typeof(ulong) ||
-                elementType == JsonTypeInfo.ObjectType)
+            else
             {
-                return true;
+                Debug.Assert(ConverterBase.ElementType != null);
+                potentialNumberType = ConverterBase.ElementType;
             }
 
-            return false;
+            potentialNumberType = Nullable.GetUnderlyingType(potentialNumberType) ?? potentialNumberType;
+
+            return potentialNumberType == typeof(byte) ||
+                potentialNumberType == typeof(decimal) ||
+                potentialNumberType == typeof(double) ||
+                potentialNumberType == typeof(short) ||
+                potentialNumberType == typeof(int) ||
+                potentialNumberType == typeof(long) ||
+                potentialNumberType == typeof(sbyte) ||
+                potentialNumberType == typeof(float) ||
+                potentialNumberType == typeof(ushort) ||
+                potentialNumberType == typeof(uint) ||
+                potentialNumberType == typeof(ulong) ||
+                potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
         internal static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
@@ -305,6 +318,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type? runtimePropertyType,
             ConverterStrategy runtimeClassType,
             MemberInfo? memberInfo,
+            bool isVirtual,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonNumberHandling? parentTypeNumberHandling,
@@ -312,12 +326,12 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(converter != null);
 
-            ClrName = memberInfo?.Name;
             DeclaringType = parentClassType;
             DeclaredPropertyType = declaredPropertyType;
             RuntimePropertyType = runtimePropertyType;
             ConverterStrategy = runtimeClassType;
             MemberInfo = memberInfo;
+            IsVirtual = isVirtual;
             ConverterBase = converter;
             Options = options;
         }
@@ -360,6 +374,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal byte[] EscapedNameSection { get; set; } = null!;
 
         internal JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
+
+        /// <summary>
+        /// The property order.
+        /// </summary>
+        internal int Order { get; set; }
 
         internal bool ReadJsonAndAddExtensionProperty(
             object obj,
@@ -479,6 +498,16 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool IsIgnored { get; set; }
 
+        /// <summary>
+        /// Relevant to source generated metadata: did the property have the <see cref="JsonIncludeAttribute"/>?
+        /// </summary>
+        internal bool SrcGen_HasJsonInclude { get; set; }
+
+        /// <summary>
+        /// Relevant to source generated metadata: is the property public?
+        /// </summary>
+        internal bool SrcGen_IsPublic { get; set; }
+
         internal JsonNumberHandling? NumberHandling { get; set; }
 
         //  Whether the property type can be null.
@@ -489,5 +518,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal MemberTypes MemberType { get; set; } // TODO: with some refactoring, we should be able to remove this.
 
         internal string? ClrName { get; set; }
+
+        internal bool IsVirtual { get; set; }
     }
 }

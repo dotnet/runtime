@@ -31,7 +31,7 @@ namespace System.ComponentModel.Design.Serialization
         /// a successful load, or a collection of exceptions that indicate the
         /// reason(s) for failure.
         /// </summary>
-        void DependentLoadComplete(bool successful, ICollection errorCollection);
+        void DependentLoadComplete(bool successful, ICollection? errorCollection);
 
         /// <summary>
         /// This can be called by an outside object to request that the loader

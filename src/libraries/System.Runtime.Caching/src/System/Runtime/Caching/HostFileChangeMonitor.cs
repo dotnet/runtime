@@ -38,7 +38,7 @@ namespace System.Runtime.Caching
                     DateTimeOffset lastWrite;
                     long fileSize;
                     s_fcn.StartMonitoring(path, new OnChangedCallback(OnChanged), out _fcnState, out lastWrite, out fileSize);
-                    uniqueId = path + lastWrite.UtcDateTime.Ticks.ToString("X", CultureInfo.InvariantCulture) + fileSize.ToString("X", CultureInfo.InvariantCulture);
+                    uniqueId = $"{path}{lastWrite.UtcDateTime.Ticks:X}{fileSize:X}";
                     _lastModified = lastWrite;
                 }
                 else
@@ -98,7 +98,7 @@ namespace System.Runtime.Caching
                 if (fcn == null)
                 {
 #if NET5_0_OR_GREATER
-                    if (OperatingSystem.IsBrowser())
+                    if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();
                     }

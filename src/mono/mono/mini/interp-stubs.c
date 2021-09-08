@@ -215,6 +215,11 @@ stub_mark_stack (gpointer thread_data, GcScanFunc func, gpointer gc_data, gboole
 {
 }
 
+static void
+stub_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
+{
+}
+
 #undef MONO_EE_CALLBACK
 #define MONO_EE_CALLBACK(ret, name, sig) stub_ ## name,
 

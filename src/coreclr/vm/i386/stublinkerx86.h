@@ -437,7 +437,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitDebugTrashReg(X86Reg reg);
 #endif
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
         virtual VOID EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel);
         virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
@@ -536,7 +536,7 @@ struct StubPrecode {
 
         return rel32Decode(PTR_HOST_MEMBER_TADDR(StubPrecode, this, m_rel32));
     }
-
+#ifndef DACCESS_COMPILE
     void ResetTargetInterlocked()
     {
         CONTRACTL
@@ -562,6 +562,7 @@ struct StubPrecode {
         ExecutableWriterHolder<void> rel32Holder(&m_rel32, 4);
         return rel32SetInterlocked(&m_rel32, rel32Holder.GetRW(), target, expected, (MethodDesc*)GetMethodDesc());
     }
+#endif // !DACCESS_COMPILE
 };
 IN_TARGET_64BIT(static_assert_no_msg(offsetof(StubPrecode, m_movR10) == OFFSETOF_PRECODE_TYPE);)
 IN_TARGET_64BIT(static_assert_no_msg(offsetof(StubPrecode, m_type) == OFFSETOF_PRECODE_TYPE_MOV_R10);)
@@ -646,6 +647,13 @@ struct FixupPrecode {
         return dac_cast<TADDR>(this) + (m_PrecodeChunkIndex + 1) * sizeof(FixupPrecode);
     }
 
+    size_t GetSizeRW()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return GetBase() + sizeof(void*) - dac_cast<TADDR>(this);
+    }
+
     TADDR GetMethodDesc();
 #else // HAS_FIXUP_PRECODE_CHUNKS
     TADDR GetMethodDesc()
@@ -676,13 +684,6 @@ struct FixupPrecode {
 
         return *dac_cast<PTR_BYTE>(addr) == X86_INSTR_JMP_REL32;
     }
-
-#ifdef FEATURE_PREJIT
-    // Partial initialization. Used to save regrouped chunks.
-    void InitForSave(int iPrecodeChunkIndex);
-
-    void Fixup(DataImage *image, MethodDesc * pMD);
-#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

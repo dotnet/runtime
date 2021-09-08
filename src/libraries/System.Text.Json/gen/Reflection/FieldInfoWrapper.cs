@@ -6,7 +6,7 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using System.Globalization;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class FieldInfoWrapper : FieldInfo
     {
@@ -33,6 +33,11 @@ namespace System.Text.Json.SourceGeneration.Reflection
                         _attributes |= FieldAttributes.Static;
                     }
 
+                    if (_field.IsReadOnly)
+                    {
+                        _attributes |= FieldAttributes.InitOnly;
+                    }
+
                     switch (_field.DeclaredAccessibility)
                     {
                         case Accessibility.Public:
@@ -40,6 +45,9 @@ namespace System.Text.Json.SourceGeneration.Reflection
                             break;
                         case Accessibility.Private:
                             _attributes |= FieldAttributes.Private;
+                            break;
+                        case Accessibility.Protected:
+                            _attributes |= FieldAttributes.Family;
                             break;
                     }
                 }

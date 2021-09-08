@@ -536,16 +536,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Provides some interesting information about the PageSettings in String form.
         /// </summary>
-        public override string ToString()
-        {
-            return "[PageSettings:"
-            + " Color=" + Color.ToString()
-            + ", Landscape=" + Landscape.ToString()
-            + ", Margins=" + Margins.ToString()
-            + ", PaperSize=" + PaperSize.ToString()
-            + ", PaperSource=" + PaperSource.ToString()
-            + ", PrinterResolution=" + PrinterResolution.ToString()
-            + "]";
-        }
+        public override string ToString() =>
+            $"[{nameof(PageSettings)}: Color={Color}, Landscape={Landscape}, Margins={Margins}, PaperSize={PaperSize}, PaperSource={PaperSource}, PrinterResolution={PrinterResolution}]";
     }
 }

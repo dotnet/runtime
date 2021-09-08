@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -10,6 +12,10 @@ namespace System.IO
     internal static partial class FileSystem
     {
         internal const int DefaultBufferSize = 4096;
+
+        // On Linux, the maximum number of symbolic links that are followed while resolving a pathname is 40.
+        // See: https://man7.org/linux/man-pages/man7/path_resolution.7.html
+        private const int MaxFollowedLinks = 40;
 
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
@@ -20,10 +26,10 @@ namespace System.IO
             }
 
             // Copy the contents of the file from the source to the destination, creating the destination in the process
-            using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.None))
-            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, DefaultBufferSize, FileOptions.None))
+            using (SafeFileHandle src = File.OpenHandle(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.None))
+            using (SafeFileHandle dst = File.OpenHandle(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, FileOptions.None))
             {
-                Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
+                Interop.CheckIo(Interop.Sys.CopyFile(src, dst));
             }
         }
 
@@ -97,6 +103,36 @@ namespace System.IO
 
         public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
         {
+            // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
+            // These checks are not atomic, the file could change after a check was performed and before it is renamed.
+            Interop.Sys.FileStatus sourceStat;
+            if (Interop.Sys.LStat(sourceFullPath, out sourceStat) != 0)
+            {
+                Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
+                throw Interop.GetExceptionForIoErrno(errno, sourceFullPath);
+            }
+            // Check source is not a directory.
+            if ((sourceStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            {
+                throw new UnauthorizedAccessException(SR.Format(SR.IO_NotAFile, sourceFullPath));
+            }
+
+            Interop.Sys.FileStatus destStat;
+            if (Interop.Sys.LStat(destFullPath, out destStat) == 0)
+            {
+                // Check destination is not a directory.
+                if ((destStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+                {
+                    throw new UnauthorizedAccessException(SR.Format(SR.IO_NotAFile, destFullPath));
+                }
+                // Check source and destination are not the same.
+                if (sourceStat.Dev == destStat.Dev &&
+                    sourceStat.Ino == destStat.Ino)
+                  {
+                      throw new IOException(SR.Format(SR.IO_CannotReplaceSameFile, sourceFullPath, destFullPath));
+                  }
+            }
+
             if (destBackupFullPath != null)
             {
                 // We're backing up the destination file to the backup file, so we need to first delete the backup
@@ -219,8 +255,7 @@ namespace System.IO
 
                         // Input allows trailing separators in order to match Windows behavior
                         // Unix does not accept trailing separators, so must be trimmed
-                        if (!FileExists(Path.TrimEndingDirectorySeparator(fullPath),
-                            Interop.Sys.FileTypes.S_IFREG, out fileExistsError) &&
+                        if (!FileExists(fullPath, out fileExistsError) &&
                             fileExistsError.Error == Interop.Error.ENOENT)
                         {
                             return;
@@ -345,7 +380,7 @@ namespace System.IO
                 // On Windows we end up with ERROR_INVALID_NAME, which is
                 // "The filename, directory name, or volume label syntax is incorrect."
                 //
-                // This surfaces as a IOException, if we let it go beyond here it would
+                // This surfaces as an IOException, if we let it go beyond here it would
                 // give DirectoryNotFound.
 
                 if (Path.EndsInDirectorySeparator(sourceFullPath))
@@ -370,7 +405,7 @@ namespace System.IO
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, sourceFullPath, isDirectory: true);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
                 }
             }
         }
@@ -486,7 +521,7 @@ namespace System.IO
 
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).CreationTime;
+            return new FileInfo(fullPath, null).CreationTimeUtc;
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -500,7 +535,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).LastAccessTime;
+            return new FileInfo(fullPath, null).LastAccessTimeUtc;
         }
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -514,7 +549,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).LastWriteTime;
+            return new FileInfo(fullPath, null).LastWriteTimeUtc;
         }
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -529,6 +564,92 @@ namespace System.IO
         public static string[] GetLogicalDrives()
         {
             return DriveInfoInternal.GetLogicalDrives();
+        }
+
+        internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
+
+        internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
+        {
+            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
+
+            // Fail if the target exists but is not consistent with the expected filesystem entry type
+            if (Interop.Sys.Stat(pathToTargetFullPath, out Interop.Sys.FileStatus targetInfo) == 0)
+            {
+                if (isDirectory != ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR))
+                {
+                    throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
+                }
+            }
+
+            Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path, isDirectory);
+        }
+
+        internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
+        {
+            ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
+            sb.Append(linkPath);
+
+            string? linkTarget = GetLinkTarget(linkPath, isDirectory: false /* Irrelevant in Unix */);
+            if (linkTarget == null)
+            {
+                sb.Dispose();
+                Interop.Error error = Interop.Sys.GetLastError();
+                // Not a link, return null
+                if (error == Interop.Error.EINVAL)
+                {
+                    return null;
+                }
+
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), linkPath, isDirectory);
+            }
+
+            if (!returnFinalTarget)
+            {
+                GetLinkTargetFullPath(ref sb, linkTarget);
+            }
+            else
+            {
+                string? current = linkTarget;
+                int visitCount = 1;
+
+                while (current != null)
+                {
+                    if (visitCount > MaxFollowedLinks)
+                    {
+                        sb.Dispose();
+                        // We went over the limit and couldn't reach the final target
+                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
+                    }
+
+                    GetLinkTargetFullPath(ref sb, current);
+                    current = GetLinkTarget(sb.AsSpan(), isDirectory: false);
+                    visitCount++;
+                }
+            }
+
+            Debug.Assert(sb.Length > 0);
+            linkTarget = sb.ToString(); // ToString disposes
+
+            return isDirectory ?
+                    new DirectoryInfo(linkTarget) :
+                    new FileInfo(linkTarget);
+
+            // In case of link target being relative:
+            // Preserve the full path of the directory of the previous path
+            // so the final target is returned with a valid full path
+            static void GetLinkTargetFullPath(ref ValueStringBuilder sb, ReadOnlySpan<char> linkTarget)
+            {
+                if (PathInternal.IsPartiallyQualified(linkTarget))
+                {
+                    sb.Length = Path.GetDirectoryNameOffset(sb.AsSpan());
+                    sb.Append(PathInternal.DirectorySeparatorChar);
+                }
+                else
+                {
+                    sb.Length = 0;
+                }
+                sb.Append(linkTarget);
+            }
         }
     }
 }

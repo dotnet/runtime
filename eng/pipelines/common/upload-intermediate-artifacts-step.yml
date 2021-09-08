@@ -1,14 +1,27 @@
 parameters:
   name: ''
+  publishPackagesCondition: always()
+  publishVSSetupCondition: false
 
 steps:
 - task: CopyFiles@2
   displayName: Prepare job-specific intermediate artifacts subdirectory
+  condition: and(succeeded(), ${{ parameters.publishPackagesCondition }})
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
     Contents: |
       Shipping/**/*
       NonShipping/**/*
+    TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts/${{ parameters.name }}'
+    CleanTargetFolder: true
+
+- task: CopyFiles@2
+  displayName: Prepare job-specific intermediate artifacts subdirectory
+  condition: and(succeeded(), ${{ parameters.publishVSSetupCondition }})
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/artifacts/VSSetup/$(_BuildConfig)'
+    Contents: |
+      Insertion/**/*
     TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts/${{ parameters.name }}'
     CleanTargetFolder: true
 

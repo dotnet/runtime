@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -60,8 +56,8 @@ namespace System.Net.Http.Tests
             CheckValidParsedValue("1234567890", 0, new TimeSpan(0, 0, 1234567890), 10);
             CheckValidParsedValue("0", 0, new TimeSpan(0, 0, 0), 1);
             CheckValidParsedValue("000015", 0, new TimeSpan(0, 0, 15), 6);
-            CheckValidParsedValue(" 123 \t\r\n ", 0, new TimeSpan(0, 0, 123), 9);
-            CheckValidParsedValue("a 5 \r\n ", 1, new TimeSpan(0, 0, 5), 7);
+            CheckValidParsedValue(" 123 \t ", 0, new TimeSpan(0, 0, 123), 7);
+            CheckValidParsedValue("a 5  ", 1, new TimeSpan(0, 0, 5), 5);
             CheckValidParsedValue(" 987", 0, new TimeSpan(0, 0, 987), 4);
             CheckValidParsedValue("987 ", 0, new TimeSpan(0, 0, 987), 4);
             CheckValidParsedValue("a456", 1, new TimeSpan(0, 0, 456), 4);
@@ -88,6 +84,8 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("-123", 0);
             CheckInvalidParsedValue("123456789012345678901234567890", 0); // value >> Int32.MaxValue
             CheckInvalidParsedValue("2147483648", 0); // value = Int32.MaxValue + 1
+            CheckInvalidParsedValue(" 123 \t\r\n", 0);
+            CheckInvalidParsedValue("a 5 \r\n ", 0);
         }
 
         [Fact]

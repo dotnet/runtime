@@ -205,8 +205,6 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-    _ASSERTE(!NingenEnabled() && "You cannot allocate managed objects inside the ngen compilation process.");
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
     {
@@ -324,7 +322,8 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
     // Notify the profiler of the allocation
     // do this after initializing bounds so callback has size information
     if (TrackAllocations() ||
-        (TrackLargeAllocations() && flags & GC_ALLOC_LARGE_OBJECT_HEAP))
+        (TrackLargeAllocations() && flags & GC_ALLOC_LARGE_OBJECT_HEAP) ||
+		(TrackPinnedAllocations() && flags & GC_ALLOC_PINNED_OBJECT_HEAP))
     {
         OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
         GCPROTECT_BEGIN(objref);

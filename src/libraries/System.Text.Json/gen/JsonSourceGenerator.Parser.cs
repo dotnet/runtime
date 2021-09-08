@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
-using System.Text.Json.Serialization;
-using System.Text.Json.SourceGeneration.Reflection;
-using System.Linq;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
+using System.Text.Json.Reflection;
+using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -21,40 +23,58 @@ namespace System.Text.Json.SourceGeneration
         private sealed class Parser
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
-
             private const string JsonConverterAttributeFullName = "System.Text.Json.Serialization.JsonConverterAttribute";
-
+            private const string JsonElementFullName = "System.Text.Json.JsonElement";
+            private const string JsonConverterFactoryFullName = "System.Text.Json.Serialization.JsonConverterFactory";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
-
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
-
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
-
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
-
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
+            private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
+            private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
+            private const string JsonSerializerAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
+            private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
-            private readonly GeneratorExecutionContext _executionContext;
-
+            private readonly Compilation _compilation;
+            private readonly SourceProductionContext _sourceProductionContext;
             private readonly MetadataLoadContextInternal _metadataLoadContext;
 
+            private readonly Type _ilistOfTType;
+            private readonly Type _icollectionOfTType;
             private readonly Type _ienumerableType;
-            private readonly Type _listOfTType;
-            private readonly Type _dictionaryType;
+            private readonly Type _ienumerableOfTType;
+
+            private readonly Type? _listOfTType;
+            private readonly Type? _dictionaryType;
+            private readonly Type? _idictionaryOfTKeyTValueType;
+            private readonly Type? _ireadonlyDictionaryType;
+            private readonly Type? _isetType;
+            private readonly Type? _stackOfTType;
+            private readonly Type? _queueOfTType;
+            private readonly Type? _concurrentStackType;
+            private readonly Type? _concurrentQueueType;
+            private readonly Type? _idictionaryType;
+            private readonly Type? _ilistType;
+            private readonly Type? _stackType;
+            private readonly Type? _queueType;
+            private readonly Type? _keyValuePair;
 
             private readonly Type _booleanType;
-            private readonly Type _byteArrayType;
             private readonly Type _charType;
             private readonly Type _dateTimeType;
-            private readonly Type _dateTimeOffsetType;
-            private readonly Type _guidType;
             private readonly Type _nullableOfTType;
+            private readonly Type _objectType;
             private readonly Type _stringType;
-            private readonly Type _uriType;
-            private readonly Type _versionType;
+
+            private readonly Type? _dateTimeOffsetType;
+            private readonly Type? _byteArrayType;
+            private readonly Type? _guidType;
+            private readonly Type? _uriType;
+            private readonly Type? _versionType;
+            private readonly Type? _jsonElementType;
 
             private readonly HashSet<Type> _numberTypes = new();
-
             private readonly HashSet<Type> _knownTypes = new();
 
             /// <summary>
@@ -62,43 +82,75 @@ namespace System.Text.Json.SourceGeneration
             /// </summary>
             private readonly Dictionary<Type, TypeGenerationSpec> _typeGenerationSpecCache = new();
 
+            private readonly HashSet<TypeGenerationSpec> _implicitlyRegisteredTypes = new();
+
+            private JsonKnownNamingPolicy _currentContextNamingPolicy;
+
             private static DiagnosticDescriptor ContextClassesMustBePartial { get; } = new DiagnosticDescriptor(
                 id: "SYSLIB1032",
                 title: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.ContextClassesMustBePartialMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: SystemTextJsonSourceGenerationName,
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-            public Parser(in GeneratorExecutionContext executionContext)
-            {
-                _executionContext = executionContext;
-                _metadataLoadContext = new MetadataLoadContextInternal(executionContext.Compilation);
+            private static DiagnosticDescriptor MultipleJsonConstructorAttribute { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1033",
+                title: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.MultipleJsonConstructorAttributeFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Error,
+                isEnabledByDefault: true);
 
-                _ienumerableType = _metadataLoadContext.Resolve(typeof(IEnumerable));
+            public Parser(Compilation compilation, in SourceProductionContext sourceProductionContext)
+            {
+                _compilation = compilation;
+                _sourceProductionContext = sourceProductionContext;
+                _metadataLoadContext = new MetadataLoadContextInternal(_compilation);
+
+                _ilistOfTType = _metadataLoadContext.Resolve(SpecialType.System_Collections_Generic_IList_T);
+                _icollectionOfTType = _metadataLoadContext.Resolve(SpecialType.System_Collections_Generic_ICollection_T);
+                _ienumerableOfTType = _metadataLoadContext.Resolve(SpecialType.System_Collections_Generic_IEnumerable_T);
+                _ienumerableType = _metadataLoadContext.Resolve(SpecialType.System_Collections_IEnumerable);
+
                 _listOfTType = _metadataLoadContext.Resolve(typeof(List<>));
                 _dictionaryType = _metadataLoadContext.Resolve(typeof(Dictionary<,>));
+                _idictionaryOfTKeyTValueType = _metadataLoadContext.Resolve(typeof(IDictionary<,>));
+                _ireadonlyDictionaryType = _metadataLoadContext.Resolve(typeof(IReadOnlyDictionary<,>));
+                _isetType = _metadataLoadContext.Resolve(typeof(ISet<>));
+                _stackOfTType = _metadataLoadContext.Resolve(typeof(Stack<>));
+                _queueOfTType = _metadataLoadContext.Resolve(typeof(Queue<>));
+                _concurrentStackType = _metadataLoadContext.Resolve(typeof(ConcurrentStack<>));
+                _concurrentQueueType = _metadataLoadContext.Resolve(typeof(ConcurrentQueue<>));
+                _idictionaryType = _metadataLoadContext.Resolve(typeof(IDictionary));
+                _ilistType = _metadataLoadContext.Resolve(typeof(IList));
+                _stackType = _metadataLoadContext.Resolve(typeof(Stack));
+                _queueType = _metadataLoadContext.Resolve(typeof(Queue));
+                _keyValuePair = _metadataLoadContext.Resolve(typeof(KeyValuePair<,>));
 
-                _booleanType = _metadataLoadContext.Resolve(typeof(bool));
-                _byteArrayType = _metadataLoadContext.Resolve(typeof(byte[]));
-                _charType = _metadataLoadContext.Resolve(typeof(char));
-                _dateTimeType = _metadataLoadContext.Resolve(typeof(DateTime));
+                _booleanType = _metadataLoadContext.Resolve(SpecialType.System_Boolean);
+                _charType = _metadataLoadContext.Resolve(SpecialType.System_Char);
+                _dateTimeType = _metadataLoadContext.Resolve(SpecialType.System_DateTime);
+                _nullableOfTType = _metadataLoadContext.Resolve(SpecialType.System_Nullable_T);
+                _objectType = _metadataLoadContext.Resolve(SpecialType.System_Object);
+                _stringType = _metadataLoadContext.Resolve(SpecialType.System_String);
+
                 _dateTimeOffsetType = _metadataLoadContext.Resolve(typeof(DateTimeOffset));
+                _byteArrayType = _metadataLoadContext.Resolve(typeof(byte[]));
                 _guidType = _metadataLoadContext.Resolve(typeof(Guid));
-                _nullableOfTType = _metadataLoadContext.Resolve(typeof(Nullable<>));
-                _stringType = _metadataLoadContext.Resolve(typeof(string));
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
+                _jsonElementType = _metadataLoadContext.Resolve(JsonElementFullName);
 
                 PopulateKnownTypes();
             }
 
-            public SourceGenerationSpec? GetGenerationSpec(List<ClassDeclarationSyntax> classDeclarationSyntaxList)
+            public SourceGenerationSpec? GetGenerationSpec(ImmutableArray<ClassDeclarationSyntax> classDeclarationSyntaxList)
             {
-                Compilation compilation = _executionContext.Compilation;
-                INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializerContext");
-                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSerializableAttribute");
-                INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute");
+                Compilation compilation = _compilation;
+                INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
+                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerAttributeFullName);
+                INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSourceGenerationOptionsAttributeFullName);
 
                 if (jsonSerializerContextSymbol == null || jsonSerializableAttributeSymbol == null || jsonSourceGenerationOptionsAttributeSymbol == null)
                 {
@@ -153,7 +205,7 @@ namespace System.Text.Json.SourceGeneration
                     if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
                     {
                         // Class or one of its containing types is not partial so we can't add to it.
-                        _executionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
+                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
                         continue;
                     }
 
@@ -164,7 +216,10 @@ namespace System.Text.Json.SourceGeneration
                         ContextClassDeclarationList = classDeclarationList
                     };
 
-                    foreach(AttributeSyntax attribute in serializableAttributeList)
+                    // Set the naming policy for the current context.
+                    _currentContextNamingPolicy = contextGenSpec.GenerationOptions.PropertyNamingPolicy;
+
+                    foreach (AttributeSyntax attribute in serializableAttributeList)
                     {
                         TypeGenerationSpec? metadata = GetRootSerializableType(compilationSemanticModel, attribute, contextGenSpec.GenerationOptions.GenerationMode);
                         if (metadata != null)
@@ -178,11 +233,14 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
+                    contextGenSpec.ImplicitlyRegisteredTypes.UnionWith(_implicitlyRegisteredTypes);
+
                     contextGenSpecList ??= new List<ContextGenerationSpec>();
                     contextGenSpecList.Add(contextGenSpec);
 
                     // Clear the cache of generated metadata between the processing of context classes.
                     _typeGenerationSpecCache.Clear();
+                    _implicitlyRegisteredTypes.Clear();
                 }
 
                 if (contextGenSpecList == null)
@@ -205,7 +263,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             // Returns true if a given type derives directly from JsonSerializerContext.
-            private bool DerivesFromJsonSerializerContext(
+            private static bool DerivesFromJsonSerializerContext(
                 ClassDeclarationSyntax classDeclarationSyntax,
                 INamedTypeSymbol jsonSerializerContextSymbol,
                 SemanticModel compilationSemanticModel)
@@ -231,7 +289,7 @@ namespace System.Text.Json.SourceGeneration
                 return match != null;
             }
 
-            private static bool TryGetClassDeclarationList(INamedTypeSymbol typeSymbol, [NotNullWhenAttribute(true)] out List<string>? classDeclarationList)
+            private static bool TryGetClassDeclarationList(INamedTypeSymbol typeSymbol, [NotNullWhen(true)] out List<string>? classDeclarationList)
             {
                 INamedTypeSymbol currentSymbol = typeSymbol;
                 classDeclarationList = null;
@@ -334,14 +392,6 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 Type type = typeSymbol.AsType(_metadataLoadContext);
-                if (type.Namespace == "<global namespace>")
-                {
-                    // typeof() reference where the type's name isn't fully qualified.
-                    // The compilation is not valid and the user needs to fix their code.
-                    // The compiler will notify the user so we don't have to.
-                    return null;
-                }
-
                 TypeGenerationSpec typeGenerationSpec = GetOrAddTypeGenerationSpec(type, generationMode);
 
                 if (typeInfoPropertyName != null)
@@ -355,6 +405,36 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return typeGenerationSpec;
+            }
+
+            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : > 0 } } };
+
+            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            {
+                var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
+
+                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
+                {
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
+                        if (attributeSymbol == null)
+                        {
+                            continue;
+                        }
+
+                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                        if (fullName == "System.Text.Json.Serialization.JsonSerializableAttribute")
+                        {
+                            return classDeclarationSyntax;
+                        }
+                    }
+
+                }
+
+                return null;
             }
 
             private static JsonSourceGenerationMode? GetJsonSourceGenerationModeEnumVal(SyntaxNode propertyValueMode)
@@ -479,26 +559,30 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Add metadata to cache now to prevent stack overflow when the same type is found somewhere else in the object graph.
-                typeMetadata = new();
+                typeMetadata = new TypeGenerationSpec();
                 _typeGenerationSpecCache[type] = typeMetadata;
 
                 ClassType classType;
                 Type? collectionKeyType = null;
                 Type? collectionValueType = null;
-                Type? nullableUnderlyingType = null;
-                List<PropertyGenerationSpec>? propertiesMetadata = null;
-                CollectionType collectionType = CollectionType.NotApplicable;
+                TypeGenerationSpec? nullableUnderlyingTypeGenSpec = null;
+                List<PropertyGenerationSpec>? propGenSpecList = null;
                 ObjectConstructionStrategy constructionStrategy = default;
+                ParameterGenerationSpec[]? paramGenSpecArray = null;
+                CollectionType collectionType = CollectionType.NotApplicable;
                 JsonNumberHandling? numberHandling = null;
-
                 bool foundDesignTimeCustomConverter = false;
                 string? converterInstatiationLogic = null;
+                bool implementsIJsonOnSerialized = false;
+                bool implementsIJsonOnSerializing = false;
+                bool hasTypeFactoryConverter = false;
+                bool hasPropertyFactoryConverters = false;
 
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(type);
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
                     Type attributeType = attributeData.AttributeType;
-                    if (attributeType.FullName == "System.Text.Json.Serialization.JsonNumberHandlingAttribute")
+                    if (attributeType.FullName == JsonNumberHandlingAttributeFullName)
                     {
                         IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                         numberHandling = (JsonNumberHandling)ctorArgs[0].Value;
@@ -507,7 +591,11 @@ namespace System.Text.Json.SourceGeneration
                     else if (!foundDesignTimeCustomConverter && attributeType.GetCompatibleBaseClass(JsonConverterAttributeFullName) != null)
                     {
                         foundDesignTimeCustomConverter = true;
-                        converterInstatiationLogic = GetConverterInstantiationLogic(attributeData);
+                        converterInstatiationLogic = GetConverterInstantiationLogic(
+                            type,
+                            attributeData,
+                            forType: true,
+                            ref hasTypeFactoryConverter);
                     }
                 }
 
@@ -521,10 +609,12 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.KnownType;
                 }
-                else if (type.IsNullableValueType(_nullableOfTType, out nullableUnderlyingType))
+                else if (type.IsNullableValueType(_nullableOfTType, out Type? nullableUnderlyingType))
                 {
                     Debug.Assert(nullableUnderlyingType != null);
                     classType = ClassType.Nullable;
+                    nullableUnderlyingTypeGenSpec = GetOrAddTypeGenerationSpec(nullableUnderlyingType, generationMode);
+                    _implicitlyRegisteredTypes.Add(nullableUnderlyingTypeGenSpec);
                 }
                 else if (type.IsEnum)
                 {
@@ -532,117 +622,401 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (_ienumerableType.IsAssignableFrom(type))
                 {
-                    // Only T[], List<T>, and Dictionary<Tkey, TValue> are supported.
-
-                    if (type.IsArray)
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionType = CollectionType.Array;
-                        collectionValueType = type.GetElementType();
-                    }
-                    else if (!type.IsGenericType)
-                    {
-                        classType = ClassType.TypeUnsupportedBySourceGen;
-                    }
-                    else
-                    {
-                        Type genericTypeDef = type.GetGenericTypeDefinition();
-                        Type[] genericTypeArgs = type.GetGenericArguments();
-
-                        if (genericTypeDef == _listOfTType)
-                        {
-                            classType = ClassType.Enumerable;
-                            collectionType = CollectionType.List;
-                            collectionValueType = genericTypeArgs[0];
-                        }
-                        else if (genericTypeDef == _dictionaryType)
-                        {
-                            classType = ClassType.Dictionary;
-                            collectionType = CollectionType.Dictionary;
-                            collectionKeyType = genericTypeArgs[0];
-                            collectionValueType = genericTypeArgs[1];
-                        }
-                        else
-                        {
-                            classType = ClassType.TypeUnsupportedBySourceGen;
-                        }
-                    }
-                }
-                else
-                {
-                    classType = ClassType.Object;
-
-                    if (type.GetConstructor(Type.EmptyTypes) != null && !type.IsAbstract && !type.IsInterface)
+                    if ((type.GetConstructor(Type.EmptyTypes) != null || type.IsValueType) && !type.IsAbstract && !type.IsInterface)
                     {
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                     }
 
-                    for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
+                    Type actualTypeToConvert;
+
+                    if (type.IsArray)
                     {
+                        classType = type.GetArrayRank() > 1
+                            ? ClassType.TypeUnsupportedBySourceGen // Multi-dimentional arrays are not supported in STJ.
+                            : ClassType.Enumerable;
+                        collectionType = CollectionType.Array;
+                        collectionValueType = type.GetElementType();
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _listOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.List;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _dictionaryType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.Dictionary;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if (type.IsImmutableDictionaryType(sourceGenType: true))
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.ImmutableDictionary;
+
+                        Type[] genericArgs = type.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_idictionaryOfTKeyTValueType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.IDictionaryOfTKeyTValue;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ireadonlyDictionaryType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.IReadOnlyDictionary;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if (type.IsImmutableEnumerableType(sourceGenType: true))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ImmutableEnumerable;
+                        collectionValueType = type.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ilistOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IListOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_isetType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ISet;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_icollectionOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ICollectionOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _stackOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.StackOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _queueOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.QueueOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseClass(_concurrentStackType, _objectType, sourceGenType: true)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ConcurrentStack;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseClass(_concurrentQueueType, _objectType, sourceGenType: true)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ConcurrentQueue;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ienumerableOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IEnumerableOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if (_idictionaryType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.IDictionary;
+                        collectionKeyType = _stringType;
+                        collectionValueType = _objectType;
+                    }
+                    else if (_ilistType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IList;
+                        collectionValueType = _objectType;
+                    }
+                    else if (_stackType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.Stack;
+                        collectionValueType = _objectType;
+                    }
+                    else if (_queueType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.Queue;
+                        collectionValueType = _objectType;
+                    }
+                    else
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IEnumerable;
+                        collectionValueType = _objectType;
+                    }
+                }
+                else
+                {
+                    bool useDefaultCtorInAnnotatedStructs = !type.IsKeyValuePair(_keyValuePair);
+
+                    if (!type.TryGetDeserializationConstructor(useDefaultCtorInAnnotatedStructs, out ConstructorInfo? constructor))
+                    {
+                        classType = ClassType.TypeUnsupportedBySourceGen;
+                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonConstructorAttribute, Location.None, new string[] { $"{type}" }));
+                    }
+                    else
+                    {
+                        classType = ClassType.Object;
+
+                        if ((constructor != null || type.IsValueType) && !type.IsAbstract)
+                        {
+                            ParameterInfo[]? parameters = constructor?.GetParameters();
+                            int paramCount = parameters?.Length ?? 0;
+
+                            if (paramCount == 0)
+                            {
+                                constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
+                            }
+                            else
+                            {
+                                constructionStrategy = ObjectConstructionStrategy.ParameterizedConstructor;
+                                paramGenSpecArray = new ParameterGenerationSpec[paramCount];
+
+                                for (int i = 0; i < paramCount; i++)
+                                {
+                                    ParameterInfo parameterInfo = parameters[i];
+                                    TypeGenerationSpec typeGenerationSpec = GetOrAddTypeGenerationSpec(parameterInfo.ParameterType, generationMode);
+
+                                    paramGenSpecArray[i] = new ParameterGenerationSpec()
+                                    {
+                                        TypeGenerationSpec = typeGenerationSpec,
+                                        ParameterInfo = parameterInfo
+                                    };
+
+                                    _implicitlyRegisteredTypes.Add(typeGenerationSpec);
+                                }
+                            }
+                        }
+
+                        // GetInterface() is currently not implemented, so we use GetInterfaces().
+                        IEnumerable<string> interfaces = type.GetInterfaces().Select(interfaceType => interfaceType.FullName!);
+                        implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == JsonConstants.IJsonOnSerializedFullName) != null;
+                        implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == JsonConstants.IJsonOnSerializingFullName) != null;
+
+                        propGenSpecList = new List<PropertyGenerationSpec>();
+                        Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
+
                         const BindingFlags bindingFlags =
                             BindingFlags.Instance |
                             BindingFlags.Public |
                             BindingFlags.NonPublic |
                             BindingFlags.DeclaredOnly;
 
-                        foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
-                        {
-                            PropertyGenerationSpec metadata = GetPropertyGenerationSpec(propertyInfo, generationMode);
+                        bool propertyOrderSpecified = false;
 
-                            // Ignore indexers.
-                            if (propertyInfo.GetIndexParameters().Length > 0)
+                        for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
+                        {
+                            PropertyGenerationSpec spec;
+
+                            foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
                             {
-                                continue;
+                                bool isVirtual = propertyInfo.IsVirtual();
+
+                                if (propertyInfo.GetIndexParameters().Length > 0 ||
+                                    PropertyIsOverridenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
+                                {
+                                    continue;
+                                }
+
+                                spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
+                                CacheMemberHelper();
                             }
 
-                            if (metadata.CanUseGetter || metadata.CanUseSetter)
+                            foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
                             {
-                                (propertiesMetadata ??= new()).Add(metadata);
+                                if (PropertyIsOverridenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                                {
+                                    continue;
+                                }
+
+                                spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
+                                CacheMemberHelper();
+                            }
+
+                            void CacheMemberHelper()
+                            {
+                                CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
+
+                                propertyOrderSpecified |= spec.Order != 0;
+                                hasPropertyFactoryConverters |= spec.HasFactoryConverter;
+
+                                // The property type may be implicitly in the context, so add that as well.
+                                hasTypeFactoryConverter |= spec.TypeGenerationSpec.HasTypeFactoryConverter;
                             }
                         }
 
-                        foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
+                        if (propertyOrderSpecified)
                         {
-                            PropertyGenerationSpec metadata = GetPropertyGenerationSpec(fieldInfo, generationMode);
-
-                            if (metadata.CanUseGetter || metadata.CanUseSetter)
-                            {
-                                (propertiesMetadata ??= new()).Add(metadata);
-                            }
+                            propGenSpecList.Sort((p1, p2) => p1.Order.CompareTo(p2.Order));
                         }
                     }
                 }
 
                 typeMetadata.Initialize(
                     generationMode,
-                    typeRef: type.GetUniqueCompilableTypeName(),
-                    typeInfoPropertyName: type.GetFriendlyTypeName(),
                     type,
                     classType,
-                    isValueType: type.IsValueType,
                     numberHandling,
-                    propertiesMetadata,
+                    propGenSpecList,
+                    paramGenSpecArray,
                     collectionType,
                     collectionKeyTypeMetadata: collectionKeyType != null ? GetOrAddTypeGenerationSpec(collectionKeyType, generationMode) : null,
                     collectionValueTypeMetadata: collectionValueType != null ? GetOrAddTypeGenerationSpec(collectionValueType, generationMode) : null,
                     constructionStrategy,
-                    nullableUnderlyingTypeMetadata: nullableUnderlyingType != null ? GetOrAddTypeGenerationSpec(nullableUnderlyingType, generationMode) : null,
-                    converterInstatiationLogic);
+                    nullableUnderlyingTypeMetadata: nullableUnderlyingTypeGenSpec,
+                    converterInstatiationLogic,
+                    implementsIJsonOnSerialized : implementsIJsonOnSerialized,
+                    implementsIJsonOnSerializing : implementsIJsonOnSerializing,
+                    hasTypeFactoryConverter : hasTypeFactoryConverter,
+                    hasPropertyFactoryConverters : hasPropertyFactoryConverters);
 
                 return typeMetadata;
             }
 
-            private PropertyGenerationSpec GetPropertyGenerationSpec(MemberInfo memberInfo, JsonSourceGenerationMode generationMode)
+            private Type GetCompatibleGenericBaseClass(Type type, Type baseType)
+                => type.GetCompatibleGenericBaseClass(baseType, _objectType);
+
+            private void CacheMember(
+                PropertyGenerationSpec propGenSpec,
+                ref List<PropertyGenerationSpec> propGenSpecList,
+                ref Dictionary<string, PropertyGenerationSpec> ignoredMembers)
             {
+                propGenSpecList.Add(propGenSpec);
+
+                if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                {
+                    ignoredMembers ??= new Dictionary<string, PropertyGenerationSpec>();
+                    ignoredMembers.Add(propGenSpec.ClrName, propGenSpec);
+                }
+            }
+
+            private static bool PropertyIsOverridenAndIgnored(
+                string currentMemberName,
+                Type currentMemberType,
+                bool currentMemberIsVirtual,
+                Dictionary<string, PropertyGenerationSpec>? ignoredMembers)
+            {
+                if (ignoredMembers == null || !ignoredMembers.TryGetValue(currentMemberName, out PropertyGenerationSpec? ignoredMember))
+                {
+                    return false;
+                }
+
+                return currentMemberType == ignoredMember.TypeGenerationSpec.Type &&
+                    currentMemberIsVirtual &&
+                    ignoredMember.IsVirtual;
+            }
+
+            private PropertyGenerationSpec GetPropertyGenerationSpec(MemberInfo memberInfo, bool isVirtual, JsonSourceGenerationMode generationMode)
+            {
+                Type memberCLRType = GetMemberClrType(memberInfo);
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(memberInfo);
 
-                bool hasJsonInclude = false;
-                JsonIgnoreCondition? ignoreCondition = null;
-                JsonNumberHandling? numberHandling = null;
-                string? jsonPropertyName = null;
+                ProcessCustomAttributes(
+                    attributeDataList,
+                    memberCLRType,
+                    out bool hasJsonInclude,
+                    out string? jsonPropertyName,
+                    out JsonIgnoreCondition? ignoreCondition,
+                    out JsonNumberHandling? numberHandling,
+                    out string? converterInstantiationLogic,
+                    out int order,
+                    out bool hasFactoryConverter);
+
+                ProcessMember(
+                    memberInfo,
+                    memberCLRType,
+                    hasJsonInclude,
+                    out bool isReadOnly,
+                    out bool isPublic,
+                    out bool canUseGetter,
+                    out bool canUseSetter,
+                    out bool getterIsVirtual,
+                    out bool setterIsVirtual);
+
+                string clrName = memberInfo.Name;
+                string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
+                string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
+
+                return new PropertyGenerationSpec
+                {
+                    ClrName = clrName,
+                    IsProperty = memberInfo.MemberType == MemberTypes.Property,
+                    IsPublic = isPublic,
+                    IsVirtual = isVirtual,
+                    JsonPropertyName = jsonPropertyName,
+                    RuntimePropertyName = runtimePropertyName,
+                    PropertyNameVarName = propertyNameVarName,
+                    IsReadOnly = isReadOnly,
+                    CanUseGetter = canUseGetter,
+                    CanUseSetter = canUseSetter,
+                    GetterIsVirtual = getterIsVirtual,
+                    SetterIsVirtual = setterIsVirtual,
+                    DefaultIgnoreCondition = ignoreCondition,
+                    NumberHandling = numberHandling,
+                    Order = order,
+                    HasJsonInclude = hasJsonInclude,
+                    TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
+                    DeclaringTypeRef = memberInfo.DeclaringType.GetCompilableName(),
+                    ConverterInstantiationLogic = converterInstantiationLogic,
+                    HasFactoryConverter = hasFactoryConverter
+                };
+            }
+
+            private Type GetMemberClrType(MemberInfo memberInfo)
+            {
+                if (memberInfo is PropertyInfo propertyInfo)
+                {
+                    return propertyInfo.PropertyType;
+                }
+
+                if (memberInfo is FieldInfo fieldInfo)
+                {
+                    return fieldInfo.FieldType;
+                }
+
+                throw new InvalidOperationException();
+            }
+
+            private void ProcessCustomAttributes(
+                IList<CustomAttributeData> attributeDataList,
+                Type memberCLRType,
+                out bool hasJsonInclude,
+                out string? jsonPropertyName,
+                out JsonIgnoreCondition? ignoreCondition,
+                out JsonNumberHandling? numberHandling,
+                out string? converterInstantiationLogic,
+                out int order,
+                out bool hasFactoryConverter)
+            {
+                hasJsonInclude = false;
+                jsonPropertyName = null;
+                ignoreCondition = default;
+                numberHandling = default;
+                converterInstantiationLogic = null;
+                order = 0;
 
                 bool foundDesignTimeCustomConverter = false;
-                string? converterInstantiationLogic = null;
+                hasFactoryConverter = false;
 
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
@@ -651,7 +1025,11 @@ namespace System.Text.Json.SourceGeneration
                     if (!foundDesignTimeCustomConverter && attributeType.GetCompatibleBaseClass(JsonConverterAttributeFullName) != null)
                     {
                         foundDesignTimeCustomConverter = true;
-                        converterInstantiationLogic = GetConverterInstantiationLogic(attributeData);
+                        converterInstantiationLogic = GetConverterInstantiationLogic(
+                            memberCLRType,
+                            attributeData,
+                            forType: false,
+                            ref hasFactoryConverter);
                     }
                     else if (attributeType.Assembly.FullName == SystemTextJsonNamespace)
                     {
@@ -691,68 +1069,104 @@ namespace System.Text.Json.SourceGeneration
                                     // Null check here is done at runtime within JsonSerializer.
                                 }
                                 break;
+                            case JsonPropertyOrderAttributeFullName:
+                                {
+                                    IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
+                                    order = (int)ctorArgs[0].Value;
+                                }
+                                break;
                             default:
                                 break;
                         }
                     }
                 }
+            }
 
-                Type memberCLRType;
-                bool isReadOnly;
-                bool canUseGetter;
-                bool canUseSetter;
-                bool getterIsVirtual = false;
-                bool setterIsVirtual = false;
+            private static void ProcessMember(
+                MemberInfo memberInfo,
+                Type memberClrType,
+                bool hasJsonInclude,
+                out bool isReadOnly,
+                out bool isPublic,
+                out bool canUseGetter,
+                out bool canUseSetter,
+                out bool getterIsVirtual,
+                out bool setterIsVirtual)
+            {
+                isPublic = false;
+                canUseGetter = false;
+                canUseSetter = false;
+                getterIsVirtual = false;
+                setterIsVirtual = false;
 
                 switch (memberInfo)
                 {
                     case PropertyInfo propertyInfo:
                         {
-                            MethodInfo setMethod = propertyInfo.SetMethod;
-                            memberCLRType = propertyInfo.PropertyType;
-                            isReadOnly = setMethod == null;
-                            canUseGetter = PropertyAccessorCanBeReferenced(propertyInfo.GetMethod, hasJsonInclude);
-                            canUseSetter = PropertyAccessorCanBeReferenced(setMethod, hasJsonInclude) && !setMethod.IsInitOnly();
-                            getterIsVirtual = propertyInfo.GetMethod?.IsVirtual == true;
-                            setterIsVirtual = propertyInfo.SetMethod?.IsVirtual == true;
+                            MethodInfo? getMethod = propertyInfo.GetMethod;
+                            MethodInfo? setMethod = propertyInfo.SetMethod;
+
+                            if (getMethod != null)
+                            {
+                                if (getMethod.IsPublic)
+                                {
+                                    isPublic = true;
+                                    canUseGetter = true;
+                                }
+                                else if (getMethod.IsAssembly)
+                                {
+                                    canUseGetter = hasJsonInclude;
+                                }
+
+                                getterIsVirtual = getMethod.IsVirtual;
+                            }
+
+                            if (setMethod != null)
+                            {
+                                isReadOnly = false;
+
+                                if (setMethod.IsPublic)
+                                {
+                                    isPublic = true;
+                                    canUseSetter = !setMethod.IsInitOnly();
+                                }
+                                else if (setMethod.IsAssembly)
+                                {
+                                    canUseSetter = hasJsonInclude && !setMethod.IsInitOnly();
+                                }
+
+                                setterIsVirtual = setMethod.IsVirtual;
+                            }
+                            else
+                            {
+                                isReadOnly = true;
+                            }
                         }
                         break;
                     case FieldInfo fieldInfo:
                         {
-                            Debug.Assert(fieldInfo.IsPublic);
-                            memberCLRType = fieldInfo.FieldType;
+                            isPublic = fieldInfo.IsPublic;
                             isReadOnly = fieldInfo.IsInitOnly;
-                            canUseGetter = true;
-                            canUseSetter = !isReadOnly;
+
+                            if (!fieldInfo.IsPrivate && !fieldInfo.IsFamily)
+                            {
+                                canUseGetter = true;
+                                canUseSetter = !isReadOnly;
+                            }
                         }
                         break;
                     default:
                         throw new InvalidOperationException();
                 }
-
-                return new PropertyGenerationSpec
-                {
-                    ClrName = memberInfo.Name,
-                    IsProperty = memberInfo.MemberType == MemberTypes.Property,
-                    JsonPropertyName = jsonPropertyName,
-                    IsReadOnly = isReadOnly,
-                    CanUseGetter = canUseGetter,
-                    CanUseSetter = canUseSetter,
-                    GetterIsVirtual = getterIsVirtual,
-                    SetterIsVirtual = setterIsVirtual,
-                    DefaultIgnoreCondition = ignoreCondition,
-                    NumberHandling = numberHandling,
-                    HasJsonInclude = hasJsonInclude,
-                    TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
-                    DeclaringTypeRef = $"global::{memberInfo.DeclaringType.GetUniqueCompilableTypeName()}",
-                    ConverterInstantiationLogic = converterInstantiationLogic
-                };
             }
 
-            private static bool PropertyAccessorCanBeReferenced(MethodInfo? memberAccessor, bool hasJsonInclude) =>
-                (memberAccessor != null && !memberAccessor.IsPrivate) && (memberAccessor.IsPublic || hasJsonInclude);
+            private static bool PropertyAccessorCanBeReferenced(MethodInfo? accessor)
+                => accessor != null && (accessor.IsPublic || accessor.IsAssembly);
 
-            private string? GetConverterInstantiationLogic(CustomAttributeData attributeData)
+            private string? GetConverterInstantiationLogic(
+                Type type, CustomAttributeData attributeData,
+                bool forType, // whether for a type or a property
+                ref bool hasFactoryConverter)
             {
                 if (attributeData.AttributeType.FullName != JsonConverterAttributeFullName)
                 {
@@ -767,29 +1181,93 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                return $"new {converterType.GetUniqueCompilableTypeName()}()";
+                if (converterType.GetCompatibleBaseClass(JsonConverterFactoryFullName) != null)
+                {
+                    hasFactoryConverter = true;
+
+                    if (forType)
+                    {
+                        return $"{Emitter.GetConverterFromFactoryMethodName}(typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
+                    }
+                    else
+                    {
+                        return $"{Emitter.JsonContextVarName}.{Emitter.GetConverterFromFactoryMethodName}<{type.GetCompilableName()}>(new {converterType.GetCompilableName()}())";
+                    }
+                }
+
+                return $"new {converterType.GetCompilableName()}()";
+            }
+
+            private static string DetermineRuntimePropName(string clrPropName, string? jsonPropName, JsonKnownNamingPolicy namingPolicy)
+            {
+                string runtimePropName;
+
+                if (jsonPropName != null)
+                {
+                    runtimePropName = jsonPropName;
+                }
+                else if (namingPolicy == JsonKnownNamingPolicy.CamelCase)
+                {
+                    runtimePropName = JsonNamingPolicy.CamelCase.ConvertName(clrPropName);
+                }
+                else
+                {
+                    runtimePropName = clrPropName;
+                }
+
+                return runtimePropName;
+            }
+
+            private static string DeterminePropNameIdentifier(string runtimePropName)
+            {
+                const string PropName = "PropName_";
+
+                // Use a different prefix to avoid possible collisions with "PropName_" in
+                // the rare case there is a C# property in a hex format.
+                const string EncodedPropName = "EncodedPropName_";
+
+                if (SyntaxFacts.IsValidIdentifier(runtimePropName))
+                {
+                    return PropName + runtimePropName;
+                }
+
+                // Encode the string to a byte[] and then convert to hexadecimal.
+                // To make the generated code more readable, we could use a different strategy in the future
+                // such as including the full class name + the CLR property name when there are duplicates,
+                // but that will create unnecessary JsonEncodedText properties.
+                byte[] utf8Json = Encoding.UTF8.GetBytes(runtimePropName);
+
+                StringBuilder sb = new StringBuilder(
+                    EncodedPropName,
+                    capacity: EncodedPropName.Length + utf8Json.Length * 2);
+
+                for (int i = 0; i < utf8Json.Length; i++)
+                {
+                    sb.Append(utf8Json[i].ToString("X2")); // X2 is hex format
+                }
+
+                return sb.ToString();
             }
 
             private void PopulateNumberTypes()
             {
                 Debug.Assert(_numberTypes != null);
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(byte)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(decimal)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(double)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(short)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(sbyte)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(int)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(long)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(float)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(ushort)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(uint)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(ulong)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Byte));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Decimal));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Double));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Int16));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_SByte));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Int32));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Int64));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_Single));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt16));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt32));
+                _numberTypes.Add(_metadataLoadContext.Resolve(SpecialType.System_UInt64));
             }
 
             private void PopulateKnownTypes()
             {
                 PopulateNumberTypes();
-
                 Debug.Assert(_knownTypes != null);
                 Debug.Assert(_numberTypes != null);
 
@@ -800,16 +1278,11 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_dateTimeType);
                 _knownTypes.Add(_dateTimeOffsetType);
                 _knownTypes.Add(_guidType);
-                _knownTypes.Add(_metadataLoadContext.Resolve(typeof(object)));
+                _knownTypes.Add(_objectType);
                 _knownTypes.Add(_stringType);
-
-                // System.Private.Uri may not be loaded in input compilation.
-                if (_uriType != null)
-                {
-                    _knownTypes.Add(_uriType);
-                }
-
-                _knownTypes.Add(_metadataLoadContext.Resolve(typeof(Version)));
+                _knownTypes.Add(_uriType);
+                _knownTypes.Add(_versionType);
+                _knownTypes.Add(_jsonElementType);
             }
         }
     }

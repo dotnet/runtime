@@ -11,6 +11,7 @@
 <Project>
   <PropertyGroup>
     <LocalFrameworkOverrideName>$(MicrosoftNetCoreAppFrameworkName)</LocalFrameworkOverrideName>
+    <TargetingpacksTargetsImported>true</TargetingpacksTargetsImported>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DisableImplicitFrameworkReferences)' != 'true' and
@@ -103,7 +104,7 @@
     </ItemGroup>
   </Target>
 
-  <!-- Use local targeting pack for NetCoreAppCurrent. -->
+  <!-- Use local targeting/runtime pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveFrameworkReferences">

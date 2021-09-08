@@ -99,6 +99,15 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Tries to obtain the current JSON value and returns a value that indicates whether the operation succeeded.
         /// </summary>
+        /// <remarks>
+        ///   {T} can be the type or base type of the underlying value.
+        ///   If the underlying value is a <see cref="JsonElement"/> then {T} can also be the type of any primitive
+        ///   value supported by current <see cref="JsonElement"/>.
+        ///   Specifying the <see cref="object"/> type for {T} will always succeed and return the underlying value as <see cref="object"/>.<br />
+        ///   The underlying value of a <see cref="JsonValue"/> after deserialization is an instance of <see cref="JsonElement"/>,
+        ///   otherwise it's the value specified when the <see cref="JsonValue"/> was created.
+        /// </remarks>
+        /// <seealso cref="JsonNode.GetValue{T}"></seealso>
         /// <typeparam name="T">The type of value to obtain.</typeparam>
         /// <param name="value">When this method returns, contains the parsed value.</param>
         /// <returns><see langword="true"/> if the value can be successfully obtained; otherwise, <see langword="false"/>.</returns>

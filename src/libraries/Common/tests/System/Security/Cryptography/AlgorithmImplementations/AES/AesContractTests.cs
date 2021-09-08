@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Aes.Tests
@@ -377,6 +378,25 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 Assert.Equal(firstBlockEncrypted, firstBlockEncryptedFromCount);
                 Assert.Equal(middleHalfEncrypted, middleHalfEncryptedFromOffsetAndCount);
+            }
+        }
+
+        [Fact]
+        public static void Cfb8ModeCanDepadCfb128Padding()
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                // 1, 2, 3, 4, 5 encrypted with CFB8 but padded with block-size padding.
+                byte[] ciphertext = "68C272ACF16BE005A361DB1C147CA3AD".HexToByteArray();
+                aes.Key = "3279CE2E9669A54E038AA62818672150D0B5A13F6757C27F378115501F83B119".HexToByteArray();
+                aes.IV = new byte[16];
+                aes.Padding = PaddingMode.PKCS7;
+                aes.Mode = CipherMode.CFB;
+                aes.FeedbackSize = 8;
+
+                using ICryptoTransform transform = aes.CreateDecryptor();
+                byte[] decrypted = transform.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
+                Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, decrypted);
             }
         }
 

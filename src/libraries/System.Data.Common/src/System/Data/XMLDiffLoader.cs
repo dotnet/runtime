@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
-
 using System.Diagnostics;
 using System.Collections;
 using System.Xml;
@@ -14,9 +11,9 @@ namespace System.Data
 {
     internal sealed class XMLDiffLoader
     {
-        private ArrayList _tables;
-        private DataSet _dataSet;
-        private DataTable _dataTable;
+        private ArrayList? _tables;
+        private DataSet? _dataSet;
+        private DataTable? _dataTable;
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void LoadDiffGram(DataSet ds, XmlReader dataTextReader)
@@ -42,7 +39,7 @@ namespace System.Data
         {
             foreach (DataRelation r in dt.ChildRelations)
             {
-                if (!_tables.Contains(r.ChildTable))
+                if (!_tables!.Contains(r.ChildTable))
                 {
                     _tables.Add(r.ChildTable);
                     CreateTablesHierarchy(r.ChildTable);
@@ -76,8 +73,8 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ProcessDiffs(DataSet ds, XmlReader ssync)
         {
-            DataTable tableBefore;
-            DataRow row;
+            DataTable? tableBefore;
+            DataRow? row;
             int oldRowRecord;
             int pos = -1;
 
@@ -89,13 +86,13 @@ namespace System.Data
             while (iSsyncDepth < ssync.Depth)
             {
                 tableBefore = null;
-                string diffId = null;
+                string? diffId = null;
 
                 oldRowRecord = -1;
 
                 // the diffgramm always contains sql:before and sql:after pairs
 
-                diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS);
+                diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS)!;
                 bool hasErrors = ssync.GetAttribute(Keywords.HASERRORS, Keywords.DFFNS) == Keywords.TRUE;
                 oldRowRecord = ReadOldRowData(ds, ref tableBefore, ref pos, ssync);
                 if (oldRowRecord == -1)
@@ -104,7 +101,7 @@ namespace System.Data
                 if (tableBefore == null)
                     throw ExceptionBuilder.DiffgramMissingSQL();
 
-                row = (DataRow)tableBefore.RowDiffId[diffId];
+                row = (DataRow?)tableBefore.RowDiffId[diffId];
                 if (row != null)
                 {
                     row._oldRecord = oldRowRecord;
@@ -129,8 +126,8 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ProcessDiffs(ArrayList tableList, XmlReader ssync)
         {
-            DataTable tableBefore;
-            DataRow row;
+            DataTable? tableBefore;
+            DataRow? row;
             int oldRowRecord;
             int pos = -1;
 
@@ -142,13 +139,13 @@ namespace System.Data
             while (iSsyncDepth < ssync.Depth)
             {
                 tableBefore = null;
-                string diffId = null;
+                string diffId;
 
                 oldRowRecord = -1;
 
                 // the diffgramm always contains sql:before and sql:after pairs
 
-                diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS);
+                diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS)!;
                 bool hasErrors = ssync.GetAttribute(Keywords.HASERRORS, Keywords.DFFNS) == Keywords.TRUE;
                 oldRowRecord = ReadOldRowData(_dataSet, ref tableBefore, ref pos, ssync);
                 if (oldRowRecord == -1)
@@ -157,7 +154,7 @@ namespace System.Data
                 if (tableBefore == null)
                     throw ExceptionBuilder.DiffgramMissingSQL();
 
-                row = (DataRow)tableBefore.RowDiffId[diffId];
+                row = (DataRow?)tableBefore.RowDiffId[diffId];
 
                 if (row != null)
                 {
@@ -183,7 +180,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ProcessErrors(DataSet ds, XmlReader ssync)
         {
-            DataTable table;
+            DataTable? table;
 
             int iSsyncDepth = ssync.Depth;
             ssync.Read(); // pass the before node.
@@ -193,9 +190,9 @@ namespace System.Data
                 table = ds.Tables.GetTable(XmlConvert.DecodeName(ssync.LocalName), ssync.NamespaceURI);
                 if (table == null)
                     throw ExceptionBuilder.DiffgramMissingSQL();
-                string diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS);
-                DataRow row = (DataRow)table.RowDiffId[diffId];
-                string rowError = ssync.GetAttribute(Keywords.MSD_ERROR, Keywords.DFFNS);
+                string diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS)!;
+                DataRow row = (DataRow)table.RowDiffId[diffId]!;
+                string? rowError = ssync.GetAttribute(Keywords.MSD_ERROR, Keywords.DFFNS);
                 if (rowError != null)
                     row.RowError = rowError;
                 int iRowDepth = ssync.Depth;
@@ -204,10 +201,10 @@ namespace System.Data
                 {
                     if (XmlNodeType.Element == ssync.NodeType)
                     {
-                        DataColumn col = table.Columns[XmlConvert.DecodeName(ssync.LocalName), ssync.NamespaceURI];
+                        DataColumn col = table.Columns[XmlConvert.DecodeName(ssync.LocalName), ssync.NamespaceURI]!;
                         //if (col == null)
                         // throw exception here
-                        string colError = ssync.GetAttribute(Keywords.MSD_ERROR, Keywords.DFFNS);
+                        string colError = ssync.GetAttribute(Keywords.MSD_ERROR, Keywords.DFFNS)!;
                         row.SetColumnError(col, colError);
                     }
 
@@ -223,7 +220,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ProcessErrors(ArrayList dt, XmlReader ssync)
         {
-            DataTable table;
+            DataTable? table;
 
             int iSsyncDepth = ssync.Depth;
             ssync.Read(); // pass the before node.
@@ -234,14 +231,14 @@ namespace System.Data
                 if (table == null)
                     throw ExceptionBuilder.DiffgramMissingSQL();
 
-                string diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS);
+                string diffId = ssync.GetAttribute(Keywords.DIFFID, Keywords.DFFNS)!;
 
-                DataRow row = (DataRow)table.RowDiffId[diffId];
+                DataRow? row = (DataRow?)table.RowDiffId[diffId];
                 if (row == null)
                 {
                     for (int i = 0; i < dt.Count; i++)
                     {
-                        row = (DataRow)((DataTable)dt[i]).RowDiffId[diffId];
+                        row = (DataRow?)((DataTable)dt[i]!).RowDiffId[diffId];
                         if (row != null)
                         {
                             table = row.Table;
@@ -249,9 +246,9 @@ namespace System.Data
                         }
                     }
                 }
-                string rowError = ssync.GetAttribute(Keywords.MSD_ERROR, Keywords.DFFNS);
+                string? rowError = ssync.GetAttribute(Keywords.MSD_ERROR, Keywords.DFFNS);
                 if (rowError != null)
-                    row.RowError = rowError;
+                    row!.RowError = rowError;
                 int iRowDepth = ssync.Depth;
                 ssync.Read(); // we may be inside a column
 
@@ -259,11 +256,11 @@ namespace System.Data
                 {
                     if (XmlNodeType.Element == ssync.NodeType)
                     {
-                        DataColumn col = table.Columns[XmlConvert.DecodeName(ssync.LocalName), ssync.NamespaceURI];
+                        DataColumn col = table.Columns[XmlConvert.DecodeName(ssync.LocalName), ssync.NamespaceURI]!;
                         //if (col == null)
                         // throw exception here
-                        string colError = ssync.GetAttribute(Keywords.MSD_ERROR, Keywords.DFFNS);
-                        row.SetColumnError(col, colError);
+                        string? colError = ssync.GetAttribute(Keywords.MSD_ERROR, Keywords.DFFNS);
+                        row!.SetColumnError(col, colError);
                     }
                     ssync.Read();
                 }
@@ -273,17 +270,17 @@ namespace System.Data
 
             return;
         }
-        private DataTable GetTable(string tableName, string ns)
+        private DataTable? GetTable(string tableName, string ns)
         {
             if (_tables == null)
-                return _dataSet.Tables.GetTable(tableName, ns);
+                return _dataSet!.Tables.GetTable(tableName, ns);
 
             if (_tables.Count == 0)
-                return (DataTable)_tables[0];
+                return (DataTable?)_tables[0];
 
             for (int i = 0; i < _tables.Count; i++)
             {
-                DataTable dt = (DataTable)_tables[i];
+                DataTable dt = (DataTable)_tables[i]!;
                 if (string.Equals(dt.TableName, tableName, StringComparison.Ordinal)
                     && string.Equals(dt.Namespace, ns, StringComparison.Ordinal))
                     return dt;
@@ -292,7 +289,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private int ReadOldRowData(DataSet ds, ref DataTable table, ref int pos, XmlReader row)
+        private int ReadOldRowData(DataSet? ds, ref DataTable? table, ref int pos, XmlReader row)
         {
             // read table information
             if (ds != null)
@@ -311,7 +308,7 @@ namespace System.Data
             }
 
             int iRowDepth = row.Depth;
-            string value = null;
+            string? value = null;
 
             value = row.GetAttribute(Keywords.ROWORDER, Keywords.MSDNS);
             if (!string.IsNullOrEmpty(value))
@@ -376,7 +373,7 @@ namespace System.Data
                 {
                     string ln = XmlConvert.DecodeName(row.LocalName);
                     string ns = row.NamespaceURI;
-                    DataColumn column = table.Columns[ln, ns];
+                    DataColumn? column = table.Columns[ln, ns];
 
                     if (column == null)
                     {
@@ -394,13 +391,13 @@ namespace System.Data
                         (row.GetAttribute(Keywords.TYPE, Keywords.XSINS) != null));
 
                         bool skipped = false;
-                        if (column.Table.DataSet != null && column.Table.DataSet._udtIsWrapped)
+                        if (column.Table!.DataSet != null && column.Table.DataSet._udtIsWrapped)
                         {
                             row.Read(); // if UDT is wrapped, skip the wrapper
                             skipped = true;
                         }
 
-                        XmlRootAttribute xmlAttrib = null;
+                        XmlRootAttribute? xmlAttrib = null;
 
                         if (!isPolymorphism && !column.ImplementsIXMLSerializable)
                         { // THIS CHECK MAY BE IS WRONG think more

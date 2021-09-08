@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 using System.Buffers;
 using System.Text;
+using System;
 
 internal static partial class Interop
 {
@@ -20,24 +21,31 @@ internal static partial class Interop
         /// Returns the number of bytes placed into the buffer on success; bufferSize if the buffer is too small; and -1 on error.
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadLink", SetLastError = true)]
-        private static extern int ReadLink(string path, byte[] buffer, int bufferSize);
+        private static extern int ReadLink(ref byte path, byte[] buffer, int bufferSize);
 
         /// <summary>
         /// Takes a path to a symbolic link and returns the link target path.
         /// </summary>
-        /// <param name="path">The path to the symlink</param>
-        /// <returns>
-        /// Returns the link to the target path on success; and null otherwise.
-        /// </returns>
-        public static string? ReadLink(string path)
+        /// <param name="path">The path to the symlink.</param>
+        /// <returns>Returns the link to the target path on success; and null otherwise.</returns>
+        internal static string? ReadLink(ReadOnlySpan<char> path)
         {
-            int bufferSize = 256;
+            int outputBufferSize = 1024;
+
+            // Use an initial buffer size that prevents disposing and renting
+            // a second time when calling ConvertAndTerminateString.
+            using var converter = new ValueUtf8Converter(stackalloc byte[1024]);
+
             while (true)
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(outputBufferSize);
                 try
                 {
-                    int resultLength = Interop.Sys.ReadLink(path, buffer, buffer.Length);
+                    int resultLength = Interop.Sys.ReadLink(
+                        ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path)),
+                        buffer,
+                        buffer.Length);
+
                     if (resultLength < 0)
                     {
                         // error
@@ -54,8 +62,8 @@ internal static partial class Interop
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
 
-                // buffer was too small, loop around again and try with a larger buffer.
-                bufferSize *= 2;
+                // Output buffer was too small, loop around again and try with a larger buffer.
+                outputBufferSize = buffer.Length * 2;
             }
         }
     }

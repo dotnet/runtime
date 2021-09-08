@@ -1967,8 +1967,6 @@ mono_metadata_init (void)
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
-	mono_components_init ();
-
 	mono_metadata_update_init ();
 }
 

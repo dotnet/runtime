@@ -523,10 +523,10 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             private readonly LicenseInteropProxy _licenseProxy = new LicenseInteropProxy();
             private readonly Guid _classId;
 
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicConstructors)]
             private readonly Type _classType;
 
-            public LicenseClassFactory(Guid clsid, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType)
+            public LicenseClassFactory(Guid clsid, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType)
             {
                 _classId = clsid;
                 _classType = classType;
@@ -627,6 +627,9 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         private object? _licContext;
         private Type? _targetRcwType;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
+            Justification = "The type parameter to LicenseManager.CreateWithContext method has PublicConstructors annotation. We only invoke this method" +
+                "from AllocateAndValidateLicense which annotates the value passed in with the same annotation.")]
         public LicenseInteropProxy()
         {
             Type licManager = Type.GetType("System.ComponentModel.LicenseManager, System.ComponentModel.TypeConverter", throwOnError: true)!;
@@ -742,7 +745,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         // If we are being entered because of a call to ICF::CreateInstanceLic(),
         // "isDesignTime" will be "false" and "key" will point to a non-null
         // license key.
-        public object AllocateAndValidateLicense(Type type, string? key, bool isDesignTime)
+        public object AllocateAndValidateLicense([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, string? key, bool isDesignTime)
         {
             object?[] parameters;
             object? licContext;

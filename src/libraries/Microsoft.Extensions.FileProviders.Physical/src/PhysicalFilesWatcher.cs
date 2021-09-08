@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,23 +26,21 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// </summary>
     public class PhysicalFilesWatcher : IDisposable
     {
-        private static readonly Action<object> _cancelTokenSource = state => ((CancellationTokenSource)state).Cancel();
+        private static readonly Action<object?> _cancelTokenSource = state => ((CancellationTokenSource?)state)!.Cancel();
 
         internal static TimeSpan DefaultPollingInterval = TimeSpan.FromSeconds(4);
 
-        private readonly ConcurrentDictionary<string, ChangeTokenInfo> _filePathTokenLookup =
-            new ConcurrentDictionary<string, ChangeTokenInfo>(StringComparer.OrdinalIgnoreCase);
-        private readonly ConcurrentDictionary<string, ChangeTokenInfo> _wildcardTokenLookup =
-            new ConcurrentDictionary<string, ChangeTokenInfo>(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, ChangeTokenInfo> _filePathTokenLookup = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, ChangeTokenInfo> _wildcardTokenLookup = new(StringComparer.OrdinalIgnoreCase);
 
-        private readonly FileSystemWatcher _fileWatcher;
-        private readonly object _fileWatcherLock = new object();
+        private readonly FileSystemWatcher? _fileWatcher;
+        private readonly object _fileWatcherLock = new();
         private readonly string _root;
         private readonly ExclusionFilters _filters;
 
-        private Timer _timer;
+        private Timer? _timer;
         private bool _timerInitialzed;
-        private object _timerLock = new object();
+        private object _timerLock = new();
         private Func<Timer> _timerFactory;
         private bool _disposed;
 
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// </param>
         public PhysicalFilesWatcher(
             string root,
-            FileSystemWatcher fileSystemWatcher,
+            FileSystemWatcher? fileSystemWatcher,
             bool pollForChanges)
             : this(root, fileSystemWatcher, pollForChanges, ExclusionFilters.Sensitive)
         {
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="filters">Specifies which files or directories are excluded. Notifications of changes to are not raised to these.</param>
         public PhysicalFilesWatcher(
             string root,
-            FileSystemWatcher fileSystemWatcher,
+            FileSystemWatcher? fileSystemWatcher,
             bool pollForChanges,
             ExclusionFilters filters)
         {
@@ -88,6 +88,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             if (fileSystemWatcher != null)
             {
+#if NETCOREAPP
+                if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.FileSystemWatcher_PlatformNotSupported, typeof(FileSystemWatcher)));
+                }
+#endif
+
                 _fileWatcher = fileSystemWatcher;
                 _fileWatcher.IncludeSubdirectories = true;
                 _fileWatcher.Created += OnChanged;
@@ -140,7 +147,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = GetOrAddChangeToken(filter);
+// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+#pragma warning disable CA1416 // Validate platform compatibility
             TryEnableFileSystemWatcher();
+#pragma warning restore CA1416 // Validate platform compatibility
 
             return changeToken;
         }
@@ -264,6 +274,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
             // For a file name change or a directory's name change notify registered tokens.
@@ -296,11 +310,19 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
             OnFileSystemEntryChange(e.FullPath);
         }
 
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OnError(object sender, ErrorEventArgs e)
         {
             // Notify all cache entries on error.
@@ -310,6 +332,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OnFileSystemEntryChange(string fullPath)
         {
             try
@@ -332,6 +358,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void ReportChangeForMatchedEntries(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -353,7 +383,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             foreach (System.Collections.Generic.KeyValuePair<string, ChangeTokenInfo> wildCardEntry in _wildcardTokenLookup)
             {
-                PatternMatchingResult matchResult = wildCardEntry.Value.Matcher.Match(path);
+                PatternMatchingResult matchResult = wildCardEntry.Value.Matcher!.Match(path);
                 if (matchResult.HasMatches &&
                     _wildcardTokenLookup.TryRemove(wildCardEntry.Key, out matchInfo))
                 {
@@ -368,6 +398,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void TryDisableFileSystemWatcher()
         {
             if (_fileWatcher != null)
@@ -385,6 +419,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void TryEnableFileSystemWatcher()
         {
             if (_fileWatcher != null)
@@ -425,8 +463,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 TaskScheduler.Default);
         }
 
-        internal static void RaiseChangeEvents(object state)
+        internal static void RaiseChangeEvents(object? state)
         {
+            Debug.Assert(state != null);
+
             // Iterating over a concurrent bag gives us a point in time snapshot making it safe
             // to remove items from it.
             var changeTokens = (ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>)state;
@@ -448,7 +488,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 // We're already on a background thread, don't need to spawn a background Task to cancel the CTS
                 try
                 {
-                    token.CancellationTokenSource.Cancel();
+                    token.CancellationTokenSource!.Cancel();
                 }
                 catch
                 {
@@ -469,7 +509,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             public ChangeTokenInfo(
                 CancellationTokenSource tokenSource,
                 CancellationChangeToken changeToken,
-                Matcher matcher)
+                Matcher? matcher)
             {
                 TokenSource = tokenSource;
                 ChangeToken = changeToken;
@@ -480,7 +520,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             public CancellationChangeToken ChangeToken { get; }
 
-            public Matcher Matcher { get; }
+            public Matcher? Matcher { get; }
         }
     }
 }

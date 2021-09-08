@@ -36,8 +36,6 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/exception.h>
-#include <mono/metadata/security-manager.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
@@ -2965,9 +2963,12 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoClass *result = mono_class_get_checked (image, type_token, error);
+	result = mono_class_get_checked (image, type_token, error);
 	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -3523,8 +3524,10 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	/* FIXME test for interfaces with variant generic arguments */
-	mono_class_init_internal (klass);
-	mono_class_init_internal (klassc);
+	if (check_interfaces) {
+		mono_class_init_internal (klass);
+		mono_class_init_internal (klassc);
+	}
 	
 	if (check_interfaces && MONO_CLASS_IS_INTERFACE_INTERNAL (klassc) && !MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, m_class_get_interface_id (klassc)))
@@ -4583,9 +4586,12 @@ gpointer
 mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	      MonoGenericContext *context)
 {
+	gpointer res;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	gpointer res = mono_ldtoken_checked (image, token, handle_class, context, error);
+	res = mono_ldtoken_checked (image, token, handle_class, context, error);
 	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
 
@@ -5281,7 +5287,11 @@ mono_class_is_delegate (MonoClass *klass)
 mono_bool
 mono_class_implements_interface (MonoClass* klass, MonoClass* iface)
 {
-	return mono_class_is_assignable_from_internal (iface, klass);
+	mono_bool result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_is_assignable_from_internal (iface, klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 static mono_bool

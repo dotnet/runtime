@@ -80,7 +80,7 @@ typedef enum {
 	MONO_THREAD_CREATE_FLAGS_SMALL_STACK	= 0x08,
 } MonoThreadCreateFlags;
 
-MonoInternalThread*
+MONO_COMPONENT_API MonoInternalThread*
 mono_thread_create_internal (MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
 MonoInternalThreadHandle
@@ -197,11 +197,11 @@ MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 MonoInternalThreadHandle
 mono_thread_internal_current_handle (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_internal_abort (MonoInternalThread *thread);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
 
-void mono_thread_internal_reset_abort (MonoInternalThread *thread);
+MONO_COMPONENT_API void mono_thread_internal_reset_abort (MonoInternalThread *thread);
 
 void mono_thread_internal_unhandled_exception (MonoObject* exc);
 
@@ -267,7 +267,7 @@ mono_thread_set_name (MonoInternalThread *thread,
 
 gboolean mono_thread_interruption_requested (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoException*
 mono_thread_interruption_checkpoint (void);
 
@@ -280,7 +280,7 @@ mono_thread_interruption_checkpoint_void (void);
 MonoExceptionHandle
 mono_thread_interruption_checkpoint_handle (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoException* mono_thread_force_interruption_checkpoint_noraise (void);
 
 /**
@@ -292,14 +292,14 @@ MonoException* mono_thread_force_interruption_checkpoint_noraise (void);
  * mono_thread_interruption_checkpoint () is always needed if the flag is not
  * zero.
  */
-extern gint32 mono_thread_interruption_request_flag;
+MONO_API_DATA gint32 mono_thread_interruption_request_flag;
 
 uint32_t mono_alloc_special_static_data (uint32_t static_type, uint32_t size, uint32_t align, uintptr_t *bitmap, int numbits);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void*    mono_get_special_static_data   (uint32_t offset);
 
-gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset);
+MONO_COMPONENT_API gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset);
 
 void
 mono_thread_resume_interruption (gboolean exec);
@@ -344,7 +344,7 @@ mono_thread_internal_current_is_attached (void);
 void
 mono_thread_internal_describe (MonoInternalThread *internal, GString *str);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_internal_is_current (MonoInternalThread *internal);
 
 gboolean
@@ -371,101 +371,6 @@ mono_set_thread_dump_dir(gchar* dir);
 
 MONO_COLD void
 mono_set_pending_exception_handle (MonoExceptionHandle exc);
-
-#define MONO_MAX_SUMMARY_NAME_LEN 140
-#define MONO_MAX_THREAD_NAME_LEN 140
-#define MONO_MAX_SUMMARY_THREADS 32
-#define MONO_MAX_SUMMARY_FRAMES 80
-#define MONO_MAX_SUMMARY_EXCEPTIONS 15
-
-typedef struct {
-	gboolean is_managed;
-	char str_descr [MONO_MAX_SUMMARY_NAME_LEN];
-	struct {
-		int token;
-		int il_offset;
-		int native_offset;
-		const char *guid;
-
-#ifndef MONO_PRIVATE_CRASHES
-		// We use ifdef to make it a compile-time error to store this 
-		// symbolicated string on release builds
-		const char *name;
-#endif
-		const char *filename;
-		guint32 image_size;
-		guint32 time_date_stamp;
-	} managed_data;
-	struct {
-		intptr_t ip;
-		gint32 offset;
-		char module [MONO_MAX_SUMMARY_NAME_LEN];
-		gboolean is_trampoline;
-		gboolean has_name;
-	} unmanaged_data;
-} MonoFrameSummary;
-
-typedef struct {
-	MonoClass *managed_exc_type;
-
-	int num_managed_frames;
-	MonoFrameSummary managed_frames [MONO_MAX_SUMMARY_FRAMES];
-} MonoExcSummary;
-
-typedef struct {
-	guint64 offset_free_hash;
-	guint64 offset_rich_hash;
-} MonoStackHash;
-
-typedef struct {
-	gboolean done; // Needed because cond wait can have spurious wakeups
-	MonoSemType done_wait; // Readers are finished with this
-
-	// For managed stack walking
-
-	MonoDomain *domain;
-	MonoJitTlsData *jit_tls;
-	MonoLMF *lmf;
-
-	// Emitted attributes
-
-	gboolean is_managed;
-
-	char name [MONO_MAX_THREAD_NAME_LEN];
-
-	intptr_t info_addr;
-	intptr_t native_thread_id;
-
-	// Print reason we don't have a complete
-	// managed trace
-	const char *error_msg;
-
-	int num_managed_frames;
-	MonoFrameSummary managed_frames [MONO_MAX_SUMMARY_FRAMES];
-
-	int num_unmanaged_frames;
-	MonoFrameSummary unmanaged_frames [MONO_MAX_SUMMARY_FRAMES];
-
-	int num_exceptions;
-	MonoExcSummary exceptions [MONO_MAX_SUMMARY_EXCEPTIONS];
-
-	MonoStackHash hashes;
-
-	MonoContext *ctx;
-	MonoContext ctx_mem;
-} MonoThreadSummary;
-
-void
-mono_threads_summarize_init (void);
-
-gboolean
-mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gboolean silent, gboolean signal_handler_controller, gchar *mem, size_t provided_size);
-
-gboolean
-mono_threads_summarize_execute (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gboolean silent, gchar *mem, size_t provided_size);
-
-gboolean
-mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx);
 
 void
 mono_threads_exiting (void);

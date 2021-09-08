@@ -4,32 +4,42 @@
     <body>
       <trans-unit id="ContextClassesMustBePartialMessageFormat">
         <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
-        <target state="new">Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</target>
+        <target state="translated">Türetilmiş 'JsonSerializerContext' türü '{0}' JSON ile seri hale getirilebilir türleri belirtir. kaynak oluşturmayı başlatmak için bu türün ve bu türü içeren tüm türlerin kısmi yapılması gerekir.</target>
         <note />
       </trans-unit>
       <trans-unit id="ContextClassesMustBePartialTitle">
         <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
-        <target state="new">Derived 'JsonSerializerContext' types and all containing types must be partial.</target>
+        <target state="translated">Türetilmiş 'JsonSerializerContext' türleri ve bunları içeren tüm türler kısmi olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
+        <target state="translated">{0} adını taşıyan birden çok tür var. Kaynak, algılanan ilk tür için oluşturuldu. Bu çarpışmayı çözmek için 'JsonSerializableAttribute.TypeInfoPropertyName' özelliğini kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
-        <target state="new">Duplicate type name.</target>
+        <target state="translated">Yinelenen tür adı.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">'{0}' türünün 'JsonConstructorAttribute' ile açıklanan birden çok oluşturucusu var.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">Türün JsonConstructorAttribute ile açıklanan birden çok oluşturucusu var.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
-        <target state="new">Did not generate serialization metadata for type '{0}'.</target>
+        <target state="translated">'{0}' türü için serileştirme meta verileri oluşturulmadı.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
-        <target state="new">Did not generate serialization metadata for type.</target>
+        <target state="translated">Tür için serileştirme meta verileri oluşturulmadı.</target>
         <note />
       </trans-unit>
     </body>

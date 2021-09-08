@@ -38,7 +38,7 @@ struct CnsVal
     bool    cnsReloc;
 };
 
-UNATIVE_OFFSET emitInsSize(code_t code);
+UNATIVE_OFFSET emitInsSize(code_t code, bool includeRexPrefixSize);
 UNATIVE_OFFSET emitInsSizeSV(code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
@@ -67,7 +67,7 @@ BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 unsigned emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
 unsigned emitGetVexPrefixSize(instruction ins, emitAttr attr);
-unsigned emitGetPrefixSize(code_t code);
+unsigned emitGetPrefixSize(code_t code, bool includeRexPrefixSize);
 unsigned emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code);
 
 unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code);
@@ -83,7 +83,15 @@ code_t insEncodeOpreg(instruction ins, regNumber reg, emitAttr size);
 
 unsigned insSSval(unsigned scale);
 
-bool IsAVXInstruction(instruction ins);
+static bool IsSSEInstruction(instruction ins);
+static bool IsSSEOrAVXInstruction(instruction ins);
+static bool IsAVXOnlyInstruction(instruction ins);
+static bool IsFMAInstruction(instruction ins);
+static bool IsAVXVNNIInstruction(instruction ins);
+static bool IsBMIInstruction(instruction ins);
+static regNumber getBmiRegNumber(instruction ins);
+static regNumber getSseShiftRegNumber(instruction ins);
+bool IsAVXInstruction(instruction ins) const;
 code_t insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, code_t code);
 
 code_t AddRexWPrefix(instruction ins, code_t code);
@@ -97,6 +105,9 @@ bool Is4ByteSSEInstruction(instruction ins);
 static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(
     instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
+
+static bool IsJccInstruction(instruction ins);
+static bool IsJmpInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
 
@@ -116,7 +127,8 @@ bool hasRexPrefix(code_t code)
 #define VEX_PREFIX_MASK_3BYTE 0xFF000000000000ULL
 #define VEX_PREFIX_CODE_3BYTE 0xC4000000000000ULL
 
-bool TakesVexPrefix(instruction ins);
+bool TakesVexPrefix(instruction ins) const;
+static bool TakesRexWPrefix(instruction ins, emitAttr attr);
 
 // Returns true if the instruction encoding already contains VEX prefix
 bool hasVexPrefix(code_t code)
@@ -142,7 +154,7 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
 }
 
 bool useVEXEncodings;
-bool UseVEXEncoding()
+bool UseVEXEncoding() const
 {
     return useVEXEncodings;
 }
@@ -315,7 +327,7 @@ void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
-void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val);
+void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 

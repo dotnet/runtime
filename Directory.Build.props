@@ -10,13 +10,15 @@
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOS">
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">windows</TargetOS>
+    <_hostOS>Linux</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
+    <_hostOS Condition="'$(TargetOS)' == 'Browser'">Browser</_hostOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
   </PropertyGroup>
 
@@ -27,6 +29,7 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm'">arm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'armel'">armel</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm64'">arm64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 's390x'">s390x</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'Browser'">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
@@ -38,7 +41,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>$(MajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>$(PreviousReleaseMajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
     <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
     <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
@@ -57,6 +60,7 @@
     <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'coreclr'))</CoreClrProjectRoot>
     <MonoProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'mono'))</MonoProjectRoot>
     <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'installer'))</InstallerProjectRoot>
+    <WorkloadsProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'workloads'))</WorkloadsProjectRoot>
     <SharedNativeRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native'))</SharedNativeRoot>
     <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'tools-local'))</RepoToolsLocalDir>
     <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'tasks'))</RepoTasksDir>
@@ -71,8 +75,11 @@
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</AndroidAppBuilderDir>
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
+    <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WorkloadBuildTasksDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
     <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'RuntimeConfigParser', 'Debug', '$(NetCoreAppToolCurrent)'))</RuntimeConfigParserDir>
+    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'JsonToItemsTaskFactory', 'Debug', '$(NetCoreAppToolCurrent)'))</JsonToItemsTaskFactoryDir>
+    <ILStripTaskDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILStrip', 'Debug', '$(NetCoreAppToolCurrent)'))</ILStripTaskDir>
 
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', 'net461', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
@@ -82,8 +89,11 @@
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
+    <WorkloadBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WorkloadBuildTasksDir)', 'WorkloadBuildTasks.dll'))</WorkloadBuildTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <RuntimeConfigParserTasksAssemblyPath>$([MSBuild]::NormalizePath('$(RuntimeConfigParserDir)', 'RuntimeConfigParser.dll'))</RuntimeConfigParserTasksAssemblyPath>
+    <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
+    <ILStripTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ILStripTaskDir)', 'ILStrip.dll'))</ILStripTasksAssemblyPath>
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</ILAsmToolPath>
   </PropertyGroup>
 
@@ -115,16 +125,13 @@
          the build system to use browser/ios/android as the _runtimeOS for produced package RIDs. -->
     <_runtimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</_runtimeOS>
 
-    <_runtimeOSVersionIndex>$(_runtimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
-    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(_runtimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
-
     <_portableOS>linux</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
-    <_portableOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'illumos'">illumos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'Solaris'">solaris</_portableOS>
+    <_portableOS Condition="'$(_hostOS)' == 'OSX'">osx</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'FreeBSD' or '$(TargetOS)' == 'FreeBSD'">freebsd</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'illumos' or '$(TargetOS)' == 'illumos'">illumos</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'Solaris' or '$(TargetOS)' == 'Solaris'">solaris</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'Browser'">browser</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
@@ -136,15 +143,15 @@
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
 
-    <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl' and '$(_runtimeOSFamily)' != 'illumos' and '$(_runtimeOSFamily)' != 'Solaris'">linux</_portableOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)</_packageOS>
+    <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
+    <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateRID">
+    <_toolRuntimeRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)-$(_hostArch)</_toolRuntimeRID>
     <_toolRuntimeRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_runtimeOS)-x64</_toolRuntimeRID>
     <_toolRuntimeRID Condition="'$(_toolRuntimeRID)' == ''">$(_runtimeOS)-$(_hostArch)</_toolRuntimeRID>
-    <!-- We build linux-musl-arm on a ubuntu container, so we can't use the toolset build for alpine runtime. We need to use portable linux RID for our toolset in order to be able to use it. -->
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' and $(TargetArchitecture.StartsWith('arm')) and !$(_hostArch.StartsWith('arm'))">linux-x64</_toolRuntimeRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser'">linux-x64</_toolRuntimeRID>
@@ -163,27 +170,14 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(PortableBuild)' != 'true' and '$(_portableOS)' == 'linux'">linux-$(_hostArch)</MicrosoftNetCoreIlasmPackageRuntimeId>
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_toolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
-    <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</_packageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_runtimeOS)-$(TargetArchitecture)</PackageRID>
+    <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
 
-    <_outputRID Condition="'$(TargetOS)' == 'windows'">win-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'NetBSD'">netbsd-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'illumos'">illumos-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Solaris'">solaris-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'MacCatalyst'">maccatalyst-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'iOS'">ios-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'iOSSimulator'">iossimulator-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'tvOS'">tvos-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'tvOSSimulator'">tvossimulator-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Browser'">browser-$(TargetArchitecture)</_outputRID>
+    <!-- Crossgen2 does not support armel, so we will use arm instead. -->
+    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' == 'armel'">$(_packageOS)-arm</Crossgen2PackageRID>
+    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' != 'armel'">$(PackageRID)</Crossgen2PackageRID>
 
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
-    <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_outputRID)</OutputRid>
+    <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
@@ -209,7 +203,7 @@
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
     <MicrosoftNetCoreAppRefPackDataDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'data'))</MicrosoftNetCoreAppRefPackDataDir>
 
-    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(LibrariesConfiguration)'))</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
@@ -267,13 +261,7 @@
     <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and ($(IsExperimentalAssembly) or $(IsPrivateAssembly))">true</SuppressFinalPackageVersion>
     <IsShippingAssembly Condition="$(IsExperimentalAssembly)">false</IsShippingAssembly>
     <!-- We don't want Private packages to be shipped to NuGet.org -->
-    <IsShippingPackage Condition="($(MSBuildProjectName.Contains('Private')) or $(IsExperimentalAssembly)) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
-    <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level.
-         Excluding .sfxprojs as they have their own incremental servicing infra. -->
-    <GeneratePackage Condition="'$(GeneratePackage)' == ''">true</GeneratePackage>
-    <GeneratePackage Condition="(('$(PreReleaseVersionLabel)' == 'servicing' or
-                                  '$(GitHubRepositoryName)' == 'runtimelab') and
-                                 '$(MSBuildProjectExtension)' != '.sfxproj')">false</GeneratePackage>
+    <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) or $(IsExperimentalAssembly)">false</IsShippingPackage>
     <PlaceholderFile>$(RepositoryEngineeringDir)_._</PlaceholderFile>
   </PropertyGroup>
 
@@ -285,6 +273,8 @@
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Warnings to always disable -->
+    <NoWarn>$(NoWarn),CS8969</NoWarn>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -294,6 +284,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <!-- We have very special projects that don't always contain default references. We also build MSBuild Tasks
+    and there are some implicit namespaces that clash, i.e System.Threading.Tasks. -->
+    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
   </PropertyGroup>
 
   <PropertyGroup>

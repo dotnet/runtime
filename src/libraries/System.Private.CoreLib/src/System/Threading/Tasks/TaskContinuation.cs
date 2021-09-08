@@ -216,7 +216,7 @@ namespace System.Threading.Tasks
             Debug.Assert(task != null);
             Debug.Assert(task.m_taskScheduler != null);
 
-            // Set the TASK_STATE_STARTED flag.  This only needs to be done
+            // Set the TaskStateFlags.Started flag.  This only needs to be done
             // if the task may be canceled or if someone else has a reference to it
             // that may try to execute it.
             if (needsProtection)
@@ -226,7 +226,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                task.m_stateFlags |= Task.TASK_STATE_STARTED;
+                task.m_stateFlags |= (int)Task.TaskStateFlags.Started;
             }
 
             // Try to inline it but queue if we can't

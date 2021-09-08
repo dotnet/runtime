@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -9,8 +10,15 @@ namespace System.Net.Security
     {
         internal readonly X509Certificate2 Certificate;
         internal readonly X509Certificate2[] IntermediateCertificates;
+        internal readonly SslCertificateTrust? Trust;
 
-        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline)
+        {
+            return Create(target, additionalCertificates, offline, null);
+        }
+
+        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false, SslCertificateTrust? trust = null)
         {
             if (!target.HasPrivateKey)
             {
@@ -81,13 +89,12 @@ namespace System.Net.Security
                 }
             }
 
-            return new SslStreamCertificateContext(target, intermediates);
+            return new SslStreamCertificateContext(target, intermediates, trust);
         }
 
         internal SslStreamCertificateContext Duplicate()
         {
-            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates);
-
+            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates, Trust);
         }
     }
 }
