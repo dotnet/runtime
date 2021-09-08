@@ -765,7 +765,7 @@ inline double getR8LittleEndian(const BYTE* ptr)
 
 #ifdef DEBUG
 const char* genES2str(BitVecTraits* traits, EXPSET_TP set);
-const char* refCntWtd2str(BasicBlock::weight_t refCntWtd);
+const char* refCntWtd2str(weight_t refCntWtd);
 #endif
 
 /*
@@ -1728,7 +1728,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
  *  Increment the ref counts for a local variable
  */
 
-inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, RefCountState state, bool propagate)
+inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState state, bool propagate)
 {
     // In minopts and debug codegen, we don't maintain normal ref counts.
     if ((state == RCS_NORMAL) && comp->opts.OptimizationDisabled())
@@ -1780,7 +1780,7 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
                 weight *= 2;
             }
 
-            BasicBlock::weight_t newWeight = lvRefCntWtd(state) + weight;
+            weight_t newWeight = lvRefCntWtd(state) + weight;
             assert(newWeight >= lvRefCntWtd(state));
             setLvRefCntWtd(newWeight, state);
         }
@@ -4684,7 +4684,7 @@ inline void LclVarDsc::setLvRefCnt(unsigned short newValue, RefCountState state)
 // Return Value:
 //    Weighted ref count for the local.
 
-inline BasicBlock::weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
+inline weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
 {
 
 #if defined(DEBUG)
@@ -4712,7 +4712,7 @@ inline BasicBlock::weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
 //    It is currently the caller's responsibilty to ensure this increment
 //    will not cause overflow.
 
-inline void LclVarDsc::incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state)
+inline void LclVarDsc::incLvRefCntWtd(weight_t delta, RefCountState state)
 {
 
 #if defined(DEBUG)
@@ -4721,7 +4721,7 @@ inline void LclVarDsc::incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState 
     assert(compiler->lvaRefCountState == state);
 #endif
 
-    BasicBlock::weight_t oldRefCntWtd = m_lvRefCntWtd;
+    weight_t oldRefCntWtd = m_lvRefCntWtd;
     m_lvRefCntWtd += delta;
     assert(m_lvRefCntWtd >= oldRefCntWtd);
 }
@@ -4737,7 +4737,7 @@ inline void LclVarDsc::incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState 
 //    Generally after calling v->setLvRefCntWtd(Y), v->lvRefCntWtd() == Y.
 //    However this may not be true when v->lvImplicitlyReferenced == 1.
 
-inline void LclVarDsc::setLvRefCntWtd(BasicBlock::weight_t newValue, RefCountState state)
+inline void LclVarDsc::setLvRefCntWtd(weight_t newValue, RefCountState state)
 {
 
 #if defined(DEBUG)

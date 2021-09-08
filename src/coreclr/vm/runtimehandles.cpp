@@ -1411,23 +1411,23 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
             COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
 
     {
-        AssemblyBinder * pPrivHostBinder = NULL;
+        AssemblyBinder * pBinder = NULL;
 
         if (*pAssemblyLoadContext.m_ppObject != NULL)
         {
             GCX_COOP();
             ASSEMBLYLOADCONTEXTREF * pAssemblyLoadContextRef = reinterpret_cast<ASSEMBLYLOADCONTEXTREF *>(pAssemblyLoadContext.m_ppObject);
 
-            INT_PTR nativeAssemblyLoadContext = (*pAssemblyLoadContextRef)->GetNativeAssemblyLoadContext();
+            INT_PTR nativeAssemblyBinder = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
 
-            pPrivHostBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyLoadContext);
+            pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyBinder);
         }
 
 
         typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
                                               SystemDomain::GetCallersAssembly(pStackMark),
                                               (OBJECTREF*)keepAlive.m_ppObject,
-                                              pPrivHostBinder);
+                                              pBinder);
     }
 
     if (!typeHandle.IsNull())

@@ -7736,9 +7736,9 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // Since we have linear flow we can update the next block weight.
             //
-            BasicBlock::weight_t const blockWeight   = compCurBB->bbWeight;
-            BasicBlock::weight_t const nextWeight    = nextBlock->bbWeight;
-            BasicBlock::weight_t const newNextWeight = nextWeight - blockWeight;
+            weight_t const blockWeight   = compCurBB->bbWeight;
+            weight_t const nextWeight    = nextBlock->bbWeight;
+            weight_t const newNextWeight = nextWeight - blockWeight;
 
             // If the math would result in a negative weight then there's
             // no local repair we can do; just leave things inconsistent.
@@ -7810,8 +7810,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                 {
                     // Do similar updates here.
                     //
-                    BasicBlock::weight_t const nextNextWeight    = nextNextBlock->bbWeight;
-                    BasicBlock::weight_t const newNextNextWeight = nextNextWeight - blockWeight;
+                    weight_t const nextNextWeight    = nextNextBlock->bbWeight;
+                    weight_t const newNextNextWeight = nextNextWeight - blockWeight;
 
                     // If the math would result in an negative weight then there's
                     // no local repair we can do; just leave things inconsistent.
@@ -15337,8 +15337,8 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
                 if (bUpdated != nullptr)
                 {
-                    BasicBlock::weight_t newMinWeight;
-                    BasicBlock::weight_t newMaxWeight;
+                    weight_t newMinWeight;
+                    weight_t newMaxWeight;
 
                     flowList* edge;
                     // Now fix the weights of the edges out of 'bUpdated'
@@ -16131,9 +16131,8 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
         if (block->hasProfileWeight())
         {
-            BasicBlock::weight_t const oldWeight =
-                genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
-            BasicBlock::weight_t const newWeight = oldWeight + block->bbWeight;
+            weight_t const oldWeight = genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
+            weight_t const newWeight = oldWeight + block->bbWeight;
 
             JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
                     block->bbNum, genReturnBB->bbNum);

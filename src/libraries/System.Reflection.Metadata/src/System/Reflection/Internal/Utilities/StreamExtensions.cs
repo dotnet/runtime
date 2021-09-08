@@ -76,7 +76,7 @@ namespace System.Reflection.Internal
             return totalBytesRead;
         }
 
-#if NETCOREAPP3_0_OR_GREATER
+#if NETCOREAPP
         internal static int TryReadAll(this Stream stream, Span<byte> buffer)
         {
             int totalBytesRead = 0;
