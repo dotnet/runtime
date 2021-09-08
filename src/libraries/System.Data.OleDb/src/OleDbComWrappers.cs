@@ -48,7 +48,7 @@ namespace System.Data.OleDb
             throw new NotImplementedException();
         }
 
-        private class ErrorInfoWrapper : UnsafeNativeMethods.IErrorInfo
+        private class ErrorInfoWrapper : UnsafeNativeMethods.IErrorInfo, IDisposable
         {
             private readonly IntPtr _wrappedInstance;
 
