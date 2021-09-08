@@ -22292,7 +22292,7 @@ BOOL gc_heap::gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_ge
 #ifdef USE_REGIONS
     assert (low == 0);
     assert (high == 0);
-    if (o)
+    if ((g_gc_lowest_address <= o) && (o < g_gc_highest_address))
     {
         BOOL already_marked = marked (o);
         if (already_marked)
@@ -25953,11 +25953,8 @@ void gc_heap::sweep_ro_segments (heap_segment* start_seg)
 
     while (seg)
     {
-        if (heap_segment_read_only_p (seg)
-#ifndef USE_REGIONS
-         && heap_segment_in_range_p (seg)
-#endif
-            )
+        if (heap_segment_read_only_p (seg) &&
+            heap_segment_in_range_p (seg))
         {
 #ifdef BACKGROUND_GC
             if (settings.concurrent)
