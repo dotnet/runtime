@@ -450,6 +450,11 @@ public:
 
     unsigned char lvMustInit : 1; // must be initialized
 
+private:
+    bool m_addrExposed : 1; // The address of this variable is "exposed" -- passed as an argument, stored in a
+                            // global location, etc.
+                            // We cannot reason reliably about the value of the variable.
+public:
     unsigned char lvDoNotEnregister : 1; // Do not enregister this variable.
     unsigned char lvFieldAccessed : 1;   // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
@@ -707,11 +712,8 @@ public:
         return lvIsMultiRegArg || lvIsMultiRegRet;
     }
 
-private:
-    bool m_addrExposed : 1; // The address of this variable is "exposed" -- passed as an argument, stored in a
-                            // global location, etc.
-                            // We cannot reason reliably about the value of the variable.
 #if defined(DEBUG)
+private:
     DoNotEnregisterReason m_doNotEnregReason;
 
     AddressExposedReason m_addrExposedReason;
@@ -10229,7 +10231,7 @@ public:
     {
     private:
         unsigned m_totalNumberOfVars;
-        unsigned m_totalNumberOfStrutVars;
+        unsigned m_totalNumberOfStructVars;
         unsigned m_totalNumberOfEnregVars;
         unsigned m_totalNumberOfStructEnregVars;
 

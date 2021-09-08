@@ -9704,7 +9704,7 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
     m_totalNumberOfVars++;
     if (varDsc->TypeGet() == TYP_STRUCT)
     {
-        m_totalNumberOfStrutVars++;
+        m_totalNumberOfStructVars++;
     }
     if (!varDsc->lvDoNotEnregister)
     {
@@ -9839,7 +9839,7 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
 void Compiler::EnregisterStats::Dump(FILE* fout) const
 {
     const unsigned totalNumberOfNotStructVars =
-        s_enregisterStats.m_totalNumberOfVars - s_enregisterStats.m_totalNumberOfStrutVars;
+        s_enregisterStats.m_totalNumberOfVars - s_enregisterStats.m_totalNumberOfStructVars;
     const unsigned totalNumberOfNotStructEnregVars =
         s_enregisterStats.m_totalNumberOfEnregVars - s_enregisterStats.m_totalNumberOfStructEnregVars;
     const unsigned notEnreg = s_enregisterStats.m_totalNumberOfVars - s_enregisterStats.m_totalNumberOfEnregVars;
@@ -9854,12 +9854,12 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
             m_totalNumberOfVars, m_totalNumberOfEnregVars, m_totalNumberOfVars - m_totalNumberOfEnregVars,
             (float)m_totalNumberOfEnregVars / m_totalNumberOfVars);
 
-    if (m_totalNumberOfStrutVars != 0)
+    if (m_totalNumberOfStructVars != 0)
     {
         fprintf(fout, "total number of struct locals: %d, number of enregistered: %d, notEnreg: %d, ratio: %.2f\n",
-                m_totalNumberOfStrutVars, m_totalNumberOfStructEnregVars,
-                m_totalNumberOfStrutVars - m_totalNumberOfStructEnregVars,
-                (float)m_totalNumberOfStructEnregVars / m_totalNumberOfStrutVars);
+                m_totalNumberOfStructVars, m_totalNumberOfStructEnregVars,
+                m_totalNumberOfStructVars - m_totalNumberOfStructEnregVars,
+                (float)m_totalNumberOfStructEnregVars / m_totalNumberOfStructVars);
     }
 
     const unsigned numberOfPrimitiveLocals = totalNumberOfNotStructVars - totalNumberOfNotStructEnregVars;
@@ -9911,7 +9911,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)
     {
-        fprintf(fout, "\nNo address exosed locals to report.\n");
+        fprintf(fout, "\nNo address exposed locals to report.\n");
         return;
     }
 

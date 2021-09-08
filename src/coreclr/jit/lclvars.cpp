@@ -2583,19 +2583,21 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 {
     noway_assert(varNum < lvaCount);
     LclVarDsc* varDsc = &lvaTable[varNum];
-    if (varDsc->lvDoNotEnregister == 1)
-    {
-        return;
-    }
-    varDsc->lvDoNotEnregister = 1;
-    INDEBUG(varDsc->SetDoNotEnregReason(reason));
+
+    const bool wasAlreadyMarkedDoNotEnreg = (varDsc->lvDoNotEnregister == 1);
+    varDsc->lvDoNotEnregister             = 1;
 
 #ifdef DEBUG
+    if (!wasAlreadyMarkedDoNotEnreg)
+    {
+        varDsc->SetDoNotEnregReason(reason);
+    }
 
     if (verbose)
     {
         printf("\nLocal V%02u should not be enregistered because: ", varNum);
     }
+
     switch (reason)
     {
         case DoNotEnregisterReason::AddrExposed:
