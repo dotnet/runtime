@@ -25953,8 +25953,11 @@ void gc_heap::sweep_ro_segments (heap_segment* start_seg)
 
     while (seg)
     {
-        if (heap_segment_read_only_p (seg) &&
-            heap_segment_in_range_p (seg))
+        if (heap_segment_read_only_p (seg)
+#ifndef USE_REGIONS
+         && heap_segment_in_range_p (seg)
+#endif
+            )
         {
 #ifdef BACKGROUND_GC
             if (settings.concurrent)
@@ -30499,7 +30502,7 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 {
     uint8_t* old_address = *pold_address;
 #ifdef USE_REGIONS
-    if (!old_address || !should_check_brick_for_reloc (old_address))
+    if ((o < g_gc_lowest_address) || (o >= g_gc_highest_address) || !should_check_brick_for_reloc (old_address))
     {
         return;
     }
