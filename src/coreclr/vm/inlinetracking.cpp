@@ -191,20 +191,6 @@ void InlineTrackingMap::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
 
 #endif //!DACCESS_COMPILE
 
-void ZapInlineeRecord::InitForNGen(RID rid, LPCUTF8 simpleName)
-{
-    LIMITED_METHOD_CONTRACT;
-    //XOR of up to first 24 bytes in module name
-    DWORD hash = 0;
-    for (int i = 0; simpleName[i] && i < 24; i++)
-        hash ^= (BYTE)simpleName[i];
-
-    // This key contains 24 bits of RID and 8 bits from module name.
-    // Since RID can't be longer than 24 bits, we can't have method RID collistions,
-    // that's why PersistentInlineTrackingMap::GetInliners only deals with module collisions.
-    m_key = (hash << 24) | rid;
-}
-
 #ifdef FEATURE_READYTORUN
 
 struct InliningHeader

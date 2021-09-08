@@ -10,5 +10,8 @@ internal static partial class Interop
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Log")]
         internal static extern unsafe void Log(byte* buffer, int count);
+
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LogError")]
+        internal static extern unsafe void LogError(byte* buffer, int count);
     }
 }

@@ -45,6 +45,7 @@ namespace Microsoft.Extensions.Primitives
         public StringSegment(string buffer, int offset, int length) { throw null; }
         public string? Buffer { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Buffer))]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Value))]
         public bool HasValue { get { throw null; } }
         public char this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
@@ -60,8 +61,8 @@ namespace Microsoft.Extensions.Primitives
         public static bool Equals(Microsoft.Extensions.Primitives.StringSegment a, Microsoft.Extensions.Primitives.StringSegment b, System.StringComparison comparisonType) { throw null; }
         public bool Equals(Microsoft.Extensions.Primitives.StringSegment other, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
-        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? text) { throw null; }
-        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? text, System.StringComparison comparisonType) { throw null; }
+        public bool Equals(string? text) { throw null; }
+        public bool Equals(string? text, System.StringComparison comparisonType) { throw null; }
         public override int GetHashCode() { throw null; }
         public int IndexOf(char c) { throw null; }
         public int IndexOf(char c, int start) { throw null; }

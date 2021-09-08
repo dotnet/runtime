@@ -1226,18 +1226,31 @@ void GenTreeCall::ResetArgInfo()
     // only sets up fgArgInfo, it also adds non-standard args to the IR, and we need
     // to remove that extra IR so it doesn't get added again.
     //
-    // NOTE: this doesn't handle all possible cases. There might be cases where we
-    // should be removing non-standard arg IR but currently aren't.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(TARGET_X86)
-    if (IsVirtualStub())
+    unsigned argNum = 0;
+    if (gtCallThisArg != nullptr)
     {
-        JITDUMP("Removing VSD non-standard arg [%06u] to prepare for re-morphing call [%06u]\n",
-                Compiler::dspTreeID(gtCallArgs->GetNode()), gtTreeID);
-        gtCallArgs = gtCallArgs->GetNext();
+        argNum++;
     }
-#endif // !defined(TARGET_X86)
+
+    Use** link = &gtCallArgs;
+    while ((*link) != nullptr)
+    {
+        const fgArgTabEntry* entry = fgArgInfo->GetArgEntry(argNum);
+        if (entry->isNonStandard() && entry->isNonStandardArgAddedLate())
+        {
+            JITDUMP("Removing non-standarg arg %s [%06u] to prepare for re-morphing call [%06u]\n",
+                    getNonStandardArgKindName(entry->nonStandardArgKind), Compiler::dspTreeID((*link)->GetNode()),
+                    gtTreeID);
+
+            *link = (*link)->GetNext();
+        }
+        else
+        {
+            link = &(*link)->NextRef();
+        }
+
+        argNum++;
+    }
 
     fgArgInfo = nullptr;
 }

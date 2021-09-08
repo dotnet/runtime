@@ -11,6 +11,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -357,6 +358,19 @@ namespace Wasm.Build.Tests
             }
         }
 
+        public void InitBlazorWasmProjectDir(string id)
+        {
+            InitPaths(id);
+            if (Directory.Exists(_projectDir))
+                Directory.Delete(_projectDir, recursive: true);
+            Directory.CreateDirectory(_projectDir);
+            Directory.CreateDirectory(Path.Combine(_projectDir, ".nuget"));
+
+            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "nuget6.config"), Path.Combine(_projectDir, "nuget.config"));
+            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
+            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
+        }
+
         static void AssertRuntimePackPath(string buildOutput)
         {
             var match = s_runtimePackPathRegex.Match(buildOutput);
@@ -599,6 +613,33 @@ namespace Wasm.Build.Tests
                     outputBuilder.AppendLine($"{label} {message}");
                 }
             }
+        }
+
+        public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null)
+        {
+            if (extraProperties == null && extraItems == null)
+                return projectFile;
+
+            XmlDocument doc = new();
+            doc.Load(projectFile);
+
+            if (extraItems != null)
+            {
+                XmlNode node = doc.CreateNode(XmlNodeType.Element, "ItemGroup", null);
+                node.InnerXml = extraItems;
+                doc.DocumentElement!.AppendChild(node);
+            }
+
+            if (extraProperties != null)
+            {
+                XmlNode node = doc.CreateNode(XmlNodeType.Element, "PropertyGroup", null);
+                node.InnerXml = extraProperties;
+                doc.DocumentElement!.AppendChild(node);
+            }
+
+            doc.Save(projectFile);
+
+            return projectFile;
         }
 
         public void Dispose()

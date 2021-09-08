@@ -50,7 +50,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     array.cpp
     assembly.cpp
     assemblybinder.cpp
-    assemblyloadcontext.cpp
     binder.cpp
     bundle.cpp
     castcache.cpp
@@ -149,7 +148,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     array.h
     assembly.hpp
     assemblybinder.h
-    assemblyloadcontext.h
     binder.h
     castcache.h
     callcounting.h
@@ -319,7 +317,6 @@ set(VM_SOURCES_WKS
     comutilnative.cpp
     comwaithandle.cpp
     coreassemblyspec.cpp
-    corebindresult.cpp
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
@@ -399,8 +396,6 @@ list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
 set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
     ../inc/jithelpers.h
-    coreclr/corebindresult.h
-    coreclr/corebindresult.inl
     appdomainnative.hpp
     assemblyname.hpp
     assemblynative.hpp

@@ -90,7 +90,7 @@ public:
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pManifestFile->IsSystem(); }
 
-    static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderContext, CreateDynamicAssemblyArgs *args);
+    static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args);
 
     MethodDesc *GetEntryPoint();
 

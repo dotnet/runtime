@@ -36,6 +36,7 @@ int32_t local_SSL_CTX_config(SSL_CTX* ctx, const char* name);
 unsigned long local_SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
 unsigned long local_SSL_set_options(SSL* ssl, unsigned long options);
 void local_SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
+void local_SSL_set_security_level(SSL* ssl, int32_t level);
 int local_SSL_session_reused(SSL* ssl);
 int32_t local_X509_check_host(X509* x509, const char* name, size_t namelen, unsigned int flags, char** peername);
 const ASN1_TIME* local_X509_CRL_get0_nextUpdate(const X509_CRL* crl);

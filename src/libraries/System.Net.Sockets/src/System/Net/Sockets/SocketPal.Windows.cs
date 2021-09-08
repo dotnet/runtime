@@ -841,25 +841,23 @@ namespace System.Net.Sockets
 
                 IntPtr rawHandle = handle.DangerousGetHandle();
                 IntPtr* fileDescriptorSet = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
-                Interop.Winsock.TimeValue IOwait = default;
+                Interop.Winsock.TimeValue timeout = default;
 
                 // A negative timeout value implies an indefinite wait.
                 int socketCount;
                 if (microseconds != -1)
                 {
-                    MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
-                    socketCount =
-                        Interop.Winsock.select(
+                    MicrosecondsToTimeValue((long)(uint)microseconds, ref timeout);
+                    socketCount = Interop.Winsock.select(
                             0,
                             mode == SelectMode.SelectRead ? fileDescriptorSet : null,
                             mode == SelectMode.SelectWrite ? fileDescriptorSet : null,
                             mode == SelectMode.SelectError ? fileDescriptorSet : null,
-                            ref IOwait);
+                            ref timeout);
                 }
                 else
                 {
-                    socketCount =
-                        Interop.Winsock.select(
+                    socketCount = Interop.Winsock.select(
                             0,
                             mode == SelectMode.SelectRead ? fileDescriptorSet : null,
                             mode == SelectMode.SelectWrite ? fileDescriptorSet : null,
@@ -937,21 +935,19 @@ namespace System.Net.Sockets
                 {
                     if (microseconds != -1)
                     {
-                        Interop.Winsock.TimeValue IOwait = default;
-                        MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
+                        Interop.Winsock.TimeValue timeout = default;
+                        MicrosecondsToTimeValue((long)(uint)microseconds, ref timeout);
 
-                        socketCount =
-                            Interop.Winsock.select(
+                        socketCount = Interop.Winsock.select(
                                 0, // ignored value
                                 readPtr,
                                 writePtr,
                                 errPtr,
-                                ref IOwait);
+                                ref timeout);
                     }
                     else
                     {
-                        socketCount =
-                            Interop.Winsock.select(
+                        socketCount = Interop.Winsock.select(
                                 0, // ignored value
                                 readPtr,
                                 writePtr,
@@ -1085,6 +1081,57 @@ namespace System.Net.Sockets
                 Interop.Winsock.WSAPROTOCOL_INFOW* lpProtocolInfo = (Interop.Winsock.WSAPROTOCOL_INFOW*)protocolInfoBytes;
                 int result = Interop.Winsock.WSADuplicateSocket(handle, (uint)targetProcessId, lpProtocolInfo);
                 return result == 0 ? SocketError.Success : GetLastSocketError();
+            }
+        }
+
+        internal static unsafe bool HasNonBlockingConnectCompleted(SafeSocketHandle handle, out bool success)
+        {
+            bool refAdded = false;
+            try
+            {
+                handle.DangerousAddRef(ref refAdded);
+
+                IntPtr rawHandle = handle.DangerousGetHandle();
+                IntPtr* writefds = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
+                IntPtr* exceptfds = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
+                Interop.Winsock.TimeValue timeout = default;
+                MicrosecondsToTimeValue(0, ref timeout);
+
+                int socketCount = Interop.Winsock.select(
+                            0,
+                            null,
+                            writefds,
+                            exceptfds,
+                            ref timeout);
+
+                if ((SocketError)socketCount == SocketError.SocketError)
+                {
+                    throw new SocketException((int)GetLastSocketError());
+                }
+
+                // Failure of the connect attempt is indicated in exceptfds.
+                if ((int)exceptfds[0] != 0 && exceptfds[1] == rawHandle)
+                {
+                    success = false;
+                    return true;
+                }
+
+                // Success is indicated in writefds.
+                if ((int)writefds[0] != 0 && writefds[1] == rawHandle)
+                {
+                    success = true;
+                    return true;
+                }
+
+                success = false;
+                return false;
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    handle.DangerousRelease();
+                }
             }
         }
     }
