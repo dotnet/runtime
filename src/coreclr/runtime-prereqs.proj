@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <NativeVersionFile>$(ArtifactsObjDir)/coreclr/_version.h</NativeVersionFile>
+    <NativeVersionFile>$(ArtifactsObjDir)coreclr/_version.h</NativeVersionFile>
     <RuntimeVersionFile>$(ArtifactsObjDir)/coreclr/runtime_version.h</RuntimeVersionFile>
   </PropertyGroup>
 

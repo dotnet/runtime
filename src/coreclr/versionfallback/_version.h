@@ -1,8 +1,8 @@
 #ifndef VER_COMPANYNAME_STR
-#define VER_COMPANYNAME_STR         "Microsoft Corporation"
+#define VER_COMPANYNAME_STR         ".NET Foundation"
 #endif
 #ifndef VER_FILEDESCRIPTION_STR
-#define VER_FILEDESCRIPTION_STR     "empty"
+#define VER_FILEDESCRIPTION_STR     ".NET Runtime"
 #endif
 #ifndef VER_INTERNALNAME_STR
 #define VER_INTERNALNAME_STR        VER_FILEDESCRIPTION_STR
@@ -11,7 +11,7 @@
 #define VER_ORIGINALFILENAME_STR    VER_FILEDESCRIPTION_STR
 #endif
 #ifndef VER_PRODUCTNAME_STR
-#define VER_PRODUCTNAME_STR         "Microsoft\xae .NET Framework"
+#define VER_PRODUCTNAME_STR         ".NET"
 #endif
 #undef VER_PRODUCTVERSION
 #define VER_PRODUCTVERSION          00,00,00,00000
@@ -22,7 +22,7 @@
 #undef VER_FILEVERSION_STR
 #define VER_FILEVERSION_STR         "00,00,00,00000"
 #ifndef VER_LEGALCOPYRIGHT_STR
-#define VER_LEGALCOPYRIGHT_STR      "\xa9 Microsoft Corporation. All rights reserved."
+#define VER_LEGALCOPYRIGHT_STR      ".NET Foundation"
 #endif
 #ifndef VER_DEBUG
 #define VER_DEBUG                   VS_FF_DEBUG
