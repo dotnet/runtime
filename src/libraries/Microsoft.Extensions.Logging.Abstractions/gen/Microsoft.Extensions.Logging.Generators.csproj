@@ -9,6 +9,7 @@
     <CLSCompliant>false</CLSCompliant>
     <IsPackable>false</IsPackable>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

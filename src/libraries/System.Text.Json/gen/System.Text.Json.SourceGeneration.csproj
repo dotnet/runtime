@@ -9,6 +9,7 @@
     <UsingToolXliff>true</UsingToolXliff>
     <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup>
