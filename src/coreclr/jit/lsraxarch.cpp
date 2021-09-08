@@ -1680,25 +1680,21 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             // For small allocations up to 6 pointer sized words (i.e. 48 bytes of localloc)
             // we will generate 'push 0'.
             assert((sizeVal % REGSIZE_BYTES) == 0);
-            size_t cntRegSizedWords = sizeVal / REGSIZE_BYTES;
-            if (cntRegSizedWords > 6)
+            if (!compiler->info.compInitMem)
             {
-                if (!compiler->info.compInitMem)
+                // No need to initialize allocated stack space.
+                if (sizeVal < compiler->eeGetPageSize())
                 {
-                    // No need to initialize allocated stack space.
-                    if (sizeVal < compiler->eeGetPageSize())
-                    {
 #ifdef TARGET_X86
-                        // x86 needs a register here to avoid generating "sub" on ESP.
-                        buildInternalIntRegisterDefForNode(tree);
+                    // x86 needs a register here to avoid generating "sub" on ESP.
+                    buildInternalIntRegisterDefForNode(tree);
 #endif
-                    }
-                    else
-                    {
-                        // We need two registers: regCnt and RegTmp
-                        buildInternalIntRegisterDefForNode(tree);
-                        buildInternalIntRegisterDefForNode(tree);
-                    }
+                }
+                else
+                {
+                    // We need two registers: regCnt and RegTmp
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalIntRegisterDefForNode(tree);
                 }
             }
         }

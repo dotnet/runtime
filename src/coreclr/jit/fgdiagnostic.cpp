@@ -1022,7 +1022,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
                     if (validWeights)
                     {
-                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
                     }
 
@@ -1047,7 +1047,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     }
                     if (validWeights)
                     {
-                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "\n            weight=");
                         fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
 
@@ -1801,7 +1801,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     }
     else
     {
-        BasicBlock::weight_t weight = block->getBBWeight(this);
+        weight_t weight = block->getBBWeight(this);
 
         if (weight > 99999) // Is it going to be more than 6 characters?
         {
@@ -1813,7 +1813,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             else // print weight in terms of k (i.e. 156k )
             {
                 // print weight in this format dddddk
-                BasicBlock::weight_t weightK = weight / 1000;
+                weight_t weightK = weight / 1000;
                 printf("%5uk", (unsigned)FloatingPointUtils::round(weightK / BB_UNITY_WEIGHT));
             }
         }

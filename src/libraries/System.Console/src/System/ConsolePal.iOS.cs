@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -8,15 +10,73 @@ namespace System
 {
     internal sealed class NSLogStream : ConsoleStream
     {
-        public NSLogStream() : base(FileAccess.Write) {}
+        private readonly StringBuilder _buffer = new StringBuilder();
+        private readonly Encoding _encoding;
+        private readonly Decoder _decoder;
+
+        public NSLogStream(Encoding encoding) : base(FileAccess.Write)
+        {
+            _encoding = encoding;
+            _decoder = _encoding.GetDecoder();
+        }
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
-        public override unsafe void Write(ReadOnlySpan<byte> buffer)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
-            fixed (byte* ptr = buffer)
+            int maxCharCount = _encoding.GetMaxCharCount(buffer.Length);
+            char[]? pooledBuffer = null;
+            Span<char> charSpan = maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
+            try
             {
-                Interop.Sys.Log(ptr, buffer.Length);
+                int count = _decoder.GetChars(buffer, charSpan, false);
+                if (count > 0)
+                {
+                    WriteOrCache(_buffer, charSpan.Slice(0, count));
+                }
+            }
+            finally
+            {
+                if (pooledBuffer != null)
+                {
+                    ArrayPool<char>.Shared.Return(pooledBuffer);
+                }
+            }
+        }
+
+        private static void WriteOrCache(StringBuilder cache, Span<char> charBuffer)
+        {
+            int lastNewLine = charBuffer.LastIndexOf('\n');
+            if (lastNewLine != -1)
+            {
+                Span<char> lineSpan = charBuffer.Slice(0, lastNewLine);
+                if (cache.Length > 0)
+                {
+                    Print(cache.Append(lineSpan).ToString());
+                    cache.Clear();
+                }
+                else
+                {
+                    Print(lineSpan);
+                }
+
+                if (lastNewLine + 1 < charBuffer.Length)
+                {
+                    cache.Append(charBuffer.Slice(lastNewLine + 1));
+                }
+
+                return;
+            }
+
+            // no newlines found, add the entire buffer to the cache
+            cache.Append(charBuffer);
+
+            static unsafe void Print(ReadOnlySpan<char> line)
+            {
+                fixed (char* ptr = line)
+                {
+                    Interop.Sys.Log((byte*)ptr, line.Length * 2);
+                }
             }
         }
     }
@@ -28,9 +88,9 @@ namespace System
 
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
 
-        public static Stream OpenStandardOutput() => new NSLogStream();
+        public static Stream OpenStandardOutput() => new NSLogStream(OutputEncoding);
 
-        public static Stream OpenStandardError() => new NSLogStream();
+        public static Stream OpenStandardError() => new NSLogStream(OutputEncoding);
 
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
 

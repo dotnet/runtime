@@ -12,10 +12,12 @@
     Output:<br><br> <span id="out"></span>
     <script type='text/javascript'>
       var is_testing = false;
+      var tasks = '';
       var onLoad = function() {
         var url = new URL(decodeURI(window.location));
         let args = url.searchParams.getAll('arg');
         is_testing = args !== undefined && (args.find(arg => arg == '--testing') !== undefined);
+        tasks = url.searchParams.getAll('task');
       };
 
       var test_exit = function(exit_code)
@@ -47,6 +49,8 @@
 
       var App = {
         init: function () {
+          if (tasks != '')
+            BINDING.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks", tasks);
           yieldBench ();
         }
       };

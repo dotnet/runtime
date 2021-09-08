@@ -52,7 +52,7 @@
 #pragma warning(disable:4724)
 #endif // _MSC_VER
 
-#include "ngenhash.inl"
+#include "dacenumerablehash.inl"
 
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -580,168 +580,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 }
 
 #endif // DACCESS_COMPILE
-
-
-#ifdef FEATURE_COMINTEROP
-
-#ifndef DACCESS_COMPILE
-
-// static
-GuidToMethodTableHashTable* GuidToMethodTableHashTable::Create(Module* pModule, DWORD cInitialBuckets,
-                        AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
-    }
-    CONTRACTL_END;
-
-    LoaderHeap *pHeap = pModule->GetAssembly()->GetLowFrequencyHeap();
-    GuidToMethodTableHashTable *pThis = (GuidToMethodTableHashTable*)pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(GuidToMethodTableHashTable)));
-
-    // The base class get initialized through chaining of constructors. We allocated the hash instance via the
-    // loader heap instead of new so use an in-place new to call the constructors now.
-    new (pThis) GuidToMethodTableHashTable(pModule, pHeap, cInitialBuckets);
-
-    return pThis;
-}
-
-GuidToMethodTableEntry *GuidToMethodTableHashTable::InsertValue(PTR_GUID pGuid, PTR_MethodTable pMT,
-                        BOOL bReplaceIfFound, AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
-    }
-    CONTRACTL_END;
-
-    GuidToMethodTableEntry *pEntry = NULL;
-
-    if (bReplaceIfFound)
-    {
-        pEntry = FindItem(pGuid, NULL);
-    }
-
-    if (pEntry != NULL)
-    {
-        pEntry->m_pMT = pMT;
-    }
-    else
-    {
-        pEntry = BaseAllocateEntry(pamTracker);
-        pEntry->m_Guid = pGuid;
-        pEntry->m_pMT = pMT;
-
-        DWORD hash = Hash(pGuid);
-        BaseInsertEntry(hash, pEntry);
-    }
-
-    return pEntry;
-}
-
-#endif // !DACCESS_COMPILE
-
-PTR_MethodTable GuidToMethodTableHashTable::GetValue(const GUID * pGuid, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-        PRECONDITION(CheckPointer(pGuid));
-    }
-    CONTRACTL_END;
-
-    GuidToMethodTableEntry * pEntry = FindItem(pGuid, pContext);
-    if (pEntry != NULL)
-    {
-        return pEntry->m_pMT;
-    }
-
-    return NULL;
-}
-
-GuidToMethodTableEntry *GuidToMethodTableHashTable::FindItem(const GUID * pGuid, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-        PRECONDITION(CheckPointer(pGuid));
-    }
-    CONTRACTL_END;
-
-    // It's legal for the caller not to pass us a LookupContext, but we might need to iterate
-    // internally (since we lookup via hash and hashes may collide). So substitute our own
-    // private context if one was not provided.
-    LookupContext sAltContext;
-    if (pContext == NULL)
-        pContext = &sAltContext;
-
-    // The base class provides the ability to enumerate all entries with the same hash code.
-    // We further check which of these entries actually match the full key.
-    PTR_GuidToMethodTableEntry pSearch = BaseFindFirstEntryByHash(Hash(pGuid), pContext);
-    while (pSearch)
-    {
-        if (CompareKeys(pSearch, pGuid))
-        {
-            return pSearch;
-        }
-
-        pSearch = BaseFindNextEntryByHash(pContext);
-    }
-
-    return NULL;
-}
-
-BOOL GuidToMethodTableHashTable::CompareKeys(PTR_GuidToMethodTableEntry pEntry, const GUID * pGuid)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return *pGuid == *(pEntry->m_Guid);
-}
-
-DWORD GuidToMethodTableHashTable::Hash(const GUID * pGuid)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    static_assert_no_msg(sizeof(GUID) % sizeof(DWORD) == 0);
-    static_assert_no_msg(sizeof(GUID) / sizeof(DWORD) == 4);
-    DWORD * pSlice = (DWORD*) pGuid;
-    return pSlice[0] ^ pSlice[1] ^ pSlice[2] ^ pSlice[3];
-}
-
-
-BOOL GuidToMethodTableHashTable::FindNext(Iterator *it, GuidToMethodTableEntry **ppEntry)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (!it->m_fIterating)
-    {
-        BaseInitIterator(&it->m_sIterator);
-        it->m_fIterating = true;
-    }
-
-    *ppEntry = it->m_sIterator.Next();
-    return *ppEntry ? TRUE : FALSE;
-}
-
-DWORD GuidToMethodTableHashTable::GetCount()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return BaseGetElementCount();
-}
-
-#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 MemberRefToDescHashTable* MemberRefToDescHashTable::Create(Module *pModule, DWORD cInitialBuckets, AllocMemTracker *pamTracker)
@@ -1981,26 +1819,6 @@ BOOL Module::IsPreV4Assembly()
     }
 
     return !!(m_dwPersistedFlags & IS_PRE_V4_ASSEMBLY);
-}
-
-
-ArrayDPTR(PTR_MethodTable) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (index < numHotGCStaticsMTs)
-    {
-        _ASSERTE(ppHotGCStaticsMTs != NULL);
-
-        return ppHotGCStaticsMTs + index;
-    }
-    else
-    {
-        _ASSERTE(ppColdGCStaticsMTs != NULL);
-
-        // shift the start of the cold table because all cold offsets are also shifted
-        return ppColdGCStaticsMTs + (index - numHotGCStaticsMTs);
-    }
 }
 
 DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
@@ -7724,25 +7542,6 @@ CHECK Module::CheckActivated()
 }
 
 #ifdef DACCESS_COMPILE
-
-void
-ModuleCtorInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    // This class is contained so do not enumerate 'this'.
-    DacEnumMemoryRegion(dac_cast<TADDR>(ppMT), numElements *
-                        sizeof(MethodTable *));
-    DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoHot), numElementsHot *
-                        sizeof(ClassCtorInfoEntry));
-    DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoCold),
-                        (numElements - numElementsHot) *
-                        sizeof(ClassCtorInfoEntry));
-    DacEnumMemoryRegion(dac_cast<TADDR>(hotHashOffsets), numHotHashes *
-                        sizeof(DWORD));
-    DacEnumMemoryRegion(dac_cast<TADDR>(coldHashOffsets), numColdHashes *
-                        sizeof(DWORD));
-}
 
 void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
                                bool enumThis)

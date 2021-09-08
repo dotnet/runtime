@@ -46,12 +46,7 @@ namespace Internal.Cryptography
         protected override byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             int ciphertextLength = SymmetricPadding.GetCiphertextLength(inputCount, PaddingSizeBytes, PaddingMode);
-            byte[] buffer;
-#if NET5_0_OR_GREATER
-            buffer = GC.AllocateUninitializedArray<byte>(ciphertextLength);
-#else
-            buffer = new byte[ciphertextLength];
-#endif
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(ciphertextLength);
             int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
             Debug.Assert(written == buffer.Length);
             return buffer;

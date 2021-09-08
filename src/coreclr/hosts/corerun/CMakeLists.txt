@@ -11,6 +11,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 add_executable_clr(corerun
   corerun.cpp
+  dotenv.cpp
   native.rc
 )
 
