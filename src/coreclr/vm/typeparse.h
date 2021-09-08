@@ -41,7 +41,7 @@ bool inline IsTypeNameReservedChar(WCHAR ch)
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
-    AssemblyBinder * pPrivHostBinder,
+    AssemblyBinder * pBinder,
     BOOL       bThrowIfNotFound);
 
 class TypeName
@@ -328,7 +328,7 @@ public:
         BOOL bProhibitAssemblyQualifiedName,
         Assembly* pRequestingAssembly,
         OBJECTREF *pKeepAlive,
-        AssemblyBinder * pPrivHostBinder = nullptr);
+        AssemblyBinder * pBinder = nullptr);
 
 
 public:
@@ -391,7 +391,7 @@ private:
         BOOL bProhibitAssemblyQualifiedName,
 
         Assembly* pRequestingAssembly,
-        AssemblyBinder * pPrivHostBinder,
+        AssemblyBinder * pBinder,
         OBJECTREF *pKeepAlive);
 
     //----------------------------------------------------------------------------------------------------------------
