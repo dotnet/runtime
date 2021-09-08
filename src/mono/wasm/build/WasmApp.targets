@@ -140,8 +140,6 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(EnableDefaultWasmAssembliesToBundle)' == 'true' and '$(DisableAutoWasmPublishApp)' != 'true'">
-      <!-- <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" /> -->
-      <!-- <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" /> -->
       <WasmAssembliesToBundle Include="%(PublishItemsOutputGroupOutputs.OutputPath)" Condition="'%(PublishItemsOutputGroupOutputs.OutputPath)' != '' and Exists(%(PublishItemsOutputGroupOutputs.OutputPath))" />
       <WasmAssembliesToBundle Include="%(PublishItemsOutputGroupOutputs.Identity)" Condition="'%(PublishItemsOutputGroupOutputs.OutputPath)' == '' and !Exists(%(PublishItemsOutputGroupOutputs.OutputPath))" />
       <!--<WasmAssembliesToBundle Include="@(PublishItemsOutputGroupOutputs)" />-->
