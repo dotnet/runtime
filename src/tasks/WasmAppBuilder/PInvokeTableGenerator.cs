@@ -24,6 +24,9 @@ public class PInvokeTableGenerator : Task
     [Required, NotNull]
     public string? OutputPath { get; set; }
 
+    [Output]
+    public string FileWrites { get; private set; } = string.Empty;
+
     private static char[] s_charsToReplace = new[] { '.', '-', };
 
     public override bool Execute()
@@ -81,6 +84,7 @@ public class PInvokeTableGenerator : Task
             Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{OutputPath}'.");
         else
             Log.LogMessage(MessageImportance.Low, $"PInvoke table in {OutputPath} is unchanged.");
+        FileWrites = OutputPath;
 
         File.Delete(tmpFileName);
     }

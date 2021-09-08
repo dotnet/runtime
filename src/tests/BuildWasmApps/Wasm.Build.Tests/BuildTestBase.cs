@@ -387,6 +387,79 @@ namespace Wasm.Build.Tests
             return Path.Combine(_projectDir!, $"{id}.csproj");
         }
 
+        protected (CommandResult, string) BlazorBuild(string id, string config, NativeFilesType expectedFileType, params string[] extraArgs)
+        {
+            var res = BuildInternal(id, config, publish: false, extraArgs);
+            AssertDotNetNativeFiles(expectedFileType, config, forPublish: false);
+            AssertBlazorBundle(config, isPublish: false, dotnetWasmFromRuntimePack: expectedFileType == NativeFilesType.FromRuntimePack);
+
+            return res;
+        }
+
+        protected (CommandResult, string) BlazorPublish(string id, string config, NativeFilesType expectedFileType, params string[] extraArgs)
+        {
+            var res = BuildInternal(id, config, publish: true, extraArgs);
+            AssertDotNetNativeFiles(expectedFileType, config, forPublish: true);
+            AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: expectedFileType == NativeFilesType.FromRuntimePack);
+            return res;
+        }
+
+        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, params string[] extraArgs)
+        {
+            string label = publish ? "publish" : "build";
+            Console.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
+
+            string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-{label}.binlog");
+            string[] combinedArgs = new[]
+            {
+                label, // same as the command name
+                $"-bl:{logPath}",
+                $"-p:Configuration={config}",
+                "-p:BlazorEnableCompression=false",
+                "-p:_WasmDevel=true"
+            }.Concat(extraArgs).ToArray();
+
+            CommandResult res = new DotNetCommand(s_buildEnv)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutput(combinedArgs)
+                                        .EnsureSuccessful();
+
+            return (res, logPath);
+        }
+
+        protected void AssertDotNetNativeFiles(NativeFilesType type, string config, bool forPublish)
+        {
+            string label = forPublish ? "publish" : "build";
+            string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", forPublish ? "for-publish" : "relink");
+            string binFrameworkDir = Path.Combine(_projectDir!, "bin", config, "net6.0", forPublish ? "publish" : "", "wwwroot", "_framework");
+
+            string srcDir = type switch
+            {
+                NativeFilesType.FromRuntimePack => s_buildEnv.RuntimeNativeDir,
+                NativeFilesType.Relinked => objBuildDir,
+                NativeFilesType.AOT => objBuildDir,
+                _ => throw new ArgumentOutOfRangeException(nameof(type))
+            };
+
+            AssertSameFile(Path.Combine(srcDir, "dotnet.wasm"), Path.Combine(binFrameworkDir, "dotnet.wasm"), label);
+
+            // find dotnet*js
+            string? dotnetJsPath = Directory.EnumerateFiles(binFrameworkDir)
+                                    .Where(p => Path.GetFileName(p).StartsWith("dotnet.", StringComparison.OrdinalIgnoreCase) &&
+                                                    Path.GetFileName(p).EndsWith(".js", StringComparison.OrdinalIgnoreCase))
+                                    .SingleOrDefault();
+
+            Assert.True(!string.IsNullOrEmpty(dotnetJsPath), $"[{label}] Expected to find dotnet*js in {binFrameworkDir}");
+            AssertSameFile(Path.Combine(srcDir, "dotnet.js"), dotnetJsPath!, label);
+
+            if (type != NativeFilesType.FromRuntimePack)
+            {
+                // check that the files are *not* from runtime pack
+                AssertNotSameFile(Path.Combine(s_buildEnv.RuntimeNativeDir, "dotnet.wasm"), Path.Combine(binFrameworkDir, "dotnet.wasm"), label);
+                AssertNotSameFile(Path.Combine(s_buildEnv.RuntimeNativeDir, "dotnet.js"), dotnetJsPath!, label);
+            }
+        }
+
         static void AssertRuntimePackPath(string buildOutput)
         {
             var match = s_runtimePackPathRegex.Match(buildOutput);
