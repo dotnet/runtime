@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override bool CanConvert(Type type)
         {
-            // If a type is added, also add to the souce-gen project.
+            // If a type is added, also add to the SourceGeneration project.
 
             return
                 // There's no safe way to construct a Type from untrusted user input.
