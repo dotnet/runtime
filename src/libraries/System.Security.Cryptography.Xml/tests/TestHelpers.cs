@@ -193,37 +193,37 @@ namespace System.Security.Cryptography.Xml.Tests
         private static readonly byte[] SampleDsaPfx = Convert.FromBase64String(
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy certificate.")]
             "MIIF+QIBAzCCBb8GCSqGSIb3DQEHAaCCBbAEggWsMIIFqDCCA9cGCSqGSIb3DQEH" +
-            "BqCCA8gwggPEAgEAMIIDvQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMwDgQIbzDq" +
-            "jr8PwpMCAggAgIIDkJrcDboxMkMgEusycJ0w7QdbskZ7SBvnziqhQ0e2DohHjhrm" +
-            "p19VRk8nyw0TuHgIVK39KhFbGrfOLWxAE2xvnDVOeWWMLcxDn2zoxPdM202HvXVB" +
-            "SFE0zAmVOVHD7NMa0pcXeCblqpihGnVgSW5RYHc3hJFaXkBmLe/GLX7rNl+LCXzb" +
-            "cScJfYw0CMqZHYnpcCG3M6n6aAUb79madtN7UHuVtyaCjStaPfcAUGetlacT79cV" +
-            "qR57yPG+5Rpb38d5oOE/Jeh/wzB/L2QOq6LWxeWHiXMmXlOJ8xCK64YvfASoIpiQ" +
-            "xTqtgY2SKA0bOqUcerr4945MAdjR93qLeaEOQAeR+EweSYgasGWyi5ZwDh5ul3bJ" +
-            "SX2OdK9IkdBnktekbnPvo1necVuN6OjLKLlXyyDLn5KEVTjsAUonLk1nXZ/aL3ZH" +
-            "iTHWEUB0HyvRN9sQB3Y49ggp6DwLSmKfiglPYMj95k1tAOpi/MD9LnfpTV5ur3q0" +
-            "sqgIgQgMctaHIUV6vVQ2Ngu8dmOObUgqgDR5Us3Hf1u71Lu2AJBGRoDm7V1hhbgv" +
-            "Ob4oRlJUdgssi79id5IHog1nnO7VDxxtkKujzUUbSBnrAnxc27/lNQ9jwmUYZnHH" +
-            "xg9lEI2HNK/3k6FZd6Tiy8hzNN1+fo8hNkwjorsnNPd/nWbVeM/Oti5jEiVoeMfV" +
-            "/uw1/cGj6KaTvCe3h/xgX9y0/sWZ7WqILXZ+3vAouemvmBRe531IWA1djz//hgSI" +
-            "VOK+OprshAeU0Pce7qXMbMlOD7CUKBDecn0L7xxWW8sg8ZWgwqZuJEcOjvUKezgK" +
-            "URivBV1lavevLYyLsBO8W0qLiOLYYOgQkavkz42DYvkDeCJfeE2DuY6tqRr7xBJ5" +
-            "qGxDWGZ4+oBZYmXkMa63A/VC/EF6ZSVooLxI8QsobyPaB7spKv+YP+LjQgJ7F7dR" +
-            "3YXxKivW0QuZ2cAkfWpy8CaTGUhucaay8dqBEm7i3aAXSUzWMOayYu2xieu9+2Gl" +
-            "UuBlr2ic63si37rYemztVcIfSg2Rrtb/ggLT5a22LYBH109LosbR1kMfk7r9Eaz+" +
-            "TSH3TBaKoN7L56en1I56CvikEmzCbXW9N9bih9+HL7IgHcBN0c/TLkcvTvj2Xm4l" +
-            "cKpITTGg+KBS7BRNT8DA9Zqpa9aPIaNMrhPPTWEPRYyiMwhFwJw+Of3YLUwmlkhf" +
-            "gCVpngUFmnJE19pydjCCAckGCSqGSIb3DQEHAaCCAboEggG2MIIBsjCCAa4GCyqG" +
-            "SIb3DQEMCgECoIIBdjCCAXIwHAYKKoZIhvcNAQwBAzAOBAjknYMUAVMMGwICCAAE" +
-            "ggFQ4yI0v5ZS62IfP9l1I3llZ1l8SyW8r0F6v/BXBYitXKHoCsK4WbDl6Z4enb/0" +
-            "DZ8/RyepbiD1S9bqJ5ICXaFEKaBpVSvkVK1EWJF6pM9qx9VzECxVMTFxewdg2UwB" +
-            "2JkuUAD4tXxmjwp0LQpgJdKHpq7cH0SdoEdNzTsypZnaPBXUIDHS+NfiqPScueqv" +
-            "W2MoIg8egHIM4qnwLy0/hSc0iMfOgAPVbDktnoq7wzPVG8L+esS84/bABOl9o/e9" +
-            "Cq8OjK1aVBNMLnktdt0e4I3K7yQFgEJTkq8PpHmpnesv8l7Lvjd9Mri9W8eHilOp" +
-            "ZICybwoK3A0APG1lswubo0ii/56+MA3DnE0irn1rn6bkpOMGJ8JZBeuGzbV14ah/" +
-            "4l4MMPjnIf3Cu6TGd2/YLnPdr5fE6vyJtVa1sBpawIAK7cDUJ+OOD8gs1uoMfOML" +
-            "k5VpMSUwIwYJKoZIhvcNAQkVMRYEFDdYxa4ZJsCeAQZDzHLZ+cdpC2z5MDEwITAJ" +
-            "BgUrDgMCGgUABBTv022RKjlx16b3xrtvZELrNDdQIAQIaYfksM5jcN8CAggA");
+            "BqCCA8gwggPEAgEAMIIDvQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMwDgQIlUyw" +
+            "kBK3s44CAggAgIIDkE0q38JaV5Yk9eAHZ1PHTN43RWY2IGeGrfJXxkEh10oYyu9e" +
+            "TG3XLVsGqhNWjfUwVGQQSSMdopRWYW+4YcMCE1E3OaqPc5IbalO5qyJ5Ffo1rllv" +
+            "ERK4n/88fGMVEizSUtXx+GwHysGJB9v++d+c8XFGYuNIdfkEITMRkGQmtF5fyn4M" +
+            "8mgbLpayqCUUABO+nG3hhK4T5mdWaBaMYisS7BgiJgk2ZdfTMvfTRFoo1Nw222TW" +
+            "/wJyjhyZ+UHWUP6Y3E5Om8iCjG+6Z545ojTWBDH1t/L7n7xVeHR6qDLr395Bdmrs" +
+            "RUmzHe3IloQ5SZnXebEwUG8Dbs13PjjuyhglVumXICIJjLB2iVaOkN8uuAieCOWW" +
+            "2cIvlbTew0FKYFKkd+I+705x9A+V3IlOB/jUbrP5Oa6Ba6UHhABCcLhm6KlHXWrO" +
+            "G07xM7qrrFpziqySHQh+x7DZdWE9un6SBCVUqXtRdbUlZM9gED3ZXPDXqSGn2GWu" +
+            "BThmYU0PzP+0lCsDDS96dwoFVbbSC5M+KXxOYbOoHewyXFTEXnmcWQaCXEH/Gbb4" +
+            "kMvIBSWC1JbDv7IzzZ1jAYrBZFU8Pq86dPvsLTkEaAwzuHhN/2WGME2xdG3kk+Ej" +
+            "/hRxXVyV18fX/xmGotslwOYs73QrY89+U3Aq+ZDQWSdsqJfwe/eX2T5x0W0zSGTx" +
+            "HQcFGOttBUZatUeOn9Dw1jddBkQSJCsqnEqPe1Rgh/eaVnXGx4WU9ysiOKqM4HFr" +
+            "ouADN32IFQwiuz9B6scAOdhaL/pWx/n1ncfxLrehcbbYQClrCC3Ku+GRjaSs/D5T" +
+            "E/1NZtRy/CuFL+H5xMGuOezlMBsXyK4uV4ac0JWj8WileL1OKu48V7zo30c50Rmm" +
+            "WACQX0Y3PdG1/k5lFDc15/8t4t0/WVTeDhSOd3X2dMwr+FjQkK7DOfFU3H+IHDQY" +
+            "Xf71sV27dU+8c6qO9bWEgJlBgSVm/upEHSJlPgRG2DfsosjnvhnREbH9Q+PfV3yA" +
+            "97JA7WT2CABYCdITW8Aam6oQ21547q1Gxd5u1RYm07uNXOUYW4DedbCBSUHyQilS" +
+            "b+/7zC3pLpSs+5GxRILvDx1F9YfeXtOVqmhMHndVbU7dUTYZfGnWNiZ2sGBmZBtR" +
+            "PPTyn6gf5p1vf6JSC5ge9uUJddtCx3iJfAQfhW3VXEFiZdTvhYQeX2etrPTNjTqm" +
+            "hMD6dDCRJUgKa5QbxDCCAckGCSqGSIb3DQEHAaCCAboEggG2MIIBsjCCAa4GCyqG" +
+            "SIb3DQEMCgECoIIBdjCCAXIwHAYKKoZIhvcNAQwBAzAOBAiR88/7HX1+PAICCAAE" +
+            "ggFQvcdY92jnplMZa3an3XHLkWeYfY8C6r+8XQ5MwdMnBfAGu8Jco9VDfrl6gd8h" +
+            "t5pETRabPzzOGDp1BLVA4tpmKlAz7R1Q1hni3RF/HneOwMfqx1Y6Y8NUpkyUBAMl" +
+            "siF6HOf7wspflyliKr3J1Q2lcDr+roWmyB+PohK+EoLS6zxjoBvsQ6VXKbTEThfN" +
+            "9K9RXMO+EpDdOQqbRbSpC8b/B9IVX17DDg2oR7f3YG3dysfB0hXsTKFkczOJOUP/" +
+            "HiNA21jfHaNWyysK1krOHvavOuxevM8RehNIPTQ/XWWH4J53xPUTDeHr252y6sL5" +
+            "TWKS6GQhBXzK7IRR8FQRnN+24nnSzqI+doYDtLmMtDQX02YNYHZ4uHfi6OJIXi5R" +
+            "oKNcW1EPdGnrZ4p3sVWWBvXM545z6USmE+fV4svSkNHcgWPymYYQ9qUfcAY0/Gfb" +
+            "xTWFMSUwIwYJKoZIhvcNAQkVMRYEFDdYxa4ZJsCeAQZDzHLZ+cdpC2z5MDEwITAJ" +
+            "BgUrDgMCGgUABBRQhCeY7Tpd+bwWDKpjyiEAIrOSHAQIMWQxuXDKfgYCAggA");
 
         public static X509Certificate2 GetSampleX509Certificate()
         {
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         public static X509Certificate2 GetSampleDSAX509Certificate()
         {
-            return new X509Certificate2(SampleDsaPfx, "velleity");
+            return new X509Certificate2(SampleDsaPfx, "password");
         }
 
         public static Stream LoadResourceStream(string resourceName)
