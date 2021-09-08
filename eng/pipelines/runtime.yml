@@ -535,7 +535,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - OSX_x64.
+    - OSX_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMJIT
