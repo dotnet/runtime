@@ -3,6 +3,7 @@
     <_targetFrameworkIdentifier Condition="'$(TargetFrameworkIdentifier)' != ''">$(TargetFrameworkIdentifier.Substring(1).ToLower())</_targetFrameworkIdentifier>
     <!-- Make sure the SDK raises the runtime items so that they are passed to conflict resolution -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <CopyLocalRuntimeTargetAssets>true</CopyLocalRuntimeTargetAssets>
     <!-- Suppress any SYSLIB9000 errors, as in these cases restore/build would succeed, the failure would be at run-time -->
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
