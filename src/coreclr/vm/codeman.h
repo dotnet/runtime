@@ -1175,10 +1175,12 @@ class ExecutionManager
 
     enum
     {
+#ifndef _DEBUG
         RangeSectionHandleArrayInitialSize = 100,
         RangeSectionHandleArrayExpansionFactor = 2
-#ifdef _DEBUG
-	,RangeSectionHandleArrayIncrement = 1
+#else
+        RangeSectionHandleArrayInitialSize = 8,
+	RangeSectionHandleArrayIncrement = 1
 #endif //(_DEBUG)
     };
 
