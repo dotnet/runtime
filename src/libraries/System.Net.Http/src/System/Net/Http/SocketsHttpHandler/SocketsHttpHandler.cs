@@ -419,7 +419,7 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Gets a property bag that can be used for ...
+        /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
         /// </summary>
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
