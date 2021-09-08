@@ -8968,15 +8968,7 @@ public:
     }
 
 private:
-    unsigned getSIMDInitTempVarNum()
-    {
-        if (lvaSIMDInitTempVarNum == BAD_VAR_NUM)
-        {
-            lvaSIMDInitTempVarNum                  = lvaGrabTempWithImplicitUse(false DEBUGARG("SIMDInitTempVar"));
-            lvaTable[lvaSIMDInitTempVarNum].lvType = getSIMDVectorType();
-        }
-        return lvaSIMDInitTempVarNum;
-    }
+    unsigned getSIMDInitTempVarNum(var_types simdType);
 
 #else  // !FEATURE_SIMD
     bool isOpaqueSIMDLclVar(LclVarDsc* varDsc)

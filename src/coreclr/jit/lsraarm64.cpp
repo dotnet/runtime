@@ -1132,7 +1132,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     // If the index is not a constant or op1 is in register,
                     // we will use the SIMD temp location to store the vector.
-                    compiler->getSIMDInitTempVarNum();
+                    compiler->getSIMDInitTempVarNum(compiler->getSIMDVectorType());
                 }
             }
 
