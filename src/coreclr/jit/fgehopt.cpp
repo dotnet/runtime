@@ -99,6 +99,14 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
             continue;
         }
 
+        // If the finally's block jumps back to itself, then it is not empty.
+        if ((firstBlock->bbJumpKind == BBJ_ALWAYS) && firstBlock->bbJumpDest == firstBlock)
+        {
+            JITDUMP("EH#%u finally has basic block that jumps to itself; skipping.\n", XTnum);
+            XTnum++;
+            continue;
+        }
+
         // Limit for now to finallys that contain only a GT_RETFILT.
         bool isEmpty = true;
 
@@ -181,10 +189,9 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
         JITDUMP("Remove now-unreachable handler " FMT_BB "\n", firstBlock->bbNum);
 
-        // Since the handler block has an explicit reference from the call-finallys,
-        // decrease the reference count of handler block.
-        noway_assert(firstBlock->countOfInEdges() > 0);
-        firstBlock->bbRefs--;
+        // Handler block should now be unreferenced, since the only
+        // explicit references to it were in call finallys.
+        firstBlock->bbRefs = 0;
 
         // Remove the handler block.
         const bool unreachable = true;
