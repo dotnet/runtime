@@ -1114,7 +1114,6 @@ public:
 #endif // FEATURE_COMINTEROP
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL,    "   NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_UNMANAGED_CALLI,         "   NDIRECTSTUB_FL_UNMANAGED_CALLI\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_TRIGGERCCTOR,            "   NDIRECTSTUB_FL_TRIGGERCCTOR\n", facility, level);
 #ifdef FEATURE_COMINTEROP
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDGETTER,             "   NDIRECTSTUB_FL_FIELDGETTER\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDSETTER,             "   NDIRECTSTUB_FL_FIELDSETTER\n", facility, level);
@@ -1136,7 +1135,6 @@ public:
             NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL     |
             NDIRECTSTUB_FL_UNMANAGED_CALLI          |
             NDIRECTSTUB_FL_STRUCT_MARSHAL           |
-            NDIRECTSTUB_FL_TRIGGERCCTOR             |
 #ifdef FEATURE_COMINTEROP
             NDIRECTSTUB_FL_COM                      |
             NDIRECTSTUB_FL_COMLATEBOUND             |   // internal
@@ -1945,16 +1943,7 @@ void NDirectStubLinker::Begin(DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
 
-    if (SF_IsForwardStub(dwStubFlags))
-    {
-
-        if (SF_IsStubWithCctorTrigger(dwStubFlags))
-        {
-            EmitLoadStubContext(m_pcsSetup, dwStubFlags);
-            m_pcsSetup->EmitCALL(METHOD__STUBHELPERS__INIT_DECLARING_TYPE, 1, 0);
-        }
-    }
-    else
+    if (!SF_IsForwardStub(dwStubFlags))
     {
         if (SF_IsDelegateStub(dwStubFlags))
         {

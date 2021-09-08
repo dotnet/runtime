@@ -3,15 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 abstract class BenchTask
 {
     public abstract string Name { get; }
-    List<Result> results = new List<Result>();
+    readonly List<Result> results = new();
+    public Regex pattern;
 
-    public string RunBatch(List<Result> results, int measurementIdx, int seconds = 5)
+    public string RunBatch(List<Result> results, int measurementIdx, int milliseconds = 5000)
     {
-        var result = Measurements[measurementIdx].RunBatch(this, seconds);
+        var result = Measurements[measurementIdx].RunBatch(this, milliseconds);
         results.Add(result);
 
         return result.ToString ();
@@ -39,7 +41,7 @@ abstract class BenchTask
 
         public abstract void RunStep();
 
-        public Result RunBatch(BenchTask task, int seconds)
+        public Result RunBatch(BenchTask task, int milliseconds)
         {
             DateTime start;
             DateTime end;
@@ -54,7 +56,7 @@ abstract class BenchTask
             end = DateTime.Now;
 
             var initTs = end - start;
-            int steps = (int)(seconds * 1000.0 * InitialSamples / Math.Max(1.0, initTs.TotalMilliseconds));
+            int steps = (int)(milliseconds * InitialSamples / Math.Max(1.0, initTs.TotalMilliseconds));
 
             start = DateTime.Now;
             for (int i = 0; i < steps; i++)

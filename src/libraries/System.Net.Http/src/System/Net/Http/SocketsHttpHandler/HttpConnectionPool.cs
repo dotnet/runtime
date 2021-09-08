@@ -413,11 +413,12 @@ namespace System.Net.Http
         // we will remove it from the list of available connections, if it is present there.
         // If not, then it must be unavailable at the moment; we will detect this and ensure it is not added back to the available pool.
 
-        private static HttpRequestException GetVersionException(HttpRequestMessage request, int desiredVersion)
+        [DoesNotReturn]
+        private static void ThrowGetVersionException(HttpRequestMessage request, int desiredVersion)
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
-            return new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion));
+            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion));
         }
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
@@ -887,144 +888,118 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+            // Loop in case we get a 421 and need to send the request to a different authority.
+            while (true)
             {
-                // Loop in case we get a 421 and need to send the request to a different authority.
-                while (true)
+                HttpAuthority? authority = _http3Authority;
+
+                // If H3 is explicitly requested, assume prenegotiated H3.
+                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
-                    HttpAuthority? authority = _http3Authority;
-
-                    // If H3 is explicitly requested, assume prenegotiated H3.
-                    if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
-                    {
-                        authority = authority ?? _originAuthority;
-                    }
-
-                    if (authority == null)
-                    {
-                        break;
-                    }
-
-                    if (IsAltSvcBlocked(authority))
-                    {
-                        throw GetVersionException(request, 3);
-                    }
-
-                    Http3Connection connection = await GetHttp3ConnectionAsync(request, authority, cancellationToken).ConfigureAwait(false);
-                    HttpResponseMessage response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
-
-                    // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
-                    // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                    // In this case, we blocklist the authority and retry the request at the origin.
-                    if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection.Authority != _originAuthority)
-                    {
-                        response.Dispose();
-                        BlocklistAuthority(connection.Authority);
-                        continue;
-                    }
-
-                    return response;
+                    authority ??= _originAuthority;
                 }
-            }
 
-            return null;
-        }
-
-        // Returns null if HTTP2 cannot be used.
-        private async ValueTask<HttpResponseMessage?> TrySendUsingHttp2Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            // Send using HTTP/2 if we can.
-            if (_http2Enabled && (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
-               // If the connection is not secured and downgrade is possible, prefer HTTP/1.1.
-               (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure))
-            {
-                Http2Connection? connection = await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-                if (connection is null)
+                if (authority == null)
                 {
-                    Debug.Assert(!_http2Enabled);
                     return null;
                 }
 
-                return await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
-            }
-
-            return null;
-        }
-
-        private async ValueTask<HttpResponseMessage> SendUsingHttp11Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            HttpConnection connection = await GetHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-
-            // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
-            connection.Acquire();
-            try
-            {
-                return await SendWithNtConnectionAuthAsync(connection, request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                connection.Release();
-            }
-        }
-
-        private async ValueTask<HttpResponseMessage> DetermineVersionAndSendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            HttpResponseMessage? response;
-
-            if (IsHttp3Supported())
-            {
-                response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-                if (response is not null)
+                if (IsAltSvcBlocked(authority))
                 {
-                    return response;
+                    ThrowGetVersionException(request, 3);
                 }
-            }
 
-            // We cannot use HTTP/3. Do not continue if downgrade is not allowed.
-            if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
-            {
-                throw GetVersionException(request, 3);
-            }
+                Http3Connection connection = await GetHttp3ConnectionAsync(request, authority, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
 
-            response = await TrySendUsingHttp2Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            if (response is not null)
-            {
+                // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
+                // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
+                // In this case, we blocklist the authority and retry the request at the origin.
+                if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection.Authority != _originAuthority)
+                {
+                    response.Dispose();
+                    BlocklistAuthority(connection.Authority);
+                    continue;
+                }
+
                 return response;
             }
-
-            // We cannot use HTTP/2. Do not continue if downgrade is not allowed.
-            if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
-            {
-                throw GetVersionException(request, 2);
-            }
-
-            return await SendUsingHttp11Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
         }
 
-        private async ValueTask<HttpResponseMessage> SendAndProcessAltSvcAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        /// <summary>Check for the Alt-Svc header, to upgrade to HTTP/3.</summary>
+        private void ProcessAltSvc(HttpResponseMessage response)
         {
-            HttpResponseMessage response = await DetermineVersionAndSendAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-
-            // Check for the Alt-Svc header, to upgrade to HTTP/3.
             if (_altSvcEnabled && response.Headers.TryGetValues(KnownHeaders.AltSvc.Descriptor, out IEnumerable<string>? altSvcHeaderValues))
             {
                 HandleAltSvc(altSvcHeaderValues, response.Headers.Age);
             }
-
-            return response;
         }
 
-        public async ValueTask<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        public async ValueTask<HttpResponseMessage> SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
+            // Loop on connection failures (or other problems like version downgrade) and retry if possible.
             int retryCount = 0;
             while (true)
             {
-                // Loop on connection failures (or other problems like version downgrade) and retry if possible.
                 try
                 {
-                    return await SendAndProcessAltSvcAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage? response = null;
+
+                    // Use HTTP/3 if possible.
+                    if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
+                        _http3Enabled &&
+                        (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+                    {
+                        response = await TrySendUsingHttp3Async(request, async, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (response is null)
+                    {
+                        // We could not use HTTP/3. Do not continue if downgrade is not allowed.
+                        if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                        {
+                            ThrowGetVersionException(request, 3);
+                        }
+
+                        // Use HTTP/2 if possible.
+                        if (_http2Enabled &&
+                            (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
+                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure)) // prefer HTTP/1.1 if connection is not secured and downgrade is possible
+                        {
+                            Http2Connection? connection = await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+                            Debug.Assert(connection is not null || !_http2Enabled);
+                            if (connection is not null)
+                            {
+                                response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+
+                        if (response is null)
+                        {
+                            // We could not use HTTP/2. Do not continue if downgrade is not allowed.
+                            if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                            {
+                                ThrowGetVersionException(request, 2);
+                            }
+
+                            // Use HTTP/1.x.
+                            HttpConnection connection = await GetHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+                            connection.Acquire(); // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
+                            try
+                            {
+                                response = await SendWithNtConnectionAuthAsync(connection, request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                            }
+                            finally
+                            {
+                                connection.Release();
+                            }
+                        }
+                    }
+
+                    ProcessAltSvc(response);
+                    return response;
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnConnectionFailure)
                 {
@@ -1332,7 +1307,7 @@ namespace System.Net.Http
                 return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, ProxyCredentials, doRequestAuth, this, cancellationToken);
             }
 
-            return SendWithRetryAsync(request, async, doRequestAuth, cancellationToken);
+            return SendWithVersionDetectionAndRetryAsync(request, async, doRequestAuth, cancellationToken);
         }
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)

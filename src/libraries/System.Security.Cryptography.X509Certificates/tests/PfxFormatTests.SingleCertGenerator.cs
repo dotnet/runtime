@@ -62,6 +62,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(AllSingleCertVariations))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCertWithOneKey(SingleCertOptions options)
         {
             bool sameContainer = (options & SingleCertOptions.KeyAndCertInSameContents) != 0;

@@ -426,7 +426,7 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    throw new PlatformNotSupportedException();
+                    return GetServerCertificateCustomValidationCallback();
                 }
                 else
                 {
@@ -437,7 +437,7 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    throw new PlatformNotSupportedException();
+                    SetServerCertificateCustomValidationCallback(value);
                 }
                 else
                 {

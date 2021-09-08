@@ -396,20 +396,6 @@ class DomainFile
     BOOL m_bDisableActivationCheck;
 };
 
-// These will sometimes result in a crash with error code 0x80131506 COR_E_EXECUTIONENGINE
-// "An internal error happened in the Common Language Runtime's Execution Engine"
-// Cause: Incorrectly committed to using native image for <path to assembly>
-enum ReasonForRejectingNativeImage
-{
-    ReasonForRejectingNativeImage_NoNiForManifestModule = 0x101,
-    ReasonForRejectingNativeImage_DependencyNotNative = 0x102,
-    ReasonForRejectingNativeImage_CoreLibNotNative = 0x103,
-    ReasonForRejectingNativeImage_FailedSecurityCheck = 0x104,
-    ReasonForRejectingNativeImage_DependencyIdentityMismatch = 0x105,
-    ReasonForRejectingNativeImage_CannotShareNiAssemblyNotDomainNeutral = 0x106,
-    ReasonForRejectingNativeImage_NiAlreadyUsedInAnotherSharedAssembly = 0x107,
-};
-
 //---------------------------------------------------------------------------------------
 // One of these values is specified when requesting a module iterator to customize which
 // modules should appear in the enumeration
