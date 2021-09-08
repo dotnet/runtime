@@ -22,6 +22,19 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
+		internal static bool TryGetAttribute (this ISymbol member, string attributeName, [NotNullWhen (returnValue: true)] out AttributeData? attribute)
+		{
+			attribute = null;
+			foreach (var attr in member.GetAttributes ()) {
+				if (attr.AttributeClass is { } attrClass && attrClass.HasName (attributeName)) {
+					attribute = attr;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overridenMember)
 		{
 			overridenMember = symbol switch {

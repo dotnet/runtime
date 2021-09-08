@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -27,6 +28,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected virtual ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions { get; } = ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)>.Empty;
 
+		private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
+
 		public override void Initialize (AnalysisContext context)
 		{
 			context.EnableConcurrentExecution ();
@@ -35,8 +38,8 @@ namespace ILLink.RoslynAnalyzer
 				var compilation = context.Compilation;
 				if (!IsAnalyzerEnabled (context.Options, compilation))
 					return;
-				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
 
+				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
 				context.RegisterSymbolAction (symbolAnalysisContext => {
 					var methodSymbol = (IMethodSymbol) symbolAnalysisContext.Symbol;
 					CheckMatchingAttributesInOverrides (symbolAnalysisContext, methodSymbol);
@@ -118,6 +121,9 @@ namespace ILLink.RoslynAnalyzer
 				// Register any extra operation actions supported by the analyzer.
 				foreach (var extraOperationAction in ExtraOperationActions)
 					context.RegisterOperationAction (extraOperationAction.Action, extraOperationAction.OperationKind);
+
+				foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
+					context.RegisterSyntaxNodeAction (extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
 
 				void CheckStaticConstructors (OperationAnalysisContext operationContext,
 					ImmutableArray<IMethodSymbol> staticConstructors)
@@ -263,7 +269,7 @@ namespace ILLink.RoslynAnalyzer
 
 		protected abstract string GetMessageFromAttribute (AttributeData requiresAttribute);
 
-		private string GetUrlFromAttribute (AttributeData? requiresAttribute)
+		public static string GetUrlFromAttribute (AttributeData? requiresAttribute)
 		{
 			var url = requiresAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Url").Value.Value?.ToString ();
 			return MessageFormat.FormatRequiresAttributeUrlArg (url);

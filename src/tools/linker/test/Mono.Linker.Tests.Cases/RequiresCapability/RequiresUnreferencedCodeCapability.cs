@@ -80,6 +80,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			AccessThroughPInvoke.Test ();
 			OnEventMethod.Test ();
 			AccessThroughNewConstraint.Test ();
+			AccessThroughNewConstraint.TestNewConstraintOnTypeParameter ();
+			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterOfStaticType ();
 			AccessThroughLdToken.Test ();
 			RequiresOnClass.Test ();
 		}
@@ -770,19 +772,39 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class AccessThroughNewConstraint
 		{
-			class NewConstrainTestType
+			class NewConstraintTestType
 			{
-				[RequiresUnreferencedCode ("Message for --NewConstrainTestType.ctor--")]
-				public NewConstrainTestType () { }
+				[RequiresUnreferencedCode ("Message for --NewConstraintTestType.ctor--")]
+				public NewConstraintTestType () { }
 			}
 
 			static void GenericMethod<T> () where T : new() { }
 
-			// https://github.com/mono/linker/issues/2117
-			[ExpectedWarning ("IL2026", "--NewConstrainTestType.ctor--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
 			public static void Test ()
 			{
-				GenericMethod<NewConstrainTestType> ();
+				GenericMethod<NewConstraintTestType> ();
+			}
+
+			static class NewConstraintOnTypeParameterOfStaticType<T> where T : new()
+			{
+				public static void DoNothing () { }
+			}
+
+			class NewConstaintOnTypeParameter<T> where T : new()
+			{
+			}
+
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			public static void TestNewConstraintOnTypeParameter ()
+			{
+				_ = new NewConstaintOnTypeParameter<NewConstraintTestType> ();
+			}
+
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			public static void TestNewConstraintOnTypeParameterOfStaticType ()
+			{
+				NewConstraintOnTypeParameterOfStaticType<NewConstraintTestType>.DoNothing ();
 			}
 		}
 
