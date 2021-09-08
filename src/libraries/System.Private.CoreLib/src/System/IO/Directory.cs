@@ -271,6 +271,7 @@ namespace System.IO
             bool sameDirectoryDifferentCase =
                 directoriesAreCaseVariants &&
                 destDirNameFromFullPath.Equals(sourceDirNameFromFullPath, fileSystemSensitivity);
+            bool sourcePathIsFile = FileSystem.FileExists(fullsourceDirName);
 
             // If the destination directories are the exact same name
             if (!sameDirectoryDifferentCase && string.Equals(sourcePath, destPath, fileSystemSensitivity))
@@ -285,8 +286,14 @@ namespace System.IO
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
             // to make sure our cross platform behavior matches .NET Framework behavior.
-            if (!FileSystem.DirectoryExists(fullsourceDirName) && !FileSystem.FileExists(fullsourceDirName))
+            if (!FileSystem.DirectoryExists(fullsourceDirName) && !sourcePathIsFile)
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
+
+            // To match API specification, we check if the source path is a file and ends with a trailing slash.
+            // While having a file as source is no problem for any OS, Windows will throw an error if the source path has a trailing slash.
+            // To match platform agnostic behaviour, we check that before handing over to OS specific implementation.
+            if (sourcePathIsFile && Path.EndsInDirectorySeparator(fullsourceDirName))
+                throw new IOException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
 
             if (!sameDirectoryDifferentCase // This check is to allow renaming of directories
                 && FileSystem.DirectoryExists(fulldestDirName))

@@ -43,7 +43,7 @@ namespace System.IO
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
 
-        private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
+        private static void LinkOrCopyFile(string sourceFullPath, string destFullPath)
         {
             if (Interop.Sys.Link(sourceFullPath, destFullPath) >= 0)
                 return;
@@ -128,9 +128,9 @@ namespace System.IO
                 // Check source and destination are not the same.
                 if (sourceStat.Dev == destStat.Dev &&
                     sourceStat.Ino == destStat.Ino)
-                  {
-                      throw new IOException(SR.Format(SR.IO_CannotReplaceSameFile, sourceFullPath, destFullPath));
-                  }
+                {
+                    throw new IOException(SR.Format(SR.IO_CannotReplaceSameFile, sourceFullPath, destFullPath));
+                }
             }
 
             if (destBackupFullPath != null)
@@ -372,23 +372,10 @@ namespace System.IO
 
         public static void MoveDirectory(string sourceFullPath, string destFullPath)
         {
-            // Windows doesn't care if you try and copy a file via "MoveDirectory"...
-            if (FileExists(sourceFullPath))
-            {
-                // ... but it doesn't like the source to have a trailing slash ...
-
-                // On Windows we end up with ERROR_INVALID_NAME, which is
-                // "The filename, directory name, or volume label syntax is incorrect."
-                //
-                // This surfaces as an IOException, if we let it go beyond here it would
-                // give DirectoryNotFound.
-
-                if (Path.EndsInDirectorySeparator(sourceFullPath))
-                    throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-
-                // ... but it doesn't care if the destination has a trailing separator.
+            // We have to check, if the source path does not end with a trailing separator.
+            // To match windows behaviour, Unix does not want trailing separators for both paths when it moves a file.
+            if (!Path.EndsInDirectorySeparator(sourceFullPath))
                 destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
-            }
 
             if (FileExists(destFullPath))
             {
