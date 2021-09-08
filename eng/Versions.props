@@ -115,16 +115,16 @@
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>7.0.0-alpha.1.21456.1</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.21430.2</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.21430.2</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>7.0.0-beta.21430.2</SystemDrawingCommonTestDataVersion>
-    <SystemIOCompressionTestDataVersion>7.0.0-beta.21430.2</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>7.0.0-beta.21430.2</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>7.0.0-beta.21430.2</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>7.0.0-beta.21430.2</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>7.0.0-beta.21430.2</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>7.0.0-beta.21430.2</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>7.0.0-beta.21430.2</SystemWindowsExtensionsTestDataVersion>
+    <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.21457.4</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.21457.4</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>7.0.0-beta.21457.4</SystemDrawingCommonTestDataVersion>
+    <SystemIOCompressionTestDataVersion>7.0.0-beta.21457.4</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>7.0.0-beta.21457.4</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>7.0.0-beta.21457.4</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>7.0.0-beta.21457.4</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>7.0.0-beta.21457.4</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>7.0.0-beta.21457.4</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>7.0.0-beta.21457.4</SystemWindowsExtensionsTestDataVersion>
     <MicrosoftDotNetCilStripSourcesVersion>7.0.0-beta.21430.2</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.21456.2</optimizationwindows_ntx64MIBCRuntimeVersion>
