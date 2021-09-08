@@ -14,17 +14,14 @@ class PEImage;
 class DefaultAssemblyBinder final : public AssemblyBinder
 {
 public:
-    //=========================================================================
-    // AssemblyBinder functions
-    //-------------------------------------------------------------------------
 
     HRESULT BindUsingPEImage(PEImage* pPEImage,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly) override;
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly) override;
 
-    AssemblyLoaderAllocator* GetLoaderAllocator()
+    AssemblyLoaderAllocator* GetLoaderAllocator() override
     {
         // Not supported by this binder
         return NULL;
