@@ -26,6 +26,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
@@ -61,6 +62,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -77,7 +79,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
     }
 
-    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, IncludeFields = true)]
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RepeatedTypes.Location), GenerationMode = JsonSourceGenerationMode.Serialization, TypeInfoPropertyName = "RepeatedLocation")]
     [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -97,6 +99,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -144,6 +147,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationContext.Default.MyNestedNestedClass.Serialize);
             Assert.Null(SerializationContext.Default.ObjectArray.Serialize);
             Assert.Null(SerializationContext.Default.String.Serialize);
+            Assert.NotNull(SerializationContext.Default.ValueTupleStringInt32Boolean.Serialize);
             Assert.NotNull(SerializationContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.Null(SerializationContext.Default.ClassWithCustomConverter.Serialize);
             Assert.Null(SerializationContext.Default.StructWithCustomConverter.Serialize);
@@ -411,6 +415,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ObjectArray.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.SampleEnum.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.String.Serialize);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.Serialize);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ClassWithCustomConverter.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.StructWithCustomConverter.Serialize);
