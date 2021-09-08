@@ -53,20 +53,20 @@
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>1.0.0-rc.1.21455.4</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatVersion>7.0.0-beta.21453.2</MicrosoftDotNetApiCompatVersion>
-    <MicrosoftDotNetBuildTasksFeedVersion>7.0.0-beta.21453.2</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>7.0.0-beta.21453.2</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>7.0.0-beta.21453.2</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>7.0.0-beta.21453.2</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>7.0.0-beta.21453.2</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21453.2</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>7.0.0-beta.21453.2</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>7.0.0-beta.21453.2</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>7.0.0-beta.21453.2</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>7.0.0-beta.21453.2</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>7.0.0-beta.21453.2</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>7.0.0-beta.21453.2</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageTestingVersion>7.0.0-beta.21453.2</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetApiCompatVersion>7.0.0-beta.21457.3</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>7.0.0-beta.21457.3</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>7.0.0-beta.21457.3</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>7.0.0-beta.21457.3</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>7.0.0-beta.21457.3</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21457.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>7.0.0-beta.21457.3</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>7.0.0-beta.21457.3</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetPackageTestingVersion>7.0.0-beta.21457.3</MicrosoftDotNetPackageTestingVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
