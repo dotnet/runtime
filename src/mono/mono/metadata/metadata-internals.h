@@ -186,17 +186,6 @@ struct MonoTypeNameParse {
 };
 
 
-typedef enum MonoAssemblyContextKind {
-	/* Default assembly context: Load(String) and assembly references */
-	MONO_ASMCTX_DEFAULT = 0,
-	/* Individual assembly context (.NET Framework docs call this "not in
-	 * any context"): LoadFile(String) and Load(byte[]) are here.
-	 */
-	MONO_ASMCTX_INDIVIDUAL = 2,
-
-	MONO_ASMCTX_LAST = 2
-} MonoAssemblyContextKind;
-
 typedef struct _MonoAssemblyContext {
         /* Don't fire managed load event for this assembly */
         guint8 no_managed_load_event : 1;
