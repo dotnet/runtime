@@ -19226,7 +19226,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     // for this method, so we won't prematurely conclude this method should never
     // be inlined.
     //
-    BasicBlock::weight_t weight = 0;
+    weight_t weight = 0;
 
     if (pInlineInfo != nullptr)
     {
@@ -19234,8 +19234,8 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
     else
     {
-        const float prejitHotCallerWeight = 1000000.0f;
-        weight                            = prejitHotCallerWeight;
+        const weight_t prejitHotCallerWeight = 1000000.0;
+        weight                               = prejitHotCallerWeight;
     }
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
@@ -19248,10 +19248,10 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     //
     if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
     {
-        const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
-        const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
-        profileFreq                               = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
-        hasProfile                                = true;
+        const weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        const weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        profileFreq                   = fgProfileWeightsEqual(entryWeight, 0.0) ? 0.0 : callSiteWeight / entryWeight;
+        hasProfile                    = true;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
@@ -22236,9 +22236,11 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         return true;
     }
 
-    // Check for T[] with T exact.
-    if (!impIsClassExact(arrayElementHandle))
+    const bool arrayTypeIsSealed = impIsClassExact(arrayElementHandle);
+
+    if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
     {
+        // Bail out if we don't know array's exact type
         return false;
     }
 
@@ -22246,7 +22248,16 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     bool                 valueIsNonNull = false;
     CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(value, &valueIsExact, &valueIsNonNull);
 
-    if (valueHandle == arrayElementHandle)
+    // Array's type is sealed and equals to value's type
+    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
+    {
+        JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
+        return true;
+    }
+
+    // Array's type is not sealed but we know its exact type
+    if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) &&
+        (info.compCompHnd->compareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState::Must))
     {
         JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
         return true;
