@@ -85,3 +85,6 @@ In the analyzer project make sure to do the following. Ensure it only targets `n
     <AnalyzerLanguage>cs</AnalyzerLanguage> 
   </PropertyGroup>
 ```
+
+### .NETFramework RID specific assets
+When targeting .NETFramework, RID specific assets are automatically added to the package if the project contains other compatible RID specific assets, mainly `netstandard2.0-windows`.
