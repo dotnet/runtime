@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include=".nuget/optdata/optdata.proj" />
     <ProjectReference Condition="'$(TargetOS)' == 'Windows'" Include="ToolBox/SOS/DacTableGen/DacTableGen.csproj" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
-  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile" />
+  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;OutputPgoPathForCI" />
 </Project>

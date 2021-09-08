@@ -8,19 +8,11 @@
     <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
+
   <Target Name="BuildRuntime"
+          DependsOnTargets="GetPgoDataPackagePath"
           BeforeTargets="Build">
-
-    <!-- Get the path to PGO data to pass to the runtime build script. -->
-    <MSBuild
-      Projects=".nuget/optdata/optdata.proj"
-      Targets="GetPgoDataPackagePath">
-      <Output
-        TaskParameter="TargetOutputs"
-        PropertyName="PgoDataPath" />
-    </MSBuild>
-
-
     <ItemGroup>
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="$(CMakeArgs)" />
@@ -37,14 +29,14 @@
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
                                    '$(Configuration)' == 'Release' and
                                    '$(ClrRuntimeSubset)' == 'true' and
-                                   '$(NoPgoOptimize)' != 'true' and
+                                   '$(NativeOptimizationDataSupported)' == 'true' and
                                    '$(PgoInstrument)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))" Include="-msbuild" />
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
-      <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoDataPath)&quot;" />
+      <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">
