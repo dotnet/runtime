@@ -262,231 +262,231 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
-# #
-# # Build the whole product using Mono and run libraries tests, multi-scenario
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/global-build-job.yml
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     buildConfig: Release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Browser_wasm
-#     variables:
-#       # map dependencies variables to local variables
-#       - name: librariesContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-#       - name: monoContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
-#     jobParameters:
-#       testGroup: innerloop
-#       nameSuffix: AllSubsets_Mono
-#       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-#       timeoutInMinutes: 180
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
-#       # extra steps, run tests
-#       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-#       extraStepsParameters:
-#         creator: dotnet-bot
-#         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-#         scenarios:
-#         - normal
-#         - wasmtestonbrowser
-#         condition: >-
-#           or(
-#           eq(variables['librariesContainsChange'], true),
-#           eq(variables['monoContainsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Build the whole product using Mono and run libraries tests, multi-scenario
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        scenarios:
+        - normal
+        - wasmtestonbrowser
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/global-build-job.yml
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     buildConfig: Release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Browser_wasm
-#     variables:
-#       # map dependencies variables to local variables
-#       - name: monoContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
-#       - name: installerContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
-#     jobParameters:
-#       testGroup: innerloop
-#       nameSuffix: AllSubsets_Mono_WasmBuildTests
-#       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:OnlyWasmBuildTests=true /p:TestAssemblies=false
-#       timeoutInMinutes: 180
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
-#       # extra steps, run tests
-#       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-#       extraStepsParameters:
-#         creator: dotnet-bot
-#         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-#         scenarios:
-#         - buildwasmapps
-#         condition: >-
-#           or(
-#           eq(variables['monoContainsChange'], true),
-#           eq(variables['installerContainsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+      - name: installerContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_WasmBuildTests
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:OnlyWasmBuildTests=true /p:TestAssemblies=false
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        scenarios:
+        - buildwasmapps
+        condition: >-
+          or(
+          eq(variables['monoContainsChange'], true),
+          eq(variables['installerContainsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Build for Browser/wasm, with EnableAggressiveTrimming=true
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/global-build-job.yml
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     buildConfig: Release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Browser_wasm
-#     variables:
-#       # map dependencies variables to local variables
-#       - name: librariesContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-#       - name: monoContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
-#     jobParameters:
-#       testGroup: innerloop
-#       nameSuffix: AllSubsets_Mono_EAT
-#       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=false
-#       timeoutInMinutes: 180
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
-#       # extra steps, run tests
-#       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-#       extraStepsParameters:
-#         creator: dotnet-bot
-#         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-#         extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
-#         scenarios:
-#         - normal
-#         condition: >-
-#           or(
-#           eq(variables['librariesContainsChange'], true),
-#           eq(variables['monoContainsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Build for Browser/wasm, with EnableAggressiveTrimming=true
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_EAT
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=false
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
+        scenarios:
+        - normal
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Build for Browser/wasm with RunAOTCompilation=true
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/global-build-job.yml
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     buildConfig: Release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Browser_wasm
-#     variables:
-#       # map dependencies variables to local variables
-#       - name: librariesContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-#       - name: monoContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
-#     jobParameters:
-#       testGroup: innerloop
-#       nameSuffix: AllSubsets_Mono_AOT
-#       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true
-#       timeoutInMinutes: 180
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
-#       # extra steps, run tests
-#       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-#       extraStepsParameters:
-#         creator: dotnet-bot
-#         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-#         extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
-#         scenarios:
-#         - normal
-#         condition: >-
-#           or(
-#           eq(variables['librariesContainsChange'], true),
-#           eq(variables['monoContainsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Build for Browser/wasm with RunAOTCompilation=true
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_AOT
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
+        scenarios:
+        - normal
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# # Build and test libraries under single-file publishing
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/global-build-job.yml
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     buildConfig: Release
-#     platforms:
-#     - windows_x64
-#     - Linux_x64
-#     jobParameters:
-#       testGroup: innerloop
-#       isFullMatrix: ${{ variables.isFullMatrix }}
-#       isSingleFile: true
-#       nameSuffix: SingleFile
-#       buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true /p:ArchiveTests=true
-#       timeoutInMinutes: 120
-#       # extra steps, run tests
-#       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-#       extraStepsParameters:
-#         creator: dotnet-bot
-#         testRunNamePrefixSuffix: SingleFile_$(_BuildConfig)
+# Build and test libraries under single-file publishing
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    platforms:
+    - windows_x64
+    - Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      isSingleFile: true
+      nameSuffix: SingleFile
+      buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true /p:ArchiveTests=true
+      timeoutInMinutes: 120
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: SingleFile_$(_BuildConfig)
 
-# #
-# # Build the whole product using Mono and run runtime tests
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/global-build-job.yml
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     buildConfig: Release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Browser_wasm
-#     variables:
-#       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
-#         - name: _HelixSource
-#           value: pr/dotnet/runtime/$(Build.SourceBranch)
-#       - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-#         - name: _HelixSource
-#           value: ci/dotnet/runtime/$(Build.SourceBranch)
-#       - name: timeoutPerTestInMinutes
-#         value: 10
-#       - name: timeoutPerTestCollectionInMinutes
-#         value: 200
-#     jobParameters:
-#       testGroup: innerloop
-#       nameSuffix: AllSubsets_Mono_RuntimeTests
-#       buildArgs: -s mono+libs -c $(_BuildConfig)
-#       timeoutInMinutes: 180
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
-#       # extra steps, run tests
-#       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/wasm-runtime-and-send-to-helix.yml
-#       extraStepsParameters:
-#         creator: dotnet-bot
-#         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+#
+# Build the whole product using Mono and run runtime tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 10
+      - name: timeoutPerTestCollectionInMinutes
+        value: 200
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_RuntimeTests
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/wasm-runtime-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
 # Build the whole product using Mono for Android and run runtime tests with Android emulator
@@ -849,133 +849,133 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
-# #
-# # Installer Build and Test
-# # These are always built since they only take like 15 minutes
-# # we expect these to be done before we finish libraries or coreclr testing.
-# #
-# - template: /eng/pipelines/installer/installer-matrix.yml
-#   parameters:
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#       - Linux_arm
-#       - Linux_musl_arm
-#       - Linux_musl_arm64
-#       - windows_x86
-#       - windows_arm
-#       - windows_arm64
-#     jobParameters:
-#       liveRuntimeBuildConfig: release
-#       liveLibrariesBuildConfig: Release
+#
+# Installer Build and Test
+# These are always built since they only take like 15 minutes
+# we expect these to be done before we finish libraries or coreclr testing.
+#
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+      - Linux_arm
+      - Linux_musl_arm
+      - Linux_musl_arm64
+      - windows_x86
+      - windows_arm
+      - windows_arm64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: Release
 
-# - template: /eng/pipelines/installer/installer-matrix.yml
-#   parameters:
-#     buildConfig: Release
-#     platforms:
-#       - OSX_arm64
-#       - OSX_x64
-#       - Linux_x64
-#       - Linux_arm64
-#       - Linux_musl_x64
-#       - windows_x64
-#       - FreeBSD_x64
-#     jobParameters:
-#       liveRuntimeBuildConfig: release
-#       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: Release
+    platforms:
+      - OSX_arm64
+      - OSX_x64
+      - Linux_x64
+      - Linux_arm64
+      - Linux_musl_x64
+      - windows_x64
+      - FreeBSD_x64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
-# #
-# # PGO Build
-# #
-# - template: /eng/pipelines/installer/installer-matrix.yml
-#   parameters:
-#     buildConfig: Release
-#     jobParameters:
-#       isOfficialBuild: ${{ variables.isOfficialBuild }}
-#       liveRuntimeBuildConfig: release
-#       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#       pgoType: 'PGO'
-#     platforms:
-#     - windows_x64
-#     - windows_x86
-#     - Linux_x64
+#
+# PGO Build
+#
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: Release
+    jobParameters:
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      pgoType: 'PGO'
+    platforms:
+    - windows_x64
+    - windows_x86
+    - Linux_x64
 
-# #
-# # CoreCLR Test builds using live libraries release build
-# # Only when CoreCLR is changed
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-#     buildConfig: checked
-#     platforms:
-#     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-#     jobParameters:
-#       testGroup: innerloop
-#       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# CoreCLR Test builds using live libraries release build
+# Only when CoreCLR is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # CoreCLR Test executions using live libraries
-# # Only when CoreCLR is changed
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-#     buildConfig: checked
-#     platforms:
-#     - Linux_arm
-#     - windows_x86
-#     - windows_arm64
-#     helixQueueGroup: pr
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     jobParameters:
-#       testGroup: innerloop
-#       liveLibrariesBuildConfig: Release
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# CoreCLR Test executions using live libraries
+# Only when CoreCLR is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm
+    - windows_x86
+    - windows_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: Release
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-#     buildConfig: checked
-#     platforms:
-#     - OSX_x64
-#     - Linux_x64
-#     - Linux_arm64
-#     - windows_x64
-#     helixQueueGroup: pr
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     jobParameters:
-#       testGroup: innerloop
-#       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Linux_arm64
+    - windows_x64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-#     buildConfig: checked
-#     platforms:
-#     - OSX_arm64
-#     helixQueueGroup: pr
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     jobParameters:
-#       testGroup: innerloop
-#       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Mono Test builds with CoreCLR runtime tests using live libraries debug build
@@ -1021,232 +1021,232 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
-# #
-# # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
-# # Only when Mono is changed
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-#     buildConfig: release
-#     runtimeFlavor: mono
-#     platforms:
-#     - OSX_x64
-#     - Linux_arm64
-#     helixQueueGroup: pr
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     jobParameters:
-#       testGroup: innerloop
-#       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#       liveRuntimeBuildConfig: release
-#       runtimeVariant: monointerpreter
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
-# #
-# # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
-# # Only when Mono is changed
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-#     buildConfig: release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Linux_x64
-#     - Linux_arm64
-#     helixQueueGroup: pr
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     jobParameters:
-#       testGroup: innerloop
-#       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#       liveRuntimeBuildConfig: release
-#       runtimeVariant: llvmaot
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Mono CoreCLR runtime Test executions using live libraries in interpreter mode
+# Only when Mono is changed
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - OSX_x64
+    - Linux_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      liveRuntimeBuildConfig: release
+      runtimeVariant: monointerpreter
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+#
+# Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
+# Only when Mono is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      liveRuntimeBuildConfig: release
+      runtimeVariant: llvmaot
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Libraries Release Test Execution against a release mono runtime.
-# # Only when libraries or mono changed
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-#     runtimeFlavor: mono
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#     # - windows_x64
-#     - OSX_x64
-#     - Linux_arm64
-#     - Linux_x64
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     jobParameters:
-#       isOfficialBuild: false
-#       isFullMatrix: ${{ variables.isFullMatrix }}
-#       runtimeDisplayName: mono
-#       testScope: innerloop
-#       liveRuntimeBuildConfig: release
-#       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-#       dependsOnTestArchitecture: x64
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Libraries Release Test Execution against a release mono runtime.
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    runtimeFlavor: mono
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    # - windows_x64
+    - OSX_x64
+    - Linux_arm64
+    - Linux_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: false
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      runtimeDisplayName: mono
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Libraries Release Test Execution against a release mono interpreter runtime.
-# # Only when libraries or mono changed
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-#     runtimeFlavor: mono
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#     # - windows_x64
-#     #- OSX_x64
-#     - Linux_x64
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     jobParameters:
-#       isOfficialBuild: false
-#       isFullMatrix: ${{ variables.isFullMatrix }}
-#       interpreter: true
-#       runtimeDisplayName: mono_interpreter
-#       testScope: innerloop
-#       liveRuntimeBuildConfig: release
-#       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-#       dependsOnTestArchitecture: x64
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Libraries Release Test Execution against a release mono interpreter runtime.
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    runtimeFlavor: mono
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    # - windows_x64
+    #- OSX_x64
+    - Linux_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: false
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      interpreter: true
+      runtimeDisplayName: mono_interpreter
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Libraries Release Test Execution against a release coreclr runtime
-# # Only when the PR contains a libraries change
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-#     buildConfig: Release
-#     platforms:
-#     - windows_x86
-#     - ${{ if eq(variables['isFullMatrix'], true) }}:
-#       - windows_arm64
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     jobParameters:
-#       isOfficialBuild: false
-#       isFullMatrix: ${{ variables.isFullMatrix }}
-#       testScope: innerloop
-#       liveRuntimeBuildConfig: release
-#       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-#       dependsOnTestArchitecture: x64
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Libraries Release Test Execution against a release coreclr runtime
+# Only when the PR contains a libraries change
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: Release
+    platforms:
+    - windows_x86
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - windows_arm64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: false
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Libraries Debug Test Execution against a release coreclr runtime
-# # Only when the PR contains a libraries change
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#     - windows_x64
-#     - OSX_x64
-#     - Linux_x64
-#     - Linux_musl_x64
-#     - ${{ if eq(variables['isFullMatrix'], true) }}:
-#       - Linux_arm64
-#     - ${{ if eq(variables['isFullMatrix'], false) }}:
-#       - windows_x86
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     jobParameters:
-#       isOfficialBuild: false
-#       isFullMatrix: ${{ variables.isFullMatrix }}
-#       testScope: innerloop
-#       liveRuntimeBuildConfig: release
-#       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-#       dependsOnTestArchitecture: x64
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Libraries Debug Test Execution against a release coreclr runtime
+# Only when the PR contains a libraries change
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - windows_x64
+    - OSX_x64
+    - Linux_x64
+    - Linux_musl_x64
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - Linux_arm64
+    - ${{ if eq(variables['isFullMatrix'], false) }}:
+      - windows_x86
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: false
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Libraries Test Execution against a checked runtime
-# # Only when the PR contains a coreclr change
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-#     buildConfig: Release
-#     platforms:
-#     # - windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
-#     - Linux_arm
-#     - Linux_musl_arm
-#     - Linux_musl_arm64
-#     - windows_x86
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     helixQueueGroup: libraries
-#     jobParameters:
-#       testScope: innerloop
-#       liveRuntimeBuildConfig: checked
-#       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-#       dependsOnTestArchitecture: x64
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Libraries Test Execution against a checked runtime
+# Only when the PR contains a coreclr change
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: Release
+    platforms:
+    # - windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
+    - Linux_arm
+    - Linux_musl_arm
+    - Linux_musl_arm64
+    - windows_x86
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueueGroup: libraries
+    jobParameters:
+      testScope: innerloop
+      liveRuntimeBuildConfig: checked
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# #
-# # Libraries Test Execution against a checked runtime
-# # Only if CoreCLR or Libraries is changed
-# #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#     - windows_x64
-#     - Linux_x64
-#     - Linux_musl_x64
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     helixQueueGroup: libraries
-#     jobParameters:
-#       testScope: innerloop
-#       liveRuntimeBuildConfig: checked
-#       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-#       dependsOnTestArchitecture: x64
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+#
+# Libraries Test Execution against a checked runtime
+# Only if CoreCLR or Libraries is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - windows_x64
+    - Linux_x64
+    - Linux_musl_x64
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueueGroup: libraries
+    jobParameters:
+      testScope: innerloop
+      liveRuntimeBuildConfig: checked
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-#     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#     platforms:
-#     - OSX_x64
-#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-#     helixQueueGroup: libraries
-#     jobParameters:
-#       testScope: innerloop
-#       liveRuntimeBuildConfig: checked
-#       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-#       dependsOnTestArchitecture: x64
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - OSX_x64
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueueGroup: libraries
+    jobParameters:
+      testScope: innerloop
+      liveRuntimeBuildConfig: checked
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
