@@ -37,7 +37,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
             private readonly Compilation _compilation;
-            private readonly SourceProductionContext _sourceProductionContext;
+            private readonly JsonSourceGenerationContext _sourceGenerationContext;
             private readonly MetadataLoadContextInternal _metadataLoadContext;
 
             private readonly Type _ilistOfTType;
@@ -102,10 +102,10 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            public Parser(Compilation compilation, in SourceProductionContext sourceProductionContext)
+            public Parser(Compilation compilation, in JsonSourceGenerationContext sourceGenerationContext)
             {
                 _compilation = compilation;
-                _sourceProductionContext = sourceProductionContext;
+                _sourceGenerationContext = sourceGenerationContext;
                 _metadataLoadContext = new MetadataLoadContextInternal(_compilation);
 
                 _ilistOfTType = _metadataLoadContext.Resolve(SpecialType.System_Collections_Generic_IList_T);
@@ -145,7 +145,7 @@ namespace System.Text.Json.SourceGeneration
                 PopulateKnownTypes();
             }
 
-            public SourceGenerationSpec? GetGenerationSpec(ImmutableArray<ClassDeclarationSyntax> classDeclarationSyntaxList)
+            public SourceGenerationSpec? GetGenerationSpec(IEnumerable<ClassDeclarationSyntax> classDeclarationSyntaxList)
             {
                 Compilation compilation = _compilation;
                 INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
@@ -205,7 +205,7 @@ namespace System.Text.Json.SourceGeneration
                     if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
                     {
                         // Class or one of its containing types is not partial so we can't add to it.
-                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
+                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
                         continue;
                     }
 
@@ -772,7 +772,7 @@ namespace System.Text.Json.SourceGeneration
                     if (!type.TryGetDeserializationConstructor(useDefaultCtorInAnnotatedStructs, out ConstructorInfo? constructor))
                     {
                         classType = ClassType.TypeUnsupportedBySourceGen;
-                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonConstructorAttribute, Location.None, new string[] { $"{type}" }));
+                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonConstructorAttribute, Location.None, new string[] { $"{type}" }));
                     }
                     else
                     {

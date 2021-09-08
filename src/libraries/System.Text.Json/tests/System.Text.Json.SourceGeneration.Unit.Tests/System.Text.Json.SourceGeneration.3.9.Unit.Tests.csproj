@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion_39)</RoslynApiVersion>
+  </PropertyGroup>
+
+  <Import Project="System.Text.Json.SourceGeneration.Unit.Tests.targets"/>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.3.9.csproj" />
+  </ItemGroup>
+</Project>

@@ -67,14 +67,24 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             );
         }
 
-        private static GeneratorDriver CreateDriver(Compilation compilation, IIncrementalGenerator[] generators)
-            => CSharpGeneratorDriver.Create(
+        public static Compilation RunGenerators(
+            Compilation compilation,
+            out ImmutableArray<Diagnostic> diagnostics,
+#if ROSLYN4_0_OR_GREATER
+            params IIncrementalGenerator[] generators)
+        {
+            CSharpGeneratorDriver driver = CSharpGeneratorDriver.Create(
                 generators: generators.Select(g => g.AsSourceGenerator()),
                 parseOptions: s_parseOptions);
-
-        public static Compilation RunGenerators(Compilation compilation, out ImmutableArray<Diagnostic> diagnostics, params IIncrementalGenerator[] generators)
+#else
+            params ISourceGenerator[] generators)
         {
-            CreateDriver(compilation, generators).RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out diagnostics);
+            CSharpGeneratorDriver driver = CSharpGeneratorDriver.Create(
+                generators: generators,
+                parseOptions: s_parseOptions);
+#endif
+
+            driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out diagnostics);
             return outCompilation;
         }
 

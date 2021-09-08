@@ -26,7 +26,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+#if ROSLYN4_0_OR_GREATER
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+#endif
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
@@ -69,7 +71,9 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MixedModeContext.Default.ObjectArray.Serialize);
             Assert.Null(MixedModeContext.Default.SampleEnum.Serialize);
             Assert.Null(MixedModeContext.Default.String.Serialize);
+#if ROSLYN4_0_OR_GREATER
             Assert.NotNull(MixedModeContext.Default.ValueTupleStringInt32Boolean.Serialize);
+#endif
             Assert.NotNull(MixedModeContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.Null(MixedModeContext.Default.ClassWithCustomConverter.Serialize);
             Assert.Null(MixedModeContext.Default.StructWithCustomConverter.Serialize);

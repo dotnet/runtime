@@ -349,6 +349,7 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.3.9.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.4.0.csproj" />
   </ItemGroup>
 </Project>

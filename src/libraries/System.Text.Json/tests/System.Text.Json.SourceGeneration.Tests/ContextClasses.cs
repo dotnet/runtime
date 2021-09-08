@@ -32,7 +32,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
         public JsonTypeInfo<object[]> ObjectArray { get; }
         public JsonTypeInfo<string> String { get; }
+#if ROSLYN4_0_OR_GREATER
         public JsonTypeInfo<(string Label1, int Label2, bool)> ValueTupleStringInt32Boolean { get; }
+#endif
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
         public JsonTypeInfo<StructWithCustomConverter> StructWithCustomConverter { get; }

@@ -110,6 +110,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             VerifyRepeatedLocation(expected, obj);
         }
 
+#if ROSLYN4_0_OR_GREATER
         [Fact]
         public virtual void RoundTripValueTuple()
         {
@@ -134,6 +135,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 Assert.Equal(isIncludeFieldsEnabled ? tuple : default, deserializedTuple);
             }
         }
+#endif
 
         [Fact]
         public virtual void RoundTripWithCustomConverter_Class()
