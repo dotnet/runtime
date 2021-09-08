@@ -3,7 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -15,50 +18,38 @@ using Microsoft.CodeAnalysis.Text;
 namespace Microsoft.Extensions.Logging.Generators
 {
     [Generator]
-    public partial class LoggerMessageGenerator : ISourceGenerator
+    public partial class LoggerMessageGenerator : IIncrementalGenerator
     {
-        [ExcludeFromCodeCoverage]
-        public void Initialize(GeneratorInitializationContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(SyntaxReceiver.Create);
+            IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
+                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (ctx, _) => Parser.GetSemanticTargetForGeneration(ctx))
+                .Where(static m => m is not null);
+
+            IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
+                context.CompilationProvider.Combine(classDeclarations.Collect());
+
+            context.RegisterSourceOutput(compilationAndClasses, static (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
-        [ExcludeFromCodeCoverage]
-        public void Execute(GeneratorExecutionContext context)
+        private static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> classes, SourceProductionContext context)
         {
-            if (context.SyntaxReceiver is not SyntaxReceiver receiver || receiver.ClassDeclarations.Count == 0)
+            if (classes.IsDefaultOrEmpty)
             {
                 // nothing to do yet
                 return;
             }
 
-            var p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
-            IReadOnlyList<LoggerClass> logClasses = p.GetLogClasses(receiver.ClassDeclarations);
+            IEnumerable<ClassDeclarationSyntax> distinctClasses = classes.Distinct();
+
+            var p = new Parser(compilation, context.ReportDiagnostic, context.CancellationToken);
+            IReadOnlyList<LoggerClass> logClasses = p.GetLogClasses(distinctClasses);
             if (logClasses.Count > 0)
             {
                 var e = new Emitter();
                 string result = e.Emit(logClasses, context.CancellationToken);
-    
+
                 context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));
-            }
-        }
-
-        [ExcludeFromCodeCoverage]
-        private sealed class SyntaxReceiver : ISyntaxReceiver
-        {
-            internal static ISyntaxReceiver Create()
-            {
-                return new SyntaxReceiver();
-            }
-
-            public List<ClassDeclarationSyntax> ClassDeclarations { get; } = new ();
-
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
-            {
-                if (syntaxNode is ClassDeclarationSyntax classSyntax)
-                {
-                    ClassDeclarations.Add(classSyntax);
-                }
             }
         }
     }

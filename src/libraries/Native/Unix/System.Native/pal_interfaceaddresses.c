@@ -383,7 +383,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), &sall->sll_addr, sall->sll_halen);
 
             struct ifreq ifr;
-            strncpy(ifr.ifr_name, nii->Name, sizeof(ifr.ifr_name)-1);
+            strncpy(ifr.ifr_name, nii->Name, sizeof(ifr.ifr_name));
+            ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 
             if (socketfd == -1)
             {

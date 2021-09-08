@@ -80,7 +80,6 @@ class   MethodDesc;
 class   MethodDescChunk;
 class   MethodTable;
 class   Module;
-struct  ModuleCtorInfo;
 class   Object;
 class   Stub;
 class   Substitution;

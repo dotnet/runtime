@@ -261,7 +261,6 @@ public:
     CORDB_ADDRESS m_pMemberRefHash;
     CORDB_ADDRESS m_pMemberDefHash;
     CORDB_ADDRESS m_pLookUpHashs[TBL_COUNT];
-    Target_MapSHash m_StringPoolOffsetHash;
     CORDB_ADDRESS m_pNamedItemHash;
     ULONG32 m_maxRid;
     ULONG32 m_limRid;

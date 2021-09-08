@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//#define LAUNCH_DEBUGGER
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -16,22 +18,21 @@ namespace System.Text.Json.SourceGeneration
     /// Generates source code to optimize serialization and deserialization with JsonSerializer.
     /// </summary>
     [Generator]
-    public sealed partial class JsonSourceGenerator : ISourceGenerator
+    public sealed partial class JsonSourceGenerator : IIncrementalGenerator
     {
-        /// <summary>
-        /// Registers a syntax resolver to receive compilation units.
-        /// </summary>
-        /// <param name="context"></param>
-        public void Initialize(GeneratorInitializationContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
+            IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
+                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (s, _) => Parser.GetSemanticTargetForGeneration(s))
+                .Where(static c => c is not null);
+
+            IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
+                context.CompilationProvider.Combine(classDeclarations.Collect());
+
+            context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
-        /// <summary>
-        /// Generates source code to optimize serialization and deserialization with JsonSerializer.
-        /// </summary>
-        /// <param name="executionContext"></param>
-        public void Execute(GeneratorExecutionContext executionContext)
+        private void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> contextClasses, SourceProductionContext context)
         {
 #if LAUNCH_DEBUGGER
             if (!Diagnostics.Debugger.IsAttached)
@@ -39,34 +40,19 @@ namespace System.Text.Json.SourceGeneration
                 Diagnostics.Debugger.Launch();
             }
 #endif
-            SyntaxReceiver receiver = (SyntaxReceiver)executionContext.SyntaxReceiver;
-            List<ClassDeclarationSyntax>? contextClasses = receiver.ClassDeclarationSyntaxList;
-            if (contextClasses == null)
+            if (contextClasses.IsDefaultOrEmpty)
             {
                 return;
             }
 
-            Parser parser = new(executionContext);
-            SourceGenerationSpec? spec = parser.GetGenerationSpec(receiver.ClassDeclarationSyntaxList);
+            Parser parser = new(compilation, context);
+            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses);
             if (spec != null)
             {
                 _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;
 
-                Emitter emitter = new(executionContext, spec);
+                Emitter emitter = new(context, spec);
                 emitter.Emit();
-            }
-        }
-
-        private sealed class SyntaxReceiver : ISyntaxReceiver
-        {
-            public List<ClassDeclarationSyntax>? ClassDeclarationSyntaxList { get; private set; }
-
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
-            {
-                if (syntaxNode is ClassDeclarationSyntax { AttributeLists.Count: > 0, BaseList.Types.Count: > 0 } cds)
-                {
-                    (ClassDeclarationSyntaxList ??= new List<ClassDeclarationSyntax>()).Add(cds);
-                }
             }
         }
 

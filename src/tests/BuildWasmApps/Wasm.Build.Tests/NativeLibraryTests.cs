@@ -17,7 +17,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("from pinvoke: 142", output);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectUsingSkiaSharp(BuildArgs buildArgs, RunHost host, string id)

@@ -102,11 +102,9 @@ namespace System.Tests
         public static void TestIsOSVersionAtLeast_Android_21() => Assert.True(OperatingSystem.IsAndroidVersionAtLeast(21)); // 21 is our min supported version
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void TestIsOSPlatform_IOS() => TestIsOSPlatform("iOS", OperatingSystem.IsIOS);
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void TestIsOSVersionAtLeast_IOS() => TestIsOSVersionAtLeast("iOS");
 
         [Fact, PlatformSpecific(TestPlatforms.OSX)]
@@ -129,11 +127,9 @@ namespace System.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void TestIsOSPlatform_MacCatalyst() => TestIsOSPlatform("MacCatalyst", OperatingSystem.IsMacCatalyst);
 
         [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void TestIsOSVersionAtLeast_MacCatalyst() => TestIsOSVersionAtLeast("MacCatalyst");
 
         [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
@@ -147,7 +143,6 @@ namespace System.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.iOS)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56084", TestPlatforms.MacCatalyst)]
         public static void IOS_Is_Not_Also_MacCatalyst()
         {
             Assert.False(OperatingSystem.IsOSPlatform("MacCatalyst"));
@@ -172,6 +167,12 @@ namespace System.Tests
             {
                 bool expected = currentOSName.Equals(platformName, StringComparison.OrdinalIgnoreCase);
 
+                // MacCatalyst is a special case since it also returns true for iOS
+                if (currentOSName == "MacCatalyst" && platformName == "iOS")
+                {
+                    expected = true;
+                }
+
                 Assert.Equal(expected, OperatingSystem.IsOSPlatform(platformName));
                 Assert.Equal(expected, OperatingSystem.IsOSPlatform(platformName.ToUpper()));
                 Assert.Equal(expected, OperatingSystem.IsOSPlatform(platformName.ToLower()));
@@ -186,14 +187,32 @@ namespace System.Tests
                 OperatingSystem.IsFreeBSD(),
                 OperatingSystem.IsAndroid(),
                 OperatingSystem.IsIOS(),
-                OperatingSystem.IsMacOS(),
                 OperatingSystem.IsMacCatalyst(),
+                OperatingSystem.IsMacOS(),
                 OperatingSystem.IsTvOS(),
                 OperatingSystem.IsWatchOS(),
                 OperatingSystem.IsWindows()
             };
 
-            Assert.Single(allResults, true);
+            // MacCatalyst is a special case since it also returns true for iOS
+            if (currentOSName == "MacCatalyst")
+            {
+                Assert.Equal(10, allResults.Length);
+                Assert.False(allResults[0]); // IsBrowser()
+                Assert.False(allResults[1]); // IsLinux()
+                Assert.False(allResults[2]); // IsFreeBSD()
+                Assert.False(allResults[3]); // IsAndroid()
+                Assert.True(allResults[4]);  // IsIOS()
+                Assert.True(allResults[5]);  // IsMacCatalyst()
+                Assert.False(allResults[6]); // IsMacOS()
+                Assert.False(allResults[7]); // IsTvOS()
+                Assert.False(allResults[8]); // IsWatchOS()
+                Assert.False(allResults[9]); // IsWindows()
+            }
+            else
+            {
+                Assert.Single(allResults, true);
+            }
         }
 
         private static void TestIsOSVersionAtLeast(string currentOSName)
@@ -202,13 +221,19 @@ namespace System.Tests
             {
                 bool isCurrentOS = currentOSName.Equals(platformName, StringComparison.OrdinalIgnoreCase);
 
+                // MacCatalyst is a special case since it also returns true for iOS
+                if (currentOSName == "MacCatalyst" && platformName == "iOS")
+                {
+                    isCurrentOS = true;
+                }
+
                 AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platformName, major, minor, build, revision));
                 AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platformName.ToLower(), major, minor, build, revision));
                 AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platformName.ToUpper(), major, minor, build, revision));
             }
             
             AssertVersionChecks(currentOSName.Equals("Android", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsAndroidVersionAtLeast);
-            AssertVersionChecks(currentOSName.Equals("iOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIOSVersionAtLeast);
+            AssertVersionChecks(currentOSName == "MacCatalyst" || currentOSName.Equals("iOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("macOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("MacCatalyst", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacCatalystVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("tvOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsTvOSVersionAtLeast);

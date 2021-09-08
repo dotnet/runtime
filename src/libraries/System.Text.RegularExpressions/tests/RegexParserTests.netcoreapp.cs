@@ -11,15 +11,11 @@ namespace System.Text.RegularExpressions.Tests
     public partial class RegexParserTests
     {
         [Theory]
-        [InlineData(@"[a-\-]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
-        [InlineData(@"[a-\-b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
-        [InlineData(@"[a-\-\-b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
-        [InlineData(@"[a-\-\D]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
-        [InlineData(@"[a-\-\-\D]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
-        [InlineData(@"[a -\-\b]", RegexOptions.None, null, 5)]
-        // OutOfMemoryException
+
+        // Avoid OutOfMemoryException
         [InlineData("a{2147483647}", RegexOptions.None, null)]
         [InlineData("a{2147483647,}", RegexOptions.None, null)]
+
         [InlineData(@"(?(?N))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
         [InlineData(@"(?(?i))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
         [InlineData(@"(?(?I))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
@@ -30,7 +26,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?(?X))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
         [InlineData(@"(?(?n))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
         [InlineData(@"(?(?m))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
-        // IndexOutOfRangeException
         [InlineData("(?<-", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData("(?<-", RegexOptions.IgnorePatternWhitespace, RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData(@"^[^<>]*(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))$", RegexOptions.None, null)]
@@ -90,8 +85,50 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a{0,2147483648}", RegexOptions.None, RegexParseError.QuantifierOrCaptureGroupOutOfRange, 14)]
         // Surrogate pair which is parsed as [char,char-char,char] as we operate on UTF-16 code units.
         [InlineData("[\uD82F\uDCA0-\uD82F\uDCA3]", RegexOptions.IgnoreCase, RegexParseError.ReversedCharacterRange, 5)]
+
+        // Following are borrowed from Rust regex tests ============
+        // https://github.com/rust-lang/regex/blob/master/tests/noparse.rs
+        [InlineData(@"*", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
+        [InlineData(@"[A-", RegexOptions.None, RegexParseError.UnterminatedBracket, 3)]
+        [InlineData(@"[A", RegexOptions.None, RegexParseError.UnterminatedBracket, 2)]
+        [InlineData(@"[\A]", RegexOptions.None, RegexParseError.UnrecognizedEscape, 3)]
+        [InlineData(@"[\z]", RegexOptions.None, RegexParseError.UnrecognizedEscape, 3)]
+        [InlineData(@"(", RegexOptions.None, RegexParseError.InsufficientClosingParentheses, 1)]
+        [InlineData(@")", RegexOptions.None, RegexParseError.InsufficientOpeningParentheses, 1)]
+        [InlineData(@"[a-Z]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 4)]
+        [InlineData(@"(?P<>a)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"(?P<na-me>)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"(?a)a", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"a{2,1}", RegexOptions.None, RegexParseError.ReversedQuantifierRange, 6)]
+        [InlineData(@"(?", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 2)]
+        [InlineData(@"\8", RegexOptions.None, RegexParseError.UndefinedNumberedReference, 2)]
+        [InlineData(@"\xG0", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 3)]
+        [InlineData(@"\xF", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 2)]
+        [InlineData(@"\x{fffg}", RegexOptions.None, RegexParseError.InsufficientOrInvalidHexDigits, 3)]
+        [InlineData(@"(?a)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"(?)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 2)]
+        [InlineData(@"(?P<a>.)(?P<a>.)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
+        [InlineData(@"[a-\A]", RegexOptions.None, RegexParseError.UnrecognizedEscape, 5)]
+        [InlineData(@"[a-\z]", RegexOptions.None, RegexParseError.UnrecognizedEscape, 5)]
+        [InlineData(@"[a-\b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
+        [InlineData(@"[a-\-]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
+        [InlineData(@"[a-\-b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
+        [InlineData(@"[a-\-\-b]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
+        [InlineData(@"[a-\-\D]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
+        [InlineData(@"[a-\-\-\D]", RegexOptions.None, RegexParseError.ReversedCharacterRange, 5)]
+        [InlineData(@"[a -\-\b]", RegexOptions.None, null)]
+        [InlineData(@"[\b]", RegexOptions.None, null)] // errors in rust: class_no_boundary
+        [InlineData(@"a{10000000}", RegexOptions.None, null)] // errors in rust: too_big
+        [InlineData(@"a{1001", RegexOptions.None, null)] // errors in rust: counted_no_close
+        [InlineData(@"a{-1,1}", RegexOptions.None, null)] // errors in rust: counted_nonnegative
+        [InlineData(@"\\", RegexOptions.None, null)] // errors in rust: unfinished_escape
+        [InlineData(@"(?-i-i)", RegexOptions.None, null)] // errors in rust: double_neg
+        [InlineData(@"(?i-)", RegexOptions.None, null)] // errors in rust: neg_empty
+        [InlineData(@"[a-[:lower:]]", RegexOptions.None, null)] // errors in rust: range_end_no_class
+        // End of Rust parser tests ==============
+
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public void Parse_Netcoreapp(string pattern, RegexOptions options, object error, int offset = -1)
+        public void Parse_Netcoreapp(string pattern, RegexOptions options, RegexParseError? error, int offset = -1)
         {
             Parse(pattern, options, error, offset);
         }
@@ -137,7 +174,7 @@ namespace System.Text.RegularExpressions.Tests
                     return;
                 }
 
-                throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual error: {regexParseError})");
+                throw new XunitException($"Expected RegexParseException with error {error} offset {offset} -> Actual error: {regexParseError} offset {e.Offset})");
             }
             catch (Exception e)
             {
@@ -145,6 +182,19 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual: No exception thrown");
+        }
+
+       /// <summary>
+        /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException depending on the
+        // environment and the action.
+        /// </summary>
+        /// <param name="action">The action to invoke.</param>
+        static partial void MayThrow(Action action)
+        {
+            if (Record.Exception(action) is Exception e && e is not RegexParseException)
+            {
+                throw new XunitException($"Expected RegexParseException or no exception -> Actual: ({e})");
+            }
         }
     }
 }
