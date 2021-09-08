@@ -41,8 +41,7 @@ DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile)
     m_loading(TRUE),
     m_pDynamicMethodTable(NULL),
     m_pUMThunkHash(NULL),
-    m_bDisableActivationCheck(FALSE),
-    m_dwReasonForRejectingNativeImage(0)
+    m_bDisableActivationCheck(FALSE)
 {
     CONTRACTL
     {
@@ -559,13 +558,10 @@ void DomainFile::PostLoadLibrary()
     // so it doesn't matter if types are pre-loaded. We only need the guarantee that code for the
     // loaded types won't execute yet. For NGEN images we deliver the load notification in
     // FILE_LOAD_DELIVER_EVENTS.
-    if (!GetFile()->HasNativeImage())
+    if (!IsProfilerNotified())
     {
-        if (!IsProfilerNotified())
-        {
-            SetProfilerNotified();
-            GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
-        }
+        SetProfilerNotified();
+        GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
     }
 
 #endif
@@ -619,17 +615,6 @@ void DomainFile::FinishLoad()
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
-
-#if defined(DEBUGGING_SUPPORTED) && !defined(DACCESS_COMPILE)
-    if (IsDebuggerNotified() && (g_pDebugInterface != NULL))
-    {
-        // We already notified dbgapi that this module was loading (via LoadModule()).
-        // Now let the dbgapi know the module has reached FILE_LOADED, so it can do any
-        // processing that needs to wait until this stage (e.g., binding breakpoints in
-        // NGENd generics).
-        g_pDebugInterface->LoadModuleFinished(m_pModule, m_pDomain);
-    }
-#endif // defined(DEBUGGING_SUPPORTED) && !defined(DACCESS_COMPILE)
 
     // Set a bit to indicate that the module has been loaded in some domain, and therefore
     // typeloads can involve types from this module. (Used for candidate instantiations.)

@@ -667,7 +667,9 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     if( newFrameSize > oldFrameSize)
     {
         DWORD frameIncrement = newFrameSize - oldFrameSize;
-        (void)alloca(frameIncrement);
+        // alloca() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)alloca(..)`,
+        // so we use additional NOT(!) operator to force unused-result suppression.
+        (void)!alloca(frameIncrement);
     }
 
     // Ask the EECodeManager to actually fill in the context and stack for the new frame so that

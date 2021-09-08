@@ -60,6 +60,10 @@ namespace System.Text.Json.SourceGeneration
 
         public string? ConverterInstantiationLogic { get; private set; }
 
+        // Only generate certain helper methods if necessary.
+        public bool HasPropertyFactoryConverters { get; private set; }
+        public bool HasTypeFactoryConverter { get; private set; }
+
         public string FastPathSerializeMethodName
         {
             get
@@ -107,7 +111,9 @@ namespace System.Text.Json.SourceGeneration
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? converterInstantiationLogic,
             bool implementsIJsonOnSerialized,
-            bool implementsIJsonOnSerializing)
+            bool implementsIJsonOnSerializing,
+            bool hasTypeFactoryConverter,
+            bool hasPropertyFactoryConverters)
         {
             GenerationMode = generationMode;
             TypeRef = type.GetCompilableName();
@@ -127,6 +133,8 @@ namespace System.Text.Json.SourceGeneration
             ConverterInstantiationLogic = converterInstantiationLogic;
             ImplementsIJsonOnSerialized = implementsIJsonOnSerialized;
             ImplementsIJsonOnSerializing = implementsIJsonOnSerializing;
+            HasTypeFactoryConverter = hasTypeFactoryConverter;
+            HasPropertyFactoryConverters = hasPropertyFactoryConverters;
         }
 
         public bool TryFilterSerializableProps(
@@ -217,7 +225,8 @@ ReturnFalse:
                 {
                     if (property.TypeGenerationSpec.Type.IsObjectType() ||
                         property.NumberHandling == JsonNumberHandling.AllowNamedFloatingPointLiterals ||
-                        property.NumberHandling == JsonNumberHandling.WriteAsString)
+                        property.NumberHandling == JsonNumberHandling.WriteAsString ||
+                        property.ConverterInstantiationLogic is not null)
                     {
                         return false;
                     }

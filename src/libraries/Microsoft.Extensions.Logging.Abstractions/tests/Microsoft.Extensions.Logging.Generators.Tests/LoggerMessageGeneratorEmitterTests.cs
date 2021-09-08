@@ -3,9 +3,7 @@
 
 using System;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators.Tests;
 using Xunit;
@@ -151,7 +149,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
-            string[] expectedLines = await File.ReadAllLinesAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false);
+            string baseline = await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false);
+            string[] expectedLines = baseline.Replace("%VERSION%", typeof(LoggerMessageGenerator).Assembly.GetName().Version?.ToString())
+                                             .Split(Environment.NewLine);
 
             var (d, r) = await RoslynTestUtils.RunGenerator(
                 new LoggerMessageGenerator(),

@@ -34,9 +34,6 @@ typedef DPTR(class TypeDesc) PTR_TypeDesc;
 class TypeDesc
 {
 public:
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 #ifndef DACCESS_COMPILE
     TypeDesc(CorElementType type) {
         LIMITED_METHOD_CONTRACT;
@@ -191,8 +188,8 @@ public:
     // See methodtable.h for details of the flags with the same name there
     enum
     {
-        enum_flag_NeedsRestore           = 0x00000100, // Only used during ngen
-        enum_flag_PreRestored            = 0x00000200, // Only used during ngen
+        // unused                        = 0x00000100,
+        // unused                        = 0x00000200,
         enum_flag_Unrestored             = 0x00000400,
         enum_flag_UnrestoredTypeKey      = 0x00000800,
         enum_flag_IsNotFullyLoaded       = 0x00001000,
@@ -220,9 +217,6 @@ class ParamTypeDesc : public TypeDesc {
     friend class TypeDesc;
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 #ifndef DACCESS_COMPILE
@@ -313,9 +307,6 @@ protected:
 
 class TypeVarTypeDesc : public TypeDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 public:
 
 #ifndef DACCESS_COMPILE
@@ -461,9 +452,6 @@ typedef SPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
 
 class FnPtrTypeDesc : public TypeDesc
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
 #ifndef DACCESS_COMPILE

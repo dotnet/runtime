@@ -712,7 +712,6 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
 BOOL MethodDesc::IsTypicalSharedInstantiation()
 {
     WRAPPER_NO_CONTRACT;
-    PRECONDITION(IsRestored_NoLogging());
 
     Instantiation classInst = GetMethodTable()->GetInstantiation();
     if (!ClassLoader::IsTypicalSharedInstantiation(classInst))
@@ -789,7 +788,6 @@ BOOL MethodDesc::ContainsGenericVariables()
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
 
@@ -935,9 +933,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #endif // !DACCESS_COMPILE
 
 //*******************************************************************************
-// Returns the address of the native code. The native code can be one of:
-// - jitted code if !IsPreImplemented()
-// - ngened code if IsPreImplemented()
+// Returns the address of the native code.
 //
 // Methods which have no native code are either implemented by stubs or not jitted yet.
 // For example, NDirectMethodDesc's have no native code.  They are treated as
@@ -982,21 +978,6 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
     SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl)];
 
     return (PTR_PCODE)(dac_cast<TADDR>(this) + size);
-}
-
-//*******************************************************************************
-PCODE MethodDesc::GetPreImplementedCode()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return NULL;
 }
 
 //*******************************************************************************
@@ -1298,7 +1279,6 @@ WORD MethodDesc::GetComSlot()
         THROWS;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
 
@@ -1817,7 +1797,6 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
         GC_TRIGGERS;
 
         PRECONDITION(IsVtableMethod());
-        PRECONDITION(IsRestored_NoLogging());
         PRECONDITION(HasMethodInstantiation());
         PRECONDITION(!ContainsGenericVariables());
         POSTCONDITION(CheckPointer(RETVAL));
@@ -1915,7 +1894,6 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
         THROWS;
         GC_TRIGGERS;
 
-        PRECONDITION(IsRestored_NoLogging());
         PRECONDITION(IsVtableMethod());
         POSTCONDITION(RETVAL != NULL);
     }
@@ -2216,16 +2194,13 @@ BOOL MethodDesc::IsPointingToPrestub()
     {
         if (IsVersionableWithVtableSlotBackpatch())
         {
-            return !IsRestored() || GetMethodEntryPoint() == GetTemporaryEntryPoint();
+            return GetMethodEntryPoint() == GetTemporaryEntryPoint();
         }
         return TRUE;
     }
 
     if (!HasPrecode())
         return FALSE;
-
-    if (!IsRestored())
-        return TRUE;
 
     return GetPrecode()->IsPointingToPrestub();
 }
@@ -2371,7 +2346,6 @@ BOOL MethodDesc::MayHaveNativeCode()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
 
@@ -2411,14 +2385,6 @@ BOOL MethodDesc::MayHaveNativeCode()
     return TRUE;
 }
 
-#ifndef DACCESS_COMPILE
-
-void DynamicMethodDesc::Restore()
-{
-}
-
-#endif // !DACCESS_COMPILE
-
 //*******************************************************************************
 void MethodDesc::CheckRestore(ClassLoadLevel level)
 {
@@ -2426,7 +2392,7 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FAULT;
 
-    if (!IsRestored() || !GetMethodTable()->IsFullyLoaded())
+    if (!GetMethodTable()->IsFullyLoaded())
     {
         g_IBCLogger.LogMethodDescAccess(this);
 
@@ -2457,9 +2423,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
             ClassLoader::EnsureLoaded(TypeHandle(GetMethodTable()), level);
 
 #ifndef DACCESS_COMPILE
-            PTR_DynamicMethodDesc pDynamicMD = AsDynamicMethodDesc();
-            pDynamicMD->Restore();
-
             if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {
                 ETW::MethodLog::MethodRestored(this);
@@ -2506,20 +2469,6 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     }
 
     RETURN(NULL); // Not found
-}
-
-//*******************************************************************************
-BOOL MethodDesc::IsRestored_NoLogging()
-{
-    LIMITED_METHOD_CONTRACT;
-    return TRUE;
-}
-//*******************************************************************************
-BOOL MethodDesc::IsRestored()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-    return TRUE;
 }
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
@@ -3114,7 +3063,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
 
         // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would effectively not
         // be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
-        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->HasNativeOrReadyToRunImage()) &&
+        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->IsReadyToRun()) &&
 
         // Policy - Generating optimized code is not disabled
         !IsJitOptimizationDisabled() &&
@@ -3617,8 +3566,7 @@ void NDirectMethodDesc::EnsureStackArgumentSize()
         if (MarshalingRequired())
         {
             // Generating interop stub sets the stack size as side-effect in all cases
-            MethodDesc* pStubMD;
-            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
+            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES);
         }
     }
 }
@@ -3653,38 +3601,6 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
     // All NDirect calls all through the NDirect target, so if it's updated, then we won't go into
     // NDirectImportThunk().  In fact, backpatching the import thunk glue leads to race conditions.
     SetNDirectTarget((LPVOID)target);
-}
-
-//*******************************************************************************
-BOOL MethodDesc::HasUnmanagedCallConvAttribute()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    MethodDesc* tgt = this;
-    if (IsILStub())
-    {
-        // From the IL stub, determine if the actual target has been
-        // marked with UnmanagedCallConv.
-        PTR_DynamicMethodDesc ilStubMD = AsDynamicMethodDesc();
-        PTR_ILStubResolver ilStubResolver = ilStubMD->GetILStubResolver();
-        tgt = ilStubResolver->GetStubTargetMethodDesc();
-        if (tgt == nullptr)
-            return FALSE;
-    }
-
-    _ASSERTE(tgt != nullptr);
-    HRESULT hr = tgt->GetCustomAttribute(
-        WellKnownAttribute::UnmanagedCallConv,
-        nullptr,
-        nullptr);
-
-    return (hr == S_OK) ? TRUE : FALSE;
 }
 
 //*******************************************************************************

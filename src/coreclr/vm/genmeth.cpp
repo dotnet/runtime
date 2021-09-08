@@ -80,7 +80,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(pTemplateMD));
-        PRECONDITION(pTemplateMD->IsRestored());
         PRECONDITION(pMT->IsRestored_NoLogging());
         PRECONDITION(pTemplateMD->GetMethodTable()->GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable());
     }
@@ -305,12 +304,9 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pExactMT));
         PRECONDITION(CheckPointer(pGenericMDescInRepMT));
-        PRECONDITION(pGenericMDescInRepMT->IsRestored());
-        PRECONDITION(pWrappedMD == NULL || pWrappedMD->IsRestored());
         PRECONDITION(methodInst.IsEmpty() || pGenericMDescInRepMT->IsGenericMethodDefinition());
         PRECONDITION(methodInst.GetNumArgs() == pGenericMDescInRepMT->GetNumGenericMethodArgs());
         POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->IsRestored());
         POSTCONDITION(getWrappedCode == RETVAL->IsSharedByGenericInstantiations());
         POSTCONDITION(methodInst.IsEmpty() || RETVAL->HasMethodInstantiation());
     }
@@ -588,7 +584,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
 
         // All wrapped method descriptors (except BoxedEntryPointStubs, which don't use this path) take an inst arg.
         // The only ones that don't should have been found in the type's meth table.
-        POSTCONDITION(!getWrappedCode || !RETVAL || !RETVAL->IsRestored() || RETVAL->RequiresInstArg());
+        POSTCONDITION(!getWrappedCode || !RETVAL || RETVAL->RequiresInstArg());
     }
     CONTRACT_END
 
@@ -737,7 +733,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         PRECONDITION(CheckPointer(pDefMD));
         PRECONDITION(CheckPointer(pExactMT));
-        PRECONDITION(pDefMD->IsRestored_NoLogging());
         PRECONDITION(pExactMT->IsRestored_NoLogging());
 
         // If the method descriptor belongs to a generic type then
@@ -755,7 +750,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         PRECONDITION(!forceRemotableMethod || !allowInstParam);
 
         POSTCONDITION(((RETVAL == NULL) && !allowCreate) || CheckPointer(RETVAL));
-        POSTCONDITION(((RETVAL == NULL) && !allowCreate) || RETVAL->IsRestored());
         POSTCONDITION(((RETVAL == NULL) && !allowCreate) || forceBoxedEntryPoint || !RETVAL->IsUnboxingStub());
         POSTCONDITION(((RETVAL == NULL) && !allowCreate) || allowInstParam || !RETVAL->RequiresInstArg());
     }
@@ -806,9 +800,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         pMDescInCanonMT = pExactMT->GetCanonicalMethodTable()->GetParallelMethodDesc(pDefMD);
 
-        if (!allowCreate && (!pMDescInCanonMT->IsRestored() ||
-                              !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded()))
-
+        if (!allowCreate && !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded())
         {
             RETURN(NULL);
         }
@@ -866,7 +858,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
             if (pResultMD != NULL)
             {
-                _ASSERTE(pResultMD->IsRestored() && pResultMD->GetMethodTable()->IsFullyLoaded());
+                _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
                 g_IBCLogger.LogMethodDescAccess(pResultMD);
                 RETURN(pResultMD);
             }
@@ -1014,7 +1006,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         }
         _ASSERTE(pResultMD);
 
-        if (!allowCreate && (!pResultMD->IsRestored() || !pResultMD->GetMethodTable()->IsFullyLoaded()))
+        if (!allowCreate && !pResultMD->GetMethodTable()->IsFullyLoaded())
         {
             RETURN(NULL);
         }
@@ -1063,7 +1055,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
             if (pResultMD != NULL)
                             {
-                _ASSERTE(pResultMD->IsRestored() && pResultMD->GetMethodTable()->IsFullyLoaded());
+                _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
 
                 g_IBCLogger.LogMethodDescAccess(pResultMD);
 
@@ -1204,7 +1196,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         }
         _ASSERTE(pInstMD);
 
-        if (!allowCreate && (!pInstMD->IsRestored() || !pInstMD->GetMethodTable()->IsFullyLoaded()))
+        if (!allowCreate && !pInstMD->GetMethodTable()->IsFullyLoaded())
         {
             RETURN(NULL);
         }

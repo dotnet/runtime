@@ -4,7 +4,7 @@
     <EnablePackageValidation>true</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
-    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(PreviousReleaseMajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(NetCoreAppLatestStablePackageBaselineVersion)</PackageValidationBaselineVersion>
     <!-- PackDependsOn is the right hook in a targets file if the NuGet.Build.Tasks.Pack nuget package is used, otherwise
          BeforePack must be used. Setting both to ensure that we are always running before other targets. --> 
     <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
@@ -14,7 +14,7 @@
     <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
     <IncludeBuildOutput Condition="'$(TargetsAnyOS)' != 'true' or '$(ExcludeFromPackage)' == 'true'">false</IncludeBuildOutput>  
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
-    <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true' or ('$(TargetsAnyOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0')))">true</SuppressDependenciesWhenPacking>
+    <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetPlatformIdentifier)' != '')">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
     <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
@@ -53,7 +53,7 @@
 
   <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true'">
     <_FrameworkAssemblyReferences Include="$(MSBuildProjectName)"
-                                  TargetFramework="net461" />
+                                  TargetFramework="$(NetFrameworkMinimum)" />
   </ItemGroup>
 
   <Choose>
@@ -63,8 +63,8 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
       </PropertyGroup>
       <ItemGroup Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true'">
-        <None Include="$(PlaceholderFile)" PackagePath="lib/net461" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="runtimes/win/lib/net461" Pack="true" Condition="$(TargetFrameworks.Contains('netstandard2.0-windows'))" />
+        <None Include="$(PlaceholderFile)" PackagePath="lib/$(NetFrameworkMinimum)" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="runtimes/win/lib/$(NetFrameworkMinimum)" Pack="true" Condition="$(TargetFrameworks.Contains('netstandard2.0-windows'))" />
       </ItemGroup>
       <ItemGroup Condition="'$(AddXamarinPlaceholderFilesToPackage)' == 'true'">
         <None Include="$(PlaceholderFile)" PackagePath="lib\MonoAndroid10" Pack="true" />
@@ -153,11 +153,18 @@
   <!-- Include a netstandard compat error if the project targets both .NETStandard and
        .NETCoreApp. This prohibits users to consume packages on an older .NETCoreApp version
        than the minimum supported one. -->
-  <ItemGroup Condition="'$(DisableNETStandardCompatErrorForNETCoreApp)' != 'true'">
+  <ItemGroup>
     <NETStandardCompatError Include="netcoreapp2.0"
                             Supported="$(NetCoreAppMinimum)"
                             Condition="$(TargetFrameworks.Contains('netstandard2.')) and
-                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)')))" />
+                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)'))) and
+                                       '$(DisableNETStandardCompatErrorForNETCoreApp)' != 'true'" />
+    <NETStandardCompatError Include="net461"
+                            Supported="$(NetFrameworkMinimum)"
+                            Condition="$(TargetFrameworks.Contains('netstandard2.0')) and
+                                       ($(TargetFrameworks.Contains('$(NetFrameworkMinimum)')) or $(TargetFrameworks.Contains('net47')) or $(TargetFrameworks.Contains('net48'))) and
+                                       '$(DisableNETStandardCompatErrorForNETFramework)' != 'true'" />
+
   </ItemGroup>
 
   <!-- Add targets file that marks a .NETStandard applicable tfm as unsupported. -->

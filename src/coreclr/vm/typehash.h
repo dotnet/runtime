@@ -9,7 +9,7 @@
 #ifndef _TYPE_HASH_H
 #define _TYPE_HASH_H
 
-#include "ngenhash.h"
+#include "dacenumerablehash.h"
 
 //========================================================================================
 // This hash table is used by class loaders to look up constructed types:
@@ -50,9 +50,6 @@ typedef struct EETypeHashEntry
 
 private:
     friend class EETypeHashTable;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     PTR_VOID m_data;
 } EETypeHashEntry_t;
@@ -60,11 +57,8 @@ private:
 
 // The type hash table itself
 typedef DPTR(class EETypeHashTable) PTR_EETypeHashTable;
-class EETypeHashTable : public NgenHashTable<EETypeHashTable, EETypeHashEntry, 2>
+class EETypeHashTable : public DacEnumerableHashTable<EETypeHashTable, EETypeHashEntry, 2>
 {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     // This is the domain in which the hash table is allocated
@@ -90,11 +84,10 @@ public:
     static EETypeHashTable *Create(LoaderAllocator *pAllocator, Module *pModule, DWORD dwNumBuckets, AllocMemTracker *pamTracker);
 
 private:
-    friend class NgenHashTable<EETypeHashTable, EETypeHashEntry, 2>;
 
 #ifndef DACCESS_COMPILE
     EETypeHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets) :
-        NgenHashTable<EETypeHashTable, EETypeHashEntry, 2>(pModule, pHeap, cInitialBuckets) {}
+        DacEnumerableHashTable<EETypeHashTable, EETypeHashEntry, 2>(pModule, pHeap, cInitialBuckets) {}
 #endif
     void               operator delete(void *p);
 
@@ -135,7 +128,6 @@ public:
     DWORD GetCount();
 
 #ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     void EnumMemoryRegionsForEntry(EETypeHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags);
 #endif
 

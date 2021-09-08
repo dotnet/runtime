@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Xunit;
@@ -13,6 +14,41 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static class ExtensionDataTests
     {
+        [Fact]
+        public static void EmptyPropertyName_WinsOver_ExtensionDataEmptyPropertyName()
+        {
+            string json = @"{"""":1}";
+
+            ClassWithEmptyPropertyNameAndExtensionProperty obj;
+
+            // Create a new options instances to re-set any caches.
+            JsonSerializerOptions options = new JsonSerializerOptions();
+
+            // Verify the real property wins over the extension data property.
+            obj = JsonSerializer.Deserialize<ClassWithEmptyPropertyNameAndExtensionProperty>(json, options);
+            Assert.Equal(1, obj.MyInt1);
+            Assert.Null(obj.MyOverflow);
+        }
+
+        [Fact]
+        public static void EmptyPropertyNameInExtensionData()
+        {
+            {
+                string json = @"{"""":42}";
+                EmptyClassWithExtensionProperty obj = JsonSerializer.Deserialize<EmptyClassWithExtensionProperty>(json);
+                Assert.Equal(1, obj.MyOverflow.Count);
+                Assert.Equal(42, obj.MyOverflow[""].GetInt32());
+            }
+
+            {
+                // Verify that last-in wins.
+                string json = @"{"""":42, """":43}";
+                EmptyClassWithExtensionProperty obj = JsonSerializer.Deserialize<EmptyClassWithExtensionProperty>(json);
+                Assert.Equal(1, obj.MyOverflow.Count);
+                Assert.Equal(43, obj.MyOverflow[""].GetInt32());
+            }
+        }
+
         [Fact]
         public static void ExtensionPropertyNotUsed()
         {
@@ -1294,6 +1330,116 @@ namespace System.Text.Json.Serialization.Tests
                 writer.WriteString("Hi", "There");
                 writer.WriteEndObject();
             }
+        }
+
+        [Fact]
+        public static void EmptyPropertyAndExtensionData_PropertyFirst()
+        {
+            // Verify any caching treats real property (with empty name) differently than a missing property.
+
+            ClassWithEmptyPropertyNameAndExtensionProperty obj;
+
+            // Create a new options instances to re-set any caches.
+            JsonSerializerOptions options = new JsonSerializerOptions();
+
+            // First use an empty property.
+            string json = @"{"""":43}";
+            obj = JsonSerializer.Deserialize<ClassWithEmptyPropertyNameAndExtensionProperty>(json, options);
+            Assert.Equal(43, obj.MyInt1);
+            Assert.Null(obj.MyOverflow);
+
+            // Then populate cache with a missing property name.
+            json = @"{""DoesNotExist"":42}";
+            obj = JsonSerializer.Deserialize<ClassWithEmptyPropertyNameAndExtensionProperty>(json, options);
+            Assert.Equal(0, obj.MyInt1);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(42, obj.MyOverflow["DoesNotExist"].GetInt32());
+        }
+
+        [Fact]
+        public static void EmptyPropertyNameAndExtensionData_ExtDataFirst()
+        {
+            // Verify any caching treats real property (with empty name) differently than a missing property.
+
+            ClassWithEmptyPropertyNameAndExtensionProperty obj;
+
+            // Create a new options instances to re-set any caches.
+            JsonSerializerOptions options = new JsonSerializerOptions();
+
+            // First populate cache with a missing property name.
+            string json = @"{""DoesNotExist"":42}";
+            obj = JsonSerializer.Deserialize<ClassWithEmptyPropertyNameAndExtensionProperty>(json, options);
+            Assert.Equal(0, obj.MyInt1);
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(42, obj.MyOverflow["DoesNotExist"].GetInt32());
+
+            // Then use an empty property.
+            json = @"{"""":43}";
+            obj = JsonSerializer.Deserialize<ClassWithEmptyPropertyNameAndExtensionProperty>(json, options);
+            Assert.Equal(43, obj.MyInt1);
+            Assert.Null(obj.MyOverflow);
+        }
+
+        [Fact]
+        public static void ExtensionDataDictionarySerialize_DoesNotHonor()
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            EmptyClassWithExtensionProperty obj = JsonSerializer.Deserialize<EmptyClassWithExtensionProperty>(@"{""Key1"": 1}", options);
+
+            // Ignore naming policy for extension data properties by default.
+            Assert.False(obj.MyOverflow.ContainsKey("key1"));
+            Assert.Equal(1, obj.MyOverflow["Key1"].GetInt32());
+        }
+
+        [Theory]
+        [InlineData(0x1, 'v')]
+        [InlineData(0x1, '\u0467')]
+        [InlineData(0x10, 'v')]
+        [InlineData(0x10, '\u0467')]
+        [InlineData(0x100, 'v')]
+        [InlineData(0x100, '\u0467')]
+        [InlineData(0x1000, 'v')]
+        [InlineData(0x1000, '\u0467')]
+        [InlineData(0x10000, 'v')]
+        [InlineData(0x10000, '\u0467')]
+        public static void LongPropertyNames(int propertyLength, char ch)
+        {
+            // Although the CLR may limit member length to 1023 bytes, the serializer doesn't have a hard limit.
+
+            string val = new string(ch, propertyLength);
+            string json = @"{""" + val + @""":1}";
+
+            EmptyClassWithExtensionProperty obj = JsonSerializer.Deserialize<EmptyClassWithExtensionProperty>(json);
+
+            Assert.True(obj.MyOverflow.ContainsKey(val));
+
+            var options = new JsonSerializerOptions
+            {
+                // Avoid escaping '\u0467'.
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
+            string jsonRoundTripped = JsonSerializer.Serialize(obj, options);
+            Assert.Equal(json, jsonRoundTripped);
+        }
+
+        public class EmptyClassWithExtensionProperty
+        {
+            [JsonExtensionData]
+            public IDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        public class ClassWithEmptyPropertyNameAndExtensionProperty
+        {
+            [JsonPropertyName("")]
+            public int MyInt1 { get; set; }
+
+            [JsonExtensionData]
+            public IDictionary<string, JsonElement> MyOverflow { get; set; }
         }
     }
 }

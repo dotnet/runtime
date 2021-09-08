@@ -8,7 +8,8 @@
     <DebugType>none</DebugType>
     <IsPackable>true</IsPackable>
     <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(SymbolsSuffix)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
-    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <!-- When KeepNativeSymbols is set, debug symbols are kept in the .so files.  Separate symbol files do not exist that need to be packed. -->
+    <TargetsForTfmSpecificDebugSymbolsInPackage Condition="'$(KeepNativeSymbols)' != 'true'">$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
     <!-- This is a native package and doesn't contain any ref/lib assets. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>

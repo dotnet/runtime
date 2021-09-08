@@ -1345,7 +1345,19 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            PropertyInfo? propertyInfo = typeInfo.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                            PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
+                            if (propertyInfo == null)
+                            {
+                                foreach (PropertyInfo pi in typeInfo.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+                                {
+                                    if (pi.Name == propertyName)
+                                    {
+                                        propertyInfo = pi;
+                                        break;
+                                    }
+                                }
+                            }
+
                             if (propertyInfo == null)
                             {
                                 Log.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");

@@ -2722,9 +2722,12 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     if (fgCanSwitchToOptimized() && fgMayExplicitTailCall())
                     {
                         // Method has an explicit tail call that may run like a loop or may not be generated as a tail
-                        // call in tier 0, switch to optimized to avoid spending too much time running slower code and
-                        // to avoid stack overflow from recursion
-                        fgSwitchToOptimized();
+                        // call in tier 0, switch to optimized to avoid spending too much time running slower code
+                        if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) ||
+                            ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
+                        {
+                            fgSwitchToOptimized();
+                        }
                     }
                 }
                 else
@@ -4870,8 +4873,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                             jmpBlk->bbFlags |= BBF_RUN_RARELY;
                         }
 
-                        BasicBlock::weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
-                        BasicBlock::weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
+                        weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
+                        weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
                         //
                         // If the [min/max] values for our edge weight is within the slop factor
                         //  then we will set the BBF_PROF_WEIGHT flag for the block

@@ -61,33 +61,7 @@
 
 #ifndef DACCESS_COMPILE
 
-// This value is to make it easier to diagnose Assembly Loader "grant set" crashes.
-// See Dev11 bug 358184 for more details.
-
-// This value is not thread safe and is not intended to be. It is just a best
-// effort to collect more data on the problem. Is is possible, though unlikely,
-// that thread A would record a reason for an upcoming crash,
-// thread B would then record a different reason, and we would then
-// crash on thread A, thus ending up with the recorded reason not matching
-// the thread we crash in. Be aware of this when using this value
-// to help your debugging.
-DWORD g_dwLoaderReasonForNotSharing = 0; // See code:DomainFile::m_dwReasonForRejectingNativeImage for a similar variable.
-
 volatile uint32_t g_cAssemblies = 0;
-
-// These will sometimes result in a crash with error code 0x80131401 SECURITY_E_INCOMPATIBLE_SHARE
-// "Loading this assembly would produce a different grant set from other instances."
-enum ReasonForNotSharing
-{
-    ReasonForNotSharing_NoInfoRecorded = 0x1,
-    ReasonForNotSharing_NullDomainassembly = 0x2,
-    ReasonForNotSharing_DebuggerFlagMismatch = 0x3,
-    ReasonForNotSharing_NullPeassembly = 0x4,
-    ReasonForNotSharing_MissingAssemblyClosure1 = 0x5,
-    ReasonForNotSharing_MissingAssemblyClosure2 = 0x6,
-    ReasonForNotSharing_MissingDependenciesResolved = 0x7,
-    ReasonForNotSharing_ClosureComparisonFailed = 0x8,
-};
 
 static CrstStatic g_friendAssembliesCrst;
 
@@ -348,7 +322,7 @@ Assembly * Assembly::Create(
     return pAssembly;
 } // Assembly::Create
 
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -490,10 +464,10 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
-        AssemblyBinder* pFallbackLoadContextBinder = pBinderContext;
+        AssemblyBinder* pFallbackBinder = pBinder;
 
         // If ALC is not specified
-        if (pFallbackLoadContextBinder == nullptr)
+        if (pFallbackBinder == nullptr)
         {
             // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
             // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
@@ -509,12 +483,12 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
             if (!pCallerAssemblyManifestFile->IsDynamic())
             {
                 // Static assemblies with do not have fallback load context
-                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackLoadContextBinder() == nullptr);
+                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackBinder() == nullptr);
 
                 if (pCallerAssemblyManifestFile->IsSystem())
                 {
-                    // CoreLibrary is always bound to TPA binder
-                    pFallbackLoadContextBinder = pDomain->GetTPABinderContext();
+                    // CoreLibrary is always bound with default binder
+                    pFallbackBinder = pDomain->GetDefaultBinder();
                 }
                 else
                 {
@@ -522,22 +496,22 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
                     PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
                     _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
 
-                    pFallbackLoadContextBinder = pCallerAssemblyHostAssembly->GetBinder();
+                    pFallbackBinder = pCallerAssemblyHostAssembly->GetBinder();
                 }
             }
             else
             {
                 // Creator assembly is dynamic too, so use its fallback load context for the one
                 // we are creating.
-                pFallbackLoadContextBinder = pCallerAssemblyManifestFile->GetFallbackLoadContextBinder();
+                pFallbackBinder = pCallerAssemblyManifestFile->GetFallbackBinder();
             }
         }
 
         // At this point, we should have a fallback load context binder to work with
-        _ASSERTE(pFallbackLoadContextBinder != nullptr);
+        _ASSERTE(pFallbackBinder != nullptr);
 
         // Set it as the fallback load context binder for the dynamic assembly being created
-        pFile->SetFallbackLoadContextBinder(pFallbackLoadContextBinder);
+        pFile->SetFallbackBinder(pFallbackBinder);
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
@@ -546,37 +520,37 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderCon
     {
         GCX_PREEMP();
 
-        AssemblyLoaderAllocator* pBinderAssemblyLoaderAllocator = nullptr;
-        if (pBinderContext != nullptr)
+        AssemblyLoaderAllocator* pBinderLoaderAllocator = nullptr;
+        if (pBinder != nullptr)
         {
-            pBinderAssemblyLoaderAllocator = pBinderContext->GetLoaderAllocator();
+            pBinderLoaderAllocator = pBinder->GetLoaderAllocator();
         }
 
         // Create a new LoaderAllocator if appropriate
         if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
-            AssemblyLoaderAllocator *pAssemblyLoaderAllocator = new AssemblyLoaderAllocator();
-            pAssemblyLoaderAllocator->SetCollectible();
-            pLoaderAllocator = pAssemblyLoaderAllocator;
+            AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
+            pCollectibleLoaderAllocator->SetCollectible();
+            pLoaderAllocator = pCollectibleLoaderAllocator;
 
             // Some of the initialization functions are not virtual. Call through the derived class
             // to prevent calling the base class version.
-            pAssemblyLoaderAllocator->Init(pDomain);
+            pCollectibleLoaderAllocator->Init(pDomain);
 
             // Setup the managed proxy now, but do not actually transfer ownership to it.
             // Once everything is setup and nothing can fail anymore, the ownership will be
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
-            pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
+            pCollectibleLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
             createdNewAssemblyLoaderAllocator = TRUE;
 
-            if(pBinderAssemblyLoaderAllocator != nullptr)
+            if(pBinderLoaderAllocator != nullptr)
             {
-                pAssemblyLoaderAllocator->EnsureReference(pBinderAssemblyLoaderAllocator);
+                pCollectibleLoaderAllocator->EnsureReference(pBinderLoaderAllocator);
             }
         }
         else
         {
-            pLoaderAllocator = pBinderAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderAssemblyLoaderAllocator;
+            pLoaderAllocator = pBinderLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderLoaderAllocator;
         }
 
         if (!createdNewAssemblyLoaderAllocator)
@@ -1850,7 +1824,7 @@ BOOL Assembly::IsInstrumentedHelper()
         return false;
 
     // We must have a native image in order to perform IBC instrumentation
-    if (!GetManifestFile()->HasNativeOrReadyToRunImage())
+    if (!GetManifestFile()->IsReadyToRun())
         return false;
 
     // @Consider using the full name instead of the short form
