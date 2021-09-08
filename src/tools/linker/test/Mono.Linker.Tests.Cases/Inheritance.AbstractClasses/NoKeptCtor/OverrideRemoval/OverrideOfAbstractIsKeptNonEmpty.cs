@@ -15,9 +15,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 	[KeptAssembly ("library.dll")]
 	[KeptAssembly ("librarywithnonempty.dll")]
 
-	// Uncomment after this bug is fixed
-	// https://github.com/mono/linker/issues/2260
-	//[RemovedTypeInAssembly ("library.dll", typeof (Dependencies.OverrideOfAbstractIsKeptNonEmpty_UnusedType))]
+	[RemovedTypeInAssembly ("library.dll", typeof (Dependencies.OverrideOfAbstractIsKeptNonEmpty_UnusedType))]
 
 	public class OverrideOfAbstractIsKeptNonEmpty
 	{
@@ -28,10 +26,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 
 			Dependencies.OverrideOfAbstractIsKeptNonEmpty_BaseType c = HelperToMarkLibraryAndRequireItsBase ();
 			c.Method ();
-
-			// Remove after this bug is fixed
-			// https://github.com/mono/linker/issues/2260
-			new Dependencies.OverrideOfAbstractIsKeptNonEmpty_UnusedType ();
 		}
 
 		[Kept]

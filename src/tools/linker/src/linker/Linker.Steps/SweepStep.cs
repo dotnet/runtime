@@ -256,7 +256,7 @@ namespace Mono.Linker.Steps
 				SweepAssemblyReferences (assembly);
 		}
 
-		bool SweepAssemblyReferences (AssemblyDefinition assembly)
+		static bool SweepAssemblyReferences (AssemblyDefinition assembly)
 		{
 			//
 			// We used to run over list returned by GetTypeReferences but
@@ -266,7 +266,7 @@ namespace Mono.Linker.Steps
 			//
 			assembly.MainModule.AssemblyReferences.Clear ();
 
-			var ars = new AssemblyReferencesCorrector (assembly, Context);
+			var ars = new AssemblyReferencesCorrector (assembly);
 			return ars.Process ();
 		}
 
@@ -568,16 +568,14 @@ namespace Mono.Linker.Steps
 		{
 			readonly AssemblyDefinition assembly;
 			readonly DefaultMetadataImporter importer;
-			readonly ITryResolveMetadata resolver;
 
 			HashSet<TypeReference> updated;
 			bool changedAnyScopes;
 
-			public AssemblyReferencesCorrector (AssemblyDefinition assembly, ITryResolveMetadata resolver)
+			public AssemblyReferencesCorrector (AssemblyDefinition assembly)
 			{
 				this.assembly = assembly;
 				this.importer = new DefaultMetadataImporter (assembly.MainModule);
-				this.resolver = resolver;
 
 				updated = null;
 				changedAnyScopes = false;
@@ -925,7 +923,15 @@ namespace Mono.Linker.Steps
 				//
 				// Resolve to type definition to remove any type forwarding imports
 				//
-				TypeDefinition td = resolver.TryResolve (type);
+				// Workaround for https://github.com/mono/linker/issues/2260
+				// Context has a cache which stores ref->def mapping. This code runs during sweeping
+				// which can remove the type-def from its assembly, effectively making the ref unresolvable.
+				// But the cache doesn't know that, it would still "resolve" the type-ref to now defunct type-def.
+				// For this reason we can't use the context resolution here, and must force Cecil to perform
+				// real type resolution again (since it can fail, and that's OK).
+#pragma warning disable RS0030 // Do not used banned APIs
+				TypeDefinition td = type.Resolve ();
+#pragma warning restore RS0030 // Do not used banned APIs
 				if (td == null) {
 					//
 					// This can happen when not all assembly refences were provided and we
