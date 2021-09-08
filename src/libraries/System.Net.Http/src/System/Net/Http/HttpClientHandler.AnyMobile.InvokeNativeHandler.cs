@@ -62,6 +62,12 @@ namespace System.Net.Http
         [DynamicDependency("get_ClientCertificates", NativeHandlerType, AssemblyName)]
         private X509CertificateCollection GetClientCertificates() => (X509CertificateCollection)InvokeNativeHandlerMethod("get_ClientCertificates");
 
+        [DynamicDependency("get_ServerCertificateCustomValidationCallback", NativeHandlerType, AssemblyName)]
+        private Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> GetServerCertificateCustomValidationCallback() => (Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>)InvokeNativeHandlerMethod("get_ServerCertificateCustomValidationCallback");
+
+        [DynamicDependency("set_ServerCertificateCustomValidationCallback", NativeHandlerType, AssemblyName)]
+        private void SetServerCertificateCustomValidationCallback(Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? value) => InvokeNativeHandlerMethod("set_ServerCertificateCustomValidationCallback", value);
+
         [DynamicDependency("get_CheckCertificateRevocationList", NativeHandlerType, AssemblyName)]
         private bool GetCheckCertificateRevocationList() => (bool)InvokeNativeHandlerMethod("get_CheckCertificateRevocationList");
 

@@ -85,6 +85,8 @@ public:
 
     void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg);
     uint32_t GetCurrentProcessCpuCount();
+
+    void DiagAddNewRegion(int generation, BYTE * rangeStart, BYTE * rangeEnd, BYTE * rangeEndReserved);
 };
 
 } // namespace standalone

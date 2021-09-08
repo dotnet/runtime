@@ -37,8 +37,8 @@ namespace System.Net.NetworkInformation.Tests
             p.Start();
             p.WaitForExit();
 
-            //ensure that the process takes longer than or equal to 'timeout'
-            Assert.True(stopWatch.ElapsedMilliseconds >= timeout);
+            //ensure that the process takes longer than or within 10ms of 'timeout', with a 5s maximum
+            Assert.InRange(stopWatch.ElapsedMilliseconds, timeout - 10, 5000);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

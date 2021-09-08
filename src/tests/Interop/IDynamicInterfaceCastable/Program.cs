@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using TestLibrary;
@@ -26,9 +27,9 @@ namespace IDynamicInterfaceCastableTests
         int CallImplemented(ImplementationToCall toCall);
     }
 
-    public interface ITestGeneric<T>
+    public interface ITestGeneric<in T, out U>
     {
-        T ReturnArg(T t);
+        U ReturnArg(T t);
     }
 
     public interface IDirectlyImplemented
@@ -127,18 +128,24 @@ namespace IDynamicInterfaceCastableTests
     }
 
     [DynamicInterfaceCastableImplementation]
-    public interface ITestGenericImpl<T>: ITestGeneric<T>
+    public interface ITestGenericImpl<T, U>: ITestGeneric<T, U>
     {
-        T ITestGeneric<T>.ReturnArg(T t)
+        U ITestGeneric<T, U>.ReturnArg(T t)
         {
-            return t;
+            if (!typeof(T).IsAssignableTo(typeof(U))
+                && !t.GetType().IsAssignableTo(typeof(U)))
+            {
+                throw new Exception($"Invalid covariance conversion from {typeof(T)} or {t.GetType()} to {typeof(U)}");
+            }
+
+            return Unsafe.As<T, U>(ref t);
         }
     }
 
     [DynamicInterfaceCastableImplementation]
-    public interface ITestGenericIntImpl: ITestGeneric<int>
+    public interface ITestGenericIntImpl: ITestGeneric<int, int>
     {
-        int ITestGeneric<int>.ReturnArg(int i)
+        int ITestGeneric<int, int>.ReturnArg(int i)
         {
             return i;
         }
@@ -330,27 +337,34 @@ namespace IDynamicInterfaceCastableTests
             Console.WriteLine($"Running {nameof(ValidateGenericInterface)}");
 
             object castableObj = new DynamicInterfaceCastable(new Dictionary<Type, Type> {
-                { typeof(ITestGeneric<int>), typeof(ITestGenericIntImpl) },
-                { typeof(ITestGeneric<string>), typeof(ITestGenericImpl<string>) },
+                { typeof(ITestGeneric<int, int>), typeof(ITestGenericIntImpl) },
+                { typeof(ITestGeneric<string, string>), typeof(ITestGenericImpl<string, string>) },
+                { typeof(ITestGeneric<string, object>), typeof(ITestGenericImpl<object, string>) },
             });
 
             Console.WriteLine(" -- Validate cast");
 
-            // ITestGeneric<int> -> ITestGenericIntImpl
-            Assert.IsTrue(castableObj is ITestGeneric<int>, $"Should be castable to {nameof(ITestGeneric<int>)} via is");
-            Assert.IsNotNull(castableObj as ITestGeneric<int>, $"Should be castable to {nameof(ITestGeneric<int>)} via as");
-            ITestGeneric<int> testInt = (ITestGeneric<int>)castableObj;
+            // ITestGeneric<int, int> -> ITestGenericIntImpl
+            Assert.IsTrue(castableObj is ITestGeneric<int, int>, $"Should be castable to {nameof(ITestGeneric<int, int>)} via is");
+            Assert.IsNotNull(castableObj as ITestGeneric<int, int>, $"Should be castable to {nameof(ITestGeneric<int, int>)} via as");
+            ITestGeneric<int, int> testInt = (ITestGeneric<int, int>)castableObj;
 
-            // ITestGeneric<string> -> ITestGenericImpl<string>
-            Assert.IsTrue(castableObj is ITestGeneric<string>, $"Should be castable to {nameof(ITestGeneric<string>)} via is");
-            Assert.IsNotNull(castableObj as ITestGeneric<string>, $"Should be castable to {nameof(ITestGeneric<string>)} via as");
-            ITestGeneric<string> testStr = (ITestGeneric<string>)castableObj;
+            // ITestGeneric<string, string> -> ITestGenericImpl<string, string>
+            Assert.IsTrue(castableObj is ITestGeneric<string, string>, $"Should be castable to {nameof(ITestGeneric<string, string>)} via is");
+            Assert.IsNotNull(castableObj as ITestGeneric<string, string>, $"Should be castable to {nameof(ITestGeneric<string, string>)} via as");
+            ITestGeneric<string, string> testStr = (ITestGeneric<string, string>)castableObj;
 
-            // ITestGeneric<bool> is not recognized
-            Assert.IsFalse(castableObj is ITestGeneric<bool>, $"Should not be castable to {nameof(ITestGeneric<bool>)} via is");
-            Assert.IsNull(castableObj as ITestGeneric<bool>, $"Should not be castable to {nameof(ITestGeneric<bool>)} via as");
-            var ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITestGeneric<bool>)castableObj; });
-            Assert.AreEqual(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITestGeneric<bool>)), ex.Message);
+            // Validate Variance
+            // ITestGeneric<string, object> -> ITestGenericImpl<object, string>
+            Assert.IsTrue(castableObj is ITestGeneric<string, object>, $"Should be castable to {nameof(ITestGeneric<string, object>)} via is");
+            Assert.IsNotNull(castableObj as ITestGeneric<string, object>, $"Should be castable to {nameof(ITestGeneric<string, object>)} via as");
+            ITestGeneric<string, object> testVar = (ITestGeneric<string, object>)castableObj;
+
+            // ITestGeneric<bool, bool> is not recognized
+            Assert.IsFalse(castableObj is ITestGeneric<bool, bool>, $"Should not be castable to {nameof(ITestGeneric<bool, bool>)} via is");
+            Assert.IsNull(castableObj as ITestGeneric<bool, bool>, $"Should not be castable to {nameof(ITestGeneric<bool, bool>)} via as");
+            var ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITestGeneric<bool, bool>)castableObj; });
+            Assert.AreEqual(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITestGeneric<bool, bool>)), ex.Message);
 
             int expectedInt = 42;
             string expectedStr = "str";
@@ -358,12 +372,15 @@ namespace IDynamicInterfaceCastableTests
             Console.WriteLine(" -- Validate method call");
             Assert.AreEqual(expectedInt, testInt.ReturnArg(42));
             Assert.AreEqual(expectedStr, testStr.ReturnArg(expectedStr));
+            Assert.AreEqual(expectedStr, testVar.ReturnArg(expectedStr));
 
             Console.WriteLine(" -- Validate delegate call");
             Func<int, int> funcInt = new Func<int, int>(testInt.ReturnArg);
             Assert.AreEqual(expectedInt, funcInt(expectedInt));
             Func<string, string> funcStr = new Func<string, string>(testStr.ReturnArg);
             Assert.AreEqual(expectedStr, funcStr(expectedStr));
+            Func<string, object> funcVar = new Func<string, object>(testVar.ReturnArg);
+            Assert.AreEqual(expectedStr, funcVar(expectedStr));
         }
 
         private static void ValidateOverriddenInterface()
