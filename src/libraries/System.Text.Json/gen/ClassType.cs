@@ -10,7 +10,7 @@ namespace System.Text.Json.SourceGeneration
     internal enum ClassType
     {
         TypeUnsupportedBySourceGen = 0,
-        TypeUnsupportedNoDefaultConverter = 1,
+        DisallowedType = 1,
         Object = 2,
         KnownType = 3,
         TypeWithDesignTimeProvidedCustomConverter = 4,

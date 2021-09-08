@@ -153,9 +153,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.
         /// </summary>
-        /// <typeparam name="T">The generic definition for the enum type.</typeparam>
+        /// <typeparam name="T">The generic definition for the type.</typeparam>
         /// <returns></returns>
-        public static JsonConverter<T> GetDisallowedConverter<T>()
+        public static JsonConverter<T> GetDisallowedTypeConverter<T>()
             => new DisallowedTypeConverter<T>();
 
         /// <summary>

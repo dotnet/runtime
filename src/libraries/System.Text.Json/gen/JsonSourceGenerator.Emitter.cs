@@ -255,7 +255,7 @@ namespace {@namespace}
                             }
                         }
                         break;
-                    case ClassType.TypeUnsupportedNoDefaultConverter:
+                    case ClassType.DisallowedType:
                         {
                             source = GenerateForDisallowedType(typeGenerationSpec);
                         }
@@ -364,7 +364,7 @@ namespace {@namespace}
                 string typeCompilableName = typeMetadata.TypeRef;
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
 
-                string metadataInitSource = $"_{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, {JsonMetadataServicesTypeRef}.GetDisallowedConverter<{typeCompilableName}>());";
+                string metadataInitSource = $"_{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, {JsonMetadataServicesTypeRef}.GetDisallowedTypeConverter<{typeCompilableName}>());";
 
                 return GenerateForType(typeMetadata, metadataInitSource);
             }

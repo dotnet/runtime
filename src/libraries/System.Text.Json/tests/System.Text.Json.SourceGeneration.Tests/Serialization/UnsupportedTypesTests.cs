@@ -14,7 +14,6 @@ namespace System.Text.Json.SourceGeneration.Tests
             new StringSerializerWrapper(
                 UnsupportedTypesTestsContext_Metadata.Default,
                 (options) => new UnsupportedTypesTestsContext_Metadata(options)),
-            supportsIAsyncEnumerable: false,
             supportsJsonPathOnSerialize: true)
         {
         }
@@ -37,8 +36,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithType<UIntPtr>))]
         [JsonSerializable(typeof(IAsyncEnumerable<int>))]
         [JsonSerializable(typeof(ClassWithType<IAsyncEnumerable<int>>))]
-        [JsonSerializable(typeof(IntAsyncEnumerable))]
-        [JsonSerializable(typeof(ClassWithType<IntAsyncEnumerable>))]
+        [JsonSerializable(typeof(ClassThatImplementsIAsyncEnumerable))]
+        [JsonSerializable(typeof(ClassWithType<ClassThatImplementsIAsyncEnumerable>))]
+        [JsonSerializable(typeof(ClassWithAsyncEnumerableConverter))]
+
 #if NETCOREAPP
         [JsonSerializable(typeof(DateOnly))]
         [JsonSerializable(typeof(ClassWithType<DateOnly>))]
@@ -56,7 +57,6 @@ namespace System.Text.Json.SourceGeneration.Tests
             new StringSerializerWrapper(
                 UnsupportedTypesTestsContext_Default.Default,
                 (options) => new UnsupportedTypesTestsContext_Default(options)),
-            supportsIAsyncEnumerable: false,
             supportsJsonPathOnSerialize: false)
         {
         }
@@ -78,8 +78,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithType<UIntPtr>))]
         [JsonSerializable(typeof(IAsyncEnumerable<int>))]
         [JsonSerializable(typeof(ClassWithType<IAsyncEnumerable<int>>))]
-        [JsonSerializable(typeof(IntAsyncEnumerable))]
-        [JsonSerializable(typeof(ClassWithType<IntAsyncEnumerable>))]
+        [JsonSerializable(typeof(ClassThatImplementsIAsyncEnumerable))]
+        [JsonSerializable(typeof(ClassWithType<ClassThatImplementsIAsyncEnumerable>))]
+        [JsonSerializable(typeof(ClassWithAsyncEnumerableConverter))]
 #if NETCOREAPP
         [JsonSerializable(typeof(DateOnly))]
         [JsonSerializable(typeof(ClassWithType<DateOnly>))]
