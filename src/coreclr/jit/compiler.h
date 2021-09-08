@@ -10225,7 +10225,7 @@ public:
 #endif // LOOP_HOIST_STATS
 
 #if TRACK_ENREG_STATS
-    class EnregStructStat
+    class EnregisterStats
     {
     private:
         unsigned m_totalNumberOfVars;
@@ -10246,16 +10246,15 @@ public:
         unsigned m_oneAsgRetyping;
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
-        unsigned lvLiveInOutOfHndlr;
-        unsigned lvDepField;
-        unsigned lvNoRegVars;
-        unsigned lvMinOptsGC;
+        unsigned m_liveInOutHndlr;
+        unsigned m_depField;
+        unsigned m_noRegVars;
+        unsigned m_minOptsGC;
 #ifdef JIT32_GCENCODER
-        unsigned lvPinningRef;
+        unsigned m_PinningRef;
 #endif // JIT32_GCENCODER
 #if !defined(TARGET_64BIT)
-        unsigned lvLongParamField;
-        unsigned lvLongParamVar;
+        unsigned m_longParamField;
 #endif // !TARGET_64BIT
         unsigned m_parentExposed;
         unsigned m_tooConservative;
@@ -10271,7 +10270,7 @@ public:
         void Dump(FILE* fout) const;
     };
 
-    static EnregStructStat s_enregStructStat;
+    static EnregisterStats s_enregisterStats;
 #endif // TRACK_ENREG_STATS
 
     bool compIsForImportOnly();
