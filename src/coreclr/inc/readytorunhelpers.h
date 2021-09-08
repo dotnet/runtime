@@ -83,6 +83,15 @@ HELPER(READYTORUN_HELPER_Dbl2UIntOvf,               CORINFO_HELP_DBL2UINT_OVF,  
 HELPER(READYTORUN_HELPER_Dbl2ULng,                  CORINFO_HELP_DBL2ULNG,                          )
 HELPER(READYTORUN_HELPER_Dbl2ULngOvf,               CORINFO_HELP_DBL2ULNG_OVF,                      )
 
+HELPER(READYTORUN_HELPER_Dbl2IntXCompat,            CORINFO_HELP_DBL2INT_XCOMPAT,                   )
+HELPER(READYTORUN_HELPER_Dbl2IntXCompatOvf,         CORINFO_HELP_DBL2INT_XCOMPAT_OVF,               )
+HELPER(READYTORUN_HELPER_Dbl2LngXCompat,            CORINFO_HELP_DBL2LNG_XCOMPAT,                   )
+HELPER(READYTORUN_HELPER_Dbl2LngXCompatOvf,         CORINFO_HELP_DBL2LNG_XCOMPAT_OVF,               )
+HELPER(READYTORUN_HELPER_Dbl2UIntXCompat,           CORINFO_HELP_DBL2UINT_XCOMPAT,                  )
+HELPER(READYTORUN_HELPER_Dbl2UIntXCompatOvf,        CORINFO_HELP_DBL2UINT_XCOMPAT_OVF,              )
+HELPER(READYTORUN_HELPER_Dbl2ULngXCompat,           CORINFO_HELP_DBL2ULNG_XCOMPAT,                  )
+HELPER(READYTORUN_HELPER_Dbl2ULngXCompatOvf,        CORINFO_HELP_DBL2ULNG_XCOMPAT_OVF,              )
+
 HELPER(READYTORUN_HELPER_FltRem,                    CORINFO_HELP_FLTREM,                            )
 HELPER(READYTORUN_HELPER_DblRem,                    CORINFO_HELP_DBLREM,                            )
 HELPER(READYTORUN_HELPER_FltRound,                  CORINFO_HELP_FLTROUND,                          )

@@ -755,6 +755,15 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
     READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
 
+    READYTORUN_HELPER_Dbl2IntXCompat            = 0xD8,
+    READYTORUN_HELPER_Dbl2IntXCompatOvf         = 0xD9,
+    READYTORUN_HELPER_Dbl2LngXCompat            = 0xDA,
+    READYTORUN_HELPER_Dbl2LngXCompatOvf         = 0xDB,
+    READYTORUN_HELPER_Dbl2UIntXCompat           = 0xDC,
+    READYTORUN_HELPER_Dbl2UIntXCompatOvf        = 0xDD,
+    READYTORUN_HELPER_Dbl2ULngXCompat           = 0xDE,
+    READYTORUN_HELPER_Dbl2ULngXCompatOvf        = 0xDF,
+
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,
     READYTORUN_HELPER_FltRem                    = 0xE1,

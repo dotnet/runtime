@@ -682,6 +682,115 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
 }
 HCIMPLEND
 
+
+HCIMPL1_V(int, JIT_Dbl2IntXCompat, double val)
+{
+    FCALL_CONTRACT;
+    val = trunc(val);
+    return ((val != val) || (val < INT32_MIN) || (val > INT32_MAX)) ? INT32_MIN : (int32_t)val;
+
+}
+HCIMPLEND
+
+HCIMPL1_V(int, JIT_Dbl2IntXCompatOvf, double val)
+{
+    FCALL_CONTRACT;
+    const double two31 = 2147483648.0;
+    if (val > -two31 - 1 && val < two31)
+    {
+        val = trunc(val);
+        return ((val != val) || (val < INT32_MIN) || (val > INT32_MAX)) ? INT32_MIN : (int32_t)val;
+    }
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+HCIMPL1_V(UINT32, JIT_Dbl2UIntXCompat, double val)
+{
+    FCALL_CONTRACT;
+    val = trunc(val);
+    const double int64_max_plus_1 = 0x1.p63;
+    return ((val != val) || (val < INT64_MIN) || (val >= int64_max_plus_1)) ? 0 : (uint32_t)(int64_t)val;
+}
+HCIMPLEND
+
+HCIMPL1_V(UINT32, JIT_Dbl2UIntXCompatOvf, double val)
+{
+    FCALL_CONTRACT;
+    if (val > -1.0 && val < 4294967296.0)
+    {
+        val = trunc(val);
+        const double int64_max_plus_1 = 0x1.p63;
+        return ((val != val) || (val < INT64_MIN) || (val >= int64_max_plus_1)) ? 0 : (uint32_t)(int64_t)val;
+    }
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+HCIMPL1_V(INT64, JIT_Dbl2LngXCompat, double val)
+{
+    FCALL_CONTRACT;
+    val = trunc(val);
+    const double int64_max_plus_1 = 0x1.p63;
+    return ((val != val) || (val < INT64_MIN) || (val >= int64_max_plus_1)) ? INT64_MIN : (int64_t)val;
+}
+HCIMPLEND
+
+HCIMPL1_V(INT64, JIT_Dbl2LngXCompatOvf, double val)
+{
+    FCALL_CONTRACT;
+    const double two63 = 2147483648.0 * 4294967296.0;
+    if (val > -two63 - 0x402 && val < two63)
+    {
+        val = trunc(val);
+        const double int64_max_plus_1 = 0x1.p63;
+        return ((val != val) || (val < INT64_MIN) || (val >= int64_max_plus_1)) ? INT64_MIN : (int64_t)val;
+    }
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+HCIMPL1_V(UINT64, JIT_Dbl2ULngXCompat, double val)
+{
+    FCALL_CONTRACT;
+    val = trunc(val);
+    const double int64_max_plus_1 = 0x1.p63;
+    if (val < int64_max_plus_1)
+    {
+        return (val < INT64_MIN) ? (uint64_t)INT64_MIN : (uint64_t)(int64_t)val;
+    }
+    else
+    {
+        val -= int64_max_plus_1;
+        val = trunc(val);
+        return (uint64_t)(((val != val) || (val >= int64_max_plus_1)) ? INT64_MIN : (int64_t)val) + (0x8000000000000000);
+    }
+}
+HCIMPLEND
+
+HCIMPL1_V(UINT64, JIT_Dbl2ULngXCompatOvf, double val)
+{
+    FCALL_CONTRACT;
+    const double two64 = 4294967296.0 * 4294967296.0;
+    if (val > -1.0 && val < two64)
+    {
+        val = trunc(val);
+        const double int64_max_plus_1 = 0x1.p63;
+        if (val < int64_max_plus_1)
+        {
+            return (val < INT64_MIN) ? (uint64_t)INT64_MIN : (uint64_t)(int64_t)val;
+        }
+        else
+        {
+            val -= int64_max_plus_1;
+            val = trunc(val);
+            return (uint64_t)(((val != val) || (val >= int64_max_plus_1)) ? INT64_MIN : (int64_t)val) + (0x8000000000000000);
+        }
+    }
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
     FCALL_CONTRACT;

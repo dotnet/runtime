@@ -1236,6 +1236,10 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBL2LNG:
             case CORINFO_HELP_DBL2UINT:
             case CORINFO_HELP_DBL2ULNG:
+            case CORINFO_HELP_DBL2INT_XCOMPAT:
+            case CORINFO_HELP_DBL2UINT_XCOMPAT:
+            case CORINFO_HELP_DBL2LNG_XCOMPAT:
+            case CORINFO_HELP_DBL2ULNG_XCOMPAT:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
             case CORINFO_HELP_FLTROUND:
@@ -1271,6 +1275,10 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBL2LNG_OVF:
             case CORINFO_HELP_DBL2UINT_OVF:
             case CORINFO_HELP_DBL2ULNG_OVF:
+            case CORINFO_HELP_DBL2INT_XCOMPAT_OVF:
+            case CORINFO_HELP_DBL2UINT_XCOMPAT_OVF:
+            case CORINFO_HELP_DBL2LNG_XCOMPAT_OVF:
+            case CORINFO_HELP_DBL2ULNG_XCOMPAT_OVF:
 
                 isPure = true;
                 break;

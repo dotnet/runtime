@@ -794,6 +794,31 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.Dbl2ULngOvf;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_XCOMPAT:
+                    id = ReadyToRunHelper.Dbl2IntXCompat;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_XCOMPAT_OVF:
+                    id = ReadyToRunHelper.Dbl2IntXCompatOvf;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_XCOMPAT:
+                    id = ReadyToRunHelper.Dbl2LngXCompat;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_XCOMPAT_OVF:
+                    id = ReadyToRunHelper.Dbl2LngXCompatOvf;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_XCOMPAT:
+                    id = ReadyToRunHelper.Dbl2UIntXCompat;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_XCOMPAT_OVF:
+                    id = ReadyToRunHelper.Dbl2UIntXCompatOvf;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_XCOMPAT:
+                    id = ReadyToRunHelper.Dbl2ULngXCompat;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_XCOMPAT_OVF:
+                    id = ReadyToRunHelper.Dbl2ULngXCompatOvf;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_FLTREM:
                     id = ReadyToRunHelper.FltRem;
                     break;

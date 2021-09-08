@@ -195,6 +195,41 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
             // CAST_OVF(BYTE <- INT) != CAST_OVF(BYTE <- UINT).
             assert(!tree->IsUnsigned());
         }
+        else if (JitConfig.EnableFltToIntX86Compat() > 0)
+        {
+            if (!tree->gtOverflow())
+            {
+                switch (dstType)
+                {
+                    case TYP_INT:
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT_XCOMPAT, oper);
+                    case TYP_UINT:
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT_XCOMPAT, oper);
+                    case TYP_LONG:
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG_XCOMPAT, oper);
+                    case TYP_ULONG:
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG_XCOMPAT, oper);
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                switch (dstType)
+                {
+                    case TYP_INT:
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT_XCOMPAT_OVF, oper);
+                    case TYP_UINT:
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT_XCOMPAT_OVF, oper);
+                    case TYP_LONG:
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG_XCOMPAT_OVF, oper);
+                    case TYP_ULONG:
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG_XCOMPAT_OVF, oper);
+                    default:
+                        break;
+                }
+            }
+        }
         else
         {
             /* Note that if we need to use a helper call then we can not morph oper */

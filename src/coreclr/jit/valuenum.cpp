@@ -9822,27 +9822,27 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_ULng2Dbl;
             break;
         case CORINFO_HELP_DBL2INT:
-            vnf = VNF_Dbl2Int;
-            break;
         case CORINFO_HELP_DBL2INT_OVF:
+        case CORINFO_HELP_DBL2INT_XCOMPAT:
+        case CORINFO_HELP_DBL2INT_XCOMPAT_OVF:
             vnf = VNF_Dbl2Int;
             break;
         case CORINFO_HELP_DBL2LNG:
-            vnf = VNF_Dbl2Lng;
-            break;
         case CORINFO_HELP_DBL2LNG_OVF:
+        case CORINFO_HELP_DBL2LNG_XCOMPAT:
+        case CORINFO_HELP_DBL2LNG_XCOMPAT_OVF:
             vnf = VNF_Dbl2Lng;
             break;
         case CORINFO_HELP_DBL2UINT:
-            vnf = VNF_Dbl2UInt;
-            break;
         case CORINFO_HELP_DBL2UINT_OVF:
+        case CORINFO_HELP_DBL2UINT_XCOMPAT:
+        case CORINFO_HELP_DBL2UINT_XCOMPAT_OVF:
             vnf = VNF_Dbl2UInt;
             break;
         case CORINFO_HELP_DBL2ULNG:
-            vnf = VNF_Dbl2ULng;
-            break;
         case CORINFO_HELP_DBL2ULNG_OVF:
+        case CORINFO_HELP_DBL2ULNG_XCOMPAT:
+        case CORINFO_HELP_DBL2ULNG_XCOMPAT_OVF:
             vnf = VNF_Dbl2ULng;
             break;
         case CORINFO_HELP_FLTREM:

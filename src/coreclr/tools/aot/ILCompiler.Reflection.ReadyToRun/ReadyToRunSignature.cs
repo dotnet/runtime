@@ -1874,6 +1874,33 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("DBL2ULNGOVF");
                     break;
 
+
+                case ReadyToRunHelper.Dbl2IntXCompat:
+                    builder.Append("DBL2INTXCOMPAT");
+                    break;
+                case ReadyToRunHelper.Dbl2IntXCompatOvf:
+                    builder.Append("DBL2INTXCOMPATOVF");
+                    break;
+                case ReadyToRunHelper.Dbl2LngXCompat:
+                    builder.Append("DBL2LNGXCOMPAT");
+                    break;
+                case ReadyToRunHelper.Dbl2LngXCompatOvf:
+                    builder.Append("DBL2LNGXCOMPATOVF");
+                    break;
+                case ReadyToRunHelper.Dbl2UIntXCompat:
+                    builder.Append("DBL2UINTXCOMPAT");
+                    break;
+                case ReadyToRunHelper.Dbl2UIntXCompatOvf:
+                    builder.Append("DBL2UINTXCOMPATOVF");
+                    break;
+                case ReadyToRunHelper.Dbl2ULngXCompat:
+                    builder.Append("DBL2ULNGXCOMPAT");
+                    break;
+                case ReadyToRunHelper.Dbl2ULngXCompatOvf:
+                    builder.Append("DBL2ULNGXCOMPATOVF");
+                    break;
+
+
                 // Floating point ops
                 case ReadyToRunHelper.DblRem:
                     builder.Append("DBL_REM");
