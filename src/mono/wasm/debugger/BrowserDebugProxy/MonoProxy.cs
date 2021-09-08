@@ -442,18 +442,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.setPauseOnExceptions":
                     {
                         string state = args["state"].Value<string>();
-                        switch (state)
+                        context.PauseOnExceptions = state switch
                         {
-                            case "all":
-                                context.PauseOnExceptions = PauseOnExceptionsKind.All;
-                                break;
-                            case "uncaught":
-                                context.PauseOnExceptions = PauseOnExceptionsKind.Uncaught;
-                                break;
-                            case "none":
-                                context.PauseOnExceptions = PauseOnExceptionsKind.None;
-                                break;
-                        }
+                            "all"      => PauseOnExceptionsKind.All,
+                            "uncaught" => PauseOnExceptionsKind.Uncaught,
+                            "none"     => PauseOnExceptionsKind.None,
+                            _          => PauseOnExceptionsKind.Unset
+                        };
+
                         if (context.IsRuntimeReady)
                             await SdbHelper.EnableExceptions(id, context.PauseOnExceptions, token);
                         // Pass this on to JS too
