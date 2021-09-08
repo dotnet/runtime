@@ -159,14 +159,14 @@ template<class T> void DeleteDbiMemory(T *p)
 // There's an inherent risk here - where each element's destructor will get called within
 // the context of the DAC. If the destructor tries to use the CRT allocator logic expecting
 // to hit the DBI's, we could be in trouble. Those objects need to use an export allocator like this.
-template<class T> void DeleteDbiArrayMemory(T *p, int len)
+template<class T> void DeleteDbiArrayMemory(T *p, int count)
 {
     if (p == NULL)
     {
         return;
     }
 
-    for (T *cur = p; cur < p + len; cur++)
+    for (T *cur = p; cur < p + count; cur++)
     {
         cur->~T();
     }
