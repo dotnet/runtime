@@ -16,6 +16,11 @@
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />
 
+  <!-- To suppress warnings about reseting the assembly version.-->
+  <PropertyGroup Condition="'$(AutoGenerateAssemblyVersion)' == 'true'">
+    <AssemblyVersion></AssemblyVersion>
+  </PropertyGroup>
+
   <PropertyGroup>
     <NetCoreAppCurrentBuildSettings>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrentBuildSettings)'))</NativeBinDir>
