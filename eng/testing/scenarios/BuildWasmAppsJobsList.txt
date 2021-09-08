@@ -1,4 +1,3 @@
-Wasm.Build.NativeRebuild.Tests.BlazorWasmRebuildTests
 Wasm.Build.NativeRebuild.Tests.FlagsChangeRebuildTest
 Wasm.Build.NativeRebuild.Tests.NoopNativeRebuildTest
 Wasm.Build.NativeRebuild.Tests.ReferenceNewAssemblyRebuildTest
@@ -6,6 +5,7 @@ Wasm.Build.NativeRebuild.Tests.SimpleSourceChangeRebuildTest
 Wasm.Build.Tests.BlazorWasmBuildPublishTests
 Wasm.Build.Tests.BlazorWasmTests
 Wasm.Build.Tests.BuildPublishTests
+Wasm.Build.Tests.CleanTests
 Wasm.Build.Tests.InvariantGlobalizationTests
 Wasm.Build.Tests.LocalEMSDKTests
 Wasm.Build.Tests.MainWithArgsTests
