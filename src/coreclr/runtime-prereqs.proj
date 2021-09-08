@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <NativeVersionFile>$(ArtifactsObjDir)coreclr/_version.h</NativeVersionFile>
-    <RuntimeVersionFile>$(ArtifactsObjDir)coreclr/runtime_version.h</RuntimeVersionFile>
+    <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <RuntimeVersionFile>$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
   </PropertyGroup>
 
   <ItemGroup>
