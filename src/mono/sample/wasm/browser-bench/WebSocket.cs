@@ -60,21 +60,25 @@ namespace Sample
 
         public abstract class WebSocketReceiveMeasurement : WebSocketMeasurement
         {
-            protected const int Max_length = 130_000;
+            protected const int MaxLength = 130_000;
+            protected const int MaxMessages = 100;
             public override async Task BeforeBatch()
             {
                 await base.BeforeBatch();
-                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[Max_length]);
+                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[MaxLength]);
 
-                for (int i = 0; i < Max_length; i++)
+                for (int i = 0; i < MaxLength; i++)
                 {
                     buffer[i] = (byte)(i & 0xff);
                 }
 
-                await client.SendAsync(buffer, WebSocketMessageType.Binary, true, CancellationToken.None);
+                for (int i = 0; i < MaxMessages; i++)
+                {
+                    await client.SendAsync(buffer, WebSocketMessageType.Binary, true, CancellationToken.None);
+                }
 
                 // make sure that message arrived to receive buffer
-                await Task.Delay(3500);
+                await Task.Delay(5000);
             }
         }
 
@@ -97,7 +101,7 @@ namespace Sample
 
         public class PartialSend_64KBMeasurement : WebSocketMeasurement
         {
-            const int bufferSize = 64*1024;
+            const int bufferSize = 64 * 1024;
             public override int InitialSamples => 1000;
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
             public PartialSend_64KBMeasurement()
@@ -151,7 +155,7 @@ namespace Sample
 
             protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
             {
-                return Max_length - InitialSamples - 100;
+                return MaxLength - InitialSamples - 100;
             }
 
             public override void RunStep()
@@ -168,14 +172,13 @@ namespace Sample
 
         public class PartialReceive_10KBMeasurement : WebSocketReceiveMeasurement
         {
-            const int bufferSize = 10*1024;
+            const int bufferSize = 10 * 1024;
             public override int InitialSamples => 1;
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
-            public override int NumberOfRuns => 15;
 
             protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
             {
-                return (Max_length / bufferSize) - InitialSamples - 1;
+                return 500;
             }
 
             public override void RunStep()
@@ -183,11 +186,14 @@ namespace Sample
                 var task = client.ReceiveAsync(buffer, CancellationToken.None);
 #if DEBUG
                 if (!task.IsCompleted) throw new InvalidOperationException(Name + ": Expected Completed " + step);
-                if (task.Result.Count != buffer.Count) throw new InvalidOperationException(Name + ": Expected full buffer" + step);
-                if (step == 0) for (int i = 0; i < bufferSize; i++)
+                if (step == 0)
+                {
+                    if (task.Result.Count != buffer.Count) throw new InvalidOperationException(Name + ": Expected full buffer" + step);
+                    for (int i = 0; i < bufferSize; i++)
                     {
                         if (buffer[i] != (byte)(i & 0xff)) throw new InvalidOperationException(Name + ": Expected data at " + i + " " + step);
                     }
+                }
 #endif
                 step++;
             }
@@ -198,11 +204,10 @@ namespace Sample
             const int bufferSize = 100_000;
             public override int InitialSamples => 1;
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
-            public override int NumberOfRuns => 15;
 
             protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
             {
-                return 0;
+                return MaxMessages - 1;
             }
 
             public override void RunStep()
@@ -217,11 +222,15 @@ namespace Sample
                 var task = client.ReceiveAsync(buffer, CancellationToken.None);
 #if DEBUG
                 if (!task.IsCompleted) throw new InvalidOperationException(Name + ": Expected Completed " + step);
-                if (task.Result.Count != buffer.Count) throw new InvalidOperationException(Name + ": Expected full buffer" + step + " " + task.Result.Count + "!");
-                if (step == 0) for (int i = 0; i < bufferSize; i++)
+                if (step == 0)
+                {
+                    if (task.Result.Count != buffer.Count) throw new InvalidOperationException(Name + ": Expected full buffer" + step + " " + task.Result.Count + "!");
+                    for (int i = 0; i < bufferSize; i++)
                     {
                         if (buffer[i] != (byte)(i & 0xff)) throw new InvalidOperationException(Name + ": Expected data at " + i + " " + step);
                     }
+
+                }
 #endif
                 step++;
             }
