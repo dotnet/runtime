@@ -125,7 +125,7 @@
     <SystemRuntimeTimeZoneDataVersion>7.0.0-beta.21430.2</SystemRuntimeTimeZoneDataVersion>
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>7.0.0-beta.21430.2</SystemSecurityCryptographyX509CertificatesTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>7.0.0-beta.21430.2</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>7.0.0-beta.21430.2</MicrosoftDotNetCilStripSourcesVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>7.0.0-beta.21457.4</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.21455.2</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.21455.2</optimizationwindows_ntx86MIBCRuntimeVersion>
