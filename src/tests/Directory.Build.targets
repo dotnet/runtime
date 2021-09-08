@@ -402,7 +402,7 @@
           TargetDir="build/"/>
 
         <RunTimeDependencyCopyLocal
-           Include="$(EMSDK)\**"
+           Include="$(EMSDK_PATH)\**"
            TargetDir="emsdk/"
         />
 
