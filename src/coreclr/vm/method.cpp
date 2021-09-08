@@ -3604,6 +3604,38 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
 }
 
 //*******************************************************************************
+BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+    if (IsILStub())
+    {
+        return AsDynamicMethodDesc()->IsUnmanagedCallersOnlyStub();
+    }
+
+    HRESULT hr = GetCustomAttribute(
+        WellKnownAttribute::UnmanagedCallersOnly,
+        nullptr,
+        nullptr);
+    if (hr != S_OK)
+    {
+        // See https://github.com/dotnet/runtime/issues/37622
+        hr = GetCustomAttribute(
+            WellKnownAttribute::NativeCallableInternal,
+            nullptr,
+            nullptr);
+    }
+
+    return (hr == S_OK) ? TRUE : FALSE;
+}
+
+//*******************************************************************************
 BOOL MethodDesc::ShouldSuppressGCTransition()
 {
     CONTRACTL

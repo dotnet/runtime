@@ -6156,27 +6156,6 @@ MethodTableBuilder::InitMethodDesc(
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
 
-    HRESULT hr = pNewMD->GetCustomAttribute(
-        WellKnownAttribute::UnmanagedCallersOnly,
-        GetModule(),
-        nullptr,
-        nullptr);
-
-    if (hr != S_OK)
-    {
-        // See https://github.com/dotnet/runtime/issues/37622
-        hr = pNewMD->GetCustomAttribute(
-            WellKnownAttribute::NativeCallableInternal,
-            GetModule(),
-            nullptr,
-            nullptr);
-    }
-
-    if (hr == S_OK)
-    {
-        pNewMD->SetUnmanagedCallersOnly();
-    }
-
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = (LPUTF8)pszDebugMethodName;
     pNewMD->m_pszDebugClassName  = (LPUTF8)pszDebugClassName;

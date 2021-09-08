@@ -147,9 +147,7 @@ enum MethodDescClassification
     // Method is static
     mdcStatic                           = 0x0080,
 
-    // Method has UnmanagedCallersOnly attribute
-    mdcUnmanagedCallersOnly             = 0x0100,
-
+    // unused                           = 0x0100,
     // unused                           = 0x0200,
 
     // Duplicate method. When a method needs to be placed in multiple slots in the
@@ -649,18 +647,7 @@ public:
         return GetMethodTable()->IsInterface();
     }
 
-    inline BOOL HasUnmanagedCallersOnlyAttribute()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_wFlags & mdcUnmanagedCallersOnly);
-    }
-
-    inline void SetUnmanagedCallersOnly()
-    {
-        WRAPPER_NO_CONTRACT;
-        m_wFlags |= mdcUnmanagedCallersOnly;
-    }
-
+    BOOL HasUnmanagedCallersOnlyAttribute();
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
@@ -859,23 +846,13 @@ public:
     }
 
     HRESULT GetCustomAttribute(WellKnownAttribute attribute,
-                               Module *pModule,
-                               const void  **ppData,
-                               ULONG *pcbData) const
-    {
-        WRAPPER_NO_CONTRACT;
-        PREFIX_ASSUME(pModule != NULL);
-        return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
-    }
-
-    HRESULT GetCustomAttribute(WellKnownAttribute attribute,
                                const void  **ppData,
                                ULONG *pcbData) const
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
         PREFIX_ASSUME(pModule != NULL);
-        return GetCustomAttribute(attribute, pModule, ppData, pcbData);
+        return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
     }
 
 #ifndef DACCESS_COMPILE
