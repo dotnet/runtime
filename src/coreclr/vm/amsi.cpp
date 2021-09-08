@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 // File: amsi.cpp
-//
+// 
 
 #include "common.h"
 #include "amsi.h"
