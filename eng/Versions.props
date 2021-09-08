@@ -103,7 +103,7 @@
     <SystemRuntimeInteropServicesVersion>4.3.0</SystemRuntimeInteropServicesVersion>
     <SystemRuntimeInteropServicesRuntimeInformationVersion>4.3.0</SystemRuntimeInteropServicesRuntimeInformationVersion>
     <SystemRuntimeSerializationPrimitivesVersion>4.3.0</SystemRuntimeSerializationPrimitivesVersion>
-    <SystemSecurityAccessControlVersion>5.0.0</SystemSecurityAccessControlVersion>
+    <SystemSecurityAccessControlVersion>6.0.0-rc.2.21454.1</SystemSecurityAccessControlVersion>
     <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
@@ -125,7 +125,7 @@
     <SystemRuntimeTimeZoneDataVersion>7.0.0-beta.21457.4</SystemRuntimeTimeZoneDataVersion>
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>7.0.0-beta.21457.4</SystemSecurityCryptographyX509CertificatesTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>7.0.0-beta.21457.4</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>7.0.0-beta.21430.2</MicrosoftDotNetCilStripSourcesVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>7.0.0-beta.21457.4</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.21456.2</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.21456.2</optimizationwindows_ntx86MIBCRuntimeVersion>

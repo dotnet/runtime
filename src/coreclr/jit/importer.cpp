@@ -19226,7 +19226,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     // for this method, so we won't prematurely conclude this method should never
     // be inlined.
     //
-    BasicBlock::weight_t weight = 0;
+    weight_t weight = 0;
 
     if (pInlineInfo != nullptr)
     {
@@ -19234,8 +19234,8 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
     else
     {
-        const float prejitHotCallerWeight = 1000000.0f;
-        weight                            = prejitHotCallerWeight;
+        const weight_t prejitHotCallerWeight = 1000000.0;
+        weight                               = prejitHotCallerWeight;
     }
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
@@ -19248,10 +19248,10 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     //
     if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
     {
-        const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
-        const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
-        profileFreq                               = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
-        hasProfile                                = true;
+        const weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        const weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        profileFreq                   = fgProfileWeightsEqual(entryWeight, 0.0) ? 0.0 : callSiteWeight / entryWeight;
+        hasProfile                    = true;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);

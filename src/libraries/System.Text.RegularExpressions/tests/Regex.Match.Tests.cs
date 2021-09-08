@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -1241,6 +1243,52 @@ namespace System.Text.RegularExpressions.Tests
             RegexAssert.Equal("abc", m2);
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
+        }
+
+        public static IEnumerable<object[]> UseRegexConcurrently_ThreadSafe_Success_MemberData()
+        {
+            foreach (TimeSpan timeout in new[] { Timeout.InfiniteTimeSpan, TimeSpan.FromMinutes(1) })
+            {
+                yield return new object[] { RegexOptions.None, timeout };
+                yield return new object[] { RegexOptions.Compiled, timeout };
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(UseRegexConcurrently_ThreadSafe_Success_MemberData))]
+        [OuterLoop("Takes several seconds")]
+        public void UseRegexConcurrently_ThreadSafe_Success(RegexOptions options, TimeSpan timeout)
+        {
+            const string Input = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue massa. Fusce posuere, magna sed pulvinar ultricies, purus lectus malesuada libero, sit amet commodo magna eros quis urna. Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Proin pharetra nonummy pede. Mauris et orci. Aenean nec lorem. In porttitor. abcdefghijklmnx Donec laoreet nonummy augue. Suspendisse dui purus, scelerisque at, vulputate vitae, pretium mattis, nunc. Mauris eget neque at sem venenatis eleifend. Ut nonummy. Fusce aliquet pede non pede. Suspendisse dapibus lorem pellentesque magna. Integer nulla. Donec blandit feugiat ligula. Donec hendrerit, felis et imperdiet euismod, purus ipsum pretium metus, in lacinia nulla nisl eget sapien. Donec ut est in lectus consequat consequat. Etiam eget dui. Aliquam erat volutpat. Sed at lorem in nunc porta tristique. Proin nec augue. Quisque aliquam tempor magna. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nunc ac magna. Maecenas odio dolor, vulputate vel, auctor ac, accumsan id, felis. Pellentesque cursus sagittis felis. Pellentesque porttitor, velit lacinia egestas auctor, diam eros tempus arcu, nec vulputate augue magna vel risus.nmlkjihgfedcbax";
+            const int Trials = 100;
+            const int IterationsPerTask = 10;
+
+            using var b = new Barrier(Environment.ProcessorCount);
+
+            for (int trial = 0; trial < Trials; trial++)
+            {
+                var r = new Regex("[a-q][^u-z]{13}x", options, timeout);
+                Task.WaitAll(Enumerable.Range(0, b.ParticipantCount).Select(_ => Task.Factory.StartNew(() =>
+                             {
+                                 b.SignalAndWait();
+                                 for (int i = 0; i < IterationsPerTask; i++)
+                                 {
+                                     Match m = r.Match(Input);
+                                     Assert.NotNull(m);
+                                     Assert.True(m.Success);
+                                     Assert.Equal("abcdefghijklmnx", m.Value);
+
+                                     m = m.NextMatch();
+                                     Assert.NotNull(m);
+                                     Assert.True(m.Success);
+                                     Assert.Equal("nmlkjihgfedcbax", m.Value);
+
+                                     m = m.NextMatch();
+                                     Assert.NotNull(m);
+                                     Assert.False(m.Success);
+                                 }
+                             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
+            }
         }
     }
 }
