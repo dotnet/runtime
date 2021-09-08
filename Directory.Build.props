@@ -41,18 +41,27 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>$(PreviousReleaseMajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
-    <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
-    <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppCurrentVersion>7.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
-    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
-    <NetCoreAppMinimum>netcoreapp3.1</NetCoreAppMinimum>
-    <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
-    <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
-    <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
+    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
+
+    <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
+    <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
+
+    <NetCoreAppLatestStableVersion>5.0</NetCoreAppLatestStableVersion>
+    <NetCoreAppLatestStablePackageBaselineVersion>$(NetCoreAppLatestStableVersion).0</NetCoreAppLatestStablePackageBaselineVersion>
+    <NetCoreAppLatestStable>net$(NetCoreAppLatestStableVersion)</NetCoreAppLatestStable>
+
+    <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
+
+    <NetFrameworkMinimum>net462</NetFrameworkMinimum>
+    <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -82,7 +91,7 @@
     <ILStripTaskDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILStrip', 'Debug', '$(NetCoreAppToolCurrent)'))</ILStripTaskDir>
 
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', 'net461', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetFrameworkToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
     <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
