@@ -7,7 +7,7 @@
     <Compile Include="System.ComponentModel.Composition.Registration.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\ref\System.ComponentModel.Composition.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Context\ref\System.Reflection.Context.csproj" />
   </ItemGroup>
