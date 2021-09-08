@@ -76,7 +76,6 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CLSCompliant(false)]
         public static bool IsPow2(nint value) => (value & (value - 1)) == 0 && value > 0;
 
         /// <summary>
