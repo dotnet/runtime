@@ -277,6 +277,13 @@ namespace System.IO
             Debug.Assert(fullPath.Length > 0);
             Debug.Assert(PathInternal.IsDirectorySeparator(fullPath[0]));
 
+            int length = fullPath.Length;
+            if (length == 1)
+            {
+                // fullPath is '/'.
+                return;
+            }
+
             string errorString = fullPath;
             int result = Interop.Sys.MkDir(fullPath, (int)Interop.Sys.Permissions.Mask);
             if (result == 0)
@@ -297,9 +304,7 @@ namespace System.IO
             else if (errorInfo.Error == Interop.Error.ENOENT)
             {
                 // Some parts of the path don't exist yet.
-                Debug.Assert(fullPath.Length > 1);
 
-                int length = fullPath.Length;
                 // Trim trailling separator for parent directory lookup.
                 // The smallest path with trailing separator has length 3, for example '/a/'.
                 if (length >= 3 && Path.EndsInDirectorySeparator(fullPath))
