@@ -2346,44 +2346,73 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 if (overwrittenOpNum == 1)
                 {
-                    // 132 form: op1 = (op1 * op3) + [op2]
-
-                    tgtPrefUse = BuildUse(op1);
-
-                    srcCount += 1;
-                    srcCount += BuildOperandUses(op2);
-                    srcCount += BuildDelayFreeUses(op3, op1);
-                }
-                else if (overwrittenOpNum == 3)
-                {
-                    // 231 form: op1 = (op2 * op3) + [op1]
-
-                    tgtPrefUse = BuildUse(op3);
-
-                    srcCount += BuildOperandUses(op1);
-                    srcCount += BuildDelayFreeUses(op2, op1);
-                    srcCount += 1;
-                }
-                else
-                {
-                    // op2 = op1 * op2 + op3
-                    // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-                    assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
-
-                    tgtPrefUse = BuildUse(op1);
-                    srcCount += 1;
-
-                    if (copiesUpperBits)
+                    if (op2->isContained())
                     {
-                        srcCount += BuildDelayFreeUses(op2, op1);
+                        // op1 = (op1 * [op2]) + op3
+                        // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+                        tgtPrefUse = BuildUse(op1);
+
+                        srcCount += 1;
+                        srcCount += BuildOperandUses(op2);
+                        srcCount += BuildDelayFreeUses(op3, op1);
                     }
                     else
                     {
-                        tgtPrefUse2 = BuildUse(op2);
+                        //assert(op3->isContained());
+                        // op1 = (op1 * op2) + [op3]
+                        // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+                        tgtPrefUse = BuildUse(op1);
+
                         srcCount += 1;
+                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+                        srcCount += BuildDelayFreeUses(op2, op1);
+
+                    }
+                }
+                else if (overwrittenOpNum == 3)
+                {
+                    // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+                    // One of the following:
+                    // op3 = ([op1] * op2) + op3
+                    // op3 = (op1 * [op2]) + op3
+                    tgtPrefUse = BuildUse(op3);
+                    srcCount += 1;
+                    if (op1->isContained())
+                    {
+                        srcCount += BuildOperandUses(op1);
+                        srcCount += BuildDelayFreeUses(op2, op3);
+                    }
+                    else
+                    {
+                        //assert(op2->isContained());
+                        srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op3);
+                        srcCount += BuildDelayFreeUses(op1, op3);
                     }
 
-                    srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+                }
+                else
+                {
+                    assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
+
+                    if (op1->isContained())
+                    {
+                        // op2 = ([op1] * op2) + op3
+                        // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+                        tgtPrefUse = BuildUse(op2);
+                        srcCount += 1;
+                        srcCount += BuildOperandUses(op1);
+                        srcCount += BuildDelayFreeUses(op3, op2);
+                    }
+                    else
+                    {
+                        // op2 = (op1 * op2) + [op3]
+                        // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+
+                        tgtPrefUse = BuildUse(op2);
+                        srcCount += 1;
+                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+                        srcCount += BuildDelayFreeUses(op1, op2);
+                    }
                 }
 
                 buildUses = false;

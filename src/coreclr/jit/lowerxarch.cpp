@@ -6322,50 +6322,68 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             overwrittenOpNum = node->GetOverwrittenOpNumForFMA(use.User(), op1, op2, op3);
                         }
 
-
                         switch (overwrittenOpNum)
                         {
                             case 1:
                             {
                                 if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
-                                    // 132 form: op1 = (op1 * op3) + [op2]
+                                    // op1 = (op1 * [op2]) + op3
+                                    // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
                                     MakeSrcContained(node, op2);
+                                }
+                                else if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                                {
+                                    // op1 = (op1 * op2) + [op3]
+                                    // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+                                    MakeSrcContained(node, op3);
+
                                 }
                                 else
                                 {
                                     assert(supportsRegOptional);
-
-                                    // 132 form: op1 = (op1 * op3) + [op2]
-                                    op2->SetRegOptional();
+                                    // op1 = (op1 * op2) + [op3]
+                                    // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+                                    op3->SetRegOptional();
                                 }
                                 break;
                             }
                             case 3:
                             {
-                                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                                // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+                                // One of the following:
+                                // op3 = ([op1] * op2) + op3
+                                // op3 = (op1 * [op2]) + op3
+                                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional) && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                                 {
-                                  // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
+                                    // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
 
-                                  if (!HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
-                                  {
-                                      // 231 form: op1 = (op2 * op3) + [op1]
-                                      MakeSrcContained(node, op1);
-                                  }
+                                    MakeSrcContained(node, op1);
+                                }
+                                else if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
                                 }
                                 else
                                 {
                                     assert(supportsRegOptional);
-                                    // 231 form: op1 = (op2 * op3) + [op1]
-                                    op1->SetRegOptional();
+                                    op2->SetRegOptional();
                                 }
                                 break;
                             }
                             default:
                             {
-                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                                assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
+                                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional) && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                                 {
-                                    // 213 form: op1 = (op2 * op1) + [op3]
+                                    // op2 = ([op1] * op2) + op3
+                                    // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+                                    MakeSrcContained(node, op1);
+                                }
+                                else if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                                {
+                                    // op2 = (op1 * op2) + [op3]
+                                    // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
                                     MakeSrcContained(node, op3);
                                 }
                                 else
@@ -6377,7 +6395,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     //                it can only be so if CopyUpperBits is off.
                                     //                https://github.com/dotnet/runtime/issues/6358
 
-                                    // 213 form: op1 = (op2 * op1) + [op3]
+                                    // op2 = (op1 * op2) + [op3]
+                                    // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
                                     op3->SetRegOptional();
                                 }
                             }
