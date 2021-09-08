@@ -9,10 +9,16 @@ namespace System.Text.Json.SourceGeneration
 {
     internal enum ClassType
     {
+        /// <summary>
+        /// Types that are not supported yet by source gen including types with constructor parameters.
+        /// </summary>
         TypeUnsupportedBySourceGen = 0,
-        DisallowedType = 1,
-        Object = 2,
-        KnownType = 3,
+        Object = 1,
+        KnownType = 2,
+        /// <summary>
+        /// Known types such as System.Type and System.IntPtr that throw NotSupportedException.
+        /// </summary>
+        KnownUnsupportedType = 3,
         TypeWithDesignTimeProvidedCustomConverter = 4,
         Enumerable = 5,
         Dictionary = 6,

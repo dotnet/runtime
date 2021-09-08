@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class DisallowedTypeConverterFactory : JsonConverterFactory
+    internal sealed class UnsupportedTypeConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type type)
         {
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Converters
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(DisallowedTypeConverter<>).MakeGenericType(type),
+                typeof(UnsupportedTypeConverter<>).MakeGenericType(type),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: null,
