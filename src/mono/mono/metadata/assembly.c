@@ -2206,7 +2206,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 */
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
-        ass->context.no_managed_load_event = req->no_managed_load_event;
+	ass->context.no_managed_load_event = req->no_managed_load_event;
 	ass->image = image;
 
 	MONO_PROFILER_RAISE (assembly_loading, (ass));

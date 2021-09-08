@@ -2392,7 +2392,7 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	 * might require this module to be already loaded.
 	 */
 	mono_assembly_request_prepare_open (&req, alc);
-        req.request.no_managed_load_event = TRUE;
+	req.request.no_managed_load_event = TRUE;
 	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
 	if (!assm) {
 		gchar *exe = g_strdup_printf ("%s.exe", local_ref);

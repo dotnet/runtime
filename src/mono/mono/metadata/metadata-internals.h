@@ -187,8 +187,8 @@ struct MonoTypeNameParse {
 
 
 typedef struct _MonoAssemblyContext {
-        /* Don't fire managed load event for this assembly */
-        guint8 no_managed_load_event : 1;
+	/* Don't fire managed load event for this assembly */
+	guint8 no_managed_load_event : 1;
 } MonoAssemblyContext;
 
 struct _MonoAssembly {
