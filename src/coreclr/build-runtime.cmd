@@ -16,7 +16,7 @@ set __ThisScriptFull="%~f0"
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
-::      __BinDir            -- default: %__RootBinDir%\%__TargetOS%.%__BuildArch.%__BuildType%\
+::      __BinDir            -- default: %__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
 ::      __PackagesBinDir    -- default: %__BinDir%\.nuget
 ::
@@ -307,8 +307,8 @@ REM ============================================================================
 REM We will copy our fallback version files to the expected directory if no one generated
 REM and version files previously.
 for /r "%__ProjectDir%\versionfallback" %%a in (*) do (
-    if not exist "%__RootBinDir%\obj\coreclr\%%~nxa" (
-        copy "%%a" "%__RootBinDir%\obj\coreclr"
+    if not exist "%__RootBinDir%\obj\%%~nxa" (
+        copy "%%a" "%__RootBinDir%\obj"
     )
 )
 

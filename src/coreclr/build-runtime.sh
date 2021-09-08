@@ -69,7 +69,7 @@ build_cross_architecture_components()
 copy_version_files()
 {
     # Copy dummy version files if version files haven't already been generated
-    cp -r -n "$__ProjectRoot/versionfallback/"* "$__ArtifactsIntermediatesDir/"
+    cp -r -n "$__ProjectRoot/versionfallback/"* "$__ArtifactsObjDir/"
 }
 
 handle_arguments_local() {
@@ -159,7 +159,8 @@ __LogsDir="$__RootBinDir/log/$__BuildType"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 __ConfigTriplet="$__TargetOS.$__BuildArch.$__BuildType"
 __BinDir="$__RootBinDir/bin/coreclr/$__ConfigTriplet"
-__ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
+__ArtifactsObjDir="$__RepoRootDir/artifacts/obj"
+__ArtifactsIntermediatesDir="$__ArtifactsObjDir/coreclr"
 __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
