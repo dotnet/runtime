@@ -30644,7 +30644,8 @@ gc_heap::check_demotion_helper (uint8_t** pval, uint8_t* parent_obj)
 {
 #ifdef USE_REGIONS
     uint8_t* child_object = *pval;
-    if (!child_object) return;
+    if ((child_object < g_gc_lowest_address) || (child_object >= g_gc_highest_address))
+        return;
     int child_object_plan_gen = get_region_plan_gen_num (child_object);
     bool child_obj_demoted_p = is_region_demoted (child_object);
 
