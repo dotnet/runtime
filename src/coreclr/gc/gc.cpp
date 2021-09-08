@@ -35878,7 +35878,8 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     assert (nhigh == 0);
     assert (next_boundary == 0);
     uint8_t* child_object = *poo;
-    if (!child_object) return;
+    if (child_object < g_gc_lowest_address || g_gc_highest_address <= child_object)
+        return;
     int child_object_gen = get_region_gen_num (child_object);
     int saved_child_object_gen = child_object_gen;
     uint8_t* saved_child_object = child_object;
