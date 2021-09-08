@@ -188,11 +188,11 @@
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrILToolsSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.nativeprereqs+'))">
+  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.nativeprereqs+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)runtime-prereqs.proj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.nativeprereqs+'))">
+  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
     <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)" Category="clr" />
   </ItemGroup>
 
