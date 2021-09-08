@@ -58,8 +58,8 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 
     if (assemblyLoadContext.Get() != NULL)
     {
-        INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
-        pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyLoadContext);
+        INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+        pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
     }
 
     AssemblySpec spec;
@@ -388,9 +388,9 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
         GCX_COOP();
         ASSEMBLYLOADCONTEXTREF * pAssemblyLoadContextRef = reinterpret_cast<ASSEMBLYLOADCONTEXTREF *>(pAssemblyLoadContext.m_ppObject);
 
-        INT_PTR nativeAssemblyLoadContext = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
+        INT_PTR nativeAssemblyBinder = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
 
-        pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyLoadContext);
+        pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyBinder);
     }
 
     // Load the class from this assembly (fail if it is in a different one).

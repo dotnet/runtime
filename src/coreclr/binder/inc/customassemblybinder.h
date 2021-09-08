@@ -28,7 +28,7 @@ public:
 
     AssemblyLoaderAllocator* GetLoaderAllocator();
 
-    bool IsDefault()
+    bool IsDefault() override
     {
         return false;
     }

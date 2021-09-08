@@ -30,7 +30,7 @@ public:
         return NULL;
     }
 
-    bool IsDefault()
+    bool IsDefault() override
     {
         return true;
     }

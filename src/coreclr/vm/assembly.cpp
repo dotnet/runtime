@@ -520,37 +520,37 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
     {
         GCX_PREEMP();
 
-        AssemblyLoaderAllocator* pAssemblyLoaderAllocator = nullptr;
+        AssemblyLoaderAllocator* pBinderLoaderAllocator = nullptr;
         if (pBinder != nullptr)
         {
-            pAssemblyLoaderAllocator = pBinder->GetLoaderAllocator();
+            pBinderLoaderAllocator = pBinder->GetLoaderAllocator();
         }
 
         // Create a new LoaderAllocator if appropriate
         if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
-            AssemblyLoaderAllocator *pAssemblyLoaderAllocator = new AssemblyLoaderAllocator();
-            pAssemblyLoaderAllocator->SetCollectible();
-            pLoaderAllocator = pAssemblyLoaderAllocator;
+            AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
+            pCollectibleLoaderAllocator->SetCollectible();
+            pLoaderAllocator = pCollectibleLoaderAllocator;
 
             // Some of the initialization functions are not virtual. Call through the derived class
             // to prevent calling the base class version.
-            pAssemblyLoaderAllocator->Init(pDomain);
+            pCollectibleLoaderAllocator->Init(pDomain);
 
             // Setup the managed proxy now, but do not actually transfer ownership to it.
             // Once everything is setup and nothing can fail anymore, the ownership will be
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
-            pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
+            pCollectibleLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
             createdNewAssemblyLoaderAllocator = TRUE;
 
-            if(pAssemblyLoaderAllocator != nullptr)
+            if(pBinderLoaderAllocator != nullptr)
             {
-                pAssemblyLoaderAllocator->EnsureReference(pAssemblyLoaderAllocator);
+                pCollectibleLoaderAllocator->EnsureReference(pBinderLoaderAllocator);
             }
         }
         else
         {
-            pLoaderAllocator = pAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pAssemblyLoaderAllocator;
+            pLoaderAllocator = pBinderLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderLoaderAllocator;
         }
 
         if (!createdNewAssemblyLoaderAllocator)
