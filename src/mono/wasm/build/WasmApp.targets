@@ -52,6 +52,15 @@
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
       - $(EmccTotalMemory)                  - Total memory specified with `emcc`. Default value: 536870912
 
+      - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
+                                              is what triggers the wasm app building. Defaults to `Build`.
+      - $(WasmTriggerPublishAppAfterThisTarget) - This target is used as `AfterTargets` for `WasmTriggerPublishApp.
+                                                  Defaults to `Publish`.
+
+      - $(EnableDefaultWasmAssembliesToBundle) - Get list of assemblies to bundle automatically. Defaults to true.
+      - $(WasmBuildOnlyAfterPublish)        - Causes relinking to be done only for Publish. Defaults to false.
+      - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
+                                              Defaults to false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -83,12 +92,8 @@
     <_BeforeWasmBuildAppDependsOn />
 
     <IsWasmProject Condition="'$(IsWasmProject)' == '' and '$(OutputType)' != 'Library'">true</IsWasmProject>
-    <!-- FIXME: tmp hack for blazor -->
-    <DisableAutoWasmBuildApp Condition="'$(DisableAutoWasmBuildApp)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">true</DisableAutoWasmBuildApp>
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
 
-    <!-- FIXME: tmp hack for blazor -->
-    <DisableAutoWasmPublishApp Condition="'$(DisableAutoWasmPublishApp)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">true</DisableAutoWasmPublishApp>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true' and '$(WasmBuildingForPublish)' != 'true'">Publish</WasmTriggerPublishAppAfterThisTarget>
     <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
 
