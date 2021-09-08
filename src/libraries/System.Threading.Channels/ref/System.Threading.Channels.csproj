@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Channels.cs" />
-    <Compile Include="System.Threading.Channels.netstandard21.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System.Threading.Channels.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime/ref/System.Runtime.csproj" />

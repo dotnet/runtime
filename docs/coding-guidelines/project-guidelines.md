@@ -149,7 +149,7 @@ Contains the files used to direct the trimming tool. See [ILLink files](../workf
 ### src output
 All src outputs are under
 
-`bin\$(MSBuildProjectName)\$(TargetFramework)`
+`artifacts\bin\$(MSBuildProjectName)\$(TargetFramework)`
 
 ## tests
 Similar to the src projects tests projects will define a `TargetFrameworks` property so they can list out the set of target frameworks they support.

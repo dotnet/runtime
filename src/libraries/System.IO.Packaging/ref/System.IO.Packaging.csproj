@@ -10,6 +10,10 @@
     <Compile Include="System.IO.Packaging.PackUriScheme.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="System.IO.Packaging.netframework.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
   </ItemGroup>
@@ -20,7 +24,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Compile Include="System.IO.Packaging.netframework.cs" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
 </Project>

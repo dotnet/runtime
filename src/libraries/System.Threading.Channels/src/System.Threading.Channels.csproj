@@ -15,17 +15,17 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs"
              Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard2.cs"
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
     <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
     <Compile Include="System\Threading\Channels\Channel.cs" />
     <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
-    <Compile Include="System\Threading\Channels\ChannelClosedException.netstandard21.cs"
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs"
              Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.cs" />
-    <Compile Include="System\Threading\Channels\ChannelReader.netstandard21.cs"
+    <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs"
              Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
     <Compile Include="System\Threading\Channels\ChannelWriter.cs" />

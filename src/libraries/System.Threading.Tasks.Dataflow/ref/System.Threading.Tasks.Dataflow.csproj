@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <Compile Include="System.Threading.Tasks.Dataflow.cs" />
-    <Compile Include="System.Threading.Tasks.Dataflow.netstandard21.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System.Threading.Tasks.Dataflow.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
