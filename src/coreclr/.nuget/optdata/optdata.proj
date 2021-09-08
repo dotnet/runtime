@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
 
     <OptimizationDataSupported Condition="'$(TargetOS)' == 'windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">True</OptimizationDataSupported>
     <OptimizationDataSupported Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">True</OptimizationDataSupported>
@@ -22,14 +21,13 @@
   </ItemGroup>
 
   <!--                                                                       -->
-  <!-- Task: DumpPgoDataPackagePath                                          -->
+  <!-- Task: GetPgoDataPackagePath                                          -->
   <!--                                                                       -->
   <!-- Notes:                                                                -->
   <!--                                                                       -->
-  <!-- DumpPgoDataPackagePath is used by build.sh and build.cmd to pass      -->
-  <!-- the path information to cmake. The task will write a file to be       -->
-  <!-- read back by build.cmd/sh. The path for the file is:                  -->
-  <!-- $(PgoDataPackagePathOutputFile)                                       -->
+  <!-- DumpPgoDataPackagePath is used to get the path of the native PGO data -->
+  <!-- for other MSBuild projects, generally to pass to another project or   -->
+  <!-- native script like build-runtime.cmd/sh.                              -->
   <!--                                                                       -->
 
   <Target Name="GetPgoDataPackagePath" Returns="$(PgoPackagePath)">
@@ -55,22 +53,15 @@
     <Error Condition="!Exists('$(PgoPackagePath)') And '$(OptimizationDataSupported)' == 'True'" Text="Unable to locate restored PGO package at $(PgoPackagePath). Maybe the platform-specific package naming changed?" />
   </Target>
 
-  <Target Name="DumpPgoDataPackagePath" DependsOnTargets="GetPgoDataPackagePath">
-    <!-- Error if PgoDataPackagePathOutputFile is not set. -->
-    <Error Condition="'$(PgoDataPackagePathOutputFile)'==''" Text="PgoDataPackagePathOutputFile must be passed as a property." />
-
-    <WriteLinesToFile File="$(PgoDataPackagePathOutputFile)"
-                      Lines="$(PgoPackagePath)"
-                      Condition="'$(OptimizationDataSupported)' == 'True'"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
-
-    <WriteLinesToFile File="$(PgoDataPackagePathOutputFile)"
-                      Lines=""
-                      Condition="'$(OptimizationDataSupported)' != 'True'"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
-
-    <Message Text="optimizationPGOCoreCLR Package path: $(PgoPackagePath) written to: $(PgoDataPackagePathOutputFile)" Importance="High" />
+  <Target Name="OutputPgoPathForCI" Condition="'$(ContinuousIntegrationBuild)' == 'true'" DependsOnTargets="GetPgoDataPackagePath" BeforeTargets="Build">
+    <!-- Get the path to PGO data to pass to AzDO so we can pass it to the build-runtime script. -->
+    <MSBuild
+      Projects=".nuget/optdata/optdata.proj"
+      Targets="GetPgoDataPackagePath">
+      <Output
+        TaskParameter="TargetOutputs"
+        PropertyName="PgoDataPath" />
+    </MSBuild>
+    <Message Text="##vso[task.setvariable variable=CoreClrPgoDataArg]-pgodatapath &quot;$(PgoDataPath)&quot;" />
   </Target>
 </Project>
