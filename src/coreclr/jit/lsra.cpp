@@ -1351,17 +1351,19 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             BasicBlock* prevReportedBlock = bb->bbPrev;
             if (bb->bbPrev != nullptr && bb->bbPrev->isBBCallAlwaysPairTail())
             {
-                // For callf+always pair we skip over reporting anything for
-                // the always block (which is not going to change any liveness
-                // anyway). So whether we need to rehome or not depends on what
-                // we reported at the end of the callf block.
+                // For callf+always pair we generate the code for the always
+                // block in genCallFinally and skip it, so we don't report
+                // anything for it (it has only trivial instructions, so that
+                // does not matter much). So whether we need to rehome or not
+                // depends on what we reported at the end of the callf block.
                 prevReportedBlock = bb->bbPrev->bbPrev;
             }
 
-            if (prevReportedBlock && VarSetOps::IsMember(compiler, prevReportedBlock->bbLiveOut, varIndex))
+            if (prevReportedBlock != nullptr && VarSetOps::IsMember(compiler, prevReportedBlock->bbLiveOut, varIndex))
             {
-                // varDsc was alive on previous block end ("bb->bbPrev->bbLiveOut"), so it has an open
-                // "VariableLiveRange" which should change to be according "getInVarToRegMap"
+                // varDsc was alive on previous block end so it has an open
+                // "VariableLiveRange" which should change to be according to
+                // "getInVarToRegMap"
                 compiler->codeGen->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
             }
 #endif // USING_VARIABLE_LIVE_RANGE
