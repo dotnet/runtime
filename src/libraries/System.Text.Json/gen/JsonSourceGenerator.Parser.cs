@@ -33,9 +33,9 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
 
-            private const string System_DateOnly_FullName = "System.DateOnly";
-            private const string System_TimeOnly_FullName = "System.TimeOnly";
-            private const string System_IAsyncEnumerable_FullName = "System.Collections.Generic.IAsyncEnumerable`1";
+            private const string DateOnlyFullName = "System.DateOnly";
+            private const string TimeOnlyFullName = "System.TimeOnly";
+            private const string IAsyncEnumerableFullName = "System.Collections.Generic.IAsyncEnumerable`1";
 
             private readonly Compilation _compilation;
             private readonly SourceProductionContext _sourceProductionContext;
@@ -160,9 +160,9 @@ namespace System.Text.Json.SourceGeneration
                 _serializationInfoType = _metadataLoadContext.Resolve(typeof(Runtime.Serialization.SerializationInfo));
                 _intPtrType = _metadataLoadContext.Resolve(typeof(IntPtr));
                 _uIntPtrType = _metadataLoadContext.Resolve(typeof(UIntPtr));
-                _iAsyncEnumerableGenericType = _metadataLoadContext.Resolve(System_IAsyncEnumerable_FullName);
-                _dateOnlyType = _metadataLoadContext.Resolve(System_DateOnly_FullName);
-                _timeOnlyType = _metadataLoadContext.Resolve(System_TimeOnly_FullName);
+                _iAsyncEnumerableGenericType = _metadataLoadContext.Resolve(IAsyncEnumerableFullName);
+                _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
+                _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
                 PopulateKnownTypes();
             }
@@ -790,7 +790,7 @@ namespace System.Text.Json.SourceGeneration
                 else if (_knownTypesWithoutConverter.Contains(type) ||
                     ImplementsIAsyncEnumerableInterface(type))
                 {
-                    classType = ClassType.TypeUnsupportedNoDefaultConverter;
+                    classType = ClassType.DisallowedType;
                 }
                 else
                 {

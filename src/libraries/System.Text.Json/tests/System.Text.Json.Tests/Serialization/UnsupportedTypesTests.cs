@@ -7,7 +7,6 @@ namespace System.Text.Json.Serialization.Tests
     {
         public UnsupportedTypesTestsDynamic() : base(
             JsonSerializerWrapperForString.StringSerializer,
-            supportsIAsyncEnumerable : true,
             supportsJsonPathOnSerialize: true)
         {
         }
