@@ -83,9 +83,9 @@ namespace Microsoft.Interop
                     }
 
                     var safeHandleCreationExpression = ((SafeHandleMarshallingInfo)info.MarshallingAttributeInfo).AccessibleDefaultConstructor
-                        ? (ExpressionSyntax)ObjectCreationExpression(info.ManagedType.AsTypeSyntax(), ArgumentList(), initializer: null)
+                        ? (ExpressionSyntax)ObjectCreationExpression(info.ManagedType.Syntax, ArgumentList(), initializer: null)
                         : CastExpression(
-                            info.ManagedType.AsTypeSyntax(),
+                            info.ManagedType.Syntax,
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
@@ -97,7 +97,7 @@ namespace Microsoft.Interop
                                         new []{
                                             Argument(
                                                 TypeOfExpression(
-                                                    info.ManagedType.AsTypeSyntax())),
+                                                    info.ManagedType.Syntax)),
                                             Argument(
                                                 LiteralExpression(
                                                     SyntaxKind.TrueLiteralExpression))
@@ -121,7 +121,7 @@ namespace Microsoft.Interop
                         // leak the handle if we failed to create the handle.
                         yield return LocalDeclarationStatement(
                             VariableDeclaration(
-                                info.ManagedType.AsTypeSyntax(),
+                                info.ManagedType.Syntax,
                                 SingletonSeparatedList(
                                     VariableDeclarator(newHandleObjectIdentifier)
                                     .WithInitializer(EqualsValueClause(safeHandleCreationExpression)))));

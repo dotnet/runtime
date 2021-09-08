@@ -194,31 +194,31 @@ namespace Microsoft.Interop
             if (info.IsNativeReturnPosition && !info.IsManagedReturnPosition)
             {
                 // Use marshaller for native HRESULT return / exception throwing
-                System.Diagnostics.Debug.Assert(info.ManagedType.SpecialType == SpecialType.System_Int32);
+                System.Diagnostics.Debug.Assert(info.ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 });
                 return HResultException;
             }
 
             switch (info)
             {
                 // Blittable primitives with no marshalling info or with a compatible [MarshalAs] attribute.
-                case { ManagedType: { SpecialType: SpecialType.System_SByte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I1, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U1, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I2, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U2, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I8, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U8, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysInt, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysUInt, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R4, _) }
-                    or { ManagedType: { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_SByte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I1, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U1, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I2, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U2, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I8, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U8, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysInt, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysUInt, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R4, _) }
+                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
                     return Blittable;
 
                 // Enum with no marshalling info
-                case { ManagedType: { TypeKind: TypeKind.Enum }, MarshallingAttributeInfo: NoMarshallingInfo }:
+                case { ManagedType: EnumTypeInfo enumType, MarshallingAttributeInfo: NoMarshallingInfo }:
                     // Check that the underlying type is not bool or char. C# does not allow this, but ECMA-335 does.
-                    var underlyingSpecialType = ((INamedTypeSymbol)info.ManagedType).EnumUnderlyingType!.SpecialType;
+                    var underlyingSpecialType = enumType.UnderlyingType;
                     if (underlyingSpecialType == SpecialType.System_Boolean || underlyingSpecialType == SpecialType.System_Char)
                     {
                         throw new MarshallingNotSupportedException(info, context);
@@ -226,31 +226,31 @@ namespace Microsoft.Interop
                     return Blittable;
 
                 // Pointer with no marshalling info
-                case { ManagedType: { TypeKind: TypeKind.Pointer }, MarshallingAttributeInfo: NoMarshallingInfo }:
+                case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer:false), MarshallingAttributeInfo: NoMarshallingInfo }:
                     return Blittable;
 
                 // Function pointer with no marshalling info
-                case { ManagedType: { TypeKind: TypeKind.FunctionPointer }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
+                case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer: true), MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
                     return Blittable;
 
-                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
                     return WinBool; // [Compat] Matching the default for the built-in runtime marshallers.
-                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
                     return ByteBool;
-                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:
                     return WinBool;
-                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
                     return VariantBool;
 
-                case { ManagedType: { TypeKind: TypeKind.Delegate }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
+                case { ManagedType: DelegateTypeInfo, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
                     return Delegate;
 
-                case { MarshallingAttributeInfo: SafeHandleMarshallingInfo }:
+                case { MarshallingAttributeInfo: SafeHandleMarshallingInfo(_, bool isAbstract) }:
                     if (!context.AdditionalTemporaryStateLivesAcrossStages)
                     {
                         throw new MarshallingNotSupportedException(info, context);
                     }
-                    if (info.IsByRef && info.ManagedType.IsAbstract)
+                    if (info.IsByRef && isAbstract)
                     {
                         throw new MarshallingNotSupportedException(info, context)
                         {
@@ -274,13 +274,13 @@ namespace Microsoft.Interop
 
                 // Cases that just match on type must come after the checks that match only on marshalling attribute info.
                 // The checks below do not account for generic marshalling overrides like [MarshalUsing], so those checks must come first.
-                case { ManagedType: { SpecialType: SpecialType.System_Char } }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Char } }:
                     return CreateCharMarshaller(info, context);
 
-                case { ManagedType: { SpecialType: SpecialType.System_String } }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_String } }:
                     return CreateStringMarshaller(info, context);
 
-                case { ManagedType: { SpecialType: SpecialType.System_Void } }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Void } }:
                     return Forwarder;
 
                 default:
@@ -403,7 +403,7 @@ namespace Microsoft.Interop
                            paramInfo,
                            out int numIndirectionLevels);
 
-                ITypeSymbol type = paramInfo.ManagedType;
+                ManagedTypeInfo type = paramInfo.ManagedType;
                 MarshallingInfo marshallingInfo = paramInfo.MarshallingAttributeInfo;
 
                 for (int i = 0; i < numIndirectionLevels; i++)
@@ -422,7 +422,7 @@ namespace Microsoft.Interop
                     }
                 }
 
-                if (!type.IsIntegralType())
+                if (type is not SpecialTypeInfo specialType || !specialType.SpecialType.IsIntegralType())
                 {
                     throw new MarshallingNotSupportedException(info, context)
                     {
@@ -470,14 +470,14 @@ namespace Microsoft.Interop
         {
             ValidateCustomNativeTypeMarshallingSupported(info, context, marshalInfo);
 
-            ICustomNativeTypeMarshallingStrategy marshallingStrategy = new SimpleCustomNativeTypeMarshalling(marshalInfo.NativeMarshallingType.AsTypeSyntax());
+            ICustomNativeTypeMarshallingStrategy marshallingStrategy = new SimpleCustomNativeTypeMarshalling(marshalInfo.NativeMarshallingType.Syntax);
 
-            if ((marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNativeStackalloc) != 0)
+            if ((marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.ManagedToNativeStackalloc) != 0)
             {
                 marshallingStrategy = new StackallocOptimizationMarshalling(marshallingStrategy);
             }
 
-            if (ManualTypeMarshallingHelper.HasFreeNativeMethod(marshalInfo.NativeMarshallingType))
+            if ((marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.FreeNativeResources) != 0)
             {
                 marshallingStrategy = new FreeNativeCleanupStrategy(marshallingStrategy);
             }
@@ -495,7 +495,7 @@ namespace Microsoft.Interop
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
-            if ((marshalInfo.MarshallingMethods & SupportedMarshallingMethods.Pinning) != 0)
+            if ((marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.ManagedTypePinning) != 0)
             {
                 return new PinnableManagedValueMarshaller(marshallingGenerator);
             }
@@ -508,53 +508,54 @@ namespace Microsoft.Interop
             // The marshalling method for this type doesn't support marshalling from native to managed,
             // but our scenario requires marshalling from native to managed.
             if ((info.RefKind == RefKind.Ref || info.RefKind == RefKind.Out || info.IsManagedReturnPosition)
-                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.NativeToManaged) == 0)
+                && (marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.NativeToManaged) == 0)
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingNativeToManagedUnsupported, marshalInfo.NativeMarshallingType.ToDisplayString())
+                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingNativeToManagedUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by value,
             // but our scenario requires marshalling from managed to native by value.
             else if (!info.IsByRef 
-                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0 
-                && (context.SingleFrameSpansNativeContext && (marshalInfo.MarshallingMethods & (SupportedMarshallingMethods.Pinning | SupportedMarshallingMethods.ManagedToNativeStackalloc)) == 0))
+                && (marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.ManagedToNative) == 0 
+                && (context.SingleFrameSpansNativeContext && (marshalInfo.MarshallingFeatures & (CustomMarshallingFeatures.ManagedTypePinning | CustomMarshallingFeatures.ManagedToNativeStackalloc)) == 0))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.ToDisplayString())
+                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
             // but our scenario requires marshalling from managed to native by reference.
             // "in" byref supports stack marshalling.
             else if (info.RefKind == RefKind.In 
-                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0 
-                && !(context.SingleFrameSpansNativeContext && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNativeStackalloc) != 0))
+                && (marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.ManagedToNative) == 0 
+                && !(context.SingleFrameSpansNativeContext && (marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.ManagedToNativeStackalloc) != 0))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.ToDisplayString())
+                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
             // but our scenario requires marshalling from managed to native by reference.
             // "ref" byref marshalling doesn't support stack marshalling
             else if (info.RefKind == RefKind.Ref
-                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0)
+                && (marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.ManagedToNative) == 0)
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.ToDisplayString())
+                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
         }
 
         private static ICustomNativeTypeMarshallingStrategy DecorateWithValuePropertyStrategy(NativeMarshallingAttributeInfo marshalInfo, ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller)
         {
-            TypeSyntax valuePropertyTypeSyntax = marshalInfo.ValuePropertyType!.AsTypeSyntax();
-            if (ManualTypeMarshallingHelper.FindGetPinnableReference(marshalInfo.NativeMarshallingType) is not null)
+            TypeSyntax valuePropertyTypeSyntax = marshalInfo.ValuePropertyType!.Syntax;
+
+            if ((marshalInfo.MarshallingFeatures & CustomMarshallingFeatures.NativeTypePinning) != 0)
             {
                 return new PinnableMarshallerTypeMarshalling(nativeTypeMarshaller, valuePropertyTypeSyntax);
             }
@@ -569,7 +570,7 @@ namespace Microsoft.Interop
             AnalyzerConfigOptions options,
             ICustomNativeTypeMarshallingStrategy marshallingStrategy)
         {
-            var elementInfo = TypePositionInfo.CreateForType(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) with { ManagedIndex = info.ManagedIndex };
+            var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
             var elementMarshaller = Create(
                 elementInfo,
                 new ContiguousCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, context),
@@ -580,7 +581,7 @@ namespace Microsoft.Interop
 
             if (isBlittable)
             {
-                marshallingStrategy = new ContiguousBlittableElementCollectionMarshalling(marshallingStrategy, collectionInfo.ElementType.AsTypeSyntax());
+                marshallingStrategy = new ContiguousBlittableElementCollectionMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax);
             }
             else
             {
@@ -605,7 +606,7 @@ namespace Microsoft.Interop
                 numElementsExpression,
                 SizeOfExpression(elementType));
 
-            if (collectionInfo.UseDefaultMarshalling && info.ManagedType is IArrayTypeSymbol { IsSZArray: true })
+            if (collectionInfo.UseDefaultMarshalling && info.ManagedType is SzArrayType)
             {
                 return new ArrayMarshaller(
                     new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: true),
@@ -616,7 +617,7 @@ namespace Microsoft.Interop
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
-            if ((collectionInfo.MarshallingMethods & SupportedMarshallingMethods.Pinning) != 0)
+            if ((collectionInfo.MarshallingFeatures & CustomMarshallingFeatures.ManagedTypePinning) != 0)
             {
                 return new PinnableManagedValueMarshaller(marshallingGenerator);
             }

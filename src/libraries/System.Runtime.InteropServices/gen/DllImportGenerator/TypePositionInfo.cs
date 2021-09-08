@@ -40,27 +40,15 @@ namespace Microsoft.Interop
     /// <summary>
     /// Positional type information involved in unmanaged/managed scenarios.
     /// </summary>
-    internal sealed record TypePositionInfo
+    internal sealed record TypePositionInfo(ManagedTypeInfo ManagedType, MarshallingInfo MarshallingAttributeInfo)
     {
         public const int UnsetIndex = int.MinValue;
         public const int ReturnIndex = UnsetIndex + 1;
 
-// We don't need the warnings around not setting the various
-// non-nullable fields/properties on this type in the constructor
-// since we always use a property initializer.
-#pragma warning disable 8618
-        private TypePositionInfo()
-        {
-            this.ManagedIndex = UnsetIndex;
-            this.NativeIndex = UnsetIndex;
-        }
-#pragma warning restore
+        public string InstanceIdentifier { get; init; } = string.Empty;
 
-        public string InstanceIdentifier { get; init; }
-        public ITypeSymbol ManagedType { get; init; }
-
-        public RefKind RefKind { get; init; }
-        public SyntaxKind RefKindSyntax { get; init; }
+        public RefKind RefKind { get; init; } = RefKind.None;
+        public SyntaxKind RefKindSyntax { get; init; } = SyntaxKind.None;
 
         public bool IsByRef => RefKind != RefKind.None;
 
@@ -69,35 +57,17 @@ namespace Microsoft.Interop
         public bool IsManagedReturnPosition { get => this.ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => this.NativeIndex == ReturnIndex; }
 
-        public int ManagedIndex { get; init; }
-        public int NativeIndex { get; init; }
-
-        public MarshallingInfo MarshallingAttributeInfo { get; init; }
+        public int ManagedIndex { get; init; } = UnsetIndex;
+        public int NativeIndex { get; init; } = UnsetIndex;
 
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, MarshallingInfo marshallingInfo, Compilation compilation)
         {
-            var typeInfo = new TypePositionInfo()
+            var typeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(paramSymbol.Type), marshallingInfo)
             {
-                ManagedType = paramSymbol.Type,
                 InstanceIdentifier = ParseToken(paramSymbol.Name).IsReservedKeyword() ? $"@{paramSymbol.Name}" : paramSymbol.Name,
                 RefKind = paramSymbol.RefKind,
                 RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
-                MarshallingAttributeInfo = marshallingInfo,
                 ByValueContentsMarshalKind = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation)
-            };
-
-            return typeInfo;
-        }
-
-        public static TypePositionInfo CreateForType(ITypeSymbol type, MarshallingInfo marshallingInfo, string identifier = "")
-        {
-            var typeInfo = new TypePositionInfo()
-            {
-                ManagedType = type,
-                InstanceIdentifier = identifier,
-                RefKind = RefKind.None,
-                RefKindSyntax = SyntaxKind.None,
-                MarshallingAttributeInfo = marshallingInfo
             };
 
             return typeInfo;

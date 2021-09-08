@@ -89,7 +89,7 @@ namespace Microsoft.Interop
                                             .WithTypeArgumentList(
                                                 TypeArgumentList(
                                                     SingletonSeparatedList(
-                                                        info.ManagedType.AsTypeSyntax())))),
+                                                        info.ManagedType.Syntax)))),
                                         ArgumentList(SingletonSeparatedList(Argument(IdentifierName(nativeIdentifier))))),
                                     LiteralExpression(SyntaxKind.NullLiteralExpression))));
                     }

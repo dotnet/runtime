@@ -12,7 +12,7 @@ namespace Microsoft.Interop
     {
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            return info.ManagedType.AsTypeSyntax();
+            return info.ManagedType.Syntax;
         }
 
         private bool TryRehydrateMarshalAsAttribute(TypePositionInfo info, out AttributeSyntax marshalAsAttribute)
@@ -87,7 +87,7 @@ namespace Microsoft.Interop
         {
             ParameterSyntax param = Parameter(Identifier(info.InstanceIdentifier))
                 .WithModifiers(TokenList(Token(info.RefKindSyntax)))
-                .WithType(info.ManagedType.AsTypeSyntax());
+                .WithType(info.ManagedType.Syntax);
 
             if (TryRehydrateMarshalAsAttribute(info, out AttributeSyntax marshalAsAttribute))
             {

@@ -11,7 +11,7 @@ namespace Microsoft.Interop
     {
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            return info.ManagedType.AsTypeSyntax();
+            return info.ManagedType.Syntax;
         }
 
         public ParameterSyntax AsParameter(TypePositionInfo info)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -19,101 +20,50 @@ namespace Microsoft.Interop
         AnalyzerConfigOptions Options,
         bool ModuleSkipLocalsInit);
 
-    internal class DllImportStub
+    internal sealed class DllImportStubContext : IEquatable<DllImportStubContext>
     {
-        private TypePositionInfo returnTypeInfo;
-        private IEnumerable<TypePositionInfo> paramsTypeInfo;
-
 // We don't need the warnings around not setting the various
 // non-nullable fields/properties on this type in the constructor
 // since we always use a property initializer.
 #pragma warning disable 8618
-        private DllImportStub()
+        private DllImportStubContext()
         {
         }
 #pragma warning restore
 
+        public ImmutableArray<TypePositionInfo> ElementTypeInformation { get; init; }
+
         public string? StubTypeNamespace { get; init; }
 
-        public IEnumerable<TypeDeclarationSyntax> StubContainingTypes { get; init; }
+        public ImmutableArray<TypeDeclarationSyntax> StubContainingTypes { get; init; }
 
-        public TypeSyntax StubReturnType { get => this.returnTypeInfo.ManagedType.AsTypeSyntax(); }
+        public TypeSyntax StubReturnType { get; init; }
 
         public IEnumerable<ParameterSyntax> StubParameters
         {
             get
             {
-                foreach (var typeinfo in paramsTypeInfo)
+                foreach (var typeInfo in ElementTypeInformation)
                 {
-                    if (typeinfo.ManagedIndex != TypePositionInfo.UnsetIndex
-                        && typeinfo.ManagedIndex != TypePositionInfo.ReturnIndex)
+                    if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
+                        && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
                     {
-                        yield return Parameter(Identifier(typeinfo.InstanceIdentifier))
-                            .WithType(typeinfo.ManagedType.AsTypeSyntax())
-                            .WithModifiers(TokenList(Token(typeinfo.RefKindSyntax)));
+                        yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
+                            .WithType(typeInfo.ManagedType.Syntax)
+                            .WithModifiers(TokenList(Token(typeInfo.RefKindSyntax)));
                     }
                 }
             }
         }
 
-        public BlockSyntax StubCode { get; init; }
+        public ImmutableArray<AttributeListSyntax> AdditionalAttributes { get; init; }
 
-        public AttributeListSyntax[] AdditionalAttributes { get; init; }
-
-        /// <summary>
-        /// Flags used to indicate members on GeneratedDllImport attribute.
-        /// </summary>
-        [Flags]
-        public enum DllImportMember
-        {
-            None = 0,
-            BestFitMapping = 1 << 0,
-            CallingConvention = 1 << 1,
-            CharSet = 1 << 2,
-            EntryPoint = 1 << 3,
-            ExactSpelling = 1 << 4,
-            PreserveSig = 1 << 5,
-            SetLastError = 1 << 6,
-            ThrowOnUnmappableChar = 1 << 7,
-            All = ~None
-        }
-
-        /// <summary>
-        /// GeneratedDllImportAttribute data
-        /// </summary>
-        /// <remarks>
-        /// The names of these members map directly to those on the
-        /// DllImportAttribute and should not be changed.
-        /// </remarks>
-        public class GeneratedDllImportData
-        {
-            public string ModuleName { get; set; } = null!;
-
-            /// <summary>
-            /// Value set by the user on the original declaration.
-            /// </summary>
-            public DllImportMember IsUserDefined = DllImportMember.None;
-
-            // Default values for the below fields are based on the
-            // documented semanatics of DllImportAttribute:
-            //   - https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
-            public bool BestFitMapping { get; set; } = true;
-            public CallingConvention CallingConvention { get; set; } = CallingConvention.Winapi;
-            public CharSet CharSet { get; set; } = CharSet.Ansi;
-            public string EntryPoint { get; set; } = null!;
-            public bool ExactSpelling { get; set; } = false; // VB has different and unusual default behavior here.
-            public bool PreserveSig { get; set; } = true;
-            public bool SetLastError { get; set; } = false;
-            public bool ThrowOnUnmappableChar { get; set; } = false;
-        }
-
-        public static DllImportStub Create(
+        public static DllImportStubContext Create(
             IMethodSymbol method,
             GeneratedDllImportData dllImportData,
             StubEnvironment env,
             GeneratorDiagnostics diagnostics,
-            List<AttributeSyntax> forwardedAttributes,
-            CancellationToken token = default)
+            CancellationToken token)
         {
             // Cancel early if requested
             token.ThrowIfCancellationRequested();
@@ -127,7 +77,7 @@ namespace Microsoft.Interop
             }
 
             // Determine containing type(s)
-            var containingTypes = new List<TypeDeclarationSyntax>();
+            var containingTypes = ImmutableArray.CreateBuilder<TypeDeclarationSyntax>();
             INamedTypeSymbol currType = method.ContainingType;
             while (!(currType is null))
             {
@@ -145,6 +95,36 @@ namespace Microsoft.Interop
                 currType = currType.ContainingType;
             }
 
+            var typeInfos = GenerateTypeInformation(method, dllImportData, diagnostics, env);
+
+            var additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
+
+            // Define additional attributes for the stub definition.
+            if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
+            {
+                additionalAttrs.Add(
+                    AttributeList(
+                        SeparatedList(new[]
+                        {
+                            // Adding the skip locals init indiscriminately since the source generator is
+                            // targeted at non-blittable method signatures which typically will contain locals
+                            // in the generated code.
+                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute))
+                        })));
+            }
+
+            return new DllImportStubContext()
+            {
+                StubReturnType = method.ReturnType.AsTypeSyntax(),
+                ElementTypeInformation = typeInfos,
+                StubTypeNamespace = stubTypeNamespace,
+                StubContainingTypes = containingTypes.ToImmutable(),
+                AdditionalAttributes = additionalAttrs.ToImmutable(),
+            };
+        }
+
+        private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(IMethodSymbol method, GeneratedDllImportData dllImportData, GeneratorDiagnostics diagnostics, StubEnvironment env)
+        {
             // Compute the current default string encoding value.
             var defaultEncoding = CharEncoding.Undefined;
             if (dllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
@@ -163,21 +143,22 @@ namespace Microsoft.Interop
             var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 
             // Determine parameter and return types
-            var paramsTypeInfo = new List<TypePositionInfo>();
+            var typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 var param = method.Parameters[i];
                 MarshallingInfo marshallingInfo = marshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
-                typeInfo = typeInfo with 
+                typeInfo = typeInfo with
                 {
                     ManagedIndex = i,
-                    NativeIndex = paramsTypeInfo.Count
+                    NativeIndex = typeInfos.Count
                 };
-                paramsTypeInfo.Add(typeInfo);
+                typeInfos.Add(typeInfo);
+
             }
 
-            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, marshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
+            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
@@ -190,7 +171,7 @@ namespace Microsoft.Interop
             if (!dllImportData.PreserveSig && !env.Options.GenerateForwarders())
             {
                 // Create type info for native HRESULT return
-                retTypeInfo = TypePositionInfo.CreateForType(env.Compilation.GetSpecialType(SpecialType.System_Int32), NoMarshallingInfo.Instance);
+                retTypeInfo = new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance);
                 retTypeInfo = retTypeInfo with
                 {
                     NativeIndex = TypePositionInfo.ReturnIndex
@@ -206,41 +187,34 @@ namespace Microsoft.Interop
                         RefKind = RefKind.Out,
                         RefKindSyntax = SyntaxKind.OutKeyword,
                         ManagedIndex = TypePositionInfo.ReturnIndex,
-                        NativeIndex = paramsTypeInfo.Count
+                        NativeIndex = typeInfos.Count
                     };
-                    paramsTypeInfo.Add(nativeOutInfo);
+                    typeInfos.Add(nativeOutInfo);
                 }
             }
+            typeInfos.Add(retTypeInfo);
 
-            // Generate stub code
-            var stubGenerator = new StubCodeGenerator(method, dllImportData, paramsTypeInfo, retTypeInfo, diagnostics, env.Options);
-            var code = stubGenerator.GenerateSyntax(forwardedAttributes: forwardedAttributes.Count != 0 ? AttributeList(SeparatedList(forwardedAttributes)) : null);
+            return typeInfos.ToImmutable();
+        }
 
-            var additionalAttrs = new List<AttributeListSyntax>();
+        public override bool Equals(object obj)
+        {
+            return obj is DllImportStubContext other && Equals(other);
+        }
 
-            // Define additional attributes for the stub definition.
-            if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
-            {
-                additionalAttrs.Add(
-                    AttributeList(
-                        SeparatedList(new []
-                        {
-                            // Adding the skip locals init indiscriminately since the source generator is
-                            // targeted at non-blittable method signatures which typically will contain locals
-                            // in the generated code.
-                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute))
-                        })));
-            }
+        public bool Equals(DllImportStubContext other)
+        {
+            return other is not null
+                && StubTypeNamespace == other.StubTypeNamespace
+                && ElementTypeInformation.SequenceEqual(other.ElementTypeInformation)
+                && StubContainingTypes.SequenceEqual(other.StubContainingTypes, (IEqualityComparer<TypeDeclarationSyntax>)new SyntaxEquivalentComparer())
+                && StubReturnType.IsEquivalentTo(other.StubReturnType)
+                && AdditionalAttributes.SequenceEqual(other.AdditionalAttributes, (IEqualityComparer<AttributeListSyntax>)new SyntaxEquivalentComparer());
+        }
 
-            return new DllImportStub()
-            {
-                returnTypeInfo = managedRetTypeInfo,
-                paramsTypeInfo = paramsTypeInfo,
-                StubTypeNamespace = stubTypeNamespace,
-                StubContainingTypes = containingTypes,
-                StubCode = code,
-                AdditionalAttributes = additionalAttrs.ToArray(),
-            };
+        public override int GetHashCode()
+        {
+            throw new UnreachableException();
         }
 
         private static bool MethodIsSkipLocalsInit(StubEnvironment env, IMethodSymbol method)

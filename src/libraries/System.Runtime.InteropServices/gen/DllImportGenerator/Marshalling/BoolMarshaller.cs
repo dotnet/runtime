@@ -25,7 +25,7 @@ namespace Microsoft.Interop
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            Debug.Assert(info.ManagedType.SpecialType == SpecialType.System_Boolean);
+            Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Boolean));
             return _nativeType;
         }
 

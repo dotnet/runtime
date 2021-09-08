@@ -163,9 +163,9 @@ namespace Microsoft.Interop
             return SyntaxFactory.ParseTypeName(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
         }
 
-        public static bool IsIntegralType(this ITypeSymbol type)
+        public static bool IsIntegralType(this SpecialType type)
         {
-            return type.SpecialType switch
+            return type switch
             {
                 SpecialType.System_SByte
                 or SpecialType.System_Byte
