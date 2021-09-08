@@ -920,5 +920,53 @@ class C
 
 			return VerifyRequiresUnreferencedCodeAnalyzer (source);
 		}
+
+		[Fact]
+		public Task TestMakeGenericMethodUsage ()
+		{
+			var source = @"
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
+class C
+{
+	static void M1 (MethodInfo methodInfo)
+	{
+		methodInfo.MakeGenericMethod (typeof (C));
+	}
+
+	[RequiresUnreferencedCode (""Message from RUC"")]
+	static void M2 (MethodInfo methodInfo)
+	{
+		methodInfo.MakeGenericMethod (typeof (C));
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+		}
+
+		[Fact]
+		public Task TestMakeGenericTypeUsage ()
+		{
+			var source = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+class C
+{
+	static void M1 (Type t)
+	{
+		typeof (Nullable<>).MakeGenericType (typeof (C));
+	}
+
+	[RequiresUnreferencedCode (""Message from RUC"")]
+	static void M2 (Type t)
+	{
+		typeof (Nullable<>).MakeGenericType (typeof (C));
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+		}
 	}
 }

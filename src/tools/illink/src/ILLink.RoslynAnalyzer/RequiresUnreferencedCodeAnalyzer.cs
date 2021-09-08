@@ -24,6 +24,8 @@ namespace ILLink.RoslynAnalyzer
 		static readonly DiagnosticDescriptor s_dynamicTypeInvocationRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode,
 			new LocalizableResourceString (nameof (SharedStrings.DynamicTypeInvocationTitle), SharedStrings.ResourceManager, typeof (SharedStrings)),
 			new LocalizableResourceString (nameof (SharedStrings.DynamicTypeInvocationMessage), SharedStrings.ResourceManager, typeof (SharedStrings)));
+		static readonly DiagnosticDescriptor s_makeGenericTypeRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.MakeGenericType);
+		static readonly DiagnosticDescriptor s_makeGenericMethodRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.MakeGenericMethod);
 
 		static readonly Action<OperationAnalysisContext> s_dynamicTypeInvocation = operationContext => {
 			if (FindContainingSymbol (operationContext, DiagnosticTargets.All) is ISymbol containingSymbol &&
@@ -85,7 +87,7 @@ namespace ILLink.RoslynAnalyzer
 		};
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-			ImmutableArray.Create (s_dynamicTypeInvocationRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch);
+			ImmutableArray.Create (s_dynamicTypeInvocationRule, s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch);
 
 		private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
@@ -100,8 +102,37 @@ namespace ILLink.RoslynAnalyzer
 		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation) =>
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer, compilation);
 
+		protected override ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation)
+		{
+			var incompatibleMembers = ImmutableArray.CreateBuilder<ISymbol> ();
+			var typeType = compilation.GetTypeByMetadataName ("System.Type");
+			if (typeType != null) {
+				incompatibleMembers.AddRange (typeType.GetMembers ("MakeGenericType").OfType<IMethodSymbol> ());
+			}
+
+			var methodInfoType = compilation.GetTypeByMetadataName ("System.Reflection.MethodInfo");
+			if (methodInfoType != null) {
+				incompatibleMembers.AddRange (methodInfoType.GetMembers ("MakeGenericMethod").OfType<IMethodSymbol> ());
+			}
+
+			return incompatibleMembers.ToImmutable ();
+		}
+
+		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> specialIncompatibleMembers, ISymbol member)
+		{
+			if (member is IMethodSymbol method && ImmutableArrayOperations.Contains (specialIncompatibleMembers, member, SymbolEqualityComparer.Default) &&
+				(method.Name == "MakeGenericMethod" || method.Name == "MakeGenericType")) {
+				// These two RUC-annotated APIs are intrinsically handled by the trimmer, which will not produce any
+				// RUC warning related to them. For unrecognized reflection patterns realted to generic type/method
+				// creation IL2055/IL2060 should be used instead.
+				return true;
+			}
+
+			return false;
+		}
+
 		private protected override ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions =>
-			ImmutableArray.Create ((s_dynamicTypeInvocation, new OperationKind[] { OperationKind.DynamicInvocation }));
+				ImmutableArray.Create ((s_dynamicTypeInvocation, new OperationKind[] { OperationKind.DynamicInvocation }));
 
 		private protected override ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions =>
 			ImmutableArray.Create ((s_constructorConstraint, new SyntaxKind[] { SyntaxKind.GenericName }));
