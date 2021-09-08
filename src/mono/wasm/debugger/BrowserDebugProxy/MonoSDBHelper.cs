@@ -2212,6 +2212,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         public async Task<bool> EnableExceptions(SessionId sessionId, PauseOnExceptionsKind state, CancellationToken token)
         {
+            if (state == PauseOnExceptionsKind.Unset)
+            {
+                logger.LogDebug($"Trying to setPauseOnExceptions using status Unset");
+                return false;
+            }
+
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write((byte)EventKind.Exception);
