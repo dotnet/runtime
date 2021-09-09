@@ -27,13 +27,13 @@ namespace Microsoft.Extensions.Hosting
         /// Triggered when the application host is ready to start the service.
         /// </summary>
         /// <param name="cancellationToken">Indicates that the start process has been aborted.</param>
-        public virtual Task StartAsync(CancellationToken cancellationToken)
+        public virtual async Task StartAsync(CancellationToken cancellationToken)
         {
             // Create linked token to allow cancelling executing task from provided token
             _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             // Store the task we're executing
-            _executingTask = ExecuteAsync(_stoppingCts.Token);
+            _executingTask = await ExecuteAsync(_stoppingCts.Token);
 
             // If the task is completed then return it, this will bubble cancellation and failure to the caller
             if (_executingTask.IsCompleted)
