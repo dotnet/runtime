@@ -3438,7 +3438,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         lclVar->AsLclFld()->SetLclOffs(0);
 
         // We are returning as a primitive type and the lcl is of struct type.
-        assert(!varTypeIsStruct(comp->info.compRetNativeType));
+        assert(comp->info.compRetNativeType != TYP_STRUCT);
         assert((genTypeSize(comp->info.compRetNativeType) == genTypeSize(ret)) ||
             (varTypeIsIntegral(ret) && varTypeIsIntegral(comp->info.compRetNativeType) && (genTypeSize(comp->info.compRetNativeType) <= genTypeSize(ret))));
         // If the actual return type requires normalization, then make sure we
