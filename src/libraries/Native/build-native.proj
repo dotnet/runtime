@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RepositoryEngineeringDir)/native/GenerateVersionFiles.proj" />
     <ProjectReference Include="native-binplace.proj" />
   </ItemGroup>
 
