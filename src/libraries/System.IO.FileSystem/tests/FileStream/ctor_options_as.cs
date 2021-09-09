@@ -120,12 +120,17 @@ namespace System.IO.Tests
         {
             const int initialSize = 10;
             string filePath = GetPathToNonExistingFile();
-            File.WriteAllBytes(filePath, new byte[initialSize]);
+            byte[] initialData = RandomNumberGenerator.GetBytes(initialSize);
+            File.WriteAllBytes(filePath, initialData);
 
             using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
             {
                 Assert.Equal(Math.Max(initialSize, preallocationSize), fs.Length); // it was not shrinked
                 Assert.Equal(0, fs.Position);
+
+                byte[] actualContent = new byte[initialData.Length];
+                Assert.Equal(actualContent.Length, fs.Read(actualContent));
+                AssertExtensions.SequenceEqual(initialData, actualContent); // the initial content was not changed
 
                 AssertFileContentHasBeenZeroed(initialSize, (int)fs.Length, fs);
             }
@@ -210,7 +215,7 @@ namespace System.IO.Tests
         {
             int expectedByteCount = to - from;
             int extraByteCount = 1;
-            byte[] content = RandomNumberGenerator.GetBytes(expectedByteCount + extraByteCount);
+            byte[] content = Enumerable.Repeat((byte)1, expectedByteCount + extraByteCount).ToArray();
             fs.Position = from;
             Assert.Equal(expectedByteCount, fs.Read(content));
             Assert.All(content.SkipLast(extraByteCount), @byte => Assert.Equal(0, @byte));
