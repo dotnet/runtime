@@ -4158,6 +4158,7 @@ PALIMPORT double __cdecl cos(double);
 PALIMPORT double __cdecl cosh(double);
 PALIMPORT double __cdecl exp(double);
 PALIMPORT double __cdecl fabs(double);
+PALIMPORT double __cdecl trunc(double);
 PALIMPORT double __cdecl floor(double);
 PALIMPORT double __cdecl fmod(double, double);
 PALIMPORT double __cdecl fma(double, double, double) MATH_THROW_DECL;
