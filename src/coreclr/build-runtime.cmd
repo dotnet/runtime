@@ -304,13 +304,7 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-REM We will copy our fallback version files to the expected directory if no one generated
-REM and version files previously.
-for /r "%__ProjectDir%\versionfallback" %%a in (*) do (
-    if not exist "%__RootBinDir%\obj\%%~nxa" (
-        copy "%%a" "%__RootBinDir%\obj"
-    )
-)
+call "%__RepoRootDir%\eng\native\versionfallback\copy_version_files.cmd"
 
 REM =========================================================================================
 REM ===

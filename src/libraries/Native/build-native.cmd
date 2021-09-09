@@ -49,6 +49,8 @@ if NOT [%errorlevel%] == [0] goto :Failure
 echo Commencing build of native components
 echo.
 
+call "%__engNativeDir%\versionfallback\copy_version_files.cmd"
+
 :: cmake requires forward slashes in paths
 set __cmakeRepoRoot=%__repoRoot:\=/%
 set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"

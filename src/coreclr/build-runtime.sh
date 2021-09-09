@@ -66,12 +66,6 @@ build_cross_architecture_components()
     export CROSSCOMPILE
 }
 
-copy_version_files()
-{
-    # Copy dummy version files if version files haven't already been generated
-    cp -r -n "$__ProjectRoot/versionfallback/"* "$__ArtifactsObjDir/"
-}
-
 handle_arguments_local() {
     case "$1" in
 
