@@ -11574,7 +11574,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         break;
 
         case GT_PHYSREG:
-            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeUsesFloatReg(tree)));
+            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg));
             break;
 
         case GT_IL_OFFSET:

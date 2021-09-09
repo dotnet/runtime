@@ -29,6 +29,7 @@
 //    In the DBI implementation, this can directly call delete (assuming the IAllocator::Free
 //    directly called new).
 template<class T> void DeleteDbiMemory(T *p);
+template<class T> void DeleteDbiArrayMemory(T *p, int count);
 // Need a class to serve as a tag that we can use to overload New/Delete.
 class forDbiWorker {};
 extern forDbiWorker forDbi;

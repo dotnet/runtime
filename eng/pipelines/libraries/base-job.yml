@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''
   crossBuild: false
   crossrootfsDir: ''
-  framework: 'net6.0'
+  framework: 'net7.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''
