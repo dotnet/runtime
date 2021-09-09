@@ -506,13 +506,13 @@ namespace System.IO
                     if (!isRelative)
                     {
                         // Absolute target is in NT format and we need to clean it up before return it to the user.
-                        if (targetPath.StartsWith(PathInternal.UncNTPathPrefix))
+                        if (targetPath.StartsWith(PathInternal.UncNTPathPrefix.AsSpan()))
                         {
                             // We need to prepend the Win32 equivalent of UNC NT prefix.
-                            return Path.Join(PathInternal.UncPathPrefix, targetPath.Slice(PathInternal.UncNTPathPrefix.Length)).ToString();
+                            return Path.Join(PathInternal.UncPathPrefix.AsSpan(), targetPath.Slice(PathInternal.UncNTPathPrefix.Length)).ToString();
                         }
 
-                        Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix));
+                        Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix.AsSpan()));
                         return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
                     }
                     else if (returnFullPath)
@@ -536,7 +536,7 @@ namespace System.IO
 
                     // Unlike symbolic links, mount point paths cannot be relative.
                     Debug.Assert(!PathInternal.IsPartiallyQualified(targetPath));
-                    Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix));
+                    Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix.AsSpan()));
                     return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
                 }
 
