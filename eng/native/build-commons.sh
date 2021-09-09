@@ -49,12 +49,12 @@ check_prereqs()
 copy_version_files()
 {
     # Copy dummy version files if version files haven't already been generated
-    cp -r -n "$__RepoRootDir/eng/native/versionfallback/"* "$__RepoRootDir/artifacts/obj/"
+    cp -r -n "$__RepoRootDir/eng/native/version/"* "$__RepoRootDir/artifacts/obj/"
 }
 
 build_native()
 {
-    eval "$__RepoRootDir/eng/native/versionfallback/copy_version_files.sh"
+    eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
 
     targetOS="$1"
     platformArch="$2"

@@ -299,7 +299,7 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-call "%__RepoRootDir%\eng\native\versionfallback\copy_version_files.cmd"
+call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
 
 REM =========================================================================================
 REM ===

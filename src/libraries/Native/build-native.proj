@@ -3,11 +3,13 @@
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(RepositoryEngineeringDir)/native/GenerateVersionFiles.proj" />
     <ProjectReference Include="native-binplace.proj" />
   </ItemGroup>
 
