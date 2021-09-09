@@ -122,11 +122,18 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- um handle non-aot case too -->
     <ItemGroup Condition="@(WasmNativeAsset->Count()) != 0">
+      <_DotNetJsItem Remove="@(_DotNetJsItem)" />
       <_DotNetJsItem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">
         <RelativePath>_framework/$(_BlazorDotnetJsFileName)</RelativePath>
         <AssetType>native</AssetType>
         <CopyLocal>true</CopyLocal>
       </_DotNetJsItem>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_DotnetJsStaticWebAssetCandidate Remove="@(_DotnetJsStaticWebAssetCandidate)" />
+      <_DotnetJsCopyCandidates Remove="@(_DotnetJsCopyCandidates)" />
+
     </ItemGroup>
 
     <DefineStaticWebAssets Condition="'@(_DotNetJsItem->Count())' != '0'"
