@@ -114,7 +114,6 @@ internal static partial class Interop
         switch (errorInfo.Error)
         {
             case Error.ENOENT:
-            case Error.ENOTDIR:
                 if (isDirectory)
                 {
                     return !string.IsNullOrEmpty(path) ?
