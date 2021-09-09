@@ -48,13 +48,13 @@ public class CleanTests : NativeRebuildTestsBase
         AssertEmptyOrNonExistantDirectory(relinkDir);
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
 
-    [Theory]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
