@@ -139,6 +139,11 @@
           AfterTargets="Build"
           DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones">
 
+    <ItemGroup>
+      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
+                                  $(ICULibDir)/libicui18n.a" />
+      <ICULibFiles Include="$(ICULibDir)/*.dat" />
+    </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1</CMakeConfigurationEmccFlags>
@@ -154,6 +159,10 @@
 
     <Copy SourceFiles="$(PInvokeTableFile)"
           DestinationFolder="$(MonoObjDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(ICULibFiles);@(ICULibNativeFiles)"
+          DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" />
