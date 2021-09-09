@@ -492,41 +492,52 @@ namespace System.IO
                 success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.SymbolicLinkReparseBuffer rbSymlink);
                 Debug.Assert(success);
 
-                // We use PrintName(Offset|Length) instead of SubstituteName(Offset|Length) since is more friendly to the end-user,                // however, there's no guarantee that the NT prefix doesn't show up.
-
-                // PrintName can return a NT path if the link was created explicitly targeting a file/folder in such way.
-                //   e.g: mklink /D linkName \??\C:\path\to\target.
+                // We always use SubstituteName(Offset|Length) instead of PrintName(Offset|Length),
+                // the latter is just the display name of the reparse point and it can show something completely unrelated to the target.
 
                 if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK)
                 {
-                    int printNameOffset = sizeof(Interop.Kernel32.SymbolicLinkReparseBuffer) + rbSymlink.PrintNameOffset;
-                    int printNameLength = rbSymlink.PrintNameLength;
+                    int offset = sizeof(Interop.Kernel32.SymbolicLinkReparseBuffer) + rbSymlink.SubstituteNameOffset;
+                    int length = rbSymlink.SubstituteNameLength;
 
-                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameOffset, printNameLength));
+                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(offset, length));
 
-                    if (returnFullPath &&
-                        (rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0 &&
-                        !targetPath.StartsWith(PathInternal.NTPathPrefix.AsSpan())) // Edge-case: SYMLINK_FLAG_RELATIVE is incorrectly set when the target starts with \??\.
+                    bool isRelative = (rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0;
+                    if (!isRelative)
                     {
-                        // Target path is relative and is for ResolveLinkTarget(), we need to append the link directory.
-                        return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
-                    }
+                        // Absolute target is in NT format and we need to clean it up before return it to the user.
+                        if (targetPath.StartsWith(PathInternal.UncNTPathPrefix))
+                        {
+                            // We need to prepend the Win32 equivalent of UNC NT prefix.
+                            return Path.Join(PathInternal.UncPathPrefix, targetPath.Slice(PathInternal.UncNTPathPrefix.Length)).ToString();
+                        }
 
-                    return targetPath.ToString();
+                        Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix));
+                        return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
+                    }
+                    else if (returnFullPath)
+                    {
+                        return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath).ToString();
+                    }
+                    else
+                    {
+                        return targetPath.ToString();
+                    }
                 }
                 else if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                 {
                     success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.MountPointReparseBuffer rbMountPoint);
                     Debug.Assert(success);
 
-                    int printNameOffset = sizeof(Interop.Kernel32.MountPointReparseBuffer) + rbMountPoint.PrintNameOffset;
-                    int printNameLength = rbMountPoint.PrintNameLength;
+                    int offset = sizeof(Interop.Kernel32.MountPointReparseBuffer) + rbMountPoint.SubstituteNameOffset;
+                    int length = rbMountPoint.SubstituteNameLength;
 
-                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameOffset, printNameLength));
+                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(offset, length));
 
-                    // Unlike symlinks, mount point paths cannot be relative
+                    // Unlike symbolic links, mount point paths cannot be relative.
                     Debug.Assert(!PathInternal.IsPartiallyQualified(targetPath));
-                    return targetPath.ToString();
+                    Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix));
+                    return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
                 }
 
                 return null;
