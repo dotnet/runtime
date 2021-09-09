@@ -49,7 +49,9 @@
              AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
              Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
 
-  <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'">
+  <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'"
+                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json" 
+                                       Outputs="$(PublishDir)runtimeconfig.bin">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>
