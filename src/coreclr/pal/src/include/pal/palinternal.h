@@ -213,6 +213,7 @@ function_name() to call the system's implementation
 #define cos DUMMY_cos
 #define cosh DUMMY_cosh
 #define fabs DUMMY_fabs
+#define trunc DUMMY_trunc
 #define floor DUMMY_floor
 #define fmod DUMMY_fmod
 #define modf DUMMY_modf
@@ -449,6 +450,7 @@ function_name() to call the system's implementation
 #undef cosh
 #undef exp
 #undef fabs
+#undef trunc
 #undef floor
 #undef fmod
 #undef fma
