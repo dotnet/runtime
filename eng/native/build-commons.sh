@@ -54,7 +54,7 @@ copy_version_files()
 
 build_native()
 {
-    "$__RepoRootDir/eng/native/versionfallback/copy_version_files.sh"
+    eval "$__RepoRootDir/eng/native/versionfallback/copy_version_files.sh"
 
     targetOS="$1"
     platformArch="$2"
