@@ -2604,26 +2604,13 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("it is address exposed\n");
             assert(varDsc->IsAddressExposed());
             break;
-        case DoNotEnregisterReason::NotRegSizeStruct:
-            JITDUMP("struct size does not match reg size\n");
-            assert(varTypeIsStruct(varDsc));
-            break;
         case DoNotEnregisterReason::DontEnregStructs:
             JITDUMP("struct enregistration is disabled\n");
             assert(varTypeIsStruct(varDsc));
             break;
-        case DoNotEnregisterReason::IsStructArg:
-            if (varTypeIsStruct(varDsc))
-            {
-                JITDUMP("it is a struct arg\n");
-            }
-            else
-            {
-                JITDUMP("it is reinterpreted as a struct arg\n");
-            }
-            break;
-        case DoNotEnregisterReason::BlockOp:
-            JITDUMP("written/read in a block op\n");
+        case DoNotEnregisterReason::NotRegSizeStruct:
+            JITDUMP("struct size does not match reg size\n");
+            assert(varTypeIsStruct(varDsc));
             break;
         case DoNotEnregisterReason::LocalField:
             JITDUMP("was accessed as a local field\n");
@@ -2635,6 +2622,18 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("live in/out of a handler\n");
             varDsc->lvLiveInOutOfHndlr = 1;
             break;
+        case DoNotEnregisterReason::BlockOp:
+            JITDUMP("written/read in a block op\n");
+            break;
+        case DoNotEnregisterReason::IsStructArg:
+            if (varTypeIsStruct(varDsc))
+            {
+                JITDUMP("it is a struct arg\n");
+            }
+            else
+            {
+                JITDUMP("it is reinterpreted as a struct arg\n");
+            }
             break;
         case DoNotEnregisterReason::DepField:
             JITDUMP("field of a dependently promoted struct\n");
@@ -2648,15 +2647,15 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("it is a GC Ref and we are compiling MinOpts\n");
             assert(!JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()));
             break;
+#if !defined(TARGET_64BIT)
+        case DoNotEnregisterReason::LongParamField:
+            JITDUMP("it is a decomposed field of a long parameter\n");
+            break;
+#endif
 #ifdef JIT32_GCENCODER
         case DoNotEnregisterReason::PinningRef:
             JITDUMP("pinning ref\n");
             assert(varDsc->lvPinned);
-            break;
-#endif
-#if !defined(TARGET_64BIT)
-        case DoNotEnregisterReason::LongParamField:
-            JITDUMP("it is a decomposed field of a long parameter\n");
             break;
 #endif
         case DoNotEnregisterReason::LclAddrNode:

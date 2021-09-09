@@ -9721,17 +9721,11 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::AddrExposed:
                 m_addrExposed++;
                 break;
-            case DoNotEnregisterReason::NotRegSizeStruct:
-                m_notRegSizeStruct++;
-                break;
             case DoNotEnregisterReason::DontEnregStructs:
                 m_dontEnregStructs++;
                 break;
-            case DoNotEnregisterReason::IsStructArg:
-                m_structArg++;
-                break;
-            case DoNotEnregisterReason::BlockOp:
-                m_blockOp++;
+            case DoNotEnregisterReason::NotRegSizeStruct:
+                m_notRegSizeStruct++;
                 break;
             case DoNotEnregisterReason::LocalField:
                 m_localField++;
@@ -9742,6 +9736,12 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::LiveInOutOfHandler:
                 m_liveInOutHndlr++;
                 break;
+            case DoNotEnregisterReason::BlockOp:
+                m_blockOp++;
+                break;
+            case DoNotEnregisterReason::IsStructArg:
+                m_structArg++;
+                break;
             case DoNotEnregisterReason::DepField:
                 m_depField++;
                 break;
@@ -9751,14 +9751,14 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::MinOptsGC:
                 m_minOptsGC++;
                 break;
-#ifdef JIT32_GCENCODER
-            case DoNotEnregisterReason::PinningRef:
-                m_PinningRef++;
-                break;
-#endif
 #if !defined(TARGET_64BIT)
             case DoNotEnregisterReason::LongParamField:
                 m_longParamField++;
+                break;
+#endif
+#ifdef JIT32_GCENCODER
+            case DoNotEnregisterReason::PinningRef:
+                m_PinningRef++;
                 break;
 #endif
             case DoNotEnregisterReason::LclAddrNode:
@@ -9883,24 +9883,22 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     }
 
     PRINT_STATS(m_addrExposed, notEnreg);
-    PRINT_STATS(m_notRegSizeStruct, notEnreg);
     PRINT_STATS(m_dontEnregStructs, notEnreg);
-    PRINT_STATS(m_structArg, notEnreg);
-    PRINT_STATS(m_blockOp, notEnreg);
-    PRINT_STATS(m_addrExposed, notEnreg);
+    PRINT_STATS(m_notRegSizeStruct, notEnreg);
     PRINT_STATS(m_localField, notEnreg);
     PRINT_STATS(m_VMNeedsStackAddr, notEnreg);
     PRINT_STATS(m_liveInOutHndlr, notEnreg);
+    PRINT_STATS(m_blockOp, notEnreg);
+    PRINT_STATS(m_structArg, notEnreg);
     PRINT_STATS(m_depField, notEnreg);
     PRINT_STATS(m_noRegVars, notEnreg);
     PRINT_STATS(m_minOptsGC, notEnreg);
-
-#ifdef JIT32_GCENCODER
-    PRINT_STATS(m_PinningRef, notEnreg);
-#endif // JIT32_GCENCODER
 #if !defined(TARGET_64BIT)
     PRINT_STATS(m_longParamField, notEnreg);
 #endif // !TARGET_64BIT
+#ifdef JIT32_GCENCODER
+    PRINT_STATS(m_PinningRef, notEnreg);
+#endif // JIT32_GCENCODER
     PRINT_STATS(m_lclAddrNode, notEnreg);
     PRINT_STATS(m_castTakesAddr, notEnreg);
     PRINT_STATS(m_storeBlkSrc, notEnreg);
@@ -9918,10 +9916,10 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_parentExposed, m_addrExposed);
     PRINT_STATS(m_tooConservative, m_addrExposed);
     PRINT_STATS(m_escapeAddress, m_addrExposed);
+    PRINT_STATS(m_wideIndir, m_addrExposed);
     PRINT_STATS(m_osrExposed, m_addrExposed);
     PRINT_STATS(m_stressLclFld, m_addrExposed);
     PRINT_STATS(m_copyFldByFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
-    PRINT_STATS(m_wideIndir, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS
