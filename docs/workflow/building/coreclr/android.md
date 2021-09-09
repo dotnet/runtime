@@ -29,7 +29,7 @@ When cross compiling, you need to set both the `CONFIG_DIR` and `ROOTFS_DIR` var
 To compile for arm64, run:
 
 ```
-CONFIG_DIR=`realpath cross/android/arm64` ROOTFS_DIR=`realpath cross/android-rootfs/toolchain/arm64/sysroot` ./build.sh cross arm64 skipgenerateversion skipmscorlib cmakeargs -DENABLE_LLDBPLUGIN=0
+CONFIG_DIR=`realpath cross/android/arm64` ROOTFS_DIR=`realpath cross/android-rootfs/toolchain/arm64/sysroot` ./build.sh cross arm64 cmakeargs -DENABLE_LLDBPLUGIN=0
 ```
 
 The resulting binaries will be found in `artifacts/bin/coreclr/Linux.BuildArch.BuildType/`

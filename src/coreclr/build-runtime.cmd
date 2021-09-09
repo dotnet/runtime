@@ -64,7 +64,6 @@ set __UnprocessedBuildArgs=
 set __BuildNative=1
 set __BuildCrossArchNative=0
 set __SkipCrossArchNative=0
-set __SkipGenerateVersion=0
 set __RestoreOptData=1
 set __CrossArch=
 set __CrossArch2=
@@ -137,8 +136,6 @@ if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "-skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_Loop)
-if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&shift&goto Arg_Loop)
-if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&shift&goto Arg_Loop)
 REM -ninja is a no-op option since Ninja is now the default generator on Windows.
 if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
@@ -153,8 +150,6 @@ if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&s
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
 if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_Loop)
-if /i "%1" == "skipgenerateversion" (set __SkipGenerateVersion=1&shift&goto Arg_Loop)
-if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 
@@ -752,8 +747,6 @@ echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).
 echo -skipcrossarchnative: skip building cross-architecture native components ^(default: components are built^).
-echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
-echo -skipgenerateversion: skip generating the native version headers.
 echo.
 echo Examples:
 echo     build-runtime

@@ -14,26 +14,6 @@ initTargetDistroRid()
     initDistroRidGlobal "$__TargetOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
 }
 
-isMSBuildOnNETCoreSupported()
-{
-    __IsMSBuildOnNETCoreSupported="$__msbuildonunsupportedplatform"
-
-    if [[ "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
-        return
-    fi
-
-    if [[ "$__SkipManaged" == 1 ]]; then
-        __IsMSBuildOnNETCoreSupported=0
-        return
-    fi
-
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" || "$__HostArch" == "s390x" ) ]]; then
-        __IsMSBuildOnNETCoreSupported=1
-    elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
-        __IsMSBuildOnNETCoreSupported=1
-    fi
-}
-
 setup_dirs()
 {
     echo Setting up directories for build
@@ -208,7 +188,6 @@ usage()
     echo "        will use ROOTFS_DIR environment variable if set."
     echo "-gcc: optional argument to build using gcc in PATH."
     echo "-gccx.y: optional argument to build using gcc version x.y."
-    echo "-msbuildonunsupportedplatform: build managed binaries even if distro is not officially supported."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
@@ -232,8 +211,6 @@ __HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
-
-__msbuildonunsupportedplatform=0
 
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
@@ -353,10 +330,6 @@ while :; do
             __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
             ;;
 
-        msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
-            __msbuildonunsupportedplatform=1
-            ;;
-
         ninja|-ninja)
             __UseNinja=1
             ;;
@@ -467,6 +440,3 @@ fi
 
 # init the target distro name
 initTargetDistroRid
-
-# Init if MSBuild for .NET Core is supported for this platform
-isMSBuildOnNETCoreSupported

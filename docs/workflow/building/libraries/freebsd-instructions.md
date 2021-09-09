@@ -78,8 +78,8 @@ index 81b8c7b..bb26868 100644
 +++ b/repos/coreclr.proj
 @@ -5,6 +5,7 @@
      <BuildArguments>$(Platform) $(Configuration) skiptests</BuildArguments>
-     <BuildArguments Condition="'$(SkipDisablePgo)' != 'true'">$(BuildArguments) -nopgooptimize</BuildArguments>
-     <BuildArguments Condition="'$(TargetOS)' != 'windows'">$(BuildArguments) msbuildonunsupportedplatform</BuildArguments>
+     <BuildArguments Condition="'$(SkipDisablePgo)' != 'true'">$(BuildArguments)</BuildArguments>
+     <BuildArguments Condition="'$(TargetOS)' != 'windows'">$(BuildArguments)</BuildArguments>
 +    <BuildArguments Condition="'$(TargetOS)' == 'FreeBSD'">$(BuildArguments) -clang6.0</BuildArguments>
      <BuildArguments Condition="'$(UseSystemLibraries)' == 'true'">$(BuildArguments) cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</BuildArguments>
      <BuildArguments Condition="$(Platform.Contains('arm'))">$(BuildArguments) skipnuget cross -skiprestore cmakeargs -DFEATURE_GDBJIT=TRUE</BuildArguments>
