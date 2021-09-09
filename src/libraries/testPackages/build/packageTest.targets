@@ -75,7 +75,8 @@
       <!-- Don't verify RID specific libs that aren't compatible on .NETFramework, i.e. Unix. -->
       <RuntimeLibToTest Remove="@(RuntimeLibToTest)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and
                                                                 '%(RuntimeLibToTest.RuntimeIdentifier)' != '' and
-                                                                '%(RuntimeLibToTest.RuntimeIdentifier)' != 'win'" />
+                                                                '%(RuntimeLibToTest.RuntimeIdentifier)' != 'win' and
+                                                                !$([System.String]::Copy('%(RuntimeLibToTest.RuntimeIdentifier)').StartsWith('win-'))" />
       <RuntimeLibToTest Condition="'%(RuntimeLibToTest.RuntimeIdentifier)' == ''" RuntimeIdentifier="none" />
     </ItemGroup>
 
