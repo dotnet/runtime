@@ -8,7 +8,7 @@
 
   <Target Name="_{TargetPrefix}AnalyzerMultiTargeting" 
           Condition="'$(SupportsRoslynComponentVersioning)' != 'true'" 
-          AfterTargets="ResolvePackageDependenciesForBuild"
+          AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
           DependsOnTargets="_{TargetPrefix}GatherAnalyzers">
 
     <ItemGroup>
@@ -20,7 +20,7 @@
 
   <Target Name="_{TargetPrefix}RemoveAnalyzers" 
           Condition="'$({DisableSourceGeneratorPropertyName})' == 'true'"
-          AfterTargets="ResolvePackageDependenciesForBuild"
+          AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
           DependsOnTargets="_{TargetPrefix}GatherAnalyzers">
 
     <!-- Remove all our analyzers -->
