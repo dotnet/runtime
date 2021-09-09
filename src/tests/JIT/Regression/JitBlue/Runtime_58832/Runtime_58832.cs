@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public unsafe class Runtime_58832
+public class Runtime_58832
 {
     public static int Main()
     {
