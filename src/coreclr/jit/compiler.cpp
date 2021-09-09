@@ -9879,7 +9879,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
 #define PRINT_STATS(stat, total)                                                                                       \
     if (stat != 0)                                                                                                     \
     {                                                                                                                  \
-        fprintf(fout, #stat " %d, ratio: %.2f\n", stat, (float)stat / total);                                           \
+        fprintf(fout, #stat " %d, ratio: %.2f\n", stat, (float)stat / total);                                          \
     }
 
     PRINT_STATS(m_addrExposed, notEnreg);
