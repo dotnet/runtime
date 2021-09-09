@@ -430,7 +430,7 @@ namespace Wasm.Build.Tests
         protected void AssertDotNetNativeFiles(NativeFilesType type, string config, bool forPublish)
         {
             string label = forPublish ? "publish" : "build";
-            string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", forPublish ? "for-publish" : "relink");
+            string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", forPublish ? "for-publish" : "for-build");
             string binFrameworkDir = Path.Combine(_projectDir!, "bin", config, "net6.0", forPublish ? "publish" : "", "wwwroot", "_framework");
 
             string srcDir = type switch
@@ -789,7 +789,7 @@ namespace Wasm.Build.Tests
         {
             string objDir = GetObjDir(buildArgs.Config);
             string bundleDir = Path.Combine(GetBinDir(baseDir: _projectDir, config: buildArgs.Config), "AppBundle");
-            string wasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "relink");
+            string wasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
 
             return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config), bundleDir);
         }

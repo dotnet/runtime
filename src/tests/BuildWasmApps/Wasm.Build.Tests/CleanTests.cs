@@ -36,7 +36,7 @@ public class CleanTests : NativeRebuildTestsBase
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
         BlazorBuild(id, config, NativeFilesType.Relinked);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", "relink");
+        string relinkDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", "for-build");
         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
@@ -75,7 +75,7 @@ public class CleanTests : NativeRebuildTestsBase
         BuildInternal(id, config, publish: false,
                         extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", "relink");
+        string relinkDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", "for-build");
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
