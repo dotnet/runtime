@@ -958,10 +958,6 @@ public:
     }
 
     void incRefCnts(weight_t weight, Compiler* pComp, RefCountState state = RCS_NORMAL, bool propagate = true);
-    bool IsFloatRegType() const
-    {
-        return varTypeUsesFloatReg(lvType) || lvIsHfaRegArg();
-    }
 
     var_types GetHfaType() const
     {
