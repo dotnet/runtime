@@ -9,7 +9,7 @@
     <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
     <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
 
-    <AppleBuildAppDependsOn>PrepareForAppleBuildApp;$(AppleBuildAppDependsOn)</AppleBuildAppDependsOn>
+    <AppleBuildAppDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildAppDependsOn);_AfterAppleBuildAppOnHelix</AppleBuildAppDependsOn>
 
     <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
   </PropertyGroup>
@@ -18,7 +18,7 @@
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuildApp" />
 
-  <Target Name="PrepareForAppleBuildApp">
+  <Target Name="_PrepareForAppleBuildAppOnHelix">
     <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *iOS/tvOS* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
              Importance="High" />
 
@@ -37,5 +37,43 @@
       <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
     </ItemGroup>
   </Target>
+
+  <!-- Move the app to where the xharness runner expects it. -->
+  <Target Name="_AfterAppleBuildAppOnHelix">
+    <PropertyGroup>
+      <_TestProjectName>$([System.IO.Path]::GetFileName('$(AppBundlePath)'))</_TestProjectName>
+      <_XHarnessAppPath>$([MSBuild]::NormalizeDirectory($(XHARNESS_EXECUTION_DIR), $(_TestProjectName)))</_XHarnessAppPath>
+
+      <_DebugDir>$([MSBuild]::NormalizeDirectory($(XHARNESS_EXECUTION_DIR), $(_TestProjectName)))</_DebugDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AppBundleFiles Include="$(AppBundlePath)\**\*" />
+      <_AppBundleFiles Include="$(XHARNESS_EXECUTION_DIR)\*.mobileprovision" />
+
+      <_DebugPublishFiles Include="$(OriginalPublishDir)**\*" />
+      <_DebugAppFiles Include="$(TestRootDir)**\*" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(_DebugDir)" />
+    <MakeDir Directories="$(_DebugDir)publish" />
+    <MakeDir Directories="$(_DebugDir)apple_build" />
+
+    <Copy SourceFiles="@(_DebugPublishFiles)"
+          DestinationFiles="@(_DebugPublishFiles->'$(_DebugDir)publish\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <!--<Copy SourceFiles="@(_DebugAppFiles)"
+          DestinationFiles="@(_DebugAppFiles->'$(_DebugDir)apple_build\%(RecursiveDir)%(Filename)%(Extension)')" />-->
+
+    <ZipDirectory SourceDirectory="$(_DebugDir)"
+                  DestinationFile="$([MSBuild]::NormalizePath('$(XHARNESS_EXECUTION_DIR)', '$(_TestProjectName).zip'))"
+                  Overwrite="true" />
+
+    <MakeDir Directories="$(_XHarnessAppPath)" />
+
+    <Move SourceFiles="@(_AppBundleFiles)"
+          DestinationFiles="@(_AppBundleFiles->'$(_XHarnessAppPath)%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <Message Importance="High" Text="App moved to: $(_XHarnessAppPath)"/>
+  </Target>
+
   <Import Project="Directory.Build.targets" />
 </Project>

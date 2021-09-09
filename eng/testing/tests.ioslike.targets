@@ -12,12 +12,15 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>export PATH=`pwd`/build/cmake/bin:$PATH &amp;&amp; </_AOTBuildCommand>
+    <_AOTBuildCommand>export PATH=$HELIX_CORRELATION_PAYLOAD/build/cmake/cmake-3.16.4-Darwin-x86_64/CMake.app/Contents/bin:$PATH &amp;&amp; ls -la $HELIX_CORRELATION_PAYLOAD/build/cmake/cmake-3.16.4-Darwin-x86_64/CMake.app/Contents &amp;&amp; </_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) ls -la $EXECUTION_DIR &amp;&amp; </_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:MonoEnableLLVM=true</_AOTBuildCommand>
+    
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:MonoEnableLLVM=true</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) &amp;&amp; ls -la $EXECUTION_DIR</_AOTBuildCommand>
 
     <RunScriptCommand>$(_AOTBuildCommand)</RunScriptCommand>
   </PropertyGroup> 
