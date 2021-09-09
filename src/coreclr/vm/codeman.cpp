@@ -4686,7 +4686,7 @@ void ExecutionManager::AddRangeSection(RangeSection *pRS)
 
     //where to add?
     SIZE_T size = m_RangeSectionArraySize;
-    if (pRS->LowAddress >= m_RangeSectionHandleArray[size - 1].HighAddress)
+    if ((size == 0) || (pRS->LowAddress >= m_RangeSectionHandleArray[size - 1].HighAddress))
     {
         m_RangeSectionHandleArray[size].LowAddress = pRS->LowAddress;
         m_RangeSectionHandleArray[size].HighAddress = pRS->HighAddress;
