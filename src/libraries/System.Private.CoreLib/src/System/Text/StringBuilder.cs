@@ -1246,53 +1246,41 @@ namespace System.Text
 
         #region AppendJoin
 
-        public unsafe StringBuilder AppendJoin(string? separator, params object?[] values)
+        public StringBuilder AppendJoin(string? separator, params object?[] values)
         {
             separator ??= string.Empty;
-            fixed (char* pSeparator = separator)
-            {
-                return AppendJoinCore(pSeparator, separator.Length, values);
-            }
+            return AppendJoinCore(separator.AsSpan(), values);
         }
 
-        public unsafe StringBuilder AppendJoin<T>(string? separator, IEnumerable<T> values)
+        public StringBuilder AppendJoin<T>(string? separator, IEnumerable<T> values)
         {
             separator ??= string.Empty;
-            fixed (char* pSeparator = separator)
-            {
-                return AppendJoinCore(pSeparator, separator.Length, values);
-            }
+            return AppendJoinCore(separator.AsSpan(), values);
         }
 
-        public unsafe StringBuilder AppendJoin(string? separator, params string?[] values)
+        public StringBuilder AppendJoin(string? separator, params string?[] values)
         {
             separator ??= string.Empty;
-            fixed (char* pSeparator = separator)
-            {
-                return AppendJoinCore(pSeparator, separator.Length, values);
-            }
+            return AppendJoinCore(separator.AsSpan(), values);
         }
 
-        public unsafe StringBuilder AppendJoin(char separator, params object?[] values)
+        public StringBuilder AppendJoin(char separator, params object?[] values)
         {
-            return AppendJoinCore(&separator, 1, values);
+            return AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
         }
 
-        public unsafe StringBuilder AppendJoin<T>(char separator, IEnumerable<T> values)
+        public StringBuilder AppendJoin<T>(char separator, IEnumerable<T> values)
         {
-            return AppendJoinCore(&separator, 1, values);
+            return AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
         }
 
-        public unsafe StringBuilder AppendJoin(char separator, params string?[] values)
+        public StringBuilder AppendJoin(char separator, params string?[] values)
         {
-            return AppendJoinCore(&separator, 1, values);
+            return AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
         }
 
-        private unsafe StringBuilder AppendJoinCore<T>(char* separator, int separatorLength, IEnumerable<T> values)
+        private StringBuilder AppendJoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
-            Debug.Assert(separator != null);
-            Debug.Assert(separatorLength >= 0);
-
             if (values == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
@@ -1314,7 +1302,7 @@ namespace System.Text
 
                 while (en.MoveNext())
                 {
-                    Append(separator, separatorLength);
+                    Append(separator);
                     value = en.Current;
                     if (value != null)
                     {
@@ -1325,7 +1313,7 @@ namespace System.Text
             return this;
         }
 
-        private unsafe StringBuilder AppendJoinCore<T>(char* separator, int separatorLength, T[] values)
+        private StringBuilder AppendJoinCore<T>(ReadOnlySpan<char> separator, T[] values)
         {
             if (values == null)
             {
@@ -1345,7 +1333,7 @@ namespace System.Text
 
             for (int i = 1; i < values.Length; i++)
             {
-                Append(separator, separatorLength);
+                Append(separator);
                 if (values[i] != null)
                 {
                     Append(values[i]!.ToString());
