@@ -51,6 +51,6 @@
   </Target>
 
   <Target Name="OutputPgoPathForCI" Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(NativeOptimizationDataSupported)' == 'true'" DependsOnTargets="GetPgoDataPackagePath">
-    <Message Text="##vso[task.setvariable variable=CoreClrPgoDataArg]-pgodatapath &quot;$(PgoPackagePath)&quot;" />
+    <Message Text="##vso[task.setvariable variable=CoreClrPgoDataArg]-pgodatapath &quot;$(PgoPackagePath)&quot;" Importance="High" />
   </Target>
 </Project>
