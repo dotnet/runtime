@@ -20,7 +20,7 @@ public class CleanTests : NativeRebuildTestsBase
     {
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildThenClean_NativeRelinking(string config)
