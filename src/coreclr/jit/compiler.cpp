@@ -2170,7 +2170,7 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
             /* If the variable is not in a register, or not in the register we're looking for, quit. */
             /* Also, if it is a compiler generated variable (i.e. slot# > info.compVarScopesCount), don't bother. */
             if ((varDsc->lvRegister != 0) && (varDsc->GetRegNum() == reg) &&
-                (varDsc->IsFloatRegType() || !isFloatReg) && (varDsc->lvSlotNum < info.compVarScopesCount))
+                (varDsc->lvSlotNum < info.compVarScopesCount))
             {
                 /* check if variable in that register is live */
                 if (VarSetOps::IsMember(this, compCurLife, varDsc->lvVarIndex))
@@ -2209,8 +2209,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
             static int index = 0;                               // for circular index into the name array
 
             index = (index + 1) % 2; // circular reuse of index
-            sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "%s'%s'", getRegName(reg, isFloatReg),
-                      VarNameToStr(varName));
+            sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "%s'%s'", getRegName(reg), VarNameToStr(varName));
 
             return nameVarReg[index];
         }
@@ -2219,7 +2218,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
     /* no debug info required or no variable in that register
        -> return standard name */
 
-    return getRegName(reg, isFloatReg);
+    return getRegName(reg);
 }
 
 const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
@@ -2259,22 +2258,6 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
     assert(size == 1 || size == 2);
 
     return sizeNames[reg][size - 1];
-}
-
-const char* Compiler::compFPregVarName(unsigned fpReg, bool displayVar)
-{
-    const int   NAME_VAR_REG_BUFFER_LEN = 4 + 256 + 1;
-    static char nameVarReg[2][NAME_VAR_REG_BUFFER_LEN]; // to avoid overwriting the buffer when have 2 consecutive calls
-                                                        // before printing
-    static int index = 0;                               // for circular index into the name array
-
-    index = (index + 1) % 2; // circular reuse of index
-
-    /* no debug info required or no variable in that register
-       -> return standard name */
-
-    sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "ST(%d)", fpReg);
-    return nameVarReg[index];
 }
 
 const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)

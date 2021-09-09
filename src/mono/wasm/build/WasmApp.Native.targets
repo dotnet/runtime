@@ -236,7 +236,9 @@
     <PInvokeTableGenerator
       Modules="@(_WasmPInvokeModules)"
       Assemblies="@(_WasmAssembliesInternal)"
-      OutputPath="$(_WasmPInvokeTablePath)" />
+      OutputPath="$(_WasmPInvokeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </PInvokeTableGenerator>
   </Target>
 
   <Target Name="_GenerateICallTable" Condition="'$(WasmLinkIcalls)' == 'true'">
@@ -244,10 +246,16 @@
            Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
     <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmRuntimeICallTablePath)" />
+    </ItemGroup>
+
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
       Assemblies="@(_WasmAssembliesInternal)"
-      OutputPath="$(_WasmICallTablePath)" />
+      OutputPath="$(_WasmICallTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </IcallTableGenerator>
   </Target>
 
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == true" DependsOnTargets="_MonoSelectRuntimeComponents" />
@@ -263,6 +271,9 @@
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_EmccCompileRsp)" />
+    </ItemGroup>
 
     <!-- warm up the cache -->
     <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
@@ -276,7 +287,9 @@
           SourceFiles="@(_WasmSourceFileToCompile)"
           Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"'
           EnvironmentVariables="@(EmscriptenEnvVars)"
-          OutputMessageImportance="$(_EmccCompileOutputMessageImportance)" />
+          OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
+      <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
+    </EmccCompile>
   </Target>
 
   <Target Name="_WasmCompileAssemblyBitCodeFilesForAOT"
@@ -294,7 +307,9 @@
           SourceFiles="@(_BitCodeFile)"
           Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; &quot;@$(_EmccCompileBitcodeRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)"
-          OutputMessageImportance="$(_EmccCompileOutputMessageImportance)" />
+          OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
+      <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
+    </EmccCompile>
   </Target>
 
   <Target Name="_WasmWriteRspForCompilingBitcode">
@@ -303,6 +318,9 @@
       <_BitcodeLDFlags Include="$(EmccExtraBitcodeLDFlags)" />
     </ItemGroup>
     <WriteLinesToFile Lines="@(_BitcodeLDFlags)" File="$(_EmccCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_EmccCompileBitcodeRsp)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_WasmWriteRspFilesForLinking">
@@ -312,8 +330,8 @@
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
 
       <_WasmNativeFileForLinking
-          Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a"
-          Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\%(Identity)')" />
+          Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
+          Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')" />
 
       <_WasmExtraJSFile Include="@(Content)" Condition="'%(Content.Extension)' == '.js'" />
 
@@ -336,6 +354,9 @@
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(_EmccLinkStepArgs)" File="$(_EmccLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_EmccLinkRsp)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_WasmLinkDotNet"
@@ -346,6 +367,10 @@
     <Message Text="Linking with emcc. This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
     <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js" />
+    </ItemGroup>
 
     <Message Text="Optimizing dotnet.wasm ..." Importance="High" />
     <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
@@ -433,7 +458,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssembliesInternal)" Exclude="@(_AOT_AssembliesForceToInterpret)">
+      <_AotInputAssemblies Include="@(_WasmAssembliesInternal)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
@@ -441,7 +466,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
 
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
-      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net6.0" />
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net7.0" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -449,9 +474,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnlyInterp</AOTMode>
       <_AOTCompilerCacheFile>$(_WasmIntermediateOutputPath)aot_compiler_cache.json</_AOTCompilerCacheFile>
     </PropertyGroup>
-
-    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_AssembliesForceToInterpret) > 0"
-           Text="Builing in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. %40(_AOT_AssembliesForceToInterpret): @(_AOT_AssembliesForceToInterpret)" />
 
     <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
 
@@ -492,7 +514,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
       LLVMDebug="dwarfdebug"
-      LLVMPath="$(EmscriptenUpstreamBinPath)" >
+      LLVMPath="$(EmscriptenUpstreamBinPath)"
+      IntermediateOutputPath="$(_WasmIntermediateOutputPath)">
 
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
@@ -501,9 +524,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <ItemGroup>
       <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
       <_BitcodeFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
-
-      <!-- Add back the interpreter-only assemblies -->
-      <_WasmAssembliesInternal Include="@(_AOT_AssembliesForceToInterpret)" />
     </ItemGroup>
   </Target>
 
@@ -514,11 +534,10 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </PropertyGroup>
 
     <ItemGroup>
-      <_AOTedAssemblies Include="@(_WasmAssembliesInternal)" Exclude="@(_AOT_AssembliesForceToInterpret)" />
+      <_AOTedAssemblies Include="@(_WasmAssembliesInternal)" />
       <_WasmStrippedAssemblies
               Include="@(_AOTedAssemblies)"
               OriginalPath="%(_WasmAssembliesInternal.Identity)" />
-      <_WasmInterpOnlyAssembly Include="@(_AOT_AssembliesForceToInterpret)" />
     </ItemGroup>
 
     <!-- Run mono-cil-strip on the assemblies -->
@@ -528,7 +547,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
     <ItemGroup>
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
-      <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies);@(_WasmInterpOnlyAssembly)" />
+      <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies)" />
     </ItemGroup>
   </Target>
 
