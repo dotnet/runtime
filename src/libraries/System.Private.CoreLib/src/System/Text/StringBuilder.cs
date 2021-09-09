@@ -1218,15 +1218,35 @@ namespace System.Text
 
         public StringBuilder Append(ReadOnlySpan<char> value)
         {
-            if (value.Length > 0)
+            if (value.Length != 0)
             {
-                unsafe
+                // This case is so common we want to optimize for it heavily.
+                int newIndex = value.Length + m_ChunkLength;
+                if (newIndex <= m_ChunkChars.Length)
                 {
-                    fixed (char* valueChars = &MemoryMarshal.GetReference(value))
-                    {
-                        Append(valueChars, value.Length);
-                    }
+                    value.CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
+                    m_ChunkLength = newIndex;
                 }
+                else
+                {
+                    // Copy the first chunk
+                    int firstLength = m_ChunkChars.Length - m_ChunkLength;
+                    if (firstLength > 0)
+                    {
+                        value.Slice(0, firstLength).CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
+                        m_ChunkLength = m_ChunkChars.Length;
+                    }
+
+                    // Expand the builder to add another chunk.
+                    int restLength = value.Length - firstLength;
+                    ExpandByABlock(restLength);
+                    Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
+
+                    // Copy the second chunk
+                    value.Slice(firstLength).CopyTo(m_ChunkChars);
+                    m_ChunkLength = restLength;
+                }
+                AssertInvariants();
             }
             return this;
         }
@@ -2108,33 +2128,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(valueCount), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             }
 
-            // This case is so common we want to optimize for it heavily.
-            int newIndex = valueCount + m_ChunkLength;
-            if (newIndex <= m_ChunkChars.Length)
-            {
-                new ReadOnlySpan<char>(value, valueCount).CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
-                m_ChunkLength = newIndex;
-            }
-            else
-            {
-                // Copy the first chunk
-                int firstLength = m_ChunkChars.Length - m_ChunkLength;
-                if (firstLength > 0)
-                {
-                    new ReadOnlySpan<char>(value, firstLength).CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
-                    m_ChunkLength = m_ChunkChars.Length;
-                }
-
-                // Expand the builder to add another chunk.
-                int restLength = valueCount - firstLength;
-                ExpandByABlock(restLength);
-                Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
-
-                // Copy the second chunk
-                new ReadOnlySpan<char>(value + firstLength, restLength).CopyTo(m_ChunkChars);
-                m_ChunkLength = restLength;
-            }
-            AssertInvariants();
+            Append(new ReadOnlySpan<char>(value, valueCount));
             return this;
         }
 
