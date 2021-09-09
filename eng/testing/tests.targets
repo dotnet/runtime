@@ -44,17 +44,17 @@
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Browser')"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser' or '$(BuildTestsOnHelix)' == 'true')"
           AfterTargets="$(ArchiveTestsAfterTargets)"
           DependsOnTargets="GenerateRunScript;ZipTestArchive" />
   
   <Target Name="ZipTestArchive"
-          Condition="'$(TargetOS)' != 'iOS'">
+          Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'MacCatalyst'">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <PropertyGroup>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
-      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOS' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' != 'tvOS' or '$(TargetOS)' != 'MacCatalyst' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
     <MakeDir Directories="$(TestArchiveTestsDir)" />
