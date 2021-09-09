@@ -408,14 +408,8 @@ namespace System.Text
 
             AssertInvariants();
             string result = string.FastAllocateString(length);
-            unsafe
-            {
-                fixed (char* destinationPtr = result)
-                {
-                    this.CopyTo(startIndex, new Span<char>(destinationPtr, length), length);
-                    return result;
-                }
-            }
+            this.CopyTo(startIndex, new Span<char>(ref result.GetRawStringData(), length), length);
+            return result;
         }
 
         public StringBuilder Clear()
