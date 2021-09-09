@@ -1,16 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
-    <AnalyzerRoslynVersion>4.0</AnalyzerRoslynVersion>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
   </PropertyGroup>
 
-  <Import Project="System.Text.Json.SourceGeneration.targets" />
+  <Import Project="Microsoft.Extensions.Logging.Generators.targets"/>
 
   <ItemGroup>
-    <Compile Include="JsonSourceGenerator.4.0.cs" />
+    <ProjectReference Include="..\..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
 </Project>

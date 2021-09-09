@@ -25,9 +25,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata)]
-#if ROSLYN4_0_OR_GREATER
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata)]
-#endif
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -69,9 +67,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.SampleEnum.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.Serialize);
-#if ROSLYN4_0_OR_GREATER
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.Serialize);
-#endif
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverter.Serialize);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverter.Serialize);
@@ -106,9 +102,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
-#if ROSLYN4_0_OR_GREATER
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
-#endif
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
@@ -173,9 +167,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.ObjectArray.Serialize);
             Assert.Null(MetadataContext.Default.SampleEnum.Serialize);
             Assert.Null(MetadataContext.Default.String.Serialize);
-#if ROSLYN4_0_OR_GREATER
             Assert.Null(MetadataContext.Default.ValueTupleStringInt32Boolean.Serialize);
-#endif
             Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.Null(MetadataContext.Default.ClassWithCustomConverter.Serialize);
             Assert.Null(MetadataContext.Default.StructWithCustomConverter.Serialize);

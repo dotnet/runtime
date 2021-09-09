@@ -8,7 +8,7 @@
   <Import Project="Microsoft.Extensions.Logging.Generators.targets" />
 
   <ItemGroup>
-    <Compile Remove="LoggerMessageGenerator.3.9.cs" />
+    <Compile Remove="LoggerMessageGenerator.Roslyn3.11.cs" />
   </ItemGroup>
 
 </Project>

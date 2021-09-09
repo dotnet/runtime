@@ -42,7 +42,7 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion_39>3.9.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion_39>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>3.11.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.0.0-3.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
     <MicrosoftCodeAnalysisVersion>4.0.0-3.final</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>

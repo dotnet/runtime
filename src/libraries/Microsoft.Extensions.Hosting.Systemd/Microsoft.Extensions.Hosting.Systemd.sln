@@ -71,8 +71,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hostin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting", "..\Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj", "{AFC1BDAA-7E40-4118-BB80-F8057752A600}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.csproj", "{21A8F1A2-DB8F-40BB-8B41-34FFBFF678BE}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{860B845B-929F-4442-AED1-1F4186DBF497}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{A0AF82AE-ED18-4EEB-AD9A-B44017510F0C}"
@@ -297,10 +295,6 @@ Global
 		{AFC1BDAA-7E40-4118-BB80-F8057752A600}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFC1BDAA-7E40-4118-BB80-F8057752A600}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFC1BDAA-7E40-4118-BB80-F8057752A600}.Release|Any CPU.Build.0 = Release|Any CPU
-		{21A8F1A2-DB8F-40BB-8B41-34FFBFF678BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{21A8F1A2-DB8F-40BB-8B41-34FFBFF678BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{21A8F1A2-DB8F-40BB-8B41-34FFBFF678BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{21A8F1A2-DB8F-40BB-8B41-34FFBFF678BE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{860B845B-929F-4442-AED1-1F4186DBF497}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{860B845B-929F-4442-AED1-1F4186DBF497}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{860B845B-929F-4442-AED1-1F4186DBF497}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -496,7 +490,6 @@ Global
 		{4B72FC27-F786-44B4-88DF-996D478873B8} = {192FD259-E55F-40C5-82EE-9E924EA6C3CB}
 		{CFF29AA4-794A-416B-BF4C-FD2A442FB83F} = {192FD259-E55F-40C5-82EE-9E924EA6C3CB}
 		{AFC1BDAA-7E40-4118-BB80-F8057752A600} = {192FD259-E55F-40C5-82EE-9E924EA6C3CB}
-		{21A8F1A2-DB8F-40BB-8B41-34FFBFF678BE} = {192FD259-E55F-40C5-82EE-9E924EA6C3CB}
 		{A0AF82AE-ED18-4EEB-AD9A-B44017510F0C} = {192FD259-E55F-40C5-82EE-9E924EA6C3CB}
 		{D61B6530-0055-4DFE-85D1-58BEDFC7AA2F} = {192FD259-E55F-40C5-82EE-9E924EA6C3CB}
 		{509B5AB4-8F9F-4856-811F-7C8E727BF2E6} = {192FD259-E55F-40C5-82EE-9E924EA6C3CB}

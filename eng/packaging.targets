@@ -151,6 +151,7 @@
   </Target>
 
   <PropertyGroup>
+    <_MultiTargetRoslynComponentTargetsTemplate>$(MSBuildThisFileDirectory)MultiTargetRoslynComponent.targets.template</_MultiTargetRoslynComponentTargetsTemplate>
     <MultiTargetRoslynComponentTargetsFileIntermediatePath>$(IntermediateOutputPath)MultiTargetRoslynComponent.targets</MultiTargetRoslynComponentTargetsFileIntermediatePath>
     <IncludeMultiTargetRoslynComponentTargets Condition="'$(IncludeMultiTargetRoslynComponentTargets)' == ''">true</IncludeMultiTargetRoslynComponentTargets>
   </PropertyGroup>
@@ -168,10 +169,9 @@
   </Target>
 
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"
-          Inputs="$(MSBuildProjectFullPath)"
+          Inputs="$(MSBuildProjectFullPath);_MultiTargetRoslynComponentTargetsTemplate"
           Outputs="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)">
     <PropertyGroup>
-      <_MultiTargetRoslynComponentTargetsTemplate>$(MSBuildThisFileDirectory)MultiTargetRoslynComponent.targets.template</_MultiTargetRoslynComponentTargetsTemplate>
       <_MultiTargetRoslynComponentTargetPrefix>$(PackageId.Replace('.', '_'))</_MultiTargetRoslynComponentTargetPrefix>
       <_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName>Disable$(PackageId.Replace('.', ''))SourceGenerator</_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName>
       <_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName>$(_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName.Replace('Abstractions', ''))</_MultiTargetRoslynComponentDisableSourceGeneratorPropertyName>

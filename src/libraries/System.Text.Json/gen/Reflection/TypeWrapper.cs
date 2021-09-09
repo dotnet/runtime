@@ -311,12 +311,9 @@ namespace System.Text.Json.Reflection
                         // we want a static field and this is not static
                         (BindingFlags.Static & bindingAttr) != 0 && !fieldSymbol.IsStatic ||
                         // we want an instance field and this is static or a constant
-                        (BindingFlags.Instance & bindingAttr) != 0 && (fieldSymbol.IsStatic || fieldSymbol.IsConst)
-#if ROSLYN4_0_OR_GREATER
+                        (BindingFlags.Instance & bindingAttr) != 0 && (fieldSymbol.IsStatic || fieldSymbol.IsConst) ||
                         // symbol represents an explicitly named tuple element
-                        || fieldSymbol.IsExplicitlyNamedTupleElement
-#endif
-                        )
+                        fieldSymbol.IsExplicitlyNamedTupleElement)
                     {
                         continue;
                     }

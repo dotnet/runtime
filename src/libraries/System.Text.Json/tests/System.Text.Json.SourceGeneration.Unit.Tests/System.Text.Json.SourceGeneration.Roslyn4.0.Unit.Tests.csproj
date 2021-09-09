@@ -4,9 +4,9 @@
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
   </PropertyGroup>
 
-  <Import Project="System.Text.Json.SourceGeneration.Unit.Tests.targets"/>
+  <Import Project="System.Text.Json.SourceGeneration.Unit.Tests.targets" />
 
   <ItemGroup>
-    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.4.0.csproj" />
+    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
   </ItemGroup>
 </Project>
