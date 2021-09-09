@@ -132,7 +132,7 @@ endif()
 #-------------------------------------
 # Include the basic prebuilt headers - required for getting fileversion resource details.
 include_directories("pal/prebuilt/inc")
-include_directories("../../artifacts/obj/coreclr")
+include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
 add_subdirectory(tools/aot/jitinterface)
 
