@@ -22286,13 +22286,29 @@ BOOL gc_heap::gc_mark1 (uint8_t* o)
     return marked;
 }
 
+#ifdef USE_REGIONS
+inline bool in_heap_range (uint8_t* o)
+{
+#ifdef FEATURE_BASICFREEZE
+    // we may have frozen objects in read only segments
+    // outside of the reserved address range of the gc heap
+    return ((g_gc_lowest_address <= o) && (o < g_gc_highest_address));
+#else //FEATURE_BASICFREEZE
+    // without frozen objects, every non-null pointer must be
+    // within the heap
+    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
+    return (o != nullptr);
+#endif //FEATURE_BASICFREEZE
+}
+#endif //USE_REGIONS
+
 inline
 BOOL gc_heap::gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_gen)
 {
 #ifdef USE_REGIONS
     assert (low == 0);
     assert (high == 0);
-    if ((g_gc_lowest_address <= o) && (o < g_gc_highest_address))
+    if (in_heap_range (o))
     {
         BOOL already_marked = marked (o);
         if (already_marked)
@@ -30499,9 +30515,7 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 {
     uint8_t* old_address = *pold_address;
 #ifdef USE_REGIONS
-    if ((old_address < g_gc_lowest_address) ||
-        (old_address >= g_gc_highest_address) ||
-        !should_check_brick_for_reloc (old_address))
+    if (!in_heap_range (old_address) || !should_check_brick_for_reloc (old_address))
     {
         return;
     }
@@ -30641,7 +30655,7 @@ gc_heap::check_demotion_helper (uint8_t** pval, uint8_t* parent_obj)
 {
 #ifdef USE_REGIONS
     uint8_t* child_object = *pval;
-    if ((child_object < g_gc_lowest_address) || (child_object >= g_gc_highest_address))
+    if (!in_heap_range (child_object))
         return;
     int child_object_plan_gen = get_region_plan_gen_num (child_object);
     bool child_obj_demoted_p = is_region_demoted (child_object);
@@ -35878,7 +35892,7 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     assert (nhigh == 0);
     assert (next_boundary == 0);
     uint8_t* child_object = *poo;
-    if (child_object < g_gc_lowest_address || g_gc_highest_address <= child_object)
+    if (!in_heap_range (child_object))
         return;
     int child_object_gen = get_region_gen_num (child_object);
     int saved_child_object_gen = child_object_gen;
