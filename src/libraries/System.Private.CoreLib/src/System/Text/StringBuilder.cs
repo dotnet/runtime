@@ -690,7 +690,7 @@ namespace System.Text
                     _chunkPos = -1;
                 }
             }
-#endregion
+            #endregion
         }
 
         /// <summary>
@@ -1048,19 +1048,13 @@ namespace System.Text
             Debug.Assert(insertingChars + this.Length < int.MaxValue);
 
             MakeRoom(index, (int)insertingChars, out StringBuilder chunk, out int indexInChunk, false);
-            unsafe
+            while (count > 0)
             {
-                fixed (char* valuePtr = value)
-                {
-                    while (count > 0)
-                    {
-                        ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, valuePtr, value.Length);
-                        --count;
-                    }
-
-                    return this;
-                }
+                ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, value);
+                --count;
             }
+
+            return this;
         }
 
         /// <summary>
@@ -1353,11 +1347,7 @@ namespace System.Text
 
             if (value != null)
             {
-                unsafe
-                {
-                    fixed (char* sourcePtr = value)
-                        Insert(index, sourcePtr, value.Length);
-                }
+                Insert(index, value.AsSpan());
             }
             return this;
         }
@@ -1373,10 +1363,7 @@ namespace System.Text
 
         public StringBuilder Insert(int index, char value)
         {
-            unsafe
-            {
-                Insert(index, &value, 1);
-            }
+            Insert(index, new ReadOnlySpan<char>(ref value, 1));
             return this;
         }
 
@@ -1428,11 +1415,7 @@ namespace System.Text
 
             if (charCount > 0)
             {
-                unsafe
-                {
-                    fixed (char* sourcePtr = &value[startIndex])
-                        Insert(index, sourcePtr, charCount);
-                }
+                Insert(index, value.AsSpan(startIndex, charCount));
             }
             return this;
         }
@@ -1467,11 +1450,8 @@ namespace System.Text
 
             if (value.Length > 0)
             {
-                unsafe
-                {
-                    fixed (char* sourcePtr = &MemoryMarshal.GetReference(value))
-                        Insert(index, sourcePtr, value.Length);
-                }
+                MakeRoom(index, value.Length, out StringBuilder chunk, out int indexInChunk, false);
+                ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, value);
             }
             return this;
         }
@@ -2090,26 +2070,6 @@ namespace System.Text
         }
 
         /// <summary>
-        /// Inserts a character buffer into this builder at the specified position.
-        /// </summary>
-        /// <param name="index">The index to insert in this builder.</param>
-        /// <param name="value">The pointer to the start of the buffer.</param>
-        /// <param name="valueCount">The number of characters in the buffer.</param>
-        private unsafe void Insert(int index, char* value, int valueCount)
-        {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            }
-
-            if (valueCount > 0)
-            {
-                MakeRoom(index, valueCount, out StringBuilder chunk, out int indexInChunk, false);
-                ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, value, valueCount);
-            }
-        }
-
-        /// <summary>
         /// Replaces strings at specified indices with a new string in a chunk.
         /// </summary>
         /// <param name="replacements">The list of indices, relative to the beginning of the chunk, to remove at.</param>
@@ -2127,64 +2087,57 @@ namespace System.Text
                 return;
             }
 
-            unsafe
+            Debug.Assert(replacements != null, "replacements was null when replacementsCount > 0");
+            // calculate the total amount of extra space or space needed for all the replacements.
+            long longDelta = (value.Length - removeCount) * (long)replacementsCount;
+            int delta = (int)longDelta;
+            if (delta != longDelta)
             {
-                fixed (char* valuePtr = value)
+                throw new OutOfMemoryException();
+            }
+
+            StringBuilder targetChunk = sourceChunk;        // the target as we copy chars down
+            int targetIndexInChunk = replacements[0];
+
+            // Make the room needed for all the new characters if needed.
+            if (delta > 0)
+            {
+                MakeRoom(targetChunk.m_ChunkOffset + targetIndexInChunk, delta, out targetChunk, out targetIndexInChunk, true);
+            }
+
+            // We made certain that characters after the insertion point are not moved,
+            int i = 0;
+            while (true)
+            {
+                // Copy in the new string for the ith replacement
+                ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, value);
+                int gapStart = replacements[i] + removeCount;
+                i++;
+                if (i >= replacementsCount)
                 {
-                    Debug.Assert(replacements != null, "replacements was null when replacementsCount > 0");
-                    // calculate the total amount of extra space or space needed for all the replacements.
-                    long longDelta = (value.Length - removeCount) * (long)replacementsCount;
-                    int delta = (int)longDelta;
-                    if (delta != longDelta)
-                    {
-                        throw new OutOfMemoryException();
-                    }
-
-                    StringBuilder targetChunk = sourceChunk;        // the target as we copy chars down
-                    int targetIndexInChunk = replacements[0];
-
-                    // Make the room needed for all the new characters if needed.
-                    if (delta > 0)
-                    {
-                        MakeRoom(targetChunk.m_ChunkOffset + targetIndexInChunk, delta, out targetChunk, out targetIndexInChunk, true);
-                    }
-
-                    // We made certain that characters after the insertion point are not moved,
-                    int i = 0;
-                    while (true)
-                    {
-                        // Copy in the new string for the ith replacement
-                        ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, valuePtr, value.Length);
-                        int gapStart = replacements[i] + removeCount;
-                        i++;
-                        if (i >= replacementsCount)
-                        {
-                            break;
-                        }
-
-                        int gapEnd = replacements[i];
-                        Debug.Assert(gapStart < sourceChunk.m_ChunkChars.Length, "gap starts at end of buffer.  Should not happen");
-                        Debug.Assert(gapStart <= gapEnd, "negative gap size");
-                        Debug.Assert(gapEnd <= sourceChunk.m_ChunkLength, "gap too big");
-                        if (delta != 0)     // can skip the sliding of gaps if source an target string are the same size.
-                        {
-                            // Copy the gap data between the current replacement and the next replacement
-                            fixed (char* sourcePtr = &sourceChunk.m_ChunkChars[gapStart])
-                                ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, sourcePtr, gapEnd - gapStart);
-                        }
-                        else
-                        {
-                            targetIndexInChunk += gapEnd - gapStart;
-                            Debug.Assert(targetIndexInChunk <= targetChunk.m_ChunkLength, "gap not in chunk");
-                        }
-                    }
-
-                    // Remove extra space if necessary.
-                    if (delta < 0)
-                    {
-                        Remove(targetChunk.m_ChunkOffset + targetIndexInChunk, -delta, out targetChunk, out targetIndexInChunk);
-                    }
+                    break;
                 }
+
+                int gapEnd = replacements[i];
+                Debug.Assert(gapStart < sourceChunk.m_ChunkChars.Length, "gap starts at end of buffer.  Should not happen");
+                Debug.Assert(gapStart <= gapEnd, "negative gap size");
+                Debug.Assert(gapEnd <= sourceChunk.m_ChunkLength, "gap too big");
+                if (delta != 0)     // can skip the sliding of gaps if source an target string are the same size.
+                {
+                    // Copy the gap data between the current replacement and the next replacement
+                    ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, sourceChunk.m_ChunkChars.AsSpan(gapStart, gapEnd - gapStart));
+                }
+                else
+                {
+                    targetIndexInChunk += gapEnd - gapStart;
+                    Debug.Assert(targetIndexInChunk <= targetChunk.m_ChunkLength, "gap not in chunk");
+                }
+            }
+
+            // Remove extra space if necessary.
+            if (delta < 0)
+            {
+                Remove(targetChunk.m_ChunkOffset + targetIndexInChunk, -delta, out targetChunk, out targetIndexInChunk);
             }
         }
 
@@ -2238,35 +2191,26 @@ namespace System.Text
         /// The index in <paramref name="chunk"/> to start replacing characters at.
         /// Receives the index at which character replacement ends.
         /// </param>
-        /// <param name="value">The pointer to the start of the character buffer.</param>
-        /// <param name="count">The number of characters in the buffer.</param>
-        private unsafe void ReplaceInPlaceAtChunk(ref StringBuilder? chunk, ref int indexInChunk, char* value, int count)
+        /// <param name="value">The character buffer.</param>
+        private void ReplaceInPlaceAtChunk(ref StringBuilder? chunk, ref int indexInChunk, ReadOnlySpan<char> value)
         {
-            if (count != 0)
+            while (!value.IsEmpty)
             {
-                while (true)
+                Debug.Assert(chunk != null, "chunk should not be null at this point");
+                int lengthInChunk = chunk.m_ChunkLength - indexInChunk;
+                Debug.Assert(lengthInChunk >= 0, "Index isn't in the chunk.");
+
+                int lengthToCopy = Math.Min(lengthInChunk, value.Length);
+                value.Slice(0, lengthToCopy).CopyTo(chunk.m_ChunkChars.AsSpan(indexInChunk));
+
+                // Advance the index.
+                indexInChunk += lengthToCopy;
+                if (indexInChunk >= chunk.m_ChunkLength)
                 {
-                    Debug.Assert(chunk != null, "chunk should not be null at this point");
-                    int lengthInChunk = chunk.m_ChunkLength - indexInChunk;
-                    Debug.Assert(lengthInChunk >= 0, "Index isn't in the chunk.");
-
-                    int lengthToCopy = Math.Min(lengthInChunk, count);
-                    new ReadOnlySpan<char>(value, lengthToCopy).CopyTo(chunk.m_ChunkChars.AsSpan(indexInChunk));
-
-                    // Advance the index.
-                    indexInChunk += lengthToCopy;
-                    if (indexInChunk >= chunk.m_ChunkLength)
-                    {
-                        chunk = Next(chunk);
-                        indexInChunk = 0;
-                    }
-                    count -= lengthToCopy;
-                    if (count == 0)
-                    {
-                        break;
-                    }
-                    value += lengthToCopy;
+                    chunk = Next(chunk);
+                    indexInChunk = 0;
                 }
+                value = value.Slice(lengthToCopy);
             }
         }
 
