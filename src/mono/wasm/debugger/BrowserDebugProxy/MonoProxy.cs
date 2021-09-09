@@ -134,9 +134,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             string exceptionError = args?["exceptionDetails"]?["exception"]?["value"]?.Value<string>();
                             if (exceptionError == sPauseOnUncaught || exceptionError == sPauseOnCaught)
-                            {
                                 return true;
-                            }
                         }
                         break;
                     }
@@ -156,17 +154,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 if (exceptionError == sPauseOnUncaught)
                                 {
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                                    context.PauseOnUncaught = true;
+                                    if (context.PauseOnExceptions == PauseOnExceptionsKind.Unset)
+                                        context.PauseOnExceptions = PauseOnExceptionsKind.Uncaught;
                                     return true;
                                 }
                                 if (exceptionError == sPauseOnCaught)
                                 {
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                                    context.PauseOnCaught = true;
+                                    context.PauseOnExceptions = PauseOnExceptionsKind.All;
                                     return true;
                                 }
                             }
                         }
+
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
                         switch (top_func) {
@@ -442,23 +442,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.setPauseOnExceptions":
                     {
                         string state = args["state"].Value<string>();
-                        if (!context.IsRuntimeReady)
+                        context.PauseOnExceptions = state switch
                         {
-                            context.PauseOnCaught = false;
-                            context.PauseOnUncaught = false;
-                            switch (state)
-                            {
-                                case "all":
-                                    context.PauseOnCaught = true;
-                                    context.PauseOnUncaught = true;
-                                    break;
-                                case "uncaught":
-                                    context.PauseOnUncaught = true;
-                                    break;
-                            }
-                        }
-                        else
-                            await SdbHelper.EnableExceptions(id, state, token);
+                            "all"      => PauseOnExceptionsKind.All,
+                            "uncaught" => PauseOnExceptionsKind.Uncaught,
+                            "none"     => PauseOnExceptionsKind.None,
+                            _          => PauseOnExceptionsKind.Unset
+                        };
+
+                        if (context.IsRuntimeReady)
+                            await SdbHelper.EnableExceptions(id, context.PauseOnExceptions, token);
                         // Pass this on to JS too
                         return false;
                     }
@@ -874,7 +867,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int object_id = retDebuggerCmdReader.ReadInt32();
                         var caught = retDebuggerCmdReader.ReadByte();
                         var exceptionObject = await SdbHelper.GetObjectValues(sessionId, object_id, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
-                        var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("message"));
+                        var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                         var data = JObject.FromObject(new
                         {
                             type = "object",
@@ -964,6 +957,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     context.BreakpointRequests[kvp.Key] = kvp.Value.Clone();
                 }
+                context.PauseOnExceptions = previousContext.PauseOnExceptions;
             }
 
             if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
@@ -1227,10 +1221,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Log("verbose", $"Failed to clear breakpoints");
             }
 
-            if (context.PauseOnCaught && context.PauseOnUncaught)
-                await SdbHelper.EnableExceptions(sessionId, "all", token);
-            else if (context.PauseOnUncaught)
-                await SdbHelper.EnableExceptions(sessionId, "uncaught", token);
+            if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
+                await SdbHelper.EnableExceptions(sessionId, context.PauseOnExceptions, token);
 
             await SdbHelper.SetProtocolVersion(sessionId, token);
             await SdbHelper.EnableReceiveRequests(sessionId, EventKind.UserBreak, token);
@@ -1392,8 +1384,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             // see https://github.com/mono/mono/issues/19549 for background
             if (sessions.Add(sessionId))
             {
-                string checkUncaughtExceptions = $"throw \"{sPauseOnUncaught}\";";
-                string checkCaughtExceptions = $"try {{throw \"{sPauseOnCaught}\";}} catch {{}}";
+                string checkUncaughtExceptions = string.Empty;
+                string checkCaughtExceptions = string.Empty;
+
+                //we only need this check if it's a non-vs debugging
+                if (sessionId == SessionId.Null)
+                {
+                    if (!contexts.TryGetValue(sessionId, out ExecutionContext context) || context.PauseOnExceptions == PauseOnExceptionsKind.Unset)
+                    {
+                        checkUncaughtExceptions = $"throw \"{sPauseOnUncaught}\";";
+                        checkCaughtExceptions = $"try {{throw \"{sPauseOnCaught}\";}} catch {{}}";
+                    }
+                }
+
                 await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
                     "Page.addScriptToEvaluateOnNewDocument",
