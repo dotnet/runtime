@@ -47,6 +47,7 @@
     <Compile Include="MatchCollectionTests2.cs" />
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexCompilationInfoTests.cs" />
+    <Compile Include="RegexGeneratorAttributeTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" Link="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />
