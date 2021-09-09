@@ -218,7 +218,6 @@ namespace Sample
                     client.ReceiveAsync(new ArraySegment<byte>(new byte[1]), CancellationToken.None);
                     return;
                 }
-                Console.WriteLine("RunStep " + step);
                 var task = client.ReceiveAsync(buffer, CancellationToken.None);
 #if DEBUG
                 if (!task.IsCompleted) throw new InvalidOperationException(Name + ": Expected Completed " + step);
