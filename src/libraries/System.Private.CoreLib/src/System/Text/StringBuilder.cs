@@ -776,14 +776,8 @@ namespace System.Text
                 return this;
             }
 
-            unsafe
-            {
-                fixed (char* valueChars = &value[startIndex])
-                {
-                    Append(valueChars, charCount);
-                    return this;
-                }
-            }
+            Append(value.AsSpan(startIndex, charCount));
+            return this;
         }
 
         /// <summary>
@@ -824,24 +818,11 @@ namespace System.Text
                 }
                 else
                 {
-                    AppendHelper(value);
+                    Append(value.AsSpan());
                 }
             }
 
             return this;
-        }
-
-        // We put this fixed in its own helper to avoid the cost of zero-initing `valueChars` in the
-        // case we don't actually use it.
-        private void AppendHelper(string value)
-        {
-            unsafe
-            {
-                fixed (char* valueChars = value)
-                {
-                    Append(valueChars, value.Length);
-                }
-            }
         }
 
         /// <summary>
@@ -880,14 +861,8 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
-            unsafe
-            {
-                fixed (char* valueChars = value)
-                {
-                    Append(valueChars + startIndex, count);
-                    return this;
-                }
-            }
+            Append(value.AsSpan(startIndex, count));
+            return this;
         }
 
         public StringBuilder Append(StringBuilder? value)
@@ -1205,13 +1180,7 @@ namespace System.Text
         {
             if (value?.Length > 0)
             {
-                unsafe
-                {
-                    fixed (char* valueChars = &value[0])
-                    {
-                        Append(valueChars, value.Length);
-                    }
-                }
+                Append(value.AsSpan());
             }
             return this;
         }
