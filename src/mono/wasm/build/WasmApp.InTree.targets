@@ -35,7 +35,7 @@
   </Target>
 
   <Target Name="CopyAppZipToHelixTestDir"
-          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true' and '$(WasmBuildingForPublish)' != 'true'"
+          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           AfterTargets="Build"
           DependsOnTargets="WasmTriggerPublishApp">
     <PropertyGroup>

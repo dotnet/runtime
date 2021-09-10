@@ -40,7 +40,7 @@ Implementation:
 - By default `WasmTriggerPublishApp` runs after the `Publish` target, and that triggers the nested build
     - The nested build runs `WasmNestedPublishApp`, which causes `Build`, and `Publish` targets to be run
     - Because this causes `Build` to be run again, if you have any targets that get triggered by that, then they will be running twice.
-        - But the original *build* run, and this *publish* run can be differentiated using `$(WasmBuildingForPublish)`
+        - But the original *build* run, and this *publish* run can be differentiated using `$(WasmBuildingForNestedPublish)`
 
 - `WasmTriggerPublishApp` essentially just invokes the nested publish
     - This runs after `Publish`

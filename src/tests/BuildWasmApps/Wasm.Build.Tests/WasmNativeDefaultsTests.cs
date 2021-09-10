@@ -40,8 +40,8 @@ namespace Wasm.Build.Tests
         {
             string output = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !publishValue);
 
-            Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForPublish: ''", output);
-            Assert.Contains($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmBuildingForPublish: 'true'", output);
+            Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            Assert.Contains($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmBuildingForNestedPublish: 'true'", output);
             Assert.Contains("Stopping the build", output);
         }
 
@@ -61,8 +61,8 @@ namespace Wasm.Build.Tests
                                                         dotnetWasmFromRuntimePack: !publishValue,
                                                         extraItems: nativeRefItem);
 
-            Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForPublish: ''", output);
-            Assert.Contains($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmBuildingForPublish: 'true'", output);
+            Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            Assert.Contains($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmBuildingForNestedPublish: 'true'", output);
             Assert.Contains("Stopping the build", output);
         }
 
@@ -78,8 +78,8 @@ namespace Wasm.Build.Tests
 
             string printValueTarget = @"
                 <Target Name=""PrintWasmBuildNative"" AfterTargets=""_SetWasmBuildNativeDefaults"">
-                    <Message Text=""** WasmBuildNative: '$(WasmBuildNative)', WasmBuildingForPublish: '$(WasmBuildingForPublish)'"" Importance=""High"" />
-                    <Error Text=""Stopping the build"" Condition=""$(WasmBuildingForPublish) == 'true'"" />
+                    <Message Text=""** WasmBuildNative: '$(WasmBuildNative)', WasmBuildingForNestedPublish: '$(WasmBuildingForNestedPublish)'"" Importance=""High"" />
+                    <Error Text=""Stopping the build"" Condition=""$(WasmBuildingForNestedPublish) == 'true'"" />
                 </Target>";
 
             BuildArgs buildArgs = new(ProjectName: projectName, Config: config, AOT: aot, string.Empty, null);

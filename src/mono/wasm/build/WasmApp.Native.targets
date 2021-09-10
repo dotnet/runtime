@@ -102,7 +102,7 @@
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
 
     <!-- When Building -->
-    <PropertyGroup Condition="'$(WasmBuildingForPublish)' != 'true'">
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       <!-- build AOT, only if explicitly requested -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
@@ -111,7 +111,7 @@
     </PropertyGroup>
 
     <!-- When Publishing -->
-    <PropertyGroup Condition="'$(WasmBuildingForPublish)' == 'true'">
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
       <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>

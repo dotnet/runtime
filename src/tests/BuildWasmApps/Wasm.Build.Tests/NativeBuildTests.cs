@@ -47,7 +47,7 @@ namespace Wasm.Build.Tests
         {
             // stop once `mono-aot-cross` part of the build is done
             string target = @"<Target Name=""StopAfterWasmAOT"" AfterTargets=""_WasmAotCompileApp"">
-                <Error Text=""Stopping after AOT"" Condition=""'$(WasmBuildingForPublish)' == 'true'"" />
+                <Error Text=""Stopping after AOT"" Condition=""'$(WasmBuildingForNestedPublish)' == 'true'"" />
             </Target>";
 
             string projectName = $"mono_aot_cross_{buildArgs.Config}_{buildArgs.AOT}";
@@ -109,7 +109,7 @@ namespace Wasm.Build.Tests
             // We don't want to emcc compile, and link ~180 assemblies!
             // So, stop once `mono-aot-cross` part of the build is done
             string target = @"<Target Name=""StopAfterWasmAOT"" AfterTargets=""_WasmAotCompileApp"">
-                <Error Text=""Stopping after AOT"" Condition=""'$(WasmBuildingForPublish)' == 'true'"" />
+                <Error Text=""Stopping after AOT"" Condition=""'$(WasmBuildingForNestedPublish)' == 'true'"" />
             </Target>
             ";
             AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
