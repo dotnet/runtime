@@ -718,25 +718,18 @@
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
   </Target>
 
-  <Target Name="InitializeGenerateRuntimeVersionFile"
-          BeforeTargets="Restore">
-    <MSBuild Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="Restore"/>
-  </Target>
+  <PropertyGroup>
+    <!-- Hardcode version paths in a global location. -->
+    <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <AssemblyName>.NET Runtime</AssemblyName>
+  </PropertyGroup>
 
-  <Target Name="GenerateMonoVersionFile" DependsOnTargets="InitializeGenerateRuntimeVersionFile">
-    <MSBuild Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjDir)_version.h;RuntimeVersionFile=$(MonoObjDir)runtime_version.h" />
-    <MSBuild Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'"
-             Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjCrossDir)_version.h;RuntimeVersionFile=$(MonoObjCrossDir)runtime_version.h" />
-  </Target>
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
   <!-- The standard set of targets that need to run before the BuildMono target runs -->
   <PropertyGroup>
-    <MonoDependsOnTargets>CheckEnv;GenerateMonoVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
+    <MonoDependsOnTargets>CheckEnv;GenerateRuntimeVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
     <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
   </PropertyGroup>
 
