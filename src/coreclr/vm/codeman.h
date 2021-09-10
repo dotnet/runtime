@@ -613,13 +613,11 @@ typedef DPTR(struct RangeSectionHandle) PTR_RangeSectionHandle;
 struct RangeSectionHandle
 {
     TADDR LowAddress;
-    TADDR  HighAddress;
     PTR_RangeSection pRS;
 
     RangeSectionHandle()
     {
         LowAddress = 0;
-        HighAddress = 0;
         pRS = NULL;
     }
 };

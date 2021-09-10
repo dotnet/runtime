@@ -4448,15 +4448,16 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
     if (LastUsedRSIndex != -1)
     {
         TADDR LowAddress = m_RangeSectionHandleArray[LastUsedRSIndex].LowAddress;
-        TADDR HighAddress = m_RangeSectionHandleArray[LastUsedRSIndex].HighAddress;
+        TADDR HighAddress = m_RangeSectionHandleArray[LastUsedRSIndex].pRS->HighAddress;
 
         //positive case
         if ((addr >= LowAddress) && (addr < HighAddress))
-        return m_RangeSectionHandleArray[LastUsedRSIndex].pRS;
+            return m_RangeSectionHandleArray[LastUsedRSIndex].pRS;
 
         //negative case
-        if ((addr < LowAddress) && ((LastUsedRSIndex == 0)
-            || (addr >= m_RangeSectionHandleArray[LastUsedRSIndex - 1].HighAddress)))
+        if ((m_LastUsedRSIndex != 0)
+            && ((addr < LowAddress) && ((LastUsedRSIndex == 0)
+                || (addr >= m_RangeSectionHandleArray[LastUsedRSIndex - 1].pRS->HighAddress))))
             return NULL;
     }
 #endif
@@ -4605,32 +4606,42 @@ int ExecutionManager::FindRangeSectionHandleHelper(TADDR addr)
     int iHigh = (int)m_RangeSectionArraySize - 1;
     int iMid = (iHigh + iLow)/2;
 
+    if(addr < m_RangeSectionHandleArray[0].LowAddress)
+    {
+        return EncodeRangeSectionIndex(0);
+    }
+
+    if (addr >= m_RangeSectionHandleArray[iHigh].pRS->HighAddress)
+    {
+        return EncodeRangeSectionIndex(iHigh + 1);
+    }
+
     do
     {
         if (addr < m_RangeSectionHandleArray[iMid].LowAddress)
         {
-            iHigh = iMid - 1;
+            iHigh = iMid;
+            iMid = (iHigh + iLow)/2;
         }
-        else //addr >= iMid.LowAddress
+        else if (addr >= m_RangeSectionHandleArray[iMid+1].LowAddress)
         {
-            if (addr < m_RangeSectionHandleArray[iMid].HighAddress)
-            {
-                return iMid;
-            }
-
             iLow = iMid + 1;
+            iMid = (iHigh + iLow)/2;
         }
-        iMid = (iHigh + iLow)/2;
+        else
+        {
+            iLow = iHigh = iMid;
+        }
+    } while(iHigh > iLow);
 
-    } while(iHigh >= iLow);
-
-    if (iHigh == -1)
+    if ((addr >= m_RangeSectionHandleArray[iHigh].LowAddress)
+            && (addr < m_RangeSectionHandleArray[iHigh].pRS->HighAddress))
     {
-        return EncodeRangeSectionIndex(0);
+        return iHigh;
     }
     else
     {
-        return EncodeRangeSectionIndex(iMid+1);
+        return EncodeRangeSectionIndex(iHigh + 1);
     }
 }
 #ifndef DACCESS_COMPILE
@@ -4686,10 +4697,9 @@ void ExecutionManager::AddRangeSection(RangeSection *pRS)
 
     //where to add?
     SIZE_T size = m_RangeSectionArraySize;
-    if ((size == 0) || (pRS->LowAddress >= m_RangeSectionHandleArray[size - 1].HighAddress))
+    if ((size == 0) || (pRS->LowAddress >= m_RangeSectionHandleArray[size - 1].pRS->HighAddress))
     {
         m_RangeSectionHandleArray[size].LowAddress = pRS->LowAddress;
-        m_RangeSectionHandleArray[size].HighAddress = pRS->HighAddress;
         m_RangeSectionHandleArray[size].pRS = pRS;
         m_RangeSectionArraySize = size + 1;
         return;
@@ -4702,7 +4712,6 @@ void ExecutionManager::AddRangeSection(RangeSection *pRS)
         //push and shift
         memmove(m_RangeSectionHandleArray+index+1, m_RangeSectionHandleArray+index, (m_RangeSectionArraySize-index)*sizeof(RangeSectionHandle));
         m_RangeSectionHandleArray[index].LowAddress = pRS->LowAddress;
-        m_RangeSectionHandleArray[index].HighAddress = pRS->HighAddress;
         m_RangeSectionHandleArray[index].pRS = pRS;
         m_RangeSectionArraySize = size + 1;
 #ifndef DACCESS_COMPILE
