@@ -2910,9 +2910,24 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// optLoopContains: Check if one loop contains another
+//
+// Arguments:
+//    l1 -- loop num of containing loop (must be valid loop num)
+//    l2 -- loop num of contained loop (valid loop num, or NOT_IN_LOOP)
+//
+// Returns:
+//    True if loop described by l2 is contained within l1.
+//
+// Notes:
+//    A loop contains itself.
+//
 bool Compiler::optLoopContains(unsigned l1, unsigned l2)
 {
-    assert(l1 != BasicBlock::NOT_IN_LOOP);
+    assert(l1 < optLoopCount);
+    assert((l2 < optLoopCount) || (l2 == BasicBlock::NOT_IN_LOOP));
+
     if (l1 == l2)
     {
         return true;
@@ -6750,7 +6765,18 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
         else if (funcApp.m_func == VNF_MemOpaque)
         {
             const unsigned vnLoopNum = funcApp.m_args[0];
-            res                      = !optLoopContains(lnum, vnLoopNum);
+
+            // Check for the special "ambiguous" loop MemOpaque VN.
+            // This is considered variant in every loop.
+            //
+            if (vnLoopNum == BasicBlock::MAX_LOOP_NUM)
+            {
+                res = false;
+            }
+            else
+            {
+                res = !optLoopContains(lnum, vnLoopNum);
+            }
         }
         else
         {
