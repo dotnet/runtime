@@ -11054,6 +11054,8 @@ namespace System.Numerics
         public static uint RoundUpToPowerOf2(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RoundUpToPowerOf2(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint RoundUpToPowerOf2(nuint value) { throw null; }
         public static int TrailingZeroCount(int value) { throw null; }
         public static int TrailingZeroCount(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
