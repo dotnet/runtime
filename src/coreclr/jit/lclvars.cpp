@@ -4688,7 +4688,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
 {
     unsigned result = 0;
 
-    if (lvaDoneFrameLayout >= REGALLOC_FRAME_LAYOUT)
+    if (codeGen->regSet.hasComputedTmpSize())
     {
         result = codeGen->regSet.tmpGetTotalSize();
     }
