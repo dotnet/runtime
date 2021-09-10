@@ -486,7 +486,7 @@ namespace System.Runtime.Serialization
                         if (dataContract == null)
                         {
                             if (type == null)
-                                type = Type.GetTypeFromHandle(typeHandle);
+                                type = Type.GetTypeFromHandle(typeHandle)!;
 
                             type = UnwrapNullableType(type);
 
@@ -570,7 +570,7 @@ namespace System.Runtime.Serialization
                     if (dataContract == null)
                     {
                         if (type == null)
-                            type = Type.GetTypeFromHandle(typeHandle);
+                            type = Type.GetTypeFromHandle(typeHandle)!;
                         type = UnwrapNullableType(type);
                         type = GetDataContractAdapterType(type);
                         if (!CollectionDataContract.TryCreateGetOnlyCollectionDataContract(type, out dataContract))
