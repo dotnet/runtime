@@ -2182,16 +2182,15 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        // op2 = op1 * op2 + op3
-        // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
         assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
         if (op1->isContained())
         {
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+            ins    = (instruction)(ins - 1);
             op1Reg = op2->GetRegNum();
             op2Reg = op3->GetRegNum();
-            op3    = op2;
+            op3    = op1;
 
         }
         else
