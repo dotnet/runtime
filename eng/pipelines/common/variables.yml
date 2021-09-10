@@ -8,6 +8,8 @@ variables:
   value: 6
 - name: NUGET_EXPERIMENTAL_NETWORK_RETRY_DELAY_MILLISECONDS
   value: 1000
+- name: HelixBaseUri
+  value: https://helix.int-dot.net
 
 - name: isOfficialBuild
   value: ${{ and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
