@@ -492,7 +492,7 @@
     <value>The type '{0}' is invalid for serialization or deserialization because it is a pointer type, is a ref struct, or contains generic parameters that have not been replaced by specific types.</value>
   </data>
   <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
-    <value>Serialization and deserialization of '{0}' instances are not supported and should be avoided since they can lead to security issues.</value>
+    <value>Serialization and deserialization of '{0}' instances are not supported.</value>
   </data>
   <data name="JsonIncludeOnNonPublicInvalid" xml:space="preserve">
     <value>The non-public property '{0}' on type '{1}' is annotated with 'JsonIncludeAttribute' which is invalid.</value>
