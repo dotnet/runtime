@@ -105,6 +105,7 @@
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.c"
+        IntermediateOutputPath="$(IntermediateOutputPath)"
         UseLLVM="$(MonoEnableLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
@@ -190,6 +191,7 @@
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.m"
         AotModulesTableLanguage="ObjC"
+        IntermediateOutputPath="$(IntermediateOutputPath)"
         UseLLVM="$(MonoEnableLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />

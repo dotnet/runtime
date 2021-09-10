@@ -146,7 +146,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     });
 
                     if (!result.IsCompleted && !Log.HasLoggedErrors)
-                        Log.LogError("Unknown failed occured while compiling");
+                        Log.LogError("Unknown failure occured while compiling. Check logs to get more details.");
                 }
 
                 if (!Log.HasLoggedErrors)
