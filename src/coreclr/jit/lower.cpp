@@ -2984,9 +2984,8 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     // There are two kinds of retyping:
     // - A simple bitcast can be inserted when:
     //   - We're returning a floating type as an integral type or vice-versa, or
-    //   - We're returning a struct as a primitive type and using the old form of retyping.
-    // - If we're returning a struct as a primitive type and *not* using old retying, we change the type of
-    //   'retval' in 'LowerRetStructLclVar()'
+    // - If we're returning a struct as a primitive type, we change the type of
+    // 'retval' in 'LowerRetStructLclVar()'
     bool needBitcast =
         (ret->TypeGet() != TYP_VOID) && (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1()));
     bool doPrimitiveBitcast = false;
@@ -3408,6 +3407,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     unsigned   lclNum = lclVar->GetLclNum();
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
 
+    bool replacedInLowering = false;
     if (varDsc->CanBeReplacedWithItsField(comp))
     {
         // We can replace the struct with its only field and keep the field on a register.
@@ -3420,8 +3420,9 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
                 "[%06u]\n",
                 lclNum, fieldLclNum, comp->dspTreeID(ret));
         lclVar->ChangeType(fieldDsc->lvType);
-        lclNum = fieldLclNum;
-        varDsc = comp->lvaGetDesc(lclNum);
+        lclNum             = fieldLclNum;
+        varDsc             = comp->lvaGetDesc(lclNum);
+        replacedInLowering = true;
     }
     else if (varDsc->lvPromoted)
     {
@@ -3432,20 +3433,52 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 
     if (varDsc->lvDoNotEnregister)
     {
+        assert(!replacedInLowering);
         lclVar->ChangeOper(GT_LCL_FLD);
         lclVar->AsLclFld()->SetLclOffs(0);
-        lclVar->ChangeType(ret->TypeGet());
+
+        // We are returning as a primitive type and the lcl is of struct type.
+        assert(comp->info.compRetNativeType != TYP_STRUCT);
+        assert((genTypeSize(comp->info.compRetNativeType) == genTypeSize(ret)) ||
+               (varTypeIsIntegral(ret) && varTypeIsIntegral(comp->info.compRetNativeType) &&
+                (genTypeSize(comp->info.compRetNativeType) <= genTypeSize(ret))));
+        // If the actual return type requires normalization, then make sure we
+        // do so by using the correct small type for the GT_LCL_FLD. It would
+        // be conservative to check just compRetNativeType for this since small
+        // structs are normalized to primitive types when they are returned in
+        // registers, so we would normalize for them as well.
+        if (varTypeIsSmall(comp->info.compRetType))
+        {
+            assert(genTypeSize(comp->info.compRetNativeType) == genTypeSize(comp->info.compRetType));
+            lclVar->ChangeType(comp->info.compRetType);
+        }
+        else
+        {
+            // Otherwise we don't mind that we leave the upper bits undefined.
+            lclVar->ChangeType(ret->TypeGet());
+        }
     }
     else
     {
         const var_types lclVarType = varDsc->GetRegisterType(lclVar);
         assert(lclVarType != TYP_UNDEF);
+
+        if (varDsc->lvNormalizeOnLoad() && replacedInLowering)
+        {
+            // For a normalize-on-load var that we replaced late we need to insert a cast
+            // as morph would typically be responsible for this.
+            GenTreeCast* cast = comp->gtNewCastNode(TYP_INT, lclVar, false, lclVarType);
+            ret->gtOp1        = cast;
+            BlockRange().InsertBefore(ret, cast);
+            ContainCheckCast(cast);
+        }
+
         const var_types actualType = genActualType(lclVarType);
         lclVar->ChangeType(actualType);
 
         if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVarType))
         {
-            GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), lclVar);
+            GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
             ret->gtOp1       = bitcast;
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
