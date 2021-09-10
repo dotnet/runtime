@@ -245,7 +245,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
   </Target>
 
-  <Target Name="_ResolveBlazorWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_BlazorWasmNativeForBuild" BeforeTargets="_RazorPrepareForRun">
+  <Target Name="_ResolveBlazorWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveBlazorWasmConfiguration;_BlazorWasmNativeForBuild" BeforeTargets="_RazorPrepareForRun">
     <ItemGroup>
       <_BlazorJSFile Include="$(BlazorWebAssemblyJSPath)" />
       <_BlazorJSFile Include="$(BlazorWebAssemblyJSMapPath)" Condition="Exists('$(BlazorWebAssemblyJSMapPath)')" />
