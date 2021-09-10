@@ -2647,17 +2647,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                     case TYP_REF:
                     case TYP_INT:
                         // Same type no conversion required
-                        conValTree = gtNewIconNode(static_cast<int>(value));
+                        conValTree = gtNewIconNode(value);
                         break;
 
                     case TYP_LONG:
                         // Implicit assignment conversion to larger integer
-                        conValTree = gtNewLconNode(static_cast<int>(value));
+                        conValTree = gtNewLconNode(value);
                         break;
 
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
-                        conValTree = gtNewDconNode(*(reinterpret_cast<float*>(&value)), TYP_FLOAT);
+                        conValTree = gtNewDconNode(*reinterpret_cast<float*>(&value), TYP_FLOAT);
                         break;
 
                     case TYP_DOUBLE:
@@ -2666,8 +2666,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         unreached();
                         break;
 
+                    case TYP_BOOL:
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                        assert(FitsIn(tree->TypeGet(), value));
+                        conValTree = gtNewIconNode(value);
+                        break;
+
                     default:
-                        // Do not support (e.g. bool(const int)).
+                        // Do not support (e.g. byref(const int)).
                         break;
                 }
             }

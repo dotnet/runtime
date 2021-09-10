@@ -8063,18 +8063,6 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 
 /*****************************************************************************
  *
- *  Return a string that represents the given FP register.
- */
-
-const char* emitter::emitFPregName(unsigned reg, bool varName)
-{
-    assert(reg < REG_COUNT);
-
-    return emitComp->compFPregVarName((regNumber)(reg), varName);
-}
-
-/*****************************************************************************
- *
  *  Return a string that represents the given XMM register.
  */
 
@@ -8853,7 +8841,7 @@ void emitter::emitDispIns(
                 { // (val < 0)
                     printf("-0x%IX", -val);
                 }
-                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK);
+                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idFlags);
             }
             break;
 

@@ -1466,6 +1466,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     info->idSize        = sz;
     info->idVarRefOffs  = 0;
     info->idMemCookie   = 0;
+    info->idFlags       = GTF_EMPTY;
     info->idFinallyCall = false;
     info->idCatchRet    = false;
     info->idCallSig     = nullptr;

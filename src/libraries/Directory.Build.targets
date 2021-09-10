@@ -22,7 +22,7 @@
     <NetCoreAppCurrentTestHostPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(NetCoreAppCurrentBuildSettings)'))</NetCoreAppCurrentTestHostPath>
     <NetCoreAppCurrentTestHostSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(NetCoreAppCurrentTestHostPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NetCoreAppCurrentTestHostSharedFrameworkPath>
 
-    <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0')))">$(NoWarn);nullable</NoWarn>
+    <NoWarn Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">$(NoWarn);nullable</NoWarn>
     <NoWarn Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);nullable;CA1052</NoWarn>
     <!-- Ignore Obsolete errors within the generated shims that type-forward types.
          SYSLIB0003: Code Access Security (CAS).
@@ -187,12 +187,12 @@
     </ItemGroup>
   </Target>
 
-  <!-- Adds Nullable annotation attributes to < .NET 5 builds. -->
-  <ItemGroup Condition="'$(Nullable)' != '' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+  <!-- Adds Nullable annotation attributes to non .NETCoreApp builds. -->
+  <ItemGroup Condition="'$(Nullable)' != '' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
   </ItemGroup>
 
-  <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
+  <!-- If a tfm doesn't target .NETCoreApp but uses the platform support attributes, then we include the
        System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.
 
        If a project has specified assembly-level SupportedOSPlatforms or UnsupportedOSPlatforms,
@@ -201,13 +201,13 @@
     <IncludePlatformAttributes Condition="'$(IncludePlatformAttributes)' == '' and ('$(SupportedOSPlatforms)' != '' or '$(UnsupportedOSPlatforms)' != '')">true</IncludePlatformAttributes>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IncludePlatformAttributes)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+  <ItemGroup Condition="'$(IncludePlatformAttributes)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
   </ItemGroup>
 
   <!-- Adds ObsoleteAttribute to projects that need to apply downlevel Obsoletions with DiagnosticId and UrlFormat -->
   <Choose>
-    <When Condition="'$(IncludeInternalObsoleteAttribute)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <When Condition="'$(IncludeInternalObsoleteAttribute)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
       <ItemGroup>
         <Compile Include="$(CoreLibSharedDir)System\ObsoleteAttribute.cs" Link="System\ObsoleteAttribute.cs" />
       </ItemGroup>
