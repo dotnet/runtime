@@ -148,7 +148,7 @@
     <value>Type has multiple members annotated with JsonExtensionDataAttribute.</value>
   </data>
   <data name="DataExtensionPropertyInvalidFormat" xml:space="preserve">
-    <value>The data extension property '{0}.{1}' does not match the required signature of 'IDictionary&lt;string, JsonElement&gt;', 'IDictionary&lt;string, object&gt;' or 'JsonObject'.</value>
+    <value>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
   </data>
   <data name="DataExtensionPropertyInvalidTitle" xml:space="preserve">
     <value>Data extension property type invalid.</value>
