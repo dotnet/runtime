@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using System.IO.Pipes;
 
 namespace System.IO.Tests
 {
@@ -185,6 +186,32 @@ namespace System.IO.Tests
         public async Task ProcFs_NotEmpty(string path)
         {
             Assert.InRange((await File.ReadAllBytesAsync(path)).Length, 1, int.MaxValue);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
+        public async Task ReadAllBytesAsync_NonSeekableFileStream()
+        {
+            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+            var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);
+            var contentBytes = new byte[] { 1, 2, 3 };
+            Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes);
+
+            byte[] readBytes = await File.ReadAllBytesAsync(pipePath);
+
+            await writingServerTask;
+            Assert.Equal<byte>(contentBytes, readBytes);
+
+            static async Task WaitConnectionAndWritePipeStreamAsync(NamedPipeServerStream namedPipeWriterStream, byte[] contentBytes)
+            {
+                await using (namedPipeWriterStream)
+                {
+                    await namedPipeWriterStream.WaitForConnectionAsync();
+                    await namedPipeWriterStream.WriteAsync(contentBytes);
+                }
+            }
         }
     }
 }
