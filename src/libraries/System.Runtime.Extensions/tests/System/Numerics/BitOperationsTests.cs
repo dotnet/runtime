@@ -606,15 +606,15 @@ namespace System.Numerics.Tests
             Assert.Equal(value, BitOperations.RotateLeft(value, int.MinValue)); // % 64 = 0
             Assert.Equal(BitOperations.RotateLeft(value, 63), BitOperations.RotateLeft(value, int.MaxValue)); // % 64 = 63
 #else
-            Assert.Equal((nuint) 0b10000000_00000000_00000000_00000000u, BitOperations.RotateLeft((nuint) 0b00000000_00000000_00000000_00000001u), int.MaxValue); // % 32 = 31
-            Assert.Equal((nuint) 0b00000000_00001000_00000000_00001010u, BitOperations.RotateLeft((nuint) 0b01000000_00000001_00000000_00000001u), 3);
-            Assert.Equal((nuint) 0b00000000_00000100_00000000_00000101u, BitOperations.RotateLeft((nuint) 0b01000000_00000001_00000000_00000001u), 2);
-            Assert.Equal((nuint) 0b10101010_10101010_10101010_10101010u, BitOperations.RotateLeft((nuint) 0b01010101_01010101_01010101_01010101u), 1);
-            Assert.Equal((nuint) 0b01010101_11111111_01010101_01010101u, BitOperations.RotateLeft((nuint) 0b01010101_11111111_01010101_01010101u), 0);
-            Assert.Equal((nuint) 0b10000000_00000000_00000000_00000000u, BitOperations.RotateLeft((nuint) 0b00000000_00000000_00000000_00000001u), -1);
-            Assert.Equal((nuint) 0b10000000_00000000_00000000_00000000u, BitOperations.RotateLeft((nuint) 0b00000000_00000000_00000000_00000001u), -2);
-            Assert.Equal((nuint) 0b10000000_00000000_00000000_00000000u, BitOperations.RotateLeft((nuint) 0b00000000_00000000_00000000_00000001u), -3);
-            Assert.Equal((nuint) 0b01010101_11111111_01010101_01010101u, BitOperations.RotateLeft((nuint) 0b01010101_11111111_01010101_01010101u), int.MinValue); // % 32 = 0
+            Assert.Equal((nuint) 0b10000000_00000000_00000000_00000000u, BitOperations.RotateLeft((nuint) 0b00000000_00000000_00000000_00000001u, int.MaxValue)); // % 32 = 31
+            Assert.Equal((nuint) 0b00000000_00001000_00000000_00001010u, BitOperations.RotateLeft((nuint) 0b01000000_00000001_00000000_00000001u, 3));
+            Assert.Equal((nuint) 0b00000000_00000100_00000000_00000101u, BitOperations.RotateLeft((nuint) 0b01000000_00000001_00000000_00000001u, 2));
+            Assert.Equal((nuint) 0b10101010_10101010_10101010_10101010u, BitOperations.RotateLeft((nuint) 0b01010101_01010101_01010101_01010101u, 1));
+            Assert.Equal((nuint) 0b01010101_11111111_01010101_01010101u, BitOperations.RotateLeft((nuint) 0b01010101_11111111_01010101_01010101u, 0));
+            Assert.Equal((nuint) 0b10000000_00000000_00000000_00000000u, BitOperations.RotateLeft((nuint) 0b00000000_00000000_00000000_00000001u, -1));
+            Assert.Equal((nuint) 0b10000000_00000000_00000000_00000000u, BitOperations.RotateLeft((nuint) 0b00000000_00000000_00000000_00000001u, -2));
+            Assert.Equal((nuint) 0b10000000_00000000_00000000_00000000u, BitOperations.RotateLeft((nuint) 0b00000000_00000000_00000000_00000001u, -3));
+            Assert.Equal((nuint) 0b01010101_11111111_01010101_01010101u, BitOperations.RotateLeft((nuint) 0b01010101_11111111_01010101_01010101u, int.MinValue)); // % 32 = 0
 #endif
         }
 
@@ -667,15 +667,15 @@ namespace System.Numerics.Tests
             Assert.Equal(value, BitOperations.RotateRight(value, int.MinValue)); // % 64 = 0
             Assert.Equal(BitOperations.RotateLeft(value, 63), BitOperations.RotateRight(value, int.MaxValue)); // % 64 = 63
 #else
-            Assert.Equal((nuint) 0b00000000_00000000_00000000_00000001u, BitOperations.RotateRight((nuint) 0b10000000_00000000_00000000_00000000u), int.MaxValue); // % 32 = 31
-            Assert.Equal((nuint) 0b01000000_00000001_00000000_00000001u, BitOperations.RotateRight((nuint) 0b00000000_00001000_00000000_00001010u), 3);
-            Assert.Equal((nuint) 0b01000000_00000001_00000000_00000001u, BitOperations.RotateRight((nuint) 0b00000000_00000100_00000000_00000101u), 2);
-            Assert.Equal((nuint) 0b10101010_10101010_10101010_10101010u, BitOperations.RotateRight((nuint) 0b01010101_01010101_01010101_01010101u), 1);
-            Assert.Equal((nuint) 0b01010101_11111111_01010101_01010101u, BitOperations.RotateRight((nuint) 0b01010101_11111111_01010101_01010101u), 0);
-            Assert.Equal((nuint) 0b00000000_00000000_00000000_00000001u, BitOperations.RotateRight((nuint) 0b10000000_00000000_00000000_00000000u), -1);
-            Assert.Equal((nuint) 0b00000000_00000000_00000000_00000100u, BitOperations.RotateRight((nuint) 0b00000000_00000000_00000000_00000100u), -2);
-            Assert.Equal((nuint) 0b00000000_00000000_00000000_00000010u, BitOperations.RotateRight((nuint) 0b01000000_00000000_00000000_00000000u), -3);
-            Assert.Equal((nuint) 0b01010101_11111111_01010101_01010101u, BitOperations.RotateRight((nuint) 0b01010101_11111111_01010101_01010101u), int.MinValue); // % 32 = 0
+            Assert.Equal((nuint) 0b00000000_00000000_00000000_00000001u, BitOperations.RotateRight((nuint) 0b10000000_00000000_00000000_00000000u, int.MaxValue)); // % 32 = 31
+            Assert.Equal((nuint) 0b01000000_00000001_00000000_00000001u, BitOperations.RotateRight((nuint) 0b00000000_00001000_00000000_00001010u, 3));
+            Assert.Equal((nuint) 0b01000000_00000001_00000000_00000001u, BitOperations.RotateRight((nuint) 0b00000000_00000100_00000000_00000101u, 2));
+            Assert.Equal((nuint) 0b10101010_10101010_10101010_10101010u, BitOperations.RotateRight((nuint) 0b01010101_01010101_01010101_01010101u, 1));
+            Assert.Equal((nuint) 0b01010101_11111111_01010101_01010101u, BitOperations.RotateRight((nuint) 0b01010101_11111111_01010101_01010101u, 0));
+            Assert.Equal((nuint) 0b00000000_00000000_00000000_00000001u, BitOperations.RotateRight((nuint) 0b10000000_00000000_00000000_00000000u, -1));
+            Assert.Equal((nuint) 0b00000000_00000000_00000000_00000100u, BitOperations.RotateRight((nuint) 0b00000000_00000000_00000000_00000100u, -2));
+            Assert.Equal((nuint) 0b00000000_00000000_00000000_00000010u, BitOperations.RotateRight((nuint) 0b01000000_00000000_00000000_00000000u, -3));
+            Assert.Equal((nuint) 0b01010101_11111111_01010101_01010101u, BitOperations.RotateRight((nuint) 0b01010101_11111111_01010101_01010101u, int.MinValue)); // % 32 = 0
 #endif
         }
 
