@@ -78,6 +78,25 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [InlineData("Debug", true)]
+        [InlineData("Debug", false)]
+        [InlineData("Release", true)]
+        [InlineData("Release", false)]
+        public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
+        {
+            string id = $"blz_deploy_on_build_{config}_{nativeRelink}";
+            string projectFile = CreateProjectWithNativeReference(id);
+            AddItemsPropertiesToProject(projectFile, extraProperties: nativeRelink ? string.Empty : "<RunAOTCompilation>true</RunAOTCompilation>");
+
+            // build with -p:DeployOnBuild=true, and that will trigger a publish
+            BuildInternal(id, config, publish: false, "-p:DeployOnBuild=true");
+
+            var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
+            AssertDotNetNativeFiles(expectedFileType, config, forPublish: true);
+            AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: false);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
