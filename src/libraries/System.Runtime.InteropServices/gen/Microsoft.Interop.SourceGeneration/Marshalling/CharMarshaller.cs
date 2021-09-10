@@ -9,7 +9,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal class Utf16CharMarshaller : IMarshallingGenerator
+    public sealed class Utf16CharMarshaller : IMarshallingGenerator
     {
         private static readonly PredefinedTypeSyntax NativeType = PredefinedType(Token(SyntaxKind.UShortKeyword));
 

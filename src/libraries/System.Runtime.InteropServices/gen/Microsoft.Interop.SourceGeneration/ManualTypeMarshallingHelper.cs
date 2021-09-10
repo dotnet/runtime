@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    static class ManualTypeMarshallingHelper
+    public static class ManualTypeMarshallingHelper
     {
         public const string ValuePropertyName = "Value";
         public const string GetPinnableReferenceName = "GetPinnableReference";

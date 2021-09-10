@@ -6,7 +6,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal abstract class ConditionalStackallocMarshallingGenerator : IMarshallingGenerator
+    public abstract class ConditionalStackallocMarshallingGenerator : IMarshallingGenerator
     {
         protected static string GetAllocationMarkerIdentifier(TypePositionInfo info, StubCodeContext context) => context.GetAdditionalIdentifier(info, "allocated");
 

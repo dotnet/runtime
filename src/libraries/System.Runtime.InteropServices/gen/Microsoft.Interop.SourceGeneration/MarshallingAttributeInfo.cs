@@ -12,7 +12,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Type used to pass on default marshalling details.
     /// </summary>
-    internal sealed record DefaultMarshallingInfo(
+    public sealed record DefaultMarshallingInfo(
         CharEncoding CharEncoding
     );
 
@@ -20,11 +20,15 @@ namespace Microsoft.Interop
     // for C# vNext discriminated unions. Once discriminated unions are released,
     // these should be updated to be implemented as a discriminated union.
 
-    internal abstract record MarshallingInfo
+    public abstract record MarshallingInfo
     {
+        // Add a constructor that can only be called by derived types in the same assembly
+        // to enforce that this type cannot be extended by users of this library.
+        private protected MarshallingInfo()
+        {}
     }
 
-    internal sealed record NoMarshallingInfo : MarshallingInfo
+    public sealed record NoMarshallingInfo : MarshallingInfo
     {
         public static readonly MarshallingInfo Instance = new NoMarshallingInfo();
 
@@ -34,7 +38,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Character encoding enumeration.
     /// </summary>
-    internal enum CharEncoding
+    public enum CharEncoding
     {
         Undefined,
         Utf8,
@@ -46,14 +50,14 @@ namespace Microsoft.Interop
     /// <summary>
     /// Details that are required when scenario supports strings.
     /// </summary>
-    internal record MarshallingInfoStringSupport(
+    public record MarshallingInfoStringSupport(
         CharEncoding CharEncoding
     ) : MarshallingInfo;
 
     /// <summary>
     /// Simple User-application of System.Runtime.InteropServices.MarshalAsAttribute
     /// </summary>
-    internal sealed record MarshalAsInfo(
+    public sealed record MarshalAsInfo(
         UnmanagedType UnmanagedType,
         CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
     {
@@ -64,10 +68,10 @@ namespace Microsoft.Interop
     /// or System.Runtime.InteropServices.GeneratedMarshallingAttribute on a blittable type
     /// in source in this compilation.
     /// </summary>
-    internal sealed record BlittableTypeAttributeInfo : MarshallingInfo;
+    public sealed record BlittableTypeAttributeInfo : MarshallingInfo;
 
     [Flags]
-    internal enum CustomMarshallingFeatures
+    public enum CustomMarshallingFeatures
     {
         None = 0,
         ManagedToNative = 0x1,
@@ -78,23 +82,26 @@ namespace Microsoft.Interop
         FreeNativeResources = 0x20,
     }
 
-    internal abstract record CountInfo;
+    public abstract record CountInfo
+    {
+        private protected CountInfo() {}
+    }
 
-    internal sealed record NoCountInfo : CountInfo
+    public sealed record NoCountInfo : CountInfo
     {
         public static readonly NoCountInfo Instance = new NoCountInfo();
 
         private NoCountInfo() { }
     }
 
-    internal sealed record ConstSizeCountInfo(int Size) : CountInfo;
+    public sealed record ConstSizeCountInfo(int Size) : CountInfo;
 
-    internal sealed record CountElementCountInfo(TypePositionInfo ElementInfo) : CountInfo
+    public sealed record CountElementCountInfo(TypePositionInfo ElementInfo) : CountInfo
     {
         public const string ReturnValueElementName = "return-value";
     }
 
-    internal sealed record SizeAndParamIndexInfo(int ConstSize, TypePositionInfo? ParamAtIndex) : CountInfo
+    public sealed record SizeAndParamIndexInfo(int ConstSize, TypePositionInfo? ParamAtIndex) : CountInfo
     {
         public const int UnspecifiedConstSize = -1;
 
@@ -106,7 +113,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// User-applied System.Runtime.InteropServices.NativeMarshallingAttribute
     /// </summary>
-    internal record NativeMarshallingAttributeInfo(
+    public record NativeMarshallingAttributeInfo(
         ManagedTypeInfo NativeMarshallingType,
         ManagedTypeInfo? ValuePropertyType,
         CustomMarshallingFeatures MarshallingFeatures,
@@ -116,18 +123,18 @@ namespace Microsoft.Interop
     /// User-applied System.Runtime.InteropServices.GeneratedMarshallingAttribute
     /// on a non-blittable type in source in this compilation.
     /// </summary>
-    internal sealed record GeneratedNativeMarshallingAttributeInfo(
+    public sealed record GeneratedNativeMarshallingAttributeInfo(
         string NativeMarshallingFullyQualifiedTypeName) : MarshallingInfo;
 
     /// <summary>
     /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
     /// </summary>
-    internal sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor, bool IsAbstract) : MarshallingInfo;
+    public sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor, bool IsAbstract) : MarshallingInfo;
 
     /// <summary>
     /// User-applied System.Runtime.InteropServices.NativeMarshallingAttribute
     /// with a contiguous collection marshaller
-    internal sealed record NativeContiguousCollectionMarshallingInfo(
+    public sealed record NativeContiguousCollectionMarshallingInfo(
         ManagedTypeInfo NativeMarshallingType,
         ManagedTypeInfo? ValuePropertyType,
         CustomMarshallingFeatures MarshallingFeatures,
@@ -141,10 +148,10 @@ namespace Microsoft.Interop
             UseDefaultMarshalling
         );
 
-    internal class MarshallingAttributeInfoParser
+    public sealed class MarshallingAttributeInfoParser
     {
         private readonly Compilation _compilation;
-        private readonly GeneratorDiagnostics _diagnostics;
+        private readonly IGeneratorDiagnostics _diagnostics;
         private readonly DefaultMarshallingInfo _defaultInfo;
         private readonly ISymbol _contextSymbol;
         private readonly ITypeSymbol _marshalAsAttribute;
@@ -152,7 +159,7 @@ namespace Microsoft.Interop
 
         public MarshallingAttributeInfoParser(
             Compilation compilation,
-            GeneratorDiagnostics diagnostics,
+            IGeneratorDiagnostics diagnostics,
             DefaultMarshallingInfo defaultInfo,
             ISymbol contextSymbol)
         {

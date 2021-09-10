@@ -19,7 +19,7 @@ namespace Microsoft.Interop {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -57,15 +57,6 @@ namespace Microsoft.Interop {
             }
             set {
                 resourceCulture = value;
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Marshalling an array from unmanaged to managed requires either the &apos;SizeParamIndex&apos; or &apos;SizeConst&apos; fields to be set on a &apos;MarshalAsAttribute&apos; or the &apos;ConstantElementCount&apos; or &apos;CountElementName&apos; properties to be set on a &apos;MarshalUsingAttribute&apos;..
-        /// </summary>
-        internal static string ArraySizeMustBeSpecified {
-            get {
-                return ResourceManager.GetString("ArraySizeMustBeSpecified", resourceCulture);
             }
         }
         
@@ -124,15 +115,6 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element..
-        /// </summary>
-        internal static string CollectionSizeParamTypeMustBeIntegral {
-            get {
-                return ResourceManager.GetString("CollectionSizeParamTypeMustBeIntegral", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Source-generated P/Invokes will ignore any configuration that is not supported..
         /// </summary>
         internal static string ConfigurationNotSupportedDescription {
@@ -151,7 +133,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.
+        ///   Looks up a localized string similar to The specified marshalling configuration is not supported by source-generated P/Invokes. {0}..
         /// </summary>
         internal static string ConfigurationNotSupportedMessageMarshallingInfo {
             get {
@@ -277,42 +259,6 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This element cannot depend on &apos;{0}&apos; for collection size information without creating a dependency cycle.
-        /// </summary>
-        internal static string CyclicalCountInfo {
-            get {
-                return ResourceManager.GetString("CyclicalCountInfo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Count information for a given element at a given indirection level can only be specified once.
-        /// </summary>
-        internal static string DuplicateCountInfo {
-            get {
-                return ResourceManager.GetString("DuplicateCountInfo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}.
-        /// </summary>
-        internal static string DuplicateMarshallingInfo {
-            get {
-                return ResourceManager.GetString("DuplicateMarshallingInfo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Marshalling info was specified for &apos;ElementIndirectionLevel&apos; {0}, but marshalling info was only needed for {1} levels of indirection.
-        /// </summary>
-        internal static string ExtraneousMarshallingInfo {
-            get {
-                return ResourceManager.GetString("ExtraneousMarshallingInfo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Types that contain methods marked with &apos;GeneratedDllImportAttribute&apos; must be &apos;partial&apos;. P/Invoke source generation will ignore methods contained within non-partial types..
         /// </summary>
         internal static string GeneratedDllImportContainingTypeMissingModifiersDescription {
@@ -403,56 +349,11 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The provided graph has cycles and cannot be topologically sorted..
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a closed generic so the emitted code can use a specific instantiation..
         /// </summary>
-        internal static string GraphHasCycles {
+        internal static string NativeGenericTypeMustBeClosedDescription {
             get {
-                return ResourceManager.GetString("GraphHasCycles", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;[In]&apos; attribute is not supported unless the &apos;[Out]&apos; attribute is also used. The behavior of the &apos;[In]&apos; attribute without the &apos;[Out]&apos; attribute is the same as the default behavior..
-        /// </summary>
-        internal static string InAttributeNotSupportedWithoutOut {
-            get {
-                return ResourceManager.GetString("InAttributeNotSupportedWithoutOut", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;[In]&apos; and &apos;[Out]&apos; attributes are unsupported on parameters passed by reference. Use the &apos;in&apos;, &apos;ref&apos;, or &apos;out&apos; keywords instead..
-        /// </summary>
-        internal static string InOutAttributeByRefNotSupported {
-            get {
-                return ResourceManager.GetString("InOutAttributeByRefNotSupported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The provided &apos;[In]&apos; and &apos;[Out]&apos; attributes on this parameter are unsupported on this parameter..
-        /// </summary>
-        internal static string InOutAttributeMarshalerNotSupported {
-            get {
-                return ResourceManager.GetString("InOutAttributeMarshalerNotSupported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Marshalling char with &apos;CharSet.{0}&apos; is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
-        /// </summary>
-        internal static string MarshallingCharAsSpecifiedCharSetNotSupported {
-            get {
-                return ResourceManager.GetString("MarshallingCharAsSpecifiedCharSetNotSupported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Marshalling string or char without explicit marshalling information is not supported. Specify either &apos;GeneratedDllImportAttribute.CharSet&apos; or &apos;MarshalAsAttribute&apos;..
-        /// </summary>
-        internal static string MarshallingStringOrCharAsUndefinedNotSupported {
-            get {
-                return ResourceManager.GetString("MarshallingStringOrCharAsUndefinedNotSupported", resourceCulture);
+                return ResourceManager.GetString("NativeGenericTypeMustBeClosedDescription", resourceCulture);
             }
         }
         
@@ -543,24 +444,6 @@ namespace Microsoft.Interop {
         internal static string NativeTypeMustHaveRequiredShapeMessage {
             get {
                 return ResourceManager.GetString("NativeTypeMustHaveRequiredShapeMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;[Out]&apos; attribute is only supported on array parameters..
-        /// </summary>
-        internal static string OutByValueNotSupportedDescription {
-            get {
-                return ResourceManager.GetString("OutByValueNotSupportedDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;[Out]&apos; attribute is not supported on the &apos;{0}&apos; parameter..
-        /// </summary>
-        internal static string OutByValueNotSupportedMessage {
-            get {
-                return ResourceManager.GetString("OutByValueNotSupportedMessage", resourceCulture);
             }
         }
         

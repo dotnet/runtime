@@ -10,7 +10,7 @@ using static Microsoft.Interop.MarshallerHelpers;
 
 namespace Microsoft.Interop
 {
-    internal sealed class PlatformDefinedStringMarshaller : ConditionalStackallocMarshallingGenerator
+    public sealed class PlatformDefinedStringMarshaller : ConditionalStackallocMarshallingGenerator
     {
         private static readonly TypeSyntax NativeType = PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)));
 

@@ -9,7 +9,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed class HResultExceptionMarshaller : IMarshallingGenerator
+    public sealed class HResultExceptionMarshaller : IMarshallingGenerator
     {
         private static readonly TypeSyntax NativeType = PredefinedType(Token(SyntaxKind.IntKeyword));
 

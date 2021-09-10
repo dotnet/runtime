@@ -15,7 +15,7 @@ namespace Microsoft.Interop
     /// contents of the managed array.
     /// </summary>
     [Flags]
-    internal enum ByValueContentsMarshalKind
+    public enum ByValueContentsMarshalKind
     {
         /// <summary>
         /// Marshal contents from managed to native only.
@@ -40,7 +40,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Positional type information involved in unmanaged/managed scenarios.
     /// </summary>
-    internal sealed record TypePositionInfo(ManagedTypeInfo ManagedType, MarshallingInfo MarshallingAttributeInfo)
+    public sealed record TypePositionInfo(ManagedTypeInfo ManagedType, MarshallingInfo MarshallingAttributeInfo)
     {
         public const int UnsetIndex = int.MinValue;
         public const int ReturnIndex = UnsetIndex + 1;

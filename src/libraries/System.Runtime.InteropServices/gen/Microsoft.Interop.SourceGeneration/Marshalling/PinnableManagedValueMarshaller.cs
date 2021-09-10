@@ -5,7 +5,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed class PinnableManagedValueMarshaller : IMarshallingGenerator
+    public sealed class PinnableManagedValueMarshaller : IMarshallingGenerator
     {
         private readonly IMarshallingGenerator manualMarshallingGenerator;
 

@@ -8,15 +8,8 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal class SafeHandleMarshaller : IMarshallingGenerator
+    public sealed class SafeHandleMarshaller : IMarshallingGenerator
     {
-        private readonly AnalyzerConfigOptions options;
-
-        public SafeHandleMarshaller(AnalyzerConfigOptions options)
-        {
-            this.options = options;
-        }
-
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
             return MarshallerHelpers.SystemIntPtrType;

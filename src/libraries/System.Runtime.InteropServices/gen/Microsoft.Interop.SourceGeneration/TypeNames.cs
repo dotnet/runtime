@@ -8,8 +8,6 @@ namespace Microsoft.Interop
 {
     static class TypeNames
     {
-        public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
-
         public const string GeneratedDllImportAttribute = "System.Runtime.InteropServices.GeneratedDllImportAttribute";
 
         public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
@@ -24,24 +22,37 @@ namespace Microsoft.Interop
 
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
-        public const string SuppressGCTransitionAttribute = "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
-
-        public const string UnmanagedCallConvAttribute = "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
-
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
+
+        public const string System_Activator = "System.Activator";
 
         public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
 
         public const string System_Runtime_InteropServices_MarshalAsAttribute = "System.Runtime.InteropServices.MarshalAsAttribute";
 
-        public const string System_Runtime_InteropServices_UnmanagedType = "System.Runtime.InteropServices.UnmanagedType";
-
         public const string System_Runtime_InteropServices_Marshal = "System.Runtime.InteropServices.Marshal";
+
+        private const string System_Runtime_InteropServices_MarshalEx = "System.Runtime.InteropServices.MarshalEx";
+
+        public static string MarshalEx(InteropGenerationOptions options)
+        {
+            return options.UseMarshalType ? System_Runtime_InteropServices_Marshal : System_Runtime_InteropServices_MarshalEx;
+        }
+
+        public const string System_Runtime_InteropServices_UnmanagedType = "System.Runtime.InteropServices.UnmanagedType";
+        
+        public const string System_Runtime_InteropServices_MemoryMarshal = "System.Runtime.InteropServices.MemoryMarshal";
 
         public const string System_Runtime_InteropServices_GeneratedMarshalling_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.GeneratedMarshalling.ArrayMarshaller`1";
 
         public const string System_Runtime_InteropServices_GeneratedMarshalling_PtrArrayMarshaller_Metadata = "System.Runtime.InteropServices.GeneratedMarshalling.PtrArrayMarshaller`1";
+
+        public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
+
+        public const string System_Runtime_InteropServices_OutAttribute = "System.Runtime.InteropServices.OutAttribute";
+
+        public const string System_Runtime_InteropServices_InAttribute = "System.Runtime.InteropServices.InAttribute";
 
         public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
 
@@ -49,11 +60,9 @@ namespace Microsoft.Interop
 
         private const string Internal_Runtime_CompilerServices_Unsafe = "Internal.Runtime.CompilerServices.Unsafe";
 
-        public static string Unsafe(AnalyzerConfigOptions options)
+        public static string Unsafe(InteropGenerationOptions options)
         {
-            return options.UseInternalUnsafeType() ? Internal_Runtime_CompilerServices_Unsafe : System_Runtime_CompilerServices_Unsafe;
+            return options.UseInternalUnsafeType ? Internal_Runtime_CompilerServices_Unsafe : System_Runtime_CompilerServices_Unsafe;
         }
-
-        public const string System_Type = "System.Type";
     }
 }

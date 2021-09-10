@@ -8,7 +8,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal abstract class BoolMarshallerBase : IMarshallingGenerator
+    public abstract class BoolMarshallerBase : IMarshallingGenerator
     {
         private readonly PredefinedTypeSyntax _nativeType;
         private readonly int _trueValue;
@@ -114,7 +114,7 @@ namespace Microsoft.Interop
     /// and <see href="https://en.cppreference.com/w/cpp/language/types">C++</see>, but those is implementation defined.
     /// Consult your compiler specification.
     /// </remarks>
-    internal class ByteBoolMarshaller : BoolMarshallerBase
+    public sealed class ByteBoolMarshaller : BoolMarshallerBase
     {
         public ByteBoolMarshaller()
             : base(PredefinedType(Token(SyntaxKind.ByteKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
@@ -128,7 +128,7 @@ namespace Microsoft.Interop
     /// <remarks>
     /// Corresponds to the definition of <see href="https://docs.microsoft.com/windows/win32/winprog/windows-data-types">BOOL</see>.
     /// </remarks>
-    internal class WinBoolMarshaller : BoolMarshallerBase
+    public sealed class WinBoolMarshaller : BoolMarshallerBase
     {
         public WinBoolMarshaller()
             : base(PredefinedType(Token(SyntaxKind.IntKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
@@ -139,7 +139,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Marshal a boolean value as a VARIANT_BOOL (Windows OLE/Automation type).
     /// </summary>
-    internal class VariantBoolMarshaller : BoolMarshallerBase
+    public sealed class VariantBoolMarshaller : BoolMarshallerBase
     {
         private const short VARIANT_TRUE = -1;
         private const short VARIANT_FALSE = 0;

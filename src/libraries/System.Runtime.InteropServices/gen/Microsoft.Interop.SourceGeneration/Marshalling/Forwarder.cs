@@ -8,7 +8,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal class Forwarder : IMarshallingGenerator, IAttributedReturnTypeMarshallingGenerator
+    public sealed class Forwarder : IMarshallingGenerator, IAttributedReturnTypeMarshallingGenerator
     {
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {

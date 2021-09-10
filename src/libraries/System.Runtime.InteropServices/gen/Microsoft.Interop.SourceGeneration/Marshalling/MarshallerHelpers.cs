@@ -7,7 +7,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal static class MarshallerHelpers
+    public static class MarshallerHelpers
     {
         public static readonly ExpressionSyntax IsWindows = InvocationExpression(
                                                         MemberAccessExpression(

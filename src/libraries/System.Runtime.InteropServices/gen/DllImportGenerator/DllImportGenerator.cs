@@ -105,16 +105,18 @@ namespace Microsoft.Interop
                     }
                 });
 
+            var stubOptions = context.AnalyzerConfigOptionsProvider.Select((options, ct) => new DllImportGeneratorOptions(options.GlobalOptions));
+
             var stubEnvironment = compilationAndTargetFramework
-                .Combine(context.AnalyzerConfigOptionsProvider)
+                .Combine(stubOptions)
                 .Select(
                     static (data, ct) =>
                         new StubEnvironment(
                             data.Left.compilation,
                             data.Left.isSupported,
                             data.Left.targetFrameworkVersion,
-                            data.Right.GlobalOptions,
-                            data.Left.compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute))
+                            data.Left.compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute),
+                            data.Right)
                 );
 
             var methodSourceAndDiagnostics = methodsToGenerate
@@ -133,12 +135,12 @@ namespace Microsoft.Interop
                     }
                 )
                 .WithComparer(Comparers.CalculatedContextWithSyntax)
-                .Combine(context.AnalyzerConfigOptionsProvider)
+                .Combine(stubOptions)
                 .Select(
                     (data, ct) =>
                     {
                         IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.GenerateSingleStub, data));
-                        return GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right.GlobalOptions);
+                        return GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right);
                     }
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
@@ -444,22 +446,194 @@ namespace Microsoft.Interop
         private (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
             IncrementalStubGenerationContext dllImportStub,
             MethodDeclarationSyntax originalSyntax,
-            AnalyzerConfigOptions options)
+            DllImportGeneratorOptions options)
         {
             var diagnostics = new GeneratorDiagnostics();
 
             // Generate stub code
-            var stubGenerator = new StubCodeGenerator(
-                dllImportStub.DllImportData,
+            var stubGenerator = new PInvokeStubCodeGenerator(
                 dllImportStub.StubContext.ElementTypeInformation,
-                options,
-                (elementInfo, ex) => diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails));
+                dllImportStub.DllImportData.SetLastError && !options.GenerateForwarders,
+                (elementInfo, ex) => diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails),
+                dllImportStub.StubContext.GeneratorFactory);
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = dllImportStub.ForwardedAttributes;
 
-            var code = stubGenerator.GenerateBody(originalSyntax.Identifier.Text, forwardedAttributes: forwardedAttributes.Length != 0 ? AttributeList(SeparatedList(forwardedAttributes)) : null);
+            const string innerPInvokeName = "__PInvoke__";
+
+            var code = stubGenerator.GeneratePInvokeBody(innerPInvokeName);
+
+            var dllImport = CreateTargetFunctionAsLocalStatement(
+                stubGenerator,
+                dllImportStub.StubContext.Options,
+                dllImportStub.DllImportData,
+                innerPInvokeName,
+                originalSyntax.Identifier.Text);
+
+            if (!forwardedAttributes.IsEmpty)
+            {
+                dllImport = dllImport.AddAttributeLists(AttributeList(SeparatedList(forwardedAttributes)));
+            }
+
+            code = code.AddStatements(dllImport);
 
             return (PrintGeneratedSource(originalSyntax, dllImportStub.StubContext, code), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+        }
+
+
+        private static LocalFunctionStatementSyntax CreateTargetFunctionAsLocalStatement(
+            PInvokeStubCodeGenerator stubGenerator,
+            DllImportGeneratorOptions options,
+            GeneratedDllImportData dllImportData,
+            string stubTargetName,
+            string stubMethodName)
+        {
+            var (parameterList, returnType, returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
+            var localDllImport = LocalFunctionStatement(returnType, stubTargetName)
+                .AddModifiers(
+                    Token(SyntaxKind.ExternKeyword),
+                    Token(SyntaxKind.StaticKeyword),
+                    Token(SyntaxKind.UnsafeKeyword))
+                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
+                .WithAttributeLists(
+                    SingletonList(AttributeList(
+                        SingletonSeparatedList(
+                            CreateDllImportAttributeForTarget(
+                                GetTargetDllImportDataFromStubData(
+                                    dllImportData,
+                                    stubMethodName,
+                                    options.GenerateForwarders))))))
+                .WithParameterList(parameterList);
+            if (returnTypeAttributes is not null)
+            {
+                localDllImport = localDllImport.AddAttributeLists(returnTypeAttributes.WithTarget(AttributeTargetSpecifier(Token(SyntaxKind.ReturnKeyword))));
+            }
+            return localDllImport;
+        }
+
+        private static AttributeSyntax CreateDllImportAttributeForTarget(GeneratedDllImportData targetDllImportData)
+        {
+            var newAttributeArgs = new List<AttributeArgumentSyntax>
+            {
+                AttributeArgument(LiteralExpression(
+                    SyntaxKind.StringLiteralExpression,
+                    Literal(targetDllImportData.ModuleName))),
+                AttributeArgument(
+                    NameEquals(nameof(DllImportAttribute.EntryPoint)),
+                    null,
+                    CreateStringExpressionSyntax(targetDllImportData.EntryPoint!))
+            };
+
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.BestFitMapping))
+            {
+                var name = NameEquals(nameof(DllImportAttribute.BestFitMapping));
+                var value = CreateBoolExpressionSyntax(targetDllImportData.BestFitMapping);
+                newAttributeArgs.Add(AttributeArgument(name, null, value));
+            }
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.CallingConvention))
+            {
+                var name = NameEquals(nameof(DllImportAttribute.CallingConvention));
+                var value = CreateEnumExpressionSyntax(targetDllImportData.CallingConvention);
+                newAttributeArgs.Add(AttributeArgument(name, null, value));
+            }
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
+            {
+                var name = NameEquals(nameof(DllImportAttribute.CharSet));
+                var value = CreateEnumExpressionSyntax(targetDllImportData.CharSet);
+                newAttributeArgs.Add(AttributeArgument(name, null, value));
+            }
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.ExactSpelling))
+            {
+                var name = NameEquals(nameof(DllImportAttribute.ExactSpelling));
+                var value = CreateBoolExpressionSyntax(targetDllImportData.ExactSpelling);
+                newAttributeArgs.Add(AttributeArgument(name, null, value));
+            }
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.PreserveSig))
+            {
+                var name = NameEquals(nameof(DllImportAttribute.PreserveSig));
+                var value = CreateBoolExpressionSyntax(targetDllImportData.PreserveSig);
+                newAttributeArgs.Add(AttributeArgument(name, null, value));
+            }
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.SetLastError))
+            {
+                var name = NameEquals(nameof(DllImportAttribute.SetLastError));
+                var value = CreateBoolExpressionSyntax(targetDllImportData.SetLastError);
+                newAttributeArgs.Add(AttributeArgument(name, null, value));
+            }
+            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.ThrowOnUnmappableChar))
+            {
+                var name = NameEquals(nameof(DllImportAttribute.ThrowOnUnmappableChar));
+                var value = CreateBoolExpressionSyntax(targetDllImportData.ThrowOnUnmappableChar);
+                newAttributeArgs.Add(AttributeArgument(name, null, value));
+            }
+
+            // Create new attribute
+            return Attribute(
+                ParseName(typeof(DllImportAttribute).FullName),
+                AttributeArgumentList(SeparatedList(newAttributeArgs)));
+
+            static ExpressionSyntax CreateBoolExpressionSyntax(bool trueOrFalse)
+            {
+                return LiteralExpression(
+                    trueOrFalse
+                        ? SyntaxKind.TrueLiteralExpression
+                        : SyntaxKind.FalseLiteralExpression);
+            }
+
+            static ExpressionSyntax CreateStringExpressionSyntax(string str)
+            {
+                return LiteralExpression(
+                    SyntaxKind.StringLiteralExpression,
+                    Literal(str));
+            }
+
+            static ExpressionSyntax CreateEnumExpressionSyntax<T>(T value) where T : Enum
+            {
+                return MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    IdentifierName(typeof(T).FullName),
+                    IdentifierName(value.ToString()));
+            }
+        }
+
+        private static GeneratedDllImportData GetTargetDllImportDataFromStubData(GeneratedDllImportData dllImportData, string originalMethodName, bool forwardAll)
+        {
+            DllImportMember membersToForward = DllImportMember.All
+                               // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.preservesig
+                               // If PreserveSig=false (default is true), the P/Invoke stub checks/converts a returned HRESULT to an exception.
+                               & ~DllImportMember.PreserveSig
+                               // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror
+                               // If SetLastError=true (default is false), the P/Invoke stub gets/caches the last error after invoking the native function.
+                               & ~DllImportMember.SetLastError;
+            if (forwardAll)
+            {
+                membersToForward = DllImportMember.All;
+            }
+
+            var targetDllImportData = new GeneratedDllImportData(dllImportData.ModuleName)
+            {
+                CharSet = dllImportData.CharSet,
+                BestFitMapping = dllImportData.BestFitMapping,
+                CallingConvention = dllImportData.CallingConvention,
+                EntryPoint = dllImportData.EntryPoint,
+                ExactSpelling = dllImportData.ExactSpelling,
+                SetLastError = dllImportData.SetLastError,
+                PreserveSig = dllImportData.PreserveSig,
+                ThrowOnUnmappableChar = dllImportData.ThrowOnUnmappableChar,
+                IsUserDefined = dllImportData.IsUserDefined & membersToForward
+            };
+
+            // If the EntryPoint property is not set, we will compute and
+            // add it based on existing semantics (i.e. method name).
+            //
+            // N.B. The export discovery logic is identical regardless of where
+            // the name is defined (i.e. method name vs EntryPoint property).
+            if (!targetDllImportData.IsUserDefined.HasFlag(DllImportMember.EntryPoint))
+            {
+                targetDllImportData = targetDllImportData with { EntryPoint = originalMethodName };
+            }
+
+            return targetDllImportData;
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)

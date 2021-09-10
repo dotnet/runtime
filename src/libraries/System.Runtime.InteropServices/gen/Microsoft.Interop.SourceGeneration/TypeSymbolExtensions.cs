@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
-    static class TypeSymbolExtensions
+    public static class TypeSymbolExtensions
     {
         public static bool HasOnlyBlittableFields(this ITypeSymbol type) => HasOnlyBlittableFields(type, ImmutableHashSet.Create<ITypeSymbol>(SymbolEqualityComparer.Default));
 

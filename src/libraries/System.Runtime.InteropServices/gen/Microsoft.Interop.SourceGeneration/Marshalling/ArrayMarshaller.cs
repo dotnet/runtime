@@ -6,14 +6,14 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed class ArrayMarshaller : IMarshallingGenerator
+    public sealed class ArrayMarshaller : IMarshallingGenerator
     {
         private readonly IMarshallingGenerator manualMarshallingGenerator;
         private readonly TypeSyntax elementType;
         private readonly bool enablePinning;
-        private readonly AnalyzerConfigOptions options;
+        private readonly InteropGenerationOptions options;
 
-        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning, AnalyzerConfigOptions options)
+        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning, InteropGenerationOptions options)
         {
             this.manualMarshallingGenerator = manualMarshallingGenerator;
             this.elementType = elementType;

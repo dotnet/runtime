@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="..\DllImportGenerator\DllImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\TestAssets\NativeExports\NativeExports.csproj" />
     <ProjectReference Include="..\TestAssets\SharedTypes\SharedTypes.csproj" />
   </ItemGroup>

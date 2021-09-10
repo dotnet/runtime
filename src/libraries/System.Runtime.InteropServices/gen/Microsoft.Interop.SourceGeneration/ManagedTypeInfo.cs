@@ -10,7 +10,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// A discriminated union that contains enough info about a managed type to determine a marshalling generator and generate code.
     /// </summary>
-    internal abstract record ManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName)
+    public abstract record ManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName)
     {
         public TypeSyntax Syntax { get; } = SyntaxFactory.ParseTypeName(FullTypeName);
 
@@ -46,7 +46,7 @@ namespace Microsoft.Interop
         }
     }
 
-    internal sealed record SpecialTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
+    public sealed record SpecialTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
     {
         public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
@@ -62,13 +62,13 @@ namespace Microsoft.Interop
         }
     }
 
-    internal sealed record EnumTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType UnderlyingType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record EnumTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType UnderlyingType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
-    internal sealed record PointerTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsFunctionPointer) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record PointerTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsFunctionPointer) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
-    internal sealed record SzArrayType(ManagedTypeInfo ElementTypeInfo) : ManagedTypeInfo($"{ElementTypeInfo.FullTypeName}[]", $"{ElementTypeInfo.DiagnosticFormattedName}[]");
+    public sealed record SzArrayType(ManagedTypeInfo ElementTypeInfo) : ManagedTypeInfo($"{ElementTypeInfo.FullTypeName}[]", $"{ElementTypeInfo.DiagnosticFormattedName}[]");
 
-    internal sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
-    internal sealed record SimpleManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record SimpleManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 }

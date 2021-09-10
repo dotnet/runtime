@@ -17,8 +17,8 @@ namespace Microsoft.Interop
         Compilation Compilation,
         bool SupportedTargetFramework,
         Version TargetFrameworkVersion,
-        AnalyzerConfigOptions Options,
-        bool ModuleSkipLocalsInit);
+        bool ModuleSkipLocalsInit,
+        DllImportGeneratorOptions Options);
 
     internal sealed class DllImportStubContext : IEquatable<DllImportStubContext>
     {
@@ -58,6 +58,10 @@ namespace Microsoft.Interop
 
         public ImmutableArray<AttributeListSyntax> AdditionalAttributes { get; init; }
 
+        public DllImportGeneratorOptions Options { get; init; }
+
+        public IMarshallingGeneratorFactory GeneratorFactory { get; init; }
+
         public static DllImportStubContext Create(
             IMethodSymbol method,
             GeneratedDllImportData dllImportData,
@@ -95,7 +99,7 @@ namespace Microsoft.Interop
                 currType = currType.ContainingType;
             }
 
-            var typeInfos = GenerateTypeInformation(method, dllImportData, diagnostics, env);
+            var (typeInfos, generatorFactory) = GenerateTypeInformation(method, dllImportData, diagnostics, env);
 
             var additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
@@ -120,10 +124,12 @@ namespace Microsoft.Interop
                 StubTypeNamespace = stubTypeNamespace,
                 StubContainingTypes = containingTypes.ToImmutable(),
                 AdditionalAttributes = additionalAttrs.ToImmutable(),
+                Options = env.Options,
+                GeneratorFactory = generatorFactory
             };
         }
 
-        private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(IMethodSymbol method, GeneratedDllImportData dllImportData, GeneratorDiagnostics diagnostics, StubEnvironment env)
+        private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratedDllImportData dllImportData, GeneratorDiagnostics diagnostics, StubEnvironment env)
         {
             // Compute the current default string encoding value.
             var defaultEncoding = CharEncoding.Undefined;
@@ -165,36 +171,52 @@ namespace Microsoft.Interop
                 NativeIndex = TypePositionInfo.ReturnIndex
             };
 
-            var managedRetTypeInfo = retTypeInfo;
-            // Do not manually handle PreserveSig when generating forwarders.
-            // We want the runtime to handle everything.
-            if (!dllImportData.PreserveSig && !env.Options.GenerateForwarders())
-            {
-                // Create type info for native HRESULT return
-                retTypeInfo = new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance);
-                retTypeInfo = retTypeInfo with
-                {
-                    NativeIndex = TypePositionInfo.ReturnIndex
-                };
+            InteropGenerationOptions options = new(env.Options.UseMarshalType, env.Options.UseInternalUnsafeType);
+            IMarshallingGeneratorFactory generatorFactory;
 
-                // Create type info for native out param
-                if (!method.ReturnsVoid)
+            if (env.Options.GenerateForwarders)
+            {
+                generatorFactory = new ForwarderMarshallingGeneratorFactory();
+            }
+            else
+            {
+                generatorFactory = new DefaultMarshallingGeneratorFactory(options);
+                AttributedMarshallingModelGeneratorFactory attributedMarshallingFactory = new(generatorFactory, options);
+                generatorFactory = attributedMarshallingFactory;
+                if (!dllImportData.PreserveSig)
                 {
-                    // Transform the managed return type info into an out parameter and add it as the last param
-                    TypePositionInfo nativeOutInfo = managedRetTypeInfo with
+                    // Create type info for native out param
+                    if (!method.ReturnsVoid)
                     {
-                        InstanceIdentifier = StubCodeGenerator.ReturnIdentifier,
-                        RefKind = RefKind.Out,
-                        RefKindSyntax = SyntaxKind.OutKeyword,
-                        ManagedIndex = TypePositionInfo.ReturnIndex,
-                        NativeIndex = typeInfos.Count
+                        // Transform the managed return type info into an out parameter and add it as the last param
+                        TypePositionInfo nativeOutInfo = retTypeInfo with
+                        {
+                            InstanceIdentifier = PInvokeStubCodeGenerator.ReturnIdentifier,
+                            RefKind = RefKind.Out,
+                            RefKindSyntax = SyntaxKind.OutKeyword,
+                            ManagedIndex = TypePositionInfo.ReturnIndex,
+                            NativeIndex = typeInfos.Count
+                        };
+                        typeInfos.Add(nativeOutInfo);
+                    }
+
+                    // Use a marshalling generator that supports the HRESULT return->exception marshalling.
+                    generatorFactory = new NoPreserveSigMarshallingGeneratorFactory(generatorFactory);
+
+                    // Create type info for native HRESULT return
+                    retTypeInfo = new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance);
+                    retTypeInfo = retTypeInfo with
+                    {
+                        NativeIndex = TypePositionInfo.ReturnIndex
                     };
-                    typeInfos.Add(nativeOutInfo);
                 }
+
+                generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
+                attributedMarshallingFactory.ElementMarshallingGeneratorFactory = generatorFactory;
             }
             typeInfos.Add(retTypeInfo);
 
-            return typeInfos.ToImmutable();
+            return (typeInfos.ToImmutable(), generatorFactory);
         }
 
         public override bool Equals(object obj)
@@ -204,12 +226,15 @@ namespace Microsoft.Interop
 
         public bool Equals(DllImportStubContext other)
         {
+            // We don't check if the generator factories are equal since
+            // the generator factory is deterministically created based on the ElementTypeInformation and Options.
             return other is not null
                 && StubTypeNamespace == other.StubTypeNamespace
                 && ElementTypeInformation.SequenceEqual(other.ElementTypeInformation)
                 && StubContainingTypes.SequenceEqual(other.StubContainingTypes, (IEqualityComparer<TypeDeclarationSyntax>)new SyntaxEquivalentComparer())
                 && StubReturnType.IsEquivalentTo(other.StubReturnType)
-                && AdditionalAttributes.SequenceEqual(other.AdditionalAttributes, (IEqualityComparer<AttributeListSyntax>)new SyntaxEquivalentComparer());
+                && AdditionalAttributes.SequenceEqual(other.AdditionalAttributes, (IEqualityComparer<AttributeListSyntax>)new SyntaxEquivalentComparer())
+                && Options.Equals(other.Options);
         }
 
         public override int GetHashCode()
