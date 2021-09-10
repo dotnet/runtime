@@ -12,18 +12,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class ILCompiler
 	{
-		private readonly string _ilasmExecutable;
-
-		public ILCompiler ()
-		{
-			_ilasmExecutable = LocateIlasm ().ToString ();
-		}
-
-		public ILCompiler (string ilasmExecutable)
-		{
-			_ilasmExecutable = ilasmExecutable;
-		}
-
 		public NPath Compile (CompilerOptions options)
 		{
 			var capturedOutput = new List<string> ();
@@ -44,7 +32,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void SetupProcess (Process process, CompilerOptions options)
 		{
-			process.StartInfo.FileName = _ilasmExecutable;
+			process.StartInfo.FileName = LocateIlasm ().ToString ();
 			process.StartInfo.Arguments = BuildArguments (options);
 			process.StartInfo.UseShellExecute = false;
 			process.StartInfo.CreateNoWindow = true;
@@ -65,7 +53,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return args.ToString ();
 		}
 
-		public static NPath LocateIlasm ()
+		protected virtual NPath LocateIlasm ()
 		{
 #if NETCOREAPP
 			var extension = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? ".exe" : "";
@@ -89,6 +77,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				throw new InvalidOperationException ("This method should only be called on windows");
 
 			var possiblePath = RuntimeEnvironment.GetRuntimeDirectory ().ToNPath ().Combine ("ilasm.exe");
+			if (possiblePath.FileExists ())
+				return possiblePath;
+
+			possiblePath = Environment.CurrentDirectory.ToNPath ().Combine ("ilasm.exe");
 			if (possiblePath.FileExists ())
 				return possiblePath;
 
