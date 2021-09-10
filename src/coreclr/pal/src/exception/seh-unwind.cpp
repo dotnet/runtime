@@ -458,7 +458,7 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_ARM_D13, (SIZE_T **)&contextPointers->D13);
     GetContextPointer(cursor, unwContext, UNW_ARM_D14, (SIZE_T **)&contextPointers->D14);
     GetContextPointer(cursor, unwContext, UNW_ARM_D15, (SIZE_T **)&contextPointers->D15);
-#elif (defined(HOST_UNIX) && defined(HOST_ARM64RM(defined(HOST_WINDOWS) && defined(TARGET_ARM64))
+#elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X19, &contextPointers->X19);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X20, &contextPointers->X20);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X21, &contextPointers->X21);
