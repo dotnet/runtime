@@ -272,6 +272,10 @@
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'iOS'">
     <ProjectReference Include="$(RepoRoot)\src\libraries\System.Buffers\tests\System.Buffers.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Collections.NonGeneric\tests\System.Collections.NonGeneric.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
@@ -289,6 +293,10 @@
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'tvOS'">
     <ProjectReference Include="$(RepoRoot)\src\libraries\System.Buffers\tests\System.Buffers.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Collections.NonGeneric\tests\System.Collections.NonGeneric.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />

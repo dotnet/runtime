@@ -399,8 +399,6 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-misleading-indentation>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-overflow>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-truncation>)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-mismatched-new-delete>)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-free-nonheap-object>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
 
     check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)

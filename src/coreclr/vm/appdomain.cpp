@@ -3251,8 +3251,8 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
             !pManifestFile->IsResource() &&
             pManifestFile->Equals(pFile))
         {
-            // Caller already has PEAssembly, so we can give DomainAssembly away freely without AddRef
-            return pDomainAssembly.Extract();
+            // Caller already has PEAssembly, so we can give DomainAssembly away freely without added reference
+            return pDomainAssembly.GetValue();
         }
     }
     return NULL;
