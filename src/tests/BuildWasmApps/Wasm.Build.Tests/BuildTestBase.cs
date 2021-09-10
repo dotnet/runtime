@@ -586,7 +586,7 @@ namespace Wasm.Build.Tests
 
         protected void AssertBlazorBundle(string config, bool isPublish, bool dotnetWasmFromRuntimePack, string? binFrameworkDir=null)
         {
-            binFrameworkDir ??= Path.Combine(_projectDir!, "bin", config, "net6.0", isPublish ? "publish" : "", "wwwroot", "_framework");
+            binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish);
 
             AssertBlazorBootJson(config, isPublish, binFrameworkDir: binFrameworkDir);
             AssertFile(Path.Combine(s_buildEnv.RuntimeNativeDir, "dotnet.wasm"),
@@ -605,7 +605,7 @@ namespace Wasm.Build.Tests
 
         protected void AssertBlazorBootJson(string config, bool isPublish, string? binFrameworkDir=null)
         {
-            binFrameworkDir ??= Path.Combine(_projectDir!, "bin", config, "net6.0", isPublish ? "publish" : "", "wwwroot", "_framework");
+            binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish);
 
             string bootJson = File.ReadAllText(Path.Combine(binFrameworkDir, "blazor.boot.json"));
             var bootJsonNode = JsonNode.Parse(bootJson);
@@ -617,6 +617,28 @@ namespace Wasm.Build.Tests
             Assert.True(runtimeObj!.Where(kvp => kvp.Key.StartsWith("dotnet.", StringComparison.OrdinalIgnoreCase) &&
                                                     kvp.Key.EndsWith(".js", StringComparison.OrdinalIgnoreCase)).Any(),
                                             $"{msgPrefix} Could not find dotnet.*js in {bootJson}");
+        }
+
+        protected string FindBlazorBinFrameworkDir(string config, bool forPublish)
+        {
+            string basePath = Path.Combine(_projectDir!, "bin", config, "net6.0");
+            if (forPublish)
+                basePath = FindSubDirIgnoringCase(basePath, "publish");
+
+            return Path.Combine(basePath, "wwwroot", "_framework");
+        }
+
+        private string FindSubDirIgnoringCase(string parentDir, string dirName)
+        {
+            IEnumerable<string> matchingDirs = Directory.EnumerateDirectories(parentDir,
+                                                            dirName,
+                                                            new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive });
+
+            string? first = matchingDirs.FirstOrDefault();
+            if (matchingDirs.Count() > 1)
+                throw new Exception($"Found multiple directories with names that differ only in case. {string.Join(", ", matchingDirs.ToArray())}");
+
+            return first ?? Path.Combine(parentDir, dirName);
         }
 
         protected string GetBinDir(string config, string targetFramework=s_targetFramework, string? baseDir=null)
