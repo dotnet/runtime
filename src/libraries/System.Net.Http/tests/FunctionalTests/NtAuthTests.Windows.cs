@@ -62,16 +62,6 @@ namespace System.Net.Http.Functional.Tests
 
                 // Read next requests and fall-back to loop bellow to process it.
                 request = await connection.ReadRequestDataAsync();
-                /*
-                foreach (HttpHeaderData header in request.Headers)
-                {
-                    if (header.Name == "Authorization")
-                    {
-                        authHeader = header.Value;
-                        break;
-                    }
-                }
-                */
             }
 
             SecurityStatusPal statusCode;
