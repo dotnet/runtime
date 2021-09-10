@@ -332,6 +332,52 @@
           Condition="'$(TestAssemblies)' == 'true' and
                      '$(Coverage)' == 'true'" />
 
+  <!-- Build Apple app bundles using AppBundleRoot -->
+  <UsingTask Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'"
+             TaskName="XcodeCreateProject"
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+
+  <UsingTask Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'"
+             TaskName="XcodeBuildApp"
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+
+  <Target Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'"
+          Name="BuildAppleAppBundles"
+          AfterTargets="Build">
+
+    <ItemGroup>
+      <AppBundles Include="$(AppBundleRoot)/*/AppBundle/CMakeLists.txt" />
+      <CMakeEntries Include="project(AllAppBundles)" />
+      <CMakeEntries Include="add_subdirectory(%(AppBundles.RootDir)%(AppBundles.Directory) %(AppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(AppBundleRoot)/all/CMakeLists.txt" Lines="@(CMakeEntries)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <XcodeCreateProject
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="AllAppBundles"
+        CMakeListsDirectory="$(AppBundleRoot)/all" />
+
+    <ItemGroup>
+      <!-- xcodeproj are not files but directories -->
+      <XcodeProjects Include="$([System.IO.Directory]::GetDirectories('$(AppBundleRoot)/all/AllAppBundles/%(AppBundles.RecursiveDir)', '*.xcodeproj'))" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(TestArchiveTestsDir)" />
+
+    <XcodeBuildApp
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        XcodeProjectPath="%(XcodeProjects.Identity)"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        Optimized="True"
+        DestinationFolder="$(TestArchiveTestsDir)" /> <!-- TODO: TestArchiveTestsRoot is different for when IsFunctionalTest==true but this is only set in the context of the .csproj so we need to find another solution here -->
+
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true'"
+               Directories="$(AppBundleRoot)" />
+  </Target>
+
   <!-- Restoring all trimming test projects upfront in one single call to RestoreTrimmingProjects
   so as to avoid possible race conditions that could happen if we restore each individually. -->
   <Target Name="RestoreTrimmingProjects"
