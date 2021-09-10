@@ -75,6 +75,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <WasmNestedPublishAppDependsOn>ComputeFilesToPublish;_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
     <_ScrambleDotnetJsFileNameAfterThisTarget Condition="'$(UsingBrowserRuntimeWorkload)' != 'true'">ResolveRuntimePackAssets</_ScrambleDotnetJsFileNameAfterThisTarget>
     <_ScrambleDotnetJsFileNameAfterThisTarget Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'">WasmBuildApp</_ScrambleDotnetJsFileNameAfterThisTarget>
+
+    <!-- Workaround https://github.com/dotnet/sdk/issues/20923 where we end up with two publish dirs - 'Publish', and 'publish' -->
+    <PublishDirName Condition="'$(PublishDirName)' == 'publish'">Publish</PublishDirName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -267,7 +270,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
 
     <ComputeBlazorBuildAssets
-      Candidates="@(ReferenceCopyLocalPaths);@(WasmNativeAsset->WithMetadataValue('Extension', '.wasm'))"
+      Candidates="@(ReferenceCopyLocalPaths);@(WasmNativeAsset)"
       ProjectAssembly="@(IntermediateAssembly)"
       ProjectDebugSymbols="@(_DebugSymbolsIntermediatePath)"
       SatelliteAssemblies="@(ReferenceSatellitePaths)"
