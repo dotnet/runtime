@@ -103,7 +103,6 @@ namespace System.Text.Json.Serialization.Tests
 #endif
         public async Task ExtensionFieldNotUsed()
         {
-            Diagnostics.Debugger.Launch();
             string json = @"{""MyNestedClass"":" + SimpleTestClass.s_json + "}";
             ClassWithExtensionField obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithExtensionField>(json);
             Assert.Null(obj.MyOverflow);
@@ -323,7 +322,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
 #if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Compile-time errors thrown for these scenarios.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif
         public async Task InvalidExtensionPropertyFail()
         {
@@ -797,7 +796,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
 #if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Compile-time errors thrown for these scenarios.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif
 
         public async Task DeserializeIntoSystemObjectProperty()
@@ -1087,7 +1086,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
 #if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Compile-time errors thrown for these scenarios.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif
         public async Task ExtensionProperty_InvalidDictionary()
         {
@@ -1146,7 +1145,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
 #if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Compile-time errors thrown for these scenarios.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif
         public async Task DeserializeIntoImmutableDictionaryProperty()
         {
@@ -1401,14 +1400,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(43, obj.MyInt1);
             Assert.Null(obj.MyOverflow);
         }
-
-        //[Fact]
-        //public async Task QuickDictTest()
-        //{
-        //    if (!Diagnostics.Debugger.IsAttached) { Diagnostics.Debugger.Launch(); }
-        //    var dict = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary<string, JsonElement>>("{}");
-        //    Console.WriteLine(dict.Count);
-        //}
 
         [Fact]
         public async Task ExtensionDataDictionarySerialize_DoesNotHonor()

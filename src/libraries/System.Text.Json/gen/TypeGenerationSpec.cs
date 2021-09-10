@@ -58,6 +58,10 @@ namespace System.Text.Json.SourceGeneration
 
         public TypeGenerationSpec? NullableUnderlyingTypeMetadata { get; private set; }
 
+        /// <summary>
+        /// Supports deserialization of extension data dictionaries typed as I[ReadOnly]Dictionary<string, object/JsonElement>.
+        /// Specifies a concrete type to instanciate, which would be Dictionary<string, object/JsonElement>.
+        /// </summary>
         public string? RuntimeTypeRef { get; private set; }
 
         public TypeGenerationSpec? ExtensionDataPropertyTypeSpec {  get; private set; }
