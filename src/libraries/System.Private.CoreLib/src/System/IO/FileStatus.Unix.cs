@@ -255,20 +255,6 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileCache.CTime, _fileCache.CTimeNsec);
         }
 
-        private void SetCreationTime_StandardUnixImpl(string path, DateTimeOffset time)
-        {
-            // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
-            // There is no API to update the CreationTime.
-            // Some platforms (e.g. Linux) don't store a creation time. On those platforms, the creation time
-            // is synthesized as the oldest of last status change time (ctime) and last modification time (mtime).
-            // We update the LastWriteTime (mtime).
-            // This triggers a metadata change for FileSystemWatcher NotifyFilters.CreationTime.
-            // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
-            // CreationTime, GetCreationTime will return the value that was previously set (when that value
-            // wasn't in the future).
-            SetAccessOrWriteTime_StandardUnixImpl(path, time, isAccessTime: false);
-        }
-
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
@@ -294,19 +280,24 @@ namespace System.IO
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
         }
 
-        private unsafe void SetAccessOrWriteTime_StandardUnixImpl(string path, DateTimeOffset time, bool isAccessTime)
+        private unsafe void SetAccessOrWriteTimeCore(string path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime)
         {
-            // Used for access time or as a fallback on OSX, used always on other Unix platforms.
+            // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.
+            // The reason why we use it to set 'creation time' is the below comment:
+            // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
+            // There is no API to update the CreationTime.
+            // Some platforms (e.g. Linux) don't store a creation time. On those platforms, the creation time
+            // is synthesized as the oldest of last status change time (ctime) and last modification time (mtime).
+            // We update the LastWriteTime (mtime).
+            // This triggers a metadata change for FileSystemWatcher NotifyFilters.CreationTime.
+            // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
+            // CreationTime, GetCreationTime will return the value that was previously set (when that value
+            // wasn't in the future).
 
             // force a refresh so that we have an up-to-date times for values not being overwritten
             InvalidateCaches();
             EnsureCachesInitialized(path);
-            SetAccessOrWriteTimeImpl(path, time, isAccessTime);
-            InvalidateCaches();
-        }
 
-        private unsafe void SetAccessOrWriteTimeImpl(string path, DateTimeOffset time, bool isAccessTime)
-        {
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
 
@@ -335,6 +326,24 @@ namespace System.IO
             }
 #endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
+
+            // On OSX platforms, when the modification time is less than the creation time, the creation time
+            // is broken; so these api calls revert the creation time when it shouldn't be set (since we're
+            // setting modification time and access time here). checkCreationTime is only true on OSX
+            // platforms. allowFallbackToLastWriteTime is ignored on non OSX platforms.
+            bool updateCreationTime = checkCreationTime && (_fileCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0 &&
+                                        (buf[1].TvSec < _fileCache.BirthTime || (buf[1].TvSec == _fileCache.BirthTime && buf[1].TvNsec < _fileCache.BirthTimeNsec));
+
+            InvalidateCaches();
+
+            if (updateCreationTime)
+            {
+                Interop.Error result = SetCreationTimeCore(path, UnixTimeToDateTimeOffset(_fileCache.BirthTime, _fileCache.BirthTimeNsec));
+                if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
+                {
+                    Interop.CheckIo(error, path, InitiallyDirectory);
+                }
+            }
         }
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)

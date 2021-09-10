@@ -7,7 +7,26 @@ namespace System.IO
 {
     internal partial struct FileStatus
     {
-        internal unsafe void SetCreationTime(string path, DateTimeOffset time)
+        internal void SetCreationTime(string path, DateTimeOffset time)
+        {
+            // Try to set the attribute on the file system entry using setattrlist,
+            // if we get ENOTSUP then it means that "The volume does not support
+            // setattrlist()", so we fall back to the method used on other unix
+            // platforms, otherwise we throw an error if we get one, or invalidate
+            // the cache if successful because otherwise it has invalid information.
+            Interop.Error error = SetCreationTimeCore(path, time);
+
+            if (error == Interop.Error.ENOTSUP)
+            {
+                SetAccessOrWriteTimeCore(path, time, isAccessTime: false, checkCreationTime: false);
+            }
+            else if (error != Interop.Error.SUCCESS)
+            {
+                Interop.CheckIo(error, path, InitiallyDirectory);
+            }
+        }
+
+        private Interop.Error SetCreationTimeCore(string path, DateTimeOffset time)
         {
             Interop.Sys.TimeSpec timeSpec = default;
 
@@ -21,47 +40,17 @@ namespace System.IO
             attrList.bitmapCount = Interop.libc.AttrList.ATTR_BIT_MAP_COUNT;
             attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
 
-            // Try to set the attribute on the file system entry using setattrlist,
-            // if we get ENOTSUP then it means that "The volume does not support
-            // setattrlist()", so we fall back to the method used on other unix
-            // platforms, otherwise we throw an error if we get one, or invalidate
-            // the cache if successful because otherwise it has invalid information.
-            Interop.Error result = (Interop.Error)Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), default(CULong));
-            if (result == Interop.Error.ENOTSUP)
-            {
-                SetCreationTime_StandardUnixImpl(path, time);
-            }
-            else if (result == Interop.Error.SUCCESS)
+            Interop.Error error =  (Interop.Error)Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), default(CULong));
+
+            if (error == Interop.Error.SUCCESS)
             {
                 InvalidateCaches();
             }
-            else
-            {
-                Interop.CheckIo(result, path, InitiallyDirectory);
-            }
+
+            return error;
         }
 
-        private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
-        {
-            // Force an update so GetCreationTime is up-to-date.
-            InvalidateCaches();
-            EnsureCachesInitialized(path);
-
-            // Get the creation time here in case the modification time is less than it.
-            var creationTime = GetCreationTime(path);
-
-            SetAccessOrWriteTimeImpl(path, time, isAccessTime);
-
-            if ((isAccessTime ? GetLastWriteTime(path) : time) < creationTime)
-            {
-                // In this case, the creation time is moved back to the modification time on OSX.
-                // So this code makes sure that the creation time is not changed when it shouldn't be.
-                SetCreationTime(path, creationTime);
-            }
-            else
-            {
-                InvalidateCaches();
-            }
-        }
+        private void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime) =>
+            SetAccessOrWriteTimeCore(path, time, isAccessTime, checkCreationTime: true);
     }
 }

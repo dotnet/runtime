@@ -7,7 +7,14 @@ namespace System.IO
 {
     internal partial struct FileStatus
     {
-        internal void SetCreationTime(string path, DateTimeOffset time) => SetCreationTime_StandardUnixImpl(path, time);
-        private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime) => SetAccessOrWriteTime_StandardUnixImpl(path, time, isAccessTime);
+        internal void SetCreationTime(string path, DateTimeOffset time) =>
+            SetLastWriteTime(path, time);
+
+        private void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime) =>
+            SetAccessOrWriteTimeCore(path, time, isAccessTime, checkCreationTime: false);
+
+        // This is not used on these platforms, but is needed for source compat
+        private Interop.Error SetCreationTimeCore(string path, DateTimeOffset time) =>
+            default(Interop.Error);
     }
 }
