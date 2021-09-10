@@ -286,8 +286,9 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(list, nameof(list));
 
-            if (list.Count == 0 && startIndex == 0)
+            if (list.Count == 0)
             {
+                // Avoid argument out of range exceptions.
                 return -1;
             }
 
@@ -318,6 +319,13 @@ namespace System.Collections.Immutable
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item, int startIndex, int count)
         {
             Requires.NotNull(list, nameof(list));
+
+            if (list.Count == 0)
+            {
+                // Avoid argument out of range exceptions.
+                return -1;
+            }
+
             return list.LastIndexOf(item, startIndex, count, EqualityComparer<T>.Default);
         }
     }
