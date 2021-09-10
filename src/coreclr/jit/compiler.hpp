@@ -533,34 +533,6 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
     return regNum;
 }
 
-//------------------------------------------------------------------------------
-// genSmallTypeCanRepresentValue: Checks if a value can be represented by a given small type.
-//
-// Arguments:
-//    value - the value to check
-//    type  - the type
-//
-// Return Value:
-//    True if the value is representable, false otherwise.
-
-inline bool genSmallTypeCanRepresentValue(var_types type, ssize_t value)
-{
-    switch (type)
-    {
-        case TYP_UBYTE:
-        case TYP_BOOL:
-            return FitsIn<UINT8>(value);
-        case TYP_BYTE:
-            return FitsIn<INT8>(value);
-        case TYP_USHORT:
-            return FitsIn<UINT16>(value);
-        case TYP_SHORT:
-            return FitsIn<INT16>(value);
-        default:
-            unreached();
-    }
-}
-
 /*****************************************************************************
  *
  *  Return the size in bytes of the given type.

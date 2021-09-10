@@ -2601,24 +2601,21 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 {
     switch (toType)
     {
-        case TYP_BYTE:
-            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_BOOL:
+        case TYP_BYTE:
         case TYP_UBYTE:
-            return (uint8_t)fromValue != fromValue;
         case TYP_SHORT:
-            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_USHORT:
-            return (uint16_t)fromValue != fromValue;
         case TYP_INT:
-            return fromUnsigned && (fromValue < 0);
         case TYP_UINT:
-        case TYP_ULONG:
-            return !fromUnsigned && (fromValue < 0);
         case TYP_LONG:
+        case TYP_ULONG:
+            return fromUnsigned ? !FitsIn(toType, static_cast<uint32_t>(fromValue)) : !FitsIn(toType, fromValue);
+
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return false;
+
         default:
             unreached();
     }
@@ -2628,26 +2625,21 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 {
     switch (toType)
     {
-        case TYP_BYTE:
-            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_BOOL:
+        case TYP_BYTE:
         case TYP_UBYTE:
-            return (uint8_t)fromValue != fromValue;
         case TYP_SHORT:
-            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_USHORT:
-            return (uint16_t)fromValue != fromValue;
         case TYP_INT:
-            return ((int32_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_UINT:
-            return (uint32_t)fromValue != fromValue;
         case TYP_LONG:
-            return fromUnsigned && (fromValue < 0);
         case TYP_ULONG:
-            return !fromUnsigned && (fromValue < 0);
+            return fromUnsigned ? !FitsIn(toType, static_cast<uint64_t>(fromValue)) : !FitsIn(toType, fromValue);
+
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return false;
+
         default:
             unreached();
     }
