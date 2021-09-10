@@ -509,15 +509,14 @@ namespace System.IO
                         if (targetPath.StartsWith(PathInternal.UncNTPathPrefix.AsSpan()))
                         {
                             // We need to prepend the Win32 equivalent of UNC NT prefix.
-                            return Path.Join(PathInternal.UncPathPrefix.AsSpan(), targetPath.Slice(PathInternal.UncNTPathPrefix.Length)).ToString();
+                            return Path.Join(PathInternal.UncPathPrefix.AsSpan(), targetPath.Slice(PathInternal.UncNTPathPrefix.Length));
                         }
 
-                        Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix.AsSpan()));
-                        return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
+                        return GetTargetPathWithoutNTPrefix(targetPath);
                     }
                     else if (returnFullPath)
                     {
-                        return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath).ToString();
+                        return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
                     }
                     else
                     {
@@ -536,8 +535,9 @@ namespace System.IO
 
                     // Unlike symbolic links, mount point paths cannot be relative.
                     Debug.Assert(!PathInternal.IsPartiallyQualified(targetPath));
-                    Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix.AsSpan()));
-                    return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
+                    // Mount points cannot point to a remote location.
+                    Debug.Assert(!targetPath.StartsWith(PathInternal.UncNTPathPrefix.AsSpan()));
+                    return GetTargetPathWithoutNTPrefix(targetPath);
                 }
 
                 return null;
@@ -545,6 +545,12 @@ namespace System.IO
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            static string GetTargetPathWithoutNTPrefix(ReadOnlySpan<char> targetPath)
+            {
+                Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix.AsSpan()));
+                return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
             }
         }
 
