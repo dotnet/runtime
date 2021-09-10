@@ -147,7 +147,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(false, "This constructor should not be called.");
         }
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, ConverterStrategy converterStrategy)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options, bool dummy)
         {
             Type = type;
             Options = options ?? throw new ArgumentNullException(nameof(options));

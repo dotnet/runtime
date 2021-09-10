@@ -565,14 +565,6 @@ namespace System.Text.Json.SourceGeneration
                                 }
                             }
                             break;
-                        case nameof(JsonSourceGenerationOptionsAttribute.IgnoreRuntimeCustomConverters):
-                            {
-                                if (bool.TryParse(propertyValueStr, out bool value))
-                                {
-                                    options.IgnoreRuntimeCustomConverters = value;
-                                }
-                            }
-                            break;
                         case nameof(JsonSourceGenerationOptionsAttribute.IncludeFields):
                             {
                                 if (bool.TryParse(propertyValueStr, out bool value))
@@ -640,7 +632,7 @@ namespace System.Text.Json.SourceGeneration
                 string? converterInstatiationLogic = null;
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
-                bool hasEncounteredInitOnlyProperties = false;
+                bool hasInitOnlyProperties = false;
                 bool hasTypeFactoryConverter = false;
                 bool hasPropertyFactoryConverters = false;
 
@@ -972,10 +964,10 @@ namespace System.Text.Json.SourceGeneration
                                     _implicitlyRegisteredTypes.Add(dataExtensionPropGenSpec);
                                 }
 
-                                if (!hasEncounteredInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter)
+                                if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter)
                                 {
                                     _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, Location.None, new string[] { type.Name }));
-                                    hasEncounteredInitOnlyProperties = true;
+                                    hasInitOnlyProperties = true;
                                 }
 
                                 if (spec.HasJsonInclude && (!spec.CanUseGetter || !spec.CanUseSetter || !spec.IsPublic))
