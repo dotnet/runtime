@@ -9,6 +9,7 @@
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <UseLiveBuiltDotNetHost Condition="'$(TargetArchitecture)' == 's390x'">true</UseLiveBuiltDotNetHost>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -16,7 +17,7 @@
                       Version="$(MicrosoftDiaSymReaderNativeVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true' and '$(UseLiveBuiltDotNetHost)' != 'true'">
     <PackageReference Include="Microsoft.NETCore.DotNetHost"
                       Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy"
@@ -38,14 +39,28 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'apphost'" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(UseLiveBuiltDotNetHost)' != 'true'">
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'hostfxr' or
                                                                   '%(ReferenceCopyLocalPaths.Filename)' == 'libhostfxr'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(UseLiveBuiltDotNetHost)' == 'true'">
+      <CoreHostFiles Include="$(DotNetHostBinDir)*" />
+      <HostFxFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostfxr' or
+                                                          '%(CoreHostFiles.Filename)' == 'libhostfxr'" />
+      <HostPolicyFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostpolicy' or
+                                                              '%(CoreHostFiles.Filename)' == 'libhostpolicy'" />
+      <DotnetExe Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
     <Copy SourceFiles="@(HostFxFile)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)host\fxr\$(ProductVersion)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
+    <Copy SourceFiles="@(HostPolicyFile)"
+          DestinationFolder="$(NetCoreAppCurrentTestHostPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
