@@ -401,6 +401,16 @@ namespace Wasm.Build.Tests
             var res = BuildInternal(id, config, publish: true, extraArgs);
             AssertDotNetNativeFiles(expectedFileType, config, forPublish: true);
             AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: expectedFileType == NativeFilesType.FromRuntimePack);
+
+            if (expectedFileType == NativeFilesType.AOT)
+            {
+                // check for this too, so we know the format is correct for the negative
+                // test for jsinterop.webassembly.dll
+                Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Item1.Output);
+
+                // make sure this assembly gets skipped
+                Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Item1.Output);
+            }
             return res;
         }
 

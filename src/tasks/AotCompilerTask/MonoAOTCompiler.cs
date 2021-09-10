@@ -211,7 +211,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private int _numCompiled;
     private int _totalNumAssemblies;
 
-
     private bool ProcessAndValidateArguments()
     {
         if (!File.Exists(CompilerBinaryPath))
@@ -401,10 +400,31 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(ITaskItem[] originalAssemblies)
     {
+        List<ITaskItem> filteredAssemblies = new();
         string firstAsmDir = Path.GetDirectoryName(originalAssemblies[0].GetMetadata("FullPath")) ?? string.Empty;
-        bool allInSameDir = originalAssemblies.All(asm => Path.GetDirectoryName(asm.GetMetadata("FullPath")) == firstAsmDir);
+        bool allInSameDir = true;
+
+        foreach (var origAsm in originalAssemblies)
+        {
+            if (allInSameDir && Path.GetDirectoryName(origAsm.GetMetadata("FullPath")) != firstAsmDir)
+                allInSameDir = false;
+
+            if (ShouldSkip(origAsm))
+            {
+                if (parsedAotMode == MonoAotMode.LLVMOnly)
+                    throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {origAsm.ItemSpec}");
+
+                Log.LogMessage(MessageImportance.Low, $"Skipping {origAsm.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
+                continue;
+            }
+
+            filteredAssemblies.Add(origAsm);
+        }
+
         if (allInSameDir)
-            return originalAssemblies.ToList();
+            return filteredAssemblies;
+
+        // Copy to aot-in
 
         string aotInPath = Path.Combine(IntermediateOutputPath, "aot-in");
         Directory.CreateDirectory(aotInPath);
@@ -412,27 +432,26 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         List<ITaskItem> newAssemblies = new();
         foreach (var origAsm in originalAssemblies)
         {
-            string origPath = origAsm.GetMetadata("FullPath");
-            string newPath = Path.Combine(aotInPath, Path.GetFileName(origPath));
-
-            string? skip = origAsm.GetMetadata("AOT_InternalForceInterpret");
-            if (bool.TryParse(skip, out bool shouldSkip) &&
-                shouldSkip && parsedAotMode == MonoAotMode.LLVMOnly)
-            {
-                throw new LogAsErrorException($"Builing in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {origAsm.ItemSpec}");
-            }
+            string asmPath = origAsm.GetMetadata("FullPath");
+            string newPath = Path.Combine(aotInPath, Path.GetFileName(asmPath));
 
             // FIXME: delete files not in originalAssemblies though
             // FIXME: or .. just delete the whole dir?
-            if (Utils.CopyIfDifferent(origPath, newPath, useHash: true))
-                Log.LogMessage(MessageImportance.Low, $"Copying {origPath} to {newPath}");
+            if (Utils.CopyIfDifferent(asmPath, newPath, useHash: true))
+                Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
 
-            ITaskItem newAsm = new TaskItem(newPath);
-            origAsm.CopyMetadataTo(newAsm);
-            newAssemblies.Add(newAsm);
+            if (!ShouldSkip(origAsm))
+            {
+                ITaskItem newAsm = new TaskItem(newPath);
+                origAsm.CopyMetadataTo(newAsm);
+                newAssemblies.Add(newAsm);
+            }
         }
 
         return newAssemblies;
+
+        static bool ShouldSkip(ITaskItem asmItem)
+            => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
     }
 
     private bool PrecompileLibrary(ITaskItem assemblyItem, string? monoPaths)

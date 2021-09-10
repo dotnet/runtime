@@ -89,11 +89,22 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraProperties: nativeRelink ? string.Empty : "<RunAOTCompilation>true</RunAOTCompilation>");
 
             // build with -p:DeployOnBuild=true, and that will trigger a publish
-            BuildInternal(id, config, publish: false, "-p:DeployOnBuild=true");
+            (CommandResult res, _) = BuildInternal(id, config, publish: false, "-p:DeployOnBuild=true");
 
             var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
+
             AssertDotNetNativeFiles(expectedFileType, config, forPublish: true);
             AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: false);
+
+            if (expectedFileType == NativeFilesType.AOT)
+            {
+                // check for this too, so we know the format is correct for the negative
+                // test for jsinterop.webassembly.dll
+                Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Output);
+
+                // make sure this assembly gets skipped
+                Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Output);
+            }
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]

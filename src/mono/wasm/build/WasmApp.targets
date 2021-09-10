@@ -76,10 +76,6 @@
                                     <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
                                     <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
                                     <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
-
-      - @(_AOT_AssembliesForceToInterpret) - Assemblies to exclude from AOT
-                                             note: This is not compatible with AOTMode=LLVMOnly .
-
   -->
 
   <PropertyGroup>
