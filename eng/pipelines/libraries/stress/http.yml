@@ -21,7 +21,12 @@ variables:
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress
   - name: sdkBaseImage
     value: dotnet-sdk-libraries-current
-
+  - name: share_root
+    value: $(System.DefaultWorkingDirectory)/share
+  - name: server_share
+    value: $(share_root)/server
+  - name: client_share
+    value: $(share_root)/client
 
 jobs:
 - job: linux
@@ -55,5 +60,9 @@ jobs:
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 3.0
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - publish: $(share_root)
+    artifact: DumpsAndLogs
+    condition: failed()
 
 # TODO: deleting big part of pipeline to make the testing loop in CI faster, return it back once it's done.

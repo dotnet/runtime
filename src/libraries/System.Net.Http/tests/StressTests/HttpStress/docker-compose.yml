@@ -5,6 +5,10 @@ services:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile}
     image: httpstress
+    volumes:
+      - "${CLIENT_SHARE}:/share/"
+    cap_add:
+      - SYS_PTRACE
     links:
       - server
     environment:
@@ -14,6 +18,10 @@ services:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile}
     image: httpstress
+    volumes:
+      - "${SERVER_SHARE}:/share/"
+    cap_add:
+      - SYS_PTRACE
     ports:
       - "5001:5001"
     environment:

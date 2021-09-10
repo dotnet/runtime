@@ -87,6 +87,15 @@ if [[ "$imagename" != "" ]]; then
     build_args=" --build-arg SDK_BASE_IMAGE=$imagename"
 fi
 
+export SERVER_SHARE="${SERVER_SHARE:-$(mktemp -d)}"
+export CLIENT_SHARE="${CLIENT_SHARE:-$(mktemp -d)}"
+mkdir -p ${SERVER_SHARE}
+mkdir -p ${CLIENT_SHARE}
+chmod -R 755 ${SERVER_SHARE}
+chmod -R 755 ${CLIENT_SHARE}
+echo "SERVER_SHARE=${SERVER_SHARE}"
+echo "CLIENT_SHARE=${CLIENT_SHARE}"
+
 compose_file="$scriptroot/docker-compose.yml"
 
 if ! docker-compose --file "$compose_file" build $build_args; then
