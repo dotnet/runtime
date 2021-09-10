@@ -92,7 +92,7 @@ jobs:
       targetRid: linux-musl-x64
       platform: Linux_musl_x64
       container:
-        image: alpine-3.9-WithNode-20210714125437-9b5bbc2
+        image: alpine-3.13-WithNode-20210910135845-c401c85
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
