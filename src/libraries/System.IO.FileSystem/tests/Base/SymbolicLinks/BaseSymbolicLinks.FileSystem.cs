@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO.Enumeration;
 using System.Linq;
 using Xunit;
@@ -158,7 +157,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ResolveLinkTarget_PathToTarget_Data))]
+        [MemberData(nameof(SymbolicLink_ResolveLinkTarget_PathToTarget_Data))]
         public void ResolveLinkTarget_Succeeds(string pathToTarget, bool returnFinalTarget)
         {
             string linkPath = GetRandomLinkPath();
@@ -345,32 +344,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void CreateSymbolicLink_WrongTargetType_Throws()
-        {
-            // dirLink -> file
-            // fileLink -> dir
-
-            string targetPath = GetRandomFilePath();
-            CreateFileOrDirectory(targetPath, createOpposite: true); // The underlying file system entry needs to be different
-            Assert.Throws<IOException>(() => CreateSymbolicLink(GetRandomFilePath(), targetPath));
-        }
-
-        [Fact]
-        public void CreateSymbolicLink_WrongTargetType_Indirect_Throws()
-        {
-            // link-2 (dir) -> link-1 (file) -> file
-            // link-2 (file) -> link-1 (dir) -> dir
-            string targetPath = GetRandomFilePath();
-            string firstLinkPath = GetRandomFilePath();
-            string secondLinkPath = GetRandomFilePath();
-
-            CreateFileOrDirectory(targetPath, createOpposite: true);
-            CreateSymbolicLink_Opposite(firstLinkPath, targetPath);
-
-            Assert.Throws<IOException>(() => CreateSymbolicLink(secondLinkPath, firstLinkPath));
-        }
-
-        [Fact]
         public void CreateSymbolicLink_CorrectTargetType_Indirect_Succeeds()
         {
             // link-2 (file) -> link-1 (file) -> file
@@ -429,14 +402,14 @@ namespace System.IO.Tests
             Assert.True(link2Info.Exists);
             Assert.True(link2Info.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertIsCorrectTypeAndDirectoryAttribute(link2Info);
-            Assert.Equal(link2Target, link2Info.LinkTarget);
+            AssertPathEquals_RelativeSegments(link2Target, link2Info.LinkTarget);
 
             // link1 to link2
             FileSystemInfo link1Info = CreateSymbolicLink(link1Path, link1Target);
             Assert.True(link1Info.Exists);
             Assert.True(link1Info.Attributes.HasFlag(FileAttributes.ReparsePoint));
             AssertIsCorrectTypeAndDirectoryAttribute(link1Info);
-            Assert.Equal(link1Target, link1Info.LinkTarget);
+            AssertPathEquals_RelativeSegments(link1Target, link1Info.LinkTarget);
 
             // link1: do not follow symlinks
             FileSystemInfo link1TargetInfo = ResolveLinkTarget(link1Path, returnFinalTarget: false);
@@ -444,7 +417,7 @@ namespace System.IO.Tests
             AssertIsCorrectTypeAndDirectoryAttribute(link1TargetInfo);
             Assert.True(link1TargetInfo.Attributes.HasFlag(FileAttributes.ReparsePoint));
             Assert.Equal(link2Path, link1TargetInfo.FullName);
-            Assert.Equal(link2Target, link1TargetInfo.LinkTarget);
+            AssertPathEquals_RelativeSegments(link2Target, link1TargetInfo.LinkTarget);
 
             // link2: do not follow symlinks
             FileSystemInfo link2TargetInfo = ResolveLinkTarget(link2Path, returnFinalTarget: false);
@@ -460,6 +433,19 @@ namespace System.IO.Tests
             AssertIsCorrectTypeAndDirectoryAttribute(finalTarget);
             Assert.False(finalTarget.Attributes.HasFlag(FileAttributes.ReparsePoint));
             Assert.Equal(filePath, finalTarget.FullName);
+
+            void AssertPathEquals_RelativeSegments(string expected, string actual)
+            {
+#if WINDOWS
+                // DeviceIoControl canonicalizes the target path i.e: removes redundant segments.
+                int rootLength = PathInternal.GetRootLength(expected);
+                if (rootLength > 0)
+                {
+                    expected = PathInternal.RemoveRelativeSegments(expected, rootLength);
+                }
+#endif
+                Assert.Equal(expected, actual);
+            }
         }
 
         // Must call inside a remote executor
@@ -510,51 +496,6 @@ namespace System.IO.Tests
                     FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
                     (entry.Attributes & FileAttributes.ReparsePoint) != 0
             }.FirstOrDefault();
-        }
-
-        public static IEnumerable<object[]> ResolveLinkTarget_PathToTarget_Data
-        {
-            get
-            {
-                foreach (string path in PathToTargetData)
-                {
-                    yield return new object[] { path, false };
-                    yield return new object[] { path, true };
-                }
-            }
-        }
-
-        internal static IEnumerable<string> PathToTargetData
-        {
-            get
-            {
-                if (OperatingSystem.IsWindows())
-                {
-                    //Non-rooted relative
-                    yield return "foo";
-                    yield return @".\foo";
-                    yield return @"..\foo";
-                    // Rooted relative
-                    yield return @"\foo";
-                    // Rooted absolute
-                    yield return Path.Combine(Path.GetTempPath(), "foo");
-                    // Extended DOS
-                    yield return Path.Combine(@"\\?\", Path.GetTempPath(), "foo");
-                    // UNC
-                    yield return @"\\LOCALHOST\share\path";
-                }
-                else
-                {
-                    //Non-rooted relative
-                    yield return "foo";
-                    yield return "./foo";
-                    yield return "../foo";
-                    // Rooted relative
-                    yield return "/foo";
-                    // Rooted absolute
-                    Path.Combine(Path.GetTempPath(), "foo");
-                }
-            }
         }
     }
 }
