@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
@@ -161,7 +162,7 @@ namespace System.Xml.Serialization
         internal const string TrimSerializationWarning = "Members from serialized types may be trimmed if not referenced directly";
         private const string TrimDeserializationWarning = "Members from deserialized types may be trimmed if not referenced directly";
 
-        private static readonly Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
+        private static readonly ConditionalWeakTable<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new ConditionalWeakTable<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
 
         protected XmlSerializer()
         {
@@ -235,6 +236,7 @@ namespace System.Xml.Serialization
                     _tempAssembly = s_cache[defaultNamespace, type];
                     if (_tempAssembly == null)
                     {
+                        using (AssemblyLoadContext.EnterContextualReflection(type.Assembly))
                         {
                             XmlSerializerImplementation? contract = null;
                             Assembly? assembly = TempAssembly.LoadGeneratedAssembly(type, defaultNamespace, out contract);
@@ -403,7 +405,12 @@ namespace System.Xml.Serialization
                     }
                 }
                 else
-                    _tempAssembly.InvokeWriter(_mapping, xmlWriter, o, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
+                {
+                    using (AssemblyLoadContext.EnterContextualReflection(_tempAssembly._assembly))
+                    {
+                        _tempAssembly.InvokeWriter(_mapping, xmlWriter, o, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
+                    }
+                }
             }
             catch (Exception? e)
             {
@@ -501,7 +508,10 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    return _tempAssembly.InvokeReader(_mapping, xmlReader, events, encodingStyle);
+                    using (AssemblyLoadContext.EnterContextualReflection(_tempAssembly._assembly))
+                    {
+                        return _tempAssembly.InvokeReader(_mapping, xmlReader, events, encodingStyle);
+                    }
                 }
             }
             catch (Exception? e)
@@ -585,52 +595,55 @@ namespace System.Xml.Serialization
                 return serializers;
             }
 
-            XmlSerializerImplementation? contract = null;
-            Assembly? assembly = type == null ? null : TempAssembly.LoadGeneratedAssembly(type, null, out contract);
-            TempAssembly? tempAssembly = null;
-            if (assembly == null)
+            using (AssemblyLoadContext.EnterContextualReflection(type?.Assembly))
             {
-                if (Mode == SerializationMode.PreGenOnly)
+                XmlSerializerImplementation? contract = null;
+                Assembly? assembly = type == null ? null : TempAssembly.LoadGeneratedAssembly(type, null, out contract);
+                TempAssembly? tempAssembly = null;
+                if (assembly == null)
                 {
-                    AssemblyName name = type!.Assembly.GetName();
-                    string serializerName = Compiler.GetTempAssemblyName(name, null);
-                    throw new FileLoadException(SR.Format(SR.FailLoadAssemblyUnderPregenMode, serializerName));
-                }
-
-                if (XmlMapping.IsShallow(mappings))
-                {
-                    return Array.Empty<XmlSerializer>();
-                }
-                else
-                {
-                    if (type == null)
+                    if (Mode == SerializationMode.PreGenOnly)
                     {
-                        tempAssembly = new TempAssembly(mappings, new Type?[] { type }, null, null);
-                        XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
+                        AssemblyName name = type!.Assembly.GetName();
+                        string serializerName = Compiler.GetTempAssemblyName(name, null);
+                        throw new FileLoadException(SR.Format(SR.FailLoadAssemblyUnderPregenMode, serializerName));
+                    }
 
-                        contract = tempAssembly.Contract;
-
-                        for (int i = 0; i < serializers.Length; i++)
-                        {
-                            serializers[i] = (XmlSerializer)contract.TypedSerializers[mappings[i].Key!]!;
-                            serializers[i].SetTempAssembly(tempAssembly, mappings[i]);
-                        }
-
-                        return serializers;
+                    if (XmlMapping.IsShallow(mappings))
+                    {
+                        return Array.Empty<XmlSerializer>();
                     }
                     else
                     {
-                        // Use XmlSerializer cache when the type is not null.
-                        return GetSerializersFromCache(mappings, type);
+                        if (type == null)
+                        {
+                            tempAssembly = new TempAssembly(mappings, new Type?[] { type }, null, null);
+                            XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
+
+                            contract = tempAssembly.Contract;
+
+                            for (int i = 0; i < serializers.Length; i++)
+                            {
+                                serializers[i] = (XmlSerializer)contract.TypedSerializers[mappings[i].Key!]!;
+                                serializers[i].SetTempAssembly(tempAssembly, mappings[i]);
+                            }
+
+                            return serializers;
+                        }
+                        else
+                        {
+                            // Use XmlSerializer cache when the type is not null.
+                            return GetSerializersFromCache(mappings, type);
+                        }
                     }
                 }
-            }
-            else
-            {
-                XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
-                for (int i = 0; i < serializers.Length; i++)
-                    serializers[i] = (XmlSerializer)contract!.TypedSerializers[mappings[i].Key!]!;
-                return serializers;
+                else
+                {
+                    XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
+                    for (int i = 0; i < serializers.Length; i++)
+                        serializers[i] = (XmlSerializer)contract!.TypedSerializers[mappings[i].Key!]!;
+                    return serializers;
+                }
             }
         }
 
@@ -703,7 +716,7 @@ namespace System.Xml.Serialization
                 if (!s_xmlSerializerTable.TryGetValue(type, out typedMappingTable))
                 {
                     typedMappingTable = new Dictionary<XmlSerializerMappingKey, XmlSerializer>();
-                    s_xmlSerializerTable[type] = typedMappingTable;
+                    s_xmlSerializerTable.Add(type, typedMappingTable);
                 }
             }
 
