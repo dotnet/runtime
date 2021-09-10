@@ -757,13 +757,15 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         internal class CustomContext : JsonSerializerContext
         {
-            public CustomContext(JsonSerializerOptions options) : base(options, null) { }
+            public CustomContext(JsonSerializerOptions options) : base(options) { }
 
             private JsonTypeInfo<object> _object;
             public JsonTypeInfo<object> Object => _object ??= JsonMetadataServices.CreateValueInfo<object>(Options, JsonMetadataServices.ObjectConverter);
 
             private JsonTypeInfo<object[]> _objectArray;
-            public JsonTypeInfo<object[]> ObjectArray => _objectArray ??= JsonMetadataServices.CreateArrayInfo<object>(Options, Object, default, serializeFunc: null);
+            public JsonTypeInfo<object[]> ObjectArray => _objectArray ??= JsonMetadataServices.CreateArrayInfo<object>(Options, new JsonCollectionInfoValues<object[]> { ElementInfo = Object });
+
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
 
             public override JsonTypeInfo GetTypeInfo(Type type)
             {

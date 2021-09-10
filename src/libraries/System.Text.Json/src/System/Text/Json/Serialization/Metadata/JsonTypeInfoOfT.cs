@@ -15,8 +15,8 @@ namespace System.Text.Json.Serialization.Metadata
     {
         private Action<Utf8JsonWriter, T>? _serialize;
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, ConverterStrategy converterStrategy) :
-            base(type, options, converterStrategy)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options) :
+            base(type, options, dummy: false)
         { }
 
         internal JsonTypeInfo()
