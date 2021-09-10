@@ -44,6 +44,13 @@ without MSIL embedding are copied to the output folder next to the composite R2R
 and are rewritten by the compiler to include a formal ReadyToRun header with forwarding
 information pointing to the owner composite R2R executable (section `OwnerCompositeExecutable`).
 
+# Additions to the debug directory
+
+Currently shipping PE envelopes - both single-file and composite - can contain records for additional
+debug information in the debug directory. One such entry specific to R2R images is the one for R2R PerfMaps.
+The format of the auxiliary file is described [R2R perfmap format](./r2r-perfmap-format.md) and the corresponding
+debug directory entry is described in [PE COFF](../../../design/specs/PE-COFF.md#r2r-perfmap-debug-directory-entry-type-21).
+
 ## Future Improvements
 
 The limitations of the current format are:
