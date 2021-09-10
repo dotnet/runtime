@@ -408,7 +408,7 @@
 
     </ItemGroup>
 
-    <Message Text="!!!naricc_debug!!! RunTimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal)" Importance="High" />
+    <Message Text="!!!naricc_debug!!! EMSDK_PATH: $(EMSDK_PATH) RunTimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal)" Importance="High" />
 
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"

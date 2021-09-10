@@ -180,12 +180,12 @@
 
         <RunTimeDependencyCopyLocal
           Include="$(EmSdkDir)\**"
-          TargetDir="runtimepack/native/emsdk/"/>
+          TargetDir="emsdk/"/>
 
     </ItemGroup>
 
 
-     <Message Text="!!!naricc_debug!!!: CopyDependencyToCoreRoot: MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir): TagetArchitecture: $(TargetArchitecture): RuntimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal) " Importance="high" />
+     <Message Text="!!!naricc_debug!!!: EmSdkDir: $(EmSdkDir) CopyDependencyToCoreRoot: MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir): TagetArchitecture: $(TargetArchitecture): RuntimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal) " Importance="high" />
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
