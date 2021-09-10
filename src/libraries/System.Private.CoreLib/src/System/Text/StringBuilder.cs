@@ -1014,7 +1014,9 @@ namespace System.Text
         /// <param name="index">The index to insert in this builder.</param>
         /// <param name="value">The string to insert.</param>
         /// <param name="count">The number of times to insert the string.</param>
-        public StringBuilder Insert(int index, string? value, int count)
+        public StringBuilder Insert(int index, string? value, int count) => Insert(index, value.AsSpan(), count);
+
+        private StringBuilder Insert(int index, ReadOnlySpan<char> value, int count)
         {
             if (count < 0)
             {
@@ -1027,7 +1029,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
-            if (string.IsNullOrEmpty(value) || count == 0)
+            if (value.IsEmpty || count == 0)
             {
                 return this;
             }
@@ -1175,6 +1177,14 @@ namespace System.Text
 
         public StringBuilder Append(ReadOnlySpan<char> value)
         {
+            // This is where we can check if adding value will put us over m_MaxCapacity.
+            // We are doing the check here to prevent the corruption of the StringBuilder.
+            int newLength = Length + value.Length;
+            if (newLength > m_MaxCapacity || newLength < value.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
+            }
+
             if (value.Length != 0)
             {
                 // This case is so common we want to optimize for it heavily.
@@ -1347,7 +1357,7 @@ namespace System.Text
         }
 
 #pragma warning disable CA1830 // Prefer strongly-typed Append and Insert method overloads on StringBuilder. No need to fix for the builder itself
-        public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString());
+        public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString().AsSpan(), 1);
 #pragma warning restore CA1830
 
         [CLSCompliant(false)]
@@ -1431,7 +1441,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public StringBuilder Insert(int index, ulong value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, object? value) => (value == null) ? this : Insert(index, value.ToString());
+        public StringBuilder Insert(int index, object? value) => (value == null) ? this : Insert(index, value.ToString().AsSpan(), 1);
 
         public StringBuilder Insert(int index, ReadOnlySpan<char> value)
         {
@@ -1455,10 +1465,12 @@ namespace System.Text
             Span<char> buffer = stackalloc char[256];
             if (value.TryFormat(buffer, out int charsWritten, format: default, provider: null))
             {
-                return Insert(index, buffer.Slice(0, charsWritten));
+                // We don't use Insert(int, ReadOnlySpan<char>) for exception compatibility;
+                // we want exceeding the maximum capacity to throw an OutOfMemoryException.
+                return Insert(index, buffer.Slice(0, charsWritten), 1);
             }
 
-            return Insert(index, value.ToString());
+            return Insert(index, value.ToString().AsSpan(), 1);
         }
 
         public StringBuilder AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
@@ -2060,14 +2072,6 @@ namespace System.Text
             if (valueCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(valueCount), SR.ArgumentOutOfRange_NegativeCount);
-            }
-
-            // this is where we can check if the valueCount will put us over m_MaxCapacity
-            // We are doing the check here to prevent the corruption of the StringBuilder.
-            int newLength = Length + valueCount;
-            if (newLength > m_MaxCapacity || newLength < valueCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(valueCount), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             }
 
             Append(new ReadOnlySpan<char>(value, valueCount));

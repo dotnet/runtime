@@ -14,7 +14,7 @@ namespace System.Text.Tests
     public partial class StringBuilderTests
     {
         private static readonly string s_chunkSplitSource = new string('a', 30);
-        private static readonly string s_noCapacityParamName = "valueCount";
+        private static readonly string s_noCapacityParamName = "value";
 
         private static StringBuilder StringBuilderWithMultipleChunks() => new StringBuilder(20).Append(s_chunkSplitSource);
 
