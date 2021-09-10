@@ -1188,11 +1188,9 @@ namespace System.Text
             if (value.Length != 0)
             {
                 // This case is so common we want to optimize for it heavily.
-                int newIndex = value.Length + m_ChunkLength;
-                if (newIndex <= m_ChunkChars.Length)
+                if (value.TryCopyTo(m_ChunkChars.AsSpan(m_ChunkLength)))
                 {
-                    value.CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
-                    m_ChunkLength = newIndex;
+                    m_ChunkLength += value.Length;
                 }
                 else
                 {
