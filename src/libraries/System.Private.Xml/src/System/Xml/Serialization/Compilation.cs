@@ -11,13 +11,14 @@ using System.Security;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Xml.Serialization
 {
     internal sealed class TempAssembly
     {
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
-        private readonly Assembly? _assembly;
+        internal readonly Assembly? _assembly;
         private XmlSerializerImplementation? _contract;
         private IDictionary? _writerMethods;
         private IDictionary? _readerMethods;
@@ -690,7 +691,7 @@ namespace System.Xml.Serialization
 
     internal sealed class TempAssemblyCache
     {
-        private Dictionary<TempAssemblyCacheKey, TempAssembly> _cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
+        private ConditionalWeakTable<TempAssemblyCacheKey, TempAssembly> _cache = new ConditionalWeakTable<TempAssemblyCacheKey, TempAssembly>();
 
         internal TempAssembly? this[string? ns, object o]
         {
@@ -710,8 +711,12 @@ namespace System.Xml.Serialization
                 TempAssembly? tempAssembly;
                 if (_cache.TryGetValue(key, out tempAssembly) && tempAssembly == assembly)
                     return;
-                Dictionary<TempAssemblyCacheKey, TempAssembly> _copy = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_cache); // clone
-                _copy[key] = assembly;
+                ConditionalWeakTable<TempAssemblyCacheKey, TempAssembly> _copy = new ConditionalWeakTable<TempAssemblyCacheKey, TempAssembly>(); // clone
+                foreach (KeyValuePair<TempAssemblyCacheKey, TempAssembly> kvp in _cache)
+                {
+                    _copy.Add(kvp.Key, kvp.Value);
+                }
+                _copy.Add(key, assembly);
                 _cache = _copy;
             }
         }
