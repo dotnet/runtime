@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <Target Name="BuildNativeUnix"
+          DependsOnTargets="GenerateNativeVersionFile"
           BeforeTargets="Build"
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
@@ -40,6 +41,7 @@
   </Target>
 
   <Target Name="BuildNativeWindows"
+          DependsOnTargets="GenerateNativeVersionFile"
           BeforeTargets="Build"
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
