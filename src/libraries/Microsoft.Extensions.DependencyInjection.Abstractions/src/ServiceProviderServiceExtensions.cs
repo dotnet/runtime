@@ -56,7 +56,6 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 service = provider.GetService(serviceType);
             }
-            
             if (service == null)
             {
                 throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
