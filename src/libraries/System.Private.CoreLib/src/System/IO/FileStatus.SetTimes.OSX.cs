@@ -26,7 +26,7 @@ namespace System.IO
             }
         }
 
-        private Interop.Error SetCreationTimeCore(string path, DateTimeOffset time)
+        private unsafe Interop.Error SetCreationTimeCore(string path, DateTimeOffset time)
         {
             Interop.Sys.TimeSpec timeSpec = default;
 
