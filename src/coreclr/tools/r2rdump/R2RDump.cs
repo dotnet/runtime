@@ -146,7 +146,7 @@ namespace R2RDump
 
             return new StandaloneAssemblyMetadata(peReader);
         }
-        
+
         public SignatureFormattingOptions GetSignatureFormattingOptions()
         {
             if (signatureFormattingOptions == null)
@@ -434,7 +434,9 @@ namespace R2RDump
                     {
                         perfmapPath = Path.ChangeExtension(r2r.Filename, ".r2rmap");
                     }
-                    PerfMapWriter.Write(perfmapPath, _options.PerfmapFormatVersion, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), r2r.TargetOperatingSystem, r2r.TargetArchitecture);
+                    // TODO: can't seem to find any place that surfaces the ABI. This is for debugging purposes, so may not be as relevant to be correct.
+                    TargetDetails details = new TargetDetails(r2r.TargetArchitecture, r2r.TargetOperatingSystem, TargetAbi.CoreRT);
+                    PerfMapWriter.Write(perfmapPath, _options.PerfmapFormatVersion, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), details);
                 }
 
                 if (standardDump)
@@ -459,7 +461,7 @@ namespace R2RDump
                 mi.AssemblyName = method.ComponentReader.MetadataReader.GetString(method.ComponentReader.MetadataReader.GetAssemblyDefinition().Name);
                 mi.ColdRVA = 0;
                 mi.ColdLength = 0;
-                
+
                 yield return mi;
             }
         }
