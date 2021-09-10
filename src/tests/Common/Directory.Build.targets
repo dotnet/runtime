@@ -182,6 +182,11 @@
           Include="$(EmSdkDir)\**"
           TargetDir="emsdk/"/>
 
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoAOTCompilerDir)\**"
+          TargetDir="monoaotcompiler/"
+        />
+
     </ItemGroup>
 
 
