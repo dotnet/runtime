@@ -118,10 +118,23 @@ public class WasmAppBuilder : Task
 
     public override bool Execute ()
     {
+        try
+        {
+            return ExecuteInternal();
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError(laee.Message);
+            return false;
+        }
+    }
+
+    private bool ExecuteInternal ()
+    {
         if (!File.Exists(MainJS))
-            throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
+            throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
-            throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+            throw new LogAsErrorException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
         if (Assemblies?.Length == 0)
         {
