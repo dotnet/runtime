@@ -1960,6 +1960,42 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(x.Name, y.Name);
     }
 
+    [Fact]
+    public static void Xml_TypeInCollectibleALC()
+    {
+        WeakReference weakRef;
+
+#if !XMLSERIALIZERGENERATORTESTS
+        ExecuteAndUnload("System.Collections.Specialized", "System.Collections.Specialized.StringCollection", out weakRef);
+#else
+        ExecuteAndUnload("SerializableAssembly", "SerializationTypes.SimpleType", out weakRef);
+#endif
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+        private static void ExecuteAndUnload(string assemblyname, string typename, out WeakReference wref)
+    {
+        var alc = new System.Runtime.Loader.AssemblyLoadContext("XmlSerializerTests", true);
+        wref = new WeakReference(alc);
+        var asm = alc.LoadFromAssemblyName(new AssemblyName(assemblyname));
+        var type = asm.GetType(typename);
+        var obj = Activator.CreateInstance(type);
+
+        XmlSerializer serializer = new XmlSerializer(type);
+        var rto = SerializeAndDeserialize(obj, null, () => serializer, true);
+
+        Assert.NotNull(rto);
+
+        alc.Unload();
+    }
+
+
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
     {
@@ -2080,11 +2116,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
-        XmlSerializer serializer = new XmlSerializer(typeof(T));
-        if (serializerFactory != null)
-        {
-            serializer = serializerFactory();
-        }
+        XmlSerializer serializer = (serializerFactory != null) ? serializerFactory() : new XmlSerializer(typeof(T));
 
         using (MemoryStream ms = new MemoryStream())
         {
