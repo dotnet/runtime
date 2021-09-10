@@ -370,9 +370,9 @@
     </XHarnessApkToTest>
     
     <XHarnessAppBundleToTest Include="@(Payloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
-      <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</Targets>
-      <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
-      <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
