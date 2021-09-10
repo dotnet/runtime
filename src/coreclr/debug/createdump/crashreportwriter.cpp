@@ -4,7 +4,7 @@
 #include "createdump.h"
 
 // Include the .NET Core version string instead of link because it is "static".
-#include "version.c"
+#include "_version.c"
 
 CrashReportWriter::CrashReportWriter(CrashInfo& crashInfo) :
     m_crashInfo(crashInfo)
@@ -152,13 +152,13 @@ CrashReportWriter::WriteCrashReport()
         for (auto iterator = thread->StackFrames().cbegin(); iterator != thread->StackFrames().cend(); ++iterator)
         {
             if (thread->IsBeginRepeat(iterator))
-            { 
+            {
                 OpenObject();
                 WriteValue32("repeated", thread->NumRepeatedFrames());
                 OpenArray("repeated_frames");
             }
             if (thread->IsEndRepeat(iterator))
-            { 
+            {
                 CloseArray();   // repeated_frames
                 CloseObject();
             }
