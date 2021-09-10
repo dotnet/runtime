@@ -96,8 +96,6 @@ namespace System.Net.Http
                 _connectTimeout = _connectTimeout,
                 _credentials = _credentials,
                 _defaultProxyCredentials = _defaultProxyCredentials,
-                _defaultCredentialsUsedForProxy = _defaultCredentialsUsedForProxy,
-                _defaultCredentialsUsedForServer = _defaultCredentialsUsedForServer,
                 _expect100ContinueTimeout = _expect100ContinueTimeout,
                 _maxAutomaticRedirections = _maxAutomaticRedirections,
                 _maxConnectionsPerServer = _maxConnectionsPerServer,
@@ -123,6 +121,8 @@ namespace System.Net.Http
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
                 _activityHeadersPropagator = _activityHeadersPropagator,
+                _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
+                _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,
             };
 
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.
