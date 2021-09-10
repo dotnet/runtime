@@ -101,7 +101,8 @@
     <PackageReference Include="System.Net.MsQuic.Transport"
                       Version="$(SystemNetMsQuicTransportVersion)"
                       PrivateAssets="all"
-                      GeneratePathProperty="true" />
+                      GeneratePathProperty="true" 
+                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
