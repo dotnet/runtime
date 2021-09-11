@@ -390,7 +390,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(42 + yields, await ValueTaskReturningAsyncMethod(42));
             Assert.Equal(84 + yields, await ValueTaskReturningAsyncMethod(84));
 
-            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<int>))]
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
             async ValueTask<int> ValueTaskReturningAsyncMethod(int result)
             {
                 for (int i = 0; i < yields; i++)
@@ -440,7 +440,7 @@ namespace System.Threading.Tasks.Tests
                 }
             }
 
-            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<int>))]
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
             async ValueTask<int> ValueTaskInt32ReturningMethod()
             {
                 for (int i = 0; i < 3; i++)
@@ -499,7 +499,7 @@ namespace System.Threading.Tasks.Tests
                 {
                     Assert.Equal(42 + i, await ValueTaskAsync(i));
 
-                    [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<int>))]
+                    [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
                     static async ValueTask<int> ValueTaskAsync(int i)
                     {
                         await Task.Delay(1);
@@ -549,7 +549,7 @@ namespace System.Threading.Tasks.Tests
                 Assert.InRange(boxes.Distinct().Count(), 1, boxes.Count - 1);
             }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
 
-            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<int>))]
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
             static async ValueTask<int> ComputeAsync(int input, ConcurrentQueue<object> boxes)
             {
                 await RecursiveValueTaskAsync(3, boxes);

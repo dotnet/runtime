@@ -202,9 +202,15 @@ namespace Internal.TypeSystem
                 }
 
                 if (assemblyName.StartsWith("System.Private", StringComparison.Ordinal))
-                    assemblyName = "S.P" + assemblyName.Substring(14);
+                {
+                    sb.Append("S.P");
+                    sb.Append(assemblyName, 14, assemblyName.Length - 14);
+                }
+                else
+                {
+                    sb.Append(assemblyName);
+                }
 
-                sb.Append(assemblyName);
                 sb.Append(']');
             }
         }

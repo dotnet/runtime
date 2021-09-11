@@ -89,7 +89,7 @@ private:
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
-    void ContainCheckStoreIndir(GenTreeIndir* indirNode);
+    void ContainCheckStoreIndir(GenTreeStoreInd* indirNode);
     void ContainCheckMul(GenTreeOp* node);
     void ContainCheckShiftRotate(GenTreeOp* node);
     void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const;
@@ -292,9 +292,9 @@ private:
 #endif // defined(TARGET_XARCH)
 
     // Per tree node member functions
-    void LowerStoreIndirCommon(GenTreeIndir* ind);
+    void LowerStoreIndirCommon(GenTreeStoreInd* ind);
     void LowerIndir(GenTreeIndir* ind);
-    void LowerStoreIndir(GenTreeIndir* node);
+    void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);

@@ -4,6 +4,7 @@
     <DefineConstants>$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <NoWarn>$(NoWarn);SYSLIB0026;SYSLIB0027;SYSLIB0028</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
@@ -12,6 +13,7 @@
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"

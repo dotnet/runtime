@@ -703,6 +703,13 @@ namespace ILCompiler.PEWriter
         /// <param name="offsetsAndTypes">16-bit entries encoding offset relative to the base RVA (low 12 bits) and relocation type (top 4 bite)</param>
         private static void FlushRelocationBlock(BlobBuilder builder, int baseRVA, List<ushort> offsetsAndTypes)
         {
+            // Ensure blocks are 4-byte aligned. This is required by kernel memory manager
+            // on Windows 8.1 and earlier.
+            if ((offsetsAndTypes.Count & 1) == 1)
+            {
+                offsetsAndTypes.Add(0);
+            }
+
             // First, emit the block header: 4 bytes starting RVA,
             builder.WriteInt32(baseRVA);
             // followed by the total block size comprising this header

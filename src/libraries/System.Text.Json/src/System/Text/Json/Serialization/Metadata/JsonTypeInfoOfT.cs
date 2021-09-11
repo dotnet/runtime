@@ -13,6 +13,8 @@ namespace System.Text.Json.Serialization.Metadata
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class JsonTypeInfo<T> : JsonTypeInfo
     {
+        private Action<Utf8JsonWriter, T>? _serialize;
+
         internal JsonTypeInfo(Type type, JsonSerializerOptions options, ConverterStrategy converterStrategy) :
             base(type, options, converterStrategy)
         { }
@@ -24,8 +26,19 @@ namespace System.Text.Json.Serialization.Metadata
 
         /// <summary>
         /// A method that serializes an instance of <typeparamref name="T"/> using
-        /// <see cref="JsonSerializerOptionsAttribute"/> values specified at design time.
+        /// <see cref="JsonSourceGenerationOptionsAttribute"/> values specified at design time.
         /// </summary>
-        public Action<Utf8JsonWriter, T>? Serialize { get; private protected set; }
+        public Action<Utf8JsonWriter, T>? Serialize
+        {
+            get
+            {
+                return _serialize;
+            }
+            private protected set
+            {
+                _serialize = value;
+                HasSerialize = value != null;
+            }
+        }
     }
 }

@@ -16,6 +16,7 @@ parameters:
   stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
+  tieringTest: false
   runtimeVariant: ''
   variables: {}
   pool: ''
@@ -64,6 +65,8 @@ jobs:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.stagedBuild, true) }}:
         - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'))  }}:
+          # This is needed for creating a CORE_ROOT in the current design.
+          - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
           # minijit and mono interpreter runtimevariants do not require any special build of the runtime
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
@@ -102,7 +105,8 @@ jobs:
 
     - ${{ if eq(parameters.readyToRun, true) }}:
       - name: crossgenArg
-        value: 'crossgen'
+      # Switch R2R to use cg2 by default
+        value: 'crossgen2'
       - name: LogNamePrefix
         value: TestRunLogs_R2R
       - ${{ if eq(parameters.crossgen2, true) }}:
@@ -175,6 +179,9 @@ jobs:
         value: 180
       - name: timeoutPerTestInMinutes
         value: 30
+    - ${{ if in(parameters.testGroup, 'pgo') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
 
     - ${{ if eq(parameters.compositeBuildMode, true) }}:
       - name: crossgenArg
@@ -188,7 +195,7 @@ jobs:
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       timeoutInMinutes: 200
-    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental') }}:
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'pgo') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
@@ -261,7 +268,7 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
       displayName: Copy native test components to test output folder
 
 
@@ -276,6 +283,15 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
 
+    # Overwrite coreclr runtime binaries with mono ones
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      - script: $(_msbuildCommand)
+                $(Build.SourcesDirectory)/src/mono/mono.proj
+                /t:PatchCoreClrCoreRoot
+                /p:Configuration=$(buildConfigUpper)
+                /p:TargetArchitecture=$(archType)
+        displayName: "Patch dotnet with mono"
+
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
       - ${{ if eq(parameters.archType, 'arm64') }}:
@@ -289,16 +305,6 @@ jobs:
                   /p:MonoAOTEnableLLVM=true
                   /p:MonoAOTLLVMUseCxx11Abi=true
           displayName: "Build Mono LLVM AOT cross compiler"
-
-
-    # Overwrite coreclr runtime binaries with mono ones
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      - script: $(_msbuildCommand)
-                $(Build.SourcesDirectory)/src/mono/mono.proj
-                /t:PatchCoreClrCoreRoot
-                /p:Configuration=$(buildConfigUpper)
-                /p:TargetArchitecture=$(archType)
-        displayName: "Patch dotnet with mono"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
       - ${{ if eq(parameters.archType, 'x64') }}:
@@ -320,6 +326,7 @@ jobs:
         osSubgroup: ${{ parameters.osSubgroup}}
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+        runtimeVariant: ${{ parameters.runtimeVariant }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
@@ -352,6 +359,7 @@ jobs:
 
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        tieringTest: ${{ parameters.tieringTest }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
@@ -363,8 +371,7 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
           - normal
-          - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-            - no_tiered_compilation
+          - no_tiered_compilation
 
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:
@@ -471,6 +478,9 @@ jobs:
           - defaultpgo
           - dynamicpgo
           - fullpgo
+          - fullpgo_random_gdv
+          - fullpgo_random_edge
+          - fullpgo_random_gdv_edge
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -479,6 +489,12 @@ jobs:
           gcSimulatorTests: true
           scenarios:
           - normal
+        ${{ if in(parameters.testGroup, 'gc-standalone') }}:
+          scenarios:
+          - gcstandalone
+        ${{ if in(parameters.testGroup, 'gc-standalone-server') }}:
+          scenarios:
+          - gcstandaloneserver
         ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
           scenarios:
           - jitelthookenabled

@@ -35,7 +35,7 @@ namespace ILCompiler.IBC
                 try
                 {
                     if (token == 0)
-                        return new TypeSystemEntityOrUnknown(0);
+                        return new TypeSystemEntityOrUnknown(null);
                     if ((token & 0xFF000000) == 0)
                     {
                         // token type is 0, therefore it can't be a type

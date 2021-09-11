@@ -89,7 +89,7 @@ void Compiler::fgResetForSsa()
         m_memorySsaMap[memoryKind] = nullptr;
     }
 
-    for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
+    for (BasicBlock* const blk : Blocks())
     {
         // Eliminate phis.
         for (MemoryKind memoryKind : allMemoryKinds())
@@ -106,14 +106,13 @@ void Compiler::fgResetForSsa()
             }
         }
 
-        for (Statement* stmt : blk->Statements())
+        for (Statement* const stmt : blk->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->IsLocal())
                 {
                     tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
-                    continue;
                 }
             }
         }
@@ -486,7 +485,7 @@ void SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkV
 static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
 {
     // Walk the statements for phi nodes.
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         // A prefix of the statements of the block are phi definition nodes. If we complete processing
         // that prefix, exit.
@@ -540,7 +539,7 @@ void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
 
 #ifdef DEBUG
     unsigned seqNum = 1;
-    for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
+    for (GenTree* const node : stmt->TreeList())
     {
         node->gtSeqNum = seqNum++;
     }
@@ -590,7 +589,7 @@ void SsaBuilder::AddPhiArg(
 
 #ifdef DEBUG
     unsigned seqNum = 1;
-    for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
+    for (GenTree* const node : stmt->TreeList())
     {
         node->gtSeqNum = seqNum++;
     }
@@ -904,7 +903,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
                 bool phiFound = false;
 #endif
                 // A prefix of blocks statements will be SSA definitions.  Search those for "lclNum".
-                for (Statement* stmt : handler->Statements())
+                for (Statement* const stmt : handler->Statements())
                 {
                     // If the tree is not an SSA def, break out of the loop: we're done.
                     if (!stmt->IsPhiDefnStmt())
@@ -1055,9 +1054,9 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
     }
 
     // Walk the statements of the block and rename definitions and uses.
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
-        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+        for (GenTree* const tree : stmt->TreeList())
         {
             if (tree->OperIs(GT_ASG))
             {
@@ -1120,7 +1119,7 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
     for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
     {
         // Walk the statements for phi nodes.
-        for (Statement* stmt : succ->Statements())
+        for (Statement* const stmt : succ->Statements())
         {
             // A prefix of the statements of the block are phi definition nodes. If we complete processing
             // that prefix, exit.
@@ -1251,7 +1250,7 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                 // For a filter, we consider the filter to be the "real" handler.
                 BasicBlock* handlerStart = succTry->ExFlowBlock();
 
-                for (Statement* stmt : handlerStart->Statements())
+                for (Statement* const stmt : handlerStart->Statements())
                 {
                     GenTree* tree = stmt->GetRootNode();
 
@@ -1393,7 +1392,7 @@ void SsaBuilder::RenameVariables()
 
     // Initialize the memory ssa numbers for unreachable blocks. ValueNum expects
     // memory ssa numbers to have some intitial value.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         if (block->bbIDom == nullptr)
         {
@@ -1528,7 +1527,7 @@ void SsaBuilder::Build()
     // tree is built. The pre/post order numbers that were generated previously and used for loop
     // recognition are still being used by optPerformHoistExpr via fgCreateLoopPreHeader. That's rather
     // odd, considering that SetupBBRoot may have added a new block.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         block->bbIDom         = nullptr;
         block->bbPostOrderNum = 0;

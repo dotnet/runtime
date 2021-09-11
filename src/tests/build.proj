@@ -1,14 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build">
   <Import Project="Directory.Build.props" />
 
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)Common\dirs.proj" />
   </ItemGroup>
 
-  <Import Project="$(RepoRoot)\src\tests\Directory.Build.targets" />
-
-  <Import Project="$(RepoRoot)\src\tests\Common\dir.traversal.targets" />
+  <Import Project="Directory.Build.targets" />
+  <Import Project="Common\dir.traversal.targets" />
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
@@ -18,18 +16,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\scripts\scripts.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\test_dependencies_fs\test_dependencies.fsproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\test_dependencies\test_dependencies.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\external\external.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)Common\ilasm\ilasm.ilproj" />
+    <RestoreProjects Include="Common\test_dependencies_fs\test_dependencies.fsproj" />
+    <RestoreProjects Include="Common\test_dependencies\test_dependencies.csproj" />
+    <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <RestoreProjects Include="Common\external\external.csproj" />
+    <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
     <Message Text="Building Targeting Pack" Importance="High" />
-    <Error  Text="TargetOS has not been specified. Please do that then run build again."  Condition="'$(TargetOS)' == 'AnyOS'" />
-    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\external\external.csproj"
+    <Error Text="TargetOS has not been specified. Please do that then run build again." Condition="'$(TargetOS)' == 'AnyOS'" />
+    <MSBuild Projects="Common\external\external.csproj"
              Targets="Build" />
   </Target>
 
@@ -46,7 +43,7 @@
 
   <Target Name="RestorePackage">
     <PropertyGroup>
-      <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration)</_ConfigurationProperties>
+      <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">"$(DotNetTool)" restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>

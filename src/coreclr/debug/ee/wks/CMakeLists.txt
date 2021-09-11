@@ -32,11 +32,7 @@ if (CLR_CMAKE_TARGET_WIN32)
 
 else ()
 
-  if(CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_I386)
-    add_library_clr(cordbee_wks_obj OBJECT ${CORDBEE_SOURCES_WKS} ../${ARCH_SOURCES_DIR}/dbghelpers.S)
-  else()
-    message(FATAL_ERROR "Unknown platform")
-  endif()
+  add_library_clr(cordbee_wks_obj OBJECT ${CORDBEE_SOURCES_WKS} ../${ARCH_SOURCES_DIR}/dbghelpers.S)
 
 endif (CLR_CMAKE_TARGET_WIN32)
 

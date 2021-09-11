@@ -131,14 +131,6 @@ namespace System.Reflection
             return (RuntimeType)DeclaringType;
         }
 
-        private RuntimeType ReflectedTypeInternal
-        {
-            get
-            {
-                return (RuntimeType)ReflectedType;
-            }
-        }
-
         internal RuntimeModule GetRuntimeModule()
         {
             return GetDeclaringTypeInternal().GetRuntimeModule();
@@ -488,7 +480,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimePropertyInfo>(other);

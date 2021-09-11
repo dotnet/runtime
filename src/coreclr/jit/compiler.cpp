@@ -1466,7 +1466,19 @@ void Compiler::compShutdown()
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     // Finish reading and/or writing inline xml
-    InlineStrategy::FinalizeXml();
+    if (JitConfig.JitInlineDumpXmlFile() != nullptr)
+    {
+        FILE* file = _wfopen(JitConfig.JitInlineDumpXmlFile(), W("a"));
+        if (file != nullptr)
+        {
+            InlineStrategy::FinalizeXml(file);
+            fclose(file);
+        }
+        else
+        {
+            InlineStrategy::FinalizeXml();
+        }
+    }
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if defined(DEBUG) || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
@@ -2003,10 +2015,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     }
 #endif // DEBUG
 
-    vnStore               = nullptr;
-    m_opAsgnVarDefSsaNums = nullptr;
-    fgSsaPassesCompleted  = 0;
-    fgVNPassesCompleted   = 0;
+    vnStore                    = nullptr;
+    m_opAsgnVarDefSsaNums      = nullptr;
+    m_nodeToLoopMemoryBlockMap = nullptr;
+    fgSsaPassesCompleted       = 0;
+    fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
 
@@ -2157,7 +2170,7 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
             /* If the variable is not in a register, or not in the register we're looking for, quit. */
             /* Also, if it is a compiler generated variable (i.e. slot# > info.compVarScopesCount), don't bother. */
             if ((varDsc->lvRegister != 0) && (varDsc->GetRegNum() == reg) &&
-                (varDsc->IsFloatRegType() || !isFloatReg) && (varDsc->lvSlotNum < info.compVarScopesCount))
+                (varDsc->lvSlotNum < info.compVarScopesCount))
             {
                 /* check if variable in that register is live */
                 if (VarSetOps::IsMember(this, compCurLife, varDsc->lvVarIndex))
@@ -2196,8 +2209,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
             static int index = 0;                               // for circular index into the name array
 
             index = (index + 1) % 2; // circular reuse of index
-            sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "%s'%s'", getRegName(reg, isFloatReg),
-                      VarNameToStr(varName));
+            sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "%s'%s'", getRegName(reg), VarNameToStr(varName));
 
             return nameVarReg[index];
         }
@@ -2206,7 +2218,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
     /* no debug info required or no variable in that register
        -> return standard name */
 
-    return getRegName(reg, isFloatReg);
+    return getRegName(reg);
 }
 
 const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
@@ -2246,22 +2258,6 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
     assert(size == 1 || size == 2);
 
     return sizeNames[reg][size - 1];
-}
-
-const char* Compiler::compFPregVarName(unsigned fpReg, bool displayVar)
-{
-    const int   NAME_VAR_REG_BUFFER_LEN = 4 + 256 + 1;
-    static char nameVarReg[2][NAME_VAR_REG_BUFFER_LEN]; // to avoid overwriting the buffer when have 2 consecutive calls
-                                                        // before printing
-    static int index = 0;                               // for circular index into the name array
-
-    index = (index + 1) % 2; // circular reuse of index
-
-    /* no debug info required or no variable in that register
-       -> return standard name */
-
-    sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "ST(%d)", fpReg);
-    return nameVarReg[index];
 }
 
 const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
@@ -2417,6 +2413,11 @@ void Compiler::compSetProcessor()
     if (!JitConfig.EnableAVX2())
     {
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX2);
+    }
+
+    if (!JitConfig.EnableAVXVNNI())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVXVNNI);
     }
 
     if (!JitConfig.EnableLZCNT())
@@ -2838,8 +2839,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
-    lvaEnregEHVars       = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableEHWriteThru());
-    lvaEnregMultiRegVars = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableMultiRegLocals());
+    lvaEnregEHVars       = (compEnregLocals() && JitConfig.EnableEHWriteThru());
+    lvaEnregMultiRegVars = (compEnregLocals() && JitConfig.EnableMultiRegLocals());
 
     if (compIsForImportOnly())
     {
@@ -2971,6 +2972,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAsmSpilled   = false;
     opts.disDiffable     = false;
     opts.disAddr         = false;
+    opts.disAlignment    = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -3117,6 +3119,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
+        }
+
+        if (JitConfig.JitDasmWithAlignmentBoundaries() != 0)
+        {
+            opts.disAlignment = true;
         }
 
         if (JitConfig.JitLongAddress() != 0)
@@ -4667,7 +4674,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // local variable allocation on the stack.
     ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
 
-    if (JitConfig.JitObjectStackAllocation() && opts.OptimizationEnabled())
+    if (compObjectStackAllocation() && opts.OptimizationEnabled())
     {
         objectAllocator.EnableObjectStackAllocation();
     }
@@ -5082,11 +5089,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-#ifdef TARGET_AMD64
-    //  Check if we need to add the Quirk for the PPP backward compat issue
-    compQuirkForPPPflag = compQuirkForPPP();
-#endif
-
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
@@ -5102,9 +5104,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         compSizeEstimate  = 0;
         compCycleEstimate = 0;
-        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 compSizeEstimate += stmt->GetCostSz();
                 compCycleEstimate += stmt->GetCostEx();
@@ -5290,12 +5292,12 @@ void Compiler::generatePatchpointInfo()
     }
 
     // Special offsets
-
-    if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
+    //
+    if (lvaReportParamTypeArg())
     {
-        const int offset = lvaToCallerSPRelativeOffset(lvaCachedGenericContextArgOffset(), true);
+        const int offset = lvaCachedGenericContextArgOffset();
         patchpointInfo->SetGenericContextArgOffset(offset);
-        JITDUMP("--OSR-- cached generic context offset is CallerSP %d\n", patchpointInfo->GenericContextArgOffset());
+        JITDUMP("--OSR-- cached generic context offset is FP %d\n", patchpointInfo->GenericContextArgOffset());
     }
 
     if (lvaKeepAliveAndReportThis())
@@ -5337,11 +5339,11 @@ void Compiler::ResetOptAnnotations()
     fgSsaPassesCompleted  = 0;
     fgVNPassesCompleted   = 0;
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 tree->ClearVN();
                 tree->ClearAssertion();
@@ -5366,9 +5368,10 @@ void Compiler::RecomputeLoopInfo()
     // Recompute reachability sets, dominators, and loops.
     optLoopCount   = 0;
     fgDomsComputed = false;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_LOOP_FLAGS;
+        block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
     }
     fgComputeReachability();
     // Rebuild the loop tree annotations themselves
@@ -5379,89 +5382,6 @@ void Compiler::RecomputeLoopInfo()
 void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
 }
-
-#ifdef TARGET_AMD64
-//  Check if we need to add the Quirk for the PPP backward compat issue.
-//  This Quirk addresses a compatibility issue between the new RyuJit and the previous JIT64.
-//  A backward compatibity issue called 'PPP' exists where a PInvoke call passes a 32-byte struct
-//  into a native API which basically writes 48 bytes of data into the struct.
-//  With the stack frame layout used by the RyuJIT the extra 16 bytes written corrupts a
-//  caller saved register and this leads to an A/V in the calling method.
-//  The older JIT64 jit compiler just happened to have a different stack layout and/or
-//  caller saved register set so that it didn't hit the A/V in the caller.
-//  By increasing the amount of stack allocted for the struct by 32 bytes we can fix this.
-//
-//  Return true if we actually perform the Quirk, otherwise return false
-//
-bool Compiler::compQuirkForPPP()
-{
-    if (lvaCount != 2)
-    { // We require that there are exactly two locals
-        return false;
-    }
-
-    if (compTailCallUsed)
-    { // Don't try this quirk if a tail call was used
-        return false;
-    }
-
-    bool       hasOutArgs          = false;
-    LclVarDsc* varDscExposedStruct = nullptr;
-
-    unsigned   lclNum;
-    LclVarDsc* varDsc;
-
-    /* Look for struct locals that are address taken */
-    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
-    {
-        if (varDsc->lvIsParam) // It can't be a parameter
-        {
-            continue;
-        }
-
-        // We require that the OutgoingArg space lclVar exists
-        if (lclNum == lvaOutgoingArgSpaceVar)
-        {
-            hasOutArgs = true; // Record that we saw it
-            continue;
-        }
-
-        // Look for a 32-byte address exposed Struct and record its varDsc
-        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvAddrExposed && (varDsc->lvExactSize == 32))
-        {
-            varDscExposedStruct = varDsc;
-        }
-    }
-
-    // We only perform the Quirk when there are two locals
-    // one of them is a address exposed struct of size 32
-    // and the other is the outgoing arg space local
-    //
-    if (hasOutArgs && (varDscExposedStruct != nullptr))
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nAdding a backwards compatibility quirk for the 'PPP' issue\n");
-        }
-#endif // DEBUG
-
-        // Increase the exact size of this struct by 32 bytes
-        // This fixes the PPP backward compat issue
-        varDscExposedStruct->lvExactSize += 32;
-
-        // The struct is now 64 bytes.
-        // We're on x64 so this should be 8 pointer slots.
-        assert((varDscExposedStruct->lvExactSize / TARGET_POINTER_SIZE) == 8);
-
-        varDscExposedStruct->SetLayout(
-            varDscExposedStruct->GetLayout()->GetPPPQuirkLayout(getAllocator(CMK_ClassLayout)));
-
-        return true;
-    }
-    return false;
-}
-#endif // TARGET_AMD64
 
 /*****************************************************************************/
 
@@ -5893,7 +5813,24 @@ void Compiler::compCompileFinish()
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     m_inlineStrategy->DumpData();
-    m_inlineStrategy->DumpXml();
+
+    if (JitConfig.JitInlineDumpXmlFile() != nullptr)
+    {
+        FILE* file = _wfopen(JitConfig.JitInlineDumpXmlFile(), W("a"));
+        if (file != nullptr)
+        {
+            m_inlineStrategy->DumpXml(file);
+            fclose(file);
+        }
+        else
+        {
+            m_inlineStrategy->DumpXml();
+        }
+    }
+    else
+    {
+        m_inlineStrategy->DumpXml();
+    }
 
 #endif
 
@@ -6319,6 +6256,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // We're prejitting the root method. We also will analyze it as
         // a potential inline candidate.
         InlineResult prejitResult(this, methodHnd, "prejit");
+
+        // Profile data allows us to avoid early "too many IL bytes" outs.
+        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, fgHaveSufficientProfileData());
 
         // Do the initial inline screen.
         impCanInlineIL(methodHnd, methodInfo, forceInline, &prejitResult);
@@ -7361,11 +7301,11 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
 
     // Otherwise, iterate.
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
+        for (Statement* const stmt : block->NonPhiStatements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 TestLabelAndNum tlAndN;
 
@@ -7489,22 +7429,17 @@ void Compiler::compCallArgStats()
 
     assert(fgStmtListThreaded);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            for (GenTree* call = stmt->GetTreeList(); call != nullptr; call = call->gtNext)
+            for (GenTree* const call : stmt->TreeList())
             {
                 if (call->gtOper != GT_CALL)
                     continue;
 
-                argNum =
-
-                    regArgNum = regArgDeferred = regArgTemp =
-
-                        regArgConst = regArgLclVar =
-
-                            argDWordNum = argLngNum = argFltNum = argDblNum = 0;
+                argNum = regArgNum = regArgDeferred = regArgTemp = regArgConst = regArgLclVar = argDWordNum =
+                    argLngNum = argFltNum = argDblNum = 0;
 
                 argTotalCalls++;
 
@@ -8576,6 +8511,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cBlocks,     dBlocks        : Display all the basic blocks of a function (call fgDispBasicBlocks()).
  *      cBlocksV,    dBlocksV       : Display all the basic blocks of a function (call fgDispBasicBlocks(true)).
  *                                    "V" means "verbose", and will dump all the trees.
+ *      cStmt,       dStmt          : Display a Statement (call gtDispStmt()).
  *      cTree,       dTree          : Display a tree (call gtDispTree()).
  *      cTreeLIR,    dTreeLIR       : Display a tree in LIR form (call gtDispLIRNode()).
  *      cTrees,      dTrees         : Display all the trees in a function (call fgDumpTrees()).
@@ -8598,6 +8534,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *
  * The following don't require a Compiler* to work:
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
+ *      dBlockList                  : Display a BasicBlockList*.
  */
 
 void cBlock(Compiler* comp, BasicBlock* block)
@@ -8772,6 +8709,11 @@ void dBlocksV()
     cBlocksV(JitTls::GetCompiler());
 }
 
+void dStmt(Statement* statement)
+{
+    cStmt(JitTls::GetCompiler(), statement);
+}
+
 void dTree(GenTree* tree)
 {
     cTree(JitTls::GetCompiler(), tree);
@@ -8914,16 +8856,15 @@ GenTree* dFindTree(GenTree* tree, unsigned id)
 
 GenTree* dFindTree(unsigned id)
 {
-    Compiler*   comp = JitTls::GetCompiler();
-    BasicBlock* block;
-    GenTree*    tree;
+    Compiler* comp = JitTls::GetCompiler();
+    GenTree*  tree;
 
     dbTreeBlock = nullptr;
     dbTree      = nullptr;
 
-    for (block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             tree = dFindTree(stmt->GetRootNode(), id);
             if (tree != nullptr)
@@ -8939,15 +8880,14 @@ GenTree* dFindTree(unsigned id)
 
 Statement* dFindStmt(unsigned id)
 {
-    Compiler*   comp = JitTls::GetCompiler();
-    BasicBlock* block;
+    Compiler* comp = JitTls::GetCompiler();
 
     dbStmt = nullptr;
 
     unsigned stmtId = 0;
-    for (block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmtId++;
             if (stmtId == id)
@@ -9716,6 +9656,21 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "devirtualization crossed version bubble";
         case CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL:
             return "object class has multiple implementations of interface";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL:
+            return "decl method is defined on class and decl method not in version bubble, and decl method not in "
+                   "type closest to version bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL:
+            return "decl method is defined on interface and not in version bubble, and implementation type not "
+                   "entirely defined in bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL:
+            return "object class not defined within version bubble";
+        case CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE:
+            return "object class cannot be referenced from R2R code due to missing tokens";
+        case CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE:
+            return "crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate "
+                   "interface implementations";
+        case CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE:
+            return "Decl method cannot be represented in R2R image";
         default:
             return "undefined";
     }

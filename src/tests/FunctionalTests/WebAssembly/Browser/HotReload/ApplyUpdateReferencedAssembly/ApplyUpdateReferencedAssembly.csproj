@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="EnableAggressiveTrimming;PublishTrimmed">
+  <PropertyGroup>
+    <TestRuntime>true</TestRuntime>
+    <DeltaScript>deltascript.json</DeltaScript>
+    <OutputType>library</OutputType>
+    <!-- to call AsssemblyExtensions.ApplyUpdate we need Optimize=false, EmitDebugInformation=true in all configurations -->
+    <Optimize>false</Optimize>
+    <EmitDebugInformation>true</EmitDebugInformation>
+    <!-- hot reload is not compatible with trimming -->
+    <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
+    <PublishTrimmed>false</PublishTrimmed>
+    <!-- CI builds turn this on, but it interferes with Roslyn's ability to generate EnC deltas -->
+    <DeterministicSourcePaths>false</DeterministicSourcePaths>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="MethodBody1.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- This package from https://github.com/dotnet/hotreload-utils provides
+         targets that read the json delta script and generates deltas based on the baseline assembly and the modified sources.
+
+         Projects must define the DeltaScript property that specifies the (relative) path to the json script.
+         Deltas will be emitted next to the output assembly.  Deltas will be copied when the current
+         project is referenced from other other projects.
+    -->
+    <PackageReference Include="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion)" />
+  </ItemGroup>
+</Project>

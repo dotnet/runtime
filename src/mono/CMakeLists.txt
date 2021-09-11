@@ -16,7 +16,7 @@ if(NOT MONO_LIB_NAME)
 endif()
 
 if(NOT MONO_SHARED_LIB_NAME)
-  set(MONO_SHARED_LIB_NAME "$(MONO_LIB_NAME)")
+  set(MONO_SHARED_LIB_NAME "${MONO_LIB_NAME}")
 endif()
 
 include(GNUInstallDirs)
@@ -62,29 +62,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-#
-# This is the version of the corlib-runtime interface. When
-# making changes to this interface (by changing the layout
-# of classes the runtime knows about, changing icall signature or
-# semantics etc), change this variable.
-#
-# This must be unique relative to corlib interface and semantics.
-#
-# If you change corlib such that a runtime change is required, or
-# vice versa, change this string. Examples include removing icalls,
-# adding icalls, changing icall signatures, and changing type layouts
-# that both sides know.
-#
-# It is an arbitrary string and should be parsed as such.
-# A guid works and is encouraged.
-#
-# There is no ordering of corlib versions, no old or new,
-# an exact match is required between corlib and runtime.
-#
-# This line is parsed by other tools, it should remain in the format they expect.
-#
-set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
-
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
@@ -107,10 +84,6 @@ set(DISABLED_FEATURES "\"\"")
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
   set(GCC 1)
-endif()
-
-if(DISABLE_INTERPRETER)
-  unset(ENABLE_METADATA_UPDATE)
 endif()
 
 add_definitions(-DHAVE_CONFIG_H)
@@ -160,11 +133,11 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "x86_64-apple-maccatalyst")
     set(TARGET_SYSTEM_NAME "Darwin")
     set(TARGET_ARCH "x86_64")
-    set(CMAKE_SYSTEM_VARIANT "MacCatalyst")
+    set(TARGET_MACCAT 1)
   elseif(AOT_TARGET_TRIPLE STREQUAL "aarch64-apple-maccatalyst")
     set(TARGET_SYSTEM_NAME "Darwin")
     set(TARGET_ARCH "arm64")
-    set(CMAKE_SYSTEM_VARIANT "MacCatalyst")
+    set(TARGET_MACCAT 1)
   elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-none")
     set(TARGET_SYSTEM_NAME "Emscripten")
     set(TARGET_ARCH "wasm")
@@ -223,9 +196,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
   set(DISABLE_EXECUTABLES 1)
-  set(DISABLE_CRASH_REPORTING 1)
   set(ENABLE_MONOTOUCH 1)
-  add_definitions(-DMONOTOUCH=1)
   add_definitions("-DSMALL_CONFIG")
   add_definitions("-D_XOPEN_SOURCE")
   add_definitions("-DHAVE_LARGE_FILE_SUPPORT=1")
@@ -263,8 +234,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
-  set(DISABLE_CRASH_REPORTING 1)
-  set(DISABLE_PORTABILITY 1)
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
@@ -280,6 +249,11 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_compile_options(/GL) # whole program optimization
     add_link_options(/LTCG)  # link-time code generation
   endif()
+elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
+  set(HOST_SOLARIS 1)
+  add_definitions(-DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(HOST_FREEBSD 1)
 else()
   message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()
@@ -307,7 +281,6 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
     set(TARGET_TVOS 1)
   endif()
   set(ENABLE_MONOTOUCH 1)
-  add_definitions(-DMONOTOUCH=1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Linux")
   set(TARGET_LINUX 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Android")
@@ -319,6 +292,10 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
   set(TARGET_WIN32 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "SunOS")
+  set(TARGET_SOLARIS 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(TARGET_FREEBSD 1)
 else()
   message(FATAL_ERROR "Target '${TARGET_SYSTEM_NAME}' not supported.")
 endif()
@@ -347,7 +324,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "i686" OR CMAKE_SYSTEM_PROCESSOR STREQUAL
   set(CMAKE_SYSTEM_PROCESSOR "x86")
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
   set(CMAKE_SYSTEM_PROCESSOR "arm64")
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x64")
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "amd64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x64")
   set(CMAKE_SYSTEM_PROCESSOR "x86_64")
 endif()
 
@@ -429,6 +406,15 @@ elseif(TARGET_ARCH STREQUAL "wasm")
   set(SIZEOF_REGISTER 4)
 else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
+endif()
+
+# arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
+if ((HOST_MACCAT AND HOST_ARCH STREQUAL "arm64") OR (TARGET_MACCAT AND TARGET_ARCH STREQUAL "arm64"))
+  set(ENABLE_MONOTOUCH 1)
+endif()
+
+if(ENABLE_MONOTOUCH)
+  add_definitions(-DMONOTOUCH=1)
 endif()
 
 ######################################
@@ -609,6 +595,15 @@ elseif(HOST_LINUX)
 elseif(HOST_WIN32)
   set(ICU_FLAGS "-DTARGET_WINDOWS -DPALEXPORT=EXTERN_C")
   set(HAVE_SYS_ICU 1)
+elseif(HOST_SOLARIS)
+  set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
+  set(HAVE_SYS_ICU 1)
+elseif(TARGET_FREEBSD)
+  set(ICU_FLAGS "-DTARGET_UNIX -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
+  set(ICU_LIBS icuuc icui18n)
+  set(ICU_INCLUDEDIR "${CROSS_ROOTFS}/usr/local/include")
+  set(ICU_LIBDIR "${CROSS_ROOTFS}/usr/local/lib")
 else()
   message(FATAL_ERROR "Unknown host")
 endif()
@@ -723,13 +718,24 @@ else()
   # FIXME:
   set(NAME_DEV_RANDOM "\"/dev/random\"")
 endif()
+
+if(HOST_LINUX AND HAVE_SYS_MMAN_H AND HAVE_ELF_H AND HAVE_SYS_SYSCALL_H)
+  set(ENABLE_JIT_DUMP 1)
+endif()
 ### End of other checks
 
 ######################################
 # EXTRACT VERSION
 ######################################
-if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
+  if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
+  else()
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+  endif()
+endif()
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc" "\n")
 endif()
 if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
   file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"
@@ -765,7 +771,7 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(TARGET_IOS OR TARGET_ANDROID OR TARGET_MACCAT)
+if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
   # FIXME: the mobile products use mono_dllmap_insert so allow this
   unset(DISABLE_DLLMAP)
 else()

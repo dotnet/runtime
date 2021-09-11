@@ -23,6 +23,8 @@ namespace System.IO.Pipelines
 
             public override void CancelPendingFlush() => _pipe.CancelPendingFlush();
 
+            public override bool CanGetUnflushedBytes => true;
+
 #pragma warning disable CS0672 // Member overrides obsolete member
             public override void OnReaderCompleted(Action<Exception?, object?> callback, object? state) => _pipe.OnReaderCompleted(callback, state);
 #pragma warning restore CS0672 // Member overrides obsolete member
@@ -40,6 +42,8 @@ namespace System.IO.Pipelines
             public FlushResult GetResult(short token) => _pipe.GetFlushAsyncResult();
 
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _pipe.OnFlushAsyncCompleted(continuation, state, flags);
+
+            public override long UnflushedBytes => _pipe.GetUnflushedBytes();
 
             public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
             {

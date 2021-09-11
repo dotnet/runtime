@@ -337,7 +337,7 @@ namespace System.Text
                         if (pCodePageIndex->CodePage == codePage)
                         {
                             Debug.Assert(pCodePageIndex->ByteCount == 1 || pCodePageIndex->ByteCount == 2,
-                                "[BaseCodePageEncoding] Code page (" + codePage + ") has invalid byte size (" + pCodePageIndex->ByteCount + ") in table");
+                                $"[BaseCodePageEncoding] Code page ({codePage}) has invalid byte size ({pCodePageIndex->ByteCount}) in table");
                             // Return what it says for byte count
                             return pCodePageIndex->ByteCount;
                         }

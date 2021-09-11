@@ -295,6 +295,12 @@
   <data name="Cryptography_X509_PKCS7_Unsupported" xml:space="preserve">
     <value>PKCS#7 certificate format is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
+    <value>The PKCS#12 PersistKeySet flag is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_ExportableNotSupported" xml:space="preserve">
+    <value>The PKCS#12 Exportable flag is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_X509_StoreAddFailure" xml:space="preserve">
     <value>The X509 certificate could not be added to the store.</value>
   </data>
@@ -331,6 +337,9 @@
   <data name="Cryptography_X509_NoOrMismatchedPemKey" xml:space="preserve">
     <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate.</value>
   </data>
+  <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
+    <value>Certificate '{0}' is corrupted.</value>
+  </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>
   </data>
@@ -363,6 +372,9 @@
   </data>
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
+  </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
   </data>
   <data name="Cryptography_FileStatusError" xml:space="preserve">
     <value>Unable to get file status.</value>

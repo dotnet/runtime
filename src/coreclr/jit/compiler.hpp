@@ -533,34 +533,6 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
     return regNum;
 }
 
-//------------------------------------------------------------------------------
-// genSmallTypeCanRepresentValue: Checks if a value can be represented by a given small type.
-//
-// Arguments:
-//    value - the value to check
-//    type  - the type
-//
-// Return Value:
-//    True if the value is representable, false otherwise.
-
-inline bool genSmallTypeCanRepresentValue(var_types type, ssize_t value)
-{
-    switch (type)
-    {
-        case TYP_UBYTE:
-        case TYP_BOOL:
-            return FitsIn<UINT8>(value);
-        case TYP_BYTE:
-            return FitsIn<INT8>(value);
-        case TYP_USHORT:
-            return FitsIn<UINT16>(value);
-        case TYP_SHORT:
-            return FitsIn<INT16>(value);
-        default:
-            unreached();
-    }
-}
-
 /*****************************************************************************
  *
  *  Return the size in bytes of the given type.
@@ -763,28 +735,9 @@ inline double getR8LittleEndian(const BYTE* ptr)
     return *(double*)&val;
 }
 
-/*****************************************************************************
- *
- *  Return the normalized index to use in the EXPSET_TP for the CSE with
- *  the given CSE index.
- *  Each GenTree has the following field:
- *    signed char       gtCSEnum;        // 0 or the CSE index (negated if def)
- *  So zero is reserved to mean this node is not a CSE
- *  and postive values indicate CSE uses and negative values indicate CSE defs.
- *  The caller of this method must pass a non-zero postive value.
- *  This precondition is checked by the assert on the first line of this method.
- */
-
-inline unsigned int genCSEnum2bit(unsigned index)
-{
-    assert((index > 0) && (index <= EXPSET_SZ));
-
-    return (index - 1);
-}
-
 #ifdef DEBUG
 const char* genES2str(BitVecTraits* traits, EXPSET_TP set);
-const char* refCntWtd2str(BasicBlock::weight_t refCntWtd);
+const char* refCntWtd2str(weight_t refCntWtd);
 #endif
 
 /*
@@ -859,6 +812,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 
 #ifdef DEBUG
     gtSeqNum = 0;
+    gtUseNum = -1;
     gtTreeID = JitTls::GetCompiler()->compGenTreeID++;
     gtVNPair.SetBoth(ValueNumStore::NoVN);
     gtRegTag   = GT_REGTAG_NONE;
@@ -1302,6 +1256,14 @@ inline void Compiler::gtSetStmtInfo(Statement* stmt)
 
 /*****************************************************************************/
 
+inline void Compiler::fgUpdateConstTreeValueNumber(GenTree* tree)
+{
+    if (vnStore != nullptr)
+    {
+        fgValueNumberTreeConst(tree);
+    }
+}
+
 inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(((gtDebugFlags & GTF_DEBUG_NODE_SMALL) != 0) != ((gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0));
@@ -1361,6 +1323,20 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         // Clear the ValueNum field as well.
         gtVNPair.SetBoth(ValueNumStore::NoVN);
     }
+}
+
+inline GenTree* Compiler::gtNewKeepAliveNode(GenTree* op)
+{
+    GenTree* keepalive = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, op);
+
+    // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
+    // very subtle and hard to observe. Thus we are conservatively marking it with both
+    // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
+    // necessary. The conservative side-effects are unlikely to have negative impact
+    // on code quality in this case.
+    keepalive->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+
+    return keepalive;
 }
 
 inline GenTreeCast* Compiler::gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
@@ -1516,7 +1492,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline bool Compiler::lvaHaveManyLocals() const
 {
-    return (lvaCount >= lclMAX_TRACKED);
+    return (lvaCount >= (unsigned)JitConfig.JitMaxLocalsToTrack());
 }
 
 /*****************************************************************************
@@ -1724,7 +1700,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
  *  Increment the ref counts for a local variable
  */
 
-inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, RefCountState state, bool propagate)
+inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState state, bool propagate)
 {
     // In minopts and debug codegen, we don't maintain normal ref counts.
     if ((state == RCS_NORMAL) && comp->opts.OptimizationDisabled())
@@ -1776,7 +1752,7 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
                 weight *= 2;
             }
 
-            BasicBlock::weight_t newWeight = lvRefCntWtd(state) + weight;
+            weight_t newWeight = lvRefCntWtd(state) + weight;
             assert(newWeight >= lvRefCntWtd(state));
             setLvRefCntWtd(newWeight, state);
         }
@@ -1832,7 +1808,7 @@ inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(Statement* stmt)
 
     assert(fgStmtListThreaded);
 
-    for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+    for (GenTree* const tree : stmt->TreeList())
     {
         if (tree->gtOper != GT_LCL_VAR)
         {
@@ -2606,7 +2582,6 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
  *    argument exception (used by feature SIMD)
  *    argument range-check exception (used by feature SIMD)
  *    divide by zero exception  (Not used on X86/X64)
- *    null reference exception (Not currently used)
  *    overflow exception
  */
 
@@ -2622,32 +2597,19 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    GenTree* call = block->lastNode();
+    // Special check blocks will always end in a throw helper call.
+    //
+    GenTree* const call = block->lastNode();
 
-#ifdef DEBUG
-    if (block->IsLIR())
-    {
-        LIR::Range& blockRange = LIR::AsRange(block);
-        for (LIR::Range::ReverseIterator node = blockRange.rbegin(), end = blockRange.rend(); node != end; ++node)
-        {
-            if (node->OperGet() == GT_CALL)
-            {
-                assert(*node == call);
-                assert(node == blockRange.rbegin());
-                break;
-            }
-        }
-    }
-#endif
-
-    if (!call || (call->gtOper != GT_CALL))
+    if ((call == nullptr) || (call->gtOper != GT_CALL))
     {
         return false;
     }
 
     if (!((call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
+          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTEXCEPTION)) ||
+          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION)) ||
           (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW))))
     {
         return false;
@@ -3606,7 +3568,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR ||
         helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS ||
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS ||
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         helper == CORINFO_HELP_READYTORUN_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE ||
 #endif
         helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS;
@@ -4694,7 +4656,7 @@ inline void LclVarDsc::setLvRefCnt(unsigned short newValue, RefCountState state)
 // Return Value:
 //    Weighted ref count for the local.
 
-inline BasicBlock::weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
+inline weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
 {
 
 #if defined(DEBUG)
@@ -4722,7 +4684,7 @@ inline BasicBlock::weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
 //    It is currently the caller's responsibilty to ensure this increment
 //    will not cause overflow.
 
-inline void LclVarDsc::incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state)
+inline void LclVarDsc::incLvRefCntWtd(weight_t delta, RefCountState state)
 {
 
 #if defined(DEBUG)
@@ -4731,7 +4693,7 @@ inline void LclVarDsc::incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState 
     assert(compiler->lvaRefCountState == state);
 #endif
 
-    BasicBlock::weight_t oldRefCntWtd = m_lvRefCntWtd;
+    weight_t oldRefCntWtd = m_lvRefCntWtd;
     m_lvRefCntWtd += delta;
     assert(m_lvRefCntWtd >= oldRefCntWtd);
 }
@@ -4747,7 +4709,7 @@ inline void LclVarDsc::incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState 
 //    Generally after calling v->setLvRefCntWtd(Y), v->lvRefCntWtd() == Y.
 //    However this may not be true when v->lvImplicitlyReferenced == 1.
 
-inline void LclVarDsc::setLvRefCntWtd(BasicBlock::weight_t newValue, RefCountState state)
+inline void LclVarDsc::setLvRefCntWtd(weight_t newValue, RefCountState state)
 {
 
 #if defined(DEBUG)

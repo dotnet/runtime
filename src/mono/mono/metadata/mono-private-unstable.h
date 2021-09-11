@@ -28,6 +28,7 @@ typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV3) (MonoAssemblyLoadContextGCHa
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, void *user_data, mono_bool append);
 
+// This can point at NULL before the default ALC is initialized
 MONO_API MONO_RT_EXTERNAL_ONLY MonoAssemblyLoadContextGCHandle
 mono_alc_get_default_gchandle (void);
 

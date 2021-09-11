@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -37,6 +38,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type? runtimePropertyType,
             ConverterStrategy runtimeClassType,
             MemberInfo? memberInfo,
+            bool isVirtual,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonNumberHandling? parentTypeNumberHandling,
@@ -48,6 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
                 runtimePropertyType,
                 runtimeClassType,
                 memberInfo,
+                isVirtual,
                 converter,
                 ignoreCondition,
                 parentTypeNumberHandling,
@@ -116,13 +119,15 @@ namespace System.Text.Json.Serialization.Metadata
         internal void InitializeForSourceGen(
             JsonSerializerOptions options,
             bool isProperty,
+            bool isPublic,
             Type declaringType,
             JsonTypeInfo typeInfo,
             JsonConverter<T> converter,
-            Func<object, T>? getter,
-            Action<object, T>? setter,
-            JsonIgnoreCondition ignoreCondition,
-            JsonNumberHandling numberHandling,
+            Func<object, T?>? getter,
+            Action<object, T?>? setter,
+            JsonIgnoreCondition? ignoreCondition,
+            bool hasJsonInclude,
+            JsonNumberHandling? numberHandling,
             string propertyName,
             string? jsonPropertyName)
         {
@@ -150,6 +155,11 @@ namespace System.Text.Json.Serialization.Metadata
             NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
             EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
 
+            SrcGen_IsPublic = isPublic;
+            SrcGen_HasJsonInclude = hasJsonInclude;
+            DeclaredPropertyType = typeof(T);
+            ConverterBase = converter;
+
             if (ignoreCondition == JsonIgnoreCondition.Always)
             {
                 IsIgnored = true;
@@ -158,13 +168,11 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                Get = getter;
+                Get = getter!;
                 Set = setter;
                 HasGetter = Get != null;
                 HasSetter = Set != null;
-                ConverterBase = converter;
                 RuntimeTypeInfo = typeInfo;
-                DeclaredPropertyType = typeof(T);
                 DeclaringType = declaringType;
                 IgnoreCondition = ignoreCondition;
                 MemberType = isProperty ? MemberTypes.Property : MemberTypes.Field;
@@ -234,11 +242,17 @@ namespace System.Text.Json.Serialization.Metadata
         {
             T value = Get!(obj);
 
-            if (Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
-                value != null &&
+            if (
+#if NET5_0_OR_GREATER
+                !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
+#else
+                !Converter.IsValueType &&
+#endif
+                Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                value is not null &&
                 // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
                 // However JsonConverter<object> that uses ConverterStrategy == Value is an exception.
-                (Converter.CanBePolymorphic || (!Converter.IsValueType && ConverterStrategy != ConverterStrategy.Value)) &&
+                (Converter.CanBePolymorphic || ConverterStrategy != ConverterStrategy.Value) &&
                 state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {
                 // If a reference cycle is detected, treat value as null.
@@ -283,9 +297,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (Converter.HandleNullOnWrite)
                 {
-                    // No object, collection, or re-entrancy converter handles null.
-                    Debug.Assert(Converter.ConverterStrategy == ConverterStrategy.Value);
-
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
                         state.Current.PropertyState = StackFramePropertyState.Name;

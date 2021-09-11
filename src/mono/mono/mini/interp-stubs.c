@@ -80,11 +80,6 @@ stub_set_optimizations (guint32 i)
 }
 
 static void
-stub_metadata_update_init (MonoError *error)
-{
-}
-
-static void
 stub_invalidate_transformed (void)
 {
 }
@@ -217,6 +212,11 @@ stub_free_context (gpointer context)
 
 static void
 stub_mark_stack (gpointer thread_data, GcScanFunc func, gpointer gc_data, gboolean precise)
+{
+}
+
+static void
+stub_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 {
 }
 

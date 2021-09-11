@@ -1596,20 +1596,6 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static void _HandleException(IntPtr thisHandle, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                _this.HandleException(pExceptionPointers);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-            }
-        }
-
-        [UnmanagedCallersOnly]
         static void _ThrowExceptionForJitResult(IntPtr thisHandle, IntPtr* ppException, HRESULT result)
         {
             var _this = GetThis(thisHandle);
@@ -1644,6 +1630,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.runWithErrorTrap(function, parameter) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        static byte _runWithSPMIErrorTrap(IntPtr thisHandle, IntPtr* ppException, void* function, void* parameter)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.runWithSPMIErrorTrap(function, parameter) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2548,10 +2549,25 @@ namespace Internal.JitInterface
             }
         }
 
+        [UnmanagedCallersOnly]
+        static byte _doesFieldBelongToClass(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* fldHnd, CORINFO_CLASS_STRUCT_* cls)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.doesFieldBelongToClass(fldHnd, cls) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
 
         static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 172);
+            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 173);
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isJitIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodAttribs;
@@ -2660,10 +2676,10 @@ namespace Internal.JitInterface
             callbacks[104] = (delegate* unmanaged<IntPtr, IntPtr*, _EXCEPTION_POINTERS*, HRESULT>)&_GetErrorHRESULT;
             callbacks[105] = (delegate* unmanaged<IntPtr, IntPtr*, char*, uint, uint>)&_GetErrorMessage;
             callbacks[106] = (delegate* unmanaged<IntPtr, IntPtr*, _EXCEPTION_POINTERS*, int>)&_FilterException;
-            callbacks[107] = (delegate* unmanaged<IntPtr, IntPtr*, _EXCEPTION_POINTERS*, void>)&_HandleException;
-            callbacks[108] = (delegate* unmanaged<IntPtr, IntPtr*, HRESULT, void>)&_ThrowExceptionForJitResult;
-            callbacks[109] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_HELPER_DESC*, void>)&_ThrowExceptionForHelper;
-            callbacks[110] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, byte>)&_runWithErrorTrap;
+            callbacks[107] = (delegate* unmanaged<IntPtr, IntPtr*, HRESULT, void>)&_ThrowExceptionForJitResult;
+            callbacks[108] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_HELPER_DESC*, void>)&_ThrowExceptionForHelper;
+            callbacks[109] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, byte>)&_runWithErrorTrap;
+            callbacks[110] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, byte>)&_runWithSPMIErrorTrap;
             callbacks[111] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_EE_INFO*, void>)&_getEEInfo;
             callbacks[112] = (delegate* unmanaged<IntPtr, IntPtr*, char*>)&_getJitTimeLogFilename;
             callbacks[113] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, mdToken>)&_getMethodDefFromMethod;
@@ -2725,6 +2741,7 @@ namespace Internal.JitInterface
             callbacks[169] = (delegate* unmanaged<IntPtr, IntPtr*, void*, ushort>)&_getRelocTypeHint;
             callbacks[170] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
             callbacks[171] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
+            callbacks[172] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_doesFieldBelongToClass;
 
             return (IntPtr)callbacks;
         }

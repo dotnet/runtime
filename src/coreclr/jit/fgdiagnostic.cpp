@@ -14,19 +14,15 @@
 #ifdef DEBUG
 void Compiler::fgPrintEdgeWeights()
 {
-    BasicBlock* bSrc;
-    BasicBlock* bDst;
-    flowList*   edge;
-
     // Print out all of the edge weights
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+    for (BasicBlock* const bDst : Blocks())
     {
         if (bDst->bbPreds != nullptr)
         {
             printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (flowList* const edge : bDst->PredEdges())
             {
-                bSrc = edge->getBlock();
+                BasicBlock* bSrc = edge->getBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 printf(FMT_BB " ", bSrc->bbNum);
@@ -845,7 +841,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     unsigned  blockOrdinal = 1;
     unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[blkMapSize];
     memset(blkMap, 0, sizeof(unsigned) * blkMapSize);
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         assert(block->bbNum < blkMapSize);
         blkMap[block->bbNum] = blockOrdinal++;
@@ -989,8 +985,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 targetWeightDivisor = (double)bTarget->bbWeight;
             }
 
-            flowList* edge;
-            for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
+            for (flowList* const edge : bTarget->PredEdges())
             {
                 BasicBlock* bSource = edge->getBlock();
                 double      sourceWeightDivisor;
@@ -1027,7 +1022,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
                     if (validWeights)
                     {
-                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
                     }
 
@@ -1052,7 +1047,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     }
                     if (validWeights)
                     {
-                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "\n            weight=");
                         fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
 
@@ -1084,6 +1079,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     fprintf(fgxFile, ">");
                     fprintf(fgxFile, "\n        </edge>");
                 }
+
+                ++edgeNum;
             }
         }
     }
@@ -1093,7 +1090,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     //
     if (createDotFile)
     {
-        for (BasicBlock* bSource = fgFirstBB; bSource != nullptr; bSource = bSource->bbNext)
+        for (BasicBlock* const bSource : Blocks())
         {
             if (constrained)
             {
@@ -1115,11 +1112,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
             // Emit successor edges
             //
-            const unsigned numSuccs = bSource->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const bTarget : bSource->Succs())
             {
-                BasicBlock* const bTarget = bSource->GetSucc(i);
                 fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
                 if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                 {
@@ -1696,7 +1690,7 @@ void Compiler::fgDispReach()
     printf("BBnum  Reachable by \n");
     printf("------------------------------------------------\n");
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         printf(FMT_BB " : ", block->bbNum);
         BlockSetOps::Iter iter(this, block->bbReach);
@@ -1807,7 +1801,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     }
     else
     {
-        BasicBlock::weight_t weight = block->getBBWeight(this);
+        weight_t weight = block->getBBWeight(this);
 
         if (weight > 99999) // Is it going to be more than 6 characters?
         {
@@ -1819,7 +1813,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             else // print weight in terms of k (i.e. 156k )
             {
                 // print weight in this format dddddk
-                BasicBlock::weight_t weightK = weight / 1000;
+                weight_t weightK = weight / 1000;
                 printf("%5uk", (unsigned)FloatingPointUtils::round(weightK / BB_UNITY_WEIGHT));
             }
         }
@@ -2044,10 +2038,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         // Output a brace for every try region that this block opens
 
-        EHblkDsc* HBtab;
-        EHblkDsc* HBtabEnd;
-
-        for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
             if (HBtab->ebdTryBeg == block)
             {
@@ -2058,10 +2049,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
     }
 
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (HBtab->ebdTryLast == block)
         {
@@ -2242,7 +2230,7 @@ void Compiler::fgDumpBlock(BasicBlock* block)
 
     if (!block->IsLIR())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgDumpStmtTree(stmt, block->bbNum);
         }
@@ -2264,7 +2252,7 @@ void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
 {
     // Note that typically we have already called fgDispBasicBlocks()
     // so we don't need to print the preds and succs again here.
-    for (BasicBlock* block = firstBlock; block; block = block->bbNext)
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->bbNext)
     {
         fgDumpBlock(block);
 
@@ -2369,7 +2357,7 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
     }
 
     unsigned blockRefs = 0;
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* const pred : block->PredEdges())
     {
         blockRefs += pred->flDupCount;
 
@@ -2504,22 +2492,15 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
-        {
-            unsigned jumpCnt = blockPred->bbJumpSwt->bbsCount;
-
-            for (unsigned i = 0; i < jumpCnt; ++i)
+            for (BasicBlock* const bTarget : blockPred->SwitchTargets())
             {
-                BasicBlock* jumpTab = blockPred->bbJumpSwt->bbsDstTab[i];
-                assert(jumpTab != nullptr);
-                if (block == jumpTab)
+                if (block == bTarget)
                 {
                     return true;
                 }
             }
-
             assert(!"SWITCH in the predecessor list with no jump label to BLOCK!");
-        }
-        break;
+            break;
 
         default:
             assert(!"Unexpected bbJumpKind");
@@ -2568,7 +2549,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         // we find a potential 'hit' we check if the funclet we're looking at is
         // from the correct try region.
 
-        for (BasicBlock* bcall = comp->fgFirstFuncletBB; bcall != nullptr; bcall = bcall->bbNext)
+        for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
             if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
             {
@@ -2646,12 +2627,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     /* Check bbNum, bbRefs and bbPreds */
     // First, pick a traversal stamp, and label all the blocks with it.
     unsigned curTraversalStamp = unsigned(InterlockedIncrement((LONG*)&bbTraverseLabel));
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbTraversalStamp = curTraversalStamp;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (checkBBNum)
         {
@@ -2737,8 +2718,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             {
                 // Check to see if this block is the beginning of a filter or a handler and adjust the ref count
                 // appropriately.
-                for (EHblkDsc *HBtab = compHndBBtab, *HBtabEnd = &compHndBBtab[compHndBBtabCount]; HBtab != HBtabEnd;
-                     HBtab++)
+                for (EHblkDsc* const HBtab : EHClauses(this))
                 {
                     if (HBtab->ebdHndBeg == block)
                     {
@@ -2758,6 +2738,52 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (block->hasTryIndex())
         {
             assert(block->getTryIndex() < compHndBBtabCount);
+        }
+
+        // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
+        // with the finally block the BBJ_CALLFINALLY is targeting. There is one special case: if the
+        // BBJ_CALLFINALLY is the first block of a `try`, then its predecessor can be outside the `try`:
+        // either a branch or fall-through to the first block.
+        //
+        // Note that this IR condition is a choice. It naturally occurs when importing EH constructs.
+        // This condition prevents flow optimizations from skipping blocks in a `try` and branching
+        // directly to the BBJ_CALLFINALLY. Relaxing this constraint would require careful thinking about
+        // the implications, such as data flow optimizations.
+        //
+        // Don't depend on predecessors list for the check.
+        for (BasicBlock* const succBlock : block->Succs())
+        {
+            if (succBlock->bbJumpKind == BBJ_CALLFINALLY)
+            {
+                BasicBlock* finallyBlock = succBlock->bbJumpDest;
+                assert(finallyBlock->hasHndIndex());
+                unsigned finallyIndex = finallyBlock->getHndIndex();
+
+                // Now make sure the block branching to the BBJ_CALLFINALLY is in the correct region. The branch
+                // to the BBJ_CALLFINALLY can come from the try region of the finally block, or from a more nested
+                // try region, e.g.:
+                //    try {
+                //        try {
+                //            LEAVE L_OUTER; // this becomes a branch to a BBJ_CALLFINALLY in an outer try region
+                //                           // (in the FEATURE_EH_CALLFINALLY_THUNKS case)
+                //        } catch {
+                //        }
+                //    } finally {
+                //    }
+                //    L_OUTER:
+                //
+                EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
+                if (ehDsc->ebdTryBeg == succBlock)
+                {
+                    // The BBJ_CALLFINALLY is the first block of it's `try` region. Don't check the predecessor.
+                    // Note that this case won't occur in the FEATURE_EH_CALLFINALLY_THUNKS case, since the
+                    // BBJ_CALLFINALLY in that case won't exist in the `try` region of the `finallyIndex`.
+                }
+                else
+                {
+                    assert(bbInTryRegions(finallyIndex, block));
+                }
+            }
         }
 
         /* Check if BBF_RUN_RARELY is set that we have bbWeight of zero */
@@ -3012,6 +3038,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 }
                 break;
 
+            case GT_ASG:
+            {
+                // Can't CSE dst.
+                assert((tree->gtGetOp1()->gtFlags & GTF_DONT_CSE) != 0);
+                break;
+            }
             default:
                 break;
         }
@@ -3267,14 +3299,13 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
-// fgDebugCheckDispFlags:
-//    Wrapper function that displays two GTF_IND_ flags
-//      and then calls ftDispFlags to display the rest.
+// fgDebugCheckDispFlags: Wrapper function that displays GTF_IND_ flags
+// and then calls gtDispFlags to display the rest.
 //
 // Arguments:
 //    tree       - Tree whose flags are being checked
-//    dispFlags  - the first argument for gtDispFlags
-//                 ands hold GTF_IND_INVARIANT and GTF_IND_NONFLUALTING
+//    dispFlags  - the first argument for gtDispFlags (flags to display),
+//                 including GTF_IND_INVARIANT, GTF_IND_NONFAULTING, GTF_IND_NONNULL
 //    debugFlags - the second argument to gtDispFlags
 //
 void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
@@ -3291,15 +3322,14 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenT
 //------------------------------------------------------------------------------
 // fgDebugCheckFlagsHelper : Check if all bits that are set in chkFlags are also set in treeFlags.
 //
-//
 // Arguments:
-//    tree  - Tree whose flags are being checked
+//    tree      - Tree whose flags are being checked
 //    treeFlags - Actual flags on the tree
-//    chkFlags - Expected flags
+//    chkFlags  - Expected flags
 //
 // Note:
 //    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
-
+//
 void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags)
 {
     if (chkFlags & ~treeFlags)
@@ -3466,7 +3496,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
     fgDebugCheckBlockLinks();
 
     // For each block check the links between the trees.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -3496,7 +3526,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 
 void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 {
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         // Verify that bbStmtList is threaded correctly.
         // Note that for the statements list, the GetPrevStmt() list is circular.
@@ -3560,7 +3590,7 @@ void Compiler::fgDebugCheckBlockLinks()
 {
     assert(fgFirstBB->bbPrev == nullptr);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbNext)
         {
@@ -3592,11 +3622,9 @@ void Compiler::fgDebugCheckBlockLinks()
                 // about the BlockSet epoch.
                 BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
                 BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-                BasicBlock** jumpTable = block->bbJumpSwt->bbsDstTab;
-                unsigned     jumpCount = block->bbJumpSwt->bbsCount;
-                for (unsigned i = 0; i < jumpCount; i++)
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, jumpTable[i]->bbNum);
+                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
                 }
                 // Now we should have a set of unique successors that matches what's in the switchMap.
                 // First, check the number of entries, then make sure all the blocks in uniqueSuccSet
@@ -3675,7 +3703,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
 {
     UniquenessCheckWalker walker(this);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -3686,7 +3714,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
         }
         else
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* root = stmt->GetRootNode();
                 fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
@@ -3709,7 +3737,7 @@ void Compiler::fgDebugCheckLoopTable()
         assert(optLoopTable != nullptr);
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (optLoopCount == 0)
         {

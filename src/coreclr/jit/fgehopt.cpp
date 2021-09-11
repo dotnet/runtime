@@ -99,10 +99,18 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
             continue;
         }
 
+        // If the finally's block jumps back to itself, then it is not empty.
+        if ((firstBlock->bbJumpKind == BBJ_ALWAYS) && firstBlock->bbJumpDest == firstBlock)
+        {
+            JITDUMP("EH#%u finally has basic block that jumps to itself; skipping.\n", XTnum);
+            XTnum++;
+            continue;
+        }
+
         // Limit for now to finallys that contain only a GT_RETFILT.
         bool isEmpty = true;
 
-        for (Statement* stmt : firstBlock->Statements())
+        for (Statement* const stmt : firstBlock->Statements())
         {
             GenTree* stmtExpr = stmt->GetRootNode();
 
@@ -197,7 +205,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
 
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -349,7 +357,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const lastTryBlock      = HBtab->ebdTryLast;
         BasicBlock* const firstHandlerBlock = HBtab->ebdHndBeg;
         BasicBlock* const lastHandlerBlock  = HBtab->ebdHndLast;
-        BasicBlock* const endHandlerBlock   = lastHandlerBlock->bbNext;
 
         assert(firstTryBlock->getTryIndex() == XTnum);
 
@@ -474,7 +481,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // handler region (if any) won't change.
         //
         // Kind of overkill to loop here, but hey.
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -511,7 +518,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
         // Decrement nesting level of enclosed GT_END_LFINs.
-        for (BasicBlock* block = firstHandlerBlock; block != endHandlerBlock; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstHandlerBlock, lastHandlerBlock))
         {
             if (block == firstHandlerBlock)
             {
@@ -545,7 +552,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             // If we're in a non-funclet model, decrement the nesting
             // level of any GT_END_LFIN we find in the handler region,
             // since we're removing the enclosing handler.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
@@ -733,7 +740,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Should we compute statement cost here, or is it
             // premature...? For now just count statements I guess.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 regionStmtCount++;
             }
@@ -791,12 +798,12 @@ PhaseStatus Compiler::fgCloneFinally()
         assert(bbInTryRegions(XTnum, lastTryBlock));
         BasicBlock* const beforeTryBlock = firstTryBlock->bbPrev;
 
-        BasicBlock*          normalCallFinallyBlock   = nullptr;
-        BasicBlock*          normalCallFinallyReturn  = nullptr;
-        BasicBlock*          cloneInsertAfter         = HBtab->ebdTryLast;
-        bool                 tryToRelocateCallFinally = false;
-        const bool           usingProfileWeights      = fgIsUsingProfileWeights();
-        BasicBlock::weight_t currentWeight            = BB_ZERO_WEIGHT;
+        BasicBlock* normalCallFinallyBlock   = nullptr;
+        BasicBlock* normalCallFinallyReturn  = nullptr;
+        BasicBlock* cloneInsertAfter         = HBtab->ebdTryLast;
+        bool        tryToRelocateCallFinally = false;
+        const bool  usingProfileWeights      = fgIsUsingProfileWeights();
+        weight_t    currentWeight            = BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->bbPrev)
         {
@@ -1022,13 +1029,12 @@ PhaseStatus Compiler::fgCloneFinally()
         // Clone the finally body, and splice it into the flow graph
         // within in the parent region of the try.
         //
-        const unsigned             finallyTryIndex = firstBlock->bbTryIndex;
-        BasicBlock*                insertAfter     = nullptr;
-        BlockToBlockMap            blockMap(getAllocator());
-        bool                       clonedOk     = true;
-        unsigned                   cloneBBCount = 0;
-        BasicBlock::weight_t const originalWeight =
-            firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
+        const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
+        BasicBlock*     insertAfter     = nullptr;
+        BlockToBlockMap blockMap(getAllocator());
+        bool            clonedOk       = true;
+        unsigned        cloneBBCount   = 0;
+        weight_t const  originalWeight = firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->bbNext)
         {
@@ -1135,10 +1141,10 @@ PhaseStatus Compiler::fgCloneFinally()
         // Modify the targeting call finallys to branch to the cloned
         // finally. Make a note if we see some calls that can't be
         // retargeted (since they want to return to other places).
-        BasicBlock* const    firstCloneBlock    = blockMap[firstBlock];
-        bool                 retargetedAllCalls = true;
-        BasicBlock*          currentBlock       = firstCallFinallyRangeBlock;
-        BasicBlock::weight_t retargetedWeight   = BB_ZERO_WEIGHT;
+        BasicBlock* const firstCloneBlock    = blockMap[firstBlock];
+        bool              retargetedAllCalls = true;
+        BasicBlock*       currentBlock       = firstCallFinallyRangeBlock;
+        weight_t          retargetedWeight   = BB_ZERO_WEIGHT;
 
         while (currentBlock != endCallFinallyRangeBlock)
         {
@@ -1235,20 +1241,19 @@ PhaseStatus Compiler::fgCloneFinally()
         if (usingProfileWeights && (originalWeight > BB_ZERO_WEIGHT))
         {
             // We can't leave the finally more often than we enter.
-            // So cap cloned scale at 1.0f
+            // So cap cloned scale at 1.0
             //
-            BasicBlock::weight_t const clonedScale =
-                retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0f;
-            BasicBlock::weight_t const originalScale = 1.0f - clonedScale;
+            weight_t const clonedScale = retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0;
+            weight_t const originalScale = 1.0 - clonedScale;
 
             JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",
                     retargetedWeight, originalWeight, clonedScale, originalScale);
 
-            for (BasicBlock* block = firstBlock; block != lastBlock->bbNext; block = block->bbNext)
+            for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
             {
                 if (block->hasProfileWeight())
                 {
-                    BasicBlock::weight_t const blockWeight = block->bbWeight;
+                    weight_t const blockWeight = block->bbWeight;
                     block->setBBProfileWeight(blockWeight * originalScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
 
@@ -1343,10 +1348,9 @@ void Compiler::fgDebugCheckTryFinallyExits()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() <= XTnum);
         assert(lastTryBlock->getTryIndex() <= XTnum);
-        BasicBlock* const afterTryBlock = lastTryBlock->bbNext;
-        BasicBlock* const finallyBlock  = isFinally ? HBtab->ebdHndBeg : nullptr;
+        BasicBlock* const finallyBlock = isFinally ? HBtab->ebdHndBeg : nullptr;
 
-        for (BasicBlock* block = firstTryBlock; block != afterTryBlock; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock, lastTryBlock))
         {
             // Only check the directly contained blocks.
             assert(block->hasTryIndex());
@@ -1357,12 +1361,8 @@ void Compiler::fgDebugCheckTryFinallyExits()
             }
 
             // Look at each of the normal control flow possibilities.
-            const unsigned numSuccs = block->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const succBlock : block->Succs())
             {
-                BasicBlock* const succBlock = block->GetSucc(i);
-
                 if (succBlock->hasTryIndex() && succBlock->getTryIndex() <= XTnum)
                 {
                     // Successor does not exit this try region.
@@ -1514,7 +1514,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // Remove the GT_END_LFIN from the continuation,
     // Note we only expect to see one such statement.
     bool foundEndLFin = false;
-    for (Statement* stmt : continuation->Statements())
+    for (Statement* const stmt : continuation->Statements())
     {
         GenTree* expr = stmt->GetRootNode();
         if (expr->gtOper == GT_END_LFIN)
@@ -1566,7 +1566,7 @@ void Compiler::fgClearAllFinallyTargetBits()
     // in case bits are left over from EH clauses being deleted.
 
     // Walk all blocks, and reset the target bits.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
@@ -1585,7 +1585,7 @@ void Compiler::fgAddFinallyTargetFlags()
         return;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->isBBCallAlwaysPair())
         {
@@ -1682,10 +1682,8 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 
     // Look for finallys.
     bool hasFinally = false;
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
-
         // Check if this is a try/finally.
         if (HBtab->HasFinallyHandler())
         {
@@ -1895,17 +1893,17 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     {
         // Add weight to the canonical call finally pair.
         //
-        BasicBlock::weight_t const canonicalWeight =
+        weight_t const canonicalWeight =
             canonicalCallFinally->hasProfileWeight() ? canonicalCallFinally->bbWeight : BB_ZERO_WEIGHT;
-        BasicBlock::weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
+        weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
 
         canonicalCallFinally->setBBProfileWeight(newCanonicalWeight);
 
         BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->bbNext;
 
-        BasicBlock::weight_t const canonicalLeaveWeight =
+        weight_t const canonicalLeaveWeight =
             canonicalLeaveBlock->hasProfileWeight() ? canonicalLeaveBlock->bbWeight : BB_ZERO_WEIGHT;
-        BasicBlock::weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
+        weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
 
         canonicalLeaveBlock->setBBProfileWeight(newLeaveWeight);
 
@@ -1913,14 +1911,14 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
         //
         if (callFinally->hasProfileWeight())
         {
-            BasicBlock::weight_t const newCallFinallyWeight =
+            weight_t const newCallFinallyWeight =
                 callFinally->bbWeight > block->bbWeight ? callFinally->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
             callFinally->setBBProfileWeight(newCallFinallyWeight);
         }
 
         if (leaveBlock->hasProfileWeight())
         {
-            BasicBlock::weight_t const newLeaveWeight =
+            weight_t const newLeaveWeight =
                 leaveBlock->bbWeight > block->bbWeight ? leaveBlock->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
             leaveBlock->setBBProfileWeight(newLeaveWeight);
         }

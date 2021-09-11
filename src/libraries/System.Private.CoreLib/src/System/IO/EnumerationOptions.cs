@@ -10,6 +10,7 @@ namespace Microsoft.IO
 namespace System.IO
 #endif
 {
+    /// <summary>Provides file and directory enumeration options.</summary>
     public class EnumerationOptions
     {
         private int _maxRecursionDepth;
@@ -31,9 +32,7 @@ namespace System.IO
         /// </summary>
         internal static EnumerationOptions Default { get; } = new EnumerationOptions();
 
-        /// <summary>
-        /// Default constructor. Constructs the options class with recommended default options.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="EnumerationOptions" /> class with the recommended default options.</summary>
         public EnumerationOptions()
         {
             IgnoreInaccessible = true;
@@ -52,53 +51,36 @@ namespace System.IO
             return searchOption == SearchOption.AllDirectories ? CompatibleRecursive : Compatible;
         }
 
-        /// <summary>
-        /// Should we recurse into subdirectories while enumerating?
-        /// Default is false.
-        /// </summary>
+        /// <summary>Gets or sets a value that indicates whether to recurse into subdirectories while enumerating. The default is <see langword="false" />.</summary>
+        /// <value><see langword="true" /> to recurse into subdirectories; otherwise, <see langword="false" />.</value>
         public bool RecurseSubdirectories { get; set; }
 
-        /// <summary>
-        /// Skip files/directories when access is denied (e.g. AccessDeniedException/SecurityException).
-        /// Default is true.
-        /// </summary>
+        /// <summary>Gets or sets a value that indicates whether to skip files or directories when access is denied (for example, <see cref="System.UnauthorizedAccessException" /> or <see cref="System.Security.SecurityException" />). The default is <see langword="true" />.</summary>
+        /// <value><see langword="true" /> to skip innacessible files or directories; otherwise, <see langword="false" />.</value>
         public bool IgnoreInaccessible { get; set; }
 
-        /// <summary>
-        /// Suggested buffer size, in bytes. Default is 0 (no suggestion).
-        /// </summary>
-        /// <remarks>
-        /// Not all platforms use user allocated buffers, and some require either fixed buffers or a
-        /// buffer that has enough space to return a full result. One scenario where this option is
-        /// useful is with remote share enumeration on Windows. Having a large buffer may result in
-        /// better performance as more results can be batched over the wire (e.g. over a network
-        /// share). A "large" buffer, for example, would be 16K. Typical is 4K.
-        ///
-        /// We will not use the suggested buffer size if it has no meaning for the native APIs on the
-        /// current platform or if it would be too small for getting at least a single result.
-        /// </remarks>
+        /// <summary>Gets or sets the suggested buffer size, in bytes. The default is 0 (no suggestion).</summary>
+        /// <value>The buffer size.</value>
+        /// <remarks>Not all platforms use user allocated buffers, and some require either fixed buffers or a buffer that has enough space to return a full result.
+        /// One scenario where this option is useful is with remote share enumeration on Windows. Having a large buffer may result in better performance as more results can be batched over the wire (for example, over a network share).
+        /// A "large" buffer, for example, would be 16K. Typical is 4K.
+        /// The suggested buffer size will not be used if it has no meaning for the native APIs on the current platform or if it would be too small for getting at least a single result.</remarks>
         public int BufferSize { get; set; }
 
-        /// <summary>
-        /// Skip entries with the given attributes. Default is FileAttributes.Hidden | FileAttributes.System.
-        /// </summary>
+        /// <summary>Gets or sets the attributes to skip. The default is <c>FileAttributes.Hidden | FileAttributes.System</c>.</summary>
+        /// <value>The attributes to skip.</value>
         public FileAttributes AttributesToSkip { get; set; }
 
-        /// <summary>
-        /// For APIs that allow specifying a match expression this will allow you to specify how
-        /// to interpret the match expression.
-        /// </summary>
-        /// <remarks>
-        /// The default is simple matching where '*' is always 0 or more characters and '?' is a single character.
-        /// </remarks>
+        /// <summary>Gets or sets the match type.</summary>
+        /// <value>One of the enumeration values that indicates the match type.</value>
+        /// <remarks>For APIs that allow specifying a match expression, this property allows you to specify how to interpret the match expression.
+        /// The default is simple matching where '*' is always 0 or more characters and '?' is a single character.</remarks>
         public MatchType MatchType { get; set; }
 
-        /// <summary>
-        /// For APIs that allow specifying a match expression this will allow you to specify case matching behavior.
-        /// </summary>
-        /// <remarks>
-        /// Default is to match platform defaults, which are gleaned from the case sensitivity of the temporary folder.
-        /// </remarks>
+        /// <summary>Gets or sets the case matching behavior.</summary>
+        /// <value>One of the enumeration values that indicates the case matching behavior.</value>
+        /// <remarks>For APIs that allow specifying a match expression, this property allows you to specify the case matching behavior.
+        /// The default is to match platform defaults, which are gleaned from the case sensitivity of the temporary folder.</remarks>
         public MatchCasing MatchCasing { get; set; }
 
         /// <summary>Gets or sets a value that indicates the maximum directory depth to recurse while enumerating, when <see cref="RecurseSubdirectories" /> is set to <see langword="true" />.</summary>
@@ -119,9 +101,8 @@ namespace System.IO
             }
         }
 
-        /// <summary>
-        /// Set to true to return "." and ".." directory entries.
-        /// </summary>
+        /// <summary>Gets or sets a value that indicates whether to return the special directory entries "." and "..".</summary>
+        /// <value><see langword="true" /> to return the special directory entries "." and ".."; otherwise, <see langword="false" />.</value>
         public bool ReturnSpecialDirectories { get; set; }
     }
 }

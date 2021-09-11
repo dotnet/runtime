@@ -8,9 +8,6 @@
 
 #ifdef DECLARE_DATA
 #include "asmconstants.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 #endif
 
 //#define STUB_LOGGING
@@ -74,7 +71,7 @@ struct LookupHolder
 {
     static void InitializeStatic() { LIMITED_METHOD_CONTRACT; }
 
-    void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken);
+    void  Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken);
 
     LookupStub*    stub()               { LIMITED_METHOD_CONTRACT;  return &_stub;    }
 
@@ -122,7 +119,7 @@ struct DispatchStub
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slotTypeRef != nullptr);
 
-        *slotTypeRef = EntryPointSlots::SlotType_Normal;
+        *slotTypeRef = EntryPointSlots::SlotType_Executable;
         return (TADDR)&_implTarget;
     }
 
@@ -168,7 +165,7 @@ struct DispatchHolder
         static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
     }
 
-    void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT);
+    void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT);
 
     DispatchStub* stub()      { LIMITED_METHOD_CONTRACT;  return &_stub; }
 
@@ -262,7 +259,8 @@ struct ResolveHolder
 {
     static void  InitializeStatic() { LIMITED_METHOD_CONTRACT; }
 
-    void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+    void  Initialize(ResolveHolder* pResolveHolderRX,
+                     PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
                      void * cacheAddr, INT32 * counterAddr);
 
@@ -426,7 +424,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 {
     unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
     unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == false /* TODO: NYI */);
 
     VTableCallStub* pStub = stub();
     BYTE* p = (BYTE*)(pStub->entryPoint() & ~THUMB_CODE);

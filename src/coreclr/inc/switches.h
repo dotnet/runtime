@@ -5,9 +5,7 @@
 //
 
 
-#ifndef CROSSGEN_COMPILE
 #define STRESS_HEAP
-#endif
 
 
 #define VERIFY_HEAP
@@ -21,7 +19,7 @@
 #define STRESS_LOG
 #endif
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define USE_CHECKED_OBJECTREFS
 #endif
 
@@ -53,7 +51,7 @@
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     #define USE_UPPER_ADDRESS       0
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
     #define UPPER_ADDRESS_MAPPING_FACTOR 2
     #define CLR_UPPER_ADDRESS_MIN   0x64400000000
     #define CODEHEAP_START_ADDRESS  0x64480000000
@@ -172,14 +170,9 @@
 #endif // defined(FEATURE_CORESYSTEM)
 
 // If defined, support interpretation.
-#if !defined(CROSSGEN_COMPILE)
 
 #if !defined(TARGET_UNIX)
 #define FEATURE_STACK_SAMPLING
 #endif // defined (ALLOW_SXS_JIT)
 
-#endif // !defined(CROSSGEN_COMPILE)
 
-#if defined(FEATURE_INTERPRETER) && defined(CROSSGEN_COMPILE)
-#undef FEATURE_INTERPRETER
-#endif

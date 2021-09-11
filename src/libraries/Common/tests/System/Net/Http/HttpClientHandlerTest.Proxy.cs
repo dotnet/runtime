@@ -57,7 +57,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(AuthenticationSchemes.Ntlm, true, false)]
         [InlineData(AuthenticationSchemes.Negotiate, true, false)]
@@ -114,7 +114,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static bool IsSocketsHttpHandlerAndRemoteExecutorSupported => !HttpClientHandlerTestBase.IsWinHttpHandler && RemoteExecutor.IsSupported;
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [ConditionalFact(nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
         public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
@@ -171,7 +171,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
         public async Task AuthenticatedProxiedRequest_GetAsyncWithCreds_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
@@ -202,7 +202,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
         public async Task AuthenticatedProxyTunnelRequest_PostAsyncWithCreds_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
@@ -241,7 +241,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(BypassedProxies))]
         public async Task Proxy_BypassTrue_GetRequestDoesntGoesThroughCustomProxy(IWebProxy proxy)
@@ -259,7 +259,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task AuthenticatedProxiedRequest_GetAsyncWithNoCreds_ProxyAuthenticationRequiredStatusCode()
         {
@@ -306,7 +306,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public async Task Proxy_SslProxyUnsupported_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

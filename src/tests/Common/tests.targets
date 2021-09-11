@@ -15,10 +15,10 @@
       <AllTestAssemblies Include="$(BaseOutputPathWithConfig)\**\*.XUnitWrapper.dll" />
       <TestAssemblies Include="@(AllTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')" />
     </ItemGroup>
-    
+
     <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir)\*\ before they can be run, Do a clean Test Run"
             Condition="'@(AllTestAssemblies)' == ''" />
-    
+
     <Message Text= "AllTestAssemblies= @(AllTestAssemblies)"/>
     <Message Text= "TestAssemblies= @(TestAssemblies)"/>
     <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
@@ -43,8 +43,8 @@
     <PropertyGroup>
       <XunitConsoleRunner>$(CORE_ROOT)\xunit\xunit.console.dll</XunitConsoleRunner>
 
-      <XunitArgs Condition="'$(TargetOS)' == 'Android'">-parallel none</XunitArgs>
-      <XunitArgs Condition="'$(TargetOS)' != 'Android'">-parallel $(ParallelRun)</XunitArgs>
+      <XunitArgs Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator'">-parallel none</XunitArgs>
+      <XunitArgs Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOSSimulator'">-parallel $(ParallelRun)</XunitArgs>
       <XunitArgs>$(XunitArgs) -html $(__TestRunHtmlLog)</XunitArgs>
       <XunitArgs>$(XunitArgs) -xml $(__TestRunXmlLog)</XunitArgs>
       <XunitArgs>$(XunitArgs) @(IncludeTraitsItems->'-trait %(Identity)', ' ')</XunitArgs>
@@ -55,7 +55,7 @@
 
       <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
-      <CorerunExecutable Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'"> $(DotnetRoot)/dotnet</CorerunExecutable>
+      <CorerunExecutable Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator'"> $(DotnetRoot)/dotnet</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths

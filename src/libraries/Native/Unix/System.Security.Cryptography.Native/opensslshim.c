@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <dlfcn.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -50,7 +51,7 @@ static void DlOpen(const char* libraryName)
     }
 }
 
-int OpenLibrary()
+static void OpenLibraryOnce()
 {
     // If there is an override of the version specified using the CLR_OPENSSL_VERSION_OVERRIDE
     // env variable, try to load that first.
@@ -122,6 +123,13 @@ int OpenLibrary()
     {
         DlOpen(MAKELIB("8"));
     }
+}
+
+static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
+
+int OpenLibrary()
+{
+    pthread_once(&g_openLibrary, OpenLibraryOnce);
 
     if (libssl != NULL)
     {

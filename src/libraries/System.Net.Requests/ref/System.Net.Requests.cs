@@ -33,7 +33,7 @@ namespace System.Net
     }
     public partial class FileWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Serialization has been deprecated for FileWebRequest.")]
         protected FileWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string? ConnectionGroupName { get { throw null; } set { } }
         public override long ContentLength { get { throw null; } set { } }
@@ -60,7 +60,7 @@ namespace System.Net
     }
     public partial class FileWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Serialization has been deprecated for FileWebResponse.")]
         protected FileWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override long ContentLength { get { throw null; } }
         public override string ContentType { get { throw null; } }
@@ -162,7 +162,7 @@ namespace System.Net
         public override void Close() { }
         public override System.IO.Stream GetResponseStream() { throw null; }
     }
-    [System.ObsoleteAttribute("This class has been deprecated. Please use WebRequest.DefaultWebProxy instead to access and set the global default proxy. Use 'null' instead of GetEmptyWebProxy. https://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("GlobalProxySelection has been deprecated. Use WebRequest.DefaultWebProxy instead to access and set the global default proxy. Use 'null' instead of GetEmptyWebProxy.")]
     public partial class GlobalProxySelection
     {
         public GlobalProxySelection() { }
@@ -173,7 +173,7 @@ namespace System.Net
     public delegate void HttpContinueDelegate(int StatusCode, System.Net.WebHeaderCollection httpHeaders);
     public partial class HttpWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected HttpWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string? Accept { get { throw null; } set { } }
         public System.Uri Address { get { throw null; } }
@@ -234,12 +234,12 @@ namespace System.Net
         public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
         public System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult, out System.Net.TransportContext? context) { throw null; }
         public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Serialization has been deprecated for HttpWebRequest.")]
         protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override System.IO.Stream GetRequestStream() { throw null; }
         public System.IO.Stream GetRequestStream(out System.Net.TransportContext? context) { throw null; }
         public override System.Net.WebResponse GetResponse() { throw null; }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Serialization has been deprecated for HttpWebRequest.")]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class HttpWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
@@ -247,7 +247,7 @@ namespace System.Net
         [System.ObsoleteAttribute("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public HttpWebResponse() { }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Serialization has been deprecated for HttpWebResponse.")]
         protected HttpWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string? CharacterSet { get { throw null; } }
         public string ContentEncoding { get { throw null; } }
@@ -266,11 +266,11 @@ namespace System.Net
         public override bool SupportsHeaders { get { throw null; } }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Serialization has been deprecated for HttpWebResponse.")]
         protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string GetResponseHeader(string headerName) { throw null; }
         public override System.IO.Stream GetResponseStream() { throw null; }
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Serialization has been deprecated for HttpWebResponse.")]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial interface IAuthenticationModule

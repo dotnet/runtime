@@ -64,7 +64,7 @@ HRESULT GetServerHeaps(CLRDATA_ADDRESS pGCHeaps[], ICorDebugDataTarget * pTarget
     // heap addresses.
     for (int i = 0; i < GCHeapCount(); i++)
     {
-        pGCHeaps[i] = (CLRDATA_ADDRESS)HeapTableIndex(g_gcDacGlobals->g_heaps, i).GetAddr();
+        pGCHeaps[i] = (CLRDATA_ADDRESS)HeapTableIndex(g_gcDacGlobals->g_heaps, i);
     }
 
     return S_OK;
@@ -86,10 +86,10 @@ HRESULT ClrDataAccess::GetServerAllocData(unsigned int count, struct DacpGenerat
 
         for (unsigned int n=0; n < heaps; n++)
         {
-            DPTR(dac_gc_heap) pHeap = HeapTableIndex(g_gcDacGlobals->g_heaps, n);
+            TADDR pHeap = HeapTableIndex(g_gcDacGlobals->g_heaps, n);
             for (int i=0;i<NUMBERGENERATIONS;i++)
             {
-                dac_generation generation = *ServerGenerationTableIndex(pHeap, i);
+                dac_generation generation = ServerGenerationTableIndex(pHeap, i);
                 data[n].allocData[i].allocBytes = (CLRDATA_ADDRESS)(ULONG_PTR) generation.allocation_context.alloc_bytes;
                 data[n].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) generation.allocation_context.alloc_bytes_uoh;
             }
@@ -99,45 +99,72 @@ HRESULT ClrDataAccess::GetServerAllocData(unsigned int count, struct DacpGenerat
     return S_OK;
 }
 
-HRESULT ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *detailsData)
+HRESULT
+ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *detailsData)
 {
+    // Make sure ClrDataAccess::GetGCHeapStaticData() is updated as well.
     if (!heapAddr)
     {
         // PREfix.
         return E_INVALIDARG;
     }
+    if (detailsData == NULL)
+    {
+        return E_INVALIDARG;
+    }
 
-    DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
-    int i;
+    TADDR heapAddress = TO_TADDR(heapAddr);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
+    dac_gc_heap* pHeap = &heap;
 
     //get global information first
     detailsData->heapAddr = heapAddr;
 
     detailsData->lowest_address = PTR_CDADDR(g_lowest_address);
     detailsData->highest_address = PTR_CDADDR(g_highest_address);
-    detailsData->card_table = PTR_CDADDR(g_card_table);
+    detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
 
     // now get information specific to this heap (server mode gives us several heaps; we're getting
     // information about only one of them.
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)pHeap->alloc_allocated;
     detailsData->ephemeral_heap_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->ephemeral_heap_segment);
+    detailsData->card_table = (CLRDATA_ADDRESS)pHeap->card_table;
+    detailsData->mark_array = (CLRDATA_ADDRESS)pHeap->mark_array;
+    detailsData->next_sweep_obj = (CLRDATA_ADDRESS)pHeap->next_sweep_obj;
+    if (pHeap->saved_sweep_ephemeral_seg.IsValid())
+    {
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
+        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
+    }
+    else
+    {
+        // with regions, we don't have these variables anymore
+        // use special value -1 in saved_sweep_ephemeral_seg to signal the region case
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)-1;
+        detailsData->saved_sweep_ephemeral_start = 0;
+    }
+    detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)pHeap->background_saved_lowest_address;
+    detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)pHeap->background_saved_highest_address;
 
     // get bounds for the different generations
-    for (i=0; i<NUMBERGENERATIONS; i++)
+    for (unsigned int i=0; i < DAC_NUMBERGENERATIONS; i++)
     {
-        DPTR(dac_generation) generation = ServerGenerationTableIndex(pHeap, i);
-        detailsData->generation_table[i].start_segment     = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
-        detailsData->generation_table[i].allocation_start   = (CLRDATA_ADDRESS)(ULONG_PTR)generation->allocation_start;
-        DPTR(gc_alloc_context) alloc_context = dac_cast<TADDR>(generation) + offsetof(dac_generation, allocation_context);
-        detailsData->generation_table[i].allocContextPtr    = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_ptr;
-        detailsData->generation_table[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context->alloc_limit;
+        dac_generation generation = ServerGenerationTableIndex(heapAddress, i);
+        detailsData->generation_table[i].start_segment     = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation.start_segment);
+        detailsData->generation_table[i].allocation_start   = (CLRDATA_ADDRESS)(ULONG_PTR)generation.allocation_start;
+        gc_alloc_context alloc_context = generation.allocation_context;
+        detailsData->generation_table[i].allocContextPtr    = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context.alloc_ptr;
+        detailsData->generation_table[i].allocContextLimit = (CLRDATA_ADDRESS)(ULONG_PTR) alloc_context.alloc_limit;
     }
 
     DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
-    DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
-    for(i=0; i<(NUMBERGENERATIONS+dac_finalize_queue::ExtraSegCount); i++)
+    if (fq.IsValid())
     {
-        detailsData->finalization_fill_pointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
+        DPTR(uint8_t*) fillPointersTable = dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+        for (unsigned int i = 0; i < DAC_NUMBERGENERATIONS + 3; i++)
+        {
+            detailsData->finalization_fill_pointers[i] = (CLRDATA_ADDRESS)*TableIndex(fillPointersTable, i, sizeof(uint8_t*));
+        }
     }
 
     return S_OK;
@@ -146,7 +173,9 @@ HRESULT ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapD
 HRESULT
 ClrDataAccess::ServerOomData(CLRDATA_ADDRESS addr, DacpOomData *oomData)
 {
-    DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(addr));
+    TADDR heapAddress = TO_TADDR(addr);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
+    dac_gc_heap* pHeap = &heap;
 
     oom_history pOOMInfo = pHeap->oom_info;
     oomData->reason = pOOMInfo.reason;
@@ -193,7 +222,9 @@ HRESULT ClrDataAccess::ServerGCHeapAnalyzeData(CLRDATA_ADDRESS heapAddr, DacpGcH
         return E_INVALIDARG;
     }
 
-    DPTR(dac_gc_heap) pHeap = __DPtr<dac_gc_heap>(TO_TADDR(heapAddr));
+    TADDR heapAddress = TO_TADDR(heapAddr);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
+    dac_gc_heap* pHeap = &heap;
 
     analyzeData->heapAddr = heapAddr;
     analyzeData->internal_root_array = (CLRDATA_ADDRESS)pHeap->internal_root_array;
@@ -221,26 +252,26 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     for (int i = 0; i < heaps; i++)
     {
-        DPTR(dac_gc_heap) pHeap = HeapTableIndex(g_gcDacGlobals->g_heaps, i);
-
-        size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
-        DacEnumMemoryRegion(dac_cast<TADDR>(pHeap), sizeof(dac_gc_heap));
+        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);
+        dac_gc_heap heap = LoadGcHeapData(heapAddress);
+        dac_gc_heap* pHeap = &heap;
+        EnumGcHeap(heapAddress);
+        TADDR generationTable = ServerGenerationTableAddress(heapAddress);
+        EnumGenerationTable(generationTable);
         DacEnumMemoryRegion(dac_cast<TADDR>(pHeap->finalize_queue), sizeof(dac_finalize_queue));
 
-        TADDR taddrTable = dac_cast<TADDR>(pHeap) + offsetof(dac_gc_heap, generation_table);
-        DacEnumMemoryRegion(taddrTable, gen_table_size);
-
-        // enumerating the generations from max (which is normally gen2) to max+1 gives you
-        // the segment list for all the normal segements plus the large heap segment (max+1)
+        ULONG first = IsRegion() ? 0 : (*g_gcDacGlobals->max_gen);
+        // enumerating the first to max + 2 gives you
+        // the segment list for all the normal segments plus the pinned heap segment (max + 2)
         // this is the convention in the GC so it is repeated here
-        for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
+        for (ULONG i = first; i <= *g_gcDacGlobals->max_gen + 2; i++)
         {
-            DPTR(dac_heap_segment) seg = ServerGenerationTableIndex(pHeap, i)->start_segment;
+            dac_generation generation = ServerGenerationTableIndex(heapAddress, i);
+            DPTR(dac_heap_segment) seg = generation.start_segment;
             while (seg)
             {
-                    DacEnumMemoryRegion(PTR_HOST_TO_TADDR(seg), sizeof(dac_heap_segment));
-
-                    seg = seg->next;
+                DacEnumMemoryRegion(PTR_HOST_TO_TADDR(seg), sizeof(dac_heap_segment));
+                seg = seg->next;
             }
         }
     }
@@ -257,6 +288,8 @@ DWORD DacGetNumHeaps()
 
 HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 {
+    bool regions = IsRegion();
+
     if (g_gcDacGlobals->n_heaps == nullptr || g_gcDacGlobals->g_heaps == nullptr)
         return S_OK;
 
@@ -270,49 +303,102 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
     for (int i = 0; i < heaps; ++i)
     {
         // Basic heap info.
-        DPTR(dac_gc_heap) heap = HeapTableIndex(g_gcDacGlobals->g_heaps, i);
-        dac_generation gen0 = *ServerGenerationTableIndex(heap, 0);
-        dac_generation gen1 = *ServerGenerationTableIndex(heap, 1);
-        dac_generation gen2 = *ServerGenerationTableIndex(heap, 2);
-        dac_generation loh  = *ServerGenerationTableIndex(heap, 3);
-        dac_generation poh  = *ServerGenerationTableIndex(heap, 4);
+        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);    
+        dac_gc_heap heap = LoadGcHeapData(heapAddress);
+        dac_gc_heap* pHeap = &heap;
+        dac_generation gen0 = ServerGenerationTableIndex(heapAddress, 0);
+        dac_generation gen1 = ServerGenerationTableIndex(heapAddress, 1);
+        dac_generation gen2 = ServerGenerationTableIndex(heapAddress, 2);
+        dac_generation loh  = ServerGenerationTableIndex(heapAddress, 3);
+        dac_generation poh  = ServerGenerationTableIndex(heapAddress, 4);
 
         pHeaps[i].YoungestGenPtr = (CORDB_ADDRESS)gen0.allocation_context.alloc_ptr;
         pHeaps[i].YoungestGenLimit = (CORDB_ADDRESS)gen0.allocation_context.alloc_limit;
 
-        pHeaps[i].Gen0Start = (CORDB_ADDRESS)gen0.allocation_start;
-        pHeaps[i].Gen0End = (CORDB_ADDRESS)heap->alloc_allocated;
-        pHeaps[i].Gen1Start = (CORDB_ADDRESS)gen1.allocation_start;
+        if (!regions)
+        {
+            pHeaps[i].Gen0Start = (CORDB_ADDRESS)gen0.allocation_start;
+            pHeaps[i].Gen0End = (CORDB_ADDRESS)pHeap->alloc_allocated;
+            pHeaps[i].Gen1Start = (CORDB_ADDRESS)gen1.allocation_start;
+        }
 
         // Segments
         int count = GetSegmentCount(loh.start_segment);
         count += GetSegmentCount(poh.start_segment);
         count += GetSegmentCount(gen2.start_segment);
+        if (regions)
+        {
+            count += GetSegmentCount(gen1.start_segment);
+            count += GetSegmentCount(gen0.start_segment);
+        }
 
         pHeaps[i].SegmentCount = count;
         pHeaps[i].Segments = new (nothrow) SegmentData[count];
         if (pHeaps[i].Segments == NULL)
             return E_OUTOFMEMORY;
 
-        // Small object heap segments
-        DPTR(dac_heap_segment) seg = gen2.start_segment;
+        DPTR(dac_heap_segment) seg;
         int j = 0;
-        for (; seg && (j < count); ++j)
+        // Small object heap segments
+        if (regions)
         {
-            pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
-            if (seg.GetAddr() == heap->ephemeral_heap_segment.GetAddr())
+            seg = gen2.start_segment;
+            for (; seg && (j < count); ++j)
             {
-                pHeaps[i].Segments[j].End = (CORDB_ADDRESS)heap->alloc_allocated;
-                pHeaps[i].EphemeralSegment = j;
-                pHeaps[i].Segments[j].Generation = 1;
-            }
-            else
-            {
-                pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
                 pHeaps[i].Segments[j].Generation = 2;
-            }
+                pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
+                pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
 
-            seg = seg->next;
+                seg = seg->next;
+            }
+            seg = gen1.start_segment;
+            for (; seg && (j < count); ++j)
+            {
+                pHeaps[i].Segments[j].Generation = 1;
+                pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
+                pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
+
+                seg = seg->next;
+            }
+            seg = gen0.start_segment;
+            for (; seg && (j < count); ++j)
+            {
+                pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
+                if (seg.GetAddr() == pHeap->ephemeral_heap_segment.GetAddr())
+                {
+                    pHeaps[i].Segments[j].End = (CORDB_ADDRESS)pHeap->alloc_allocated;
+                    pHeaps[i].EphemeralSegment = j;
+                    pHeaps[i].Segments[j].Generation = 0;
+                }
+                else
+                {
+                    pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
+                    pHeaps[i].Segments[j].Generation = 2;
+                }
+
+                seg = seg->next;
+            }
+        }
+        else
+        {
+            seg = gen2.start_segment;
+            for (; seg && (j < count); ++j)
+            {
+                pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
+                if (seg.GetAddr() == pHeap->ephemeral_heap_segment.GetAddr())
+                {
+                    pHeaps[i].Segments[j].End = (CORDB_ADDRESS)pHeap->alloc_allocated;
+                    pHeaps[i].EphemeralSegment = j;
+                    pHeaps[i].Segments[j].Generation = 1;
+                }
+                else
+                {
+                    pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
+                    pHeaps[i].Segments[j].Generation = 2;
+                }
+
+                seg = seg->next;
+            }
         }
 
         // Large object heap segments

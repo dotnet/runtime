@@ -17,7 +17,7 @@ BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
 PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
-NATIVE_BIN_DIR?=$(BINDIR)/native/net6.0-Browser-$(CONFIG)-wasm
+NATIVE_BIN_DIR?=$(BINDIR)/native/net7.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
@@ -48,11 +48,20 @@ provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 	@echo "----------------------------------------------------------"
 	@echo "Installed emsdk into EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk"
 
+# FIXME: When https://github.com/dotnet/runtime/issues/54565 is fixed, and the WasmApp targets are updated to use mono runtime components, remove this
+MONO_COMPONENT_LIBS= \
+	$(MONO_BIN_DIR)/libmono-component-hot_reload-static.a \
+	$(MONO_BIN_DIR)/libmono-component-debugger-static.a \
+	$(MONO_BIN_DIR)/libmono-component-diagnostics_tracing-stub-static.a
+
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm
+# libmonosgen-2.0 is in MONO_LIBS twice because the components and the runtime are depend on each other
 MONO_LIBS = \
 	$(MONO_BIN_DIR)/libmono-ee-interp.a \
+	$(MONO_BIN_DIR)/libmonosgen-2.0.a \
+	$(MONO_COMPONENT_LIBS) \
 	$(MONO_BIN_DIR)/libmonosgen-2.0.a \
 	$(MONO_BIN_DIR)/libmono-ilgen.a \
 	$(MONO_BIN_DIR)/libmono-icall-table.a \
@@ -62,8 +71,8 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
-EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DDEBUG=1
-EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2
+EMCC_DEBUG_FLAGS =-g -Os -s -DDEBUG=1
+EMCC_RELEASE_FLAGS=-Oz
 
 ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
@@ -110,10 +119,10 @@ $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c $(EMCC_DEFAULT_RSP) | $
 $(EMCC_DEFAULT_RSP): $(CURDIR)/wasm.proj | $(NATIVE_BIN_DIR)/src Makefile
 	$(DOTNET) build $(CURDIR)/wasm.proj /p:Configuration=$(CONFIG) /t:GenerateEmccPropsAndRspFiles
 
-$(NATIVE_BIN_DIR)/src/Emcc.props: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
+$(NATIVE_BIN_DIR)/src/emcc-props.json: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
 	$(DOTNET) build $(CURDIR)/wasm.proj /p:Configuration=$(CONFIG) /t:GenerateEmccPropsAndRspFiles
 
-build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-default.rsp $(NATIVE_BIN_DIR)/src/Emcc.props
+build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-default.rsp $(NATIVE_BIN_DIR)/src/emcc-props.json
 
 endef
 

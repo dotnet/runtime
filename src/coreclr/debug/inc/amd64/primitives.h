@@ -187,7 +187,7 @@ inline void CORDbgInsertBreakpoint(UNALIGNED CORDB_ADDRESS_TYPE *address)
 {
     LIMITED_METHOD_CONTRACT;
 
-    *((unsigned char*)address) = 0xCC;  // int 3 (single byte patch)
+    *((unsigned char*)address) = 0xCC; // int 3 (single byte patch)
     FlushInstructionCache(GetCurrentProcess(), address, 1);
 
 }

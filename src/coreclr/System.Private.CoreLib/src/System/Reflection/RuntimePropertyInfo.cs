@@ -165,7 +165,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
 
@@ -239,7 +239,7 @@ namespace System.Reflection
 
         public override Type PropertyType => Signature.ReturnType;
 
-        public override MethodInfo? GetGetMethod(bool nonPublic)
+        public override RuntimeMethodInfo? GetGetMethod(bool nonPublic)
         {
             if (!Associates.IncludeAccessor(m_getterMethod, nonPublic))
                 return null;
@@ -247,7 +247,7 @@ namespace System.Reflection
             return m_getterMethod;
         }
 
-        public override MethodInfo? GetSetMethod(bool nonPublic)
+        public override RuntimeMethodInfo? GetSetMethod(bool nonPublic)
         {
             if (!Associates.IncludeAccessor(m_setterMethod, nonPublic))
                 return null;
@@ -282,7 +282,7 @@ namespace System.Reflection
                 ParameterInfo[]? methParams = null;
 
                 // First try to get the Get method.
-                MethodInfo? m = GetGetMethod(true);
+                RuntimeMethodInfo? m = GetGetMethod(true);
                 if (m != null)
                 {
                     // There is a Get method so use it.
@@ -304,9 +304,11 @@ namespace System.Reflection
                 // Now copy over the parameter info's and change their
                 // owning member info to the current property info.
 
-                ParameterInfo[] propParams = new ParameterInfo[numParams];
+                ParameterInfo[] propParams = numParams != 0 ?
+                    new ParameterInfo[numParams] :
+                    Array.Empty<ParameterInfo>();
 
-                for (int i = 0; i < numParams; i++)
+                for (int i = 0; i < propParams.Length; i++)
                     propParams[i] = new RuntimeParameterInfo((RuntimeParameterInfo)methParams![i], this);
 
                 m_parameters = propParams;
@@ -335,7 +337,7 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            MethodInfo? m = GetGetMethod(true);
+            RuntimeMethodInfo? m = GetGetMethod(true);
             if (m == null)
                 throw new ArgumentException(System.SR.Arg_GetMethNotFnd);
             return m.Invoke(obj, invokeAttr, binder, index, null);
@@ -357,28 +359,26 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            MethodInfo? m = GetSetMethod(true);
+            RuntimeMethodInfo? m = GetSetMethod(true);
 
             if (m == null)
                 throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
 
-            object?[] args;
-            if (index != null)
+            if (index is null)
             {
-                args = new object[index.Length + 1];
+                m.InvokeOneParameter(obj, invokeAttr, binder, value, culture);
+            }
+            else
+            {
+                var args = new object?[index.Length + 1];
 
                 for (int i = 0; i < index.Length; i++)
                     args[i] = index[i];
 
                 args[index.Length] = value;
-            }
-            else
-            {
-                args = new object[1];
-                args[0] = value;
-            }
 
-            m.Invoke(obj, invokeAttr, binder, args, culture);
+                m.Invoke(obj, invokeAttr, binder, args, culture);
+            }
         }
         #endregion
 

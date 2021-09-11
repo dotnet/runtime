@@ -47,7 +47,7 @@ namespace System.Text.RegularExpressions
             _hasTimeout = hasTimeout;
 
             // Pick a unique number for the methods we generate.
-            object regexNum = (uint)Interlocked.Increment(ref s_regexCount); // object to box once instead of twice below
+            uint regexNum = (uint)Interlocked.Increment(ref s_regexCount);
 
             // Get a description of the regex to use in the name.  This is helpful when profiling, and is opt-in.
             string description = string.Empty;

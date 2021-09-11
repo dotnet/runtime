@@ -9,6 +9,7 @@ namespace System.Security.Cryptography
     {
         public DSAOpenSsl(DSAParameters parameters)
         {
+            ThrowIfNotSupported();
             // Make _key be non-null before calling ImportParameters
             _key = new Lazy<SafeDsaHandle>();
             ImportParameters(parameters);
@@ -31,6 +32,7 @@ namespace System.Security.Cryptography
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
+            ThrowIfNotSupported();
             // If dsa is valid it has already been up-ref'd, so we can just use this handle as-is.
             SafeDsaHandle key = Interop.Crypto.EvpPkeyGetDsa(pkeyHandle);
             if (key.IsInvalid)
@@ -57,6 +59,7 @@ namespace System.Security.Cryptography
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
+            ThrowIfNotSupported();
             SafeDsaHandle ecKeyHandle = SafeDsaHandle.DuplicateHandle(handle);
             SetKey(ecKeyHandle);
         }
@@ -87,6 +90,14 @@ namespace System.Security.Cryptography
             {
                 pkeyHandle.Dispose();
                 throw;
+            }
+        }
+
+        static partial void ThrowIfNotSupported()
+        {
+            if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(DSAOpenSsl)));
             }
         }
     }

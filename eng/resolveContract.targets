@@ -3,6 +3,8 @@
     <!-- Use implementation referencepath if no contract dependency path is set.
          This item transform is executed at the time this property is evaluated in the API Compat targets. -->
     <ContractDependencyPaths Condition="'$(ContractDependencyPaths)' == ''">@(ReferencePath->'%(RelativeDir)'->Distinct())</ContractDependencyPaths>
+    <!-- Fall back to the targeting pack dir for NetCoreAppCurrent to avoid passing through dependencies from ref to src. -->
+    <ContractDependencyPaths Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">$(ContractDependencyPaths);$(MicrosoftNetCoreAppRefPackRefDir)</ContractDependencyPaths>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
@@ -23,6 +25,7 @@
   <!-- Allow P2Ps that target a source project to build against the corresponding ref project. -->
   <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithReferenceAssembly"
           Condition="'$(HasMatchingContract)' == 'true'"
+          DependsOnTargets="ResolveProjectReferences"
           AfterTargets="GetTargetPathWithTargetPlatformMoniker">
     <ItemGroup>
       <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContract)" />

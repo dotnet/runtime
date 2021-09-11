@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Text.Json.Tests.Serialization
+namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class MetadataTests
     {
@@ -15,11 +16,11 @@ namespace System.Text.Json.Tests.Serialization
         {
             WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
             string json = await Serializer.SerializeWrapper(expected, JsonContext.Default.WeatherForecastWithPOCOs);
-            WeatherForecastWithPOCOs actual = await Deserializer.DeserializeWrapper(json, JsonContext.Default.WeatherForecastWithPOCOs);
+            WeatherForecastWithPOCOs actual = await Serializer.DeserializeWrapper(json, JsonContext.Default.WeatherForecastWithPOCOs);
             VerifyWeatherForecastWithPOCOs(expected, actual);
 
             json = await Serializer.SerializeWrapper(actual, typeof(WeatherForecastWithPOCOs), JsonContext.Default);
-            actual = (WeatherForecastWithPOCOs)await Deserializer.DeserializeWrapper(json, typeof(WeatherForecastWithPOCOs), JsonContext.Default);
+            actual = (WeatherForecastWithPOCOs)await Serializer.DeserializeWrapper(json, typeof(WeatherForecastWithPOCOs), JsonContext.Default);
             VerifyWeatherForecastWithPOCOs(expected, actual);
         }
 

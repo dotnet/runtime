@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.TypeLoading
@@ -54,6 +55,7 @@ namespace System.Reflection.TypeLoading
         internal sealed override RoType[] GetGenericTypeParametersNoCopy() => throw null!;
         internal sealed override RoType[] GetGenericTypeArgumentsNoCopy() => throw null!;
         protected internal sealed override RoType[] GetGenericArgumentsNoCopy() => throw null!;
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw null!;
 
         public sealed override GenericParameterAttributes GenericParameterAttributes => throw null!;

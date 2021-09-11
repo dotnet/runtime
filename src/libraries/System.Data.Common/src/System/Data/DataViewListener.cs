@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -22,7 +23,7 @@ namespace System.Data
             _dvWeak = new WeakReference(dv);
         }
 
-        private void ChildRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
+        private void ChildRelationCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
             if (dv != null)
@@ -35,7 +36,7 @@ namespace System.Data
             }
         }
 
-        private void ParentRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
+        private void ParentRelationCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
             if (dv != null)
@@ -48,7 +49,7 @@ namespace System.Data
             }
         }
 
-        private void ColumnCollectionChanged(object sender, CollectionChangeEventArgs e)
+        private void ColumnCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
             if (dv != null)

@@ -1292,5 +1292,14 @@ namespace System.Numerics
 
             return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
         }
+
+        /// <summary>
+        /// Returns the sum of all elements inside the vector.
+        /// </summary>
+        [Intrinsic]
+        public static T Sum<T>(Vector<T> value) where T : struct
+        {
+            return Vector<T>.Sum(value);
+        }
     }
 }

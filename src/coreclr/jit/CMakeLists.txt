@@ -4,8 +4,7 @@ include_directories("./jitstd")
 include_directories("../inc")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fpermissive>)
-  add_compile_options(-Wno-error)
+  add_compile_options(-Wno-error) # tracked by https://github.com/dotnet/runtime/issues/33541
 endif()
 
 function(create_standalone_jit)
@@ -31,6 +30,8 @@ function(create_standalone_jit)
     set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
   elseif(TARGETDETAILS_ARCH STREQUAL "arm64")
     set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
+  elseif(TARGETDETAILS_ARCH STREQUAL "s390x")
+    set(JIT_ARCH_SOURCES ${JIT_S390X_SOURCES})
   else()
     clr_unknown_arch()
   endif()
@@ -46,9 +47,6 @@ function(create_standalone_jit)
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
-  if(FEATURE_READYTORUN)
-    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_READYTORUN_COMPILER)
-  endif(FEATURE_READYTORUN)
 
   if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR ((TARGETDETAILS_ARCH STREQUAL "x86") AND NOT (TARGETDETAILS_OS STREQUAL "unix")))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
@@ -120,6 +118,7 @@ set( JIT_SOURCES
   lsra.cpp
   lsrabuild.cpp
   morph.cpp
+  morphblock.cpp
   objectalloc.cpp
   optcse.cpp
   optimizer.cpp
@@ -345,6 +344,10 @@ set( JIT_ARM64_SOURCES
   hwintrinsiccodegenarm64.cpp
 )
 
+set( JIT_S390X_SOURCES
+  # Not supported as JIT target
+)
+
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
   set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
 elseif(CLR_CMAKE_TARGET_ARCH_ARM)
@@ -353,6 +356,8 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
   set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_S390X)
+  set(JIT_ARCH_SOURCES ${JIT_S390X_SOURCES})
 else()
   clr_unknown_arch()
 endif()
@@ -473,10 +478,6 @@ endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (FEATURE_MERGE_JIT_AND_ENGINE)
-  add_subdirectory(crossgen)
-endif (FEATURE_MERGE_JIT_AND_ENGINE)
-
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)
 
@@ -502,14 +503,19 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
-create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH armel DESTINATIONS .)
 create_standalone_jit(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm DESTINATIONS .)
 target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
 create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm DESTINATIONS .)
 create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
 
+if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
+  create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86 DESTINATIONS .)
+endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
+
 if (CLR_CMAKE_TARGET_UNIX)
-    install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
+    if (NOT ARCH_TARGET_NAME STREQUAL s390x)
+      install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
+    endif(NOT ARCH_TARGET_NAME STREQUAL s390x)
     if (ARCH_TARGET_NAME STREQUAL arm)
       target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
   endif (ARCH_TARGET_NAME STREQUAL arm)

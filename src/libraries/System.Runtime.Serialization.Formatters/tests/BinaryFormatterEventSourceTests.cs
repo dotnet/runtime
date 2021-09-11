@@ -12,7 +12,6 @@ using Xunit;
 namespace System.Runtime.Serialization.Formatters.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public static class BinaryFormatterEventSourceTests
     {
         private const string BinaryFormatterEventSourceName = "System.Runtime.Serialization.Formatters.Binary.BinaryFormatterEventSource";

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
@@ -42,6 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
             base.Reset();
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2()
             : base()
         {
@@ -170,6 +172,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return Pal.Archived;
             }
 
+            [SupportedOSPlatform("windows")]
             set
             {
                 ThrowIfInvalid();
@@ -216,6 +219,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return Pal.FriendlyName;
             }
 
+            [SupportedOSPlatform("windows")]
             set
             {
                 ThrowIfInvalid();
@@ -234,6 +238,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CertificatePrivateKeyMessage, DiagnosticId = Obsoletions.X509CertificatePrivateKeyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AsymmetricAlgorithm? PrivateKey
         {
             get
@@ -307,18 +312,22 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] RawData
+        public byte[] RawData => RawDataMemory.ToArray();
+
+        /// <summary>
+        /// Gets the raw data of a certificate.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="RawData" />, this does not create a fresh copy of the data
+        /// every time.
+        /// </remarks>
+        public ReadOnlyMemory<byte> RawDataMemory
         {
             get
             {
                 ThrowIfInvalid();
 
-                byte[]? rawData = _lazyRawData;
-                if (rawData == null)
-                {
-                    rawData = _lazyRawData = Pal.RawData;
-                }
-                return rawData.CloneByteArray();
+                return _lazyRawData ??= Pal.RawData;
             }
         }
 
@@ -340,7 +349,7 @@ namespace System.Security.Cryptography.X509Certificates
                 if (signatureAlgorithm == null)
                 {
                     string oidValue = Pal.SignatureAlgorithm;
-                    signatureAlgorithm = _lazySignatureAlgorithm = Oid.FromOidValue(oidValue, OidGroup.SignatureAlgorithm);
+                    signatureAlgorithm = _lazySignatureAlgorithm = new Oid(oidValue, null);
                 }
                 return signatureAlgorithm;
             }
@@ -630,33 +639,39 @@ namespace System.Security.Cryptography.X509Certificates
             return sb.ToString();
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData)
         {
             base.Import(rawData);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(rawData, password, keyStorageFlags);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(rawData, password, keyStorageFlags);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName)
         {
             base.Import(fileName);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(fileName, password, keyStorageFlags);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(fileName, password, keyStorageFlags);

@@ -20,7 +20,7 @@ typedef struct
     uint32_t InterfaceIndex; // The index of the interface to which this address belongs.
     uint8_t AddressBytes[8]; // A pointer to the bytes containing the address.
     uint8_t NumAddressBytes; // The number of bytes actually stored in the address.
-    uint8_t __padding;
+    uint8_t _padding;
     uint16_t HardwareType;
 } LinkLayerAddressInfo;
 
@@ -30,7 +30,7 @@ typedef struct
     uint8_t AddressBytes[16];
     uint8_t NumAddressBytes;
     uint8_t PrefixLength;
-    uint8_t __padding[2];
+    uint8_t _padding[2];
 } IpAddressInfo;
 
 typedef struct
@@ -44,7 +44,7 @@ typedef struct
     uint8_t NumAddressBytes;    // The number of bytes actually stored in the address.
     uint8_t AddressBytes[8];    // Link address.
     uint8_t SupportsMulticast;  // Interface supports multicast.
-    uint8_t __padding[3];
+    uint8_t _padding[3];
 } NetworkInterfaceInfo;
 
 typedef void (*IPv4AddressFound)(void* context, const char* interfaceName, IpAddressInfo* addressInfo);

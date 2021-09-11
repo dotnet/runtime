@@ -4,12 +4,17 @@
 using MockHostTypes;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
 {
     public class HostFactoryResolverTests
     {
+        private static readonly TimeSpan s_WaitTimeout = TimeSpan.FromSeconds(20);
+
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(BuildWebHostPatternTestSite.Program))]
         public void BuildWebHostPattern_CanFindWebHost()
@@ -46,7 +51,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(BuildWebHostInvalidSignature.Program).Assembly);
 
-            Assert.Null(factory);
+            Assert.NotNull(factory);
         }
 
         [Fact]
@@ -119,13 +124,154 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Null(factory);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateHostBuilderInvalidSignature.Program))]
         public void CreateHostBuilderPattern__Invalid_CantFindServiceProvider()
         {
-            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly);
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(CreateHostBuilderInvalidSignature.Program).Assembly, s_WaitTimeout);
 
-            Assert.Null(factory);
+            Assert.NotNull(factory);
+            Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPattern()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPatternHostBuilderConfigureHostBuilderCallbackIsCalled()
+        {
+            bool called = false;
+            void ConfigureHostBuilder(object hostBuilder)
+            {
+                Assert.IsAssignableFrom<IHostBuilder>(hostBuilder);
+                called = true;
+            }
+
+            var factory = HostFactoryResolver.ResolveHostFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, waitTimeout: s_WaitTimeout, configureHostBuilder: ConfigureHostBuilder);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
+            Assert.True(called);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPatternBuildsThenThrowsCallsEntryPointCompletedCallback()
+        {
+            var wait = new ManualResetEventSlim(false);
+            Exception? entryPointException = null;
+            void EntryPointCompleted(Exception? exception)
+            {
+                entryPointException = exception;
+                wait.Set();
+            }
+
+            var factory = HostFactoryResolver.ResolveHostFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, waitTimeout: s_WaitTimeout, stopApplication: false, entrypointCompleted: EntryPointCompleted);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
+            Assert.True(wait.Wait(s_WaitTimeout));
+            Assert.Null(entryPointException);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternBuildsThenThrows.Program))]
+        public void NoSpecialEntryPointPatternBuildsThenThrowsCallsEntryPointCompletedCallbackWithException()
+        {
+            var wait = new ManualResetEventSlim(false);
+            Exception? entryPointException = null;
+            void EntryPointCompleted(Exception? exception)
+            {
+                entryPointException = exception;
+                wait.Set();
+            }
+
+            var factory = HostFactoryResolver.ResolveHostFactory(typeof(NoSpecialEntryPointPatternBuildsThenThrows.Program).Assembly, waitTimeout: s_WaitTimeout, stopApplication: false, entrypointCompleted: EntryPointCompleted);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
+            Assert.True(wait.Wait(s_WaitTimeout));
+            Assert.NotNull(entryPointException);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternThrows.Program))]
+        public void NoSpecialEntryPointPatternThrows()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternThrows.Program).Assembly, s_WaitTimeout);
+
+            Assert.NotNull(factory);
+            Assert.Throws<Exception>(() => factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternExits.Program))]
+        public void NoSpecialEntryPointPatternExits()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternExits.Program).Assembly, s_WaitTimeout);
+
+            Assert.NotNull(factory);
+            Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternHangs.Program))]
+        public void NoSpecialEntryPointPatternHangs()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternHangs.Program).Assembly, s_WaitTimeout);
+
+            Assert.NotNull(factory);
+            Assert.Throws<InvalidOperationException>(() => factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPatternMainNoArgs.Program))]
+        public void NoSpecialEntryPointPatternMainNoArgs()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPatternMainNoArgs.Program).Assembly, s_WaitTimeout);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void TopLevelStatements()
+        {
+            var assembly = Assembly.Load("TopLevelStatements");
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
+
+            Assert.NotNull(factory);
+            Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPatternCanRunInParallel()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
+            Assert.NotNull(factory);
+
+            var tasks = new Task<IServiceProvider>[30];
+            int index = 0;
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[index++] = Task.Run(() => factory(Array.Empty<string>()));
+            }
+
+            Task.WaitAll(tasks);
+
+            foreach (var t in tasks)
+            {
+                Assert.IsAssignableFrom<IServiceProvider>(t.Result);
+            }
         }
     }
 }

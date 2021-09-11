@@ -25,6 +25,35 @@ namespace System.IO
             if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
+            return GetFullPathInternal(path);
+        }
+
+        public static string GetFullPath(string path, string basePath)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            if (basePath == null)
+                throw new ArgumentNullException(nameof(basePath));
+
+            if (!IsPathFullyQualified(basePath))
+                throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
+
+            if (basePath.Contains('\0') || path.Contains('\0'))
+                throw new ArgumentException(SR.Argument_InvalidPathChars);
+
+            if (IsPathFullyQualified(path))
+                return GetFullPathInternal(path);
+
+            return GetFullPathInternal(CombineInternal(basePath, path));
+        }
+
+        // Gets the full path without argument validation
+        private static string GetFullPathInternal(string path)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(!path.Contains('\0'));
+
             // Expand with current directory if necessary
             if (!IsPathRooted(path))
             {
@@ -43,26 +72,6 @@ namespace System.IO
             return result;
         }
 
-        public static string GetFullPath(string path, string basePath)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (basePath == null)
-                throw new ArgumentNullException(nameof(basePath));
-
-            if (!IsPathFullyQualified(basePath))
-                throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
-
-            if (basePath.Contains('\0') || path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
-
-            if (IsPathFullyQualified(path))
-                return GetFullPath(path);
-
-            return GetFullPath(CombineInternal(basePath, path));
-        }
-
         private static string RemoveLongPathPrefix(string path)
         {
             return path; // nop.  There's nothing special about "long" paths on Unix.
@@ -71,7 +80,6 @@ namespace System.IO
         public static string GetTempPath()
         {
             const string TempEnvVar = "TMPDIR";
-            const string DefaultTempPath = "/tmp/";
 
             // Get the temp path from the TMPDIR environment variable.
             // If it's not set, just return the default path.
@@ -129,17 +137,5 @@ namespace System.IO
             return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString.AsSpan() : ReadOnlySpan<char>.Empty;
         }
 
-        /// <summary>Gets whether the system is case-sensitive.</summary>
-        internal static bool IsCaseSensitive
-        {
-            get
-            {
-                #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    return false;
-                #else
-                    return true;
-                #endif
-            }
-        }
     }
 }

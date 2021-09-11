@@ -5,12 +5,6 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-        if [[ $__Mono -eq 1 ]]; then
-            __RuntimeFlavor="mono"
-        else
-            __RuntimeFlavor="coreclr"
-        fi
-
         __Exclude="$__RepoRootDir/src/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
 
@@ -57,20 +51,19 @@ build_mono_aot()
     build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir"
 }
 
+build_ios_apps()
+{
+    __RuntimeFlavor="mono" \
+    __Exclude="$__RepoRootDir/src/tests/issues.targets" \
+    build_MSBuild_projects "Create_iOS_App" "$__RepoRootDir/src/tests/run.proj" "Create iOS Apps" "/t:BuildAlliOSApp"
+}
+
 generate_layout()
 {
     echo "${__MsgPrefix}Creating test overlay..."
 
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
-
-    if [[ "$__RebuildTests" -ne 0 ]]; then
-        if [[ -d "${__TestBinDir}" ]]; then
-            echo "Removing tests build dir: ${__TestBinDir}"
-            rm -rf "$__TestBinDir"
-        fi
-    fi
-
     __CMakeBinDir="${__TestBinDir}"
 
     if [[ -z "$__TestIntermediateDir" ]]; then
@@ -133,8 +126,7 @@ generate_layout()
     build_MSBuild_projects "Tests_Overlay_Managed" "$__RepoRootDir/src/tests/run.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     # Precompile framework assemblies with crossgen if required
-    if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
-        chmod +x "$__CrossgenExe"
+    if [[ "$__DoCrossgen2" != 0 ]]; then
         if [[ "$__SkipCrossgenFramework" == 0 ]]; then
             precompile_coreroot_fx
         fi
@@ -171,11 +163,7 @@ precompile_coreroot_fx()
         crossgenDir="$crossgenDir/$__HostArch"
     fi
 
-    if [[ "$__DoCrossgen" != 0 ]]; then
-        crossgenCmd="$crossgenCmd --crossgen --nocrossgen2 --crossgen-path \"$crossgenDir/crossgen\""
-    else
-        crossgenCmd="$crossgenCmd --verify-type-and-field-layout --crossgen2-path \"$crossgenDir/crossgen2/crossgen2.dll\""
-    fi
+    crossgenCmd="$crossgenCmd --verify-type-and-field-layout --crossgen2-path \"$crossgenDir/crossgen2/crossgen2.dll\""
 
     echo "Running $crossgenCmd"
     eval $crossgenCmd
@@ -189,17 +177,6 @@ precompile_coreroot_fx()
     mv "$outputDir"/*.dll "$CORE_ROOT"
 
     return 0
-}
-
-declare -a skipCrossGenFiles
-
-function is_skip_crossgen_test {
-    for skip in "${skipCrossGenFiles[@]}"; do
-        if [[ "$1" == "$skip" ]]; then
-            return 0
-        fi
-    done
-    return 1
 }
 
 build_Tests()
@@ -278,7 +255,7 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
+    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
         build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
@@ -290,7 +267,7 @@ build_Tests()
     if [[ "$__SkipManaged" != 1 ]]; then
         echo "Starting the Managed Tests Build..."
 
-        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up" "/p:RuntimeFlavor=$__RuntimeFlavor"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: managed test build failed. Refer to the build log files for details (above)"
@@ -314,7 +291,7 @@ build_Tests()
     if [[ "$__CopyNativeTestBinaries" == 1 ]]; then
         echo "Copying native test binaries to output..."
 
-        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/p:RuntimeFlavor=$__RuntimeFlavor" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: copying native test binaries failed. Refer to the build log files for details (above)"
@@ -385,6 +362,9 @@ build_MSBuild_projects()
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
             buildArgs+=("/p:__SkipPackageRestore=true");
             buildArgs+=("/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_managed_tests_${testGroupToBuild}.binlog");
+            buildArgs+=("/p:BuildTestProject=${__BuildTestProject}");
+            buildArgs+=("/p:BuildTestDir=${__BuildTestDir}");
+            buildArgs+=("/p:BuildTestTree=${__BuildTestTree}");
 
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
@@ -447,7 +427,10 @@ usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 
-usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
+usage_list+=("-test:xxx - only build a single test project");
+usage_list+=("-dir:xxx - build all tests in a given directory");
+usage_list+=("-tree:xxx - build all tests in a given subtree");
+
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
 usage_list+=("-allTargets: Build managed tests for all target platforms.")
@@ -480,11 +463,6 @@ handle_arguments_local() {
             __SkipCrossgenFramework=1
             ;;
 
-        crossgen|-crossgen)
-            __DoCrossgen=1
-            __TestBuildMode=crossgen
-            ;;
-
         crossgen2|-crossgen2)
             __DoCrossgen2=1
             __TestBuildMode=crossgen2
@@ -511,6 +489,24 @@ handle_arguments_local() {
 
         rebuild|-rebuild)
             __RebuildTests=1
+            ;;
+
+        test*|-test*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
+            ;;
+
+        dir*|-dir*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
+            ;;
+
+        tree*|-tree*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
             ;;
 
         runtests|-runtests)
@@ -559,9 +555,12 @@ __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
 __DistroRid=""
-__DoCrossgen=0
 __DoCrossgen2=0
 __CompositeBuildMode=0
+__TestBuildMode=
+__BuildTestProject="%3B"
+__BuildTestDir="%3B"
+__BuildTestTree="%3B"
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __IsMSBuildOnNETCoreSupported=0
@@ -595,6 +594,16 @@ if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
+if [[ "$__CrossBuild" == 1 && "$__TargetOS" != "Android" ]]; then
+    __UnprocessedBuildArgs+=("/p:CrossBuild=true")
+fi
+
+if [[ $__Mono -eq 1 ]]; then
+    __RuntimeFlavor="mono"
+else
+    __RuntimeFlavor="coreclr"
+fi
+
 # Set dependent variables
 __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
@@ -607,17 +616,8 @@ __TestDir="$__RepoRootDir/src/tests"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
-__CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 __MonoBinDir="$__RootBinDir/bin/mono/$__OSPlatformConfig"
-
-__CrossArch="$__HostArch"
-if [[ "$__CrossBuild" == 1 ]]; then
-    __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
-fi
-__CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$BuildArch.$__BuildType.log"
-__CrossgenExe="$__CrossComponentBinDir/crossgen"
-__Crossgen2Dll="$__CrossComponentBinDir/crossgen2/crossgen2.dll"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
 # This is needed by CLI to function.
@@ -629,6 +629,13 @@ if [[ -z "$HOME" ]]; then
     HOME="$__ProjectDir"/temp_home
     export HOME
     echo "HOME not defined; setting it to $HOME"
+fi
+
+if [[ "$__RebuildTests" -ne 0 ]]; then
+    if [[ -d "${__TestWorkingDir}" ]]; then
+        echo "Removing tests build dir: ${__TestWorkingDir}"
+        rm -rf "${__TestWorkingDir}"
+    fi
 fi
 
 if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") && ("$__MonoAot" -eq 0) ]]; then
@@ -651,6 +658,8 @@ echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 
 if [ "$__TargetOS" == "Android" ]; then
     build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
+elif [ "$__TargetOS" == "iOS" ] || [ "$__TargetOS" == "iOSSimulator" ]; then
+    build_ios_apps
 fi
 
 if [[ "$__RunTests" -ne 0 ]]; then

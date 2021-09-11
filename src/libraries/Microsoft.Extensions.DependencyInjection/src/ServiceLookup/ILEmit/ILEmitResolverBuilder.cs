@@ -17,6 +17,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly MethodInfo ScopeLockGetter = typeof(ServiceProviderEngineScope).GetProperty(
             nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
 
+        private static readonly MethodInfo ScopeIsRootScope = typeof(ServiceProviderEngineScope).GetProperty(
+            nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public).GetMethod;
+
+        private static readonly MethodInfo CallSiteRuntimeResolverResolveMethod = typeof(CallSiteRuntimeResolver).GetMethod(
+            nameof(CallSiteRuntimeResolver.Resolve), BindingFlags.Public | BindingFlags.Instance);
+
+        private static readonly MethodInfo CallSiteRuntimeResolverInstanceField = typeof(CallSiteRuntimeResolver).GetProperty(
+            nameof(CallSiteRuntimeResolver.Instance), BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance).GetMethod;
+
         private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories));
         private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
         private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
@@ -60,10 +69,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Only scope methods are cached
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
             {
-#if NETSTANDARD2_1
-                return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, _buildTypeDelegate, callSite);
-#else
+#if NETFRAMEWORK || NETSTANDARD2_0
                 return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, key => _buildTypeDelegate(key, callSite));
+#else
+                return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, _buildTypeDelegate, callSite);
 #endif
             }
 
@@ -99,11 +108,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 "ResolveService", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(object),
                 new[] { typeof(ILEmitResolverBuilderRuntimeContext), typeof(ServiceProviderEngineScope) });
 
-            GenerateMethodBody(callSite, method.GetILGenerator(), info);
+            GenerateMethodBody(callSite, method.GetILGenerator());
             type.CreateTypeInfo();
             assembly.Save(assemblyName + ".dll");
 #endif
-            DependencyInjectionEventSource.Log.DynamicMethodBuilt(callSite.ServiceType, ilGenerator.ILOffset);
+            DependencyInjectionEventSource.Log.DynamicMethodBuilt(_rootScope.RootProvider, callSite.ServiceType, ilGenerator.ILOffset);
 
             return new GeneratedMethod()
             {
@@ -184,17 +193,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        protected override object VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, ILEmitResolverBuilderContext argument)
-        {
-            AddConstant(argument, serviceScopeFactoryCallSite.Value);
-            return null;
-        }
-
         protected override object VisitIEnumerable(IEnumerableCallSite enumerableCallSite, ILEmitResolverBuilderContext argument)
         {
             if (enumerableCallSite.ServiceCallSites.Length == 0)
             {
-                argument.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.GetArrayEmptyMethodInfo(enumerableCallSite.ItemType));
+                argument.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.GetArrayEmptyMethodInfo(enumerableCallSite.ItemType));
             }
             else
             {
@@ -241,7 +244,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Generator.Emit(OpCodes.Ldelem, typeof(Func<IServiceProvider, object>));
 
             argument.Generator.Emit(OpCodes.Ldarg_1);
-            argument.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.InvokeFactoryMethodInfo);
+            argument.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.InvokeFactoryMethodInfo);
 
             argument.Factories.Add(factoryCallSite.Factory);
             return null;
@@ -281,6 +284,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Factories = null
             };
 
+            // if (scope.IsRootScope)
+            // {
+            //     return CallSiteRuntimeResolver.Instance.Resolve(callSite, scope);
+            // }
             //  var cacheKey = scopedCallSite.CacheKey;
             //  try
             //  {
@@ -309,8 +316,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 Label skipCreationLabel = context.Generator.DefineLabel();
                 Label returnLabel = context.Generator.DefineLabel();
+                Label defaultLabel = context.Generator.DefineLabel();
+
+                // Check if scope IsRootScope
+                context.Generator.Emit(OpCodes.Ldarg_1);
+                context.Generator.Emit(OpCodes.Callvirt, ScopeIsRootScope);
+                context.Generator.Emit(OpCodes.Brfalse_S, defaultLabel);
+
+                context.Generator.Emit(OpCodes.Call, CallSiteRuntimeResolverInstanceField);
+                AddConstant(context, callSite);
+                context.Generator.Emit(OpCodes.Ldarg_1);
+                context.Generator.Emit(OpCodes.Callvirt, CallSiteRuntimeResolverResolveMethod);
+                context.Generator.Emit(OpCodes.Ret);
 
                 // Generate cache key
+                context.Generator.MarkLabel(defaultLabel);
                 AddCacheKey(context, callSite.Cache.Key);
                 // and store to local
                 Stloc(context.Generator, cacheKeyLocal.LocalIndex);
@@ -336,7 +356,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Load address of lockTaken
                 context.Generator.Emit(OpCodes.Ldloca_S, lockTakenLocal.LocalIndex);
                 // Monitor.Enter
-                context.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.MonitorEnterMethodInfo);
+                context.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.MonitorEnterMethodInfo);
 
                 // Load resolved services
                 Ldloc(context.Generator, resolvedServicesLocal.LocalIndex);
@@ -345,7 +365,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Load address of result local
                 context.Generator.Emit(OpCodes.Ldloca_S, resultLocal.LocalIndex);
                 // .TryGetValue
-                context.Generator.Emit(OpCodes.Callvirt, ExpressionResolverBuilder.TryGetValueMethodInfo);
+                context.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.TryGetValueMethodInfo);
 
                 // Jump to the end if already in cache
                 context.Generator.Emit(OpCodes.Brtrue, skipCreationLabel);
@@ -370,7 +390,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // load value
                 Ldloc(context.Generator, resultLocal.LocalIndex);
                 // .Add
-                context.Generator.Emit(OpCodes.Callvirt, ExpressionResolverBuilder.AddMethodInfo);
+                context.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.AddMethodInfo);
 
                 context.Generator.MarkLabel(skipCreationLabel);
 
@@ -383,7 +403,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Load syncLocal
                 Ldloc(context.Generator, syncLocal.LocalIndex);
                 // Monitor.Exit
-                context.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.MonitorExitMethodInfo);
+                context.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.MonitorExitMethodInfo);
 
                 context.Generator.MarkLabel(returnLabel);
 
@@ -417,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static void EndCaptureDisposable(ILEmitResolverBuilderContext argument)
         {
             // Call CaptureDisposabl we expect calee and arguments to be on the stackcontext.Generator.BeginExceptionBlock
-            argument.Generator.Emit(OpCodes.Callvirt, ExpressionResolverBuilder.CaptureDisposableMethodInfo);
+            argument.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.CaptureDisposableMethodInfo);
         }
 
         private void Ldloc(ILGenerator generator, int index)

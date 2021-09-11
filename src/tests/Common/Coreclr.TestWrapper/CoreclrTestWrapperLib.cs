@@ -284,7 +284,7 @@ namespace CoreclrTestLib
             return children;
         }
 
-        public int RunTest(string executable, string outputFile, string errorFile, string category, string testBinaryBase)
+        public int RunTest(string executable, string outputFile, string errorFile, string category, string testBinaryBase, string outputDir)
         {
             Debug.Assert(outputFile != errorFile);
 
@@ -321,6 +321,7 @@ namespace CoreclrTestLib
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.EnvironmentVariables.Add("__Category", category);
                 process.StartInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
+                process.StartInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
 
                 DateTime startTime = DateTime.Now;
                 process.Start();

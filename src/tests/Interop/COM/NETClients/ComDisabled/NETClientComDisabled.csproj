@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ApplicationManifest>App.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../../ServerContracts/Server.CoClasses.cs" />
+    <Compile Include="../../ServerContracts/Server.Contracts.cs" />
+    <Compile Include="../../ServerContracts/ServerGuids.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="false" />
+  </ItemGroup>
+</Project>

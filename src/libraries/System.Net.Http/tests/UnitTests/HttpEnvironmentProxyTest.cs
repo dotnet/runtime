@@ -10,7 +10,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class HttpEnvironmentProxyTest
     {
         private readonly ITestOutputHelper _output;

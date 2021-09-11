@@ -102,9 +102,9 @@ void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less
             //
             // It's not possible for newFirst to go past the end of the sort range:
             //   - If newFirst reaches the pivot before newLast then the pivot is
-            //	   swapped to the right and we'll stop again when we reach it.
+            //     swapped to the right and we'll stop again when we reach it.
             //   - If newLast reaches the pivot before newFirst then the pivot is
-            //	   swapped to the left and the value at newFirst will take its place
+            //     swapped to the left and the value at newFirst will take its place
             //     to the right so less(newFirst, pivot) will again be false when the
             //     old pivot's position is reached.
             do

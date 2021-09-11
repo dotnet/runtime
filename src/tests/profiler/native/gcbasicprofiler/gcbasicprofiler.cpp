@@ -15,7 +15,7 @@ HRESULT GCBasicProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(0, 0x10)))
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(0, COR_PRF_HIGH_BASIC_GC)))
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
@@ -31,7 +31,7 @@ HRESULT GCBasicProfiler::Shutdown()
 
     if (_gcStarts == 0)
     {
-        printf("GCBasicProfiler::Shutdown: FAIL: Expected GarbaseCollectionStarted to be called\n");
+        printf("GCBasicProfiler::Shutdown: FAIL: Expected GarbageCollectionStarted to be called\n");
     }
     else if (_gcFinishes == 0)
     {
@@ -50,9 +50,6 @@ HRESULT GCBasicProfiler::Shutdown()
     return S_OK;
 }
 
-// filler for empty generations: x86 - 0xc; ia64 - 0x18
-#define GEN_FILLER 0x18
-
 HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
 {
     SHUTDOWNGUARD();
@@ -69,59 +66,66 @@ HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generat
     if(_gcStarts == 1)
     {
         ULONG nObjectRanges;
-        const ULONG cRanges = 32;
-        COR_PRF_GC_GENERATION_RANGE objectRanges[cRanges];
-
-        HRESULT hr = pCorProfilerInfo->GetGenerationBounds(cRanges, &nObjectRanges, objectRanges);
-        if (FAILED(hr))
+        bool fHeapAlloc = false;
+        COR_PRF_GC_GENERATION_RANGE* pObjectRanges = nullptr;
         {
-            _failures++;
-            printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: GetGenerationBounds hr=0x%x\n", hr);
-            return S_OK;
-        }
+            const ULONG cRanges = 32;
+            COR_PRF_GC_GENERATION_RANGE objectRangesStackBuffer[cRanges];
 
-        // Assuming an initial gc heap like this.
-        //
-        // Generation: 3	Start: 1ee1000	Length: 2030	Reserved: fff000	// big objects
-        // Generation: 2	Start: 7a8d0bbc Length: 1fd1c	Reserved: 1fd1c		// frozen objects (per module)
-        // Generation: 2	Start: 3120004	Length: c		Reserved: c			// debug build only, internal
-        // Generation: 2	Start: 5ba29b7c	Length: 465f0	Reserved: 465f0		// frozen objects (per module)
-        // Generation: 2	Start: ee1000	Length: c		Reserved: c			// empty, with filler
-        // Generation: 1	Start: ee100c	Length: c		Reserved: c			// empty, with filler
-        // Generation: 0	Start: ee1018	Length: 15b8	Reserved: ffefe8	// new objects
-
-        // loop through generations from 0 to 3
-        for (int i = nObjectRanges - 1; i >= 0; i--)
-        {
-            switch (objectRanges[i].generation)
+            HRESULT hr = pCorProfilerInfo->GetGenerationBounds(cRanges, &nObjectRanges, objectRangesStackBuffer);
+            if (FAILED(hr))
             {
-            case 0:
-            case 3:
-            case 4:
-                // no useful verification
-                break;
-            case 1:
-                if (objectRanges[i].rangeLength > GEN_FILLER)
-                {
-                    _failures++;
-                    printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: Expected initial gen1 rangeLength <= 0x%x. rangeLength=0x%p\n",
-                        GEN_FILLER, (void*)objectRanges[i].rangeLength);
-                }
-                if (objectRanges[i].rangeLengthReserved > GEN_FILLER)
-                {
-                    _failures++;
-                    printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: Expected initial gen1 rangeLengthReserved <= 0x%x. rangeLengthReserved=0x%p\n",
-                        GEN_FILLER, (void*)objectRanges[i].rangeLengthReserved);
-                }
-                break;
-            case 2:
-                break;
-            default:
                 _failures++;
-                printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: invalid generation: %d\n",objectRanges[i].generation);
+                printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: GetGenerationBounds hr=0x%x\n", hr);
+                return S_OK;
+            }
+            if (nObjectRanges <= cRanges)
+            {
+                pObjectRanges = objectRangesStackBuffer;
             }
         }
+
+        if (pObjectRanges == nullptr)
+        {
+            pObjectRanges = new COR_PRF_GC_GENERATION_RANGE[nObjectRanges];
+            if (pObjectRanges == nullptr)
+            {
+                _failures++;
+                printf("Couldn't allocate buffer for generation ranges\n");
+                return S_OK;
+            }
+            fHeapAlloc = true;
+
+            ULONG nObjectRanges2;
+            HRESULT hr = pCorProfilerInfo->GetGenerationBounds(nObjectRanges, &nObjectRanges2, pObjectRanges);
+            if (FAILED(hr) || nObjectRanges != nObjectRanges2)
+            {
+                _failures++;
+                printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: GetGenerationBounds hr=0x%x, %d != %d\n", hr, nObjectRanges, nObjectRanges2);
+                return S_OK;
+            }
+        }
+        // loop through all ranges
+        for (int i = nObjectRanges - 1; i >= 0; i--)
+        {
+            if (0 > pObjectRanges[i].generation || pObjectRanges[i].generation > 4)
+            {
+                _failures++;
+                printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: invalid generation: %d\n",pObjectRanges[i].generation);
+            }
+        }
+        if (nObjectRanges > 3 && pObjectRanges[2].generation == 2 && pObjectRanges[2].rangeLength == 0x18 && pObjectRanges[2].generation == 1)
+        {
+            if (pObjectRanges[3].rangeLength != 0x18)
+            {
+                _failures++;
+                printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: in the first GC for the segment case, gen 1 should have size 0x18");
+            }
+        }
+        if (fHeapAlloc)
+            delete[] pObjectRanges;
     }
+
     return S_OK;
 }
 

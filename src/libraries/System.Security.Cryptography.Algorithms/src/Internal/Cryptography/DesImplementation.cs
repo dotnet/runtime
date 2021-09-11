@@ -76,7 +76,157 @@ namespace Internal.Cryptography
                 ValidateCFBFeedbackSize(FeedbackSize);
             }
 
-            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, FeedbackSize / BitsPerByte, this.GetPaddingSize(), encrypting);
+            return CreateTransformCore(
+                Mode,
+                Padding,
+                rgbKey,
+                rgbIV,
+                BlockSize / BitsPerByte,
+                FeedbackSize / BitsPerByte,
+                this.GetPaddingSize(Mode, FeedbackSize),
+                encrypting);
+        }
+
+        protected override bool TryDecryptEcbCore(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.ECB,
+                paddingMode,
+                Key,
+                iv: null,
+                blockSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                paddingSize: BlockSize / BitsPerByte,
+                encrypting: false);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.ECB,
+                paddingMode,
+                Key,
+                iv: null,
+                blockSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                paddingSize: BlockSize / BitsPerByte,
+                encrypting: true);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptCbcCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.CBC,
+                paddingMode,
+                Key,
+                iv: iv.ToArray(),
+                blockSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                paddingSize: BlockSize / BitsPerByte,
+                encrypting: true);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryDecryptCbcCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.CBC,
+                paddingMode,
+                Key,
+                iv: iv.ToArray(),
+                blockSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                paddingSize: BlockSize / BitsPerByte,
+                encrypting: false);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryDecryptCfbCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.CFB,
+                paddingMode,
+                Key,
+                iv: iv.ToArray(),
+                blockSize: BlockSize / BitsPerByte,
+                feedbackSizeInBits / BitsPerByte,
+                paddingSize: feedbackSizeInBits / BitsPerByte,
+                encrypting: false);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptCfbCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.CFB,
+                paddingMode,
+                Key,
+                iv: iv.ToArray(),
+                blockSize: BlockSize / BitsPerByte,
+                feedbackSizeInBits / BitsPerByte,
+                paddingSize: feedbackSizeInBits / BitsPerByte,
+                encrypting: true);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
         }
 
         private static void ValidateCFBFeedbackSize(int feedback)

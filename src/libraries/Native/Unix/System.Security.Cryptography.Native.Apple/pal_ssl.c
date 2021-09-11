@@ -23,6 +23,14 @@ SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
 #pragma clang diagnostic pop
 }
 
+int32_t AppleCryptoNative_SslSetConnection(SSLContextRef sslContext, SSLConnectionRef sslConnection)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return SSLSetConnection(sslContext, sslConnection);
+#pragma clang diagnostic pop
+}
+
 int32_t AppleCryptoNative_SslSetAcceptClientCert(SSLContextRef sslContext)
 {
 #pragma clang diagnostic push
@@ -462,15 +470,18 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
                 {
                     CFArrayRef statusCodes = CFDictionaryGetValue(CFArrayGetValueAtIndex(details,0), CFSTR("StatusCodes"));
 
-                    OSStatus status = 0;
-                    // look for first failure to keep it simple. Normally, there will be exactly one.
-                    for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
+                    if (statusCodes != NULL)
                     {
-                        CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
-                        if (status != noErr)
+                        OSStatus status = 0;
+                        // look for first failure to keep it simple. Normally, there will be exactly one.
+                        for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
                         {
-                            *pOSStatus = status;
-                            break;
+                            CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
+                            if (status != noErr)
+                            {
+                                *pOSStatus = status;
+                                break;
+                            }
                         }
                     }
                 }
@@ -585,19 +596,19 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     // Max numCipherSuites is 2^16 (all possible cipher suites)
     assert(numCipherSuites < (1 << 16));
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_ARM64) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
     if (sizeof(SSLCipherSuite) == sizeof(uint32_t))
     {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        // macOS
+        // macOS & MacCatalyst x64
         return SSLSetEnabledCiphers(sslContext, (const SSLCipherSuite *)cipherSuites, (size_t)numCipherSuites);
 #pragma clang diagnostic pop   
     }
     else
 #endif
     {
-        // MacCatalyst, iOS, tvOS, watchOS
+        // MacCatalyst arm64, iOS, tvOS, watchOS
         SSLCipherSuite* cipherSuites16 = (SSLCipherSuite*)calloc((size_t)numCipherSuites, sizeof(SSLCipherSuite));
 
         if (cipherSuites16 == NULL)

@@ -21,9 +21,19 @@ namespace System.Text.Json
         {
             MetadataPropertyName writtenMetadataName;
 
-            // If the jsonConverter supports immutable dictionaries or value types, don't write any metadata
-            if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
+            if (state.BoxedStructReferenceId != null)
             {
+                // We're serializing a struct that has been handled by a polymorphic converter;
+                // emit the reference id that was recorded for the boxed instance.
+
+                Debug.Assert(jsonConverter.IsValueType && jsonConverter.CanHaveIdMetadata);
+                writer.WriteString(s_metadataId, state.BoxedStructReferenceId);
+                writtenMetadataName = MetadataPropertyName.Id;
+                state.BoxedStructReferenceId = null;
+            }
+            else if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
+            {
+                // If the jsonConverter supports immutable dictionaries or value types, don't write any metadata
                 writtenMetadataName = MetadataPropertyName.NoMetadata;
             }
             else
@@ -55,9 +65,22 @@ namespace System.Text.Json
         {
             MetadataPropertyName writtenMetadataName;
 
-            // If the jsonConverter supports immutable enumerables or value type collections, don't write any metadata
-            if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
+            if (state.BoxedStructReferenceId != null)
             {
+                // We're serializing a struct that has been handled by a polymorphic converter;
+                // emit the reference id that was recorded for the boxed instance.
+
+                Debug.Assert(jsonConverter.IsValueType && jsonConverter.CanHaveIdMetadata);
+
+                writer.WriteStartObject();
+                writer.WriteString(s_metadataId, state.BoxedStructReferenceId);
+                writer.WriteStartArray(s_metadataValues);
+                writtenMetadataName = MetadataPropertyName.Id;
+                state.BoxedStructReferenceId = null;
+            }
+            else if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
+            {
+                // If the jsonConverter supports immutable enumerables or value type collections, don't write any metadata
                 writer.WriteStartArray();
                 writtenMetadataName = MetadataPropertyName.NoMetadata;
             }
@@ -83,6 +106,33 @@ namespace System.Text.Json
             }
 
             return writtenMetadataName;
+        }
+
+        /// <summary>
+        /// Used by polymorphic converters that are handling references for values that are boxed structs.
+        /// </summary>
+        internal static bool TryWriteReferenceForBoxedStruct(object currentValue, ref WriteStack state, Utf8JsonWriter writer)
+        {
+            Debug.Assert(state.BoxedStructReferenceId == null);
+            Debug.Assert(currentValue.GetType().IsValueType);
+
+            string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+            Debug.Assert(referenceId != null);
+
+            if (alreadyExists)
+            {
+                writer.WriteStartObject();
+                writer.WriteString(s_metadataRef, referenceId);
+                writer.WriteEndObject();
+            }
+            else
+            {
+                // Since we cannot run `ReferenceResolver.GetReference` twice for newly encountered instances,
+                // need to store the reference id for use by the subtype converter we're dispatching to.
+                state.BoxedStructReferenceId = referenceId;
+            }
+
+            return alreadyExists;
         }
     }
 }

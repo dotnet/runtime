@@ -14,7 +14,7 @@ namespace System
     public partial class Array
     {
         [StructLayout(LayoutKind.Sequential)]
-        private sealed class RawData
+        internal sealed class RawData
         {
             public IntPtr Bounds;
             // The following is to prevent a mismatch between the managed and runtime
@@ -67,7 +67,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            ref byte ptr = ref array.GetRawSzArrayData();
+            ref byte ptr = ref MemoryMarshal.GetArrayDataReference(array);
             nuint byteLength = array.NativeLength * (nuint)(uint)array.GetElementSize() /* force zero-extension */;
 
             if (RuntimeHelpers.ObjectHasReferences(array))
@@ -90,7 +90,7 @@ namespace System
             if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > numComponents)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
-            ref byte ptr = ref Unsafe.AddByteOffset(ref array.GetRawSzArrayData(), (uint)offset * (nuint)elementSize);
+            ref byte ptr = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(array), (uint)offset * (nuint)elementSize);
             nuint byteLength = (uint)length * (nuint)elementSize;
 
             if (RuntimeHelpers.ObjectHasReferences(array))
@@ -448,22 +448,6 @@ namespace System
         public int GetUpperBound(int dimension)
         {
             return GetLowerBound(dimension) + GetLength(dimension) - 1;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ref byte GetRawSzArrayData()
-        {
-            // TODO: Missing intrinsic in interpreter
-            return ref Unsafe.As<RawData>(this).Data;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ref byte GetRawArrayData()
-        {
-            // TODO: Missing intrinsic in interpreter
-            return ref Unsafe.As<RawData>(this).Data;
         }
 
         [Intrinsic]

@@ -330,11 +330,8 @@ namespace Internal.TypeSystem
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
-            foreach (MethodDesc candidate in currentType.GetAllMethods())
+            foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
-                if (!candidate.IsVirtual)
-                    continue;
-
                 if (candidate.Name == name)
                 {
                     if (candidate.Signature.Equals(sig))
@@ -462,6 +459,11 @@ namespace Internal.TypeSystem
 
             foreach (MethodDesc memberMethod in unificationGroup.Members)
             {
+                // If a method is both overriden via MethodImpl and name/sig, we don't remove it from the unification list
+                // as the local MethodImpl takes priority over the name/sig match, and prevents the slot disunificaiton
+                if (FindSlotDefiningMethodForVirtualMethod(memberMethod) == FindSlotDefiningMethodForVirtualMethod(originalDefiningMethod))
+                    continue;
+
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
                 if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
                 {
@@ -668,7 +670,7 @@ namespace Internal.TypeSystem
 
             foreach (TypeDesc iface in currentType.RuntimeInterfaces)
             {
-                if (iface.CanCastTo(interfaceType))
+                if (iface.HasSameTypeDefinition(interfaceType) && iface.CanCastTo(interfaceType))
                 {
                     implMethod = iface.FindMethodOnTypeWithMatchingTypicalMethod(interfaceMethod);
                     Debug.Assert(implMethod != null);
@@ -738,7 +740,22 @@ namespace Internal.TypeSystem
             bool diamondCase = false;
             impl = null;
 
-            foreach (MetadataType runtimeInterface in currentType.RuntimeInterfaces)
+            DefType[] consideredInterfaces;
+            if (!currentType.IsInterface)
+            {
+                // If this is not an interface, only things on the interface list could provide
+                // default implementations.
+                consideredInterfaces = currentType.RuntimeInterfaces;
+            }
+            else
+            {
+                // If we're asking about an interface, include the interface in the list.
+                consideredInterfaces = new DefType[currentType.RuntimeInterfaces.Length + 1];
+                Array.Copy(currentType.RuntimeInterfaces, consideredInterfaces, currentType.RuntimeInterfaces.Length);
+                consideredInterfaces[consideredInterfaces.Length - 1] = (DefType)currentType.InstantiateAsOpen();
+            }
+
+            foreach (MetadataType runtimeInterface in consideredInterfaces)
             {
                 if (runtimeInterface == interfaceMethodOwningType)
                 {
@@ -810,11 +827,8 @@ namespace Internal.TypeSystem
             {
                 do
                 {
-                    foreach (MethodDesc m in type.GetAllMethods())
+                    foreach (MethodDesc m in type.GetAllVirtualMethods())
                     {
-                        if (!m.IsVirtual)
-                            continue;
-
                         MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
                         if (!alreadyEnumerated.Contains(possibleVirtual))
                         {

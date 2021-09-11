@@ -61,27 +61,10 @@ public:
         return m_UserStringHeap.GetBlob(nIndex, pData);
     }
 
-#ifdef FEATURE_PREJIT
-    void DisableHotDataUsage()
-    {
-        MetaData::HotHeap emptyHotHeap;
-        // Initialize hot data again with empty heap to disable their usage
-        m_StringHeap.InitializeHotData(emptyHotHeap);
-        m_BlobHeap.InitializeHotData(emptyHotHeap);
-        m_UserStringHeap.InitializeHotData(emptyHotHeap);
-        m_GuidHeap.InitializeHotData(emptyHotHeap);
-        // Disable usage of hot table data (throw it away)
-        m_pHotTablesDirectory = NULL;
-    }
-#endif //FEATURE_PREJIT
-
 protected:
     DAC_ALIGNAS(CMiniMdTemplate<CMiniMd>) // Align the first member to the alignment of the base class
     // Table info.
     MetaData::TableRO m_Tables[TBL_COUNT];
-#ifdef FEATURE_PREJIT
-    struct MetaData::HotTablesDirectory * m_pHotTablesDirectory;
-#endif //FEATURE_PREJIT
 
     __checkReturn
     HRESULT InitializeTables(MetaData::DataBlob tablesData);
@@ -135,9 +118,6 @@ protected:
             ppRecord,
             m_TableDefs[nTableIndex].m_cbRec,
             m_Schema.m_cRecs[nTableIndex],
-#ifdef FEATURE_PREJIT
-            m_pHotTablesDirectory,
-#endif //FEATURE_PREJIT
             nTableIndex);
     }
 

@@ -22,7 +22,13 @@ const char* g_help = "createdump [options] pid\n"
 "-t, --triage - create triage minidump.\n"
 "-u, --full - create full core dump.\n"
 "-d, --diag - enable diagnostic messages.\n"
-"-vd, --verbose - enable verbose diagnostic messages.\n";
+"-v, --verbose - enable verbose diagnostic messages.\n"
+#ifdef HOST_UNIX
+"--crashreport - write crash report file.\n"
+"--crashthread <id> - the thread id of the crashing thread.\n"
+"--signal <code> - the signal code of the crash.\n"
+#endif
+;
 
 bool g_diagnostics = false;
 bool g_diagnosticsVerbose = false;
@@ -41,6 +47,9 @@ int __cdecl main(const int argc, const char* argv[])
                                                  MiniDumpWithTokenInformation);
     const char* dumpType = "minidump with heap";
     const char* dumpPathTemplate = nullptr;
+    bool crashReport = false;
+    int signal = 0;
+    int crashThread = 0;
     int exitCode = 0;
     int pid = 0;
 
@@ -86,10 +95,13 @@ int __cdecl main(const int argc, const char* argv[])
             {
                 dumpType = "triage minidump";
                 minidumpType = (MINIDUMP_TYPE)(MiniDumpFilterTriage |
-                                               MiniDumpWithDataSegs |
-                                               MiniDumpWithHandleData |
+                                               MiniDumpIgnoreInaccessibleMemory |
+                                               MiniDumpWithoutOptionalData |
+                                               MiniDumpWithProcessThreadData |
                                                MiniDumpFilterModulePaths |
-                                               MiniDumpWithThreadInfo);
+                                               MiniDumpWithUnloadedModules |
+                                               MiniDumpFilterMemory |
+                                               MiniDumpWithHandleData);
             }
             else if ((strcmp(*argv, "-u") == 0) || (strcmp(*argv, "--full") == 0))
             {
@@ -102,11 +114,25 @@ int __cdecl main(const int argc, const char* argv[])
                                                MiniDumpWithThreadInfo |
                                                MiniDumpWithTokenInformation);
             }
+#ifdef HOST_UNIX
+            else if (strcmp(*argv, "--crashreport") == 0)
+            {
+                crashReport = true;
+            }
+            else if (strcmp(*argv, "--crashthread") == 0)
+            {
+                crashThread = atoi(*++argv);
+            }
+            else if (strcmp(*argv, "--signal") == 0)
+            {
+                signal = atoi(*++argv);
+            }
+#endif
             else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))
             {
                 g_diagnostics = true;
             }
-            else if ((strcmp(*argv, "-vd") == 0) || (strcmp(*argv, "--verbose") == 0))
+            else if ((strcmp(*argv, "-v") == 0) || (strcmp(*argv, "--verbose") == 0))
             {
                 g_diagnostics = true;
                 g_diagnosticsVerbose = true;
@@ -138,7 +164,7 @@ int __cdecl main(const int argc, const char* argv[])
             dumpPathTemplate = tmpPath;
         }
 
-        if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType))
+        if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, crashReport, crashThread, signal))
         {
             printf("Dump successfully written\n");
         }

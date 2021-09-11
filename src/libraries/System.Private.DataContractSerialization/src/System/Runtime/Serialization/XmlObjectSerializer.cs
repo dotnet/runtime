@@ -355,7 +355,7 @@ namespace System.Runtime.Serialization
             reader.MoveToElement();
             if (name != null) // root name set explicitly
             {
-                return reader.IsStartElement(name, ns!); // https://github.com/dotnet/runtime/issues/41395
+                return reader.IsStartElement(name, ns ?? XmlDictionaryString.Empty);
             }
             else
             {
@@ -393,7 +393,7 @@ namespace System.Runtime.Serialization
         internal static string TryAddLineInfo(XmlReaderDelegator reader, string errorMessage)
         {
             if (reader.HasLineInfo())
-                return string.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.Format(SR.ErrorInLine, reader.LineNumber, reader.LinePosition), errorMessage);
+                return string.Create(CultureInfo.InvariantCulture, $"{SR.Format(SR.ErrorInLine, reader.LineNumber, reader.LinePosition)} {errorMessage}");
             return errorMessage;
         }
 

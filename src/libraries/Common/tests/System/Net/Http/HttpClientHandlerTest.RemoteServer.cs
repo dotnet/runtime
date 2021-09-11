@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ namespace System.Net.Http.Functional.Tests
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
     public sealed class HttpClientHandler_RemoteServerTest : HttpClientHandlerTestBase
     {
         private const string ExpectedContent = "Test content";
@@ -59,6 +61,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
         public async Task UseDefaultCredentials_SetToFalseAndServerNeedsAuth_StatusCodeUnauthorized(bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -75,8 +78,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task SendAsync_SimpleGet_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -92,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task SendAsync_MultipleRequestsReusingSameClient_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -108,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -123,8 +127,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -139,8 +144,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -155,7 +161,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
@@ -169,7 +175,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
@@ -195,7 +201,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersHeaderValuesAndUris))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(Configuration.Http.RemoteServer remoteServer, string name, string value, Uri uri)
         {
@@ -213,7 +219,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
         public async Task GetAsync_LargeRequestHeader_HeadersAndValuesSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
@@ -280,7 +286,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> RemoteServersAndHeaderEchoUrisMemberData() => RemoteServersAndHeaderEchoUris().Select(x => new object[] { x.remoteServer, x.uri });
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock(Configuration.Http.RemoteServer remoteServer)
         {
@@ -305,7 +311,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
@@ -331,7 +337,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_CallMethodTwice_StringContent(Configuration.Http.RemoteServer remoteServer)
         {
@@ -339,7 +345,17 @@ namespace System.Net.Http.Functional.Tests
             {
                 string data = "Test String";
                 var content = new StringContent(data, Encoding.UTF8);
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                }
+
                 HttpResponseMessage response;
                 using (response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
@@ -348,7 +364,16 @@ namespace System.Net.Http.Functional.Tests
 
                 // Repeat call.
                 content = new StringContent(data, Encoding.UTF8);
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                }
+
                 using (response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -356,7 +381,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_CallMethod_UnicodeStringContent(Configuration.Http.RemoteServer remoteServer)
         {
@@ -364,7 +389,15 @@ namespace System.Net.Http.Functional.Tests
             {
                 string data = "\ub4f1\uffc7\u4e82\u67ab4\uc6d4\ud1a0\uc694\uc77c\uffda3\u3155\uc218\uffdb";
                 var content = new StringContent(data, Encoding.UTF8);
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
+                }
 
                 using (HttpResponseMessage response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
@@ -373,13 +406,21 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(VerifyUploadServersStreamsAndExpectedData))]
         public async Task PostAsync_CallMethod_StreamContent(Configuration.Http.RemoteServer remoteServer, HttpContent content, byte[] expectedData)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
+                }
 
                 using (HttpResponseMessage response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
@@ -512,7 +553,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_CallMethod_NullContent(Configuration.Http.RemoteServer remoteServer)
         {
@@ -533,7 +574,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_CallMethod_EmptyContent(Configuration.Http.RemoteServer remoteServer)
         {
@@ -563,9 +604,10 @@ namespace System.Net.Http.Functional.Tests
                 select new object[] {expect, version};
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(ExpectContinueVersion))]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, Version version)
         {
             // Sync API supported only up to HTTP/1.1
@@ -603,7 +645,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_Redirect_ResultingGetFormattedCorrectly(Configuration.Http.RemoteServer remoteServer)
         {
@@ -624,7 +666,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_RedirectWith307_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
@@ -639,7 +681,7 @@ namespace System.Net.Http.Functional.Tests
             await PostAsync_Redirect_LargePayload_Helper(remoteServer, 307, true);
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_RedirectWith302_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
@@ -669,7 +711,15 @@ namespace System.Net.Http.Functional.Tests
                 var content = new StreamContent(fs);
 
                 // Compute MD5 of request body data. This will be verified by the server when it receives the request.
-                content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(contentBytes);
+                if (PlatformDetection.IsBrowser)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                    content.Headers.Add("Content-MD5-Skip", "browser");
+                }
+                else
+                {
+                    content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(contentBytes);
+                }
 
                 using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
                 using (HttpResponseMessage response = await client.PostAsync(redirectUri, content))
@@ -694,7 +744,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if !NETFRAMEWORK
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_ReuseRequestContent_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -714,12 +764,17 @@ namespace System.Net.Http.Functional.Tests
         }
 #endif
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(HttpMethods))]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(
             string method,
             Uri serverUri)
         {
+            if (method == "TRACE" && PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53592", TestPlatforms.Browser)]
+                return;
+            }
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -734,12 +789,18 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(HttpMethodsThatAllowContent))]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(
             string method,
             Uri serverUri)
         {
+            if (method == "GET" && PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53591", TestPlatforms.Browser)]
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -763,12 +824,23 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(HttpMethodsThatDontAllowContent))]
         public async Task SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(
             string method,
             Uri serverUri)
         {
+            if (method == "TRACE" && PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53592", TestPlatforms.Browser)]
+                return;
+            }
+            if (method == "HEAD" && PlatformDetection.IsBrowser)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53591", TestPlatforms.Browser)]
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -808,7 +880,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success_MemberData))]
         public async Task SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(Configuration.Http.RemoteServer remoteServer, string stringContent, int startingPosition)
         {
@@ -840,7 +912,411 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        public static IEnumerable<object[]> RemoteServersAndRedirectStatusCodes()
+        {
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            {
+                yield return new object[] { remoteServer, 300 };
+                yield return new object[] { remoteServer, 301 };
+                yield return new object[] { remoteServer, 302 };
+                yield return new object[] { remoteServer, 303 };
+                yield return new object[] { remoteServer, 307 };
+                yield return new object[] { remoteServer, 308 };
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
+        public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
+        {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = false;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: statusCode,
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(statusCode, (int)response.StatusCode);
+                    Assert.Equal(uri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
+        {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: statusCode,
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(remoteServer.EchoUri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttps_StatusCodeOK()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                Uri uri = Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: Configuration.Http.RemoteSecureHttp11Server.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(Configuration.Http.SecureRemoteEchoServer, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                Uri uri = Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: Configuration.Http.RemoteHttp11Server.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+                    Assert.Equal(uri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet(Configuration.Http.RemoteServer remoteServer)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            Uri targetUri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: targetUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                    Assert.Equal(targetUri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory]
+        [InlineData(3, 2)]
+        [InlineData(3, 3)]
+        [InlineData(3, 4)]
+        [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
+        public async Task GetAsync_MaxAutomaticRedirectionsNServerHops_ThrowsIfTooMany(int maxHops, int hops)
+        {
+            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
+            {
+                // Skip this test if using WinHttpHandler but on a release prior to Windows 10 Creators Update.
+                _output.WriteLine("Skipping test due to Windows 10 version prior to Version 1703.");
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.MaxAutomaticRedirections = maxHops;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                Task<HttpResponseMessage> t = client.GetAsync(Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: Configuration.Http.RemoteHttp11Server.EchoUri,
+                    hops: hops));
+
+                if (hops <= maxHops)
+                {
+                    using (HttpResponseMessage response = await t)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.Equal(Configuration.Http.RemoteEchoServer, response.RequestMessage.RequestUri);
+                    }
+                }
+                else
+                {
+                    if (!IsWinHttpHandler)
+                    {
+                        using (HttpResponseMessage response = await t)
+                        {
+                            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+                        }
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<HttpRequestException>(() => t);
+                    }
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithRelativeLocation(Configuration.Http.RemoteServer remoteServer)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: 302,
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1,
+                    relative: true);
+                _output.WriteLine("Uri: {0}", uri);
+
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(remoteServer.EchoUri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [OuterLoop("Uses external servers")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.Credentials = _credential;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri redirectUri = remoteServer.RedirectUriForCreds(
+                    statusCode: 302,
+                    userName: Username,
+                    password: Password);
+                using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
+                {
+                    Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
+                }
+            }
+        }
+
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        [OuterLoop("Uses external servers")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.Credentials = _credential;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                Uri redirectUri = remoteServer.RedirectUriForCreds(
+                    statusCode: 302,
+                    userName: Username,
+                    password: Password);
+                using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
+                {
+                    Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
+                }
+
+                // Use the same handler to perform get request, authentication should succeed after redirect.
+                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+                using (HttpResponseMessage authResponse = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, authResponse.StatusCode);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
+        {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
+            Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
+            Uri redirectUri = remoteServer.RedirectUriForCreds(
+                statusCode: statusCode,
+                userName: Username,
+                password: Password);
+            _output.WriteLine(uri.AbsoluteUri);
+            _output.WriteLine(redirectUri.AbsoluteUri);
+            var credentialCache = new CredentialCache();
+            credentialCache.Add(uri, "Basic", _credential);
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.Credentials = credentialCache;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                using (HttpResponseMessage response = await client.GetAsync(redirectUri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(uri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
+        public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
+        {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                string credentialString = _credential.UserName + ":" + _credential.Password;
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentialString);
+                Uri uri = remoteServer.RedirectUriForDestinationUri(
+                    statusCode: statusCode,
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    string responseText = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseText);
+                    Assert.False(TestHelper.JsonMessageContainsKey(responseText, "Authorization"));
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> RemoteServersAndCompressionUris()
+        {
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            {
+                yield return new object[] { remoteServer, remoteServer.GZipUri };
+
+                // Remote deflate endpoint isn't correctly following the deflate protocol,
+                // but SocketsHttpHandler makes it work, anyway.
+                yield return new object[] { remoteServer, remoteServer.DeflateUri };
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
+        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_GZip(Configuration.Http.RemoteServer remoteServer, Uri uri)
+        {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
+            {
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            {
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, uri, remoteServer.HttpVersion)))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseContent);
+                    TestHelper.VerifyResponseBody(
+                        responseContent,
+                        response.Content.Headers.ContentMD5,
+                        false,
+                        null);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory]
+        [InlineData("http://httpbin.org/deflate", "\"deflated\": true")]
+        [InlineData("https://httpbin.org/deflate", "\"deflated\": true")]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_Deflate(string uri, string expectedContent)
+        {
+            if (IsWinHttpHandler)
+            {
+                // WinHttpHandler targets netstandard2.0 and still erroneously uses DeflateStream rather than ZlibStream for deflate.
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                Assert.Contains(expectedContent, await client.GetStringAsync(uri));
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        public async Task GetAsync_SetAutomaticDecompression_HeadersRemoved(Configuration.Http.RemoteServer remoteServer, Uri uri)
+        {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
+            {
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
+            using (HttpResponseMessage response = await client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, uri, remoteServer.HttpVersion), HttpCompletionOption.ResponseHeadersRead))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                Assert.False(response.Content.Headers.Contains("Content-Encoding"), "Content-Encoding unexpectedly found");
+                Assert.False(response.Content.Headers.Contains("Content-Length"), "Content-Length unexpectedly found");
+            }
+        }
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory]
         [MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
@@ -872,7 +1348,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {

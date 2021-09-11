@@ -272,10 +272,10 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await server.AcceptConnectionAsync(async connection =>
                             {
+                                await connection.ReadRequestDataAsync();
                                 await WaitForEventCountersAsync(events);
                                 cts.Cancel();
                                 Assert.True(await semaphore.WaitAsync(TimeSpan.FromSeconds(30)));
-                                connection.Dispose();
                             });
                         });
 
@@ -552,10 +552,6 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Contains(http11requestQueueDurations, d => d > 0);
                 Assert.All(http11requestQueueDurations, d => Assert.True(d >= 0));
             }
-            else
-            {
-                Assert.All(http11requestQueueDurations, d => Assert.True(d == 0));
-            }
 
             Assert.True(eventCounters.TryGetValue("http20-requests-queue-duration", out double[] http20requestQueueDurations));
             Assert.Equal(0, http20requestQueueDurations[^1]);
@@ -563,10 +559,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.Contains(http20requestQueueDurations, d => d > 0);
                 Assert.All(http20requestQueueDurations, d => Assert.True(d >= 0));
-            }
-            else
-            {
-                Assert.All(http20requestQueueDurations, d => Assert.True(d == 0));
             }
         }
 
@@ -655,12 +647,19 @@ namespace System.Net.Http.Functional.Tests
 
                 ValidateConnectionEstablishedClosed(events, version);
 
-                (EventWrittenEventArgs requestLeftQueue, Guid requestLeftQueueId) = Assert.Single(events, e => e.Event.EventName == "RequestLeftQueue");
-                Assert.Equal(3, requestLeftQueue.Payload.Count);
-                Assert.True((double)requestLeftQueue.Payload.Count > 0); // timeSpentOnQueue
-                Assert.Equal(version.Major, (byte)requestLeftQueue.Payload[1]);
-                Assert.Equal(version.Minor, (byte)requestLeftQueue.Payload[2]);
+                var requestLeftEvents = events.Where(e => e.Event.EventName == "RequestLeftQueue");
+                Assert.Equal(2, requestLeftEvents.Count());
 
+                foreach (var (e, _) in requestLeftEvents)
+                {
+                    Assert.Equal(3, e.Payload.Count);
+                    Assert.True((double)e.Payload[0] > 0); // timeSpentOnQueue
+                    Assert.Equal(version.Major, (byte)e.Payload[1]);
+                    Assert.Equal(version.Minor, (byte)e.Payload[2]);
+
+                }
+
+                Guid requestLeftQueueId = requestLeftEvents.Last().ActivityId;
                 Assert.Equal(requestLeftQueueId, events.Where(e => e.Event.EventName == "RequestStart").Last().ActivityId);
 
                 ValidateRequestResponseStartStopEvents(events, requestContentLength: null, responseContentLength: 0, count: 3);
@@ -674,7 +673,7 @@ namespace System.Net.Http.Functional.Tests
             DateTime startTime = DateTime.UtcNow;
             int startCount = events.Count;
 
-            while (events.Skip(startCount).Count(e => IsRequestsStartedEventCounter(e.Event)) < 2)
+            while (events.Skip(startCount).Count(e => IsRequestsStartedEventCounter(e.Event)) < 3)
             {
                 if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
                     throw new TimeoutException($"Timed out waiting for EventCounters");

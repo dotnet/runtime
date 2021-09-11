@@ -1035,7 +1035,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

@@ -381,7 +381,7 @@ namespace Internal.JitInterface
 
     // Represents the calling conventions supported with the extensible calling convention syntax
     // as well as the original metadata-encoded calling conventions.
-    enum CorInfoCallConvExtension
+    public enum CorInfoCallConvExtension
     {
         Managed,
         C,
@@ -1072,17 +1072,24 @@ namespace Internal.JitInterface
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL
     {
-        CORINFO_DEVIRTUALIZATION_UNKNOWN,         // no details available
-        CORINFO_DEVIRTUALIZATION_SUCCESS,         // devirtualization was successful
-        CORINFO_DEVIRTUALIZATION_FAILED_CANON,    // object class was canonical
-        CORINFO_DEVIRTUALIZATION_FAILED_COM,      // object class was com
-        CORINFO_DEVIRTUALIZATION_FAILED_CAST,     // object class could not be cast to interface class
-        CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,   // interface method could not be found
-        CORINFO_DEVIRTUALIZATION_FAILED_DIM,      // interface method was default interface method
-        CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS, // object not subclass of base class
-        CORINFO_DEVIRTUALIZATION_FAILED_SLOT,     // virtual method installed via explicit override
-        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,   // devirtualization crossed version bubble
-        CORINFO_DEVIRTUALIZATION_COUNT,           // sentinel for maximum value
+        CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
+        CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+        CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
+        CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
+        CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
+        CORINFO_DEVIRTUALIZATION_FAILED_DIM,                           // interface method was default interface method
+        CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS,                      // object not subclass of base class
+        CORINFO_DEVIRTUALIZATION_FAILED_SLOT,                          // virtual method installed via explicit override
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,                        // devirtualization crossed version bubble
+        CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL,                        // object has multiple implementations of interface class
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL,             // decl method is defined on class and decl method not in version bubble, and decl method not in closest to version bubble
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL,         // decl method is defined on interface and not in version bubble, and implementation type not entirely defined in bubble
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL,                   // object class not defined within version bubble
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE, // object class cannot be referenced from R2R code due to missing tokens
+        CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
+        CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
+        CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
     }
 
     public unsafe struct CORINFO_DEVIRTUALIZATION_INFO
@@ -1093,6 +1100,7 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* virtualMethod;
         public CORINFO_CLASS_STRUCT_* objClass;
         public CORINFO_CONTEXT_STRUCT* context;
+        public CORINFO_RESOLVED_TOKEN* pResolvedTokenVirtualMethod;
 
         //
         // [Out] results of resolveVirtualMethod.
@@ -1107,6 +1115,8 @@ namespace Internal.JitInterface
         public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
+        public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
+        public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
     }
 
     //----------------------------------------------------------------------------

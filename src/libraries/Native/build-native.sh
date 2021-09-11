@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net6.0-Linux-Release-x64', used to name output directory.")
+usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net7.0-Linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
@@ -77,7 +77,11 @@ fi
 
 if [[ "$__TargetOS" == OSX ]]; then
     # set default OSX deployment target
-    __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
+    if [[ "$__BuildArch" == x64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
+    else
+        __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
+    fi
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     if [[ -z "$ANDROID_NDK_ROOT" ]]; then
         echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."

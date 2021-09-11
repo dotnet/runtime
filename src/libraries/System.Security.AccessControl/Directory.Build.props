@@ -2,15 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides base classes that enable managing access and audit control lists on securable objects.
-
-Commonly Used Types:
-System.Security.AccessControl.AccessRule
-System.Security.AccessControl.AuditRule
-System.Security.AccessControl.ObjectAccessRule
-System.Security.AccessControl.ObjectAuditRule
-System.Security.AccessControl.ObjectSecurity</PackageDescription>
   </PropertyGroup>
 </Project>

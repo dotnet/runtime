@@ -624,8 +624,7 @@ namespace System.Xml
 
         private void ValidateQName(string name)
         {
-            string prefix, localName;
-            ValidateNames.ParseQNameThrow(name, out prefix, out localName);
+            ValidateNames.ParseQNameThrow(name);
         }
 
         private void ValidateQName(string prefix, string localName)

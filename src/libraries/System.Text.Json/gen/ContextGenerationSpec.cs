@@ -3,7 +3,8 @@
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using System.Text.Json.SourceGeneration.Reflection;
+using System.Text.Json.Reflection;
+using System.Diagnostics;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -11,13 +12,16 @@ namespace System.Text.Json.SourceGeneration
     /// Represents the set of input types and options needed to provide an
     /// implementation for a user-provided JsonSerializerContext-derived type.
     /// </summary>
+    [DebuggerDisplay("ContextTypeRef={ContextTypeRef}")]
     internal sealed class ContextGenerationSpec
     {
-        public JsonSerializerOptionsAttribute SerializerOptions { get; init; }
+        public JsonSourceGenerationOptionsAttribute GenerationOptions { get; init; }
 
         public Type ContextType { get; init; }
 
-        public List<TypeGenerationSpec>? RootSerializableTypes { get; init; }
+        public List<TypeGenerationSpec> RootSerializableTypes { get; } = new();
+
+        public HashSet<TypeGenerationSpec>? ImplicitlyRegisteredTypes { get; } = new();
 
         public List<string> ContextClassDeclarationList { get; init; }
 
@@ -28,10 +32,12 @@ namespace System.Text.Json.SourceGeneration
         public HashSet<TypeGenerationSpec> TypesWithMetadataGenerated { get; } = new();
 
         /// <summary>
-        /// Cache of runtime property names (statically determined) found accross the object graph of the JsonSerializerContext.
+        /// Cache of runtime property names (statically determined) found across the object graph of the JsonSerializerContext.
+        /// The dictionary Key is the JSON property name, and the Value is the variable name which is the same as the property
+        /// name except for cases where special characters are used with [JsonPropertyName].
         /// </summary>
-        public HashSet<string> RuntimePropertyNames { get; } = new();
+        public Dictionary<string, string> RuntimePropertyNames { get; } = new();
 
-        public string ContextTypeRef => $"global::{ContextType.GetUniqueCompilableTypeName()}";
+        public string ContextTypeRef => ContextType.GetCompilableName();
     }
 }

@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -11,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Interop.Brotli.cs" />
+    <!-- The native compression lib uses a BROTLI_BOOL type analogous to the Windows BOOL type -->
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliStream.Compress.cs" />
     <Compile Include="System\IO\Compression\dec\BrotliStream.Decompress.cs" />
     <Compile Include="System\IO\Compression\BrotliUtils.cs" />

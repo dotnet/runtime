@@ -54,7 +54,7 @@ namespace System.Net.Http.Headers
         {
             if (_quality.HasValue)
             {
-                return _value + "; q=" + _quality.Value.ToString("0.0##", NumberFormatInfo.InvariantInfo);
+                return string.Create(CultureInfo.InvariantCulture, stackalloc char[128], $"{_value}; q={_quality.Value:0.0##}");
             }
 
             return _value;

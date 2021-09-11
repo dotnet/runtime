@@ -172,11 +172,12 @@ def determine_jit_name(coreclr_args):
         raise RuntimeError("Unknown OS.")
 
 
-def list_az_jits(filter_func=lambda unused: True):
+def list_az_jits(filter_func=lambda unused: True, prefix_string = None):
     """ List the JITs in Azure Storage using REST api
 
     Args:
         filter_func (lambda: string -> bool): filter to apply to the list. The filter takes a URL and returns True if this URL is acceptable.
+        prefix_string: Optional. Specifies a string prefix for the Azure Storage query.
 
     Returns:
         urls (list): set of URLs in Azure Storage that match the filter.
@@ -187,46 +188,72 @@ def list_az_jits(filter_func=lambda unused: True):
 
     # This URI will return *all* the blobs, for all git_hash/OS/architecture/build_type combinations.
     # pass "prefix=foo/bar/..." to only show a subset. Or, we can filter later using string search.
-    list_az_container_uri = az_blob_storage_container_uri + "?restype=container&comp=list&prefix=" + az_builds_root_folder + "/"
-
-    try:
-        contents = urllib.request.urlopen(list_az_container_uri).read().decode('utf-8')
-    except Exception as exception:
-        print("Didn't find any collections using {}".format(list_az_container_uri))
-        print("  Error: {}".format(exception))
-        return None
-
-    # Contents is an XML file with contents like:
-    # <EnumerationResults ContainerName="https://clrjit2.blob.core.windows.net/jitrollingbuild">
-    #   <Prefix>builds/</Prefix>
-    #   <Blobs>
-    #     <Blob>
-    #       <Name>builds/755f01659f03196487ec41225de8956911f8049b/Linux/x64/Checked/libclrjit.so</Name>
-    #       <Url>https://clrjit2.blob.core.windows.net/jitrollingbuild/builds/755f01659f03196487ec41225de8956911f8049b/Linux/x64/Checked/libclrjit.so</Url>
-    #       <Properties>
-    #         ...
-    #       </Properties>
-    #     </Blob>
-    #     <Blob>
-    #       <Name>builds/755f01659f03196487ec41225de8956911f8049b/OSX/x64/Checked/libclrjit.dylib</Name>
-    #       <Url>https://clrjit2.blob.core.windows.net/jitrollingbuild/builds/755f01659f03196487ec41225de8956911f8049b/OSX/x64/Checked/libclrjit.dylib</Url>
-    #       <Properties>
-    #         ...
-    #       </Properties>
-    #     </Blob>
-    #     ... etc. ...
-    #   </Blobs>
-    # </EnumerationResults>
     #
-    # We just want to extract the <Url> entries. We could probably use an XML parsing package, but we just
-    # use regular expressions.
+    # Note that there is a maximum number of results returned in one query of 5000. So we might need to
+    # iterate. In that case, the XML result contains a `<NextMarker>` element like:
+    #
+    # <NextMarker>2!184!MDAwMDkyIWJ1aWxkcy8wMTZlYzI5OTAzMzkwMmY2ZTY4Yzg0YWMwYTNlYzkxN2Y5MzA0OTQ2L0xpbnV4L3g2NC9DaGVja2VkL2xpYmNscmppdF93aW5fYXJtNjRfeDY0LnNvITAwMDAyOCE5OTk5LTEyLTMxVDIzOjU5OjU5Ljk5OTk5OTlaIQ--</NextMarker>
+    #
+    # which we need to pass to the REST API with `marker=...`.
 
-    urls_split = contents.split("<Url>")[1:]
     urls = []
-    for item in urls_split:
-        url = item.split("</Url>")[0].strip()
-        if filter_func(url):
-            urls.append(url)
+
+    list_az_container_uri_root = az_blob_storage_container_uri + "?restype=container&comp=list&prefix=" + az_builds_root_folder + "/"
+    if prefix_string:
+        list_az_container_uri_root += prefix_string
+
+    iter = 1
+    marker = ""
+
+    while True:
+        list_az_container_uri = list_az_container_uri_root + marker
+
+        try:
+            contents = urllib.request.urlopen(list_az_container_uri).read().decode('utf-8')
+        except Exception as exception:
+            print("Didn't find any collections using {}".format(list_az_container_uri))
+            print("  Error: {}".format(exception))
+            return None
+
+        # Contents is an XML file with contents like:
+        # <EnumerationResults ContainerName="https://clrjit2.blob.core.windows.net/jitrollingbuild">
+        #   <Prefix>builds/</Prefix>
+        #   <Blobs>
+        #     <Blob>
+        #       <Name>builds/755f01659f03196487ec41225de8956911f8049b/Linux/x64/Checked/libclrjit.so</Name>
+        #       <Url>https://clrjit2.blob.core.windows.net/jitrollingbuild/builds/755f01659f03196487ec41225de8956911f8049b/Linux/x64/Checked/libclrjit.so</Url>
+        #       <Properties>
+        #         ...
+        #       </Properties>
+        #     </Blob>
+        #     <Blob>
+        #       <Name>builds/755f01659f03196487ec41225de8956911f8049b/OSX/x64/Checked/libclrjit.dylib</Name>
+        #       <Url>https://clrjit2.blob.core.windows.net/jitrollingbuild/builds/755f01659f03196487ec41225de8956911f8049b/OSX/x64/Checked/libclrjit.dylib</Url>
+        #       <Properties>
+        #         ...
+        #       </Properties>
+        #     </Blob>
+        #     ... etc. ...
+        #   </Blobs>
+        # </EnumerationResults>
+        #
+        # We just want to extract the <Url> entries. We could probably use an XML parsing package, but we just
+        # use regular expressions.
+
+        urls_split = contents.split("<Url>")[1:]
+        for item in urls_split:
+            url = item.split("</Url>")[0].strip()
+            if filter_func(url):
+                urls.append(url)
+
+        # Look for a continuation marker.
+        re_match = re.match(r'.*<NextMarker>(.*)</NextMarker>.*', contents)
+        if re_match:
+            marker_text = re_match.group(1)
+            marker = "&marker=" + marker_text
+            iter += 1
+        else:
+            break
 
     return urls
 
@@ -449,7 +476,7 @@ def get_jit_urls(coreclr_args, find_all=False):
         url = url.lower()
         return find_all or url.startswith(blob_prefix_filter)
 
-    return list_az_jits(filter_jits)
+    return list_az_jits(filter_jits, None if find_all else blob_filter_string)
 
 
 def download_command(coreclr_args):

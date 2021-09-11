@@ -57,7 +57,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public string GetPrimitiveType(PrimitiveTypeCode typeCode)
         {
-            typeCode.ToCoreType().GetFullName(out byte[] ns, out byte[] name);
+            typeCode.ToCoreType().GetFullName(out ReadOnlySpan<byte> ns, out ReadOnlySpan<byte> name);
             return ns.ToUtf16() + "." + name.ToUtf16();  // This is not safe for types outside of a namespace, but all primitive types are known to be in "System"
         }
     }

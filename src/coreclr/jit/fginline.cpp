@@ -99,30 +99,28 @@ PhaseStatus Compiler::fgInline()
                                                                         &info.compMethodInfo->args);
 #endif // DEBUG
 
-    BasicBlock* block       = fgFirstBB;
-    bool        madeChanges = false;
-    noway_assert(block != nullptr);
+    noway_assert(fgFirstBB != nullptr);
 
     // Set the root inline context on all statements
     InlineContext* rootContext = m_inlineStrategy->GetRootContext();
 
-    for (; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(rootContext);
         }
     }
 
-    // Reset block back to start for inlining
-    block = fgFirstBB;
+    BasicBlock* block       = fgFirstBB;
+    bool        madeChanges = false;
 
     do
     {
         // Make the current basic block address available globally
         compCurBB = block;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
 
 #ifdef DEBUG
@@ -187,7 +185,7 @@ PhaseStatus Compiler::fgInline()
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
             fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, fgLateDevirtualization,
-                       (void*)this);
+                       (void*)&madeChanges);
 
             // See if stmt is of the form GT_COMMA(call, nop)
             // If yes, we can get rid of GT_COMMA.
@@ -212,7 +210,7 @@ PhaseStatus Compiler::fgInline()
 
     do
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             // Call Compiler::fgDebugCheckInlineCandidates on each node
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
@@ -499,8 +497,9 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         return WALK_SKIP_SUBTREES;
     }
 
-    Compiler*            comp      = data->compiler;
-    CORINFO_CLASS_HANDLE retClsHnd = NO_CLASS_HANDLE;
+    bool*                madeChanges = static_cast<bool*>(data->pCallbackData);
+    Compiler*            comp        = data->compiler;
+    CORINFO_CLASS_HANDLE retClsHnd   = NO_CLASS_HANDLE;
 
     while (tree->OperGet() == GT_RET_EXPR)
     {
@@ -562,6 +561,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         }
 
         tree->ReplaceWith(inlineCandidate, comp);
+        *madeChanges = true;
         comp->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
 
 #ifdef DEBUG
@@ -612,6 +612,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                     // Just assign the inlinee to a variable to keep it simple.
                     tree->ReplaceWith(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
                 }
+                *madeChanges = true;
             }
             break;
 
@@ -691,9 +692,10 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 
 Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkData* data)
 {
-    GenTree*  tree   = *pTree;
-    GenTree*  parent = data->parent;
-    Compiler* comp   = data->compiler;
+    GenTree*  tree        = *pTree;
+    GenTree*  parent      = data->parent;
+    Compiler* comp        = data->compiler;
+    bool*     madeChanges = static_cast<bool*>(data->pCallbackData);
 
     // In some (rare) cases the parent node of tree will be smashed to a NOP during
     // the preorder by fgAttachStructToInlineeArg.
@@ -731,8 +733,9 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             CORINFO_CONTEXT_HANDLE context                = nullptr;
             const bool             isLateDevirtualization = true;
             bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
+            comp->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
                                       explicitTailCall);
+            *madeChanges = true;
         }
     }
     else if (tree->OperGet() == GT_ASG)
@@ -756,6 +759,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
                 if (newClass != NO_CLASS_HANDLE)
                 {
                     comp->lvaUpdateClass(lclNum, newClass, isExact);
+                    *madeChanges = true;
                 }
             }
         }
@@ -772,6 +776,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             JITDUMP("... removing self-assignment\n");
             DISPTREE(tree);
             tree->gtBashToNOP();
+            *madeChanges = true;
         }
     }
     else if (tree->OperGet() == GT_JTRUE)
@@ -791,20 +796,18 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             comp->gtUpdateNodeSideEffects(tree);
             assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
             tree->gtBashToNOP();
+            *madeChanges = true;
 
-            BasicBlock* bTaken    = nullptr;
             BasicBlock* bNotTaken = nullptr;
 
             if (condTree->AsIntCon()->gtIconVal != 0)
             {
                 block->bbJumpKind = BBJ_ALWAYS;
-                bTaken            = block->bbJumpDest;
                 bNotTaken         = block->bbNext;
             }
             else
             {
                 block->bbJumpKind = BBJ_NONE;
-                bTaken            = block->bbNext;
                 bNotTaken         = block->bbJumpDest;
             }
 
@@ -823,14 +826,14 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     {
         const var_types retType    = tree->TypeGet();
         GenTree*        foldedTree = comp->gtFoldExpr(tree);
-        const var_types newType    = foldedTree->TypeGet();
 
         GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, foldedTree, retType);
         if (putArgType != nullptr)
         {
             foldedTree = putArgType;
         }
-        *pTree = foldedTree;
+        *pTree       = foldedTree;
+        *madeChanges = true;
     }
 
     return WALK_CONTINUE;
@@ -1095,7 +1098,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     GenTreeCall* iciCall  = pInlineInfo->iciCall;
     Statement*   iciStmt  = pInlineInfo->iciStmt;
     BasicBlock*  iciBlock = pInlineInfo->iciBlock;
-    BasicBlock*  block;
 
     noway_assert(iciBlock->bbStmtList != nullptr);
     noway_assert(iciStmt->GetRootNode() != nullptr);
@@ -1118,9 +1120,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Create a new inline context and mark the inlined statements with it
     InlineContext* calleeContext = m_inlineStrategy->NewSuccess(pInlineInfo);
 
-    for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(calleeContext);
         }
@@ -1272,7 +1274,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     // Set the try and handler index and fix the jump types of inlinee's blocks.
     //
-    for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
         noway_assert(!block->hasTryIndex());
         noway_assert(!block->hasHndIndex());

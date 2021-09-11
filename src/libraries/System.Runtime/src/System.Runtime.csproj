@@ -1,11 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Pull type forwards from the experimental ref assembly so we only need to maintain a single src project -->
+    <ContractProject>$(LibrariesProjectRoot)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Compiler throws error if you try to use System.Void and instructs you to use void keyword instead. So we have manually added a typeforward for this type. -->  
+    <!-- Compiler throws error if you try to use System.Void and instructs you to use void keyword instead. So we have manually added a typeforward for this type. -->
     <GenFacadesOmitType Include="System.Void" />
   </ItemGroup>
   <ItemGroup>

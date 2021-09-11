@@ -242,7 +242,7 @@ void Compiler::optEarlyProp()
 
     assert(fgSsaPassesCompleted == 1);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
 #ifndef DEBUG
         if (!optDoEarlyPropForBlock(block))
@@ -524,7 +524,8 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 
         GenTree* treeRhs = ssaDefAsg->gtGetOp2();
 
-        if (treeRhs->OperIsScalarLocal() && lvaInSsa(treeRhs->AsLclVarCommon()->GetLclNum()))
+        if (treeRhs->OperIsScalarLocal() && lvaInSsa(treeRhs->AsLclVarCommon()->GetLclNum()) &&
+            treeRhs->AsLclVarCommon()->HasSsaName())
         {
             // Recursively track the Rhs
             unsigned rhsLclNum = treeRhs->AsLclVarCommon()->GetLclNum();

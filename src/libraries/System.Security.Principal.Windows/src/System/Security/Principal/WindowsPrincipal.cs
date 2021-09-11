@@ -121,11 +121,7 @@ namespace System.Security.Principal
             return IsInRole(
                 new SecurityIdentifier(
                     IdentifierAuthority.NTAuthority,
-#if NETSTANDARD2_0
-                    new
-#else
                     stackalloc
-#endif
                     int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid }
                 )
             );

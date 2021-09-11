@@ -15,6 +15,8 @@
 # include "tdep-ppc32/dwarf-config.h"
 #elif defined __powerpc64__
 # include "tdep-ppc64/dwarf-config.h"
+#elif defined __s390x__
+# include "tdep-s390x/dwarf-config.h"
 #elif defined __sh__
 # include "tdep-sh/dwarf-config.h"
 #elif defined __i386__

@@ -12,7 +12,6 @@
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
 
-
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 

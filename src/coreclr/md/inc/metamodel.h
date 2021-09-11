@@ -594,6 +594,7 @@ public:
 
 
 protected:
+    DAC_ALIGNAS(8)
     CMiniMdSchema   m_Schema;                       // data header.
     ULONG           m_TblCount;                     // Tables in this database.
     BOOL            m_fVerifiedByTrustedSource;     // whether the data was verified by a trusted source
@@ -752,12 +753,6 @@ public:
             *pFoundRid = 0;
             return S_OK;
         }
-
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // If you change the rows touched while searching, please update
-        // CMiniMdRW::GetHotMetadataTokensSearchAware
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
         // End will be at least one larger than found record.
         ridEnd = ridBegin + 1;

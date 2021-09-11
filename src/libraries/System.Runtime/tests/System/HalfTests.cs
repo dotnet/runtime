@@ -10,74 +10,64 @@ namespace System.Tests
 {
     public partial class HalfTests
     {
-        private static ushort HalfToUInt16Bits(Half value)
-        {
-            return (ushort)BitConverter.HalfToInt16Bits(value);
-        }
-
-        private static Half UInt16BitsToHalf(ushort value)
-        {
-            return BitConverter.Int16BitsToHalf((short)value);
-        }
-
         [Fact]
         public static void Epsilon()
         {
-            Assert.Equal(0x0001u, HalfToUInt16Bits(Half.Epsilon));
+            Assert.Equal(0x0001u, BitConverter.HalfToUInt16Bits(Half.Epsilon));
         }
 
         [Fact]
         public static void PositiveInfinity()
         {
-            Assert.Equal(0x7C00u, HalfToUInt16Bits(Half.PositiveInfinity));
+            Assert.Equal(0x7C00u, BitConverter.HalfToUInt16Bits(Half.PositiveInfinity));
         }
 
         [Fact]
         public static void NegativeInfinity()
         {
-            Assert.Equal(0xFC00u, HalfToUInt16Bits(Half.NegativeInfinity));
+            Assert.Equal(0xFC00u, BitConverter.HalfToUInt16Bits(Half.NegativeInfinity));
         }
 
         [Fact]
         public static void NaN()
         {
-            Assert.Equal(0xFE00u, HalfToUInt16Bits(Half.NaN));
+            Assert.Equal(0xFE00u, BitConverter.HalfToUInt16Bits(Half.NaN));
         }
 
         [Fact]
         public static void MinValue()
         {
-            Assert.Equal(0xFBFFu, HalfToUInt16Bits(Half.MinValue));
+            Assert.Equal(0xFBFFu, BitConverter.HalfToUInt16Bits(Half.MinValue));
         }
 
         [Fact]
         public static void MaxValue()
         {
-            Assert.Equal(0x7BFFu, HalfToUInt16Bits(Half.MaxValue));
+            Assert.Equal(0x7BFFu, BitConverter.HalfToUInt16Bits(Half.MaxValue));
         }
 
         [Fact]
         public static void Ctor_Empty()
         {
             var value = new Half();
-            Assert.Equal(0x0000, HalfToUInt16Bits(value));
+            Assert.Equal(0x0000, BitConverter.HalfToUInt16Bits(value));
         }
 
         public static IEnumerable<object[]> IsFinite_TestData()
         {
-            yield return new object[] { Half.NegativeInfinity, false };     // Negative Infinity
-            yield return new object[] { Half.MinValue, true };              // Min Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x8400), true };   // Max Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x83FF), true };   // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8001), true };   // Max Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8000), true };   // Negative Zero
-            yield return new object[] { Half.NaN, false };                  // NaN
-            yield return new object[] { UInt16BitsToHalf(0x0000), true };   // Positive Zero
-            yield return new object[] { Half.Epsilon, true };               // Min Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x03FF), true };   // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x0400), true };   // Min Positive Normal
-            yield return new object[] { Half.MaxValue, true };              // Max Positive Normal
-            yield return new object[] { Half.PositiveInfinity, false };     // Positive Infinity
+            yield return new object[] { Half.NegativeInfinity, false };                  // Negative Infinity
+            yield return new object[] { Half.MinValue, true };                           // Min Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8400), true };   // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x83FF), true };   // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), true };   // Max Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), true };   // Negative Zero
+            yield return new object[] { Half.NaN, false };                               // NaN
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), true };   // Positive Zero
+            yield return new object[] { Half.Epsilon, true };                            // Min Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x03FF), true };   // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0400), true };   // Min Positive Normal
+            yield return new object[] { Half.MaxValue, true };                           // Max Positive Normal
+            yield return new object[] { Half.PositiveInfinity, false };                  // Positive Infinity
         }
 
         [Theory]
@@ -89,19 +79,19 @@ namespace System.Tests
 
         public static IEnumerable<object[]> IsInfinity_TestData()
         {
-            yield return new object[] { Half.NegativeInfinity, true };      // Negative Infinity
-            yield return new object[] { Half.MinValue, false };             // Min Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
-            yield return new object[] { UInt16BitsToHalf(0x8000), false };  // Negative Zero
-            yield return new object[] { Half.NaN, false };                  // NaN
-            yield return new object[] { UInt16BitsToHalf(0x0000), false };  // Positive Zero
-            yield return new object[] { Half.Epsilon, false };              // Min Positive Subnormal (Positive Epsilon)
-            yield return new object[] { UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
-            yield return new object[] { Half.MaxValue, false };             // Max Positive Normal
-            yield return new object[] { Half.PositiveInfinity, true };      // Positive Infinity
+            yield return new object[] { Half.NegativeInfinity, true };                   // Negative Infinity
+            yield return new object[] { Half.MinValue, false };                          // Min Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), false };  // Negative Zero
+            yield return new object[] { Half.NaN, false };                               // NaN
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), false };  // Positive Zero
+            yield return new object[] { Half.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
+            yield return new object[] { Half.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { Half.PositiveInfinity, true };                   // Positive Infinity
         }
 
         [Theory]
@@ -113,19 +103,19 @@ namespace System.Tests
 
         public static IEnumerable<object[]> IsNaN_TestData()
         {
-            yield return new object[] { Half.NegativeInfinity, false };     // Negative Infinity
-            yield return new object[] { Half.MinValue, false };             // Min Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
-            yield return new object[] { UInt16BitsToHalf(0x8000), false };  // Negative Zero
-            yield return new object[] { Half.NaN, true };                   // NaN
-            yield return new object[] { UInt16BitsToHalf(0x0000), false };  // Positive Zero
-            yield return new object[] { Half.Epsilon, false };              // Min Positive Subnormal (Positive Epsilon)
-            yield return new object[] { UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
-            yield return new object[] { Half.MaxValue, false };             // Max Positive Normal
-            yield return new object[] { Half.PositiveInfinity, false };     // Positive Infinity
+            yield return new object[] { Half.NegativeInfinity, false };                  // Negative Infinity
+            yield return new object[] { Half.MinValue, false };                          // Min Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), false };  // Negative Zero
+            yield return new object[] { Half.NaN, true };                                // NaN
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), false };  // Positive Zero
+            yield return new object[] { Half.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
+            yield return new object[] { Half.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { Half.PositiveInfinity, false };                  // Positive Infinity
         }
 
         [Theory]
@@ -137,19 +127,19 @@ namespace System.Tests
 
         public static IEnumerable<object[]> IsNegative_TestData()
         {
-            yield return new object[] { Half.NegativeInfinity, true };      // Negative Infinity
-            yield return new object[] { Half.MinValue, true };              // Min Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x8400), true };   // Max Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x83FF), true };   // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8001), true };   // Max Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8000), true };   // Negative Zero
-            yield return new object[] { Half.NaN, true };                   // NaN
-            yield return new object[] { UInt16BitsToHalf(0x0000), false };  // Positive Zero
-            yield return new object[] { Half.Epsilon, false };              // Min Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
-            yield return new object[] { Half.MaxValue, false };             // Max Positive Normal
-            yield return new object[] { Half.PositiveInfinity, false };     // Positive Infinity
+            yield return new object[] { Half.NegativeInfinity, true };                   // Negative Infinity
+            yield return new object[] { Half.MinValue, true };                           // Min Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8400), true };   // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x83FF), true };   // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), true };   // Max Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), true };   // Negative Zero
+            yield return new object[] { Half.NaN, true };                                // NaN
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), false };  // Positive Zero
+            yield return new object[] { Half.Epsilon, false };                           // Min Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
+            yield return new object[] { Half.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { Half.PositiveInfinity, false };                  // Positive Infinity
         }
 
         [Theory]
@@ -161,19 +151,19 @@ namespace System.Tests
 
         public static IEnumerable<object[]> IsNegativeInfinity_TestData()
         {
-            yield return new object[] { Half.NegativeInfinity, true };      // Negative Infinity
-            yield return new object[] { Half.MinValue, false };             // Min Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
-            yield return new object[] { UInt16BitsToHalf(0x8000), false };  // Negative Zero
-            yield return new object[] { Half.NaN, false };                  // NaN
-            yield return new object[] { UInt16BitsToHalf(0x0000), false };  // Positive Zero
-            yield return new object[] { Half.Epsilon, false };              // Min Positive Subnormal (Positive Epsilon)
-            yield return new object[] { UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
-            yield return new object[] { Half.MaxValue, false };             // Max Positive Normal
-            yield return new object[] { Half.PositiveInfinity, false };     // Positive Infinity
+            yield return new object[] { Half.NegativeInfinity, true };                   // Negative Infinity
+            yield return new object[] { Half.MinValue, false };                          // Min Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), false };  // Negative Zero
+            yield return new object[] { Half.NaN, false };                               // NaN
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), false };  // Positive Zero
+            yield return new object[] { Half.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
+            yield return new object[] { Half.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { Half.PositiveInfinity, false };                  // Positive Infinity
         }
 
         [Theory]
@@ -185,19 +175,19 @@ namespace System.Tests
 
         public static IEnumerable<object[]> IsNormal_TestData()
         {
-            yield return new object[] { Half.NegativeInfinity, false };     // Negative Infinity
-            yield return new object[] { Half.MinValue, true };              // Min Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x8400), true };   // Max Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8000), false };  // Negative Zero
-            yield return new object[] { Half.NaN, false };                  // NaN
-            yield return new object[] { UInt16BitsToHalf(0x0000), false };  // Positive Zero
-            yield return new object[] { Half.Epsilon, false };              // Min Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x0400), true };   // Min Positive Normal
-            yield return new object[] { Half.MaxValue, true };              // Max Positive Normal
-            yield return new object[] { Half.PositiveInfinity, false };     // Positive Infinity
+            yield return new object[] { Half.NegativeInfinity, false };                  // Negative Infinity
+            yield return new object[] { Half.MinValue, true };                           // Min Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8400), true };   // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), false };  // Negative Zero
+            yield return new object[] { Half.NaN, false };                               // NaN
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), false };  // Positive Zero
+            yield return new object[] { Half.Epsilon, false };                           // Min Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0400), true };   // Min Positive Normal
+            yield return new object[] { Half.MaxValue, true };                           // Max Positive Normal
+            yield return new object[] { Half.PositiveInfinity, false };                  // Positive Infinity
         }
 
         [Theory]
@@ -209,19 +199,19 @@ namespace System.Tests
 
         public static IEnumerable<object[]> IsPositiveInfinity_TestData()
         {
-            yield return new object[] { Half.NegativeInfinity, false };     // Negative Infinity
-            yield return new object[] { Half.MinValue, false };             // Min Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
-            yield return new object[] { UInt16BitsToHalf(0x8000), false };  // Negative Zero
-            yield return new object[] { Half.NaN, false };                  // NaN
-            yield return new object[] { UInt16BitsToHalf(0x0000), false };  // Positive Zero
-            yield return new object[] { Half.Epsilon, false };              // Min Positive Subnormal (Positive Epsilon)
-            yield return new object[] { UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
-            yield return new object[] { Half.MaxValue, false };             // Max Positive Normal
-            yield return new object[] { Half.PositiveInfinity, true };      // Positive Infinity
+            yield return new object[] { Half.NegativeInfinity, false };                  // Negative Infinity
+            yield return new object[] { Half.MinValue, false };                          // Min Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x83FF), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), false };  // Negative Zero
+            yield return new object[] { Half.NaN, false };                               // NaN
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), false };  // Positive Zero
+            yield return new object[] { Half.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x03FF), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
+            yield return new object[] { Half.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { Half.PositiveInfinity, true };                   // Positive Infinity
         }
 
         [Theory]
@@ -233,19 +223,19 @@ namespace System.Tests
 
         public static IEnumerable<object[]> IsSubnormal_TestData()
         {
-            yield return new object[] { Half.NegativeInfinity, false };     // Negative Infinity
-            yield return new object[] { Half.MinValue, false };             // Min Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToHalf(0x83FF), true };   // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8001), true };   // Max Negative Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x8000), false };  // Negative Zero
-            yield return new object[] { Half.NaN, false };                  // NaN
-            yield return new object[] { UInt16BitsToHalf(0x0000), false };  // Positive Zero
-            yield return new object[] { Half.Epsilon, true };               // Min Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x03FF), true };   // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
-            yield return new object[] { Half.MaxValue, false };             // Max Positive Normal
-            yield return new object[] { Half.PositiveInfinity, false };     // Positive Infinity
+            yield return new object[] { Half.NegativeInfinity, false };                  // Negative Infinity
+            yield return new object[] { Half.MinValue, false };                          // Min Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8400), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x83FF), true };   // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), true };   // Max Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), false };  // Negative Zero
+            yield return new object[] { Half.NaN, false };                               // NaN
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), false };  // Positive Zero
+            yield return new object[] { Half.Epsilon, true };                            // Min Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x03FF), true };   // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0400), false };  // Min Positive Normal
+            yield return new object[] { Half.MaxValue, false };                          // Max Positive Normal
+            yield return new object[] { Half.PositiveInfinity, false };                  // Positive Infinity
         }
 
         [Theory]
@@ -272,19 +262,26 @@ namespace System.Tests
         {
             yield return new object[] { Half.MaxValue, Half.MaxValue, 0 };
             yield return new object[] { Half.MaxValue, Half.MinValue, 1 };
-            yield return new object[] { Half.Epsilon, UInt16BitsToHalf(0x8001), 1 };
-            yield return new object[] { Half.MaxValue, UInt16BitsToHalf(0x0000), 1 };
+            yield return new object[] { Half.Epsilon, BitConverter.UInt16BitsToHalf(0x8001), 1 };
+            yield return new object[] { Half.MaxValue, BitConverter.UInt16BitsToHalf(0x0000), 1 };
             yield return new object[] { Half.MaxValue, Half.Epsilon, 1 };
             yield return new object[] { Half.MaxValue, Half.PositiveInfinity, -1 };
             yield return new object[] { Half.MinValue, Half.MaxValue, -1 };
             yield return new object[] { Half.MaxValue, Half.NaN, 1 };
             yield return new object[] { Half.NaN, Half.NaN, 0 };
-            yield return new object[] { Half.NaN, UInt16BitsToHalf(0x0000), -1 };
+            yield return new object[] { Half.NaN, BitConverter.UInt16BitsToHalf(0x0000), -1 };
             yield return new object[] { Half.MaxValue, null, 1 };
             yield return new object[] { Half.MinValue, Half.NegativeInfinity, 1 };
             yield return new object[] { Half.NegativeInfinity, Half.MinValue, -1 };
-            yield return new object[] { UInt16BitsToHalf(0x8000), Half.NegativeInfinity, 1 }; // Negative zero
-            yield return new object[] { Half.NegativeInfinity, UInt16BitsToHalf(0x8000), -1 }; // Negative zero
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), Half.NegativeInfinity, 1 }; // Negative zero
+            yield return new object[] { Half.NegativeInfinity, BitConverter.UInt16BitsToHalf(0x8000), -1 }; // Negative zero
+            yield return new object[] { Half.NegativeInfinity, Half.NegativeInfinity, 0};
+            yield return new object[] { Half.PositiveInfinity, Half.PositiveInfinity, 0};
+            yield return new object[] { (Half)(-180f), (Half)(-180f), 0};
+            yield return new object[] { (Half)(180f), (Half)(180f), 0};
+            yield return new object[] { (Half)(-180f), (Half)(180f), -1};
+            yield return new object[] { (Half)(180f), (Half)(-180f), 1};
+            yield return new object[] { (Half)(-65535), (object)null, 1};
         }
 
         [Theory]
@@ -334,7 +331,7 @@ namespace System.Tests
         {
             yield return new object[] { Half.MaxValue, Half.MaxValue, true };
             yield return new object[] { Half.MaxValue, Half.MinValue, false };
-            yield return new object[] { Half.MaxValue, UInt16BitsToHalf(0x0000), false };
+            yield return new object[] { Half.MaxValue, BitConverter.UInt16BitsToHalf(0x0000), false };
             yield return new object[] { Half.NaN, Half.NaN, true };
             yield return new object[] { Half.MaxValue, 789.0f, false };
             yield return new object[] { Half.MaxValue, "789", false };
@@ -351,41 +348,41 @@ namespace System.Tests
         {
             (Half Original, float Expected)[] data = // Fraction is shifted left by 42, Exponent is -15 then +127 = +112
             {
-                (UInt16BitsToHalf(0b0_01111_0000000000), 1f), // 1
-                (UInt16BitsToHalf(0b1_01111_0000000000), -1f), // -1
+                (BitConverter.UInt16BitsToHalf(0b0_01111_0000000000), 1f), // 1
+                (BitConverter.UInt16BitsToHalf(0b1_01111_0000000000), -1f), // -1
                 (Half.MaxValue, 65504f), // 65500
                 (Half.MinValue, -65504f), // -65500
-                (UInt16BitsToHalf(0b0_01011_1001100110), 0.0999755859375f), // 0.1ish
-                (UInt16BitsToHalf(0b1_01011_1001100110), -0.0999755859375f), // -0.1ish
-                (UInt16BitsToHalf(0b0_10100_0101000000), 42f), // 42
-                (UInt16BitsToHalf(0b1_10100_0101000000), -42f), // -42
+                (BitConverter.UInt16BitsToHalf(0b0_01011_1001100110), 0.0999755859375f), // 0.1ish
+                (BitConverter.UInt16BitsToHalf(0b1_01011_1001100110), -0.0999755859375f), // -0.1ish
+                (BitConverter.UInt16BitsToHalf(0b0_10100_0101000000), 42f), // 42
+                (BitConverter.UInt16BitsToHalf(0b1_10100_0101000000), -42f), // -42
                 (Half.PositiveInfinity, float.PositiveInfinity), // PosInfinity
                 (Half.NegativeInfinity, float.NegativeInfinity), // NegInfinity
-                (UInt16BitsToHalf(0b0_11111_1000000000), BitConverter.Int32BitsToSingle(0x7FC00000)), // Positive Quiet NaN
+                (BitConverter.UInt16BitsToHalf(0b0_11111_1000000000), BitConverter.Int32BitsToSingle(0x7FC00000)), // Positive Quiet NaN
                 (Half.NaN, float.NaN), // Negative Quiet NaN
-                (UInt16BitsToHalf(0b0_11111_1010101010), BitConverter.Int32BitsToSingle(0x7FD54000)), // Positive Signalling NaN - Should preserve payload
-                (UInt16BitsToHalf(0b1_11111_1010101010), BitConverter.Int32BitsToSingle(unchecked((int)0xFFD54000))), // Negative Signalling NaN - Should preserve payload
+                (BitConverter.UInt16BitsToHalf(0b0_11111_1010101010), BitConverter.Int32BitsToSingle(0x7FD54000)), // Positive Signalling NaN - Should preserve payload
+                (BitConverter.UInt16BitsToHalf(0b1_11111_1010101010), BitConverter.Int32BitsToSingle(unchecked((int)0xFFD54000))), // Negative Signalling NaN - Should preserve payload
                 (Half.Epsilon, 1/16777216f), // PosEpsilon = 0.000000059605...
-                (UInt16BitsToHalf(0), 0), // 0
-                (UInt16BitsToHalf(0b1_00000_0000000000), -0f), // -0
-                (UInt16BitsToHalf(0b0_10000_1001001000), 3.140625f), // 3.140625
-                (UInt16BitsToHalf(0b1_10000_1001001000), -3.140625f), // -3.140625
-                (UInt16BitsToHalf(0b0_10000_0101110000), 2.71875f), // 2.71875
-                (UInt16BitsToHalf(0b1_10000_0101110000), -2.71875f), // -2.71875
-                (UInt16BitsToHalf(0b0_01111_1000000000), 1.5f), // 1.5
-                (UInt16BitsToHalf(0b1_01111_1000000000), -1.5f), // -1.5
-                (UInt16BitsToHalf(0b0_01111_1000000001), 1.5009765625f), // 1.5009765625
-                (UInt16BitsToHalf(0b1_01111_1000000001), -1.5009765625f), // -1.5009765625
-                (UInt16BitsToHalf(0b0_00001_0000000000), BitConverter.Int32BitsToSingle(0x38800000)), // smallest normal
-                (UInt16BitsToHalf(0b0_00000_1111111111), BitConverter.Int32BitsToSingle(0x387FC000)), // largest subnormal
-                (UInt16BitsToHalf(0b0_00000_1000000000), BitConverter.Int32BitsToSingle(0x38000000)), // middle subnormal
-                (UInt16BitsToHalf(0b0_00000_0111111111), BitConverter.Int32BitsToSingle(0x37FF8000)), // just below middle subnormal
-                (UInt16BitsToHalf(0b0_00000_0000000001), BitConverter.Int32BitsToSingle(0x33800000)), // smallest subnormal
-                (UInt16BitsToHalf(0b1_00000_0000000001), BitConverter.Int32BitsToSingle(unchecked((int)0xB3800000))), // highest negative subnormal
-                (UInt16BitsToHalf(0b1_00000_0111111111), BitConverter.Int32BitsToSingle(unchecked((int)0xB7FF8000))), // just above negative middle subnormal
-                (UInt16BitsToHalf(0b1_00000_1000000000), BitConverter.Int32BitsToSingle(unchecked((int)0xB8000000))), // negative middle subnormal
-                (UInt16BitsToHalf(0b1_00000_1111111111), BitConverter.Int32BitsToSingle(unchecked((int)0xB87FC000))), // lowest negative subnormal
-                (UInt16BitsToHalf(0b1_00001_0000000000), BitConverter.Int32BitsToSingle(unchecked((int)0xB8800000))) // highest negative normal
+                (BitConverter.UInt16BitsToHalf(0), 0), // 0
+                (BitConverter.UInt16BitsToHalf(0b1_00000_0000000000), -0f), // -0
+                (BitConverter.UInt16BitsToHalf(0b0_10000_1001001000), 3.140625f), // 3.140625
+                (BitConverter.UInt16BitsToHalf(0b1_10000_1001001000), -3.140625f), // -3.140625
+                (BitConverter.UInt16BitsToHalf(0b0_10000_0101110000), 2.71875f), // 2.71875
+                (BitConverter.UInt16BitsToHalf(0b1_10000_0101110000), -2.71875f), // -2.71875
+                (BitConverter.UInt16BitsToHalf(0b0_01111_1000000000), 1.5f), // 1.5
+                (BitConverter.UInt16BitsToHalf(0b1_01111_1000000000), -1.5f), // -1.5
+                (BitConverter.UInt16BitsToHalf(0b0_01111_1000000001), 1.5009765625f), // 1.5009765625
+                (BitConverter.UInt16BitsToHalf(0b1_01111_1000000001), -1.5009765625f), // -1.5009765625
+                (BitConverter.UInt16BitsToHalf(0b0_00001_0000000000), BitConverter.Int32BitsToSingle(0x38800000)), // smallest normal
+                (BitConverter.UInt16BitsToHalf(0b0_00000_1111111111), BitConverter.Int32BitsToSingle(0x387FC000)), // largest subnormal
+                (BitConverter.UInt16BitsToHalf(0b0_00000_1000000000), BitConverter.Int32BitsToSingle(0x38000000)), // middle subnormal
+                (BitConverter.UInt16BitsToHalf(0b0_00000_0111111111), BitConverter.Int32BitsToSingle(0x37FF8000)), // just below middle subnormal
+                (BitConverter.UInt16BitsToHalf(0b0_00000_0000000001), BitConverter.Int32BitsToSingle(0x33800000)), // smallest subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00000_0000000001), BitConverter.Int32BitsToSingle(unchecked((int)0xB3800000))), // highest negative subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00000_0111111111), BitConverter.Int32BitsToSingle(unchecked((int)0xB7FF8000))), // just above negative middle subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00000_1000000000), BitConverter.Int32BitsToSingle(unchecked((int)0xB8000000))), // negative middle subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00000_1111111111), BitConverter.Int32BitsToSingle(unchecked((int)0xB87FC000))), // lowest negative subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00001_0000000000), BitConverter.Int32BitsToSingle(unchecked((int)0xB8800000))) // highest negative normal
             };
 
             foreach ((Half original, float expected) in data)
@@ -406,41 +403,41 @@ namespace System.Tests
         {
             (Half Original, double Expected)[] data = // Fraction is shifted left by 42, Exponent is -15 then +127 = +112
             {
-                (UInt16BitsToHalf(0b0_01111_0000000000), 1d), // 1
-                (UInt16BitsToHalf(0b1_01111_0000000000), -1d), // -1
+                (BitConverter.UInt16BitsToHalf(0b0_01111_0000000000), 1d), // 1
+                (BitConverter.UInt16BitsToHalf(0b1_01111_0000000000), -1d), // -1
                 (Half.MaxValue, 65504d), // 65500
                 (Half.MinValue, -65504d), // -65500
-                (UInt16BitsToHalf(0b0_01011_1001100110), 0.0999755859375d), // 0.1ish
-                (UInt16BitsToHalf(0b1_01011_1001100110), -0.0999755859375d), // -0.1ish
-                (UInt16BitsToHalf(0b0_10100_0101000000), 42d), // 42
-                (UInt16BitsToHalf(0b1_10100_0101000000), -42d), // -42
+                (BitConverter.UInt16BitsToHalf(0b0_01011_1001100110), 0.0999755859375d), // 0.1ish
+                (BitConverter.UInt16BitsToHalf(0b1_01011_1001100110), -0.0999755859375d), // -0.1ish
+                (BitConverter.UInt16BitsToHalf(0b0_10100_0101000000), 42d), // 42
+                (BitConverter.UInt16BitsToHalf(0b1_10100_0101000000), -42d), // -42
                 (Half.PositiveInfinity, double.PositiveInfinity), // PosInfinity
                 (Half.NegativeInfinity, double.NegativeInfinity), // NegInfinity
-                (UInt16BitsToHalf(0b0_11111_1000000000), BitConverter.Int64BitsToDouble(0x7FF80000_00000000)), // Positive Quiet NaN
+                (BitConverter.UInt16BitsToHalf(0b0_11111_1000000000), BitConverter.Int64BitsToDouble(0x7FF80000_00000000)), // Positive Quiet NaN
                 (Half.NaN, double.NaN), // Negative Quiet NaN
-                (UInt16BitsToHalf(0b0_11111_1010101010), BitConverter.Int64BitsToDouble(0x7FFAA800_00000000)), // Positive Signalling NaN - Should preserve payload
-                (UInt16BitsToHalf(0b1_11111_1010101010), BitConverter.Int64BitsToDouble(unchecked((long)0xFFFAA800_00000000))), // Negative Signalling NaN - Should preserve payload
+                (BitConverter.UInt16BitsToHalf(0b0_11111_1010101010), BitConverter.Int64BitsToDouble(0x7FFAA800_00000000)), // Positive Signalling NaN - Should preserve payload
+                (BitConverter.UInt16BitsToHalf(0b1_11111_1010101010), BitConverter.Int64BitsToDouble(unchecked((long)0xFFFAA800_00000000))), // Negative Signalling NaN - Should preserve payload
                 (Half.Epsilon, 1/16777216d), // PosEpsilon = 0.000000059605...
-                (UInt16BitsToHalf(0), 0d), // 0
-                (UInt16BitsToHalf(0b1_00000_0000000000), -0d), // -0
-                (UInt16BitsToHalf(0b0_10000_1001001000), 3.140625d), // 3.140625
-                (UInt16BitsToHalf(0b1_10000_1001001000), -3.140625d), // -3.140625
-                (UInt16BitsToHalf(0b0_10000_0101110000), 2.71875d), // 2.71875
-                (UInt16BitsToHalf(0b1_10000_0101110000), -2.71875d), // -2.71875
-                (UInt16BitsToHalf(0b0_01111_1000000000), 1.5d), // 1.5
-                (UInt16BitsToHalf(0b1_01111_1000000000), -1.5d), // -1.5
-                (UInt16BitsToHalf(0b0_01111_1000000001), 1.5009765625d), // 1.5009765625
-                (UInt16BitsToHalf(0b1_01111_1000000001), -1.5009765625d), // -1.5009765625
-                (UInt16BitsToHalf(0b0_00001_0000000000), BitConverter.Int64BitsToDouble(0x3F10000000000000)), // smallest normal
-                (UInt16BitsToHalf(0b0_00000_1111111111), BitConverter.Int64BitsToDouble(0x3F0FF80000000000)), // largest subnormal
-                (UInt16BitsToHalf(0b0_00000_1000000000), BitConverter.Int64BitsToDouble(0x3F00000000000000)), // middle subnormal
-                (UInt16BitsToHalf(0b0_00000_0111111111), BitConverter.Int64BitsToDouble(0x3EFFF00000000000)), // just below middle subnormal
-                (UInt16BitsToHalf(0b0_00000_0000000001), BitConverter.Int64BitsToDouble(0x3E70000000000000)), // smallest subnormal
-                (UInt16BitsToHalf(0b1_00000_0000000001), BitConverter.Int64BitsToDouble(unchecked((long)0xBE70000000000000))), // highest negative subnormal
-                (UInt16BitsToHalf(0b1_00000_0111111111), BitConverter.Int64BitsToDouble(unchecked((long)0xBEFFF00000000000))), // just above negative middle subnormal
-                (UInt16BitsToHalf(0b1_00000_1000000000), BitConverter.Int64BitsToDouble(unchecked((long)0xBF00000000000000))), // negative middle subnormal
-                (UInt16BitsToHalf(0b1_00000_1111111111), BitConverter.Int64BitsToDouble(unchecked((long)0xBF0FF80000000000))), // lowest negative subnormal
-                (UInt16BitsToHalf(0b1_00001_0000000000), BitConverter.Int64BitsToDouble(unchecked((long)0xBF10000000000000))) // highest negative normal
+                (BitConverter.UInt16BitsToHalf(0), 0d), // 0
+                (BitConverter.UInt16BitsToHalf(0b1_00000_0000000000), -0d), // -0
+                (BitConverter.UInt16BitsToHalf(0b0_10000_1001001000), 3.140625d), // 3.140625
+                (BitConverter.UInt16BitsToHalf(0b1_10000_1001001000), -3.140625d), // -3.140625
+                (BitConverter.UInt16BitsToHalf(0b0_10000_0101110000), 2.71875d), // 2.71875
+                (BitConverter.UInt16BitsToHalf(0b1_10000_0101110000), -2.71875d), // -2.71875
+                (BitConverter.UInt16BitsToHalf(0b0_01111_1000000000), 1.5d), // 1.5
+                (BitConverter.UInt16BitsToHalf(0b1_01111_1000000000), -1.5d), // -1.5
+                (BitConverter.UInt16BitsToHalf(0b0_01111_1000000001), 1.5009765625d), // 1.5009765625
+                (BitConverter.UInt16BitsToHalf(0b1_01111_1000000001), -1.5009765625d), // -1.5009765625
+                (BitConverter.UInt16BitsToHalf(0b0_00001_0000000000), BitConverter.Int64BitsToDouble(0x3F10000000000000)), // smallest normal
+                (BitConverter.UInt16BitsToHalf(0b0_00000_1111111111), BitConverter.Int64BitsToDouble(0x3F0FF80000000000)), // largest subnormal
+                (BitConverter.UInt16BitsToHalf(0b0_00000_1000000000), BitConverter.Int64BitsToDouble(0x3F00000000000000)), // middle subnormal
+                (BitConverter.UInt16BitsToHalf(0b0_00000_0111111111), BitConverter.Int64BitsToDouble(0x3EFFF00000000000)), // just below middle subnormal
+                (BitConverter.UInt16BitsToHalf(0b0_00000_0000000001), BitConverter.Int64BitsToDouble(0x3E70000000000000)), // smallest subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00000_0000000001), BitConverter.Int64BitsToDouble(unchecked((long)0xBE70000000000000))), // highest negative subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00000_0111111111), BitConverter.Int64BitsToDouble(unchecked((long)0xBEFFF00000000000))), // just above negative middle subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00000_1000000000), BitConverter.Int64BitsToDouble(unchecked((long)0xBF00000000000000))), // negative middle subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00000_1111111111), BitConverter.Int64BitsToDouble(unchecked((long)0xBF0FF80000000000))), // lowest negative subnormal
+                (BitConverter.UInt16BitsToHalf(0b1_00001_0000000000), BitConverter.Int64BitsToDouble(unchecked((long)0xBF10000000000000))) // highest negative normal
             };
 
             foreach ((Half original, double expected) in data)
@@ -462,73 +459,73 @@ namespace System.Tests
         {
             (float, Half)[] data =
             {
-                (MathF.PI, UInt16BitsToHalf(0b0_10000_1001001000)), // 3.140625
-                (MathF.E, UInt16BitsToHalf(0b0_10000_0101110000)), // 2.71875
-                (-MathF.PI, UInt16BitsToHalf(0b1_10000_1001001000)), // -3.140625
-                (-MathF.E, UInt16BitsToHalf(0b1_10000_0101110000)), // -2.71875
+                (MathF.PI, BitConverter.UInt16BitsToHalf(0b0_10000_1001001000)), // 3.140625
+                (MathF.E, BitConverter.UInt16BitsToHalf(0b0_10000_0101110000)), // 2.71875
+                (-MathF.PI, BitConverter.UInt16BitsToHalf(0b1_10000_1001001000)), // -3.140625
+                (-MathF.E, BitConverter.UInt16BitsToHalf(0b1_10000_0101110000)), // -2.71875
                 (float.MaxValue, Half.PositiveInfinity), // Overflow
                 (float.MinValue, Half.NegativeInfinity), // Overflow
                 (float.PositiveInfinity, Half.PositiveInfinity), // Overflow
                 (float.NegativeInfinity, Half.NegativeInfinity), // Overflow
                 (float.NaN, Half.NaN), // Quiet Negative NaN
-                (BitConverter.Int32BitsToSingle(0x7FC00000), UInt16BitsToHalf(0b0_11111_1000000000)), // Quiet Positive NaN
+                (BitConverter.Int32BitsToSingle(0x7FC00000), BitConverter.UInt16BitsToHalf(0b0_11111_1000000000)), // Quiet Positive NaN
                 (BitConverter.Int32BitsToSingle(unchecked((int)0xFFD55555)),
-                    UInt16BitsToHalf(0b1_11111_1010101010)), // Signalling Negative NaN
-                (BitConverter.Int32BitsToSingle(0x7FD55555), UInt16BitsToHalf(0b0_11111_1010101010)), // Signalling Positive NaN
-                (float.Epsilon, UInt16BitsToHalf(0)), // Underflow
-                (-float.Epsilon, UInt16BitsToHalf(0b1_00000_0000000000)), // Underflow
-                (1f, UInt16BitsToHalf(0b0_01111_0000000000)), // 1
-                (-1f, UInt16BitsToHalf(0b1_01111_0000000000)), // -1
-                (0f, UInt16BitsToHalf(0)), // 0
-                (-0f, UInt16BitsToHalf(0b1_00000_0000000000)), // -0
-                (42f, UInt16BitsToHalf(0b0_10100_0101000000)), // 42
-                (-42f, UInt16BitsToHalf(0b1_10100_0101000000)), // -42
-                (0.1f, UInt16BitsToHalf(0b0_01011_1001100110)), // 0.0999755859375
-                (-0.1f, UInt16BitsToHalf(0b1_01011_1001100110)), // -0.0999755859375
-                (1.5f, UInt16BitsToHalf(0b0_01111_1000000000)), // 1.5
-                (-1.5f, UInt16BitsToHalf(0b1_01111_1000000000)), // -1.5
-                (1.5009765625f, UInt16BitsToHalf(0b0_01111_1000000001)), // 1.5009765625
-                (-1.5009765625f, UInt16BitsToHalf(0b1_01111_1000000001)), // -1.5009765625
-                (BitConverter.Int32BitsToSingle(0x38800000), UInt16BitsToHalf(0b0_00001_0000000000)), // smallest normal
-                (BitConverter.Int32BitsToSingle(0x387FC000), UInt16BitsToHalf(0b0_00000_1111111111)), // largest subnormal
-                (BitConverter.Int32BitsToSingle(0x38000000), UInt16BitsToHalf(0b0_00000_1000000000)), // middle subnormal
-                (BitConverter.Int32BitsToSingle(0x37FF8000), UInt16BitsToHalf(0b0_00000_0111111111)), // just below middle subnormal
-                (BitConverter.Int32BitsToSingle(0x33800000), UInt16BitsToHalf(0b0_00000_0000000001)), // smallest subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_11111_1010101010)), // Signalling Negative NaN
+                (BitConverter.Int32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToHalf(0b0_11111_1010101010)), // Signalling Positive NaN
+                (float.Epsilon, BitConverter.UInt16BitsToHalf(0)), // Underflow
+                (-float.Epsilon, BitConverter.UInt16BitsToHalf(0b1_00000_0000000000)), // Underflow
+                (1f, BitConverter.UInt16BitsToHalf(0b0_01111_0000000000)), // 1
+                (-1f, BitConverter.UInt16BitsToHalf(0b1_01111_0000000000)), // -1
+                (0f, BitConverter.UInt16BitsToHalf(0)), // 0
+                (-0f, BitConverter.UInt16BitsToHalf(0b1_00000_0000000000)), // -0
+                (42f, BitConverter.UInt16BitsToHalf(0b0_10100_0101000000)), // 42
+                (-42f, BitConverter.UInt16BitsToHalf(0b1_10100_0101000000)), // -42
+                (0.1f, BitConverter.UInt16BitsToHalf(0b0_01011_1001100110)), // 0.0999755859375
+                (-0.1f, BitConverter.UInt16BitsToHalf(0b1_01011_1001100110)), // -0.0999755859375
+                (1.5f, BitConverter.UInt16BitsToHalf(0b0_01111_1000000000)), // 1.5
+                (-1.5f, BitConverter.UInt16BitsToHalf(0b1_01111_1000000000)), // -1.5
+                (1.5009765625f, BitConverter.UInt16BitsToHalf(0b0_01111_1000000001)), // 1.5009765625
+                (-1.5009765625f, BitConverter.UInt16BitsToHalf(0b1_01111_1000000001)), // -1.5009765625
+                (BitConverter.Int32BitsToSingle(0x38800000), BitConverter.UInt16BitsToHalf(0b0_00001_0000000000)), // smallest normal
+                (BitConverter.Int32BitsToSingle(0x387FC000), BitConverter.UInt16BitsToHalf(0b0_00000_1111111111)), // largest subnormal
+                (BitConverter.Int32BitsToSingle(0x38000000), BitConverter.UInt16BitsToHalf(0b0_00000_1000000000)), // middle subnormal
+                (BitConverter.Int32BitsToSingle(0x37FF8000), BitConverter.UInt16BitsToHalf(0b0_00000_0111111111)), // just below middle subnormal
+                (BitConverter.Int32BitsToSingle(0x33800000), BitConverter.UInt16BitsToHalf(0b0_00000_0000000001)), // smallest subnormal
                 (BitConverter.Int32BitsToSingle(unchecked((int)0xB3800000)),
-                    UInt16BitsToHalf(0b1_00000_0000000001)), // highest negative subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_00000_0000000001)), // highest negative subnormal
                 (BitConverter.Int32BitsToSingle(unchecked((int)0xB7FF8000)),
-                    UInt16BitsToHalf(0b1_00000_0111111111)), // just above negative middle subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_00000_0111111111)), // just above negative middle subnormal
                 (BitConverter.Int32BitsToSingle(unchecked((int)0xB8000000)),
-                    UInt16BitsToHalf(0b1_00000_1000000000)), // negative middle subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_00000_1000000000)), // negative middle subnormal
                 (BitConverter.Int32BitsToSingle(unchecked((int)0xB87FC000)),
-                    UInt16BitsToHalf(0b1_00000_1111111111)), // lowest negative subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_00000_1111111111)), // lowest negative subnormal
                 (BitConverter.Int32BitsToSingle(unchecked((int)0xB8800000)),
-                    UInt16BitsToHalf(0b1_00001_0000000000)), // highest negative normal
+                    BitConverter.UInt16BitsToHalf(0b1_00001_0000000000)), // highest negative normal
                 (BitConverter.Int32BitsToSingle(0b0_10001001_00000000111000000000001),
-                                  UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5+ULP rounds up
+                                  BitConverter.UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5+ULP rounds up
                 (BitConverter.Int32BitsToSingle(0b0_10001001_00000000111000000000000),
-                                  UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5 rounds to even
+                                  BitConverter.UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5 rounds to even
                 (BitConverter.Int32BitsToSingle(0b0_10001001_00000000110111111111111),
-                                  UInt16BitsToHalf(0b0_11001_0000000011)), // 1027.5-ULP rounds down
+                                  BitConverter.UInt16BitsToHalf(0b0_11001_0000000011)), // 1027.5-ULP rounds down
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000110111111111111)),
-                                                 UInt16BitsToHalf(0b1_11001_0000000011)), // -1027.5+ULP rounds towards zero
+                                                 BitConverter.UInt16BitsToHalf(0b1_11001_0000000011)), // -1027.5+ULP rounds towards zero
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000111000000000000)),
-                                                 UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5 rounds to even
+                                                 BitConverter.UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5 rounds to even
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000111000000000001)),
-                                                 UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5-ULP rounds away from zero
+                                                 BitConverter.UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5-ULP rounds away from zero
                 (BitConverter.Int32BitsToSingle(0b0_01110000_00000001110000000000001),
-                                 UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal + ULP rounds up
+                                 BitConverter.UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal + ULP rounds up
                 (BitConverter.Int32BitsToSingle(0b0_01110000_00000001110000000000000),
-                                 UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal rounds to even
+                                 BitConverter.UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal rounds to even
                 (BitConverter.Int32BitsToSingle(0b0_01110000_00000001101111111111111),
-                                 UInt16BitsToHalf(0b0_00000_1000000011)), // subnormal - ULP rounds down
+                                 BitConverter.UInt16BitsToHalf(0b0_00000_1000000011)), // subnormal - ULP rounds down
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001101111111111111)),
-                                                UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal + ULP rounds higher
+                                                BitConverter.UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal + ULP rounds higher
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001110000000000000)),
-                                                UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal rounds to even
+                                                BitConverter.UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal rounds to even
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001101111111111111)),
-                                                UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal - ULP rounds lower,
-                (BitConverter.Int32BitsToSingle(0x33000000), UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
+                                                BitConverter.UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal - ULP rounds lower,
+                (BitConverter.Int32BitsToSingle(0x33000000), BitConverter.UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((float original, Half expected) in data)
@@ -542,87 +539,87 @@ namespace System.Tests
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
-            Assert.Equal(HalfToUInt16Bits(expected), HalfToUInt16Bits(h));
+            Assert.Equal(BitConverter.HalfToUInt16Bits(expected), BitConverter.HalfToUInt16Bits(h));
         }
 
         public static IEnumerable<object[]> ExplicitConversion_FromDouble_TestData()
         {
             (double, Half)[] data =
             {
-                (Math.PI, UInt16BitsToHalf(0b0_10000_1001001000)), // 3.140625
-                (Math.E, UInt16BitsToHalf(0b0_10000_0101110000)), // 2.71875
-                (-Math.PI, UInt16BitsToHalf(0b1_10000_1001001000)), // -3.140625
-                (-Math.E, UInt16BitsToHalf(0b1_10000_0101110000)), // -2.71875
+                (Math.PI, BitConverter.UInt16BitsToHalf(0b0_10000_1001001000)), // 3.140625
+                (Math.E, BitConverter.UInt16BitsToHalf(0b0_10000_0101110000)), // 2.71875
+                (-Math.PI, BitConverter.UInt16BitsToHalf(0b1_10000_1001001000)), // -3.140625
+                (-Math.E, BitConverter.UInt16BitsToHalf(0b1_10000_0101110000)), // -2.71875
                 (double.MaxValue, Half.PositiveInfinity), // Overflow
                 (double.MinValue, Half.NegativeInfinity), // Overflow
                 (double.PositiveInfinity, Half.PositiveInfinity), // Overflow
                 (double.NegativeInfinity, Half.NegativeInfinity), // Overflow
                 (double.NaN, Half.NaN), // Quiet Negative NaN
                 (BitConverter.Int64BitsToDouble(0x7FF80000_00000000),
-                    UInt16BitsToHalf(0b0_11111_1000000000)), // Quiet Positive NaN
+                    BitConverter.UInt16BitsToHalf(0b0_11111_1000000000)), // Quiet Positive NaN
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xFFFAAAAA_AAAAAAAA)),
-                    UInt16BitsToHalf(0b1_11111_1010101010)), // Signalling Negative NaN
+                    BitConverter.UInt16BitsToHalf(0b1_11111_1010101010)), // Signalling Negative NaN
                 (BitConverter.Int64BitsToDouble(0x7FFAAAAA_AAAAAAAA),
-                    UInt16BitsToHalf(0b0_11111_1010101010)), // Signalling Positive NaN
-                (double.Epsilon, UInt16BitsToHalf(0)), // Underflow
-                (-double.Epsilon, UInt16BitsToHalf(0b1_00000_0000000000)), // Underflow
-                (1d, UInt16BitsToHalf(0b0_01111_0000000000)), // 1
-                (-1d, UInt16BitsToHalf(0b1_01111_0000000000)), // -1
-                (0d, UInt16BitsToHalf(0)), // 0
-                (-0d, UInt16BitsToHalf(0b1_00000_0000000000)), // -0
-                (42d, UInt16BitsToHalf(0b0_10100_0101000000)), // 42
-                (-42d, UInt16BitsToHalf(0b1_10100_0101000000)), // -42
-                (0.1d, UInt16BitsToHalf(0b0_01011_1001100110)), // 0.0999755859375
-                (-0.1d, UInt16BitsToHalf(0b1_01011_1001100110)), // -0.0999755859375
-                (1.5d, UInt16BitsToHalf(0b0_01111_1000000000)), // 1.5
-                (-1.5d, UInt16BitsToHalf(0b1_01111_1000000000)), // -1.5
-                (1.5009765625d, UInt16BitsToHalf(0b0_01111_1000000001)), // 1.5009765625
-                (-1.5009765625d, UInt16BitsToHalf(0b1_01111_1000000001)), // -1.5009765625
+                    BitConverter.UInt16BitsToHalf(0b0_11111_1010101010)), // Signalling Positive NaN
+                (double.Epsilon, BitConverter.UInt16BitsToHalf(0)), // Underflow
+                (-double.Epsilon, BitConverter.UInt16BitsToHalf(0b1_00000_0000000000)), // Underflow
+                (1d, BitConverter.UInt16BitsToHalf(0b0_01111_0000000000)), // 1
+                (-1d, BitConverter.UInt16BitsToHalf(0b1_01111_0000000000)), // -1
+                (0d, BitConverter.UInt16BitsToHalf(0)), // 0
+                (-0d, BitConverter.UInt16BitsToHalf(0b1_00000_0000000000)), // -0
+                (42d, BitConverter.UInt16BitsToHalf(0b0_10100_0101000000)), // 42
+                (-42d, BitConverter.UInt16BitsToHalf(0b1_10100_0101000000)), // -42
+                (0.1d, BitConverter.UInt16BitsToHalf(0b0_01011_1001100110)), // 0.0999755859375
+                (-0.1d, BitConverter.UInt16BitsToHalf(0b1_01011_1001100110)), // -0.0999755859375
+                (1.5d, BitConverter.UInt16BitsToHalf(0b0_01111_1000000000)), // 1.5
+                (-1.5d, BitConverter.UInt16BitsToHalf(0b1_01111_1000000000)), // -1.5
+                (1.5009765625d, BitConverter.UInt16BitsToHalf(0b0_01111_1000000001)), // 1.5009765625
+                (-1.5009765625d, BitConverter.UInt16BitsToHalf(0b1_01111_1000000001)), // -1.5009765625
                 (BitConverter.Int64BitsToDouble(0x3F10000000000000),
-                    UInt16BitsToHalf(0b0_00001_0000000000)), // smallest normal
+                    BitConverter.UInt16BitsToHalf(0b0_00001_0000000000)), // smallest normal
                 (BitConverter.Int64BitsToDouble(0x3F0FF80000000000),
-                    UInt16BitsToHalf(0b0_00000_1111111111)), // largest subnormal
+                    BitConverter.UInt16BitsToHalf(0b0_00000_1111111111)), // largest subnormal
                 (BitConverter.Int64BitsToDouble(0x3f00000000000000),
-                    UInt16BitsToHalf(0b0_00000_1000000000)), // middle subnormal
+                    BitConverter.UInt16BitsToHalf(0b0_00000_1000000000)), // middle subnormal
                 (BitConverter.Int64BitsToDouble(0x3EFFF00000000000),
-                    UInt16BitsToHalf(0b0_00000_0111111111)), // just below middle subnormal
+                    BitConverter.UInt16BitsToHalf(0b0_00000_0111111111)), // just below middle subnormal
                 (BitConverter.Int64BitsToDouble(0x3E70000000000000),
-                    UInt16BitsToHalf(0b0_00000_0000000001)), // smallest subnormal
+                    BitConverter.UInt16BitsToHalf(0b0_00000_0000000001)), // smallest subnormal
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBE70000000000000)),
-                    UInt16BitsToHalf(0b1_00000_0000000001)), // highest negative subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_00000_0000000001)), // highest negative subnormal
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBEFFF00000000000)),
-                    UInt16BitsToHalf(0b1_00000_0111111111)), // just above negative middle subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_00000_0111111111)), // just above negative middle subnormal
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF00000000000000)),
-                    UInt16BitsToHalf(0b1_00000_1000000000)), // negative middle subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_00000_1000000000)), // negative middle subnormal
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF0FF80000000000)),
-                    UInt16BitsToHalf(0b1_00000_1111111111)), // lowest negative subnormal
+                    BitConverter.UInt16BitsToHalf(0b1_00000_1111111111)), // lowest negative subnormal
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF10000000000000)),
-                    UInt16BitsToHalf(0b1_00001_0000000000)), // highest negative normal
+                    BitConverter.UInt16BitsToHalf(0b1_00001_0000000000)), // highest negative normal
                 (BitConverter.Int64BitsToDouble(0x40900E0000000001),
-                    UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5+ULP rounds up
+                    BitConverter.UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5+ULP rounds up
                 (BitConverter.Int64BitsToDouble(0x40900E0000000000),
-                    UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5 rounds to even
+                    BitConverter.UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5 rounds to even
                 (BitConverter.Int64BitsToDouble(0x40900DFFFFFFFFFF),
-                    UInt16BitsToHalf(0b0_11001_0000000011)), // 1027.5-ULP rounds down
+                    BitConverter.UInt16BitsToHalf(0b0_11001_0000000011)), // 1027.5-ULP rounds down
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900DFFFFFFFFFF)),
-                    UInt16BitsToHalf(0b1_11001_0000000011)), // -1027.5+ULP rounds towards zero
+                    BitConverter.UInt16BitsToHalf(0b1_11001_0000000011)), // -1027.5+ULP rounds towards zero
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900E0000000000)),
-                    UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5 rounds to even
+                    BitConverter.UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5 rounds to even
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900E0000000001)),
-                    UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5-ULP rounds away from zero
+                    BitConverter.UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5-ULP rounds away from zero
                 (BitConverter.Int64BitsToDouble(0x3F001C0000000001),
-                    UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal + ULP rounds up
+                    BitConverter.UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal + ULP rounds up
                 (BitConverter.Int64BitsToDouble(0x3F001C0000000001),
-                    UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal rounds to even
+                    BitConverter.UInt16BitsToHalf(0b0_00000_1000000100)), // subnormal rounds to even
                 (BitConverter.Int64BitsToDouble(0x3F001BFFFFFFFFFF),
-                    UInt16BitsToHalf(0b0_00000_1000000011)), // subnormal - ULP rounds down
+                    BitConverter.UInt16BitsToHalf(0b0_00000_1000000011)), // subnormal - ULP rounds down
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF001BFFFFFFFFFF)),
-                    UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal + ULP rounds higher
+                    BitConverter.UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal + ULP rounds higher
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF001C0000000000)),
-                    UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal rounds to even
+                    BitConverter.UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal rounds to even
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF001C0000000001)),
-                    UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal - ULP rounds lower
-                (BitConverter.Int64BitsToDouble(0x3E60000000000000), UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
+                    BitConverter.UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal - ULP rounds lower
+                (BitConverter.Int64BitsToDouble(0x3E60000000000000), BitConverter.UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((double original, Half expected) in data)
@@ -636,7 +633,7 @@ namespace System.Tests
         public static void ExplicitConversion_FromDouble(double d, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)d;
-            Assert.Equal(HalfToUInt16Bits(expected), HalfToUInt16Bits(h));
+            Assert.Equal(BitConverter.HalfToUInt16Bits(expected), BitConverter.HalfToUInt16Bits(h));
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -1033,16 +1030,16 @@ namespace System.Tests
             yield return new object[] { Half.MaxValue };
             yield return new object[] { Half.PositiveInfinity };
 
-            yield return new object[] { (UInt16BitsToHalf(0b0_00001_0000000000)) }; // smallest normal
-            yield return new object[] { (UInt16BitsToHalf(0b0_00000_1111111111)) }; // largest subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b0_00000_1000000000)) }; // middle subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b0_00000_0111111111)) }; // just below middle subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b0_00000_0000000001)) }; // smallest subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00000_0000000001)) }; // highest negative subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00000_0111111111)) }; // just above negative middle subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00000_1000000000)) }; // negative middle subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00000_1111111111)) }; // lowest negative subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00001_0000000000)) }; // highest negative normal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b0_00001_0000000000)) }; // smallest normal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b0_00000_1111111111)) }; // largest subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b0_00000_1000000000)) }; // middle subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b0_00000_0111111111)) }; // just below middle subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b0_00000_0000000001)) }; // smallest subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b1_00000_0000000001)) }; // highest negative subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b1_00000_0111111111)) }; // just above negative middle subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b1_00000_1000000000)) }; // negative middle subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b1_00000_1111111111)) }; // lowest negative subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToHalf(0b1_00001_0000000000)) }; // highest negative normal
         }
 
         [Theory]
@@ -1051,7 +1048,7 @@ namespace System.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString());
-            Assert.Equal(HalfToUInt16Bits((Half)value), HalfToUInt16Bits(result));
+            Assert.Equal(BitConverter.HalfToUInt16Bits((Half)value), BitConverter.HalfToUInt16Bits(result));
         }
 
         [Theory]
@@ -1060,7 +1057,7 @@ namespace System.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString("R"));
-            Assert.Equal(HalfToUInt16Bits((Half)value), HalfToUInt16Bits(result));
+            Assert.Equal(BitConverter.HalfToUInt16Bits((Half)value), BitConverter.HalfToUInt16Bits(result));
         }
 
         public static IEnumerable<object[]> RoundTripFloat_CornerCases()

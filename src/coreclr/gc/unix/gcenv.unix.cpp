@@ -884,7 +884,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
-#if defined(TARGET_LINUX) && !defined(HOST_ARM)
+#if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
     if (cacheSize == 0)
     {
         //
@@ -1467,10 +1467,24 @@ bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_strin
 }
 
 // Initialize the critical section
-void CLRCriticalSection::Initialize()
+bool CLRCriticalSection::Initialize()
 {
-    int st = pthread_mutex_init(&m_cs.mutex, NULL);
-    assert(st == 0);
+    pthread_mutexattr_t mutexAttributes;
+    int st = pthread_mutexattr_init(&mutexAttributes);
+    if (st != 0)
+    {
+        return false;
+    }
+
+    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
+    if (st == 0)
+    {
+        st = pthread_mutex_init(&m_cs.mutex, &mutexAttributes);
+    }
+
+    pthread_mutexattr_destroy(&mutexAttributes);
+
+    return (st == 0);
 }
 
 // Destroy the critical section

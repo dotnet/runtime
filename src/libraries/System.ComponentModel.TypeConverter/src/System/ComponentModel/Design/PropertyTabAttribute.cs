@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
@@ -13,8 +14,8 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public class PropertyTabAttribute : Attribute
     {
-        private Type[] _tabClasses;
-        private string[] _tabClassNames;
+        private Type[]? _tabClasses;
+        private string[]? _tabClassNames;
 
         /// <summary>
         /// Basic constructor that creates a PropertyTabAttribute. Use this ctor to derive from this
@@ -87,7 +88,7 @@ namespace System.ComponentModel
                 {
                     InitializeTabClasses();
                 }
-                return _tabClasses;
+                return _tabClasses!;
             }
         }
 
@@ -95,14 +96,16 @@ namespace System.ComponentModel
             Justification = "The APIs that specify _tabClassNames are either marked with DynamicallyAccessedMembers or RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
             Justification = "The APIs that specify _tabClassNames are either marked with DynamicallyAccessedMembers or RequiresUnreferencedCode.")]
+        [MemberNotNull(nameof(_tabClasses))]
         private void InitializeTabClasses()
         {
+            Debug.Assert(_tabClassNames != null);
             _tabClasses = new Type[_tabClassNames.Length];
             for (int i = 0; i < _tabClassNames.Length; i++)
             {
                 int commaIndex = _tabClassNames[i].IndexOf(',');
-                string className = null;
-                string assemblyName = null;
+                string? className = null;
+                string? assemblyName = null;
 
                 if (commaIndex != -1)
                 {
@@ -114,7 +117,7 @@ namespace System.ComponentModel
                     className = _tabClassNames[i];
                 }
 
-                _tabClasses[i] = Type.GetType(className, false);
+                _tabClasses[i] = Type.GetType(className, false)!;
 
                 if (_tabClasses[i] == null)
                 {
@@ -123,7 +126,7 @@ namespace System.ComponentModel
                         Assembly a = Assembly.Load(assemblyName);
                         if (a != null)
                         {
-                            _tabClasses[i] = a.GetType(className, true);
+                            _tabClasses[i] = a.GetType(className, true)!;
                         }
                     }
                     else
@@ -134,14 +137,14 @@ namespace System.ComponentModel
             }
         }
 
-        protected string[] TabClassNames => (string[])_tabClassNames?.Clone();
+        protected string[]? TabClassNames => (string[]?)_tabClassNames?.Clone();
 
         /// <summary>
         /// Gets the scopes of tabs for this System.ComponentModel.Design.PropertyTabAttribute, from System.ComponentModel.Design.PropertyTabScope.
         /// </summary>
         public PropertyTabScope[] TabScopes { get; private set; }
 
-        public override bool Equals(object other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             if (other is PropertyTabAttribute propertyTabAttribute)
             {
@@ -182,7 +185,7 @@ namespace System.ComponentModel
         /// Utiliity function to set the types of tab classes this PropertyTabAttribute specifies.
         /// </summary>
         [RequiresUnreferencedCode("The Types referenced by tabClassNames may be trimmed.")]
-        protected void InitializeArrays(string[] tabClassNames, PropertyTabScope[] tabScopes)
+        protected void InitializeArrays(string[]? tabClassNames, PropertyTabScope[]? tabScopes)
         {
             InitializeArrays(tabClassNames, null, tabScopes);
         }
@@ -190,12 +193,12 @@ namespace System.ComponentModel
         /// <summary>
         /// Utiliity function to set the types of tab classes this PropertyTabAttribute specifies.
         /// </summary>
-        protected void InitializeArrays(Type[] tabClasses, PropertyTabScope[] tabScopes)
+        protected void InitializeArrays(Type[]? tabClasses, PropertyTabScope[]? tabScopes)
         {
             InitializeArrays(null, tabClasses, tabScopes);
         }
 
-        private void InitializeArrays(string[] tabClassNames, Type[] tabClasses, PropertyTabScope[] tabScopes)
+        private void InitializeArrays(string[]? tabClassNames, Type[]? tabClasses, PropertyTabScope[]? tabScopes)
         {
             if (tabClasses != null)
             {
@@ -232,7 +235,7 @@ namespace System.ComponentModel
             }
             else
             {
-                TabScopes = new PropertyTabScope[tabClasses.Length];
+                TabScopes = new PropertyTabScope[tabClasses!.Length];
 
                 for (int i = 0; i < TabScopes.Length; i++)
                 {

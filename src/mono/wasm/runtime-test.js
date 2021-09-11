@@ -18,15 +18,27 @@ globalThis.testConsole = console;
 
 function proxyMethod (prefix, func, asJson) {
 	return function() {
-		var args = [...arguments];
+		const args = [...arguments];
+		var payload= args[0];
+		if(payload === undefined) payload = 'undefined';
+		else if(payload === null) payload = 'null';
+		else if(typeof payload === 'function') payload = payload.toString();
+		else if(typeof payload !== 'string') {
+			try{
+				payload = JSON.stringify(payload);
+			}catch(e){
+				payload = payload.toString();
+			}
+		}
+
 		if (asJson) {
 			func (JSON.stringify({
 				method: prefix,
-				payload: args[0],
+				payload: payload,
 				arguments: args
 			}));
 		} else {
-			func([prefix + args[0], ...args.slice(1)]);
+			func([prefix + payload, ...args.slice(1)]);
 		}
 	};
 };
@@ -162,9 +174,9 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0].startsWith ("--setenv=")) {
 		var arg = args [0].substring ("--setenv=".length);
 		var parts = arg.split ('=');
-		if (parts.length != 2)
+		if (parts.length < 2)
 			fail_exec ("Error: malformed argument: '" + args [0]);
-		setenv [parts [0]] = parts [1];
+		setenv [parts [0]] = arg.substring (parts [0].length + 1);
 		args = args.slice (1);
 	} else if (args [0].startsWith ("--runtime-arg=")) {
 		var arg = args [0].substring ("--runtime-arg=".length);
@@ -204,13 +216,15 @@ function loadScript (url)
 	}
 }
 
-loadScript ("mono-config.js");
-
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
-
+	config: null,
 	print,
 	printErr,
+
+    preInit: async function() {
+        await MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
+    },
 
 	onAbort: function(x) {
 		print ("ABORT: " + x);
@@ -230,7 +244,7 @@ var Module = {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 
-		config.loaded_cb = function () {
+		Module.config.loaded_cb = function () {
 			let wds = FS.stat (working_dir);
 			if (wds === undefined || !FS.isDir (wds.mode)) {
 				fail_exec (`Could not find working directory ${working_dir}`);
@@ -240,13 +254,13 @@ var Module = {
 			FS.chdir (working_dir);
 			App.init ();
 		};
-		config.fetch_file_cb = function (asset) {
+		Module.config.fetch_file_cb = function (asset) {
 			// console.log("fetch_file_cb('" + asset + "')");
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
 			/*
 			var content = new Uint8Array (read (asset, 'binary'));
-			var path = asset.substr(config.deploy_prefix.length);
+			var path = asset.substr(Module.config.deploy_prefix.length);
 			writeContentToFile(content, path);
 			*/
 
@@ -280,10 +294,9 @@ var Module = {
 			}
 		};
 
-		MONO.mono_load_runtime_and_bcl_args (config);
+		MONO.mono_load_runtime_and_bcl_args (Module.config);
 	},
 };
-
 loadScript ("dotnet.js");
 
 const IGNORE_PARAM_COUNT = -1;

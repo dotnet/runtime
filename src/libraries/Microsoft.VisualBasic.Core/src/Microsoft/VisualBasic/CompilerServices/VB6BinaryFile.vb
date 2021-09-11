@@ -27,7 +27,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         ' the implementation of Lock in base class VB6RandomFile does not handle m_lRecordLen=-1
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overloads Overrides Sub Lock(ByVal lStart As Long, ByVal lEnd As Long)
@@ -54,7 +53,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         ' see Lock description
         <UnsupportedOSPlatform("ios")>
-        <UnsupportedOSPlatform("maccatalyst")>
         <UnsupportedOSPlatform("macos")>
         <UnsupportedOSPlatform("tvos")>
         Friend Overloads Overrides Sub Unlock(ByVal lStart As Long, ByVal lEnd As Long)

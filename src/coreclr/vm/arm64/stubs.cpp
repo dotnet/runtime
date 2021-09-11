@@ -58,7 +58,7 @@ class ConditionalBranchInstructionFormat : public InstructionFormat
         // Encoding 0|1|0|1|0|1|0|0|imm19|0|cond
         // cond = Bits3-0(variation)
         // imm19 = bits19-0(fixedUpReference/4), will be SignExtended
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -70,10 +70,10 @@ class ConditionalBranchInstructionFormat : public InstructionFormat
             _ASSERTE((fixedUpReference & 0x3) == 0);
             DWORD imm19 = (DWORD)(0x7FFFF & (fixedUpReference >> 2));
 
-            pOutBuffer[0] = static_cast<BYTE>((0x7 & imm19 /* Bits2-0(imm19) */) << 5  | (0xF & variationCode /* cond */));
-            pOutBuffer[1] = static_cast<BYTE>((0x7F8 & imm19 /* Bits10-3(imm19) */) >> 3);
-            pOutBuffer[2] = static_cast<BYTE>((0x7F800 & imm19 /* Bits19-11(imm19) */) >> 11);
-            pOutBuffer[3] = static_cast<BYTE>(0x54);
+            pOutBufferRW[0] = static_cast<BYTE>((0x7 & imm19 /* Bits2-0(imm19) */) << 5  | (0xF & variationCode /* cond */));
+            pOutBufferRW[1] = static_cast<BYTE>((0x7F8 & imm19 /* Bits10-3(imm19) */) >> 3);
+            pOutBufferRW[2] = static_cast<BYTE>((0x7F800 & imm19 /* Bits19-11(imm19) */) >> 11);
+            pOutBufferRW[3] = static_cast<BYTE>(0x54);
         }
 };
 
@@ -148,14 +148,14 @@ class BranchInstructionFormat : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
             if (IsIndirect(variationCode))
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
-                __int64 dataOffset = pDataBuffer - pOutBuffer;
+                __int64 dataOffset = pDataBuffer - pOutBufferRW;
 
                 if (dataOffset < -1048576 || dataOffset > 1048572)
                     COMPlusThrow(kNotSupportedException);
@@ -165,25 +165,25 @@ class BranchInstructionFormat : public InstructionFormat
                 // +0: ldr x16, [pc, #dataOffset]
                 // +4: ldr x16, [x16]
                 // +8: b(l)r x16
-                *((DWORD*)pOutBuffer) = (0x58000010 | (imm19 << 5));
-                *((DWORD*)(pOutBuffer+4)) = 0xF9400210;
+                *((DWORD*)pOutBufferRW) = (0x58000010 | (imm19 << 5));
+                *((DWORD*)(pOutBufferRW+4)) = 0xF9400210;
                 if (IsCall(variationCode))
                 {
-                    *((DWORD*)(pOutBuffer+8)) = 0xD63F0200; // blr x16
+                    *((DWORD*)(pOutBufferRW+8)) = 0xD63F0200; // blr x16
                 }
                 else
                 {
-                    *((DWORD*)(pOutBuffer+8)) = 0xD61F0200; // br x16
+                    *((DWORD*)(pOutBufferRW+8)) = 0xD61F0200; // br x16
                 }
 
 
-                *((__int64*)pDataBuffer) = fixedUpReference + (__int64)pOutBuffer;
+                *((__int64*)pDataBuffer) = fixedUpReference + (__int64)pOutBufferRX;
             }
             else
             {
 
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
-                __int64 dataOffset = pDataBuffer - pOutBuffer;
+                __int64 dataOffset = pDataBuffer - pOutBufferRW;
 
                 if (dataOffset < -1048576 || dataOffset > 1048572)
                     COMPlusThrow(kNotSupportedException);
@@ -192,17 +192,17 @@ class BranchInstructionFormat : public InstructionFormat
 
                 // +0: ldr x16, [pc, #dataOffset]
                 // +4: b(l)r x16
-                *((DWORD*)pOutBuffer) = (0x58000010 | (imm19 << 5));
+                *((DWORD*)pOutBufferRW) = (0x58000010 | (imm19 << 5));
                 if (IsCall(variationCode))
                 {
-                    *((DWORD*)(pOutBuffer+4)) = 0xD63F0200; // blr x16
+                    *((DWORD*)(pOutBufferRW+4)) = 0xD63F0200; // blr x16
                 }
                 else
                 {
-                    *((DWORD*)(pOutBuffer+4)) = 0xD61F0200; // br x16
+                    *((DWORD*)(pOutBufferRW+4)) = 0xD61F0200; // br x16
                 }
 
-                if (!ClrSafeInt<__int64>::addition(fixedUpReference, (__int64)pOutBuffer, fixedUpReference))
+                if (!ClrSafeInt<__int64>::addition(fixedUpReference, (__int64)pOutBufferRX, fixedUpReference))
                     COMPlusThrowArithmetic();
                 *((__int64*)pDataBuffer) = fixedUpReference;
             }
@@ -239,7 +239,7 @@ class LoadFromLabelInstructionFormat : public InstructionFormat
             return fExternal;
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
             // VariationCode is used to indicate the register the label is going to be loaded
@@ -252,11 +252,11 @@ class LoadFromLabelInstructionFormat : public InstructionFormat
             _ASSERTE((variationCode & 0x1F) != 31);
 
             // adrp Xt, #Page_of_fixedUpReference
-            *((DWORD*)pOutBuffer) = ((9<<28) | ((imm & 3)<<29) | (imm>>2)<<5 | (variationCode&0x1F));
+            *((DWORD*)pOutBufferRW) = ((9<<28) | ((imm & 3)<<29) | (imm>>2)<<5 | (variationCode&0x1F));
 
             // ldr Xt, [Xt, #offset_of_fixedUpReference_to_its_page]
-            UINT64 target = (UINT64)(fixedUpReference + pOutBuffer)>>3;
-            *((DWORD*)(pOutBuffer+4)) = ( 0xF9400000 | ((target & 0x1FF)<<10) | (variationCode & 0x1F)<<5 | (variationCode & 0x1F));
+            UINT64 target = (UINT64)(fixedUpReference + pOutBufferRX)>>3;
+            *((DWORD*)(pOutBufferRW+4)) = ( 0xF9400000 | ((target & 0x1FF)<<10) | (variationCode & 0x1F)<<5 | (variationCode & 0x1F));
         }
 };
 
@@ -274,7 +274,6 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
         pRD->volatileCurrContextPointers.X[i] = NULL;
 }
 
-#ifndef CROSSGEN_COMPILE
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
@@ -543,7 +542,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
-#endif // CROSSGEN_COMPILE
 
 TADDR FixupPrecode::GetMethodDesc()
 {
@@ -567,13 +565,9 @@ void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     int n = 0;
 
@@ -587,30 +581,9 @@ void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
     m_pMethodDesc = (TADDR)pMD;
 }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void StubPrecode::Fixup(DataImage *image)
+void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
-
-    image->FixupFieldToNode(this, offsetof(StubPrecode, m_pTarget),
-                            image->GetHelperThunk(CORINFO_HELP_EE_PRESTUB),
-                            0,
-                            IMAGE_REL_BASED_PTR);
-
-    image->FixupField(this, offsetof(StubPrecode, m_pMethodDesc),
-                      (void*)GetMethodDesc(),
-                      0,
-                      IMAGE_REL_BASED_PTR);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
-void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     int n = 0;
 
@@ -624,30 +597,9 @@ void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     m_pMethodDesc = (TADDR)pMD;
 }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-void NDirectImportPrecode::Fixup(DataImage *image)
+void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
     WRAPPER_NO_CONTRACT;
-
-    image->FixupField(this, offsetof(NDirectImportPrecode, m_pMethodDesc),
-                      (void*)GetMethodDesc(),
-                      0,
-                      IMAGE_REL_BASED_PTR);
-
-    image->FixupFieldToNode(this, offsetof(NDirectImportPrecode, m_pTarget),
-                            image->GetHelperThunk(CORINFO_HELP_EE_PINVOKE_FIXUP),
-                            0,
-                            IMAGE_REL_BASED_PTR);
-}
-#endif
-
-void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
-{
-    WRAPPER_NO_CONTRACT;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     InitCommon();
 
@@ -670,58 +622,13 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
             *(void**)GetBase() = (BYTE*)pMD - (iMethodDescChunkIndex * MethodDesc::ALIGNMENT);
     }
 
-    _ASSERTE(GetMethodDesc() == (TADDR)pMD);
+    _ASSERTE(pPrecodeRX->GetMethodDesc() == (TADDR)pMD);
 
     if (pLoaderAllocator != NULL)
     {
         m_pTarget = GetEEFuncEntryPoint(PrecodeFixupThunk);
     }
 }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-// Partial initialization. Used to save regrouped chunks.
-void FixupPrecode::InitForSave(int iPrecodeChunkIndex)
-{
-    STANDARD_VM_CONTRACT;
-
-    InitCommon();
-
-    _ASSERTE(FitsInU1(iPrecodeChunkIndex));
-    m_PrecodeChunkIndex = static_cast<BYTE>(iPrecodeChunkIndex);
-    // The rest is initialized in code:FixupPrecode::Fixup
-}
-
-void FixupPrecode::Fixup(DataImage *image, MethodDesc * pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Note that GetMethodDesc() does not return the correct value because of
-    // regrouping of MethodDescs into hot and cold blocks. That's why the caller
-    // has to supply the actual MethodDesc
-
-    SSIZE_T mdChunkOffset;
-    ZapNode * pMDChunkNode = image->GetNodeForStructure(pMD, &mdChunkOffset);
-    ZapNode * pHelperThunk = image->GetHelperThunk(CORINFO_HELP_EE_PRECODE_FIXUP);
-
-    image->FixupFieldToNode(this, offsetof(FixupPrecode, m_pTarget), pHelperThunk);
-
-    // Set the actual chunk index
-    FixupPrecode * pNewPrecode = (FixupPrecode *)image->GetImagePointer(this);
-
-    size_t mdOffset = mdChunkOffset - sizeof(MethodDescChunk);
-    size_t chunkIndex = mdOffset / MethodDesc::ALIGNMENT;
-    _ASSERTE(FitsInU1(chunkIndex));
-    pNewPrecode->m_MethodDescChunkIndex = (BYTE)chunkIndex;
-
-    // Fixup the base of MethodDescChunk
-    if (m_PrecodeChunkIndex == 0)
-    {
-        image->FixupFieldToNode(this, (BYTE *)GetBase() - (BYTE *)this,
-            pMDChunkNode, sizeof(MethodDescChunk));
-    }
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
 
 void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
@@ -745,7 +652,6 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     m_pMethodDesc = (TADDR)pMD;
 }
 
-#ifndef CROSSGEN_COMPILE
 BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     PTR_DWORD pInstr = dac_cast<PTR_DWORD>(PCODEToPINSTR(pCode));
@@ -784,7 +690,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
@@ -820,7 +725,6 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->Lr  = (PDWORD64)&pCalleeSaved->x30;
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
@@ -846,7 +750,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 
-#endif
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
@@ -1034,7 +937,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #ifdef FEATURE_COMINTEROP
 
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
+void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1051,16 +954,17 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
         0xd61f0140
     };
 
-    BYTE *pBuffer = (BYTE*)pCOMMethod - COMMETHOD_CALL_PRESTUB_SIZE;
+    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
+    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
 
-    memcpy(pBuffer, rgCode, sizeof(rgCode));
-    *((PCODE*)(pBuffer + sizeof(rgCode) + 4)) = target;
+    memcpy(pBufferRW, rgCode, sizeof(rgCode));
+    *((PCODE*)(pBufferRW + sizeof(rgCode) + 4)) = target;
 
     // Ensure that the updated instructions get actually written
-    ClrFlushInstructionCache(pBuffer, COMMETHOD_CALL_PRESTUB_SIZE);
+    ClrFlushInstructionCache(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE);
 
-    _ASSERTE(IS_ALIGNED(pBuffer + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-             *((PCODE*)(pBuffer + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
+    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
+             *((PCODE*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
 }
 #endif // FEATURE_COMINTEROP
 
@@ -1069,16 +973,23 @@ void JIT_TailCall()
     _ASSERTE(!"ARM64:NYI");
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
+#if !defined(DACCESS_COMPILE)
+EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
+
+extern "C" void STDCALL JIT_PatchedCodeStart();
+extern "C" void STDCALL JIT_PatchedCodeLast();
 
 static void UpdateWriteBarrierState(bool skipEphemeralCheck)
 {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
+    BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
+    ExecutableWriterHolder<BYTE> writeBarrierWriterHolder;
+    if (IsWriteBarrierCopyEnabled())
+    {
+        writeBarrierWriterHolder = ExecutableWriterHolder<BYTE>(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+        writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
+    }
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
 }
 
 void InitJITHelpers1()
@@ -1112,7 +1023,7 @@ void InitJITHelpers1()
 
 #else
 void UpdateWriteBarrierState(bool) {}
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {
@@ -1138,7 +1049,7 @@ void RedirectForThreadAbort()
     throw "NYI";
 }
 
-#if !defined(DACCESS_COMPILE) && !defined (CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1198,12 +1109,12 @@ AdjustContextForVirtualStub(
     {
         pExceptionRecord->ExceptionAddress = (PVOID)callsite;
     }
-	
+
     SetIP(pContext, callsite);
 
     return TRUE;
 }
-#endif // !(DACCESS_COMPILE && CROSSGEN_COMPILE)
+#endif // !DACCESS_COMPILE
 
 UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 {
@@ -1224,11 +1135,8 @@ UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
     return NULL;
 }
 
-void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
+void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
 {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     // adr x12, _label
     // ldp x16, x12, [x12]
     // br x16
@@ -1244,21 +1152,21 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
 
     m_pTargetCode = (TADDR)pTargetCode;
     m_pvSecretParam = (TADDR)pvSecretParam;
-    FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
+    FlushInstructionCache(GetCurrentProcess(),&pEntryThunkCodeRX->m_code,sizeof(m_code));
 }
 
 #ifndef DACCESS_COMPILE
 
 void UMEntryThunkCode::Poison()
 {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
+    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
 
-    m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
+    pThisRW->m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
 
     // ldp x16, x0, [x12]
-    m_code[1] = 0xa9400190;
+    pThisRW->m_code[1] = 0xa9400190;
+
     ClrFlushInstructionCache(&m_code,sizeof(m_code));
 }
 
@@ -1281,7 +1189,6 @@ void FlushWriteBarrierInstructionCache()
     // this wouldn't be called in arm64, just to comply with gchelpers.h
 }
 
-#ifndef CROSSGEN_COMPILE
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
@@ -1307,7 +1214,6 @@ int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#endif // CROSSGEN_COMPILE
 
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
@@ -1331,23 +1237,19 @@ void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
         // MOVK Rd, <2nd word>, LSL 1
         // MOVK Rd, <3nd word>, LSL 2
         // MOVK Rd, <4nd word>, LSL 3
-        WORD word = (WORD) (constant & WORD_MASK);
-        Emit32((DWORD)(0xD2<<24 | (4)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFF)) return;
 
-        word = (WORD) ((constant>>16) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (5)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFFFFFF)) return;
+        DWORD movInstr = 0xD2; // MOVZ
+        int shift = 0;
+        do
+        {
+            WORD word = (WORD) (constant & WORD_MASK);
+            Emit32((DWORD)(movInstr<<24 | (1 << 23) | (shift)<<21 | word<<5 | target));
+            shift++;
+            movInstr = 0xF2; // MOVK
+        }
+        while ((constant >>= 16) != 0);
 
-        word = (WORD) ((constant>>32) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (6)<<21 | word<<5 | target));
-        if (!(constant & 0xFFFFFFFFFFFF)) return;
 
-        word = (WORD) ((constant>>48) & WORD_MASK);
-        if (word != 0)
-            Emit32((DWORD)(0xF2<<24 | (7)<<21 | word<<5 | target));
 #undef WORD_MASK
 }
 
@@ -1571,21 +1473,23 @@ void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum
 }
 
 
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset)
+void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset, int log2Size)
 {
-    EmitLoadStoreRegImm(flags, (int)Xt, Xn, offset, FALSE);
+    EmitLoadStoreRegImm(flags, (int)Xt, Xn, offset, FALSE, log2Size);
 }
 void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset)
 {
     EmitLoadStoreRegImm(flags, (int)Vt, Xn, offset, TRUE);
 }
 
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec)
+void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec, int log2Size)
 {
     // Encoding:
     // wb=1 : [size(2)=11] | 1 | 1 | 1 | [IsVec(1)] | 0 | [!writeBack(1)] | 0 | [isLoad(1)] | 0 | [imm(7)] | [!postIndex(1)] | [Xn(5)] | [Xt(5)]
     // wb=0 : [size(2)=11] | 1 | 1 | 1 | [IsVec(1)] | 0 | [!writeBack(1)] | 0 | [isLoad(1)] | [          imm(12)           ] | [Xn(5)] | [Xt(5)]
     // where IsVec=0 for IntReg, 1 for VecReg
+
+    _ASSERTE((log2Size & ~0x3ULL) == 0);
 
     BOOL isLoad    = flags & 1;
     BOOL writeBack = flags & 2;
@@ -1593,7 +1497,8 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int 
     if (writeBack)
     {
         _ASSERTE(-256 <= offset && offset <= 255);
-        Emit32((DWORD) ( (0x1F<<27) |
+        Emit32((DWORD) ( (log2Size << 30) |
+                         (0x7<<27) |
                          (!!isVec<<26) |
                          (!writeBack<<24) |
                          (!!isLoad<<22) |
@@ -1606,13 +1511,16 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int 
     }
     else
     {
-        _ASSERTE((0 <= offset) && (offset <= 32760));
-        _ASSERTE((offset & 7) == 0);
-        Emit32((DWORD) ( (0x1F<<27) |
+        int scaledOffset = 0xFFF & (offset >> log2Size);
+
+        _ASSERTE(offset == (scaledOffset << log2Size));
+
+        Emit32((DWORD) ( (log2Size << 30) |
+                         (0x7<<27) |
                          (!!isVec<<26) |
                          (!writeBack<<24) |
                          (!!isLoad<<22) |
-                         ((0xFFF & (offset >> 3)) << 10) |
+                         (scaledOffset << 10) |
                          (Xn<<5) |
                          (regNum))
               );
@@ -1719,15 +1627,25 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         {
             // If source is present in register then destination must also be a register
             _ASSERTE(pEntry->dstofs & ShuffleEntry::REGMASK);
+            _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
+            _ASSERTE(!(pEntry->srcofs & ShuffleEntry::FPREGMASK));
 
-            EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSMASK));
+            EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSREGMASK));
         }
         else if (pEntry->dstofs & ShuffleEntry::REGMASK)
         {
             // source must be on the stack
             _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
+            _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
 
-            EmitLoadStoreRegImm(eLOAD, IntReg(pEntry->dstofs & ShuffleEntry::OFSMASK), RegSp, pEntry->srcofs * sizeof(void*));
+
+#if !defined(TARGET_OSX)
+            EmitLoadStoreRegImm(eLOAD, IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), RegSp, pEntry->srcofs * sizeof(void*));
+#else
+            int log2Size = (pEntry->srcofs >> 12);
+            int srcOffset = int(pEntry->srcofs & 0xfff) << log2Size;
+            EmitLoadStoreRegImm(eLOAD, IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), RegSp, srcOffset, log2Size);
+#endif
         }
         else
         {
@@ -1737,8 +1655,22 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             // dest must be on the stack
             _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
 
+#if !defined(TARGET_OSX)
             EmitLoadStoreRegImm(eLOAD, IntReg(9), RegSp, pEntry->srcofs * sizeof(void*));
             EmitLoadStoreRegImm(eSTORE, IntReg(9), RegSp, pEntry->dstofs * sizeof(void*));
+#else
+            // Decode ShuffleIterator::GetNextOfs() encoded entries
+            // See comments in that function
+
+            // We expect src and dst stack size to be the same.
+            _ASSERTE((pEntry->srcofs >> 12) == (pEntry->dstofs >> 12));
+            int log2Size = (pEntry->srcofs >> 12);
+            int srcOffset = int(pEntry->srcofs & 0xfff) << log2Size;
+            int dstOffset = int(pEntry->dstofs & 0xfff) << log2Size;
+
+            EmitLoadStoreRegImm(eLOAD, IntReg(9), RegSp, srcOffset, log2Size);
+            EmitLoadStoreRegImm(eSTORE, IntReg(9), RegSp, dstOffset, log2Size);
+#endif
         }
     }
 
@@ -1761,7 +1693,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
         _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
 
-        EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSMASK));
+        EmitMovReg(IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), IntReg(pEntry->srcofs & ShuffleEntry::OFSREGMASK));
     }
 
     MetaSig msig(pSharedMD);
@@ -1827,7 +1759,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_READYTORUN
 
@@ -1837,32 +1768,20 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
-    BYTE * pStart = (BYTE *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
-    BYTE * p = pStart; \
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-
-#define END_DYNAMIC_HELPER_EMIT() \
-    _ASSERTE(pStart + cb == p); \
-    while (p < pStart + cbAligned) { *(DWORD*)p = 0xBADC0DF0; p += 4; }\
-    ClrFlushInstructionCache(pStart, cbAligned); \
-    return (PCODE)pStart
-#else // defined(HOST_OSX) && defined(HOST_ARM64)
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
-    SIZE_T cb = size; \
-    SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
-    BYTE * pStart = (BYTE *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    ExecutableWriterHolder<BYTE> startWriterHolder(pStartRX, cbAligned); \
+    BYTE * pStart = startWriterHolder.GetRW(); \
+    size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xBADC0DF0; p += 4; }\
-    ClrFlushInstructionCache(pStart, cbAligned); \
-    return (PCODE)pStart
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+    ClrFlushInstructionCache(pStartRX, cbAligned); \
+    return (PCODE)pStartRX
 
 // Uses x8 as scratch register to store address of data label
 // After load x8 is increment to point to next data
@@ -1906,7 +1825,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
 }
 
 // Caller must ensure sufficient byte are allocated including padding (if applicable)
-void DynamicHelpers::EmitHelperWithArg(BYTE*& p, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1944,7 +1863,7 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
 
-    EmitHelperWithArg(p, pAllocator, arg, target);
+    EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -2139,16 +2058,15 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
-
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
-    pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
-    pArgs->signature = pLookup->signature;
-    pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+    ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));
+    argsWriterHolder.GetRW()->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
+    argsWriterHolder.GetRW()->signature = pLookup->signature;
+    argsWriterHolder.GetRW()->module = (CORINFO_MODULE_HANDLE)pModule;
 
     WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
@@ -2161,7 +2079,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // reuse EmitHelperWithArg for below two operations
         // X1 <- pArgs
         // branch to helperAddress
-        EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+        EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
 
         END_DYNAMIC_HELPER_EMIT();
     }
@@ -2299,7 +2217,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             // reuse EmitHelperWithArg for below two operations
             // X1 <- pArgs
             // branch to helperAddress
-            EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+            EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
         }
 
         // datalabel:
@@ -2322,6 +2240,5 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 }
 #endif // FEATURE_READYTORUN
 
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE

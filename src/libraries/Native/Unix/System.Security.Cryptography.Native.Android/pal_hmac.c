@@ -136,3 +136,29 @@ void CryptoNative_HmacDestroy(jobject ctx)
 {
     ReleaseGRef(GetJNIEnv(), ctx);
 }
+
+int32_t CryptoNative_HmacOneShot(intptr_t type,
+                                 uint8_t* key,
+                                 int32_t keyLen,
+                                 uint8_t* source,
+                                 int32_t sourceLen,
+                                 uint8_t* md,
+                                 int32_t* mdSize)
+{
+    jobject hmacCtx = CryptoNative_HmacCreate(key, keyLen, type);
+
+    if (hmacCtx == FAIL)
+        return FAIL;
+
+    int32_t ret = sourceLen == 0 ? SUCCESS : CryptoNative_HmacUpdate(hmacCtx, source, sourceLen);
+
+    if (ret != SUCCESS)
+    {
+        CryptoNative_HmacDestroy(hmacCtx);
+        return ret;
+    }
+
+    ret = CryptoNative_HmacFinal(hmacCtx, md, mdSize);
+    CryptoNative_HmacDestroy(hmacCtx);
+    return ret;
+}

@@ -21,6 +21,9 @@ WARNING:   When setting properties based on their current state (for example:
   <PropertyGroup>
     <BashScriptSnippetGen>$(BashScriptSnippetGen);GetCrossgenBashScript</BashScriptSnippetGen>
     <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetCrossgenBatchScript</BatchScriptSnippetGen>
+
+    <!-- Crossgen2 testing is incompatible with the ilasm/ildasm round trip testing. -->
+    <IlasmRoundTripIncompatible Condition="'$(AlwaysUseCrossGen2)' == 'true'">true</IlasmRoundTripIncompatible>
   </PropertyGroup>
 
   <!--
@@ -32,39 +35,16 @@ WARNING:   When setting properties based on their current state (for example:
   -->
   <Target Name="GetCrossgenBashScript">
 
+    <Error Text="Setting both AlwaysUseCrossGen2 to true and CrossGenTest to false is non-sensical" Condition="'$(CrossGenTest)' == 'false' and '$(AlwaysUseCrossGen2)' == 'true'"/>
+
     <PropertyGroup>
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
         <![CDATA[
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
-    export RunCrossGen=
+    unset RunCrossGen
     export RunCrossGen2=1
     export CompositeBuildMode=1
-fi
-
-# CrossGen Script
-if [ ! -z ${RunCrossGen+x} ]%3B then
-    export COMPlus_ZapRequire=$(ZapRequire)
-    export COMPlus_ZapRequireList=$(MSBuildProjectName)
-    if [ ! -f $(MSBuildProjectName).org ]%3B then
-        TakeLock
-        if [ ! -f $(MSBuildProjectName).org ]%3B then
-          mkdir IL
-          cp $(MSBuildProjectName).dll IL/$(MSBuildProjectName).dll
-          mv $(MSBuildProjectName).dll $(MSBuildProjectName).org
-          __Command=$_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
-          echo $__Command
-          $__Command
-          __cgExitCode=$?
-          if [ $__cgExitCode -ne 0 ]
-          then
-            echo Crossgen failed with exitcode: $__cgExitCode
-            ReleaseLock
-            exit 1
-          fi
-        fi
-        ReleaseLock
-    fi
 fi
 
 # CrossGen2 Script
@@ -85,6 +65,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
       else
         cp *.dll IL-CG2/
+        rm IL-CG2/composite-r2r.dll
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -100,14 +81,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
         __ResponseFile="$__OutputFile.rsp"
         rm $__ResponseFile
-
-        # Suppress the GC stress COMPlus for the duration of Crossgen2 execution
-        local gcStressModeToRestore=$COMPlus_GCStress;
-        local heapVerifyModeToRestore=$COMPlus_HeapVerify;
-        local readyToRunModeToRestore=$COMPlus_ReadyToRun;
-        export COMPlus_GCStress=
-        export COMPlus_HeapVerify=
-        export COMPlus_ReadyToRun=
 
         __Command=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -132,13 +105,15 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
         echo "Response file: $__ResponseFile"
         cat $__ResponseFile
+
+        # Suppress some COMPlus variables for the duration of Crossgen2 execution
+        export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+
         echo "Running CrossGen2: $__Command"
         $__Command
         __cg2ExitCode=$?
 
-        export COMPlus_GCStress=$gcStressModeToRestore
-        export COMPlus_HeapVerify=$heapVerifyModeToRestore
-        export COMPlus_ReadyToRun=$readyToRunModeToRestore
+        export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
       }
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
@@ -166,6 +141,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     fi
     ReleaseLock
   fi
+
+  export COMPlus_ZapRequire=$(ZapRequire)
+  export COMPlus_ZapRequireList=$(MSBuildProjectName)
 fi
         ]]>
       </CrossgenBashScript>
@@ -183,31 +161,6 @@ if /i "$(AlwaysUseCrossGen2)" == "true" (
     set RunCrossGen=
     set RunCrossGen2=1
     set CompositeBuildMode=1
-)
-
-REM CrossGen Script
-if defined RunCrossGen (
-    if defined LargeVersionBubble ( set OptionalArguments=!OptionalArguments! /largeversionbubble)
-    set COMPlus_ZapRequire=$(ZapRequire)
-    set COMPlus_ZapRequireList=$(MSBuildProjectName)
-    if not exist "$(MSBuildProjectName).org" (
-        call :TakeLock
-        set CrossGenStatus=0
-        if not exist "$(MSBuildProjectName).org" (
-            mkdir IL
-            copy $(MSBuildProjectName).dll IL\$(MSBuildProjectName).dll
-            ren $(MSBuildProjectName).dll $(MSBuildProjectName).org
-            set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths !CORE_ROOT!%3B%25cd%25 /in %21scriptPath%21$(MSBuildProjectName).org /out %21scriptPath%21\$(MSBuildProjectName).dll
-            echo "!__Command!"
-            call !__Command!
-            set CrossGenStatus=!ERRORLEVEL!
-        )
-        call :ReleaseLock
-        IF NOT !CrossGenStatus!==0 (
-            ECHO Crossgen failed with exitcode - !CrossGenStatus!
-            Exit /b 1
-        )
-    )
 )
 
 REM CrossGen2 Script
@@ -230,6 +183,7 @@ if defined RunCrossGen2 (
 
     mkdir IL-CG2
     copy *.dll IL-CG2\
+    del IL-CG2\composite-r2r.dll
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
@@ -256,14 +210,6 @@ if defined RunCrossGen2 (
 :CompileOneFileCrossgen2
     set __ResponseFile=!__OutputFile!.rsp
     del /Q !__ResponseFile!
-
-    REM Suppress GC stress mode for the duration of Crossgen2 execution
-    set __gcStressModeToRestore=!COMPlus_GCStress!
-    set COMPlus_GCStress=
-    set __heapVerifyModeToRestore=!COMPlus_HeapVerify!
-    set COMPlus_HeapVerify=
-    set __readyToRunModeToRestore=!COMPlus_ReadyToRun!
-    set COMPlus_ReadyToRun=
 
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -292,13 +238,17 @@ if defined RunCrossGen2 (
     echo Response file: !__ResponseFile!
     type !__ResponseFile!
 
+    REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+    setlocal
+    set "COMPlus_GCName="
+    set "COMPlus_GCStress="
+    set "COMPlus_HeapVerify="
+    set "COMPlus_ReadyToRun="
+
     echo "!__Command!"
     call !__Command!
+    endlocal
     set CrossGen2Status=!ERRORLEVEL!
-    set COMPlus_GCStress=!__gcStressModeToRestore!
-    set COMPlus_HeapVerify=!__heapVerifyModeToRestore!
-    set COMPlus_ReadyToRun=!__readyToRunModeToRestore!
-
     Exit /b 0
 
 :DoneCrossgen2Operations
@@ -309,6 +259,9 @@ if defined RunCrossGen2 (
         ECHO Crossgen2 failed with exitcode - !CrossGen2Status!
         Exit /b 1
     )
+
+  set COMPlus_ZapRequire=$(ZapRequire)
+  set COMPlus_ZapRequireList=$(MSBuildProjectName)
 )
         ]]>
       </CrossgenBatchScript>

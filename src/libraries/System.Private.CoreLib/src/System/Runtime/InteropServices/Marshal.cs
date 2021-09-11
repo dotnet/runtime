@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices
             if (arr is null)
                 throw new ArgumentNullException(nameof(arr));
 
-            void* pRawData = Unsafe.AsPointer(ref arr.GetRawArrayData());
+            void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
 

@@ -12,6 +12,10 @@
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
 
+#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
+#include "executableallocator.h"
+#endif
+
 typedef NEON128                     FPRegister64;
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
@@ -146,7 +150,13 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
 
+#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE) && defined(HOST_OSX)
+    ExecutableWriterHolder<void> instructionWriterHolder((LPVOID)address, sizeof(PRD_TYPE));
+
+    ULONGLONG ptraddr = dac_cast<ULONGLONG>(instructionWriterHolder.GetRW());
+#else // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX
     ULONGLONG ptraddr = dac_cast<ULONGLONG>(address);
+#endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX
     *(PRD_TYPE *)ptraddr = instruction;
     FlushInstructionCache(GetCurrentProcess(),
                           address,

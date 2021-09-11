@@ -6,8 +6,9 @@
 // <is-shared-static>)
 
 // clang-format off
-ValueNumFuncDef(MapStore, 3, false, false, false)
-ValueNumFuncDef(MapSelect, 2, false, false, false)
+ValueNumFuncDef(MemOpaque, 1, false, false, false)  // Args: 0: loop num
+ValueNumFuncDef(MapStore, 4, false, false, false)   // Args: 0: map, 1: index (e. g. field handle), 2: value being stored, 3: loop num.
+ValueNumFuncDef(MapSelect, 2, false, false, false)  // Args: 0: map, 1: key.
 
 ValueNumFuncDef(FieldSeq, 2, false, false, false)   // Sequence (VN of null == empty) of (VN's of) field handles.
 ValueNumFuncDef(NotAField, 0, false, false, false)  // Value number function for FieldSeqStore::NotAField.
@@ -74,6 +75,10 @@ ValueNumFuncDef(Dbl2Int, 1, false, false, false)
 ValueNumFuncDef(Dbl2UInt, 1, false, false, false)
 ValueNumFuncDef(Dbl2Lng, 1, false, false, false)
 ValueNumFuncDef(Dbl2ULng, 1, false, false, false)
+ValueNumFuncDef(Dbl2IntOvf, 1, false, false, false)
+ValueNumFuncDef(Dbl2UIntOvf, 1, false, false, false)
+ValueNumFuncDef(Dbl2LngOvf, 1, false, false, false)
+ValueNumFuncDef(Dbl2ULngOvf, 1, false, false, false)
 ValueNumFuncDef(FltRound, 1, false, false, false)
 ValueNumFuncDef(DblRound, 1, false, false, false)
 

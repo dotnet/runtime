@@ -25,8 +25,6 @@ char*          g_logFilePath        = nullptr; // We *don't* leak this, hooray!
 WCHAR*         g_HomeDirectory      = nullptr;
 WCHAR*         g_DefaultRealJitPath = nullptr;
 MethodContext* g_globalContext      = nullptr;
-WCHAR*         g_debugRecStr        = nullptr;
-WCHAR*         g_debugRepStr        = nullptr;
 bool           g_initialized        = false;
 
 void SetDefaultPaths()
@@ -82,27 +80,6 @@ void SetLogFilePath()
     }
 }
 
-void SetDebugVariables()
-{
-    if (g_debugRecStr == nullptr)
-    {
-        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
-    }
-    if (g_debugRepStr == nullptr)
-    {
-        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
-    }
-
-    if (0 == wcscmp(g_debugRecStr, W("1")))
-    {
-        g_debugRec = true;
-    }
-    if (0 == wcscmp(g_debugRepStr, W("1")))
-    {
-        g_debugRep = true;
-    }
-}
-
 void InitializeShim()
 {
     if (g_initialized)
@@ -153,14 +130,14 @@ extern "C"
     return TRUE;
 }
 
-extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
+extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
 {
     // crossgen2 doesn't invoke DllMain on Linux/Mac (under PAL), so optionally do initialization work here.
     InitializeShim();
 
     SetDefaultPaths();
     SetLibName();
-    SetDebugVariables();
+    SetDebugDumpVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
@@ -180,7 +157,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
     pnjitStartup(g_ourJitHost);
 }
 
-extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
+extern "C" DLLEXPORT ICorJitCompiler* getJit()
 {
     DWORD             dwRetVal = 0;
     PgetJit           pngetJit;
@@ -191,7 +168,7 @@ extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
     SetLibName();
     SetLogPath();
     SetLogPathName();
-    SetDebugVariables();
+    SetDebugDumpVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {

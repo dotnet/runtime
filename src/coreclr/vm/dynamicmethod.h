@@ -286,7 +286,7 @@ private:
     HostCodeHeap(EEJitManager *pJitManager);
     HeapList* InitializeHeapList(CodeHeapRequestInfo *pInfo);
     TrackAllocation* AllocFromFreeList(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
-    void AddToFreeList(TrackAllocation *pBlockToInsert);
+    void AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocation *pBlockToInsertRW);
 
     TrackAllocation* AllocMemory_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
 

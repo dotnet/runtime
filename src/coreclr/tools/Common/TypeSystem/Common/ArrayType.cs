@@ -119,6 +119,11 @@ namespace Internal.TypeSystem
             return _methods;
         }
 
+        public override IEnumerable<MethodDesc> GetVirtualMethods()
+        {
+            return MethodDesc.EmptyMethods;
+        }
+
         public MethodDesc GetArrayMethod(ArrayMethodKind kind)
         {
             if (_methods == null)

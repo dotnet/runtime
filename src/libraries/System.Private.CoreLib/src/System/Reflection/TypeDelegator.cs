@@ -126,6 +126,8 @@ namespace System.Reflection
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => typeImpl.GetMembers(bindingAttr);
 
+        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member) => typeImpl.GetMemberWithSameMetadataDefinitionAs(member);
+
         protected override TypeAttributes GetAttributeFlagsImpl() => typeImpl.Attributes;
 
         public override bool IsTypeDefinition => typeImpl.IsTypeDefinition;

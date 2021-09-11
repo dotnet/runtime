@@ -152,26 +152,38 @@ namespace System.Text.Json.Nodes.Tests
             FieldInfo elementField = typeof(JsonObject).GetField("_jsonElement", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(elementField);
 
-            FieldInfo listField = typeof(JsonObject).GetField("_list", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo jsonDictionaryField = typeof(JsonObject).GetField("_dictionary", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(jsonDictionaryField);
+
+            Type jsonPropertyDictionaryType = typeof(JsonObject).Assembly.GetType("System.Text.Json.JsonPropertyDictionary`1");
+            Assert.NotNull(jsonPropertyDictionaryType);
+
+            jsonPropertyDictionaryType = jsonPropertyDictionaryType.MakeGenericType(new Type[] { typeof(JsonNode) });
+
+            FieldInfo listField = jsonPropertyDictionaryType.GetField("_propertyList", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(listField);
 
-            FieldInfo dictionaryField = typeof(JsonObject).GetField("_dictionary", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo dictionaryField = jsonPropertyDictionaryType.GetField("_propertyDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(dictionaryField);
 
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
             {
                 // Only JsonElement is present.
                 JsonNode node = JsonNode.Parse(stream);
+                object jsonDictionary = jsonDictionaryField.GetValue(node);
+                Assert.Null(jsonDictionary); // Value is null until converted from JsonElement.
                 Assert.NotNull(elementField.GetValue(node));
-                Assert.Null(listField.GetValue(node));
-                Assert.Null(dictionaryField.GetValue(node));
                 Test();
 
                 // Cause the single JsonElement to expand into individual JsonElement nodes.
                 Assert.Equal(1, node.AsObject()["MyInt16"].GetValue<int>());
                 Assert.Null(elementField.GetValue(node));
-                Assert.NotNull(listField.GetValue(node));
-                Assert.NotNull(dictionaryField.GetValue(node)); // The dictionary threshold was reached.
+
+                jsonDictionary = jsonDictionaryField.GetValue(node);
+                Assert.NotNull(jsonDictionary);
+
+                Assert.NotNull(listField.GetValue(jsonDictionary));
+                Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
                 Test();
 
                 void Test()

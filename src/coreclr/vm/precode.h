@@ -31,9 +31,6 @@ enum PrecodeType {
 
 // For more details see. file:../../doc/BookOfTheRuntime/ClassLoader/MethodDescDesign.doc
 class Precode {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     BYTE m_data[SIZEOF_PRECODE_BASE];
 
@@ -180,11 +177,6 @@ public:
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
 
-#ifdef CROSSGEN_COMPILE
-        // Crossgen does not create jump stubs on AMD64, so just return always false here to
-        // avoid non-deterministic behavior.
-        return FALSE;
-#else // CROSSGEN_COMPILE
         if (target == addr)
             return TRUE;
 
@@ -198,7 +190,6 @@ public:
 #endif // TARGET_AMD64
 
         return FALSE;
-#endif // CROSSGEN_COMPILE
     }
 
     BOOL IsPointingToNativeCode(PCODE pNativeCode)
@@ -238,7 +229,7 @@ public:
 
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
-    void Init(PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
 #ifndef DACCESS_COMPILE
     void ResetTargetInterlocked();
@@ -302,30 +293,6 @@ public:
 
     static TADDR AllocateTemporaryEntryPoints(MethodDescChunk* pChunk,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
-
-#ifdef FEATURE_PREJIT
-    //
-    // NGEN stuff
-    //
-
-    void Save(DataImage *image);
-    void Fixup(DataImage *image, MethodDesc * pMD);
-
-    BOOL IsPrebound(DataImage *image);
-
-    // Helper class for saving precodes in chunks
-    class SaveChunk
-    {
-#ifdef HAS_FIXUP_PRECODE_CHUNKS
-        // Array of methods to be saved in the method desc chunk
-        InlineSArray<MethodDesc *, 20> m_rgPendingChunk;
-#endif // HAS_FIXUP_PRECODE_CHUNKS
-
-    public:
-        void Save(DataImage * image, MethodDesc * pMD);
-        void Flush(DataImage * image);
-    };
-#endif // FEATURE_PREJIT
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

@@ -479,6 +479,12 @@ int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* t
     abort_if_invalid_pointer_argument (sslStream);
     abort_if_invalid_pointer_argument (targetHost);
 
+    if (g_SNIHostName == NULL || g_SSLParametersSetServerNames == NULL)
+    {
+        // SSL not supported below API Level 24
+        return UNSUPPORTED_API_LEVEL;
+    }
+
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;

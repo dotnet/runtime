@@ -623,6 +623,14 @@ mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 }
 
 void
+mono_mb_emit_no_nullcheck (MonoMethodBuilder *mb)
+{
+	mono_mb_emit_byte (mb, CEE_PREFIX1);
+	mono_mb_emit_byte (mb, CEE_NO_);
+	mono_mb_emit_byte (mb, CEE_NO_NULLCHECK);
+}
+
+void
 mono_mb_set_clauses (MonoMethodBuilder *mb, int num_clauses, MonoExceptionClause *clauses)
 {
 	mb->num_clauses = num_clauses;

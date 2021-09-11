@@ -213,11 +213,9 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         }
     }
 
-    BasicBlock* block;
-
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             BuildConnGraphVisitor buildConnGraphVisitor(this);
             buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -340,9 +338,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
     m_PossiblyStackPointingPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_DefinitelyStackPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
-    BasicBlock* block;
-
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
         const bool basicBlockHasNewObj       = (block->bbFlags & BBF_HAS_NEWOBJ) == BBF_HAS_NEWOBJ;
         const bool basicBlockHasBackwardJump = (block->bbFlags & BBF_BACKWARD_JUMP) == BBF_BACKWARD_JUMP;
@@ -353,7 +349,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
         }
 #endif // DEBUG
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             GenTree* stmtExpr = stmt->GetRootNode();
             GenTree* op2      = nullptr;
@@ -460,7 +456,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     bool         helperHasSideEffects = allocObj->gtHelperHasSideEffects;
 
     GenTreeCall::Use* args;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP entryPoint = allocObj->gtEntryPoint;
     if (helper == CORINFO_HELP_READYTORUN_NEW)
     {
@@ -479,7 +475,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (entryPoint.addr != nullptr)
     {
         assert(comp->opts.IsReadyToRun());
@@ -917,11 +913,9 @@ void ObjectAllocator::RewriteUses()
         }
     };
 
-    BasicBlock* block;
-
-    foreach_block(comp, block)
+    for (BasicBlock* const block : comp->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             RewriteUsesVisitor rewriteUsesVisitor(this);
             rewriteUsesVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);

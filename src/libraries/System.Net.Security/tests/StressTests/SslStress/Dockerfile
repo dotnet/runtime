@@ -1,4 +1,4 @@
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:5.0-buster-slim
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 FROM $SDK_BASE_IMAGE
 
 RUN echo "DOTNET_SDK_VERSION="$DOTNET_SDK_VERSION
@@ -6,7 +6,7 @@ RUN echo "DOTNET_VERSION="$DOTNET_VERSION
 
 WORKDIR /app
 COPY . .
-WORKDIR /app/System.Net.Security/tests/StressTests/SslStress 
+WORKDIR /app/System.Net.Security/tests/StressTests/SslStress
 
 ARG CONFIGURATION=Release
 RUN dotnet build -c $CONFIGURATION

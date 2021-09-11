@@ -38,6 +38,8 @@
       COMPlus_FeatureSIMD;
       COMPlus_ForceRelocs;
       COMPlus_GCStress;
+      COMPlus_GCName;
+      COMPlus_gcServer;
       COMPlus_HeapVerify;
       COMPlus_JITMinOpts;
       COMPlus_JitELTHookEnabled;
@@ -57,6 +59,8 @@
       COMPlus_JitInlinePolicyProfile;
       COMPlus_JitClassProfiling;
       COMPlus_JitEdgeProfiling;
+      COMPlus_JitRandomGuardedDevirtualization;
+      COMPlus_JitRandomEdgeCounts;
       RunningIlasmRoundTrip
     </COMPlusVariables>
   </PropertyGroup>
@@ -155,6 +159,13 @@
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />
     <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
+    <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1"/>
+    <TestEnvironment Include="fullpgo_random_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomEdgeCounts="1"/>
+    <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1"/>
+    <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
+    <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
+    <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>
+    <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' != 'true'" gcServer="1" GCName="libclrgc.so"/>
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
@@ -193,7 +204,7 @@
       <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
 
       <!-- Mono interpreter -->
-      <_TestEnvFileLine Include="set MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="set MONO_ENV_OPTIONS=--interpreter" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
@@ -208,7 +219,10 @@
       <_TestEnvFileLine Include="@(_COMPlusVariable->'export %(Identity)=%(Value)')"  />
 
       <!-- Mono interpreter -->
-      <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
+
+      <!-- Hack: Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->

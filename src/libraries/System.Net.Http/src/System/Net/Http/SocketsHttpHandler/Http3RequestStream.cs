@@ -16,7 +16,6 @@ using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
-    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
@@ -56,6 +55,9 @@ namespace System.Net.Http
         // Keep track of how much is remaining in that frame.
         private long _requestContentLengthRemaining;
 
+        // For the precomputed length case, we need to add the DATA framing for the first write only.
+        private bool _singleDataFrameWritten;
+
         public long StreamId
         {
             get => Volatile.Read(ref _streamId);
@@ -82,6 +84,7 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
+                AbortStream();
                 _stream.Dispose();
                 DisposeSyncHelper();
             }
@@ -92,6 +95,7 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
+                AbortStream();
                 await _stream.DisposeAsync().ConfigureAwait(false);
                 DisposeSyncHelper();
             }
@@ -100,8 +104,6 @@ namespace System.Net.Http
         private void DisposeSyncHelper()
         {
             _connection.RemoveStream(_stream);
-            _connection = null!;
-            _stream = null!;
 
             _sendBuffer.Dispose();
             _recvBuffer.Dispose();
@@ -141,19 +143,9 @@ namespace System.Net.Http
                     // If we don't have content, or we are doing Expect 100 Continue, then we can't rely on
                     // this and must send our headers immediately.
 
-                    await _stream.WriteAsync(_sendBuffer.ActiveMemory, requestCancellationSource.Token).ConfigureAwait(false);
-                    _sendBuffer.Discard(_sendBuffer.ActiveLength);
-
-                    if (_expect100ContinueCompletionSource != null)
-                    {
-                        // Flush to ensure we get a response.
-                        // TODO: MsQuic may not need any flushing.
-                        await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        _stream.Shutdown();
-                    }
+                    // End the stream writing if there's no content to send, do it as part of the write so that the FIN flag isn't send in an empty QUIC frame.
+                    // Note that there's no need to call Shutdown separately since the FIN flag in the last write is the same thing.
+                    await FlushSendBufferAsync(endStream: _request.Content == null, requestCancellationSource.Token).ConfigureAwait(false);
                 }
 
                 // If using duplex content, the content will continue sending after this method completes.
@@ -171,7 +163,7 @@ namespace System.Net.Http
                 // See Http2Connection.SendAsync for a full comment on this logic -- it is identical behavior.
                 if (sendContentTask.IsCompleted ||
                     _request.Content?.AllowDuplex != true ||
-                    sendContentTask == await Task.WhenAny(sendContentTask, readResponseTask).ConfigureAwait(false) ||
+                    await Task.WhenAny(sendContentTask, readResponseTask).ConfigureAwait(false) == sendContentTask ||
                     sendContentTask.IsCompleted)
                 {
                     try
@@ -242,6 +234,11 @@ namespace System.Net.Http
                 // The server is requesting us fall back to an older HTTP version.
                 throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
             }
+            catch (QuicStreamAbortedException ex) when (ex.ErrorCode == (long)Http3ErrorCode.RequestRejected)
+            {
+                // The server is rejecting the request without processing it, retry it on a different connection.
+                throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+            }
             catch (QuicStreamAbortedException ex)
             {
                 // Our stream was reset.
@@ -256,11 +253,10 @@ namespace System.Net.Http
                 Exception abortException = _connection.Abort(ex);
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
-            catch (OperationCanceledException ex)
-                when (ex.CancellationToken == requestCancellationSource.Token) // It is possible for user's Content code to throw an unexpected OperationCanceledException.
+            // It is possible for user's Content code to throw an unexpected OperationCanceledException.
+            catch (OperationCanceledException ex) when (ex.CancellationToken == requestCancellationSource.Token)
             {
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
-
                 if (cancellationToken.IsCancellationRequested)
                 {
                     _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
@@ -364,15 +360,20 @@ namespace System.Net.Http
                 await content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
             }
 
+            // Set to 0 to recognize that the whole request body has been sent and therefore there's no need to abort write side in case of a premature disposal.
+            _requestContentLengthRemaining = 0;
+
             if (_sendBuffer.ActiveLength != 0)
             {
-                // Our initial send buffer, which has our headers, are normally sent out on the first write to the Http3WriteStream.
+                // Our initial send buffer, which has our headers, is normally sent out on the first write to the Http3WriteStream.
                 // If we get here, it means the content didn't actually do any writing. Send out the headers now.
-                await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
-                _sendBuffer.Discard(_sendBuffer.ActiveLength);
+                // Also send the FIN flag, since this is the last write. No need to call Shutdown separately.
+                await FlushSendBufferAsync(endStream: true, cancellationToken).ConfigureAwait(false);
             }
-
-            _stream.Shutdown();
+            else
+            {
+                _stream.Shutdown();
+            }
         }
 
         private async ValueTask WriteRequestContentAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -394,9 +395,9 @@ namespace System.Net.Http
                 }
                 _requestContentLengthRemaining -= buffer.Length;
 
-                if (_sendBuffer.ActiveLength != 0)
+                if (!_singleDataFrameWritten)
                 {
-                    // We haven't sent out headers yet, so write them together with the user's content buffer.
+                    // Note we may not have sent headers yet; if so, _sendBuffer.ActiveLength will be > 0, and we will write them in a single write.
 
                     // Because we have a Content-Length, we can write it in a single DATA frame.
                     BufferFrameEnvelope(Http3FrameType.Data, remaining);
@@ -406,10 +407,12 @@ namespace System.Net.Http
                     await _stream.WriteAsync(_gatheredSendBuffer, cancellationToken).ConfigureAwait(false);
 
                     _sendBuffer.Discard(_sendBuffer.ActiveLength);
+
+                    _singleDataFrameWritten = true;
                 }
                 else
                 {
-                    // Headers already sent, send just the content buffer directly.
+                    // DATA frame already sent, send just the content buffer directly.
                     await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
                 }
             }
@@ -425,6 +428,14 @@ namespace System.Net.Http
 
                 _sendBuffer.Discard(_sendBuffer.ActiveLength);
             }
+        }
+
+        private async ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
+        {
+            await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream, cancellationToken).ConfigureAwait(false);
+            _sendBuffer.Discard(_sendBuffer.ActiveLength);
+
+            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask DrainContentLength0Frames(CancellationToken cancellationToken)
@@ -587,7 +598,7 @@ namespace System.Net.Http
 
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
-                int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref _headerValues);
+                int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
 
@@ -867,24 +878,43 @@ namespace System.Net.Http
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
                 }
 
-                int statusCode = staticIndex switch
+                int statusCode;
+                if (staticValue != null) // Indexed Header Field -- both name and value are taken from the table
                 {
-                    H3StaticTable.Status103 => 103,
-                    H3StaticTable.Status200 => 200,
-                    H3StaticTable.Status304 => 304,
-                    H3StaticTable.Status404 => 404,
-                    H3StaticTable.Status503 => 503,
-                    H3StaticTable.Status100 => 100,
-                    H3StaticTable.Status204 => 204,
-                    H3StaticTable.Status206 => 206,
-                    H3StaticTable.Status302 => 302,
-                    H3StaticTable.Status400 => 400,
-                    H3StaticTable.Status403 => 403,
-                    H3StaticTable.Status421 => 421,
-                    H3StaticTable.Status425 => 425,
-                    H3StaticTable.Status500 => 500,
-                    _ => HttpConnectionBase.ParseStatusCode(literalValue),
-                };
+                    statusCode = staticIndex switch
+                    {
+                        H3StaticTable.Status103 => 103,
+                        H3StaticTable.Status200 => 200,
+                        H3StaticTable.Status304 => 304,
+                        H3StaticTable.Status404 => 404,
+                        H3StaticTable.Status503 => 503,
+                        H3StaticTable.Status100 => 100,
+                        H3StaticTable.Status204 => 204,
+                        H3StaticTable.Status206 => 206,
+                        H3StaticTable.Status302 => 302,
+                        H3StaticTable.Status400 => 400,
+                        H3StaticTable.Status403 => 403,
+                        H3StaticTable.Status421 => 421,
+                        H3StaticTable.Status425 => 425,
+                        H3StaticTable.Status500 => 500,
+                        // We should never get here, at least while we only use static table. But we can still parse staticValue.
+                        _ => ParseStatusCode(staticIndex, staticValue)
+                    };
+
+                    int ParseStatusCode(int? index, string value)
+                    {
+                        string message = $"Unexpected QPACK table reference for Status code: index={index} value=\'{value}\'";
+                        Debug.Fail(message);
+                        if (NetEventSource.Log.IsEnabled()) Trace(message);
+
+                        // TODO: The parsing is not optimal, but I don't expect this line to be executed at all for now.
+                        return HttpConnectionBase.ParseStatusCode(Encoding.ASCII.GetBytes(value));
+                    }
+                }
+                else // Literal Header Field With Name Reference -- only name is taken from the table
+                {
+                    statusCode = HttpConnectionBase.ParseStatusCode(literalValue);
+                }
 
                 _response = new HttpResponseMessage()
                 {
@@ -1014,6 +1044,14 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= copyLen;
                         _recvBuffer.Discard(copyLen);
                         buffer = buffer.Slice(copyLen);
+
+                        // Stop, if we've reached the end of a data frame and start of the next data frame is not buffered yet
+                        // Waiting for the next data frame may cause a hang, e.g. in echo scenario
+                        // TODO: this is inefficient if data is already available in transport
+                        if (_responseDataPayloadRemaining == 0 && _recvBuffer.ActiveLength == 0)
+                        {
+                            break;
+                        }
                     }
                     else
                     {
@@ -1030,6 +1068,10 @@ namespace System.Net.Http
                         totalBytesRead += bytesRead;
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
+
+                        // Stop, even if we are in the middle of a data frame. Waiting for the next data may cause a hang
+                        // TODO: this is inefficient if data is already available in transport
+                        break;
                     }
                 }
 
@@ -1071,6 +1113,14 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= copyLen;
                         _recvBuffer.Discard(copyLen);
                         buffer = buffer.Slice(copyLen);
+
+                        // Stop, if we've reached the end of a data frame and start of the next data frame is not buffered yet
+                        // Waiting for the next data frame may cause a hang, e.g. in echo scenario
+                        // TODO: this is inefficient if data is already available in transport
+                        if (_responseDataPayloadRemaining == 0 && _recvBuffer.ActiveLength == 0)
+                        {
+                            break;
+                        }
                     }
                     else
                     {
@@ -1087,6 +1137,10 @@ namespace System.Net.Http
                         totalBytesRead += bytesRead;
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
+
+                        // Stop, even if we are in the middle of a data frame. Waiting for the next data may cause a hang
+                        // TODO: this is inefficient if data is already available in transport
+                        break;
                     }
                 }
 
@@ -1103,7 +1157,10 @@ namespace System.Net.Http
         {
             switch (ex)
             {
+                // Peer aborted the stream
                 case QuicStreamAbortedException _:
+                // User aborted the stream
+                case QuicOperationAbortedException _:
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case QuicConnectionAbortedException _:
                     // Our connection was reset. Start aborting the connection.
@@ -1114,11 +1171,11 @@ namespace System.Net.Http
                     _connection.Abort(ex);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case OperationCanceledException oce when oce.CancellationToken == cancellationToken:
-                    _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                    _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
                 default:
-                    _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                    _stream.AbortRead((long)Http3ErrorCode.InternalError);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
             }
         }
@@ -1141,6 +1198,11 @@ namespace System.Net.Http
                 switch (frameType)
                 {
                     case Http3FrameType.Data:
+                        // Ignore DATA frames with 0 length.
+                        if (payloadLength == 0)
+                        {
+                            continue;
+                        }
                         _responseDataPayloadRemaining = payloadLength;
                         return true;
                     case Http3FrameType.Headers:
@@ -1167,6 +1229,20 @@ namespace System.Net.Http
         public void Trace(string message, [CallerMemberName] string? memberName = null) =>
             _connection.Trace(StreamId, message, memberName);
 
+        private void AbortStream()
+        {
+            // If the request body isn't completed, cancel it now.
+            if (_requestContentLengthRemaining != 0) // 0 is used for the end of content writing, -1 is used for unknown Content-Length
+            {
+                _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+            }
+            // If the response body isn't completed, cancel it now.
+            if (_responseDataPayloadRemaining != -1) // -1 is used for EOF, 0 for consumed DATA frame payload before the next read
+            {
+                _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
+            }
+        }
+
         // TODO: it may be possible for Http3RequestStream to implement Stream directly and avoid this allocation.
         private sealed class Http3ReadStream : HttpBaseStream
         {
@@ -1190,35 +1266,41 @@ namespace System.Net.Http
 
             protected override void Dispose(bool disposing)
             {
-                if (_stream != null)
+                Http3RequestStream? stream = Interlocked.Exchange(ref _stream, null);
+                if (stream is null)
                 {
-                    if (disposing)
-                    {
-                        // This will remove the stream from the connection properly.
-                        _stream.Dispose();
-                    }
-                    else
-                    {
-                        // We shouldn't be using a managed instance here, but don't have much choice -- we
-                        // need to remove the stream from the connection's GOAWAY collection.
-                        _stream._connection.RemoveStream(_stream._stream);
-                        _stream._connection = null!;
-                    }
-
-                    _stream = null;
-                    _response = null;
+                    return;
                 }
+
+                if (disposing)
+                {
+                    // This will remove the stream from the connection properly.
+                    stream.Dispose();
+                }
+                else
+                {
+                    // We shouldn't be using a managed instance here, but don't have much choice -- we
+                    // need to remove the stream from the connection's GOAWAY collection.
+                    stream._connection.RemoveStream(stream._stream);
+                    stream._connection = null!;
+                }
+
+                _response = null;
 
                 base.Dispose(disposing);
             }
 
             public override async ValueTask DisposeAsync()
             {
-                if (_stream != null)
+                Http3RequestStream? stream = Interlocked.Exchange(ref _stream, null);
+                if (stream is null)
                 {
-                    await _stream.DisposeAsync().ConfigureAwait(false);
-                    _stream = null!;
+                    return;
                 }
+
+                await stream.DisposeAsync().ConfigureAwait(false);
+
+                _response = null;
 
                 await base.DisposeAsync().ConfigureAwait(false);
             }
@@ -1289,6 +1371,16 @@ namespace System.Net.Http
                 }
 
                 return _stream.WriteRequestContentAsync(buffer, cancellationToken);
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                if (_stream == null)
+                {
+                    return Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
+                }
+
+                return _stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();
             }
         }
 

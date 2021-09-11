@@ -62,73 +62,37 @@ namespace System.Runtime.InteropServices
             bytes[actualByteLength] = 0;
         }
 
-        public static IntPtr AllocHGlobal(IntPtr cb)
+        public static unsafe IntPtr AllocHGlobal(IntPtr cb)
         {
-            nuint cbNative = (nuint)(nint)cb;
-
-            // Avoid undefined malloc behavior by always allocating at least one byte
-            IntPtr pNewMem = Interop.Sys.MemAlloc((cbNative != 0) ? cbNative : 1);
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
+            return (nint)NativeMemory.Alloc((nuint)(nint)cb);
         }
 
-        public static void FreeHGlobal(IntPtr hglobal)
+        public static unsafe void FreeHGlobal(IntPtr hglobal)
         {
-            if (hglobal != IntPtr.Zero)
-            {
-                Interop.Sys.MemFree(hglobal);
-            }
+            NativeMemory.Free((void*)(nint)hglobal);
         }
 
-        public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
-            nuint cbNative = (nuint)(nint)cb;
-
-            if (cbNative == 0)
-            {
-                // ReAllocHGlobal never returns null, even for 0 size (different from standard C/C++ realloc)
-
-                // Avoid undefined realloc behavior by always allocating at least one byte
-                cbNative = 1;
-            }
-
-            IntPtr pNewMem = Interop.Sys.MemReAlloc(pv, cbNative);
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return pNewMem;
+            return (nint)NativeMemory.Realloc((void*)(nint)pv, (nuint)(nint)cb);
         }
 
         public static IntPtr AllocCoTaskMem(int cb) => AllocHGlobal((nint)(uint)cb);
 
         public static void FreeCoTaskMem(IntPtr ptr) => FreeHGlobal(ptr);
 
-        public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
+        public static unsafe IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
         {
             nuint cbNative = (nuint)(uint)cb;
+            void* pvNative = (void*)(nint)pv;
 
-            if (cbNative == 0)
+            if ((cbNative == 0) && (pvNative != null))
             {
-                if (pv != IntPtr.Zero)
-                {
-                    Interop.Sys.MemFree(pv);
-                    return IntPtr.Zero;
-                }
-                // Avoid undefined realloc behavior by always allocating at least one byte
-                cbNative = 1;
+                Interop.Sys.Free(pvNative);
+                return IntPtr.Zero;
             }
 
-            IntPtr pNewMem = Interop.Sys.MemReAlloc(pv, cbNative);
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return pNewMem;
+            return (nint)NativeMemory.Realloc((void*)(nint)pv, cbNative);
         }
 
         internal static unsafe IntPtr AllocBSTR(int length)
@@ -137,22 +101,24 @@ namespace System.Runtime.InteropServices
             const nuint WIN32_ALLOC_ALIGN = 15;
 
             ulong cbNative = 2 * (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+
             if (cbNative > uint.MaxValue)
             {
                 throw new OutOfMemoryException();
             }
 
-            IntPtr p = Interop.Sys.MemAlloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
-            if (p == IntPtr.Zero)
+            void* p = Interop.Sys.Malloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
+
+            if (p == null)
             {
                 throw new OutOfMemoryException();
             }
 
-            IntPtr s = p + sizeof(IntPtr);
+            void* s = (byte*)p + sizeof(nuint);
             *(((uint*)s) - 1) = (uint)(length * sizeof(char));
             ((char*)s)[length] = '\0';
 
-            return s;
+            return (nint)s;
         }
 
         internal static unsafe IntPtr AllocBSTRByteLen(uint length)
@@ -161,32 +127,36 @@ namespace System.Runtime.InteropServices
             const nuint WIN32_ALLOC_ALIGN = 15;
 
             ulong cbNative = (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+
             if (cbNative > uint.MaxValue)
             {
                 throw new OutOfMemoryException();
             }
 
-            IntPtr p = Interop.Sys.MemAlloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
-            if (p == IntPtr.Zero)
+            void* p = Interop.Sys.Malloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
+
+            if (p == null)
             {
                 throw new OutOfMemoryException();
             }
 
-            IntPtr s = p + sizeof(IntPtr);
+            void* s = (byte*)p + sizeof(nuint);
             *(((uint*)s) - 1) = (uint)length;
 
             // NULL-terminate with both a narrow and wide zero.
             *(byte*)((byte*)s + length) = (byte)'\0';
             *(short*)((byte*)s + ((length + 1) & ~1)) = 0;
 
-            return s;
+            return (nint)s;
         }
 
         public static unsafe void FreeBSTR(IntPtr ptr)
         {
-            if (ptr != IntPtr.Zero)
+            void* ptrNative = (void*)(nint)ptr;
+
+            if (ptrNative != null)
             {
-                Interop.Sys.MemFree(ptr - sizeof(IntPtr));
+                Interop.Sys.Free((byte*)ptr - sizeof(nuint));
             }
         }
 

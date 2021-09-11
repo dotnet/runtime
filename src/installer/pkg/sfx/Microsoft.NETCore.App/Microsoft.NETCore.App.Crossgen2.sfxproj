@@ -10,7 +10,8 @@
     <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix).$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
-    <RuntimeIdentifiers>linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
+    <!-- Build this pack for any RID if building from source. Otherwise, only build select RIDs. -->
+    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
         AddRuntimeFilesToPackage;
@@ -33,7 +34,7 @@
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" TargetPath="tools/" />
     <Reference Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
-    <Reference Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
+    <Reference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_x86_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
@@ -60,6 +61,18 @@
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" TargetPath="tools/" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddCrossgen2SymbolFilesToPackage" BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+      <_Crossgen2SymbolFilesToPackage Include="@(Reference->'$(CoreCLRArtifactsPath)PDB\%(FileName).pdb')" />
+      <!-- Symbol files for JIT libraries are placed in a different location for Windows builds -->
+      <_Crossgen2SymbolFilesToPackage Include="@(NativeRuntimeAsset->'$(CoreCLRArtifactsPdbDir)%(FileName).pdb')" Condition="'$(TargetOS)' == 'windows' and '%(FileName)' != 'crossgen2'" />
+      <_Crossgen2SymbolFilesToPackage Include="@(NativeRuntimeAsset->'$(CoreCLRArtifactsPath)%(FileName)%(Extension)$(SymbolsSuffix)')" Condition="'$(TargetOS)' != 'windows' and '%(FileName)' != 'crossgen2'" />
+      <_Crossgen2SymbolFilesToPackage Remove="@(_Crossgen2SymbolFilesToPackage)" Condition="!Exists('%(Identity)')" />
+
+      <_SymbolFilesToPackage Include="@(_Crossgen2SymbolFilesToPackage)" TargetPath="tools/" />
     </ItemGroup>
   </Target>
 

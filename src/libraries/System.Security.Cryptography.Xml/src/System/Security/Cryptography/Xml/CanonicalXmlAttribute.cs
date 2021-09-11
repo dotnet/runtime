@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Xml
 
         public void Write(StringBuilder strBuilder, DocPosition docPos, AncestralNamespaceContextManager anc)
         {
-            strBuilder.Append(" " + Name + "=\"");
+            strBuilder.Append($" {Name}=\"");
             strBuilder.Append(Utils.EscapeAttributeValue(Value));
             strBuilder.Append('"');
         }

@@ -823,6 +823,19 @@ namespace System.Numerics
         }
 
         [Intrinsic]
+        internal static T Sum(Vector<T> value)
+        {
+            T sum = default;
+
+            for (nint index = 0; index < Count; index++)
+            {
+                sum = ScalarAdd(sum, value.GetElement(index));
+            }
+
+            return sum;
+        }
+
+        [Intrinsic]
         internal static unsafe Vector<T> SquareRoot(Vector<T> value)
         {
             Vector<T> result = default;

@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -487,8 +485,8 @@ namespace System.Net.Http.Tests
             Assert.Equal("custom", value.Parameters.ElementAt(0).Name);
             Assert.Null(value.Parameters.ElementAt(0).Value);
 
-            Assert.Equal(40, ContentDispositionHeaderValue.GetDispositionTypeLength(
-                "inline ; custom =\r\n \"x\" ; name = myName , next", 0, out result));
+            Assert.Equal(38, ContentDispositionHeaderValue.GetDispositionTypeLength(
+                "inline ; custom = \"x\" ; name = myName , next", 0, out result));
             value = (ContentDispositionHeaderValue)result;
             Assert.Equal("inline", value.DispositionType);
             Assert.Equal("myName", value.Name);
@@ -535,14 +533,14 @@ namespace System.Net.Http.Tests
         public void Parse_SetOfValidValueStrings_ParsedCorrectly()
         {
             ContentDispositionHeaderValue expected = new ContentDispositionHeaderValue("inline");
-            CheckValidParse("\r\n inline  ", expected);
+            CheckValidParse(" inline  ", expected);
             CheckValidParse("inline", expected);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
             // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // Content-Disposition parser.
             expected.Name = "myName";
-            CheckValidParse("\r\n inline  ;  name =   myName ", expected);
+            CheckValidParse(" inline  ;  name =   myName ", expected);
             CheckValidParse("  inline;name=myName", expected);
 
             expected.Name = null;
@@ -565,35 +563,7 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("inline; name=myName,");
             CheckInvalidParse("inline; name=my\u4F1AName");
             CheckInvalidParse("inline/");
-        }
-
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            ContentDispositionHeaderValue expected = new ContentDispositionHeaderValue("inline");
-            CheckValidTryParse("\r\n inline  ", expected);
-            CheckValidTryParse("inline", expected);
-
-            // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a
-            // Content-Disposition parser.
-            expected.Name = "myName";
-            CheckValidTryParse("\r\n inline  ;  name =   myName ", expected);
-            CheckValidTryParse("  inline;name=myName", expected);
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("");
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse("inline\u4F1A");
-            CheckInvalidTryParse("inline ,");
-            CheckInvalidTryParse("inline,");
-            CheckInvalidTryParse("inline; name=myName ,");
-            CheckInvalidTryParse("inline; name=myName,");
-            CheckInvalidTryParse("text/");
+            CheckInvalidParse(" inline  ; \r name =   myName ");
         }
 
         #region Tests from HenrikN
@@ -1209,24 +1179,16 @@ namespace System.Net.Http.Tests
         {
             ContentDispositionHeaderValue result = ContentDispositionHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(ContentDispositionHeaderValue.TryParse(input, out result), input);
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { ContentDispositionHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, ContentDispositionHeaderValue expectedResult)
-        {
-            ContentDispositionHeaderValue result = null;
-            Assert.True(ContentDispositionHeaderValue.TryParse(input, out result), input);
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            ContentDispositionHeaderValue result = null;
-            Assert.False(ContentDispositionHeaderValue.TryParse(input, out result), input);
+            Assert.False(ContentDispositionHeaderValue.TryParse(input, out ContentDispositionHeaderValue result), input);
             Assert.Null(result);
         }
 

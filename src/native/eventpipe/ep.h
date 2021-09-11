@@ -181,7 +181,8 @@ ep_enable (
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
 	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback);
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
 
 EventPipeSessionID
 ep_enable_2 (
@@ -192,7 +193,8 @@ ep_enable_2 (
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
 	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback);
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
 
 void
 ep_disable (EventPipeSessionID id);
@@ -296,6 +298,11 @@ ep_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackCo
 	ep_stack_contents_reset (stack_contents);
 	return (thread != NULL) ? ep_rt_walk_managed_stack_for_thread (thread, stack_contents) : false;
 }
+
+bool
+ep_add_rundown_execution_checkpoint (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp);
 
 /*
  * EventPipePerf.

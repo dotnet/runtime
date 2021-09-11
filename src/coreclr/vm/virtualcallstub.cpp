@@ -15,9 +15,6 @@
 
 #include "common.h"
 #include "array.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -641,7 +638,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
                               dwTotalReserveMemSize);
         }
 
-        initReservedMem = ClrVirtualAllocExecutable (dwTotalReserveMemSize, MEM_RESERVE, PAGE_NOACCESS);
+        initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
         m_initialReservedMemForHeaps = (BYTE *) initReservedMem;
 
@@ -1029,13 +1026,6 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     BOOL fIsOwner = isStub(stubStartAddress);
 
-#if defined(TARGET_X86) && defined(FEATURE_PREJIT)
-    if (!fIsOwner)
-    {
-        fIsOwner = (stubStartAddress == GetEEFuncEntryPoint(StubDispatchFixupStub));
-    }
-#endif // defined(TARGET_X86) && defined(FEATURE_PREJIT)
-
     return fIsOwner;
 }
 
@@ -1051,14 +1041,6 @@ BOOL VirtualCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinatio
     LOG((LF_CORDB, LL_EVERYTHING, "VirtualCallStubManager::DoTraceStub called\n"));
 
     _ASSERTE(CheckIsStub_Internal(stubStartAddress));
-
-#ifdef FEATURE_PREJIT
-    if (stubStartAddress == GetEEFuncEntryPoint(StubDispatchFixupStub))
-    {
-        trace->InitForManagerPush(GetEEFuncEntryPoint(StubDispatchFixupPatchLabel), this);
-        return TRUE;
-    }
-#endif
 
     // @workaround: Well, we really need the context to figure out where we're going, so
     // we'll do a TRACE_MGR_PUSH so that TraceManager gets called and we can use
@@ -1080,17 +1062,6 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
-
-#ifdef FEATURE_PREJIT
-    // This is the case for the lazy slot fixup
-    if (GetIP(pContext) == GetEEFuncEntryPoint(StubDispatchFixupPatchLabel)) {
-
-        *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
-
-        // The destination for the virtual invocation
-        return StubManager::TraceStub(StubManagerHelpers::GetTailCallTarget(pContext), trace);
-    }
-#endif // FEATURE_PREJIT
 
     TADDR pStub = GetIP(pContext);
 
@@ -1173,7 +1144,6 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!MethodTable::VTableIndir_t::isRelative /* Not yet supported */);
         POSTCONDITION(RETVAL != NULL);
     } CONTRACT_END;
 
@@ -1203,14 +1173,14 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!MethodTable::VTableIndir_t::isRelative /* Not yet supported */);
         POSTCONDITION(RETVAL != NULL);
     } CONTRACT_END;
 
     //allocate from the requisite heap and copy the template over it.
     VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(VTableCallHolder::GetHolderSize(slot), CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, sizeof(VTableCallHolder));
+    vtableWriterHolder.GetRW()->Initialize(slot);
 
-    pHolder->Initialize(slot);
     ClrFlushInstructionCache(pHolder->stub(), pHolder->stub()->size());
 
     AddToCollectibleVSDRangeList(pHolder);
@@ -1227,131 +1197,6 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
 
     RETURN(pHolder);
 }
-
-#ifdef FEATURE_PREJIT
-extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock,
-                                                 TADDR siteAddrForRegisterIndirect,
-                                                 DWORD sectionIndex,
-                                                 Module * pModule)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        ENTRY_POINT;
-    } CONTRACTL_END;
-
-    PCODE pTarget = NULL;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    FrameWithCookie<StubDispatchFrame> frame(pTransitionBlock);
-    StubDispatchFrame * pSDFrame = &frame;
-
-    PCODE returnAddress = pSDFrame->GetUnadjustedReturnAddress();
-
-    StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
-
-    TADDR pIndirectCell = (TADDR)callSite.GetIndirectCell();
-
-    // FUTURE: Consider always passing in module and section index to avoid the lookups
-    if (pModule == NULL)
-    {
-        pModule = ExecutionManager::FindZapModule(pIndirectCell);
-        sectionIndex = (DWORD)-1;
-    }
-    _ASSERTE(pModule != NULL);
-
-    pSDFrame->SetCallSite(pModule, pIndirectCell);
-
-    pSDFrame->Push(CURRENT_THREAD);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    PEImageLayout *pNativeImage = pModule->GetNativeOrReadyToRunImage();
-
-    DWORD rva = pNativeImage->GetDataRva(pIndirectCell);
-
-    PTR_CORCOMPILE_IMPORT_SECTION pImportSection;
-    if (sectionIndex != (DWORD) -1)
-    {
-        pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
-        _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
-    }
-    else
-    {
-        pImportSection = pModule->GetImportSectionForRVA(rva);
-    }
-    _ASSERTE(pImportSection != NULL);
-
-    _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
-
-    COUNT_T index = (rva - VAL32(pImportSection->Section.VirtualAddress)) / sizeof(TADDR);
-
-    // Get the stub manager for this module
-    VirtualCallStubManager *pMgr = pModule->GetLoaderAllocator()->GetVirtualCallStubManager();
-
-    // Force a GC on every jit if the stress level is high enough
-    GCStress<cfg_any>::MaybeTrigger();
-
-    // Get the data section
-    PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
-
-    PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
-
-    BYTE kind = *pBlob++;
-
-    Module * pInfoModule = pModule;
-    if (kind & ENCODE_MODULE_OVERRIDE)
-    {
-        DWORD moduleIndex = CorSigUncompressData(pBlob);
-        pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-        kind &= ~ENCODE_MODULE_OVERRIDE;
-    }
-    _ASSERTE(kind == ENCODE_VIRTUAL_ENTRY_SLOT);
-
-    DWORD slot = CorSigUncompressData(pBlob);
-
-    TypeHandle ownerType = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
-
-    MethodTable * pMT = ownerType.GetMethodTable();
-
-    DispatchToken token;
-    if (pMT->IsInterface())
-        token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-    else
-        token = DispatchToken::CreateDispatchToken(slot);
-
-    OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
-    _ASSERTE(protectedObj != NULL);
-    if (*protectedObj == NULL) {
-        COMPlusThrow(kNullReferenceException);
-    }
-
-    pTarget = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
-    _ASSERTE(pTarget != NULL);
-
-#if _DEBUG
-    if (pSDFrame->GetGCRefMap() != NULL)
-    {
-        GCX_PREEMP();
-        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
-    }
-#endif // _DEBUG
-
-    // Ready to return
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    pSDFrame->Pop(CURRENT_THREAD);
-
-    return pTarget;
-}
-#endif // FEATURE_PREJIT
 
 //+----------------------------------------------------------------------------
 //
@@ -1723,10 +1568,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         PRECONDITION(*protectedObj != NULL);
         PRECONDITION(IsProtectedByGCFrame(protectedObj));
     } CONTRACTL_END;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     MethodTable* objectType = (*protectedObj)->GetMethodTable();
     CONSISTENCY_CHECK(CheckPointer(objectType));
@@ -2769,7 +2610,8 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     }
 #endif
 
-    holder->Initialize(addrOfCode,
+    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, dispatchHolderSize);
+    dispatchWriterHolder.GetRW()->Initialize(holder, addrOfCode,
                        addrOfFail,
                        (size_t)pMTExpected
 #ifdef TARGET_AMD64
@@ -2831,10 +2673,11 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     } CONTRACT_END;
 
     //allocate from the requisite heap and copy the template over it.
-    DispatchHolder * holder = (DispatchHolder*) (void*)
-        dispatch_heap->AllocAlignedMem(DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG), CODE_SIZE_ALIGN);
+    size_t dispatchHolderSize = DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG);
+    DispatchHolder * holder = (DispatchHolder*) (void*)dispatch_heap->AllocAlignedMem(dispatchHolderSize, CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, dispatchHolderSize);
 
-    holder->Initialize(addrOfCode,
+    dispatchWriterHolder.GetRW()->Initialize(holder, addrOfCode,
                        addrOfFail,
                        (size_t)pMTExpected,
                        DispatchStub::e_TYPE_LONG);
@@ -2942,8 +2785,10 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
     //allocate from the requisite heap and copy the templates for each piece over it.
     ResolveHolder * holder = (ResolveHolder*) (void*)
         resolve_heap->AllocAlignedMem(sizeof(ResolveHolder), CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<ResolveHolder> resolveWriterHolder(holder, sizeof(ResolveHolder));
 
-    holder->Initialize(addrOfResolver, addrOfPatcher,
+    resolveWriterHolder.GetRW()->Initialize(holder,
+                       addrOfResolver, addrOfPatcher,
                        dispatchToken, DispatchCache::HashToken(dispatchToken),
                        g_resolveCache->GetCacheBaseAddr(), counterAddr
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
@@ -2980,14 +2825,11 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     //allocate from the requisite heap and copy the template over it.
     LookupHolder * holder     = (LookupHolder*) (void*) lookup_heap->AllocAlignedMem(sizeof(LookupHolder), CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<LookupHolder> lookupWriterHolder(holder, sizeof(LookupHolder));
 
-    holder->Initialize(addrOfResolver, dispatchToken);
+    lookupWriterHolder.GetRW()->Initialize(holder, addrOfResolver, dispatchToken);
     ClrFlushInstructionCache(holder->stub(), holder->stub()->size());
 
     AddToCollectibleVSDRangeList(holder);

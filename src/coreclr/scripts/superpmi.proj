@@ -85,6 +85,10 @@
     <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 
+  <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
+    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+  </ItemGroup>
   <!-- We're currently not using .dotnet on the Helix agents -->
   <!--
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
@@ -94,11 +98,12 @@
   <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT' ">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/.dotnet:$PATH" Condition=" '$(CollectionType)' == 'crossgen2' "/>
   </ItemGroup>
+  -->
 
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+    <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
   </PropertyGroup>
-  -->
 
   <ItemGroup>
     <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">

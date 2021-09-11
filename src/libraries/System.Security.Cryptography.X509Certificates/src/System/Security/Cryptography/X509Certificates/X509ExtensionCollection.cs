@@ -14,7 +14,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public sealed class X509ExtensionCollection : ICollection, IEnumerable
+    public sealed class X509ExtensionCollection : ICollection, IEnumerable<X509Extension>
     {
         public X509ExtensionCollection()
         {
@@ -102,6 +102,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return new X509ExtensionEnumerator(this);
         }
+
+        IEnumerator<X509Extension> IEnumerable<X509Extension>.GetEnumerator() => GetEnumerator();
 
         private readonly List<X509Extension> _list = new List<X509Extension>();
     }

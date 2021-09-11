@@ -153,6 +153,7 @@ namespace System.Numerics
         public float Z;
         public Quaternion(System.Numerics.Vector3 vectorPart, float scalarPart) { throw null; }
         public Quaternion(float x, float y, float z, float w) { throw null; }
+        public static System.Numerics.Quaternion Zero { get { throw null; } }
         public static System.Numerics.Quaternion Identity { get { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
         public static System.Numerics.Quaternion Add(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
@@ -300,6 +301,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> low, out System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Xor<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
+        public static T Sum<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable
     {

@@ -304,6 +304,9 @@ DEFINE_METASIG(GM(RefT_IntPtr_RetRefT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(M(0))
 DEFINE_METASIG(GM(PtrVoid_Int_RetPtrVoid, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, P(v) i, P(v)))
 DEFINE_METASIG(GM(RefT_RetVoid, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(M(0)), v))
 
+DEFINE_METASIG(GM(ArrT_RetRefT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, a(M(0)), r(M(0))))
+DEFINE_METASIG_T(SM(Array_RetRefByte, C(ARRAY), r(b)))
+
 DEFINE_METASIG_T(SM(SafeHandle_RefBool_RetIntPtr, C(SAFE_HANDLE) r(F), I ))
 DEFINE_METASIG_T(SM(SafeHandle_RetVoid, C(SAFE_HANDLE), v ))
 
@@ -465,7 +468,6 @@ DEFINE_METASIG_T(IM(Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetO
 DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid, j j g(BINDING_FLAGS) C(BINDER) C(CULTURE_INFO), v))
 DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetVoid, j j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), v))
 DEFINE_METASIG_T(IM(Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetObj, j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), j))
-DEFINE_METASIG_T(IM(Obj_Type_CultureInfo_RetObj, j C(TYPE) C(CULTURE_INFO), j))
 DEFINE_METASIG(IM(IntPtr_ArrObj_Obj_RefArrObj_RetObj, I a(j) j r(a(j)), j))
 DEFINE_METASIG(IM(RefObject_RetBool, r(j), F))
 DEFINE_METASIG_T(IM(Class_RetObj, C(CLASS), j))

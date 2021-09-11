@@ -4,6 +4,9 @@
 using System;
 using Internal.TypeSystem;
 
+// If any of these constants change, update src/coreclr/inc/readytorun.h and
+// src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs with the new R2R minor version
+
 namespace Internal.ReadyToRunConstants
 {
     [Flags]
@@ -31,6 +34,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_METHOD_SIG_MemberRefToken = 0x10,
         READYTORUN_METHOD_SIG_Constrained = 0x20,
         READYTORUN_METHOD_SIG_OwnerType = 0x40,
+        READYTORUN_METHOD_SIG_UpdateContext = 0x80,
     }
 
     [Flags]
@@ -49,6 +53,13 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_LAYOUT_Alignment_Native = 0x04,
         READYTORUN_LAYOUT_GCLayout = 0x08,
         READYTORUN_LAYOUT_GCLayout_Empty = 0x10,
+    }
+
+    [Flags]
+    public enum ReadyToRunVirtualFunctionOverrideFlags : uint
+    {
+        None = 0x00,
+        VirtualFunctionOverriden = 0x01,
     }
 
     public enum DictionaryEntryKind
@@ -120,6 +131,9 @@ namespace Internal.ReadyToRunConstants
 
         Verify_FieldOffset = 0x31,  // Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
         Verify_TypeLayout = 0x32,  // Generate a runtime check to ensure that the type layout (size, alignment, HFA, reference map) matches between compile and runtime. Unlike Check_TypeLayout, this will generate a runtime failure instead of silently dropping the method
+
+        Check_VirtualFunctionOverride = 0x33, // Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used
+        Verify_VirtualFunctionOverride = 0x34, // Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure.
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref

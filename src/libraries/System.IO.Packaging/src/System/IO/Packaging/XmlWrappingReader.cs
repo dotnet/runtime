@@ -22,14 +22,14 @@ namespace System.IO.Packaging
             Reader = baseReader;
         }
 
-        public override XmlReaderSettings Settings { get { return _reader.Settings; } }
+        public override XmlReaderSettings? Settings { get { return _reader.Settings; } }
         public override XmlNodeType NodeType { get { return _reader.NodeType; } }
         public override string Name { get { return _reader.Name; } }
         public override string LocalName { get { return _reader.LocalName; } }
         public override string NamespaceURI { get { return _reader.NamespaceURI; } }
         public override string Prefix { get { return _reader.Prefix; } }
         public override bool HasValue { get { return _reader.HasValue; } }
-        public override string? Value { get { return _reader.Value; } }
+        public override string Value { get { return _reader.Value; } }
         public override int Depth { get { return _reader.Depth; } }
         public override string BaseURI { get { return _reader.BaseURI; } }
         public override bool IsEmptyElement { get { return _reader.IsEmptyElement; } }
@@ -39,8 +39,8 @@ namespace System.IO.Packaging
         public override System.Type ValueType { get { return _reader.ValueType; } }
         public override int AttributeCount { get { return _reader.AttributeCount; } }
         public override string this[int i] { get { return _reader[i]; } }
-        public override string this[string name] { get { return _reader[name]; } }
-        public override string this[string name, string namespaceURI] { get { return _reader[name, namespaceURI]; } }
+        public override string? this[string name] { get { return _reader[name]; } }
+        public override string? this[string name, string? namespaceURI] { get { return _reader[name, namespaceURI]; } }
         public override bool CanResolveEntity { get { return _reader.CanResolveEntity; } }
         public override bool EOF { get { return _reader.EOF; } }
         public override ReadState ReadState { get { return _reader.ReadState; } }
@@ -52,7 +52,7 @@ namespace System.IO.Packaging
             return _reader.GetAttribute(name);
         }
 
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             return _reader.GetAttribute(name, namespaceURI);
         }
@@ -67,7 +67,7 @@ namespace System.IO.Packaging
             return _reader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             return _reader.MoveToAttribute(name, ns);
         }
@@ -109,12 +109,12 @@ namespace System.IO.Packaging
 
         string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
-            return (_readerAsResolver == null) ? null : _readerAsResolver.LookupPrefix(namespaceName);
+            return _readerAsResolver?.LookupPrefix(namespaceName);
         }
 
-        IDictionary<string, string>? IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
+        IDictionary<string, string> IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
         {
-            return (_readerAsResolver == null) ? null : _readerAsResolver.GetNamespacesInScope(scope);
+            return _readerAsResolver?.GetNamespacesInScope(scope)!;
         }
 
         public override void ResolveEntity()

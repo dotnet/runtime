@@ -190,9 +190,49 @@ namespace System.Security.Cryptography.Xml.Tests
     // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy certificate.")]
     @"MIIFpQIBAzCCBV8GCSqGSIb3DQEHAaCCBVAEggVMMIIFSDCCAl8GCSqGSIb3DQEHBqCCAlAwggJMAgEAMIICRQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMwDgQIGTfVa4+vR1UCAgfQgIICGJuFE9alFWJFkaoeewKDIEnVwRxXfMsi8dcySYnp7jljEUQBfW/GIbOf7Lg2nHd0qxvxYI2YL4Zs+d0jWbqfNHamGFCMPe1dK957Z2PsKXR183vMSgnmlLAHktsIN+Gor7q1GbQ4ljfZkGqZ/rkgUsgsSYZSnJevP/uH0VnvxemljVJ7N7gKMYO0aqrca4qJ0O4YxBYyaerPFUOYunQlvk6DOF3SQXza5oFKcPGrSpE/9eQrnmm64BtbdnUE6qqEjfZfNa6MOD3vOnapLUBsel2TtVCu8tEl7I8FGxozTLXVTXOBkL3k7xLRS52ZtpbcU2JIhlDGpxeFXmjKYzdzHoL20iJubfdkUYtHwB0XjBKKLcI7jfgGgjNauaTLAx8FF+5O9s7Zbj2+SKWv56kqAwdX+iH21VgjAN9EByIXHb3p2ZOvy4ONDXTmfSn7jbuPLZTi+u6bxn2JOLf/gjEA8FiCuQDL9gF247bnUq08Z1uzuAUeaPL13U8mxwEuvCOXx5NEQIuf3cusnaH4+7uIhPk5tnfA5XOaABySetRjZhVN5dC5/g3KTwmaDamlW3Y7Az/NzAC4uKa2ny5jwYKBgHviEKOyJfLDKr5fOMRToOfgxvAdXZohQQTE1+TcBjp+eeV5koDfB1ReCKIRHugPZu5j9SCVcYanwFeJ5M4cEHZ9U1Ytsmzjh0fwV17D/hxQ4aS4VwVpOMypMIIC4QYJKoZIhvcNAQcBoIIC0gSCAs4wggLKMIICxgYLKoZIhvcNAQwKAQKgggKeMIICmjAcBgoqhkiG9w0BDAEDMA4ECBRdKqx022cfAgIH0ASCAnjZx9fvPCHizdH6apVzWWmfy/84HvDPjFOUV1TPehTnDPkNpF/uK/ya4jlbl4Kw0Zfknt5Xydl89SMXIWa2q+nWmxyG3XyfGqOAeBfJBSdCF5K3qkZZnzEfraKZZ5Hh8IEmK+ey45O6sltua6Xl5MRBmKLiwma7vX4ihXQTMfb0WlWDYCXZi85OeF0OlUjRWAwz4PeeiBK4nmI/vNmF1EzDVdZGkrrE8mot3Y4z6bvwqip2tUUbHuMnC+/1ikAcJzCOw4NpnEWCRtIJxgJ9es8E8CUfHESnWKe4nh6tJVJ15B8/7oF7N6j7oq4Oj346JthKoWWkzifNaH79A60/uFh08Rv7zrtJf6kedY6Ve2bR5lhWn0cv9Q6IaoqTmKKTmKJnjdQO9lKRCR6iI2OsYtXBropD8xhNNqsyfpNmP0G6wFiEZZxZjWOkZEJLUzFbH+Su+7l2l4FN9sM7k211/l3/3YF1QJHwZsgL98DZL4qE+nkuZQcdtOUx8QTyTOcVb3IzgCAwZm0rgdXQpJ9yRBgOC/6MnqaCPI0jJuavXF/a28GJWWGlazx7SWTrbzNVJ83ZhQ+pfPEPtMi3t0YVLLvapu3otgpiMkv4ew/ssXwYbg6xBWfotK+NG1cPwVFy9/V9+H5dpdvRI/le2QG0F5xCfCeKh/3AuNiMPEGoVUR5kj5cwFK6eskvt/+74ZenxfNPZ2Uttiw8DsqtTx1gxhcSZeU5YWpO7O78RaYE4Ll4kPbbvIaR18Napb6NKP846z02zvaw+feXARLe0HUY58TlmUjSX3MZRK4PEdyMIQ/URyPimj4rImaDfFrKPAHIjqT3EKv+KuNs8TEVMBMGCSqGSIb3DQEJFTEGBAQBAAAAMD0wITAJBgUrDgMCGgUABBRZOo132cuo2zNyy+SH2c+pN4OGmQQU2nQao3je7DTj2G6Gge8pooPf2ncCAgfQ");
 
+        private static readonly byte[] SampleDsaPfx = Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy certificate.")]
+            "MIIF+QIBAzCCBb8GCSqGSIb3DQEHAaCCBbAEggWsMIIFqDCCA9cGCSqGSIb3DQEH" +
+            "BqCCA8gwggPEAgEAMIIDvQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMwDgQIOSCt" +
+            "zaujK/MCAggAgIIDkEQdcESXtxlkTEwicjcfUahzjrHb8uWLi4AAGKqrchbiUJsj" +
+            "cAwATdijQhwffUAmQ7+i52P46MViik+aKDw2Otb0Tu5+MzUEQiV+x7ZCzgAinxkE" +
+            "TlH3Njk6Hfccy+TtITzFwaNXyJMIQS6LdZ1XweV0FdFXCfo9eN2OVM6JrUNhhH6h" +
+            "io2aujcedtM0iNIaNujgYcRALDVwnozCPj8eeUqlo0vftMPmbAN/y4lIFLj/cXbr" +
+            "2pSU0QOcB/i/7eMWN12H+E4jA/IXw8sPT0ADKERaDNcRTzeLRTyMTPuuySOiDHkk" +
+            "t7g8fQ6BXUtVw44TnK/es1BgNZRJvAiNJXrG228anPEXcVM4hiMQ6+/tHyDUaPBm" +
+            "TZ+bVI0ZD/14VxDicS7KjE7/4aHWY3DHCmtZAS5u4LXOjwEip82gRXcvyuhszbtU" +
+            "xc9lSptUriraKYj80bTHC4iK+1GJI+qo4cZiuH+qARXez1aT9IjyVlRog/uacrHx" +
+            "ycbl2fvo81VUyCPmUph93Zr9PWvKmO4BmW3mQeJVqgTZrHfQpkY+SelcyaheniMu" +
+            "+pdOwmoYWqE2bOg9uSPhlvh+duDBmOr4X+m1YDLb/3sRQcbhDFPANAlss39lLzpl" +
+            "QS/emRTuiyRpMixl3XHbGz1GF5nJo1OwEysWb5EbaV5w+FM5JzUqc8JAegBcp0Zf" +
+            "G3uTaC4Wc9Q3703jqV1bhGQK3clR2/O+p6fKwr/POOT/qFxws8o85QEGOYn5GFtz" +
+            "57gRxpXWWmpsm5QFu6LTWQ4kyMJ4m3CzU54ULjuaFTP63nRLDDCk5iQOvADP4UhH" +
+            "nfKNI5w7UMQEULTQeLPLz4bsbY0CfsVISaKtqrmyQQHB38YDEs5kdx+Xy6oNSVVh" +
+            "eIkW2ktgJiSgC8jsjXFDUKsj9rsk8xcCu41YZoWSEs1+lOo7qyReZZQl5AOzxHaZ" +
+            "3AGXQg8vzbPkUG6oRJLKTcncewUglCI9hMIN3JbgBnmQj0Vdtr4ou6qaxT96hrFJ" +
+            "mGKTqrOimKUOc0pAsQraIRfVbiezFFH0/fjgJuek+mwPpWIR0/jmye+uTK6kF1uX" +
+            "cQIIETfZHblJ7GmXm83uk/6hieM+47JhN4dEMfTnoqtilu5QR+NAXnVhmEKJp2Dx" +
+            "OLSKQ41uHxdguLHgaKMKXR1RYwnSsLrX0TXKDefX38dAxs0rdkTZb4wfT1y8JYhJ" +
+            "NWJGksBCZnOf9pL5IzCCAckGCSqGSIb3DQEHAaCCAboEggG2MIIBsjCCAa4GCyqG" +
+            "SIb3DQEMCgECoIIBdjCCAXIwHAYKKoZIhvcNAQwBAzAOBAiE35N4ijeQpwICCAAE" +
+            "ggFQ27yZqvji6lI03S0HBGRfGukbymgoKKV4k+dMaVt3cd+KGPzQMcwUjuNQiR32" +
+            "CzoElYvqaHo4KIhDukElLUxHQ+0ti5yaIabCRF2FRMtswhEVVRFvi0YZiBz7jzge" +
+            "Z0nqDtEKoDFBvbb34yVk51gDaNn2Is5AFBGZKY+Tas4qzJbe2ELbEosXBDk0Jvv6" +
+            "X13gDJfk67/J/8AE8IH2FY7/XDoG6luOxDG4Ebe68Qm+TY85vGiDMelvAaWyxGeY" +
+            "xndylDVyQSUGFoJHfvA4AgwaukR1rqc9/IZ/eJgz2ptMPZq2p+hsB1/IYaKzud1/" +
+            "QYpYtCkBfsT1DSRwvmJ6CingwEIL+NwrcdaD0F3C55BWzXRzbRE8XR754qq77gSv" +
+            "xk6gRR0kcO175AFeTDqwjmPPylaQ/okiSQ9a4yRFxHUnxigNRgD7tcVR6LuKGDBE" +
+            "v02cMSUwIwYJKoZIhvcNAQkVMRYEFDdYxa4ZJsCeAQZDzHLZ+cdpC2z5MDEwITAJ" +
+            "BgUrDgMCGgUABBS0CMJuJYzpHkxOFI+r0PA67eJbzQQI4yGr4jgshqECAggA");
+
         public static X509Certificate2 GetSampleX509Certificate()
         {
             return new X509Certificate2(SamplePfx, "mono");
+        }
+
+        public static X509Certificate2 GetSampleDSAX509Certificate()
+        {
+            return new X509Certificate2(SampleDsaPfx, "PLACEHOLDER");
         }
 
         public static Stream LoadResourceStream(string resourceName)

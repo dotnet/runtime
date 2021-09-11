@@ -162,7 +162,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when the system is running out of available RAM.
         /// </summary>
-        [Obsolete("This event has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("The LowMemory event has been deprecated and is not supported.")]
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         public static event EventHandler? LowMemory
         {
@@ -469,33 +469,23 @@ namespace Microsoft.Win32
                 {
                     if (s_systemEvents == null)
                     {
-                        // If we are creating system events on a thread declared as STA, then
-                        // just share the thread.
-                        if (!UserInteractive || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
-                        {
-                            SystemEvents systemEvents = new SystemEvents();
-                            systemEvents.Initialize();
+                        // Create a new pumping thread.  We always create one even if the current thread
+                        // is STA, as there are no guarantees this thread will pump nor still be alive
+                        // for the desired duration.
 
-                            // ensure this is initialized last as that will force concurrent threads calling
-                            // this method to block until after we've initialized.
-                            s_systemEvents = systemEvents;
-                        }
-                        else
+                        s_eventWindowReady = new ManualResetEvent(false);
+                        SystemEvents systemEvents = new SystemEvents();
+                        s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc))
                         {
-                            s_eventWindowReady = new ManualResetEvent(false);
-                            SystemEvents systemEvents = new SystemEvents();
-                            s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc))
-                            {
-                                IsBackground = true,
-                                Name = ".NET System Events"
-                            };
-                            s_windowThread.Start();
-                            s_eventWindowReady.WaitOne();
+                            IsBackground = true,
+                            Name = ".NET System Events"
+                        };
+                        s_windowThread.Start();
+                        s_eventWindowReady.WaitOne();
 
-                            // ensure this is initialized last as that will force concurrent threads calling
-                            // this method to block until after we've initialized.
-                            s_systemEvents = systemEvents;
-                        }
+                        // ensure this is initialized last as that will force concurrent threads calling
+                        // this method to block until after we've initialized.
+                        s_systemEvents = systemEvents;
 
                         if (requireHandle && s_systemEvents._windowHandle == IntPtr.Zero)
                         {
@@ -1353,7 +1343,7 @@ namespace Microsoft.Win32
                 _delegate.DynamicInvoke((object[]?)arg);
             }
 
-            public override bool Equals(object? other)
+            public override bool Equals([NotNullWhen(true)] object? other)
             {
                 return other is SystemEventInvokeInfo otherInvoke && otherInvoke._delegate.Equals(_delegate);
             }

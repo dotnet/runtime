@@ -12,7 +12,6 @@ namespace System.Tests
     public class UnloadingAndProcessExitTests : FileCleanupTestBase
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void UnloadingEventMustHappenBeforeProcessExitEvent()
         {
             string fileName = GetTestFilePath();

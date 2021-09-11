@@ -653,12 +653,8 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         DEBUGARG(szName)
         );
 
-    // Type is blittable only if parent is also blittable and is not empty.
-    if (isBlittable && fHasNonTrivialParent)
-    {
-        isBlittable = pParentMT->IsBlittable()  // Check parent
-            && (!pParentLayoutInfo || !pParentLayoutInfo->IsZeroSized()); // Ensure non-zero size
-    }
+    // Type is blittable only if parent is also blittable
+    isBlittable = isBlittable && (fHasNonTrivialParent ? pParentMT->IsBlittable() : TRUE);
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
 
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
@@ -905,14 +901,12 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         // The intrinsic Vector<T> type has a special size. Copy the native size and alignment
         // from the managed size and alignment.
         // Crossgen scenarios block Vector<T> from even being loaded, so only do this check when not in crossgen.
-#ifndef CROSSGEN_COMPILE
         if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
         {
             pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();
             pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
         }
         else
-#endif
         if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)))

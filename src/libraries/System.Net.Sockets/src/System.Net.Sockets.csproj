@@ -65,6 +65,8 @@
              Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
              Link="Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
+             Link="Common\System\Net\SocketProtocolSupportPal.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <!-- System.Net.Internals -->
@@ -236,6 +238,8 @@
              Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Listen.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Listen.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IOVector.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.IOVector.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MessageHeader.cs"
              Link="Common\Interop\Unix\System.Native\Interop.MessageHeader.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MulticastOption.cs"

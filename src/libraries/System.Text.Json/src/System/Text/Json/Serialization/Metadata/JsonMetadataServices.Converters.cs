@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -82,7 +83,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonElement"/> values.
         /// </summary>
-        internal static JsonConverter<JsonElement> JsonElementConverter => s_jsonElementConverter ??= new JsonElementConverter();
+        public static JsonConverter<JsonElement> JsonElementConverter => s_jsonElementConverter ??= new JsonElementConverter();
         private static JsonConverter<JsonElement>? s_jsonElementConverter;
 
         /// <summary>
@@ -109,6 +110,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public static JsonConverter<string> StringConverter => s_stringConverter ??= new StringConverter();
         private static JsonConverter<string>? s_stringConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="TimeSpan"/> values.
+        /// </summary>
+        public static JsonConverter<TimeSpan> TimeSpanConverter => s_timeSpanConverter ??= new TimeSpanConverter();
+        private static JsonConverter<TimeSpan>? s_timeSpanConverter;
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="ushort"/> values.
@@ -142,6 +149,14 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public static JsonConverter<Version> VersionConverter => s_versionConverter ??= new VersionConverter();
         private static JsonConverter<Version>? s_versionConverter;
+
+        /// <summary>
+        /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.
+        /// </summary>
+        /// <typeparam name="T">The generic definition for the type.</typeparam>
+        /// <returns></returns>
+        public static JsonConverter<T> GetUnsupportedTypeConverter<T>()
+            => new UnsupportedTypeConverter<T>();
 
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T"/> values.

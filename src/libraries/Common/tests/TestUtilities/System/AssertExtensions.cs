@@ -403,7 +403,7 @@ namespace System
                 {
                     actualItemCountMapping[actualItem] = new ItemCount(1, 1);
                 }
-                
+
                 actualCount++;
             }
 
@@ -431,7 +431,7 @@ namespace System
                 countInfo.Remain--;
             }
         }
-		
+
         /// <summary>
         /// Validates that the actual span is equal to the expected span.
         /// If this fails, determine where the differences are and create an exception with that information.
@@ -471,6 +471,19 @@ namespace System
                     message += $"Total number of differences: {diffCount} out of {expected.Length}";
 
                     throw new XunitException(message);
+                }
+            }
+        }
+
+        public static void FilledWith<T>(T expected, ReadOnlySpan<T> actual)
+        {
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+
+            for (int i = 0; i < actual.Length; i++)
+            {
+                if (!comparer.Equals(expected, actual[i]))
+                {
+                    throw new XunitException($"Expected {expected?.ToString() ?? "null"} at position {i}");
                 }
             }
         }
@@ -556,7 +569,7 @@ namespace System
             Assert.Equal(expectedParamName, exception.ParamName);
             return exception;
         }
-		
+
         private class ItemCount
         {
             public int Original { get; set; }

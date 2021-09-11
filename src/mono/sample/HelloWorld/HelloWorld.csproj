@@ -2,16 +2,5 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
   </PropertyGroup>
-
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
-      </RuntimePack>
-    </ItemGroup>
-    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
-  </Target>
 </Project>
