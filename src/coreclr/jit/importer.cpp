@@ -21909,13 +21909,13 @@ void Compiler::considerGuardedDevirtualization(
 
     bool doRandomDevirt = false;
 
+    LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
+
 #ifdef DEBUG
     // Optional stress mode to pick a random known class, rather than
     // the most likely known class.
     //
     doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
-
-    LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
 
     if (doRandomDevirt)
     {
@@ -21923,9 +21923,12 @@ void Compiler::considerGuardedDevirtualization(
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        numberOfClasses             = 1;
         likelyClasses[0].clsHandle  = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
         likelyClasses[0].likelihood = 100;
+        if (likelyClasses[0].clsHandle != NO_CLASS_HANDLE)
+        {
+            numberOfClasses = 1;
+        }
     }
     else
 #endif
@@ -21938,18 +21941,20 @@ void Compiler::considerGuardedDevirtualization(
     likelihood  = likelyClasses[0].likelihood;
     likelyClass = likelyClasses[0].clsHandle;
 
-    if (likelyClass == NO_CLASS_HANDLE)
+    if (numberOfClasses < 1)
     {
         JITDUMP("No likely class, sorry\n");
         return;
     }
 
+    assert(likelyClass != NO_CLASS_HANDLE);
+
     // Print all likely classes
+    JITDUMP("%s classes for %p (%s):\n", doRandomDevirt ? "Random" : "Likely", dspPtr(objClass), objClassName)
     for (UINT32 i = 0; i < numberOfClasses; i++)
     {
-        JITDUMP("%u) %s class for %p (%s) is %p (%s) [likelihood:%u]\n", i, doRandomDevirt ? "Random" : "Likely",
-                dspPtr(objClass), objClassName, likelyClasses[i].clsHandle, eeGetClassName(likelyClasses[i].clsHandle),
-                likelyClasses[i].likelihood);
+        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].clsHandle,
+                eeGetClassName(likelyClasses[i].clsHandle), likelyClasses[i].likelihood);
     }
 
     // Todo: a more advanced heuristic using likelihood, number of
