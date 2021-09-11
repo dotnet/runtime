@@ -165,4 +165,20 @@
   <data name="InaccessibleJsonIncludePropertiesNotSupportedFormat" xml:space="preserve">
     <value>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</value>
   </data>
+  <!-- runtime exception messages -->
+  <data name="Exception_IncompatibleConverterType" xml:space="preserve">
+    <value>The converter '{0}' is not compatible with the type '{1}'.</value>
+  </data>
+  <data name="Exception_InitOnlyPropertyDeserializationNotSupported" xml:space="preserve">
+    <value>Deserialization of init-only properties is currently not supported in source generation mode.</value>
+  </data>
+  <data name="Exception_InaccessibleJsonIncludePropertiesNotSupported" xml:space="preserve">
+    <value>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</value>
+  </data>
+  <data name="Exception_InvalidSerializablePropertyConfiguration" xml:space="preserve">
+    <value>Invalid serializable-property configuration specified for type '{0}'. For more information, see 'JsonSourceGenerationMode.Serialization'.</value>
+  </data>
+  <data name="Exception_InvalidJsonConverterFactoryOutput" xml:space="preserve">
+    <value>The converter '{0}' cannot return null or a JsonConverterFactory instance.</value>
+  </data>
 </root>
