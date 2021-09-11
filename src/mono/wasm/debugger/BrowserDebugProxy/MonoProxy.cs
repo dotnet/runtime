@@ -821,6 +821,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             });
             if (!await EvaluateCondition(sessionId, context, context.CallStack.First(), bp, token))
             {
+                context.ClearState();
                 await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                 return true;
             }
