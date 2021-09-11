@@ -29,13 +29,11 @@ namespace Wasm.Build.Tests
 
             // Build
             BuildInternal(id, config, publish: false);
-            string binFrameworkDir = Path.Combine(_projectDir!, "bin", config, "net6.0", "wwwroot", "_framework");
-            AssertBlazorBootJson(config, isPublish: false, binFrameworkDir);
+            AssertBlazorBootJson(config, isPublish: false);
 
             // Publish
             BuildInternal(id, config, publish: true);
-            binFrameworkDir = Path.Combine(_projectDir!, "bin", config, "net6.0", "publish", "wwwroot", "_framework");
-            AssertBlazorBootJson(config, isPublish: true, binFrameworkDir);
+            AssertBlazorBootJson(config, isPublish: true);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]

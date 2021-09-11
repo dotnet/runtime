@@ -133,7 +133,7 @@ namespace Wasm.Build.Tests
                 result.EnsureSuccessful();
                 Assert.Contains("** UsingBrowserRuntimeWorkload: 'false'", result.Output);
 
-                string binFrameworkDir = Path.Combine(_projectDir!, "bin", config, "net5.0", "publish", "wwwroot", "_framework");
+                string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true, framework: "net5.0");
                 AssertBlazorBootJson(config, isPublish: true, binFrameworkDir: binFrameworkDir);
                 // dotnet.wasm here would be from 5.0 nuget like:
                 // /Users/radical/.nuget/packages/microsoft.netcore.app.runtime.browser-wasm/5.0.9/runtimes/browser-wasm/native/dotnet.wasm

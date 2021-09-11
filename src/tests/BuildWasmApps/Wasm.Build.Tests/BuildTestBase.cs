@@ -441,7 +441,7 @@ namespace Wasm.Build.Tests
         {
             string label = forPublish ? "publish" : "build";
             string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", forPublish ? "for-publish" : "for-build");
-            string binFrameworkDir = Path.Combine(_projectDir!, "bin", config, "net6.0", forPublish ? "publish" : "", "wwwroot", "_framework");
+            string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish);
 
             string srcDir = type switch
             {
@@ -607,7 +607,10 @@ namespace Wasm.Build.Tests
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish);
 
-            string bootJson = File.ReadAllText(Path.Combine(binFrameworkDir, "blazor.boot.json"));
+            string bootJsonPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
+            Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
+
+            string bootJson = File.ReadAllText(bootJsonPath);
             var bootJsonNode = JsonNode.Parse(bootJson);
             var runtimeObj = bootJsonNode?["resources"]?["runtime"]?.AsObject();
             Assert.NotNull(runtimeObj);
@@ -619,9 +622,9 @@ namespace Wasm.Build.Tests
                                             $"{msgPrefix} Could not find dotnet.*js in {bootJson}");
         }
 
-        protected string FindBlazorBinFrameworkDir(string config, bool forPublish)
+        protected string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework="net6.0")
         {
-            string basePath = Path.Combine(_projectDir!, "bin", config, "net6.0");
+            string basePath = Path.Combine(_projectDir!, "bin", config, framework);
             if (forPublish)
                 basePath = FindSubDirIgnoringCase(basePath, "publish");
 
