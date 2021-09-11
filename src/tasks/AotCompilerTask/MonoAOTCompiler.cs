@@ -361,45 +361,71 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         foreach (var assemblyItem in _assembliesToCompile)
             argsList.Add(GetPrecompileArgumentsFor(assemblyItem, monoPaths));
 
-        //FIXME: check the nothing changed at all case
-
         _totalNumAssemblies = _assembliesToCompile.Count;
-        int allowedParallelism = Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
-        if (BuildEngine is IBuildEngine9 be9)
-            allowedParallelism = be9.RequestCores(allowedParallelism);
-
-        if (DisableParallelAot || allowedParallelism == 1)
+        if (CheckAllUpToDate(argsList))
         {
+            Log.LogMessage(MessageImportance.High, "Everything is up-to-date, nothing to precompile");
+
+            _fileWrites.AddRange(argsList.SelectMany(args => args.ProxyFiles).Select(pf => pf.TargetFile));
             foreach (var args in argsList)
-            {
-                if (!PrecompileLibrarySerial(args))
-                    return !Log.HasLoggedErrors;
-            }
+                compiledAssemblies.GetOrAdd(args.AOTAssembly.ItemSpec, args.AOTAssembly);
         }
         else
         {
-            ParallelLoopResult result = Parallel.ForEach(
-                                                    argsList,
-                                                    new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                    (args, state) => PrecompileLibraryParallel(args, state));
+            int allowedParallelism = Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
+            if (BuildEngine is IBuildEngine9 be9)
+                allowedParallelism = be9.RequestCores(allowedParallelism);
 
-            if (!result.IsCompleted)
+            if (DisableParallelAot || allowedParallelism == 1)
             {
-                return false;
+                foreach (var args in argsList)
+                {
+                    if (!PrecompileLibrarySerial(args))
+                        return !Log.HasLoggedErrors;
+                }
             }
+            else
+            {
+                ParallelLoopResult result = Parallel.ForEach(
+                                                        argsList,
+                                                        new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                                        (args, state) => PrecompileLibraryParallel(args, state));
+
+                if (!result.IsCompleted)
+                {
+                    return false;
+                }
+            }
+
+            int numUnchanged = _totalNumAssemblies - _numCompiled;
+            if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
+                Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
         }
 
-        int numUnchanged = _totalNumAssemblies - _numCompiled;
-        if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
-            Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+        CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
 
         if (_cache.Save(CacheFilePath!))
             _fileWrites.Add(CacheFilePath!);
-
-        CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
         FileWrites = _fileWrites.ToArray();
 
         return !Log.HasLoggedErrors;
+    }
+
+    private bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
+    {
+        foreach (var args in argsList)
+        {
+            // compare original assembly vs it's outputs.. all it's outputs!
+            string assemblyPath = args.AOTAssembly.GetMetadata("FullPath");
+            if (args.ProxyFiles.Any(pf => IsNewerThanOutput(assemblyPath, pf.TargetFile)))
+                return false;
+        }
+
+        return true;
+
+        static bool IsNewerThanOutput(string inFile, string outFile)
+            => !File.Exists(inFile) || !File.Exists(outFile) ||
+                    (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
     }
 
     private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(ITaskItem[] originalAssemblies)
