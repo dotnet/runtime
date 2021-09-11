@@ -115,6 +115,8 @@
 
       <WasmNativeAsset Remove="@(WasmNativeAsset)" />
       <WasmNativeAsset Include="@(WasmNestedPublishAppResultItems)" Condition="'%(WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmNativeAsset'" />
+
+      <FileWrites Include="@(WasmNestedPublishAppResultItems)" Condition="'%(WasmNestedPublishAppResultItems.OriginalItemName)' == 'FileWrites'" />
     </ItemGroup>
   </Target>
 
@@ -122,11 +124,12 @@
   <Target Name="WasmNestedPublishApp"
           DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn)"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
-          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal)">
+          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(FileWrites)">
 
     <ItemGroup>
       <WasmNativeAsset OriginalItemName="WasmNativeAsset" />
       <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
+      <FileWrites OriginalItemName="FileWrites" />
     </ItemGroup>
   </Target>
 
