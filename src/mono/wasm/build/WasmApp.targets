@@ -94,6 +94,7 @@
     <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
 
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
+    <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and '$(DeployOnBuild)' == 'true'">true</WasmBuildOnlyAfterPublish>
   </PropertyGroup>
 
   <!-- PUBLISH -->

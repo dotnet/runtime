@@ -103,6 +103,18 @@ namespace Wasm.Build.Tests
                 // make sure this assembly gets skipped
                 Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Output);
             }
+
+            // Check that we linked only for publish
+            string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", "for-build");
+            Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets creating when relinking during Build");
+
+            // double check!
+            int index = res.Output.IndexOf("pinvoke.c -> pinvoke.o");
+            Assert.NotEqual(-1, index);
+
+            // there should be only one instance of this string!
+            index = res.Output.IndexOf("pinvoke.c -> pinvoke.o", index + 1);
+            Assert.Equal(-1, index);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
