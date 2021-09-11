@@ -3433,7 +3433,6 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 
     if (varDsc->lvDoNotEnregister)
     {
-        assert(!replacedInLowering);
         lclVar->ChangeOper(GT_LCL_FLD);
         lclVar->AsLclFld()->SetLclOffs(0);
 
