@@ -5,7 +5,7 @@ using System;
 
 public class Runtime_58972
 {
-    public static unsafe int Main()
+    public static int Main()
     {
         GetItem(new MyStruct[1], 0);
         return 100;
