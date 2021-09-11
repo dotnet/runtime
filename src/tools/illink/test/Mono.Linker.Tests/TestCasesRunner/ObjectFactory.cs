@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return new TestCaseSandbox (testCase);
 		}
 
-		public virtual TestCaseCompiler CreateCompiler (TestCaseSandbox sandbox, TestCaseMetadaProvider metadataProvider)
+		public virtual TestCaseCompiler CreateCompiler (TestCaseSandbox sandbox, TestCaseCompilationMetadataProvider metadataProvider)
 		{
 			return new TestCaseCompiler (sandbox, metadataProvider);
 		}
@@ -20,12 +20,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return new LinkerDriver ();
 		}
 
-		public virtual TestCaseMetadaProvider CreateMetadataProvider (TestCase testCase, AssemblyDefinition fullTestCaseAssemblyDefinition)
+		public virtual TestCaseMetadataProvider CreateMetadataProvider (TestCase testCase, AssemblyDefinition expectationsAssemblyDefinition)
 		{
-			return new TestCaseMetadaProvider (testCase, fullTestCaseAssemblyDefinition);
+			return new TestCaseMetadataProvider (testCase, expectationsAssemblyDefinition);
 		}
 
-		public virtual LinkerArgumentBuilder CreateLinkerArgumentBuilder (TestCaseMetadaProvider metadataProvider)
+		public virtual TestCaseCompilationMetadataProvider CreateCompilationMetadataProvider (TestCase testCase, AssemblyDefinition fullTestCaseAssemblyDefinition)
+		{
+			return new TestCaseCompilationMetadataProvider (testCase, fullTestCaseAssemblyDefinition);
+		}
+
+		public virtual LinkerArgumentBuilder CreateLinkerArgumentBuilder (TestCaseMetadataProvider metadataProvider)
 		{
 			return new LinkerArgumentBuilder (metadataProvider);
 		}

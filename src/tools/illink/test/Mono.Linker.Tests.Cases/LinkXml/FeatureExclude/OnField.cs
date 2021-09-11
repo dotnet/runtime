@@ -3,9 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml.FeatureExclude
 {
-#if NETCOREAPP
-	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.TargetingNetFramework, "--exclude-feature is not supported on .NET Core")]
 	[SetupLinkerArgument ("--exclude-feature", "one")]
 	[SetupLinkerDescriptorFile ("OnField.xml")]
 	public class OnField

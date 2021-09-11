@@ -8,9 +8,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
-#if !NETCOREAPP
-	[IgnoreTestCase ("Build with illink")]
-#endif
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/RootLibraryVisibleForwarders_Lib.cs" })]
 	[SetupLinkerLinkPublicAndFamily]
 	[Define ("RootLibraryVisibleForwarders")]

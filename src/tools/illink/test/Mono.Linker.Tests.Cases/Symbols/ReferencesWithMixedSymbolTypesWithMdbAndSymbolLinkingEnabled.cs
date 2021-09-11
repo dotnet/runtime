@@ -1,11 +1,18 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
+	[TestCaseRequirements (TestRunCharacteristics.TargetingNetFramework, "mdb files are not supported with .NET Core")]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
+	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
+	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
+
 	[Reference ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
 
@@ -17,6 +24,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	[SetupLinkerLinkSymbols ("true")]
 
 	[KeptSymbols ("test.exe")]
+	[KeptSymbols ("LibraryWithMdb.dll")]
 #if WIN32
 	[KeptSymbols ("LibraryWithPdb.dll")]
 #else
@@ -25,6 +33,9 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	[KeptSymbols ("LibraryWithCompilerDefaultSymbols.dll")]
 	[KeptSymbols ("LibraryWithEmbeddedPdbSymbols.dll")]
 	[KeptSymbols ("LibraryWithPortablePdbSymbols.dll")]
+
+	[KeptMemberInAssembly ("LibraryWithMdb.dll", typeof (LibraryWithMdb), "SomeMethod()")]
+	[RemovedMemberInAssembly ("LibraryWithMdb.dll", typeof (LibraryWithMdb), "NotUsed()")]
 
 	[KeptMemberInAssembly ("LibraryWithPdb.dll", typeof (LibraryWithPdb), "SomeMethod()")]
 	[RemovedMemberInAssembly ("LibraryWithPdb.dll", typeof (LibraryWithPdb), "NotUsed()")]
@@ -37,7 +48,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 
 	[KeptMemberInAssembly ("LibraryWithPortablePdbSymbols.dll", typeof (LibraryWithPortablePdbSymbols), "SomeMethod()")]
 	[RemovedMemberInAssembly ("LibraryWithPortablePdbSymbols.dll", typeof (LibraryWithPortablePdbSymbols), "NotUsed()")]
-	public class ReferencesWithMixedSymbolTypesAndSymbolLinkingEnabled
+	public class ReferencesWithMixedSymbolTypesWithMdbAndSymbolLinkingEnabled
 	{
 		static void Main ()
 		{
@@ -45,6 +56,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 			SomeMethod ();
 			LibraryWithCompilerDefaultSymbols.SomeMethod ();
 			LibraryWithPdb.SomeMethod ();
+			LibraryWithMdb.SomeMethod ();
 			LibraryWithEmbeddedPdbSymbols.SomeMethod ();
 			LibraryWithPortablePdbSymbols.SomeMethod ();
 		}

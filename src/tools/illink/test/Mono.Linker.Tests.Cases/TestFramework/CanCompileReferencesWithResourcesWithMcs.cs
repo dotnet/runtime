@@ -4,9 +4,7 @@ using Mono.Linker.Tests.Cases.TestFramework.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TestFramework
 {
-#if NETCOREAPP
-	[IgnoreTestCase ("Don't try to compile with mcs on .NET Core")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.TestFrameworkSupportsMcs, "A test framework that supports using mcs is required")]
 	[SetupCompileBefore ("library.dll",
 		new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
 		resources: new object[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt" },

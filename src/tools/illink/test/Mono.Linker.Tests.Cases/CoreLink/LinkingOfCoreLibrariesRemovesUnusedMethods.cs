@@ -7,9 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink
 {
-#if NETCOREAPP
-	[IgnoreTestCase ("Not important for .NET Core build")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.TargetingNetFramework, "Not important for .NET Core build")]
 	[SetupLinkerTrimMode ("link")]
 
 	[KeptAssembly (PlatformAssemblies.CoreLib)]
