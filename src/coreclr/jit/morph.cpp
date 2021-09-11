@@ -11066,8 +11066,8 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
     assert(varTypeIsIntegralOrI(tree));
     assert(tree->OperIs(GT_OR, GT_AND, GT_XOR));
 
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
+    GenTree*   op1  = tree->gtGetOp1();
+    GenTree*   op2  = tree->gtGetOp2();
     genTreeOps oper = tree->OperGet();
 
     // see whether both ops are casts, with matching to and from types.
@@ -11079,9 +11079,9 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
             return nullptr;
         }
 
-        var_types fromType = op1->AsCast()->CastOp()->TypeGet();
-        var_types toType = op1->AsCast()->CastToType();
-        bool isUnsigned = op1->IsUnsigned();
+        var_types fromType   = op1->AsCast()->CastOp()->TypeGet();
+        var_types toType     = op1->AsCast()->CastToType();
+        bool      isUnsigned = op1->IsUnsigned();
 
         if ((op2->CastFromType() != fromType) || (op2->CastToType() != toType) || (op2->IsUnsigned() != isUnsigned))
         {
@@ -11098,12 +11098,12 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
         //
         // (op2 becomes garbage)
 
-        tree->gtOp1 = op1->AsCast()->CastOp();
-        tree->gtOp2 = op2->AsCast()->CastOp();
+        tree->gtOp1  = op1->AsCast()->CastOp();
+        tree->gtOp2  = op2->AsCast()->CastOp();
         tree->gtType = fromType;
 
-        op1->gtType = genActualType(toType);
-        op1->AsCast()->gtOp1 = tree;
+        op1->gtType                 = genActualType(toType);
+        op1->AsCast()->gtOp1        = tree;
         op1->AsCast()->CastToType() = toType;
         op1->SetAllEffectsFlags(tree);
         // no need to update isUnsigned
