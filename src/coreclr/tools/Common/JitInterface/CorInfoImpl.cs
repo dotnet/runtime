@@ -110,7 +110,7 @@ namespace Internal.JitInterface
         }
 
         [DllImport(JitLibrary)]
-        private extern static uint getLikelyClass(LikelyClassRecord* pLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+        private extern static uint getLikelyClasses(LikelyClassRecord* pLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
@@ -242,7 +242,7 @@ namespace Internal.JitInterface
 
         private static PgoSchemaElem? ComputeLikelyClass(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
         {
-            // getLikelyClass will use two entries from the native schema table. There must be at least two present to avoid ovberruning the buffer
+            // getLikelyClasses will use two entries from the native schema table. There must be at least two present to avoid ovberruning the buffer
             if (index > (nativeSchema.Length - 2))
                 return null;
 
@@ -251,7 +251,7 @@ namespace Internal.JitInterface
                 fixed(byte* pInstrumentationData = &instrumentationData[0])
                 {
                     LikelyClassRecord* likelyClasses = stackalloc LikelyClassRecord[MAX_LIKELY_CLASSES];
-                    uint numberOfClasses = getLikelyClass(likelyClasses, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
+                    uint numberOfClasses = getLikelyClasses(likelyClasses, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
 
                     // We're going to store only the most popular type to reduce size of the profile
                     if ((numberOfClasses > 0) && (likelyClasses->clsHandle != IntPtr.Zero))

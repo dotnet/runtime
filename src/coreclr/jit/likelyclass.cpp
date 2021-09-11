@@ -106,7 +106,7 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 }
 
 //------------------------------------------------------------------------
-// getLikelyClass: find class profile data for an IL offset, and return the most likely class
+// getLikelyClasses: find class profile data for an IL offset, and return the most likely classes
 //
 // Arguments:
 //    pLikelyClasses - [OUT] array of likely classes sorted by likelihood (descending)
@@ -128,11 +128,11 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 //   This code can runs without a jit instance present, so JITDUMP and related
 //   cannot be used.
 //
-extern "C" UINT32 WINAPI getLikelyClass(LikelyClassRecord*                     pLikelyClasses,
-                                        ICorJitInfo::PgoInstrumentationSchema* schema,
-                                        UINT32                                 countSchemaItems,
-                                        BYTE*                                  pInstrumentationData,
-                                        int32_t                                ilOffset)
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset)
 {
     ZeroMemory(pLikelyClasses, MAX_LIKELY_CLASSES);
 

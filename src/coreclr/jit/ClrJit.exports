@@ -4,4 +4,4 @@
 EXPORTS
     getJit
     jitStartup
-    getLikelyClass
+    getLikelyClasses

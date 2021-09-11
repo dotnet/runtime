@@ -844,11 +844,11 @@ struct LikelyClassRecord
     UINT32               likelihood;
 };
 
-extern "C" UINT32 WINAPI getLikelyClass(LikelyClassRecord*                     pLikelyClasses,
-                                        ICorJitInfo::PgoInstrumentationSchema* schema,
-                                        UINT32                                 countSchemaItems,
-                                        BYTE*                                  pInstrumentationData,
-                                        int32_t                                ilOffset);
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset);
 
 /*****************************************************************************/
 #endif //_JIT_H_
