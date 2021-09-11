@@ -340,7 +340,7 @@ typedef struct {
 	macro (prefix, void, setup_async_callback, (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)) \
 	macro (prefix, gboolean, thread_state_init_from_sigctx, (MonoThreadUnwindState *state, void *sigctx)) \
 	macro (prefix, gboolean, thread_state_init_from_handle, (MonoThreadUnwindState *tctx, MonoThreadInfo *info, /*optional*/ void *sigctx)) \
-	macro (prefix, void, thread_state_init, (MonoThreadUnwindState *tctx)) \
+	macro (prefix, gboolean, thread_state_init_from_current, (MonoThreadUnwindState *tctx))
 
 typedef struct {
 	MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_DECL_CALLBACK, unused)

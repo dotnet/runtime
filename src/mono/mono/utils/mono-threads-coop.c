@@ -138,7 +138,7 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 		return;
 
 	++coop_save_count;
-	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
+	mono_threads_get_runtime_callbacks ()->thread_state_init_from_current (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	/* commit the saved state and notify others if needed */
 	switch (mono_threads_transition_state_poll (info)) {
@@ -318,7 +318,7 @@ mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, Mo
 
 retry:
 	++coop_save_count;
-	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
+	mono_threads_get_runtime_callbacks ()->thread_state_init_from_current (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	switch (mono_threads_transition_do_blocking (info, function_name)) {
 	case DoBlockingContinue:

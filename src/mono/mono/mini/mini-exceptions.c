@@ -3235,7 +3235,7 @@ mono_thread_state_init_from_monoctx (MonoThreadUnwindState *ctx, MonoContext *mc
 }
 
 /*returns false if the thread is not attached*/
-gboolean
+gboolean MONO_NEVER_INLINE
 mono_thread_state_init_from_current (MonoThreadUnwindState *ctx)
 {
 	MonoThreadInfo *thread = mono_thread_info_current_unchecked ();
