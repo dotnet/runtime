@@ -89,7 +89,7 @@ namespace Microsoft.Interop
                                     ArgumentList(SingletonSeparatedList<ArgumentSyntax>(
                                         Argument(
                                             CastExpression(
-                                                ParseTypeName("System.IntPtr"),
+                                                SystemIntPtrType,
                                                 IdentifierName(nativeIdentifier))))))));
                     }
                     break;
@@ -159,7 +159,7 @@ namespace Microsoft.Interop
                                     Argument(IdentifierName(context.GetIdentifiers(info).managed)),
                                     Argument(
                                         ObjectCreationExpression(
-                                            GenericName(Identifier("System.Span"),
+                                            GenericName(Identifier(TypeNames.System_Span),
                                                 TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                                     PredefinedType(Token(SyntaxKind.ByteKeyword))))),
                                             ArgumentList(

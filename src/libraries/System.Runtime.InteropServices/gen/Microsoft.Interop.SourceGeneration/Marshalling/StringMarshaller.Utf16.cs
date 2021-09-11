@@ -189,7 +189,7 @@ namespace Microsoft.Interop
                             SeparatedList(new [] {
                                 Argument(
                                     ObjectCreationExpression(
-                                        GenericName(Identifier("System.Span"),
+                                        GenericName(Identifier(TypeNames.System_Span),
                                             TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                                 PredefinedType(Token(SyntaxKind.CharKeyword))))),
                                         ArgumentList(

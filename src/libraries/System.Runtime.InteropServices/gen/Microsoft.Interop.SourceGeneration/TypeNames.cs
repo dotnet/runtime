@@ -6,8 +6,9 @@ using Microsoft.Interop;
 
 namespace Microsoft.Interop
 {
-    static class TypeNames
+    public static class TypeNames
     {
+        public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
         public const string GeneratedDllImportAttribute = "System.Runtime.InteropServices.GeneratedDllImportAttribute";
 
         public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
@@ -22,10 +23,17 @@ namespace Microsoft.Interop
 
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
+        public const string SuppressGCTransitionAttribute = "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
+
+        public const string UnmanagedCallConvAttribute = "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
 
+        public const string System_IntPtr = "System.IntPtr";
+
         public const string System_Activator = "System.Activator";
+
+        public const string System_Type = "System.Type";
 
         public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
 

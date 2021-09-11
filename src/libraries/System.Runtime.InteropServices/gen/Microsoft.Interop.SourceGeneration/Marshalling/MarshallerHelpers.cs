@@ -17,7 +17,7 @@ namespace Microsoft.Interop
 
         public static readonly TypeSyntax InteropServicesMarshalType = ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal);
 
-        public static readonly TypeSyntax SystemIntPtrType = ParseTypeName("System.IntPtr");
+        public static readonly TypeSyntax SystemIntPtrType = ParseTypeName(TypeNames.System_IntPtr);
 
         public static ForStatementSyntax GetForLoop(string collectionIdentifier, string indexerIdentifier)
         {
