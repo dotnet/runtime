@@ -198,7 +198,7 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
                         !ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
                     {
                         pLikelyClasses[0].likelihood = (100 * h.HistogramEntryAt(0).m_count) / h.m_totalCount;
-                        pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE) h.HistogramEntryAt(0).m_mt;
+                        pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
 
                         if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(1).m_mt))
                         {

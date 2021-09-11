@@ -21915,24 +21915,28 @@ void Compiler::considerGuardedDevirtualization(
     //
     doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
 
+    LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
+
     if (doRandomDevirt)
     {
         // Reuse the random inliner's random state.
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        likelihood      = 100;
-        numberOfClasses = 1;
-        likelyClass     = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+        numberOfClasses             = 1;
+        likelyClasses[0].clsHandle  = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+        likelyClasses[0].likelihood = 100;
     }
     else
 #endif
     {
-        LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
         numberOfClasses = getLikelyClasses(likelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
-        likelihood      = likelyClasses[0].likelihood;
-        likelyClass     = likelyClasses[0].clsHandle;
     }
+
+    // For now we only use the most popular type
+
+    likelihood  = likelyClasses[0].likelihood;
+    likelyClass = likelyClasses[0].clsHandle;
 
     if (likelyClass == NO_CLASS_HANDLE)
     {
@@ -21940,8 +21944,13 @@ void Compiler::considerGuardedDevirtualization(
         return;
     }
 
-    JITDUMP("%s class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", doRandomDevirt ? "Random" : "Likely",
-            dspPtr(objClass), objClassName, likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
+    // Print all likely classes
+    for (UINT32 i = 0; i < numberOfClasses; i++)
+    {
+        JITDUMP("%u) %s class for %p (%s) is %p (%s) [likelihood:%u]\n", i, doRandomDevirt ? "Random" : "Likely",
+                dspPtr(objClass), objClassName, likelyClasses[i].clsHandle, eeGetClassName(likelyClasses[i].clsHandle),
+                likelyClasses[i].likelihood);
+    }
 
     // Todo: a more advanced heuristic using likelihood, number of
     // classes, and the profile count for this block.

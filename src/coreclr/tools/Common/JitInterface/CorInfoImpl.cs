@@ -107,6 +107,12 @@ namespace Internal.JitInterface
         {
             public IntPtr clsHandle;
             public uint likelihood;
+
+            public LikelyClassRecord(IntPtr clsHandle, uint likelihood)
+            {
+                this.clsHandle = clsHandle;
+                this.likelihood = likelihood;
+            }
         }
 
         [DllImport(JitLibrary)]
@@ -265,7 +271,7 @@ namespace Internal.JitInterface
                             likelyClassElem.InstrumentationKind = PgoInstrumentationKind.GetLikelyClass;
                             likelyClassElem.ILOffset = nativeSchema[index].ILOffset;
                             likelyClassElem.Count = 1;
-                            likelyClassElem.Other = (int)(likelihood | (numberOfClasses << 8));
+                            likelyClassElem.Other = (int)(likelyClasses->likelihood | (numberOfClasses << 8));
                             likelyClassElem.DataObject = new TypeSystemEntityOrUnknown[] { new TypeSystemEntityOrUnknown(type) };
                             return likelyClassElem;
                         }
