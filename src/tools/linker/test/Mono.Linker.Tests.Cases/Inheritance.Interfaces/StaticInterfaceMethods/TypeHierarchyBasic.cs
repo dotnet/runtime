@@ -7,9 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
-#if !NETCOREAPP
-	[IgnoreTestCase("Only for .NET Core for some reason")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.SupportsStaticInterfaceMethods, "Requires a framework that supports static interface methods")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/TypeHierarchyBasic.il" })]
 	[KeptMemberInAssembly ("library.dll", "InterfaceScenario1", "Method()")]

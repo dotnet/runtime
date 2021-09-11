@@ -9,9 +9,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes
 {
-#if !NETCOREAPP
-	[IgnoreTestCase ("Requires support for default interface methods")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.TargetingNetCore, "Requires net5 or newer")]
 	[SetupCompileBefore ("interface.dll", new[] { "Dependencies/IReferencedAssembly.cs" })]
 	[SetupCompileBefore ("impl.dll", new[] { "Dependencies/IReferencedAssemblyImpl.cs" },
 		references: new[] { "interface.dll" }, addAsReference: false)]

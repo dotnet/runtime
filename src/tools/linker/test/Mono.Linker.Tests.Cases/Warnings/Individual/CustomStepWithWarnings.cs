@@ -12,11 +12,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.Individual
 {
-#if !NETCOREAPP
-	[IgnoreTestCase ("Can be enabled once MonoBuild produces a dll from which we can grab the types in the Mono.Linker namespace.")]
-#else
 	[SetupCompileBefore ("CustomStep.dll", new[] { "../Dependencies/CustomStep.cs" }, new[] { "illink.dll" })]
-#endif
 	[SetupLinkerArgument ("--custom-step", "CustomStep.CustomStep,CustomStep.dll")]
 	[SetupLinkerArgument ("--custom-step", "CustomStep.CustomStepWithInvalidWarningCode,CustomStep.dll")]
 	[LogContains ("CustomStep.cs(1,1): warning IL6001: Warning")]

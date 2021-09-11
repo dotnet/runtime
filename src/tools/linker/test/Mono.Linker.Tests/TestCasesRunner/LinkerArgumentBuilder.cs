@@ -6,11 +6,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	public class LinkerArgumentBuilder
 	{
 		private readonly List<string> _arguments = new List<string> ();
-		private readonly TestCaseMetadaProvider _metadaProvider;
+		private readonly TestCaseMetadataProvider _metadataProvider;
 
-		public LinkerArgumentBuilder (TestCaseMetadaProvider metadaProvider)
+		public LinkerArgumentBuilder (TestCaseMetadataProvider metadataProvider)
 		{
-			_metadaProvider = metadaProvider;
+			_metadataProvider = metadataProvider;
 		}
 
 		public virtual void AddSearchDirectory (NPath directory)
@@ -186,7 +186,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void ProcessTestInputAssembly (NPath inputAssemblyPath)
 		{
-			if (_metadaProvider.LinkPublicAndFamily ())
+			if (_metadataProvider.LinkPublicAndFamily ())
 				LinkFromPublicAndFamily (inputAssemblyPath.ToString ());
 			else
 				LinkFromAssembly (inputAssemblyPath.ToString ());

@@ -958,7 +958,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		static IStep FindStep (Pipeline pipeline, string name)
+		protected virtual IStep FindStep (Pipeline pipeline, string name)
 		{
 			foreach (IStep step in pipeline.GetSteps ()) {
 				Type t = step.GetType ();

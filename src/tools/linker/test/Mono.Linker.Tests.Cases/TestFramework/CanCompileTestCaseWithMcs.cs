@@ -5,9 +5,7 @@ using Mono.Linker.Tests.Cases.TestFramework.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TestFramework
 {
-#if NETCOREAPP
-	[IgnoreTestCase ("Don't try to compile with mcs on .NET Core.")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.TestFrameworkSupportsMcs, "A test framework that supports using mcs is required")]
 	[SetupCSharpCompilerToUse ("mcs")]
 
 	// Use all of the compiler setup attributes so that we can verify they all work
