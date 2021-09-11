@@ -45,12 +45,12 @@ int verbStrip::DoWork(
         strip = true; // Copy command with no indexes listed should copy all the inputs...
     while (true)
     {
-        MethodContextBuffer mcb = reader->GetNextMethodContext();
-        if (mcb.Error())
+        MethodContextReadResult mcb = reader->GetNextMethodContext();
+        if (mcb.IsError())
         {
             return -1;
         }
-        else if (mcb.allDone())
+        else if (mcb.IsAllDone())
         {
             break;
         }
@@ -64,7 +64,7 @@ int verbStrip::DoWork(
             st1->Start();
         }
 
-        if (!MethodContext::Initialize(loadedCount, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(loadedCount, mcb.info, mcb.blob, &mc))
             return -1;
 
         if (stripCR)

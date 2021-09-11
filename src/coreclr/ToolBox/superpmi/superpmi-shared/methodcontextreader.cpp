@@ -149,21 +149,18 @@ bool MethodContextReader::atEof()
     return pos == this->fileSize;
 }
 
-MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
+MethodContextReadResult MethodContextReader::ReadMethodContextNoLock(bool justSkip)
 {
     DWORD        bytesRead;
-    char         buff[512];
-    unsigned int totalLen = 0;
     if (atEof())
     {
-        return MethodContextBuffer();
+        return MethodContextReadResult::Done();
     }
-    Assert(ReadFile(this->fileHandle, buff, 2 + sizeof(unsigned int), &bytesRead, NULL) == TRUE);
-    AssertMsg((buff[0] == 'm') && (buff[1] == 'c'), "Didn't find magic number");
-    memcpy(&totalLen, &buff[2], sizeof(unsigned int));
+
+    MethodContextBlobInfo inf = MethodContext::ReadBlobInfoFromFile(this->fileHandle);
     if (justSkip)
     {
-        __int64 pos = totalLen + 2;
+        __int64 pos = inf.CompressedBlobSize;
         // Just move the file pointer ahead the correct number of bytes
         AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE,
                   "SetFilePointerEx failed (Error %X)", GetLastError());
@@ -171,36 +168,36 @@ MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
         // Increment curMCIndex as we advanced the file pointer by another MC
         ++curMCIndex;
 
-        return MethodContextBuffer(0);
+        return MethodContextReadResult::Blob(inf, nullptr);
     }
     else
     {
-        unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
-        Assert(ReadFile(this->fileHandle, buff2, totalLen + 2, &bytesRead, NULL) == TRUE);
+        unsigned char* buff2 = new unsigned char[inf.CompressedBlobSize];
+        Assert(ReadFile(this->fileHandle, buff2, inf.CompressedBlobSize, &bytesRead, NULL) == TRUE);
 
         // Increment curMCIndex as we read another MC
         ++curMCIndex;
 
-        return MethodContextBuffer(buff2, totalLen);
+        return MethodContextReadResult::Blob(inf, buff2);
     }
 }
 
-MethodContextBuffer MethodContextReader::ReadMethodContext(bool acquireLock, bool justSkip)
+MethodContextReadResult MethodContextReader::ReadMethodContext(bool acquireLock, bool justSkip)
 {
     if (acquireLock && !this->AcquireLock())
     {
         LogError("Can't acquire the reader lock!");
-        return MethodContextBuffer(-1);
+        return MethodContextReadResult::Error(-1);
     }
 
     struct Param
     {
         MethodContextReader* pThis;
-        MethodContextBuffer  ret;
+        MethodContextReadResult  ret;
         bool                 justSkip;
     } param;
     param.pThis    = this;
-    param.ret      = MethodContextBuffer(-2);
+    param.ret      = MethodContextReadResult::Error(-2);
     param.justSkip = justSkip;
 
     PAL_TRY(Param*, pParam, &param)
@@ -218,12 +215,12 @@ MethodContextBuffer MethodContextReader::ReadMethodContext(bool acquireLock, boo
 
 // Read a method context buffer from the ContextCollection
 // (either a hive [single] or an index)
-MethodContextBuffer MethodContextReader::GetNextMethodContext()
+MethodContextReadResult MethodContextReader::GetNextMethodContext()
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
         MethodContextReader* pThis;
-        MethodContextBuffer  mcb;
+        MethodContextReadResult  mcb;
     } param;
     param.pThis = this;
 
@@ -234,14 +231,14 @@ MethodContextBuffer MethodContextReader::GetNextMethodContext()
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
     {
         LogError("Method %d is of low integrity.", GetMethodContextIndex());
-        param.mcb = MethodContextBuffer(-1);
+        param.mcb = MethodContextReadResult::Error(-1);
     }
     PAL_ENDTRY
 
     return param.mcb;
 }
 
-MethodContextBuffer MethodContextReader::GetNextMethodContextHelper()
+MethodContextReadResult MethodContextReader::GetNextMethodContextHelper()
 {
     // If we have an offset/increment combo
     if (this->Offset > 0 && this->Increment > 0)
@@ -256,7 +253,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextHelper()
             return GetNextMethodContextFromIndexes();
         }
         else // We are done with all of them, return
-            return MethodContextBuffer();
+            return MethodContextReadResult::Done();
     }
 
     // If we have a hash
@@ -268,7 +265,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextHelper()
 }
 
 // Read a method context buffer from the ContextCollection using Indexes
-MethodContextBuffer MethodContextReader::GetNextMethodContextFromIndexes()
+MethodContextReadResult MethodContextReader::GetNextMethodContextFromIndexes()
 {
     // Assert if we don't have an Index or we are done with all the indexes
     Assert(this->hasIndex() && this->curIndexPos < this->IndexCount);
@@ -288,8 +285,8 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromIndexes()
         while (++curMethod < nextMethod)
         {
             // Skip a method context
-            MethodContextBuffer mcb = this->ReadMethodContext(true, true);
-            if (mcb.allDone() || mcb.Error())
+            MethodContextReadResult mcb = this->ReadMethodContext(true, true);
+            if (mcb.IsAllDone() || mcb.IsError())
                 return mcb;
         }
     }
@@ -297,7 +294,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromIndexes()
 }
 
 // Read a method context buffer from the ContextCollection using Hash
-MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
+MethodContextReadResult MethodContextReader::GetNextMethodContextFromHash()
 {
     // Assert if we don't have a valid hash
     Assert(this->Hash != nullptr);
@@ -316,7 +313,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
         }
 
         // No more matches in the TOC for our hash value
-        return MethodContextBuffer();
+        return MethodContextReadResult::Done();
     }
     else
     {
@@ -326,21 +323,20 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
         {
             // Read a method context
             // we can't skip because we need to calculate hashes
-            MethodContextBuffer mcb = this->ReadMethodContext(true, false);
-            if (mcb.allDone() || mcb.Error())
+            MethodContextReadResult mcb = this->ReadMethodContext(true, false);
+            if (mcb.IsAllDone() || mcb.IsError())
                 return mcb;
 
             char mcHash[MD5_HASH_BUFFER_SIZE];
 
-            // Create a temporary copy of mcb.buff plus ending 2-byte canary
-            // this will get freed up by MethodContext constructor
-            unsigned char* buff = new unsigned char[mcb.size + 2];
-            memcpy(buff, mcb.buff, mcb.size + 2);
+            // Create a temporary copy of mcb.blob that is freed up by MethodContext::Initialize constructor
+            unsigned char* buff = new unsigned char[mcb.info.CompressedBlobSize];
+            memcpy(buff, mcb.blob, mcb.info.CompressedBlobSize);
 
             MethodContext* mc;
 
-            if (!MethodContext::Initialize(-1, buff, mcb.size, &mc))
-                return MethodContextBuffer(-1);
+            if (!MethodContext::Initialize(-1, mcb.info, mcb.blob, &mc))
+                return MethodContextReadResult::Error(-1);
 
             mc->dumpMethodMD5HashToBuffer(mcHash, MD5_HASH_BUFFER_SIZE);
             delete mc;
@@ -355,11 +351,11 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
 
     // We should never get here under normal conditions
     AssertMsg(true, "Unexpected condition hit while reading input file.");
-    return MethodContextBuffer(-1);
+    return MethodContextReadResult::Error(-1);
 }
 
 // Read a method context buffer from the ContextCollection using offset/increment
-MethodContextBuffer MethodContextReader::GetNextMethodContextFromOffsetIncrement()
+MethodContextReadResult MethodContextReader::GetNextMethodContextFromOffsetIncrement()
 {
     // Assert if we don't have a valid increment/offset combo
     Assert(this->Offset > 0 && this->Increment > 0);
@@ -375,7 +371,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromOffsetIncrement
             return this->GetSpecificMethodContext(methodNumber);
         }
         else
-            return MethodContextBuffer();
+            return MethodContextReadResult::Done();
     }
     else
     {
@@ -383,8 +379,8 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromOffsetIncrement
         while (this->curMCIndex + 1 < methodNumber)
         {
             // skip over a method
-            MethodContextBuffer mcb = this->ReadMethodContext(true, true);
-            if (mcb.allDone() || mcb.Error())
+            MethodContextReadResult mcb = this->ReadMethodContext(true, true);
+            if (mcb.IsAllDone() || mcb.IsError())
                 return mcb;
         }
     }
@@ -444,23 +440,23 @@ __int64 MethodContextReader::GetOffset(unsigned int methodNumber)
     return -1;
 }
 
-MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int methodNumber)
+MethodContextReadResult MethodContextReader::GetSpecificMethodContext(unsigned int methodNumber)
 {
     __int64 pos = this->GetOffset(methodNumber);
     if (pos < 0)
     {
-        return MethodContextBuffer(-3);
+        return MethodContextReadResult::Error(-3);
     }
 
     // Take the IO lock before we set the file pointer, so we can do this on multiple threads
     if (!this->AcquireLock())
     {
-        return MethodContextBuffer(-2);
+        return MethodContextReadResult::Error(-2);
     }
     if (SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_BEGIN))
     {
         // ReadMethodContext will release the lock, but we already acquired it
-        MethodContextBuffer mcb = this->ReadMethodContext(false);
+        MethodContextReadResult mcb = this->ReadMethodContext(false);
 
         // The curMCIndex value updated by ReadMethodContext() is incorrect
         // since we are repositioning the file pointer we need to update it
@@ -472,7 +468,7 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
     {
         // Don't forget to release the lock!
         this->ReleaseLock();
-        return MethodContextBuffer(-4);
+        return MethodContextReadResult::Error(-4);
     }
 }
 

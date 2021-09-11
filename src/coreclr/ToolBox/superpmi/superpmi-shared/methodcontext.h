@@ -8,6 +8,7 @@
 #ifndef _MethodContext
 #define _MethodContext
 
+#include <vector>
 #include "runtimedetails.h"
 #include "compileresult.h"
 #include "lightweightmap.h"
@@ -64,6 +65,36 @@ static_assert((int)EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS == (int)CORJIT_FLAGS::CorJi
 static_assert((int)EXTRA_JIT_FLAGS::HAS_STATIC_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED32, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED31, "Jit Flags Mismatch");
 
+enum class MethodContextCompression : unsigned char
+{
+    None,
+    Brotli,
+};
+
+struct MethodContextBlobInfo
+{
+    unsigned int CompressedBlobSize;
+    unsigned int DecompressedBlobSize;
+    MethodContextCompression Compression;
+
+    MethodContextBlobInfo()
+        : CompressedBlobSize(0)
+        , DecompressedBlobSize(0)
+        , Compression(MethodContextCompression::None)
+    {
+    }
+
+    MethodContextBlobInfo(
+        unsigned int compressedBlobSize,
+        unsigned int decompressedBlobSize,
+        MethodContextCompression compression)
+        : CompressedBlobSize(compressedBlobSize)
+        , DecompressedBlobSize(decompressedBlobSize)
+        , Compression(compression)
+    {
+    }
+};
+
 class MethodContext
 {
 public:
@@ -73,24 +104,26 @@ private:
     MethodContext(HANDLE hFile);
     MethodContext(unsigned char* buff, unsigned int totalLen);
 
-    void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
+    void MethodInitHelperUncompressed(unsigned char* buff, size_t totalLen);
+    void MethodInitHelperBlob(const MethodContextBlobInfo& info, unsigned char* blob);
     void MethodInitHelperFile(HANDLE hFile);
 
-    bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
+    bool Initialize(int mcIndex, const MethodContextBlobInfo& info, unsigned char* blob);
     bool Initialize(int mcIndex, HANDLE hFile);
 
     int dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
+    std::vector<unsigned char> gatherData();
+
 public:
-    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
+    static MethodContextBlobInfo ReadBlobInfoFromFile(HANDLE hFile);
+    static bool Initialize(int mcIndex, const MethodContextBlobInfo& info, unsigned char* blob, /* OUT */ MethodContext** ppmc);
     static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 
     bool Equal(MethodContext* other);
-    unsigned int saveToFile(HANDLE hFile);
-    unsigned int calculateFileSize();
-    unsigned int calculateRawFileSize();
+    unsigned int saveToFile(HANDLE hFile, MethodContextCompression compression = MethodContextCompression::Brotli);
 
     // dumpToConsole: If mcNumber is not -1, display the method context number before the dumped info.
     // If simple is `true`, don't display the function name/arguments in the header.

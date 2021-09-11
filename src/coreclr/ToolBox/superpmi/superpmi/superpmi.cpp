@@ -264,12 +264,12 @@ int __cdecl main(int argc, char* argv[])
 
     while (true)
     {
-        MethodContextBuffer mcb = reader->GetNextMethodContext();
-        if (mcb.Error())
+        MethodContextReadResult mcb = reader->GetNextMethodContext();
+        if (mcb.IsError())
         {
             return (int)SpmiResult::GeneralFailure;
         }
-        else if (mcb.allDone())
+        else if (mcb.IsAllDone())
         {
             LogDebug("Done processing method contexts");
             break;
@@ -296,7 +296,7 @@ int __cdecl main(int argc, char* argv[])
 
         loadedCount++;
         const int mcIndex = reader->GetMethodContextIndex();
-        if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(mcIndex, mcb.info, mcb.blob, &mc))
         {
             return (int)SpmiResult::GeneralFailure;
         }

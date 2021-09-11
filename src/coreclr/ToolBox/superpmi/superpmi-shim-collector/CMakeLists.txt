@@ -13,6 +13,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
 include_directories(../superpmi-shared)
+include_directories(../superpmi-shared/brotli/include)
 
 set(SUPERPMI_SHIM_COLLECTOR_SOURCES
     jithost.cpp
@@ -32,6 +33,35 @@ set(SUPERPMI_SHIM_COLLECTOR_SOURCES
     ../superpmi-shared/tocfile.cpp
     ../superpmi-shared/typeutils.cpp
     ../superpmi-shared/spmidumphelper.cpp
+    ../superpmi-shared/brotli/common/constants.c
+    ../superpmi-shared/brotli/common/context.c
+    ../superpmi-shared/brotli/common/dictionary.c
+    ../superpmi-shared/brotli/common/platform.c
+    ../superpmi-shared/brotli/common/transform.c
+    ../superpmi-shared/brotli/dec/bit_reader.c
+    ../superpmi-shared/brotli/dec/decode.c
+    ../superpmi-shared/brotli/dec/huffman.c
+    ../superpmi-shared/brotli/dec/state.c
+    ../superpmi-shared/brotli/enc/backward_references.c
+    ../superpmi-shared/brotli/enc/backward_references_hq.c
+    ../superpmi-shared/brotli/enc/bit_cost.c
+    ../superpmi-shared/brotli/enc/block_splitter.c
+    ../superpmi-shared/brotli/enc/brotli_bit_stream.c
+    ../superpmi-shared/brotli/enc/cluster.c
+    ../superpmi-shared/brotli/enc/command.c
+    ../superpmi-shared/brotli/enc/compress_fragment.c
+    ../superpmi-shared/brotli/enc/compress_fragment_two_pass.c
+    ../superpmi-shared/brotli/enc/dictionary_hash.c
+    ../superpmi-shared/brotli/enc/encode.c
+    ../superpmi-shared/brotli/enc/encoder_dict.c
+    ../superpmi-shared/brotli/enc/entropy_encode.c
+    ../superpmi-shared/brotli/enc/fast_log.c
+    ../superpmi-shared/brotli/enc/histogram.c
+    ../superpmi-shared/brotli/enc/literal_cost.c
+    ../superpmi-shared/brotli/enc/memory.c
+    ../superpmi-shared/brotli/enc/metablock.c
+    ../superpmi-shared/brotli/enc/static_dict.c
+    ../superpmi-shared/brotli/enc/utf8_util.c
 )
 if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${CMAKE_CURRENT_SOURCE_DIR}/superpmi-shim-collector.def ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-collector.def)

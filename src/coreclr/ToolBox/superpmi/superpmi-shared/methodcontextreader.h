@@ -11,32 +11,61 @@
 #include "methodcontext.h"
 #include "tocfile.h"
 
-struct MethodContextBuffer
+struct MethodContextReadResult
 {
 private:
-    static const int Completed = 0x1234abcd;
+    enum class State
+    {
+        Blob,
+        Error,
+        Done,
+    };
 
+    State state;
 public:
-    unsigned char* buff;
-    DWORD          size;
+    int error;
+    MethodContextBlobInfo info;
+    unsigned char* blob;
 
-    MethodContextBuffer() : buff(nullptr), size(Completed)
-    {
-    }
-    MethodContextBuffer(DWORD error) : buff(nullptr), size(error)
-    {
-    }
-    MethodContextBuffer(unsigned char* b, DWORD e) : buff(b), size(e)
+    MethodContextReadResult()
+        : state(State::Error)
+        , error(0)
+        , info(0, 0, MethodContextCompression::None)
+        , blob(nullptr)
     {
     }
 
-    bool allDone()
+    bool IsAllDone()
     {
-        return size == Completed && buff == nullptr;
+        return state == State::Done;
     }
-    bool Error()
+    bool IsError()
     {
-        return size != 0 && size != Completed && buff == nullptr;
+        return state == State::Error;
+    }
+
+    static MethodContextReadResult Done()
+    {
+        MethodContextReadResult res;
+        res.state = State::Done;
+        return res;
+    }
+
+    static MethodContextReadResult Error(int error)
+    {
+        MethodContextReadResult res;
+        res.state = State::Error;
+        res.error = error;
+        return res;
+    }
+
+    static MethodContextReadResult Blob(const MethodContextBlobInfo& info, unsigned char* blob)
+    {
+        MethodContextReadResult res;
+        res.state = State::Blob;
+        res.info = info;
+        res.blob = blob;
+        return res;
     }
 };
 
@@ -95,14 +124,14 @@ private:
     // Just a helper...
     static HANDLE OpenFile(const char* inputFile, DWORD flags = FILE_ATTRIBUTE_NORMAL);
 
-    MethodContextBuffer ReadMethodContextNoLock(bool justSkip = false);
-    MethodContextBuffer ReadMethodContext(bool acquireLock, bool justSkip = false);
-    MethodContextBuffer GetSpecificMethodContext(unsigned int methodNumber);
+    MethodContextReadResult ReadMethodContextNoLock(bool justSkip = false);
+    MethodContextReadResult ReadMethodContext(bool acquireLock, bool justSkip = false);
+    MethodContextReadResult GetSpecificMethodContext(unsigned int methodNumber);
 
-    MethodContextBuffer GetNextMethodContextFromIndexes();
-    MethodContextBuffer GetNextMethodContextFromHash();
-    MethodContextBuffer GetNextMethodContextFromOffsetIncrement();
-    MethodContextBuffer GetNextMethodContextHelper();
+    MethodContextReadResult GetNextMethodContextFromIndexes();
+    MethodContextReadResult GetNextMethodContextFromHash();
+    MethodContextReadResult GetNextMethodContextFromOffsetIncrement();
+    MethodContextReadResult GetNextMethodContextHelper();
 
     // Looks for a file named foo.origSuffix.newSuffix or foo.newSuffix
     // but only if foo.origSuffix exists
@@ -133,7 +162,7 @@ public:
 
     // Read a method context buffer from the ContextCollection
     // (either a hive [single] or an index)
-    MethodContextBuffer GetNextMethodContext();
+    MethodContextReadResult GetNextMethodContext();
     // No C++ exceptions, so the constructor has to always succeed...
     bool   isValid();
     double PercentComplete();
