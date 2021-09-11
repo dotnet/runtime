@@ -11074,13 +11074,13 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
     if (op1->OperIs(GT_CAST) && op2->OperIs(GT_CAST))
     {
         // bail if either operand is a checked cast
-        if (op1->gtOverflowEx() || op2->gtOverflowEx())
+        if (op1->gtOverflow() || op2->gtOverflow())
         {
             return nullptr;
         }
 
         var_types fromType = op1->AsCast()->CastOp()->TypeGet();
-        var_types toType = op1->AsCast()->gtCastType;
+        var_types toType = op1->AsCast()->CastToType();
         bool isUnsigned = op1->IsUnsigned();
 
         if ((op2->CastFromType() != fromType) || (op2->CastToType() != toType) || (op2->IsUnsigned() != isUnsigned))
@@ -11104,7 +11104,8 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
 
         op1->gtType = genActualType(toType);
         op1->AsCast()->gtOp1 = tree;
-        op1->AsCast()->gtCastType = toType;
+        op1->AsCast()->CastToType() = toType;
+        op1->SetAllEffectsFlags(tree);
         // no need to update isUnsigned
 
         DEBUG_DESTROY_NODE(op2);
@@ -12800,7 +12801,7 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->AsOp()->gtOp2;
             }
 
-            if (fgGlobalMorph && (varTypeIsIntegralOrI(tree)) && (tree->OperIs(GT_AND, GT_OR, GT_XOR)))
+            if (fgGlobalMorph && varTypeIsIntegralOrI(tree) && tree->OperIs(GT_AND, GT_OR, GT_XOR))
             {
                 GenTree* result = fgMorphCastedBitwiseOp(tree->AsOp());
                 if (result != nullptr)
