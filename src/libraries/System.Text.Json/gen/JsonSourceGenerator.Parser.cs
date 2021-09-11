@@ -139,6 +139,22 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
+            private static DiagnosticDescriptor InitOnlyPropertyDeserializationNotSupported { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1037",
+                title: new LocalizableResourceString(nameof(SR.InitOnlyPropertyDeserializationNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.InitOnlyPropertyDeserializationNotSupportedFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            private static DiagnosticDescriptor InaccessibleJsonIncludePropertiesNotSupported { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1038",
+                title: new LocalizableResourceString(nameof(SR.InaccessibleJsonIncludePropertiesNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.InaccessibleJsonIncludePropertiesNotSupportedFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
             public Parser(Compilation compilation, in SourceProductionContext sourceProductionContext)
             {
                 _compilation = compilation;
@@ -624,6 +640,7 @@ namespace System.Text.Json.SourceGeneration
                 string? converterInstatiationLogic = null;
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
+                bool hasEncounteredInitOnlyProperties = false;
                 bool hasTypeFactoryConverter = false;
                 bool hasPropertyFactoryConverters = false;
 
@@ -954,6 +971,17 @@ namespace System.Text.Json.SourceGeneration
                                     dataExtensionPropGenSpec = GetOrAddTypeGenerationSpec(propType, generationMode);
                                     _implicitlyRegisteredTypes.Add(dataExtensionPropGenSpec);
                                 }
+
+                                if (!hasEncounteredInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter)
+                                {
+                                    _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, Location.None, new string[] { type.Name }));
+                                    hasEncounteredInitOnlyProperties = true;
+                                }
+
+                                if (spec.HasJsonInclude && (!spec.CanUseGetter || !spec.CanUseSetter || !spec.IsPublic))
+                                {
+                                    _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(InaccessibleJsonIncludePropertiesNotSupported, Location.None, new string[] { type.Name, spec.ClrName }));
+                                }
                             }
                         }
 
@@ -1079,7 +1107,8 @@ namespace System.Text.Json.SourceGeneration
                     out bool canUseGetter,
                     out bool canUseSetter,
                     out bool getterIsVirtual,
-                    out bool setterIsVirtual);
+                    out bool setterIsVirtual,
+                    out bool setterIsInitOnly);
 
                 string clrName = memberInfo.Name;
                 string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
@@ -1095,6 +1124,7 @@ namespace System.Text.Json.SourceGeneration
                     RuntimePropertyName = runtimePropertyName,
                     PropertyNameVarName = propertyNameVarName,
                     IsReadOnly = isReadOnly,
+                    IsInitOnlySetter = setterIsInitOnly,
                     CanUseGetter = canUseGetter,
                     CanUseSetter = canUseSetter,
                     GetterIsVirtual = getterIsVirtual,
@@ -1227,13 +1257,15 @@ namespace System.Text.Json.SourceGeneration
                 out bool canUseGetter,
                 out bool canUseSetter,
                 out bool getterIsVirtual,
-                out bool setterIsVirtual)
+                out bool setterIsVirtual,
+                out bool setterIsInitOnly)
             {
                 isPublic = false;
                 canUseGetter = false;
                 canUseSetter = false;
                 getterIsVirtual = false;
                 setterIsVirtual = false;
+                setterIsInitOnly = false;
 
                 switch (memberInfo)
                 {
@@ -1260,15 +1292,16 @@ namespace System.Text.Json.SourceGeneration
                             if (setMethod != null)
                             {
                                 isReadOnly = false;
+                                setterIsInitOnly = setMethod.IsInitOnly();
 
                                 if (setMethod.IsPublic)
                                 {
                                     isPublic = true;
-                                    canUseSetter = !setMethod.IsInitOnly();
+                                    canUseSetter = true;
                                 }
                                 else if (setMethod.IsAssembly)
                                 {
-                                    canUseSetter = hasJsonInclude && !setMethod.IsInitOnly();
+                                    canUseSetter = hasJsonInclude;
                                 }
 
                                 setterIsVirtual = setMethod.IsVirtual;

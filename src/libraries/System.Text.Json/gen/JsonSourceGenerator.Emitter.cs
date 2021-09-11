@@ -711,25 +711,28 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                         ? @$"jsonPropertyName: ""{memberMetadata.JsonPropertyName}"""
                         : "jsonPropertyName: null";
 
-                    string getterNamedArg = memberMetadata.CanUseGetter &&
-                        memberMetadata.DefaultIgnoreCondition != JsonIgnoreCondition.Always
-                        ? $"getter: static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}"
-                        : "getter: null";
-
-                    string setterNamedArg;
-                    if (memberMetadata.CanUseSetter &&
-                        memberMetadata.DefaultIgnoreCondition != JsonIgnoreCondition.Always)
+                    string getterNamedArg = memberMetadata switch
                     {
-                        string propMutation = typeGenerationSpec.IsValueType
-                            ? @$"{UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value!"
-                            : $@"(({declaringTypeCompilableName})obj).{clrPropertyName} = value!";
+                        { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "getter: null",
+                        { CanUseGetter: true } => $"getter: static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}",
+                        { CanUseGetter: false, HasJsonInclude: true }
+                            => @$"getter: static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{SR.InaccessibleJsonIncludePropertiesNotSupportedTitle}"")",
+                        _ => "getter: null"
+                    };
 
-                        setterNamedArg = $"setter: static (obj, value) => {propMutation}";
-                    }
-                    else
+                    string setterNamedArg = memberMetadata switch
                     {
-                        setterNamedArg = "setter: null";
-                    }
+                        { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "setter: null",
+                        { CanUseSetter: true, IsInitOnlySetter: true }
+                            => @$"setter: static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{SR.InitOnlyPropertyDeserializationNotSupportedTitle}"")",
+                        { CanUseSetter: true } when typeGenerationSpec.IsValueType
+                            => $@"setter: static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value!",
+                        { CanUseSetter: true }
+                            => @$"setter: static (obj, value) => (({declaringTypeCompilableName})obj).{clrPropertyName} = value!",
+                        { CanUseSetter: false, HasJsonInclude: true }
+                            => @$"setter: static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{SR.InaccessibleJsonIncludePropertiesNotSupportedTitle}"")",
+                        _ => "setter: null",
+                    };
 
                     JsonIgnoreCondition? ignoreCondition = memberMetadata.DefaultIgnoreCondition;
                     string ignoreConditionNamedArg = ignoreCondition.HasValue

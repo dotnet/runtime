@@ -4,7 +4,9 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
-    <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+    <!-- SYSLIB1037: Suppress init-only property deserialization warning -->
+    <!-- SYSLIB1038: Suppress JsonInclude on inaccessible members warning -->
+    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB1037;SYSLIB1038</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
