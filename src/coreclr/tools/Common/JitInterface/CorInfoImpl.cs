@@ -101,8 +101,16 @@ namespace Internal.JitInterface
             private static readonly IntPtr s_jit;
         }
 
+        private const int MAX_LIKELY_CLASSES = 4;
+
+        private struct LikelyClassRecord
+        {
+            public IntPtr clsHandle;
+            public uint likelihood;
+        }
+
         [DllImport(JitLibrary)]
-        private extern static IntPtr getLikelyClass(PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset, out uint pLikelihood, out uint pNumberOfClasses);
+        private extern static uint getLikelyClass(LikelyClassRecord* pLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
@@ -242,11 +250,13 @@ namespace Internal.JitInterface
             {
                 fixed(byte* pInstrumentationData = &instrumentationData[0])
                 {
-                    IntPtr classType = getLikelyClass(pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset, out uint likelihood, out uint numberOfClasses);
+                    LikelyClassRecord* likelyClasses = stackalloc LikelyClassRecord[MAX_LIKELY_CLASSES];
+                    uint numberOfClasses = getLikelyClass(likelyClasses, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
 
-                    if (classType != IntPtr.Zero)
+                    // We're going to store only the most popular type to reduce size of the profile
+                    if ((numberOfClasses > 0) && (likelyClasses->clsHandle != IntPtr.Zero))
                     {
-                        TypeDesc type = (TypeDesc)handleToObject[classType];
+                        TypeDesc type = (TypeDesc)handleToObject[likelyClasses->clsHandle];
 #if READYTORUN
                         if (compilationModuleGroup.VersionsWithType(type))
 #endif

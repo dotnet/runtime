@@ -835,12 +835,20 @@ T dspOffset(T o)
 
 #endif // !defined(DEBUG)
 
-extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
-                                                      UINT32                                 countSchemaItems,
-                                                      BYTE*                                  pInstrumentationData,
-                                                      int32_t                                ilOffset,
-                                                      UINT32*                                pLikelihood,
-                                                      UINT32*                                pNumberOfClasses);
+// Keep in sync with CorInfoImpl.cs
+#define MAX_LIKELY_CLASSES 4
+
+struct LikelyClassRecord
+{
+    CORINFO_CLASS_HANDLE clsHandle;
+    UINT32               likelihood;
+};
+
+extern "C" UINT32 WINAPI getLikelyClass(LikelyClassRecord*                     pLikelyClasses,
+                                        ICorJitInfo::PgoInstrumentationSchema* schema,
+                                        UINT32                                 countSchemaItems,
+                                        BYTE*                                  pInstrumentationData,
+                                        int32_t                                ilOffset);
 
 /*****************************************************************************/
 #endif //_JIT_H_

@@ -21341,13 +21341,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         (isExact || objClassIsFinal) && (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
     if (JitConfig.JitCrossCheckDevirtualizationAndPGO() && canSensiblyCheck)
     {
-        unsigned likelihood      = 0;
-        unsigned numberOfClasses = 0;
+        LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
 
-        CORINFO_CLASS_HANDLE likelyClass =
-            getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+        UINT32 numberOfClasses = getLikelyClass(likelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        UINT32 likelihood      = likelyClasses[0].likelihood;
 
-        if (likelyClass != NO_CLASS_HANDLE)
+        CORINFO_CLASS_HANDLE likelyClass = likelyClasses[0].clsHandle;
+
+        if ((numberOfClasses > 0) && (likelyClass != NO_CLASS_HANDLE))
         {
             // PGO had better agree the class we devirtualized to is plausible.
             //
@@ -21927,7 +21928,10 @@ void Compiler::considerGuardedDevirtualization(
     else
 #endif
     {
-        likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+        LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
+        numberOfClasses = getLikelyClass(likelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        likelihood      = likelyClasses[0].likelihood;
+        likelyClass     = likelyClasses[0].clsHandle;
     }
 
     if (likelyClass == NO_CLASS_HANDLE)

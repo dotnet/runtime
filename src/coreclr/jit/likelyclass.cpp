@@ -13,6 +13,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+#include <algorithm.h>
+
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -107,15 +109,15 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 // getLikelyClass: find class profile data for an IL offset, and return the most likely class
 //
 // Arguments:
+//    pLikelyClasses - [OUT] array of likely classes sorted by likelihood (descending)
 //    schema - profile schema
 //    countSchemaItems - number of items in the schema
 //    pInstrumentationData - associated data
 //    ilOffset - il offset of the callvirt
 //    pLikelihood - [OUT] likelihood of observing that entry [0...100]
-//    pNumberOfClasses - [OUT] estimated number of classes seen at runtime
 //
 // Returns:
-//    Class handle for the most likely class, or nullptr
+//    Estimated number of classes seen at runtime
 //
 // Notes:
 //    A "monomorphic" call site will return likelihood 100 and number of entries = 1.
@@ -126,37 +128,38 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 //   This code can runs without a jit instance present, so JITDUMP and related
 //   cannot be used.
 //
-extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
-                                                                UINT32                                 countSchemaItems,
-                                                                BYTE*   pInstrumentationData,
-                                                                int32_t ilOffset,
-                                                                UINT32* pLikelihood,
-                                                                UINT32* pNumberOfClasses)
+extern "C" UINT32 WINAPI getLikelyClass(LikelyClassRecord*                     pLikelyClasses,
+                                        ICorJitInfo::PgoInstrumentationSchema* schema,
+                                        UINT32                                 countSchemaItems,
+                                        BYTE*                                  pInstrumentationData,
+                                        int32_t                                ilOffset)
 {
-    *pLikelihood      = 0;
-    *pNumberOfClasses = 0;
+    ZeroMemory(pLikelyClasses, MAX_LIKELY_CLASSES);
 
-    if (schema == NULL)
-        return NULL;
+    if (schema == nullptr)
+    {
+        return 0;
+    }
 
     for (COUNT_T i = 0; i < countSchemaItems; i++)
     {
-        if (schema[i].ILOffset != (int32_t)ilOffset)
+        if (schema[i].ILOffset != ilOffset)
             continue;
 
         if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass) &&
             (schema[i].Count == 1))
         {
-            *pNumberOfClasses = (UINT32)schema[i].Other >> 8;
-            *pLikelihood      = (UINT32)(schema[i].Other & 0xFF);
-            INT_PTR result    = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
+            pLikelyClasses[0].likelihood = (UINT32)(schema[i].Other & 0xFF);
+            INT_PTR result               = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
             if (ICorJitInfo::IsUnknownTypeHandle(result))
-                return NULL;
-            else
-                return (CORINFO_CLASS_HANDLE)result;
+            {
+                return 0;
+            }
+            pLikelyClasses[0].clsHandle = (CORINFO_CLASS_HANDLE)result;
+            return 1;
         }
 
-        bool isHistogramCount =
+        const bool isHistogramCount =
             (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount) ||
             (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
 
@@ -168,84 +171,98 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
             LikelyClassHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
 
             // Use histogram count as number of classes estimate
-            //
-            *pNumberOfClasses = (uint32_t)h.countHistogramElements + h.m_unknownTypes;
-
             // Report back what we've learned
             // (perhaps, use count to augment likelihood?)
             //
-            switch (*pNumberOfClasses)
+            switch (h.countHistogramElements)
             {
                 case 0:
-                {
-                    return NULL;
-                }
-                break;
+                    return 0;
 
                 case 1:
                 {
+                    // Fast path for monomorphic cases
                     if (ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
                     {
-                        return NULL;
+                        return 0;
                     }
-                    *pLikelihood = 100;
-                    return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
+                    pLikelyClasses[0].likelihood = 100;
+                    pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
+                    return 1;
                 }
-                break;
 
                 case 2:
                 {
+                    // Fast path for two classes
                     if ((h.HistogramEntryAt(0).m_count >= h.HistogramEntryAt(1).m_count) &&
                         !ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
                     {
-                        *pLikelihood = (100 * h.HistogramEntryAt(0).m_count) / h.m_totalCount;
-                        return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
+                        pLikelyClasses[0].likelihood = (100 * h.HistogramEntryAt(0).m_count) / h.m_totalCount;
+                        pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE) h.HistogramEntryAt(0).m_mt;
+
+                        if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(1).m_mt))
+                        {
+                            pLikelyClasses[1].likelihood = (100 * h.HistogramEntryAt(1).m_count) / h.m_totalCount;
+                            pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(1).m_mt;
+                            return 2;
+                        }
+                        return 1;
                     }
-                    else if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(1).m_mt))
+
+                    if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(1).m_mt))
                     {
-                        *pLikelihood = (100 * h.HistogramEntryAt(1).m_count) / h.m_totalCount;
-                        return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(1).m_mt;
+                        pLikelyClasses[0].likelihood = (100 * h.HistogramEntryAt(1).m_count) / h.m_totalCount;
+                        pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(1).m_mt;
+
+                        if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
+                        {
+                            pLikelyClasses[1].likelihood = (100 * h.HistogramEntryAt(0).m_count) / h.m_totalCount;
+                            pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
+                            return 2;
+                        }
+                        return 1;
                     }
-                    else
-                    {
-                        return NULL;
-                    }
+                    return 0;
                 }
-                break;
 
                 default:
                 {
-                    // Find maximum entry and return it
-                    //
-                    unsigned maxKnownIndex = 0;
-                    unsigned maxKnownCount = 0;
-
+                    // Since this method can be invoked without a jit instance we can't use any existing allocators
+                    auto sortedEntries = (LikelyClassHistogramEntry*)malloc(sizeof(LikelyClassHistogramEntry) *
+                                                                            h.countHistogramElements);
+                    unsigned knownHandles = 0;
                     for (unsigned m = 0; m < h.countHistogramElements; m++)
                     {
-                        if ((h.HistogramEntryAt(m).m_count > maxKnownCount) &&
-                            !ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(m).m_mt))
+                        if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(m).m_mt))
                         {
-                            maxKnownIndex = m;
-                            maxKnownCount = h.HistogramEntryAt(m).m_count;
+                            sortedEntries[knownHandles++] = h.HistogramEntryAt(m);
                         }
                     }
 
-                    if (maxKnownCount > 0)
-                    {
-                        *pLikelihood = (100 * maxKnownCount) / h.m_totalCount;
-                        return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(maxKnownIndex).m_mt;
-                    }
+                    // sort by m_count (descending)
+                    jitstd::sort(sortedEntries, sortedEntries + knownHandles,
+                                 [](const LikelyClassHistogramEntry h1, const LikelyClassHistogramEntry h2) -> bool {
+                                     return h1.m_count > h2.m_count;
+                                 });
 
-                    return NULL;
+                    const UINT32 numberOfClasses = min(knownHandles, MAX_LIKELY_CLASSES);
+
+                    for (size_t hIdx = 0; hIdx < numberOfClasses; hIdx++)
+                    {
+                        const LikelyClassHistogramEntry hc = sortedEntries[hIdx];
+                        pLikelyClasses[hIdx].clsHandle     = (CORINFO_CLASS_HANDLE)hc.m_mt;
+                        pLikelyClasses[hIdx].likelihood    = hc.m_count * 100 / h.m_totalCount;
+                    }
+                    free(sortedEntries);
+                    return numberOfClasses;
                 }
-                break;
             }
         }
     }
 
     // Failed to find histogram data for this method
     //
-    return NULL;
+    return 0;
 }
 
 //------------------------------------------------------------------------
