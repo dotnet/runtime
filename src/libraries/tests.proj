@@ -395,8 +395,8 @@
 
     <ItemGroup>
       <!-- xcodeproj are directories, not files -->
-      <XcodeProjects Include="$([System.IO.Directory]::GetDirectories('$(NormalTestsAllAppBundlesRoot)NormalTestAppBundles/%(NormalTestAppBundles.RecursiveDir)', '*.xcodeproj'))" DestinationFolder="$(TestArchiveNormalTestsDir)" />
-      <XcodeProjects Include="$([System.IO.Directory]::GetDirectories('$(FunctionalTestsAllAppBundlesRoot)FunctionalTestAppBundles/%(FunctionalTestAppBundles.RecursiveDir)', '*.xcodeproj'))" DestinationFolder="$(TestArchiveFunctionalTestsDir)" />
+      <XcodeProjects Condition="'@(NormalTestAppBundles)' != ''" Include="$([System.IO.Directory]::GetDirectories('$(NormalTestsAllAppBundlesRoot)NormalTestAppBundles/%(NormalTestAppBundles.RecursiveDir)', '*.xcodeproj'))" DestinationFolder="$(TestArchiveNormalTestsDir)" />
+      <XcodeProjects Condition="'@(FunctionalTestAppBundles)' != ''" Include="$([System.IO.Directory]::GetDirectories('$(FunctionalTestsAllAppBundlesRoot)FunctionalTestAppBundles/%(FunctionalTestAppBundles.RecursiveDir)', '*.xcodeproj'))" DestinationFolder="$(TestArchiveFunctionalTestsDir)" />
     </ItemGroup>
 
     <XcodeBuildApp
