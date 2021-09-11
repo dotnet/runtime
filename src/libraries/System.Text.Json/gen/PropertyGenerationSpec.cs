@@ -76,6 +76,11 @@ namespace System.Text.Json.SourceGeneration
         public bool HasJsonInclude { get; init; }
 
         /// <summary>
+        /// Whether the property has the JsonExtensionDataAttribute.
+        /// </summary>
+        public bool IsExtensionData { get; init; }
+
+        /// <summary>
         /// Generation specification for the property's type.
         /// </summary>
         public TypeGenerationSpec TypeGenerationSpec { get; init; }

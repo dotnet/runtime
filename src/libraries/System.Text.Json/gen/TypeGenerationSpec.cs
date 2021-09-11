@@ -58,6 +58,14 @@ namespace System.Text.Json.SourceGeneration
 
         public TypeGenerationSpec? NullableUnderlyingTypeMetadata { get; private set; }
 
+        /// <summary>
+        /// Supports deserialization of extension data dictionaries typed as I[ReadOnly]Dictionary<string, object/JsonElement>.
+        /// Specifies a concrete type to instanciate, which would be Dictionary<string, object/JsonElement>.
+        /// </summary>
+        public string? RuntimeTypeRef { get; private set; }
+
+        public TypeGenerationSpec? ExtensionDataPropertyTypeSpec {  get; private set; }
+
         public string? ConverterInstantiationLogic { get; private set; }
 
         // Only generate certain helper methods if necessary.
@@ -109,6 +117,8 @@ namespace System.Text.Json.SourceGeneration
             TypeGenerationSpec? collectionValueTypeMetadata,
             ObjectConstructionStrategy constructionStrategy,
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
+            string? runtimeTypeRef,
+            TypeGenerationSpec? extensionDataPropertyTypeSpec,
             string? converterInstantiationLogic,
             bool implementsIJsonOnSerialized,
             bool implementsIJsonOnSerializing,
@@ -130,6 +140,8 @@ namespace System.Text.Json.SourceGeneration
             CollectionValueTypeMetadata = collectionValueTypeMetadata;
             ConstructionStrategy = constructionStrategy;
             NullableUnderlyingTypeMetadata = nullableUnderlyingTypeMetadata;
+            RuntimeTypeRef = runtimeTypeRef;
+            ExtensionDataPropertyTypeSpec = extensionDataPropertyTypeSpec;
             ConverterInstantiationLogic = converterInstantiationLogic;
             ImplementsIJsonOnSerialized = implementsIJsonOnSerialized;
             ImplementsIJsonOnSerializing = implementsIJsonOnSerializing;
@@ -221,6 +233,11 @@ ReturnFalse:
         {
             if (ClassType == ClassType.Object)
             {
+                if (ExtensionDataPropertyTypeSpec != null)
+                {
+                    return false;
+                }
+
                 foreach (PropertyGenerationSpec property in PropertyGenSpecList)
                 {
                     if (property.TypeGenerationSpec.Type.IsObjectType() ||
