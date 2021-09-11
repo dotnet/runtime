@@ -13,6 +13,141 @@ namespace System.Threading.Tests
     {
         private const int FailedWaitTimeout = 30000;
 
+        [Fact]
+        public void BasicFunctionalityTest()
+        {
+            // Constructor and dispose
+
+            var s = new Semaphore(0, 1);
+            Assert.False(s.WaitOne(0));
+            s.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => s.Release());
+            Assert.Throws<ObjectDisposedException>(() => s.WaitOne(0));
+
+            s = new Semaphore(1, 1);
+            Assert.True(s.WaitOne(0));
+
+            // Signal and unsignal
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => s.Release(0));
+
+            s = new Semaphore(1, 1);
+            Assert.True(s.WaitOne(0));
+            Assert.False(s.WaitOne(0));
+            Assert.False(s.WaitOne(0));
+            Assert.Equal(0, s.Release());
+            Assert.True(s.WaitOne(0));
+            Assert.Throws<SemaphoreFullException>(() => s.Release(2));
+            Assert.Equal(0, s.Release());
+            Assert.Throws<SemaphoreFullException>(() => s.Release());
+
+            s = new Semaphore(1, 2);
+            Assert.Throws<SemaphoreFullException>(() => s.Release(2));
+            Assert.Equal(1, s.Release(1));
+            Assert.True(s.WaitOne(0));
+            Assert.True(s.WaitOne(0));
+            Assert.Throws<SemaphoreFullException>(() => s.Release(3));
+            Assert.Equal(0, s.Release(2));
+            Assert.Throws<SemaphoreFullException>(() => s.Release());
+
+            // Wait
+
+            s = new Semaphore(1, 2);
+            s.CheckedWait();
+            Assert.False(s.WaitOne(0));
+            s.Release();
+            s.CheckedWait();
+            Assert.False(s.WaitOne(0));
+            s.Release(2);
+            s.CheckedWait();
+            s.Release();
+            s.CheckedWait();
+
+            s = new Semaphore(0, 2);
+            Assert.False(s.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+
+            s = null;
+
+            // Multi-wait with all indexes signaled
+            var ss =
+                new Semaphore[]
+                {
+                    new Semaphore(1, 1),
+                    new Semaphore(1, 1),
+                    new Semaphore(1, 1),
+                    new Semaphore(1, 1)
+                };
+            Assert.Equal(0, WaitHandle.WaitAny(ss, 0));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.Equal(i > 0, ss[i].WaitOne(0));
+                ss[i].Release();
+            }
+            Assert.Equal(0, WaitHandle.WaitAny(ss, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.Equal(i > 0, ss[i].WaitOne(0));
+                ss[i].Release();
+            }
+            Assert.Equal(0, WaitHandle.WaitAny(ss));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.Equal(i > 0, ss[i].WaitOne(0));
+                ss[i].Release();
+            }
+            Assert.True(WaitHandle.WaitAll(ss, 0));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.False(ss[i].WaitOne(0));
+                ss[i].Release();
+            }
+            Assert.True(WaitHandle.WaitAll(ss, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.False(ss[i].WaitOne(0));
+                ss[i].Release();
+            }
+            Assert.True(WaitHandle.WaitAll(ss));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.False(ss[i].WaitOne(0));
+            }
+
+            // Multi-wait with indexes 1 and 2 signaled
+            ss[1].Release();
+            ss[2].Release();
+            Assert.Equal(1, WaitHandle.WaitAny(ss, 0));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.Equal(i == 2, ss[i].WaitOne(0));
+            }
+            ss[1].Release();
+            ss[2].Release();
+            Assert.Equal(1, WaitHandle.WaitAny(ss, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.Equal(i == 2, ss[i].WaitOne(0));
+            }
+            ss[1].Release();
+            ss[2].Release();
+            Assert.False(WaitHandle.WaitAll(ss, 0));
+            Assert.False(WaitHandle.WaitAll(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.Equal(i == 1 || i == 2, ss[i].WaitOne(0));
+            }
+
+            // Multi-wait with all indexes unsignaled
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(ss, 0));
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            Assert.False(WaitHandle.WaitAll(ss, 0));
+            Assert.False(WaitHandle.WaitAll(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            for (int i = 0; i < ss.Length; ++i)
+            {
+                Assert.False(ss[i].WaitOne(0));
+            }
+        }
+
         [Theory]
         [InlineData(0, 1)]
         [InlineData(1, 1)]
@@ -33,8 +168,10 @@ namespace System.Threading.Tests
             new Semaphore(0, 1, name).Dispose();
 
             bool createdNew;
-            new Semaphore(0, 1, name, out createdNew).Dispose();
+            using var s = new Semaphore(0, 1, name, out createdNew);
             Assert.True(createdNew);
+            new Semaphore(0, 1, name, out createdNew).Dispose();
+            Assert.False(createdNew);
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // named semaphores aren't supported on Unix
@@ -111,29 +248,6 @@ namespace System.Threading.Tests
                     }
 
                     Assert.False(s.WaitOne(0));
-                }
-            }
-        }
-
-        [Fact]
-        public void Release()
-        {
-            using (Semaphore s = new Semaphore(1, 1))
-            {
-                Assert.Throws<SemaphoreFullException>(() => s.Release());
-            }
-
-            using (Semaphore s = new Semaphore(0, 10))
-            {
-                Assert.Throws<SemaphoreFullException>(() => s.Release(11));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("releaseCount", () => s.Release(-1));
-            }
-
-            using (Semaphore s = new Semaphore(0, 10))
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    Assert.Equal(i, s.Release());
                 }
             }
         }
@@ -216,8 +330,18 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
-            Semaphore ignored;
-            Assert.False(Semaphore.TryOpenExisting(name, out ignored));
+            Assert.False(Semaphore.TryOpenExisting(name, out _));
+
+            using (var s = new Semaphore(0, 1, name)) { }
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
+            Assert.False(Semaphore.TryOpenExisting(name, out _));
+
+            using (var s = new Semaphore(0, 1, name + "Case"))
+            {
+                string nameWithDifferentCase = name + "case";
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(nameWithDifferentCase));
+                Assert.False(Semaphore.TryOpenExisting(nameWithDifferentCase, out _));
+            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix

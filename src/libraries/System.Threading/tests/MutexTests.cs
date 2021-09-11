@@ -14,26 +14,190 @@ namespace System.Threading.Tests
     public class MutexTests : FileCleanupTestBase
     {
         [Fact]
-        public void Ctor_ConstructWaitRelease()
+        public void BasicFunctionalityTest()
         {
-            using (Mutex m = new Mutex())
+            // Constructor and dispose
+
+            var m = new Mutex();
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            m.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => m.ReleaseMutex());
+            Assert.Throws<ObjectDisposedException>(() => m.WaitOne(0));
+
+            m = new Mutex(false);
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+
+            m = new Mutex(true);
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+
+            m = new Mutex(true);
+            Assert.True(m.WaitOne(0));
+            m.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => m.ReleaseMutex());
+            Assert.Throws<ObjectDisposedException>(() => m.WaitOne(0));
+
+            // Acquire and release
+
+            m = new Mutex();
+            Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
+            Assert.True(m.WaitOne(0));
+            Assert.True(m.WaitOne(0));
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
+
+            // Wait
+
+            m.CheckedWait();
+            m.CheckedWait();
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+            Assert.True(m.WaitOne());
+            Assert.True(m.WaitOne());
+            m.ReleaseMutex();
+            m.ReleaseMutex();
+
+            m = null;
+
+            // Multi-wait with all indexes unlocked
+            var ms =
+                new Mutex[]
+                {
+                    new Mutex(),
+                    new Mutex(),
+                    new Mutex(),
+                    new Mutex()
+                };
+            Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
+            ms[0].ReleaseMutex();
+            for (int i = 1; i < ms.Length; ++i)
             {
-                m.CheckedWait();
-                m.ReleaseMutex();
+                Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
+            }
+            Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            ms[0].ReleaseMutex();
+            for (int i = 1; i < ms.Length; ++i)
+            {
+                Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
+            }
+            Assert.Equal(0, WaitHandle.WaitAny(ms));
+            ms[0].ReleaseMutex();
+            for (int i = 1; i < ms.Length; ++i)
+            {
+                Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
+            }
+            Assert.True(WaitHandle.WaitAll(ms, 0));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
             }
 
-            using (Mutex m = new Mutex(false))
+            // Multi-wait with indexes 0 and 3 locked
+            ms[0].WaitOne(0);
+            ms[3].WaitOne(0);
+            Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
+            ms[0].ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
+            Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
+            Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            ms[0].ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
+            Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
+            Assert.Equal(0, WaitHandle.WaitAny(ms));
+            ms[0].ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
+            Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
+            Assert.True(WaitHandle.WaitAll(ms, 0));
+            for (int i = 0; i < ms.Length; ++i)
             {
-                m.CheckedWait();
-                m.ReleaseMutex();
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            ms[0].ReleaseMutex();
+            Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
+            Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
+            ms[3].ReleaseMutex();
+
+            // Multi-wait with all indexes locked
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                Assert.True(ms[i].WaitOne(0));
+            }
+            Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
+            ms[0].ReleaseMutex();
+            Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            ms[0].ReleaseMutex();
+            Assert.Equal(0, WaitHandle.WaitAny(ms));
+            ms[0].ReleaseMutex();
+            Assert.True(WaitHandle.WaitAll(ms, 0));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            Assert.True(WaitHandle.WaitAll(ms));
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+            }
+            for (int i = 0; i < ms.Length; ++i)
+            {
+                ms[i].ReleaseMutex();
+                Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
             }
 
-            using (Mutex m = new Mutex(true))
+            // Mutual exclusion
+            var threadLocked = new AutoResetEvent(false);
+            var continueThread = new AutoResetEvent(false);
+            m = new Mutex();
+            Thread t = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
             {
-                m.CheckedWait();
+                Assert.True(m.WaitOne(0));
+                threadLocked.Set();
+                continueThread.CheckedWait();
                 m.ReleaseMutex();
-                m.ReleaseMutex();
-            }
+            });
+            t.IsBackground = true;
+            t.Start();
+            threadLocked.CheckedWait();
+            Assert.False(m.WaitOne(0));
+            Assert.False(m.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            continueThread.Set();
+            waitForThread();
+            Assert.True(m.WaitOne(0));
+            m.ReleaseMutex();
         }
 
         [Fact]
@@ -134,8 +298,18 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
-            Mutex ignored;
-            Assert.False(Mutex.TryOpenExisting(name, out ignored));
+            Assert.False(Mutex.TryOpenExisting(name, out _));
+
+            using (var m = new Mutex(false, name)) { }
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
+            Assert.False(Mutex.TryOpenExisting(name, out _));
+
+            using (var m = new Mutex(false, name + "Case"))
+            {
+                string nameWithDifferentCase = name + "case";
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(nameWithDifferentCase));
+                Assert.False(Mutex.TryOpenExisting(nameWithDifferentCase, out _));
+            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix

@@ -8,30 +8,127 @@ namespace System.Threading.Tests
 {
     public class AutoResetEventTests
     {
-        private const int FailedWaitTimeout = 30000;
-
         [Fact]
-        public void Ctor()
+        public void BasicFunctionalityTest()
         {
-            using (AutoResetEvent are = new AutoResetEvent(false))
-                Assert.False(are.WaitOne(0));
+            // Constructor and dispose
 
-            using (AutoResetEvent are = new AutoResetEvent(true))
-                Assert.True(are.WaitOne(0));
-        }
+            var e = new AutoResetEvent(false);
+            Assert.False(e.WaitOne(0));
+            e.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => e.Reset());
+            Assert.Throws<ObjectDisposedException>(() => e.Set());
+            Assert.Throws<ObjectDisposedException>(() => e.WaitOne(0));
 
-        [Fact]
-        public void SetReset()
-        {
-            using (AutoResetEvent are = new AutoResetEvent(false))
+            e = new AutoResetEvent(true);
+            Assert.True(e.WaitOne(0));
+
+            // Set and reset
+
+            e = new AutoResetEvent(true);
+            e.Reset();
+            Assert.False(e.WaitOne(0));
+            Assert.False(e.WaitOne(0));
+            e.Reset();
+            Assert.False(e.WaitOne(0));
+            e.Set();
+            Assert.True(e.WaitOne(0));
+            Assert.False(e.WaitOne(0));
+            e.Set();
+            e.Set();
+            Assert.True(e.WaitOne(0));
+
+            // Wait
+
+            e.Set();
+            e.CheckedWait();
+            Assert.False(e.WaitOne(0));
+            e.Set();
+            e.CheckedWait();
+            Assert.False(e.WaitOne(0));
+
+            e.Reset();
+            Assert.False(e.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+
+            e = null;
+
+            // Multi-wait with all indexes set
+            var es =
+                new AutoResetEvent[]
+                {
+                    new AutoResetEvent(true),
+                    new AutoResetEvent(true),
+                    new AutoResetEvent(true),
+                    new AutoResetEvent(true)
+                };
+            Assert.Equal(0, WaitHandle.WaitAny(es, 0));
+            for (int i = 0; i < es.Length; ++i)
             {
-                Assert.False(are.WaitOne(0));
-                are.Set();
-                Assert.True(are.WaitOne(0));
-                Assert.False(are.WaitOne(0));
-                are.Set();
-                are.Reset();
-                Assert.False(are.WaitOne(0));
+                Assert.Equal(i > 0, es[i].WaitOne(0));
+                es[i].Set();
+            }
+            Assert.Equal(0, WaitHandle.WaitAny(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.Equal(i > 0, es[i].WaitOne(0));
+                es[i].Set();
+            }
+            Assert.Equal(0, WaitHandle.WaitAny(es));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.Equal(i > 0, es[i].WaitOne(0));
+                es[i].Set();
+            }
+            Assert.True(WaitHandle.WaitAll(es, 0));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.False(es[i].WaitOne(0));
+                es[i].Set();
+            }
+            Assert.True(WaitHandle.WaitAll(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.False(es[i].WaitOne(0));
+                es[i].Set();
+            }
+            Assert.True(WaitHandle.WaitAll(es));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.False(es[i].WaitOne(0));
+            }
+
+            // Multi-wait with indexes 1 and 2 set
+            es[1].Set();
+            es[2].Set();
+            Assert.Equal(1, WaitHandle.WaitAny(es, 0));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.Equal(i == 2, es[i].WaitOne(0));
+            }
+            es[1].Set();
+            es[2].Set();
+            Assert.Equal(1, WaitHandle.WaitAny(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.Equal(i == 2, es[i].WaitOne(0));
+            }
+            es[1].Set();
+            es[2].Set();
+            Assert.False(WaitHandle.WaitAll(es, 0));
+            Assert.False(WaitHandle.WaitAll(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.Equal(i == 1 || i == 2, es[i].WaitOne(0));
+            }
+
+            // Multi-wait with all indexes reset
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, 0));
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            Assert.False(WaitHandle.WaitAll(es, 0));
+            Assert.False(WaitHandle.WaitAll(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.False(es[i].WaitOne(0));
             }
         }
 
@@ -58,7 +155,7 @@ namespace System.Threading.Tests
             for (int i = 0; i < handles.Length; i++)
                 handles[i] = new AutoResetEvent(false);
 
-            Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles, FailedWaitTimeout));
+            Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
             for (int i = 0; i < handles.Length; i++)
             {
                 Assert.False(t.IsCompleted);
@@ -76,7 +173,7 @@ namespace System.Threading.Tests
             for (int i = 0; i < handles.Length; i++)
                 handles[i] = new AutoResetEvent(false);
 
-            Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles, FailedWaitTimeout));
+            Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
             handles[5].Set();
             Assert.Equal(5, t.Result);
 
@@ -95,7 +192,7 @@ namespace System.Threading.Tests
                     {
                         for (int i = 0; i < Iters; i++)
                         {
-                            Assert.True(are1.WaitOne(FailedWaitTimeout));
+                            are1.CheckedWait();
                             are2.Set();
                         }
                     }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default),
@@ -103,7 +200,7 @@ namespace System.Threading.Tests
                     {
                         for (int i = 0; i < Iters; i++)
                         {
-                            Assert.True(are2.WaitOne(FailedWaitTimeout));
+                            are2.CheckedWait();
                             are1.Set();
                         }
                     }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));

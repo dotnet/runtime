@@ -8,31 +8,88 @@ namespace System.Threading.Tests
 {
     public class ManualResetEventTests
     {
-        private const int FailedWaitTimeout = 30000;
-
         [Fact]
-        public void Ctor()
+        public void BasicFunctionalityTest()
         {
-            using (ManualResetEvent mre = new ManualResetEvent(false))
-                Assert.False(mre.WaitOne(0));
+            // Constructor and dispose
 
-            using (ManualResetEvent mre = new ManualResetEvent(true))
-                Assert.True(mre.WaitOne(0));
-        }
+            var e = new ManualResetEvent(false);
+            Assert.False(e.WaitOne(0));
+            e.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => e.Reset());
+            Assert.Throws<ObjectDisposedException>(() => e.Set());
+            Assert.Throws<ObjectDisposedException>(() => e.WaitOne(0));
 
-        [Fact]
-        public void SetReset()
-        {
-            using (ManualResetEvent mre = new ManualResetEvent(false))
+            e = new ManualResetEvent(true);
+            Assert.True(e.WaitOne(0));
+
+            // Set and reset
+
+            e = new ManualResetEvent(true);
+            e.Reset();
+            Assert.False(e.WaitOne(0));
+            Assert.False(e.WaitOne(0));
+            e.Reset();
+            Assert.False(e.WaitOne(0));
+            e.Set();
+            Assert.True(e.WaitOne(0));
+            Assert.True(e.WaitOne(0));
+            e.Set();
+            Assert.True(e.WaitOne(0));
+
+            // Wait
+
+            e.Set();
+            e.CheckedWait();
+            e.CheckedWait();
+
+            e.Reset();
+            Assert.False(e.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+
+            e = null;
+
+            // Multi-wait with all indexes set
+            var es =
+                new ManualResetEvent[]
+                {
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(true)
+                };
+            Assert.Equal(0, WaitHandle.WaitAny(es, 0));
+            Assert.Equal(0, WaitHandle.WaitAny(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            Assert.Equal(0, WaitHandle.WaitAny(es));
+            Assert.True(WaitHandle.WaitAll(es, 0));
+            Assert.True(WaitHandle.WaitAll(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            Assert.True(WaitHandle.WaitAll(es));
+            for (int i = 0; i < es.Length; ++i)
             {
-                Assert.False(mre.WaitOne(0));
-                mre.Set();
-                Assert.True(mre.WaitOne(0));
-                Assert.True(mre.WaitOne(0));
-                mre.Set();
-                Assert.True(mre.WaitOne(0));
-                mre.Reset();
-                Assert.False(mre.WaitOne(0));
+                Assert.True(es[i].WaitOne(0));
+            }
+
+            // Multi-wait with indexes 1 and 2 set
+            es[0].Reset();
+            es[3].Reset();
+            Assert.Equal(1, WaitHandle.WaitAny(es, 0));
+            Assert.Equal(1, WaitHandle.WaitAny(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            Assert.False(WaitHandle.WaitAll(es, 0));
+            Assert.False(WaitHandle.WaitAll(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.Equal(i == 1 || i == 2, es[i].WaitOne(0));
+            }
+
+            // Multi-wait with all indexes reset
+            es[1].Reset();
+            es[2].Reset();
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, 0));
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            Assert.False(WaitHandle.WaitAll(es, 0));
+            Assert.False(WaitHandle.WaitAll(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            for (int i = 0; i < es.Length; ++i)
+            {
+                Assert.False(es[i].WaitOne(0));
             }
         }
 
@@ -43,7 +100,7 @@ namespace System.Threading.Tests
             for (int i = 0; i < handles.Length; i++)
                 handles[i] = new ManualResetEvent(false);
 
-            Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles, FailedWaitTimeout));
+            Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
             for (int i = 0; i < handles.Length; i++)
             {
                 Assert.False(t.IsCompleted);
@@ -61,7 +118,7 @@ namespace System.Threading.Tests
             for (int i = 0; i < handles.Length; i++)
                 handles[i] = new ManualResetEvent(false);
 
-            Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles, FailedWaitTimeout));
+            Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
             handles[5].Set();
             Assert.Equal(5, t.Result);
 
@@ -80,7 +137,7 @@ namespace System.Threading.Tests
                     {
                         for (int i = 0; i < Iters; i++)
                         {
-                            Assert.True(mre1.WaitOne(FailedWaitTimeout));
+                            mre1.CheckedWait();
                             mre1.Reset();
                             mre2.Set();
                         }
@@ -89,7 +146,7 @@ namespace System.Threading.Tests
                     {
                         for (int i = 0; i < Iters; i++)
                         {
-                            Assert.True(mre2.WaitOne(FailedWaitTimeout));
+                            mre2.CheckedWait();
                             mre2.Reset();
                             mre1.Set();
                         }
