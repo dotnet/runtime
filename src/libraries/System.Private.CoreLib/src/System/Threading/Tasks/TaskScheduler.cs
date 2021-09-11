@@ -253,7 +253,7 @@ namespace System.Threading.Tasks
         internal static int s_taskSchedulerIdCounter;
 
         // this TaskScheduler's unique ID
-        private volatile int m_taskSchedulerId;
+        private int m_taskSchedulerId;
 
 
 
@@ -353,7 +353,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                if (m_taskSchedulerId == 0)
+                if (Volatile.Read(ref m_taskSchedulerId) == 0)
                 {
                     int newId;
 
