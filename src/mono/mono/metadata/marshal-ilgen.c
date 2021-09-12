@@ -1920,12 +1920,11 @@ gc_safe_transition_builder_add_locals (GCSafeTransitionBuilder *builder)
  *
  */
 static void
-gc_safe_transition_builder_emit_enter (GCSafeTransitionBuilder *builder, MonoMethod *method, gboolean aot)
+gc_safe_transition_builder_emit_enter (GCSafeTransitionBuilder *builder, MonoMethod *method, MonoMethodSignature *sig, gboolean aot)
 {
 	// Copy all arguments to local volatile variables so they are saved on the stack
 	// before the GC transition.
 	int i;
-	MonoMethodSignature *sig = method->signature;
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 		if (MONO_TYPE_IS_REFERENCE (t)) {
@@ -2124,7 +2123,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 
 	// In coop mode need to register blocking state during native call
 	if (need_gc_safe)
-		gc_safe_transition_builder_emit_enter (&gc_safe_transition_builder, &piinfo->method, aot);
+		gc_safe_transition_builder_emit_enter (&gc_safe_transition_builder, &piinfo->method, sig, aot);
 
 	/* push all arguments */
 
@@ -6725,7 +6724,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	}
 
 	if (need_gc_safe)
-		gc_safe_transition_builder_emit_enter (&gc_safe_transition_builder, &piinfo->method, aot);
+		gc_safe_transition_builder_emit_enter (&gc_safe_transition_builder, &piinfo->method, csig, aot);
 
 	if (aot) {
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
