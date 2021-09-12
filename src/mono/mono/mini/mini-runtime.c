@@ -2998,7 +2998,7 @@ typedef struct {
 	gpointer *wrapper_arg;
 } RuntimeInvokeInfo;
 
-#define MONO_SIZEOF_DYN_CALL_RET_BUF 256
+#define MONO_SIZEOF_DYN_CALL_RET_BUF TARGET_SIZEOF_VOID_P
 
 static RuntimeInvokeInfo*
 create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt, gboolean use_interp, MonoError *error)
