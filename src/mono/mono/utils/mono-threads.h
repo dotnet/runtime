@@ -236,9 +236,6 @@ typedef struct _MonoThreadInfo {
 
 	gboolean suspend_can_continue;
 
-	/* This memory pool is used by coop GC to save stack data roots between GC unsafe regions */
-	GByteArray *stackdata;
-
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
 	MonoThreadUnwindState thread_saved_state [2]; //0 is self suspend, 1 is async suspend.
 
@@ -340,7 +337,7 @@ typedef struct {
 	macro (prefix, void, setup_async_callback, (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)) \
 	macro (prefix, gboolean, thread_state_init_from_sigctx, (MonoThreadUnwindState *state, void *sigctx)) \
 	macro (prefix, gboolean, thread_state_init_from_handle, (MonoThreadUnwindState *tctx, MonoThreadInfo *info, /*optional*/ void *sigctx)) \
-	macro (prefix, gboolean, thread_state_init_from_current, (MonoThreadUnwindState *tctx))
+	macro (prefix, void, thread_state_init, (MonoThreadUnwindState *tctx, MonoThreadInfo *info))
 
 typedef struct {
 	MONO_THREAD_INFO_RUNTIME_CALLBACKS (MONO_DECL_CALLBACK, unused)

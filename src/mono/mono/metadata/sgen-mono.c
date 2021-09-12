@@ -2364,23 +2364,8 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 					conservative_stack_mark = TRUE;
 				}
 				//FIXME we should eventually use the new stack_mark from coop
+				// On coop GC we force a spill of all registers into the stack.
 				sgen_conservatively_pin_objects_from ((void **)aligned_stack_start, (void **)info->client_info.info.stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
-			}
-
-			if (!precise) {
-				sgen_conservatively_pin_objects_from ((void**)&info->client_info.ctx, (void**)(&info->client_info.ctx + 1),
-					start_nursery, end_nursery, PIN_TYPE_STACK);
-
-				{
-					// This is used on Coop GC for platforms where we cannot get the data for individual registers.
-					// We force a spill of all registers into the stack and pass a chunk of data into sgen.
-					//FIXME under coop, for now, what we need to ensure is that we scan any extra memory from info->client_info.info.stack_end to stack_mark
-					MonoThreadUnwindState *state = &info->client_info.info.thread_saved_state [SELF_SUSPEND_STATE_INDEX];
-					if (state && state->gc_stackdata) {
-						sgen_conservatively_pin_objects_from ((void **)state->gc_stackdata, (void**)((char*)state->gc_stackdata + state->gc_stackdata_size),
-							start_nursery, end_nursery, PIN_TYPE_STACK);
-					}
-				}
 			}
 		}
 		if (gc_callbacks.interp_mark_func) {

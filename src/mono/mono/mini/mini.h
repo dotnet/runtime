@@ -2544,7 +2544,7 @@ MONO_COMPONENT_API void     mono_walk_stack_with_ctx               (MonoJitStack
 MONO_COMPONENT_API void     mono_walk_stack_with_state             (MonoJitStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions unwind_options, void *user_data);
 void     mono_walk_stack                        (MonoJitStackWalk func, MonoUnwindOptions options, void *user_data);
 gboolean mono_thread_state_init_from_sigctx     (MonoThreadUnwindState *ctx, void *sigctx);
-void     mono_thread_state_init                 (MonoThreadUnwindState *ctx);
+void     mono_thread_state_init                 (MonoThreadUnwindState *ctx, MonoThreadInfo *info);
 MONO_COMPONENT_API gboolean mono_thread_state_init_from_current    (MonoThreadUnwindState *ctx);
 MONO_COMPONENT_API gboolean mono_thread_state_init_from_monoctx    (MonoThreadUnwindState *ctx, MonoContext *mctx);
 

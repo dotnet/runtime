@@ -34,17 +34,6 @@
 #include <mono/utils/mach-support.h>
 #endif
 
-#ifdef _MSC_VER
-// __builtin_unwind_init not available under MSVC but equivalent implementation is done using
-// copy_stack_data_internal_win32_wrapper.
-#define SAVE_REGS_ON_STACK do {} while (0)
-#elif defined (HOST_WASM)
-//TODO: figure out wasm stack scanning
-#define SAVE_REGS_ON_STACK do {} while (0)
-#else 
-#define SAVE_REGS_ON_STACK __builtin_unwind_init ();
-#endif
-
 volatile size_t mono_polling_required;
 
 // FIXME: This would be more efficient if instead of instantiating the stack it just pushed a simple depth counter up and down,
@@ -138,7 +127,7 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 		return;
 
 	++coop_save_count;
-	mono_threads_get_runtime_callbacks ()->thread_state_init_from_current (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
+	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], info);
 
 	/* commit the saved state and notify others if needed */
 	switch (mono_threads_transition_state_poll (info)) {
@@ -156,97 +145,6 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 		info->user_data = NULL;
 	}
 }
-
-static volatile gpointer* dummy_global;
-
-static MONO_NEVER_INLINE
-void*
-return_stack_ptr (gpointer *i)
-{
-	dummy_global = i;
-	return i;
-}
-
-static void
-copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, gconstpointer wrapper_data1, gconstpointer wrapper_data2)
-{
-	MonoThreadUnwindState *state;
-	int stackdata_size;
-	gpointer dummy;
-	void* stackdata_end = return_stack_ptr (&dummy);
-
-	SAVE_REGS_ON_STACK;
-
-	state = &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
-
-	stackdata_size = (char*)mono_stackdata_get_stackpointer (stackdata_begin) - (char*)stackdata_end;
-
-	if (((gsize) stackdata_begin & (SIZEOF_VOID_P - 1)) != 0)
-		g_error ("%s stackdata_begin (%p) must be %d-byte aligned", mono_stackdata_get_function_name (stackdata_begin), stackdata_begin, SIZEOF_VOID_P);
-	if (((gsize) stackdata_end & (SIZEOF_VOID_P - 1)) != 0)
-		g_error ("%s stackdata_end (%p) must be %d-byte aligned", mono_stackdata_get_function_name (stackdata_begin), stackdata_end, SIZEOF_VOID_P);
-
-	if (stackdata_size <= 0)
-		g_error ("%s stackdata_size = %d, but must be > 0, stackdata_begin = %p, stackdata_end = %p", mono_stackdata_get_function_name (stackdata_begin), stackdata_size, stackdata_begin, stackdata_end);
-
-	g_byte_array_set_size (info->stackdata, stackdata_size);
-	state->gc_stackdata = info->stackdata->data;
-	memcpy (state->gc_stackdata, stackdata_end, stackdata_size);
-
-	state->gc_stackdata_size = stackdata_size;
-}
-
-#ifdef _MSC_VER
-typedef void (*CopyStackDataFunc)(MonoThreadInfo *, MonoStackData *, gconstpointer, gconstpointer);
-
-#ifdef HOST_AMD64
-#include <emmintrin.h>
-// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
-typedef struct {
-	__m128d fregs [10];
-	host_mgreg_t gregs [8];
-} MonoBuiltinUnwindInfo;
-
-// Defined in win64.asm
-G_EXTERN_C void
-copy_stack_data_internal_win32_wrapper (MonoThreadInfo *, MonoStackData *, MonoBuiltinUnwindInfo *, CopyStackDataFunc);
-#else
-// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
-typedef struct {
-	host_mgreg_t gregs [4];
-} MonoBuiltinUnwindInfo;
-
-// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo *.
-__declspec(naked) void __cdecl
-copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *stackdata_begin, MonoBuiltinUnwindInfo *unwind_info_data, CopyStackDataFunc func)
-{
-	__asm {
-		mov edx, dword ptr [esp + 0Ch]
-		mov dword ptr [edx + 00h], ebx
-		mov dword ptr [edx + 04h], esi
-		mov dword ptr [edx + 08h], edi
-		mov dword ptr [edx + 0Ch], ebp
-
-		// tailcall, all parameters passed through to CopyStackDataFunc.
-		mov edx, dword ptr [esp + 10h]
-		jmp edx
-	};
-}
-#endif
-
-static void
-copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
-{
-	MonoBuiltinUnwindInfo unwind_info_data;
-	copy_stack_data_internal_win32_wrapper (info, stackdata_begin, &unwind_info_data, copy_stack_data_internal);
-}
-#else
-static void
-copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
-{
-	copy_stack_data_internal (info, stackdata_begin, NULL, NULL);
-}
-#endif
 
 static gpointer
 mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, MonoStackData *stackdata);
@@ -309,16 +207,9 @@ mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, Mo
 
 	check_info (info, "enter", "safe", function_name);
 
-	// NOTE, copy_stack_data needs to be done. One problem it solves is optimization taking place between stackdata snapshot and
-	// thread_state_init, storing changed register(s) on stack and if those register(s) include managed references
-	// (that are not previously stored anywhere on the stack), then GC won't detect that reference(s). Storing the stack
-	// and registers into a separate location makes sure we still see any registers temporary stored on stack due to optimizations
-	// done between stackdata snapshot and thread_state_init.
-	//copy_stack_data (info, stackdata);
-
 retry:
 	++coop_save_count;
-	mono_threads_get_runtime_callbacks ()->thread_state_init_from_current (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
+	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], info);
 
 	switch (mono_threads_transition_do_blocking (info, function_name)) {
 	case DoBlockingContinue:
@@ -473,8 +364,6 @@ mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, 
 	const char *function_name = mono_stackdata_get_function_name (stackdata);
 
 	check_info (info, "enter", "unsafe", function_name);
-
-	//copy_stack_data (info, stackdata);
 
 	switch (mono_threads_transition_abort_blocking (info, function_name)) {
 	case AbortBlockingIgnore:

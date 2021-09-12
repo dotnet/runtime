@@ -319,7 +319,7 @@ benchmark_glib (void)
 }
 
 static void
-monotest_thread_state_init (MonoThreadUnwindState *ctx)
+monotest_thread_state_init (MonoThreadUnwindState *ctx, MonoThreadInfo *info)
 {
 }
 
