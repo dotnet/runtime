@@ -179,7 +179,7 @@ static std::vector<unsigned char> applyCompression(const std::vector<unsigned ch
         size_t maxSize = BrotliEncoderMaxCompressedSize(data.size());
         std::vector<unsigned char> compressedData(maxSize);
         size_t compressedLen = maxSize;
-        const int quality = 10; // tradeoff between size/speed
+        const int quality = 5; // tradeoff between size/speed
         int result = BrotliEncoderCompress(quality, BROTLI_DEFAULT_WINDOW, BROTLI_DEFAULT_MODE, data.size(), data.data(), &compressedLen, compressedData.data());
         Assert(result == BROTLI_TRUE);
         compressedData.resize(compressedLen);
