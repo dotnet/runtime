@@ -227,9 +227,19 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
 
                 default:
                 {
+                    const int MAX_ALLOCA_SIZE = 16;
+                    LikelyClassHistogramEntry* sortedEntries;
+                    if (h.countHistogramElements > MAX_ALLOCA_SIZE)
+                    {
+                        sortedEntries = (LikelyClassHistogramEntry*)malloc(sizeof(LikelyClassHistogramEntry) *
+                            h.countHistogramElements);
+                    }
+                    else
+                    {
+                        sortedEntries = (LikelyClassHistogramEntry*)alloca(MAX_ALLOCA_SIZE);
+                    }
+
                     // Since this method can be invoked without a jit instance we can't use any existing allocators
-                    auto sortedEntries = (LikelyClassHistogramEntry*)malloc(sizeof(LikelyClassHistogramEntry) *
-                                                                            h.countHistogramElements);
                     unsigned knownHandles = 0;
                     for (unsigned m = 0; m < h.countHistogramElements; m++)
                     {
@@ -253,7 +263,10 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
                         pLikelyClasses[hIdx].clsHandle     = (CORINFO_CLASS_HANDLE)hc.m_mt;
                         pLikelyClasses[hIdx].likelihood    = hc.m_count * 100 / h.m_totalCount;
                     }
-                    free(sortedEntries);
+                    if (h.countHistogramElements > MAX_ALLOCA_SIZE)
+                    {
+                        free(sortedEntries);
+                    }
                     return numberOfClasses;
                 }
             }

@@ -101,7 +101,7 @@ namespace Internal.JitInterface
             private static readonly IntPtr s_jit;
         }
 
-        private const int MAX_LIKELY_CLASSES = 4;
+        private const int MAX_LIKELY_CLASSES = 64;
 
         private struct LikelyClassRecord
         {
