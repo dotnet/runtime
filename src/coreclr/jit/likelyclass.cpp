@@ -251,7 +251,7 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
 
                     // sort by m_count (descending)
                     jitstd::sort(sortedEntries, sortedEntries + knownHandles,
-                                 [](const LikelyClassHistogramEntry h1, const LikelyClassHistogramEntry h2) -> bool {
+                                 [](const LikelyClassHistogramEntry& h1, const LikelyClassHistogramEntry& h2) -> bool {
                                      return h1.m_count > h2.m_count;
                                  });
 
