@@ -236,7 +236,7 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
                     }
                     else
                     {
-                        sortedEntries = (LikelyClassHistogramEntry*)alloca(MAX_ALLOCA_SIZE);
+                        sortedEntries = (LikelyClassHistogramEntry*)alloca(sizeof(LikelyClassHistogramEntry) * MAX_ALLOCA_SIZE);
                     }
 
                     // Since this method can be invoked without a jit instance we can't use any existing allocators
