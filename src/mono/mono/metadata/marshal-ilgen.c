@@ -1922,6 +1922,18 @@ gc_safe_transition_builder_add_locals (GCSafeTransitionBuilder *builder)
 static void
 gc_safe_transition_builder_emit_enter (GCSafeTransitionBuilder *builder, MonoMethod *method, gboolean aot)
 {
+	// Copy all arguments to local volatile variables so they are saved on the stack
+	// before the GC transition.
+	int i;
+	MonoMethodSignature *sig = method->signature;
+	for (i = 0; i < sig->param_count; i++) {
+		MonoType *t = sig->params [i];
+		if (MONO_TYPE_IS_REFERENCE (t)) {
+			int arg_copy_local = mono_mb_add_volatile_local (builder->mb, t);
+			mono_mb_emit_ldarg (builder->mb, i);
+			mono_mb_emit_stloc (builder->mb, arg_copy_local);
+		}
+	}
 
 	// Perform an extra, early lookup of the function address, so any exceptions
 	// potentially resulting from the lookup occur before entering blocking mode.
@@ -2121,7 +2133,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 
 	for (i = 0; i < sig->param_count; i++) {
 		mono_emit_marshal (&m, i + param_shift, sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_PUSH);
-	}			
+	}
 
 	/* call the native method */
 	if (func_param) {

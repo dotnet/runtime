@@ -250,6 +250,27 @@ mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type)
 }
 
 /**
+ * mono_mb_add_volatile_local:
+ */
+int
+mono_mb_add_volatile_local (MonoMethodBuilder *mb, MonoType *type)
+{
+	int local = mono_mb_add_local (mb, type);
+
+	if (!mb->volatile_locals) {
+		mb->volatile_locals = mono_bitset_new (local + 256, 0);
+	} else if (local >= mono_bitset_size (mb->volatile_locals)) {
+		MonoBitSet *new_set = mono_bitset_clone (mb->volatile_locals, local + 256);
+		mono_bitset_free (mb->volatile_locals);
+		mb->volatile_locals = new_set;
+	}
+
+	mono_bitset_set (mb->volatile_locals, local);
+
+	return local;
+}
+
+/**
  * mono_mb_patch_addr:
  */
 void

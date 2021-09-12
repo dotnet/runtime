@@ -314,7 +314,7 @@ mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, Mo
 	// (that are not previously stored anywhere on the stack), then GC won't detect that reference(s). Storing the stack
 	// and registers into a separate location makes sure we still see any registers temporary stored on stack due to optimizations
 	// done between stackdata snapshot and thread_state_init.
-	copy_stack_data (info, stackdata);
+	//copy_stack_data (info, stackdata);
 
 retry:
 	++coop_save_count;
@@ -474,7 +474,7 @@ mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, 
 
 	check_info (info, "enter", "unsafe", function_name);
 
-	copy_stack_data (info, stackdata);
+	//copy_stack_data (info, stackdata);
 
 	switch (mono_threads_transition_abort_blocking (info, function_name)) {
 	case AbortBlockingIgnore:

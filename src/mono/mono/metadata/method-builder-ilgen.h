@@ -64,6 +64,9 @@ mono_mb_emit_icall_id (MonoMethodBuilder *mb, MonoJitICallId jit_icall_id);
 int
 mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type);
 
+int
+mono_mb_add_volatile_local (MonoMethodBuilder *mb, MonoType *type);
+
 void
 mono_mb_emit_ldarg (MonoMethodBuilder *mb, guint argnum);
 

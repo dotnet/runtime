@@ -1982,10 +1982,8 @@ mono_arch_create_vars (MonoCompile *cfg)
 		cfg->arch.bp_tramp_var = ins;
 	}
 
-	if (cfg->method->save_lmf)
-		cfg->create_lmf_var = TRUE;
-
 	if (cfg->method->save_lmf) {
+		cfg->create_lmf_var = TRUE;
 		cfg->lmf_ir = TRUE;
 	}
 }
