@@ -1395,7 +1395,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
-            if (value.Length > 0)
+            if (!value.IsEmpty)
             {
                 MakeRoom(index, value.Length, out StringBuilder chunk, out int indexInChunk, false);
                 ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, value);
@@ -1677,7 +1677,7 @@ namespace System.Text
 
                 if (cf != null)
                 {
-                    if (itemFormatSpan.Length != 0)
+                    if (!itemFormatSpan.IsEmpty)
                     {
                         itemFormat = new string(itemFormatSpan);
                     }
@@ -1716,7 +1716,7 @@ namespace System.Text
                     // Otherwise, fallback to trying IFormattable or calling ToString.
                     if (arg is IFormattable formattableArg)
                     {
-                        if (itemFormatSpan.Length != 0)
+                        if (!itemFormatSpan.IsEmpty)
                         {
                             itemFormat ??= new string(itemFormatSpan);
                         }
