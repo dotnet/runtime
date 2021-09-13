@@ -108,25 +108,11 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe void Preallocate(string fullPath, long preallocationSize, SafeFileHandle fileHandle, FileMode mode)
         {
-            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
+            // preallocationSize must be ignored for non-seekable files, unsupported file systems
+            // and other failures other than ERROR_DISK_FULL and ERROR_FILE_TOO_LARGE
+            if (!FileStreamHelpers.TrySetFileLength(fileHandle, preallocationSize, out int errorCode)
+                && errorCode == Interop.Errors.ERROR_DISK_FULL || errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE)
             {
-                EndOfFile = preallocationSize
-            };
-
-            if (!Interop.Kernel32.SetFileInformationByHandle(
-                fileHandle,
-                Interop.Kernel32.FileEndOfFileInfo,
-                &eofInfo,
-                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
-            {
-                // preallocationSize must be ignored for non-seekable files, unsupported file systems
-                // and other failures other than ERROR_DISK_FULL and ERROR_FILE_TOO_LARGE
-                int errorCode = Marshal.GetLastPInvokeError();
-                if (errorCode != Interop.Errors.ERROR_DISK_FULL && errorCode != Interop.Errors.ERROR_FILE_TOO_LARGE)
-                {
-                    return;
-                }
-
                 // we try to mimic the atomic NtCreateFile here:
                 // if preallocation fails, close the handle and delete the file
                 fileHandle.Dispose();
