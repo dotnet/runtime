@@ -61,6 +61,11 @@ jobs:
     displayName: Run HttpStress - HTTP 3.0
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
+  - bash: |
+      sudo chown -R $(id -u):$(id -g) $(share_root)
+    displayName: Own shared dumps and files
+    condition: failed()
+
   - publish: $(share_root)
     artifact: DumpsAndLogs
     condition: failed()
