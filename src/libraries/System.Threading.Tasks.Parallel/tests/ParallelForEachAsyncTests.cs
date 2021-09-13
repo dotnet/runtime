@@ -618,6 +618,75 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsCanceled);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Cancellation_FaultsForOceForNonCancellation(bool internalToken)
+        {
+            static async IAsyncEnumerable<int> Iterate()
+            {
+                int counter = 0;
+                while (true)
+                {
+                    await Task.Yield();
+                    yield return counter++;
+                }
+            }
+
+            var cts = new CancellationTokenSource();
+
+            Task t = Parallel.ForEachAsync(Iterate(), new ParallelOptions { CancellationToken = cts.Token }, (item, cancellationToken) =>
+            {
+                throw new OperationCanceledException(internalToken ? cancellationToken : cts.Token);
+            });
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+            Assert.True(t.IsFaulted);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(0, 4)]
+        [InlineData(1, 4)]
+        [InlineData(2, 4)]
+        [InlineData(3, 4)]
+        [InlineData(4, 4)]
+        public async Task Cancellation_InternalCancellationExceptionsFilteredWhenOtherExceptions(int numThrowingNonCanceledOce, int total)
+        {
+            var cts = new CancellationTokenSource();
+
+            var barrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            int remainingCount = total;
+
+            Task t = Parallel.ForEachAsync(Enumerable.Range(0, total), new ParallelOptions { CancellationToken = cts.Token, MaxDegreeOfParallelism = total }, async (item, cancellationToken) =>
+            {
+                // Wait for all operations to be started
+                if (Interlocked.Decrement(ref remainingCount) == 0)
+                {
+                    barrier.SetResult();
+                }
+                await barrier.Task;
+
+                throw item < numThrowingNonCanceledOce ?
+                    new OperationCanceledException(cancellationToken) :
+                    throw new FormatException();
+            });
+
+            await Assert.ThrowsAnyAsync<Exception>(() => t);
+            if (numThrowingNonCanceledOce == 0)
+            {
+                Assert.Equal(total, t.Exception.InnerExceptions.Count(e => e is FormatException));
+            }
+            else if (numThrowingNonCanceledOce == total)
+            {
+                Assert.Equal(total, t.Exception.InnerExceptions.Count(e => e is OperationCanceledException));
+            }
+            else
+            {
+                Assert.Equal(total - numThrowingNonCanceledOce, t.Exception.InnerExceptions.Count);
+                Assert.All(t.Exception.InnerExceptions, e => Assert.IsType<FormatException>(e));
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Exception_FromGetEnumerator_Sync()
         {
