@@ -130,7 +130,7 @@
 
   <!-- Support for deploying msquic -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and
-                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86')">
+                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentRuntimePath)" ItemName="NativeBinPlaceItem" />
