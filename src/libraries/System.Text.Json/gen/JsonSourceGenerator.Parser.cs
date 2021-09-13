@@ -25,9 +25,12 @@ namespace System.Text.Json.SourceGeneration
             private const string SystemTextJsonNamespace = "System.Text.Json";
             private const string JsonConverterAttributeFullName = "System.Text.Json.Serialization.JsonConverterAttribute";
             private const string JsonConverterFactoryFullName = "System.Text.Json.Serialization.JsonConverterFactory";
+            private const string JsonArrayFullName = "System.Text.Json.Nodes.JsonArray";
             private const string JsonElementFullName = "System.Text.Json.JsonElement";
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
+            private const string JsonNodeFullName = "System.Text.Json.Nodes.JsonNode";
             private const string JsonObjectFullName = "System.Text.Json.Nodes.JsonObject";
+            private const string JsonValueFullName = "System.Text.Json.Nodes.JsonValue";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
@@ -80,8 +83,11 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _guidType;
             private readonly Type? _uriType;
             private readonly Type? _versionType;
+            private readonly Type? _jsonArrayType;
             private readonly Type? _jsonElementType;
+            private readonly Type? _jsonNodeType;
             private readonly Type? _jsonObjectType;
+            private readonly Type? _jsonValueType;
 
             // Unsupported types
             private readonly Type _typeType;
@@ -193,8 +199,11 @@ namespace System.Text.Json.SourceGeneration
                 _guidType = _metadataLoadContext.Resolve(typeof(Guid));
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
+                _jsonArrayType = _metadataLoadContext.Resolve(JsonArrayFullName);
                 _jsonElementType = _metadataLoadContext.Resolve(JsonElementFullName);
+                _jsonNodeType = _metadataLoadContext.Resolve(JsonNodeFullName);
                 _jsonObjectType = _metadataLoadContext.Resolve(JsonObjectFullName);
+                _jsonValueType = _metadataLoadContext.Resolve(JsonValueFullName);
 
                 // Unsupported types.
                 _typeType = _metadataLoadContext.Resolve(typeof(Type));
@@ -1446,8 +1455,11 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _guidType);
                 AddTypeIfNotNull(_knownTypes, _uriType);
                 AddTypeIfNotNull(_knownTypes, _versionType);
+                AddTypeIfNotNull(_knownTypes, _jsonArrayType);
                 AddTypeIfNotNull(_knownTypes, _jsonElementType);
+                AddTypeIfNotNull(_knownTypes, _jsonNodeType);
                 AddTypeIfNotNull(_knownTypes, _jsonObjectType);
+                AddTypeIfNotNull(_knownTypes, _jsonValueType);
 
                 _knownUnsupportedTypes.Add(_typeType);
                 _knownUnsupportedTypes.Add(_serializationInfoType);

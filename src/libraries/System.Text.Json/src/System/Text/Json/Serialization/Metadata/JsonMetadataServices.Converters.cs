@@ -82,16 +82,34 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<long>? s_int64Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonArray"/> values.
+        /// </summary>
+        public static JsonConverter<JsonArray> JsonArrayConverter => s_jsonArrayConverter ??= new JsonArrayConverter();
+        private static JsonConverter<JsonArray>? s_jsonArrayConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonElement"/> values.
         /// </summary>
         public static JsonConverter<JsonElement> JsonElementConverter => s_jsonElementConverter ??= new JsonElementConverter();
         private static JsonConverter<JsonElement>? s_jsonElementConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonNode"/> values.
+        /// </summary>
+        public static JsonConverter<JsonNode> JsonNodeConverter => s_jsonNodeConverter ??= new JsonNodeConverter();
+        private static JsonConverter<JsonNode>? s_jsonNodeConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonObject"/> values.
         /// </summary>
         public static JsonConverter<JsonObject> JsonObjectConverter => s_jsonObjectConverter ??= new JsonObjectConverter();
         private static JsonConverter<JsonObject>? s_jsonObjectConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonArray"/> values.
+        /// </summary>
+        public static JsonConverter<JsonValue> JsonValueConverter => s_jsonValueConverter ??= new JsonValueConverter();
+        private static JsonConverter<JsonValue>? s_jsonValueConverter;
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="object"/> values.

@@ -32,7 +32,6 @@ namespace System.Text.Json.SourceGeneration
             private const string OptionsInstanceVariableName = "Options";
             private const string PropInitMethodNameSuffix = "PropInit";
             private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
-            private const string SerializeMethodNameSuffix = "Serialize";
             private const string SerializeHandlerPropName = "SerializeHandler";
             private const string ValueVarName = "value";
             private const string WriterVarName = "writer";
@@ -436,7 +435,7 @@ namespace {@namespace}
                         ? GenerateFastPathFuncForEnumerable(typeGenerationSpec)
                         : GenerateFastPathFuncForDictionary(typeGenerationSpec);
 
-                    serializeHandlerValue = $"{typeGenerationSpec.FastPathSerializeMethodName}";
+                    serializeHandlerValue = $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}";
                 }
 
                 CollectionType collectionType = typeGenerationSpec.CollectionType;
@@ -571,7 +570,7 @@ namespace {@namespace}
     {WriterVarName}.WriteEndArray();";
 
                 return GenerateFastPathFuncForType(
-                    typeGenerationSpec.FastPathSerializeMethodName,
+                    $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}",
                     typeGenerationSpec.TypeRef,
                     serializationLogic,
                     typeGenerationSpec.CanBeNull);
@@ -615,7 +614,7 @@ namespace {@namespace}
     {WriterVarName}.WriteEndObject();";
 
                 return GenerateFastPathFuncForType(
-                    typeGenerationSpec.FastPathSerializeMethodName,
+                    $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}",
                     typeGenerationSpec.TypeRef,
                     serializationLogic,
                     typeGenerationSpec.CanBeNull);
@@ -657,7 +656,7 @@ namespace {@namespace}
                 if (typeMetadata.GenerateSerializationLogic)
                 {
                     serializeFuncSource = GenerateFastPathFuncForObject(typeMetadata);
-                    serializeMethodName = $"{typeFriendlyName}{SerializeMethodNameSuffix}";
+                    serializeMethodName = $"{typeFriendlyName}{SerializeHandlerPropName}";
                 }
 
                 const string ObjectInfoVarName = "objectInfo";
@@ -835,7 +834,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
             {
                 JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
                 string typeRef = typeGenSpec.TypeRef;
-                string serializeMethodName = $"{typeGenSpec.TypeInfoPropertyName}{SerializeMethodNameSuffix}";
+                string serializeMethodName = $"{typeGenSpec.TypeInfoPropertyName}{SerializeHandlerPropName}";
 
                 if (!typeGenSpec.TryFilterSerializableProps(
                     options,
@@ -1067,7 +1066,7 @@ private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName
 
                 if (serializationLogicGenerated)
                 {
-                    return $"{typeInfoPropertyName}{SerializeMethodNameSuffix}({WriterVarName}, {valueToWrite});";
+                    return $"{typeInfoPropertyName}{SerializeHandlerPropName}({WriterVarName}, {valueToWrite});";
                 }
 
                 return $"{JsonSerializerTypeRef}.Serialize({WriterVarName}, {valueToWrite}, {typeInfoRef});";

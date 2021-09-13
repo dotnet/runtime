@@ -971,8 +971,11 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<short> Int16Converter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<int> Int32Converter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<long> Int64Converter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonArray> JsonArrayConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.JsonElement> JsonElementConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonNode> JsonNodeConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonObject> JsonObjectConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonValue> JsonValueConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<object> ObjectConverter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<sbyte> SByteConverter { get { throw null; } }
@@ -1062,6 +1065,6 @@ namespace System.Text.Json.Serialization.Metadata
     public abstract partial class JsonTypeInfo<T> : System.Text.Json.Serialization.Metadata.JsonTypeInfo
     {
         internal JsonTypeInfo() { }
-        public System.Action<System.Text.Json.Utf8JsonWriter, T>? Serialize { get { throw null; } }
+        public System.Action<System.Text.Json.Utf8JsonWriter, T>? SerializeHandler { get { throw null; } }
     }
 }
