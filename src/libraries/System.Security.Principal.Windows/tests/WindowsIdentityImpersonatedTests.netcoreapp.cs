@@ -84,6 +84,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
     {
         WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
 
+        // make sure the assembly is loaded.
         _ = Dns.GetHostAddresses("");
 
         await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
