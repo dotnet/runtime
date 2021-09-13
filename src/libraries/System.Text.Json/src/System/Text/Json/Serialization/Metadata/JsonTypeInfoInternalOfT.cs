@@ -45,7 +45,7 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
 
             PropInitFunc = objectInfo.PropertyMetadataInitializer;
-            Serialize = objectInfo.SerializeHandler;
+            SerializeHandler = objectInfo.SerializeHandler;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
             NumberHandling = objectInfo.NumberHandling;
         }
@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Metadata
             ElementTypeInfo = collectionInfo.ElementInfo ?? throw new ArgumentNullException(nameof(collectionInfo.ElementInfo));
             NumberHandling = collectionInfo.NumberHandling;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
-            Serialize = collectionInfo.SerializeHandler;
+            SerializeHandler = collectionInfo.SerializeHandler;
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
             SetCreateObjectFunc(collectionInfo.ObjectCreator);

@@ -198,7 +198,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             };
 
             // Types with properties in custom converters do not support fast path serialization.
-            Assert.True(DefaultContext.ClassWithCustomConverterProperty.Serialize is null);
+            Assert.True(DefaultContext.ClassWithCustomConverterProperty.SerializeHandler is null);
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
@@ -225,7 +225,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             };
 
             // Types with properties in custom converters do not support fast path serialization.
-            Assert.True(DefaultContext.StructWithCustomConverterProperty.Serialize is null);
+            Assert.True(DefaultContext.StructWithCustomConverterProperty.SerializeHandler is null);
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
@@ -782,7 +782,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             using MemoryStream ms = new();
             using Utf8JsonWriter writer = new(ms);
-            typeInfo.Serialize!(writer, value);
+            typeInfo.SerializeHandler!(writer, value);
             writer.Flush();
 
             JsonTestHelper.AssertJsonEqual(expectedJson, Encoding.UTF8.GetString(ms.ToArray()));
