@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode, fileHandle))
                 {
-                    Preallocate(fullPath, preallocationSize, fileHandle, mode);
+                    Preallocate(fullPath, preallocationSize, fileHandle);
                 }
 
                 if ((options & FileOptions.Asynchronous) != 0)
@@ -106,19 +106,20 @@ namespace Microsoft.Win32.SafeHandles
             return fileHandle;
         }
 
-        private static unsafe void Preallocate(string fullPath, long preallocationSize, SafeFileHandle fileHandle, FileMode mode)
+        private static unsafe void Preallocate(string fullPath, long preallocationSize, SafeFileHandle fileHandle)
         {
             // preallocationSize must be ignored for non-seekable files, unsupported file systems
             // and other failures other than ERROR_DISK_FULL and ERROR_FILE_TOO_LARGE
             if (!FileStreamHelpers.TrySetFileLength(fileHandle, preallocationSize, out int errorCode)
                 && errorCode == Interop.Errors.ERROR_DISK_FULL || errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE)
             {
-                // we try to mimic the atomic NtCreateFile here:
-                // if preallocation fails, close the handle and delete the file
+                // Windows does not modify the file size if the request can't be satisfied in atomic way.
+                // posix_fallocate (Unix) implementation might consume all available disk space and fail after that.
+                // To ensure that the behaviour is the same for every OS (no incomplete or empty file), we close the handle and delete the file.
                 fileHandle.Dispose();
                 Interop.Kernel32.DeleteFile(fullPath);
 
-                throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL ? SR.IO_DiskFull_Path_AllocationSize : SR.IO_FileTooLarge_Path_AllocationSize), fullPath, preallocationSize);
+                throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL ? SR.IO_DiskFull_Path_AllocationSize : SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
             }
         }
 
