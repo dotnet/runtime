@@ -93,7 +93,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [InlineData(0, false)]
         [InlineData(0b1, true)]
         [InlineData(0b10, true)]
@@ -115,7 +115,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(false)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(0, false)]
         [InlineData(0b1, true)]
         [InlineData(0b10, true)]
@@ -137,7 +137,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [InlineData(0u, false)]
         [InlineData(0b1u, true)]
         [InlineData(0b10u, true)]
@@ -157,7 +157,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(0u, false)]
         [InlineData(0b1u, true)]
         [InlineData(0b10u, true)]
@@ -223,7 +223,7 @@ namespace System.Numerics.Tests
         }
 
 
-        [IgnoreOnArchitectureTheory(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [InlineData(0u, 32)]
         [InlineData(0b1u, 31)]
         [InlineData(0b10u, 30)]
@@ -244,7 +244,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(0ul, 64)]
         [InlineData(0b1ul, 63)]
         [InlineData(0b10ul, 62)]
@@ -357,7 +357,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(false)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [InlineData(0u, 32)]
         [InlineData(0b1u, 0)]
         [InlineData(0b10u, 1)]
@@ -379,8 +379,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(false)]
-
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(0ul, 64)]
         [InlineData(0b1ul, 0)]
         [InlineData(0b10ul, 1)]
@@ -403,7 +402,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [InlineData(0, 32)]
         [InlineData(0b1, 0)]
         [InlineData(0b10, 1)]
@@ -425,7 +424,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(false)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(0L, 64)]
         [InlineData(0b1L, 0)]
         [InlineData(0b10L, 1)]
@@ -489,7 +488,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitecture(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [InlineData(0, 0)]
         [InlineData(1, 0)]
         [InlineData(2, 1)]
@@ -509,7 +508,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitecture(false)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(0, 0)]
         [InlineData(1, 0)]
         [InlineData(2, 1)]
@@ -598,7 +597,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [InlineData(0b001, 1)]
         [InlineData(0b010, 1)]
         [InlineData(0b011, 2)]
@@ -619,7 +618,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [IgnoreOnArchitectureTheory(false)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(0b001, 1)]
         [InlineData(0b010, 1)]
         [InlineData(0b011, 2)]
@@ -822,7 +821,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, BitOperations.RoundUpToPowerOf2(value));
         }
 
-        [IgnoreOnArchitectureTheory(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         [InlineData(0u, 0u)]
         [InlineData(1u, 1u)]
         [InlineData(2u, 2u)]
@@ -842,7 +841,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, BitOperations.RoundUpToPowerOf2((nuint) value));
         }
 
-        [IgnoreOnArchitectureTheory(false)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(0ul, 0ul)]
         [InlineData(1ul, 1ul)]
         [InlineData(2ul, 2ul)]
