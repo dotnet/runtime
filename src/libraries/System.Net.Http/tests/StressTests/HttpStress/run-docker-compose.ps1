@@ -73,6 +73,15 @@ finally {
 
 if (!$buildOnly)
 {
+    if (!$env:CLIENT_SHARE) {
+        $env:CLIENT_SHARE=Join-Path $env:Temp $(New-Guid)
+    }
+    if (!$env:SERVER_SHARE) {
+        $env:SERVER_SHARE=Join-Path $env:Temp $(New-Guid)
+    }
+    New-Item -Force $env:SERVER_SHARE -ItemType Directory
+    New-Item -Force $env:SERVER_SHARE -ItemType Directory
+
     $env:HTTPSTRESS_CLIENT_ARGS = $clientStressArgs
     $env:HTTPSTRESS_SERVER_ARGS = $serverStressArgs
     docker-compose --file "$COMPOSE_FILE" up --abort-on-container-exit

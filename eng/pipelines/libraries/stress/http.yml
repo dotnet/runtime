@@ -21,7 +21,7 @@ variables:
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress
   - name: sdkBaseImage
     value: dotnet-sdk-libraries-current
-  - name: share_root
+  - name: shareRoot
     value: $(System.DefaultWorkingDirectory)/share
 
 jobs:
@@ -51,8 +51,8 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(share_root)/client/3.0"
-      export SERVER_SHARE="$(share_root)/server/3.0"
+      export CLIENT_SHARE="$(shareRoot)/client/linux/3.0"
+      export SERVER_SHARE="$(shareRoot)/server/linux/3.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -xops 10"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -60,8 +60,8 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(share_root)/client/2.0"
-      export SERVER_SHARE="$(share_root)/server/2.0"
+      export CLIENT_SHARE="$(shareRoot)/client/linux/2.0"
+      export SERVER_SHARE="$(shareRoot)/server/linux/2.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -69,8 +69,8 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(share_root)/client/1.1"
-      export SERVER_SHARE="$(share_root)/server/1.1"
+      export CLIENT_SHARE="$(shareRoot)/client/linux/1.1"
+      export SERVER_SHARE="$(shareRoot)/server/linux/1.1"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
@@ -78,10 +78,10 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
   - bash: |
-      sudo chown -R $(id -u):$(id -g) $(share_root)
+      sudo chown -R $(id -u):$(id -g) $(shareRoot)
     displayName: Own shared dumps and files
     condition: failed()
-  - publish: $(share_root)
+  - publish: $(shareRoot)
     artifact: DumpsAndLogs
     condition: failed()
 
@@ -115,6 +115,9 @@ jobs:
     displayName: Disable Firewall
   - powershell: |
       cd '$(httpStressProject)'
+      $env:COMPOSE_CONVERT_WINDOWS_PATHS=1
+      $env:CLIENT_SHARE="$(shareRoot)/client/windows/2.0"
+      $env:SERVER_SHARE="$(shareRoot)/server/windows/2.0"
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
       $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -122,11 +125,18 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - powershell: |
       cd '$(httpStressProject)'
+      $env:COMPOSE_CONVERT_WINDOWS_PATHS=1
+      $env:CLIENT_SHARE="$(shareRoot)/client/windows/1.1"
+      $env:SERVER_SHARE="$(shareRoot)/server/windows/1.1"
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
       $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - publish: $(shareRoot)
+    artifact: DumpsAndLogs
+    condition: failed()
 
   - powershell: |
       Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True

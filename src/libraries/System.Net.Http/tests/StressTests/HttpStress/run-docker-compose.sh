@@ -87,13 +87,6 @@ if [[ "$imagename" != "" ]]; then
     build_args=" --build-arg SDK_BASE_IMAGE=$imagename"
 fi
 
-export CLIENT_SHARE="${CLIENT_SHARE:-$(mktemp -d)}"
-export SERVER_SHARE="${SERVER_SHARE:-$(mktemp -d)}"
-mkdir -p ${CLIENT_SHARE}
-mkdir -p ${SERVER_SHARE}
-echo "CLIENT_SHARE=${CLIENT_SHARE}"
-echo "SERVER_SHARE=${SERVER_SHARE}"
-
 compose_file="$scriptroot/docker-compose.yml"
 
 if ! docker-compose --file "$compose_file" build $build_args; then
@@ -101,6 +94,11 @@ if ! docker-compose --file "$compose_file" build $build_args; then
 fi
 
 if [[ $buildonly -eq 0 ]]; then
+    export CLIENT_SHARE="${CLIENT_SHARE:-$(mktemp -d)}"
+    export SERVER_SHARE="${SERVER_SHARE:-$(mktemp -d)}"
+    mkdir -p ${CLIENT_SHARE}
+    mkdir -p ${SERVER_SHARE}
+
     export HTTPSTRESS_CLIENT_ARGS=$clientstressargs
     export HTTPSTRESS_SERVER_ARGS=$serverstressargs
     docker-compose --file "$compose_file" up --abort-on-container-exit
