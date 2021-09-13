@@ -3323,9 +3323,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 // Do not expect `initblock` for SIMD* types,
                 // only 'initobj'.
                 assert(retVal->AsIntCon()->IconValue() == 0);
-                retVal->ChangeOperConst(GT_CNS_DBL);
-                retVal->ChangeType(TYP_FLOAT);
-                retVal->AsDblCon()->gtDconVal = 0;
+                retVal->BashToConst(0.0, TYP_FLOAT);
             }
             break;
 

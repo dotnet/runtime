@@ -796,24 +796,21 @@ OPTIMIZECAST:
                         // need type of oper to be same as tree
                         if (tree->gtType == TYP_LONG)
                         {
-                            commaOp2->ChangeOperConst(GT_CNS_NATIVELONG);
-                            commaOp2->AsIntConCommon()->SetLngValue(0);
                             /* Change the types of oper and commaOp2 to TYP_LONG */
-                            oper->gtType = commaOp2->gtType = TYP_LONG;
+                            commaOp2->BashToConst(0LL);
+                            oper->gtType = TYP_LONG;
                         }
                         else if (varTypeIsFloating(tree->gtType))
                         {
-                            commaOp2->ChangeOperConst(GT_CNS_DBL);
-                            commaOp2->AsDblCon()->gtDconVal = 0.0;
                             // Change the types of oper and commaOp2
-                            oper->gtType = commaOp2->gtType = tree->gtType;
+                            commaOp2->BashToConst(0.0, tree->TypeGet());
+                            oper->gtType = tree->gtType;
                         }
                         else
                         {
-                            commaOp2->ChangeOperConst(GT_CNS_INT);
-                            commaOp2->AsIntCon()->gtIconVal = 0;
                             /* Change the types of oper and commaOp2 to TYP_INT */
-                            oper->gtType = commaOp2->gtType = TYP_INT;
+                            commaOp2->BashToConst(0);
+                            oper->gtType = TYP_INT;
                         }
                     }
 
@@ -13472,24 +13469,21 @@ DONE_MORPHING_CHILDREN:
                         // need type of oper to be same as tree
                         if (typ == TYP_LONG)
                         {
-                            commaOp2->ChangeOperConst(GT_CNS_NATIVELONG);
-                            commaOp2->AsIntConCommon()->SetLngValue(0);
                             /* Change the types of oper and commaOp2 to TYP_LONG */
-                            op1->gtType = commaOp2->gtType = TYP_LONG;
+                            commaOp2->BashToConst(0LL);
+                            op1->gtType = TYP_LONG;
                         }
                         else if (varTypeIsFloating(typ))
                         {
-                            commaOp2->ChangeOperConst(GT_CNS_DBL);
-                            commaOp2->AsDblCon()->gtDconVal = 0.0;
                             /* Change the types of oper and commaOp2 to TYP_DOUBLE */
-                            op1->gtType = commaOp2->gtType = TYP_DOUBLE;
+                            commaOp2->BashToConst(0.0);
+                            op1->gtType = TYP_DOUBLE;
                         }
                         else
                         {
-                            commaOp2->ChangeOperConst(GT_CNS_INT);
-                            commaOp2->AsIntConCommon()->SetIconValue(0);
                             /* Change the types of oper and commaOp2 to TYP_INT */
-                            op1->gtType = commaOp2->gtType = TYP_INT;
+                            commaOp2->BashToConst(0);
+                            op1->gtType = TYP_INT;
                         }
 
                         /* Return the GT_COMMA node as the new tree */
@@ -13539,11 +13533,9 @@ DONE_MORPHING_CHILDREN:
 
                     GenTree* commaOp2 = op2->AsOp()->gtOp2;
 
-                    commaOp2->ChangeOperConst(GT_CNS_NATIVELONG);
-                    commaOp2->AsIntConCommon()->SetLngValue(0);
-
                     /* Change the types of oper and commaOp2 to TYP_LONG */
-                    op2->gtType = commaOp2->gtType = TYP_LONG;
+                    commaOp2->BashToConst(0LL);
+                    op2->gtType = TYP_LONG;
                 }
 
                 if ((genActualType(typ) == TYP_INT) &&
@@ -13553,10 +13545,9 @@ DONE_MORPHING_CHILDREN:
 
                     GenTree* commaOp2 = op2->AsOp()->gtOp2;
 
-                    commaOp2->ChangeOperConst(GT_CNS_INT);
-                    commaOp2->AsIntCon()->gtIconVal = 0;
                     /* Change the types of oper and commaOp2 to TYP_INT */
-                    op2->gtType = commaOp2->gtType = TYP_INT;
+                    commaOp2->BashToConst(0);
+                    op2->gtType = TYP_INT;
                 }
 
                 if ((typ == TYP_BYREF) && (genActualType(op2->gtType) == TYP_I_IMPL))
@@ -13565,9 +13556,8 @@ DONE_MORPHING_CHILDREN:
 
                     GenTree* commaOp2 = op2->AsOp()->gtOp2;
 
-                    commaOp2->ChangeOperConst(GT_CNS_INT);
-                    commaOp2->AsIntCon()->gtIconVal = 0;
                     /* Change the types of oper and commaOp2 to TYP_BYREF */
+                    commaOp2->BashToConst(0, TYP_BYREF);
                     op2->gtType = commaOp2->gtType = TYP_BYREF;
                 }
 
@@ -13800,10 +13790,7 @@ SKIP:
             // Simply make this into an integer comparison.
             cmp->gtOp1 = op1->AsCast()->CastOp();
 
-            int64_t op2Value = op2->LngValue();
-            op2->ChangeOperConst(GT_CNS_INT);
-            op2->ChangeType(TYP_INT);
-            op2->SetIconValue(static_cast<int32_t>(op2Value));
+            op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
             fgUpdateConstTreeValueNumber(op2);
         }
 
@@ -13845,19 +13832,13 @@ SKIP:
         assert(andMask == andOp->gtGetOp2());
 
         // Now replace the mask node.
-        int32_t maskValue = static_cast<int32_t>(andMask->LngValue());
-        andMask->SetOper(GT_CNS_INT);
-        andMask->ChangeType(TYP_INT);
-        andMask->SetIconValue(maskValue);
+        andMask->BashToConst(static_cast<int32_t>(andMask->LngValue()));
 
         // Now change the type of the AND node.
         andOp->ChangeType(TYP_INT);
 
         // Finally we replace the comparand.
-        int32_t op2Value = static_cast<int32_t>(op2->LngValue());
-        op2->SetOper(GT_CNS_INT);
-        op2->ChangeType(TYP_INT);
-        op2->SetIconValue(op2Value);
+        op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
     }
 
     return cmp;

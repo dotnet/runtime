@@ -4891,9 +4891,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit)
                 {
-                    tree->ChangeOperConst(GT_CNS_INT);
-                    tree->gtType                = TYP_INT;
-                    tree->AsIntCon()->gtIconVal = (int)lval;
+                    tree->BashToConst(static_cast<int32_t>(lval));
                     if (vnStore != nullptr)
                     {
                         fgValueNumberTreeConst(tree);
