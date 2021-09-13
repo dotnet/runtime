@@ -109,6 +109,8 @@ mono_threads_state_poll (void)
 static void
 mono_threads_state_poll_with_info (MonoThreadInfo *info)
 {
+	MonoContext ctx;
+
 	g_assert (mono_threads_is_blocking_transition_enabled ());
 
 	++coop_do_polling_count;
@@ -125,12 +127,11 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 	if (info->thread_state.state != STATE_ASYNC_SUSPEND_REQUESTED)
 		return;
 
-	/* Spill all registers to the stack to make the GC aware of the references */
-	MonoContext ctx;
-	MONO_CONTEXT_GET_CURRENT (ctx);
-
 	++coop_save_count;
-	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], info);
+	mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], NULL);
+
+	/* Spill all registers to the stack to make the GC aware of the references */
+	ctx = info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].ctx;
 
 	/* commit the saved state and notify others if needed */
 	switch (mono_threads_transition_state_poll (info)) {
