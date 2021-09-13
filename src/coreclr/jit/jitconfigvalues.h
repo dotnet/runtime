@@ -382,6 +382,10 @@ CONFIG_INTEGER(JitMinOptsTrackGCrefs, W("JitMinOptsTrackGCrefs"), JitMinOptsTrac
 // TODO-Cleanup: need to make 'MEASURE_MEM_ALLOC' well-defined here at all times.
 CONFIG_INTEGER(DisplayMemStats, W("JitMemStats"), 0) // Display JIT memory usage statistics
 
+#if defined(DEBUG)
+CONFIG_INTEGER(JitEnregStats, W("JitEnregStats"), 0) // Display JIT enregistration statistics
+#endif                                               // DEBUG
+
 CONFIG_INTEGER(JitAggressiveInlining, W("JitAggressiveInlining"), 0) // Aggressive inlining of all methods
 CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, emit Enter/Leave/TailCall callbacks
 CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
