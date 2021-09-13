@@ -1891,7 +1891,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 // genMultiRegStoreToSIMDLocal: store multi-reg value to a single-reg SIMD local
 //
 // Arguments:
-//    lclNode  -  GentreeLclVar of GT_STORE_LCL_VAR
+//    lclNode  -  GenTreeLclVar of GT_STORE_LCL_VAR
 //
 // Return Value:
 //    None
@@ -1996,6 +1996,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     else
     {
         regNumber tempXmm = lclNode->GetSingleTempReg();
+        assert(tempXmm != targetReg);
         inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
         GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
     }

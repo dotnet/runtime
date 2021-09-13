@@ -3413,6 +3413,8 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             {
                 // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
                 buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+                // This internal register must be different from the target register.
+                setInternalRegsDelayFree = true;
             }
         }
 #endif // FEATURE_SIMD && TARGET_X86 && TARGET_WINDOWS
