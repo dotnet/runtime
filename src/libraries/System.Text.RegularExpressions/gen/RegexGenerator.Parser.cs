@@ -150,7 +150,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         if (!regexMethodSymbol.IsPartialDefinition)
                         {
-                            Diag(reportDiagnostic, DiagnosticDescriptors.RegexMethodShouldBePartial, methodSyntax.GetLocation());
+                            Diag(reportDiagnostic, DiagnosticDescriptors.RegexMethodMustBePartial, methodSyntax.GetLocation());
                             continue;
                         }
 
@@ -162,19 +162,19 @@ namespace System.Text.RegularExpressions.Generator
 
                         if (regexMethodSymbol.Parameters.Length != 0)
                         {
-                            Diag(reportDiagnostic, DiagnosticDescriptors.RegexMethodMustBeParameterless, methodSyntax.Body.GetLocation());
+                            Diag(reportDiagnostic, DiagnosticDescriptors.RegexMethodMustBeParameterless, methodSyntax.GetLocation());
                             continue;
                         }
 
                         if (regexMethodSymbol.Arity != 0)
                         {
-                            Diag(reportDiagnostic, DiagnosticDescriptors.RegexMethodMustNotBeGeneric, methodSyntax.Body.GetLocation());
+                            Diag(reportDiagnostic, DiagnosticDescriptors.RegexMethodMustNotBeGeneric, methodSyntax.GetLocation());
                             continue;
                         }
 
                         if (!regexMethodSymbol.ReturnType.Equals(regexSymbol))
                         {
-                            Diag(reportDiagnostic, DiagnosticDescriptors.RegexMethodMustReturnRegex, methodSyntax.Body.GetLocation());
+                            Diag(reportDiagnostic, DiagnosticDescriptors.RegexMethodMustReturnRegex, methodSyntax.GetLocation());
                             continue;
                         }
 
@@ -199,7 +199,31 @@ namespace System.Text.RegularExpressions.Generator
                         // - ...
                         CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
-                        // Parse the input
+                        // Validate the options
+                        const RegexOptions SupportedOptions =
+                            RegexOptions.IgnoreCase |
+                            RegexOptions.Multiline |
+                            RegexOptions.ExplicitCapture |
+                            RegexOptions.Compiled |
+                            RegexOptions.Singleline |
+                            RegexOptions.IgnorePatternWhitespace |
+                            RegexOptions.RightToLeft |
+                            RegexOptions.ECMAScript |
+                            RegexOptions.CultureInvariant;
+                        if ((regexMethod.Options.Value & ~(int)SupportedOptions) != 0)
+                        {
+                            Diag(reportDiagnostic, DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), "options");
+                            continue;
+                        }
+
+                        // Validate the timeout
+                        if (regexMethod.MatchTimeout.Value is 0 or < -1)
+                        {
+                            Diag(reportDiagnostic, DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), "matchTimeout");
+                            continue;
+                        }
+
+                        // Parse the input pattern
                         try
                         {
                             regexMethod.Tree = RegexParser.Parse(regexMethod.Pattern, (RegexOptions)regexMethod.Options, culture);

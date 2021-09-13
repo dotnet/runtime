@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.RegularExpressions.Generator
 {
-    internal static class DiagnosticDescriptors
+    public static class DiagnosticDescriptors
     {
         // TODO: Assign valid IDs
 
@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions.Generator
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor RegexMethodShouldBePartial { get; } = new DiagnosticDescriptor(
+        public static DiagnosticDescriptor RegexMethodMustBePartial { get; } = new DiagnosticDescriptor(
             id: "SYSLIB1106",
             title: new LocalizableResourceString(nameof(SR.RegexMethodMustBePartialMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.RegexMethodMustBePartialMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),

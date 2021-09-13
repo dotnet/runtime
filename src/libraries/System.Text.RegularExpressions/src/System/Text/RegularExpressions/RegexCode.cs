@@ -286,7 +286,7 @@ namespace System.Text.RegularExpressions
         }
 
         [ExcludeFromCodeCoverage]
-        private string OpcodeDescription(int offset) => OpcodeDescription(offset, Codes, Strings);
+        internal string OpcodeDescription(int offset) => OpcodeDescription(offset, Codes, Strings);
 
         [ExcludeFromCodeCoverage]
         internal static string OpcodeDescription(int offset, int[] codes, string[] strings)
