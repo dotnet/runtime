@@ -62,7 +62,7 @@ namespace System.IO.Strategies
             => preallocationSize > 0
                && (access & FileAccess.Write) != 0
                && mode != FileMode.Open && mode != FileMode.Append
-               && (mode != FileMode.OpenOrCreate || fileHandle.CanSeek && RandomAccess.GetFileLength(fileHandle) == 0); // allow to extend only new files
+               && (mode != FileMode.OpenOrCreate || (fileHandle.CanSeek && RandomAccess.GetFileLength(fileHandle) == 0)); // allow to extend only new files
 
         internal static void ValidateArguments(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
