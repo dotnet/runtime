@@ -1,13 +1,11 @@
 cmake_minimum_required(VERSION 3.14.5)
 
-project(mono-wasm-runtime)
-
-include_directories(${MONO_INCLUDES} ${MONO_OBJ_INCLUDES})
-add_compile_options(@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DCORE_BINDINGS -DGEN_PINVOKE=1)
+project(mono-wasm-runtime C)
 
 add_executable(dotnet corebindings.c driver.c pinvoke.c)
 
-set(CMAKE_EXECUTABLE_SUFFIX ".js")
+target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES})
+target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DCORE_BINDINGS -DGEN_PINVOKE=1)
 target_link_libraries(dotnet
     ${ICU_LIB_DIR}/libicuuc.a
     ${ICU_LIB_DIR}/libicui18n.a
@@ -20,7 +18,9 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
+
 set_target_properties(dotnet PROPERTIES
+    CMAKE_EXECUTABLE_SUFFIX ".js"
     LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DENABLE_NETCORE=1 --js-library ${SOURCE_DIR}/library_mono.js --js-library ${SOURCE_DIR}/binding_support.js --js-library ${SOURCE_DIR}/dotnet_support.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
