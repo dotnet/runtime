@@ -64,6 +64,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonParameterInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonParameterInfoValues";
             private const string JsonPropertyInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfo";
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
+            private const string NotSupportedExceptionTypeRef = "global::System.NotSupportedException";
 
             private static DiagnosticDescriptor TypeNotSupported { get; } = new DiagnosticDescriptor(
                 id: "SYSLIB1030",
@@ -254,6 +255,11 @@ namespace {@namespace}
                             }
                         }
                         break;
+                    case ClassType.KnownUnsupportedType:
+                        {
+                            source = GenerateForUnsupportedType(typeGenerationSpec);
+                        }
+                        break;
                     case ClassType.TypeUnsupportedBySourceGen:
                         {
                             _sourceProductionContext.ReportDiagnostic(
@@ -349,6 +355,16 @@ namespace {@namespace}
                         {OptionsInstanceVariableName},
                         {JsonMetadataServicesTypeRef}.GetNullableConverter<{underlyingTypeCompilableName}>({underlyingTypeInfoNamedArg}));
 ";
+
+                return GenerateForType(typeMetadata, metadataInitSource);
+            }
+
+            private string GenerateForUnsupportedType(TypeGenerationSpec typeMetadata)
+            {
+                string typeCompilableName = typeMetadata.TypeRef;
+                string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
+
+                string metadataInitSource = $"_{typeFriendlyName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeCompilableName}>());";
 
                 return GenerateForType(typeMetadata, metadataInitSource);
             }
