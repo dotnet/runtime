@@ -86,10 +86,6 @@ set MSBUILD_EMPTY_PROJECT_CONTENT= ^
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.props"
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.targets"
 
-:: generate version file
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-    "%__repoRoot%\eng\empty.csproj" /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
-    /t:GenerateNativeVersionFile /restore
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"
