@@ -265,7 +265,7 @@ namespace System.Text
             Debug.Assert(m_ChunkOffset + m_ChunkChars.Length >= m_ChunkOffset, "The length of the string is greater than int.MaxValue.");
 
             StringBuilder currentBlock = this;
-            int maxCapacity = this.m_MaxCapacity;
+            int maxCapacity = m_MaxCapacity;
             while (true)
             {
                 // All blocks have the same max capacity.
@@ -388,7 +388,7 @@ namespace System.Text
         /// <param name="length">The number of characters to read in this builder.</param>
         public string ToString(int startIndex, int length)
         {
-            int currentLength = this.Length;
+            int currentLength = Length;
             if (startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -408,13 +408,13 @@ namespace System.Text
 
             AssertInvariants();
             string result = string.FastAllocateString(length);
-            this.CopyTo(startIndex, new Span<char>(ref result.GetRawStringData(), length), length);
+            CopyTo(startIndex, new Span<char>(ref result.GetRawStringData(), length), length);
             return result;
         }
 
         public StringBuilder Clear()
         {
-            this.Length = 0;
+            Length = 0;
             return this;
         }
 
@@ -1037,11 +1037,11 @@ namespace System.Text
             // Ensure we don't insert more chars than we can hold, and we don't
             // have any integer overflow in our new length.
             long insertingChars = (long)value.Length * count;
-            if (insertingChars > MaxCapacity - this.Length)
+            if (insertingChars > MaxCapacity - currentLength)
             {
                 throw new OutOfMemoryException();
             }
-            Debug.Assert(insertingChars + this.Length < int.MaxValue);
+            Debug.Assert(insertingChars + currentLength < int.MaxValue);
 
             MakeRoom(index, (int)insertingChars, out StringBuilder chunk, out int indexInChunk, false);
             while (count > 0)
