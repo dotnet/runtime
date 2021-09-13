@@ -70,7 +70,10 @@ jobs:
           # minijit and mono interpreter runtimevariants do not require any special build of the runtime
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
-          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+            - ${{ format('{0}_llvmaot_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          - ${{ if not(eq(parameters.runtimeVariant, 'llvmfullaot')) }}:
+            - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
@@ -83,6 +86,17 @@ jobs:
       displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeVariant }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
+
+    - name: monoAotBuildshCommand
+      value: ''
+
+    - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+      - name: monoAotBuildshCommand
+        value: 'mono_aot'
+
+    - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+      - name: monoAotBuildshCommand
+        value: 'mono_fullaot'
 
     - name: runtimeFlavorArgs
       value: ''
@@ -293,7 +307,7 @@ jobs:
         displayName: "Patch dotnet with mono"
 
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
-    - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
+    - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
       - ${{ if eq(parameters.archType, 'arm64') }}:
         - script: ./build.sh
                   -subset mono
@@ -306,12 +320,12 @@ jobs:
                   /p:MonoAOTLLVMUseCxx11Abi=true
           displayName: "Build Mono LLVM AOT cross compiler"
 
-    - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
+    - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
       - ${{ if eq(parameters.archType, 'x64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) $(runtimeVariantArg)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(monoAotBuildshCommand) $(buildConfig) $(archType) $(runtimeVariantArg)
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.archType, 'arm64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) cross $(runtimeVariantArg)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(monoAotBuildshCommand) $(buildConfig) $(archType) cross $(runtimeVariantArg)
           displayName: "LLVM AOT cross-compile CoreCLR tests"
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
