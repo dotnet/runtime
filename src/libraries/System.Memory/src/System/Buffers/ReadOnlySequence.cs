@@ -150,7 +150,7 @@ namespace System.Buffers
                 _startObject = manager;
                 _endObject = manager;
                 _startInteger = ReadOnlySequence.MemoryManagerToSequenceStart(index);
-                _endInteger = ReadOnlySequence.MemoryManagerToSequenceEnd(length);
+                _endInteger = ReadOnlySequence.MemoryManagerToSequenceEnd(index + length);
             }
             else if (MemoryMarshal.TryGetArray(memory, out ArraySegment<T> segment))
             {
