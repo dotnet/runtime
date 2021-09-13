@@ -439,7 +439,7 @@ namespace System.IO
         // with the CleanupScatterGatherBuffers method.
         private static unsafe bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
             THandler handler, [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
-            where THandler: struct, IMemoryHandler<T>
+            where THandler : struct, IMemoryHandler<T>
         {
             int pageSize = s_cachedPageSize;
             Debug.Assert(BitOperations.IsPow2(pageSize), "Page size is not a power of two.");
@@ -483,13 +483,12 @@ namespace System.IO
                     {
                         // "The array must contain enough elements to store nNumberOfBytesToWrite
                         // bytes of data, and one element for the terminating NULL."
-                        segments = (long*)NativeMemory.Alloc((nuint)(buffersCount + 1), sizeof(long));
+                        segments = (long*)NativeMemory.Alloc((nuint)buffersCount + 1, sizeof(long));
+                        segments[buffersCount] = 0;
                     }
                     segments[i] = ptr;
                 }
 
-                Debug.Assert(segments != null);
-                segments[buffersCount] = 0;
                 segmentsPtr = (IntPtr)segments;
                 totalBytes = (int)totalBytes64;
                 success = true;
@@ -499,7 +498,7 @@ namespace System.IO
             {
                 if (!success)
                 {
-                    CleanupScatterGatherBuffers(handlesToDispose, (IntPtr) segments);
+                    CleanupScatterGatherBuffers(handlesToDispose, (IntPtr)segments);
                 }
             }
         }
@@ -516,7 +515,7 @@ namespace System.IO
 
             if (segmentsPtr != IntPtr.Zero)
             {
-                NativeMemory.Free((void*) segmentsPtr);
+                NativeMemory.Free((void*)segmentsPtr);
             }
         }
 
