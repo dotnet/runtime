@@ -271,7 +271,6 @@ namespace System.IO
             bool sameDirectoryDifferentCase =
                 directoriesAreCaseVariants &&
                 destDirNameFromFullPath.Equals(sourceDirNameFromFullPath, fileSystemSensitivity);
-            bool sourcePathIsFile = FileSystem.FileExists(fullsourceDirName);
 
             // If the destination directories are the exact same name
             if (!sameDirectoryDifferentCase && string.Equals(sourcePath, destPath, fileSystemSensitivity))
@@ -283,6 +282,8 @@ namespace System.IO
             // Compare paths for the same, skip this step if we already know the paths are identical.
             if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
+
+            bool sourcePathIsFile = FileSystem.FileExists(fullsourceDirName);
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
             // to make sure our cross platform behavior matches .NET Framework behavior.
