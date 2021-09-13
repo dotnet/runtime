@@ -259,7 +259,7 @@ namespace System.Text
             info.AddValue(ThreadIDField, 0);
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         private void AssertInvariants()
         {
             Debug.Assert(m_ChunkOffset + m_ChunkChars.Length >= m_ChunkOffset, "The length of the string is greater than int.MaxValue.");
@@ -1166,53 +1166,43 @@ namespace System.Text
 
         public StringBuilder Append(object? value) => (value == null) ? this : Append(value.ToString());
 
-        public StringBuilder Append(char[]? value)
-        {
-            if (value?.Length > 0)
-            {
-                Append(value.AsSpan());
-            }
-            return this;
-        }
+        public StringBuilder Append(char[]? value) => Append(value.AsSpan());
 
         public StringBuilder Append(ReadOnlySpan<char> value)
         {
-            // This is where we can check if adding value will put us over m_MaxCapacity.
-            // We are doing the check here to prevent the corruption of the StringBuilder.
-            int newLength = Length + value.Length;
-            if (newLength > m_MaxCapacity || newLength < value.Length)
+            // This case is so common we want to optimize for it heavily.
+            if (value.TryCopyTo(m_ChunkChars.AsSpan(m_ChunkLength)))
             {
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
+                m_ChunkLength += value.Length;
             }
-
-            if (value.Length != 0)
+            else
             {
-                // This case is so common we want to optimize for it heavily.
-                if (value.TryCopyTo(m_ChunkChars.AsSpan(m_ChunkLength)))
+                // This is where we can check if adding value will put us over m_MaxCapacity.
+                // We are doing the check here to prevent the corruption of the StringBuilder.
+                int newLength = Length + value.Length;
+                if (newLength > m_MaxCapacity || newLength < value.Length)
                 {
-                    m_ChunkLength += value.Length;
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
                 }
-                else
+
+                // Copy the first chunk
+                int firstLength = m_ChunkChars.Length - m_ChunkLength;
+                if (firstLength > 0)
                 {
-                    // Copy the first chunk
-                    int firstLength = m_ChunkChars.Length - m_ChunkLength;
-                    if (firstLength > 0)
-                    {
-                        value.Slice(0, firstLength).CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
-                        m_ChunkLength = m_ChunkChars.Length;
-                    }
-
-                    // Expand the builder to add another chunk.
-                    int restLength = value.Length - firstLength;
-                    ExpandByABlock(restLength);
-                    Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
-
-                    // Copy the second chunk
-                    value.Slice(firstLength).CopyTo(m_ChunkChars);
-                    m_ChunkLength = restLength;
+                    value.Slice(0, firstLength).CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
+                    m_ChunkLength = m_ChunkChars.Length;
                 }
-                AssertInvariants();
+
+                // Expand the builder to add another chunk.
+                int restLength = value.Length - firstLength;
+                ExpandByABlock(restLength);
+                Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
+
+                // Copy the second chunk
+                value.Slice(firstLength).CopyTo(m_ChunkChars);
+                m_ChunkLength = restLength;
             }
+            AssertInvariants();
             return this;
         }
 
@@ -1242,38 +1232,23 @@ namespace System.Text
 
         #region AppendJoin
 
-        public StringBuilder AppendJoin(string? separator, params object?[] values)
-        {
-            separator ??= string.Empty;
-            return AppendJoinCore(separator.AsSpan(), values);
-        }
+        public StringBuilder AppendJoin(string? separator, params object?[] values) =>
+            AppendJoinCore(separator.AsSpan(), values);
 
-        public StringBuilder AppendJoin<T>(string? separator, IEnumerable<T> values)
-        {
-            separator ??= string.Empty;
-            return AppendJoinCore(separator.AsSpan(), values);
-        }
+        public StringBuilder AppendJoin<T>(string? separator, IEnumerable<T> values) =>
+            AppendJoinCore(separator.AsSpan(), values);
 
-        public StringBuilder AppendJoin(string? separator, params string?[] values)
-        {
-            separator ??= string.Empty;
-            return AppendJoinCore(separator.AsSpan(), values);
-        }
+        public StringBuilder AppendJoin(string? separator, params string?[] values) =>
+            AppendJoinCore(separator.AsSpan(), values);
 
-        public StringBuilder AppendJoin(char separator, params object?[] values)
-        {
-            return AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
-        }
+        public StringBuilder AppendJoin(char separator, params object?[] values) =>
+            AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
 
-        public StringBuilder AppendJoin<T>(char separator, IEnumerable<T> values)
-        {
-            return AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
-        }
+        public StringBuilder AppendJoin<T>(char separator, IEnumerable<T> values) =>
+            AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
 
-        public StringBuilder AppendJoin(char separator, params string?[] values)
-        {
-            return AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
-        }
+        public StringBuilder AppendJoin(char separator, params string?[] values) =>
+            AppendJoinCore(new ReadOnlySpan<char>(ref separator, 1), values);
 
         private StringBuilder AppendJoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
@@ -1340,19 +1315,7 @@ namespace System.Text
 
         #endregion
 
-        public StringBuilder Insert(int index, string? value)
-        {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            }
-
-            if (value != null)
-            {
-                Insert(index, value.AsSpan());
-            }
-            return this;
-        }
+        public StringBuilder Insert(int index, string? value) => Insert(index, value.AsSpan());
 
 #pragma warning disable CA1830 // Prefer strongly-typed Append and Insert method overloads on StringBuilder. No need to fix for the builder itself
         public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString().AsSpan(), 1);
@@ -1367,19 +1330,7 @@ namespace System.Text
 
         public StringBuilder Insert(int index, char value) => Insert(index, new ReadOnlySpan<char>(ref value, 1));
 
-        public StringBuilder Insert(int index, char[]? value)
-        {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            }
-
-            if (value != null)
-            {
-                Insert(index, value.AsSpan());
-            }
-            return this;
-        }
+        public StringBuilder Insert(int index, char[]? value) => Insert(index, value.AsSpan());
 
         public StringBuilder Insert(int index, char[]? value, int startIndex, int charCount)
         {
@@ -1413,11 +1364,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
             }
 
-            if (charCount > 0)
-            {
-                Insert(index, value.AsSpan(startIndex, charCount));
-            }
-            return this;
+            return Insert(index, value.AsSpan(startIndex, charCount));
         }
 
         public StringBuilder Insert(int index, int value) => InsertSpanFormattable(index, value);
