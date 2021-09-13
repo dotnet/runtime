@@ -126,6 +126,10 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 	if (info->thread_state.state != STATE_ASYNC_SUSPEND_REQUESTED)
 		return;
 
+	/* Spill all registers to the stack to make the GC aware of the references */
+	MonoContext ctx;
+	MONO_CONTEXT_GET_CURRENT (ctx);
+
 	++coop_save_count;
 	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], info);
 
