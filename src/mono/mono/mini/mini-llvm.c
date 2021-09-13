@@ -11478,7 +11478,7 @@ emit_method_inner (EmitContext *ctx)
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
 
 	if (cfg->disable_omit_fp)
-		mono_llvm_add_func_attr_nv (method, "no-frame-pointer-elim", "true");
+		mono_llvm_add_func_attr_nv (method, "frame-pointer", "all");
 
 	if (cfg->compile_aot) {
 		if (mono_aot_is_externally_callable (cfg->method)) {
