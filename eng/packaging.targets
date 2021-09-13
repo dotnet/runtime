@@ -4,17 +4,15 @@
     <EnablePackageValidation>true</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
-    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(PreviousReleaseMajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(NetCoreAppLatestStablePackageBaselineVersion)</PackageValidationBaselineVersion>
     <!-- PackDependsOn is the right hook in a targets file if the NuGet.Build.Tasks.Pack nuget package is used, otherwise
          BeforePack must be used. Setting both to ensure that we are always running before other targets. --> 
     <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
     <BeforePack>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
-    <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludePrivateProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
-    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
-    <IncludeBuildOutput Condition="'$(TargetsAnyOS)' != 'true' or '$(ExcludeFromPackage)' == 'true'">false</IncludeBuildOutput>  
+    <IncludeBuildOutput Condition="'$(TargetFrameworkSuffix)' != ''">false</IncludeBuildOutput>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
-    <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true' or ('$(TargetsAnyOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0')))">true</SuppressDependenciesWhenPacking>
+    <SuppressDependenciesWhenPacking Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetPlatformIdentifier)' != ''">true</SuppressDependenciesWhenPacking>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
     <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
@@ -53,7 +51,7 @@
 
   <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true'">
     <_FrameworkAssemblyReferences Include="$(MSBuildProjectName)"
-                                  TargetFramework="net461" />
+                                  TargetFramework="$(NetFrameworkMinimum)" />
   </ItemGroup>
 
   <Choose>
@@ -63,16 +61,16 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
       </PropertyGroup>
       <ItemGroup Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true'">
-        <None Include="$(PlaceholderFile)" PackagePath="lib/net461" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="runtimes/win/lib/net461" Pack="true" Condition="$(TargetFrameworks.Contains('netstandard2.0-windows'))" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/$(NetFrameworkMinimum)" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="runtimes/win/$(BuildOutputTargetFolder)/$(NetFrameworkMinimum)" Pack="true" Condition="$(TargetFrameworks.Contains('netstandard2.0-windows'))" />
       </ItemGroup>
       <ItemGroup Condition="'$(AddXamarinPlaceholderFilesToPackage)' == 'true'">
-        <None Include="$(PlaceholderFile)" PackagePath="lib\MonoAndroid10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\MonoTouch10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\xamarinios10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\xamarinmac20" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\xamarintvos10" Pack="true" />
-        <None Include="$(PlaceholderFile)" PackagePath="lib\xamarinwatchos10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/MonoAndroid10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/MonoTouch10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinios10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinmac20" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarintvos10" Pack="true" />
+        <None Include="$(PlaceholderFile)" PackagePath="$(BuildOutputTargetFolder)/xamarinwatchos10" Pack="true" />
       </ItemGroup>
     </When>
   </Choose>
@@ -80,54 +78,38 @@
   <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
   <Target Name="ChangeDocumentationFileForPackaging"
           AfterTargets="DocumentationProjectOutputGroup"
-          Condition="'$(ExcludeFromPackage)' != 'true' and
-                     '$(UseIntellisenseDocumentationFile)' == 'true'">
+          Condition="'$(UseIntellisenseDocumentationFile)' == 'true'">
     <ItemGroup>
       <DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
       <DocumentationProjectOutputGroupOutput Include="$(LibIntellisenseDocumentationFilePath)" />
     </ItemGroup>
   </Target>
 
+  <!-- Add runtime specific file into the package if the tfm is RID specific or if the tfm targets .NETFramework and netstandard2.0-windows TFM is present.
+       This is necessary as compatible RID specific tfms win over compatible RID agnostic tfms. Hence without this, netstandard2.0-windows would win over net461. -->
   <Target Name="AddRuntimeSpecificFilesToPackage"
           DependsOnTargets="BuiltProjectOutputGroup;
                             DocumentationProjectOutputGroup;
                             SatelliteDllsProjectOutputGroup;
                             $(TargetsForTfmSpecificBuildOutput)"
-          Condition="'$(ExcludeFromPackage)' != 'true' and
-                     '$(TargetsAnyOS)' != 'true'">
+          Condition="'$(TargetFrameworkSuffix)' != '' or
+                     ('$(TargetFrameworkIdentifier)' == '.NETFramework' and $(TargetFrameworks.Contains('netstandard2.0-windows')))">
+    <PropertyGroup>
+      <RuntimeSymbolPath>$(TargetDir)$(TargetName).pdb</RuntimeSymbolPath>
+      <_packageTargetRuntime Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">$(PackageTargetRuntime)</_packageTargetRuntime>
+      <_packageTargetRuntime Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">win</_packageTargetRuntime>
+    </PropertyGroup>
+
     <ItemGroup>
       <TfmRuntimeSpecificPackageFile Include="@(SatelliteDllsProjectOutputGroupOutput);
                                               @(BuiltProjectOutputGroupOutput);
                                               @(DocumentationProjectOutputGroupOutput)" />
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
-                              PackagePath="runtimes/$(PackageTargetRuntime)/lib/$(TargetFrameworkWithoutSuffix)" />
-      <!-- Copy runtime specific assemblies into the rid agnostic 'lib' folder if the ridless tfm doesn't exist on .NETFramework.
-           The assumption holds that a ridless tfm doesn't follow a '-' charater. This is necessary to avoid NU5128. -->
-      <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
-                              PackagePath="$([MSBuild]::ValueOrDefault('$(BuildOutputTargetFolder)', 'lib'))/$(TargetFrameworkWithoutSuffix)"
-                              Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', '$(TargetFrameworkWithoutSuffix)(?!-)'))" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Runtime agnostic symbols are automatically added by the pack task.-->
-  <Target Name="AddRuntimeSpecificSymbolToPackage"
-          Condition="'$(ExcludeFromPackage)' != 'true' and
-                     '$(TargetsAnyOS)' != 'true' and
-                     '$(IncludeSymbols)' == 'true'">
-    <PropertyGroup>
-      <RuntimeSymbolPath>$(TargetDir)$(TargetName).pdb</RuntimeSymbolPath>
-    </PropertyGroup>
-
-    <ItemGroup Condition="Exists('$(RuntimeSymbolPath)')">
+                              PackagePath="runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)" />
       <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
-                                   TargetPath="/runtimes/$(PackageTargetRuntime)/lib/$(TargetFrameworkWithoutSuffix)"
-                                   TargetFramework="$(TargetFrameworkWithoutSuffix)" />
-      <!-- Copy runtime specific symbol into the rid agnostic 'lib' folder if the ridless tfm doesn't exist on .NETFramework.
-           The assumption holds that a ridless tfm doesn't follow a '-' charater. This is necessary to avoid NU5128. -->
-      <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)"
-                                   TargetPath="/$([MSBuild]::ValueOrDefault('$(BuildOutputTargetFolder)', 'lib'))/$(TargetFrameworkWithoutSuffix)"
+                                   TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(TargetFrameworkWithoutSuffix)/%(Filename)%(Extension)"
                                    TargetFramework="$(TargetFrameworkWithoutSuffix)"
-                                   Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', '$(TargetFrameworkWithoutSuffix)(?!-)'))" />
+                                   Condition="'$(IncludeSymbols)' == 'true' and Exists('$(RuntimeSymbolPath)')" />
     </ItemGroup>
   </Target>
 
@@ -153,11 +135,18 @@
   <!-- Include a netstandard compat error if the project targets both .NETStandard and
        .NETCoreApp. This prohibits users to consume packages on an older .NETCoreApp version
        than the minimum supported one. -->
-  <ItemGroup Condition="'$(DisableNETStandardCompatErrorForNETCoreApp)' != 'true'">
+  <ItemGroup>
     <NETStandardCompatError Include="netcoreapp2.0"
                             Supported="$(NetCoreAppMinimum)"
                             Condition="$(TargetFrameworks.Contains('netstandard2.')) and
-                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)')))" />
+                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)'))) and
+                                       '$(DisableNETStandardCompatErrorForNETCoreApp)' != 'true'" />
+    <NETStandardCompatError Include="net461"
+                            Supported="$(NetFrameworkMinimum)"
+                            Condition="$(TargetFrameworks.Contains('netstandard2.0')) and
+                                       ($(TargetFrameworks.Contains('$(NetFrameworkMinimum)')) or $(TargetFrameworks.Contains('net47')) or $(TargetFrameworks.Contains('net48'))) and
+                                       '$(DisableNETStandardCompatErrorForNETFramework)' != 'true'" />
+
   </ItemGroup>
 
   <!-- Add targets file that marks a .NETStandard applicable tfm as unsupported. -->

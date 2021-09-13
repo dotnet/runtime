@@ -284,11 +284,7 @@ namespace System.Net.Sockets
             {
                 ThrowIfDisposed();
 
-                if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
-                {
-                    _nonBlockingConnectInProgress = false;
-                    SetToConnected();
-                }
+                CheckNonBlockingConnectCompleted();
 
                 if (_rightEndPoint == null)
                 {
@@ -328,12 +324,7 @@ namespace System.Net.Sockets
 
                 if (_remoteEndPoint == null)
                 {
-                    if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
-                    {
-                        _nonBlockingConnectInProgress = false;
-                        // Update the state if we've become connected after a non-blocking connect.
-                        SetToConnected();
-                    }
+                    CheckNonBlockingConnectCompleted();
 
                     if (_rightEndPoint == null || !_isConnected)
                     {
@@ -433,12 +424,7 @@ namespace System.Net.Sockets
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_isConnected:{_isConnected}");
 
-                if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
-                {
-                    _nonBlockingConnectInProgress = false;
-                    // Update the state if we've become connected after a non-blocking connect.
-                    SetToConnected();
-                }
+                CheckNonBlockingConnectCompleted();
 
                 return _isConnected;
             }
@@ -3866,6 +3852,19 @@ namespace System.Net.Sockets
                 OperationCanceledException => SocketError.OperationAborted,
                 _ => SocketError.SocketError
             };
+        }
+
+        private void CheckNonBlockingConnectCompleted()
+        {
+            if (_nonBlockingConnectInProgress && SocketPal.HasNonBlockingConnectCompleted(_handle, out bool success))
+            {
+                _nonBlockingConnectInProgress = false;
+
+                if (success)
+                {
+                    SetToConnected();
+                }
+            }
         }
     }
 }

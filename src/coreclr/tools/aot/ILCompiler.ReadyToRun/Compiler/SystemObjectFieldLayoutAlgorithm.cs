@@ -25,7 +25,7 @@ namespace ILCompiler
             TargetDetails targetDetails = defType.Context.Target;
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
 
-            // System.Object has an EEType field in the standard AOT version used in this repo.
+            // System.Object has an MethodTable field in the standard AOT version used in this repo.
             // Make sure that we always use the CoreCLR version which (currently) has no fields.
             Debug.Assert(0 == layoutFromMetadata.Offsets.Length, "Incompatible system library. The CoreCLR System.Private.CoreLib must be used when compiling in ready-to-run mode.");
 

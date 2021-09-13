@@ -17,6 +17,8 @@ namespace Microsoft.Extensions.Logging.Generators
     {
         internal class Parser
         {
+            private const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
+
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
             private readonly Action<Diagnostic> _reportDiagnostic;
@@ -28,13 +30,41 @@ namespace Microsoft.Extensions.Logging.Generators
                 _reportDiagnostic = reportDiagnostic;
             }
 
+            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
+                node is MethodDeclarationSyntax m && m.AttributeLists.Count > 0;
+
+            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            {
+                var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
+
+                foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
+                {
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
+                        if (attributeSymbol == null)
+                        {
+                            continue;
+                        }
+
+                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                        if (fullName == LoggerMessageAttribute)
+                        {
+                            return methodDeclarationSyntax.Parent as ClassDeclarationSyntax;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
             /// <summary>
             /// Gets the set of logging classes containing methods to output.
             /// </summary>
             public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
-                const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
-
                 INamedTypeSymbol loggerMessageAttribute = _compilation.GetTypeByMetadataName(LoggerMessageAttribute);
                 if (loggerMessageAttribute == null)
                 {
@@ -408,11 +438,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             // determine the namespace the class is declared in, if any
                                             SyntaxNode? potentialNamespaceParent = classDec.Parent;
-                                            while (potentialNamespaceParent != null && potentialNamespaceParent is not NamespaceDeclarationSyntax)
+                                            while (potentialNamespaceParent != null &&
+                                                   potentialNamespaceParent is not NamespaceDeclarationSyntax &&
+                                                   potentialNamespaceParent is not FileScopedNamespaceDeclarationSyntax)
                                             {
                                                 potentialNamespaceParent = potentialNamespaceParent.Parent;
                                             }
-                                            if (potentialNamespaceParent is NamespaceDeclarationSyntax namespaceParent)
+                                            if (potentialNamespaceParent is BaseNamespaceDeclarationSyntax namespaceParent)
                                             {
                                                 nspace = namespaceParent.Name.ToString();
                                                 while (true)
@@ -442,11 +474,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                             LoggerClass currentLoggerClass = lc;
                                             var parentLoggerClass = (classDec.Parent as TypeDeclarationSyntax);
 
-                                            bool IsAllowedKind(SyntaxKind kind) => 
+                                            bool IsAllowedKind(SyntaxKind kind) =>
                                                 kind == SyntaxKind.ClassDeclaration ||
                                                 kind == SyntaxKind.StructDeclaration ||
                                                 kind == SyntaxKind.RecordDeclaration;
-                                            
+
                                             while (parentLoggerClass != null && IsAllowedKind(parentLoggerClass.Kind()))
                                             {
                                                 currentLoggerClass.ParentClass = new LoggerClass

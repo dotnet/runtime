@@ -5322,20 +5322,20 @@ handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_re
 			MonoClass *gcomparer = mono_class_get_geqcomparer_class ();
 			g_assert (gcomparer);
 			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
-			mono_error_assert_ok (error);
+			if (is_ok (error)) {
+				MONO_INST_NEW (cfg, typed_objref, OP_TYPED_OBJREF);
+				typed_objref->type = STACK_OBJ;
+				typed_objref->dreg = alloc_ireg_ref (cfg);
+				typed_objref->sreg1 = call_res->dreg;
+				typed_objref->klass = gcomparer_inst;
+				MONO_ADD_INS (cfg->cbb, typed_objref);
 
-			MONO_INST_NEW (cfg, typed_objref, OP_TYPED_OBJREF);
-			typed_objref->type = STACK_OBJ;
-			typed_objref->dreg = alloc_ireg_ref (cfg);
-			typed_objref->sreg1 = call_res->dreg;
-			typed_objref->klass = gcomparer_inst;
-			MONO_ADD_INS (cfg->cbb, typed_objref);
+				call_res = typed_objref;
 
-			call_res = typed_objref;
-
-			/* Force decompose */
-			cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
-			cfg->cbb->needs_decompose = TRUE;
+				/* Force decompose */
+				cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+				cfg->cbb->needs_decompose = TRUE;
+			}
 		}
 	}
 
@@ -6076,6 +6076,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		/* We could hit a seq point before attaching to the JIT (#8338) */
 		seq_points = FALSE;
+	}
+
+	if (method->wrapper_type == MONO_WRAPPER_OTHER)	{
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN) {
+			/* We could hit a seq point before attaching to the JIT (#8338) */
+			seq_points = FALSE;
+		}
 	}
 
 	if (cfg->prof_coverage) {

@@ -2993,11 +2993,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                 pResult->testForFixup = 0;
                 pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
 
-                if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-                {
-                    pResult->indirectFirstOffset = 1;
-                }
-
                 uint32_t data;
                 IfFailThrow(sigptr.GetData(&data));
                 pResult->offsets[1] = sizeof(TypeHandle) * data;
@@ -3078,12 +3073,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                 uint32_t data;
                 IfFailThrow(sigptr.GetData(&data));
                 pResult->offsets[2] = sizeof(TypeHandle) * data;
-
-                if (MethodTable::IsPerInstInfoRelative())
-                {
-                    pResult->indirectFirstOffset = 1;
-                    pResult->indirectSecondOffset = 1;
-                }
 
                 return;
             }
@@ -3314,11 +3303,6 @@ NoSpecialCase:
 
             // Indirect through dictionary table pointer in InstantiatedMethodDesc
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
-
-            if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-            {
-                pResult->indirectFirstOffset = 1;
-            }
         }
     }
 
@@ -3341,12 +3325,6 @@ NoSpecialCase:
 
             // Next indirect through the dictionary appropriate to this instantiated type
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
-
-            if (MethodTable::IsPerInstInfoRelative())
-            {
-                pResult->indirectFirstOffset = 1;
-                pResult->indirectSecondOffset = 1;
-            }
         }
     }
 }
@@ -3979,7 +3957,7 @@ void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
     MethodDesc *pMD = (MethodDesc*) methHnd;
 
     // MethodDescs returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(pMD->IsRestored() && pMD->GetMethodTable()->IsFullyLoaded());
+    _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -8473,7 +8451,7 @@ bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetOfIndirection,
                                      unsigned * pOffsetAfterIndirection,
-                                     bool * isRelative)
+                                     bool * isRelative) 
 {
     CONTRACTL {
         NOTHROW;
@@ -8495,8 +8473,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 
     *pOffsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir_t) */;
     *pOffsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir2_t) */;
-    *isRelative = MethodTable::VTableIndir_t::isRelative ? 1 : 0;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == MethodTable::VTableIndir2_t::isRelative);
+    *isRelative = false;
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -8521,7 +8498,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
 
     // Method better be from a fully loaded class
-    _ASSERTE(pBaseMD->IsRestored() && pBaseMT->IsFullyLoaded());
+    _ASSERTE(pBaseMT->IsFullyLoaded());
 
     //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
     _ASSERTE(!pBaseMD->HasMethodInstantiation());
@@ -8670,8 +8647,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             return false;
         }
     }
-
-    _ASSERTE(pDevirtMD->IsRestored());
 
     // Determine the exact class.
     //
@@ -8996,15 +8971,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
         ret = (void *)ftn->GetAddrOfSlot();
 
-        if (MethodTable::VTableIndir2_t::isRelative
-            && ftn->IsVtableSlot())
-        {
-            accessType = IAT_RELPVALUE;
-        }
-        else
-        {
-            accessType = IAT_PVALUE;
-        }
+        accessType = IAT_PVALUE;
     }
 
 

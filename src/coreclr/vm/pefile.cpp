@@ -47,9 +47,9 @@ PEFile::PEFile(PEImage *identity) :
     m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
     m_refCount(1),
     m_flags(0),
-    m_pAssemblyLoadContext(nullptr),
+    m_pAssemblyBinder(nullptr),
     m_pHostAssembly(nullptr),
-    m_pFallbackLoadContextBinder(nullptr)
+    m_pFallbackBinder(nullptr)
 {
     CONTRACTL
     {
@@ -149,9 +149,6 @@ static void ValidatePEFileMachineType(PEFile *peFile)
     if (peFile->IsResource())
         return;    // PEFiles for resource assemblies don't cache the machine type.
 
-    if (peFile->HasNativeImage())
-        return;    // If it passed the native binder, no need to do the check again esp. at the risk of inviting an IL page-in.
-
     DWORD peKind;
     DWORD actualMachineType;
     peFile->GetPEKindAndMachine(&peKind, &actualMachineType);
@@ -213,7 +210,7 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
     }
 
 #if !defined(TARGET_64BIT)
-    if (!HasNativeImage() && !GetILimage()->Has32BitNTHeaders())
+    if (!GetILimage()->Has32BitNTHeaders())
     {
         // Tried to load 64-bit assembly on 32-bit platform.
         EEFileLoadException::Throw(this, COR_E_BADIMAGEFORMAT, NULL);
@@ -221,10 +218,7 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
 #endif
 
     // We need contents now
-    if (!HasNativeImage())
-    {
-        EnsureImageOpened();
-    }
+    EnsureImageOpened();
 
     // Since we couldn't call LoadLibrary, we must be an IL only image
     // or the image may still contain unfixed up stuff
@@ -353,10 +347,10 @@ BOOL PEFile::Equals(PEFile *pFile)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pFile->HasHostAssembly() && this->HasHostAssembly())
     {
-        AssemblyBinder* fileBinderId = pFile->GetHostAssembly()->GetBinder();
-        AssemblyBinder* thisBinderId = this->GetHostAssembly()->GetBinder();
+        AssemblyBinder* fileBinder = pFile->GetHostAssembly()->GetBinder();
+        AssemblyBinder* thisBinder = this->GetHostAssembly()->GetBinder();
 
-        if (fileBinderId != thisBinderId || fileBinderId == NULL)
+        if (fileBinder != thisBinder || fileBinder == NULL)
             return FALSE;
     }
 
@@ -449,9 +443,7 @@ CHECK PEFile::CheckLoaded(BOOL bAllowNativeSkip/*=TRUE*/)
     }
     CONTRACT_CHECK_END;
 
-    CHECK(IsLoaded(bAllowNativeSkip)
-          // We are allowed to skip LoadLibrary in most cases for ngen'ed IL only images
-          || (bAllowNativeSkip && HasNativeImage() && IsILOnly()));
+    CHECK(IsLoaded(bAllowNativeSkip));
 
     CHECK_OK;
 }
@@ -702,7 +694,7 @@ void PEFile::OpenEmitter()
 }
 
 
-void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=FALSE*/)
+void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor)
 {
     CONTRACTL
     {
@@ -726,7 +718,7 @@ void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=
         m_pEmitter = NULL;
     }
 
-    if (m_pMDImport != NULL && (!bKeepNativeData || !HasNativeImage()))
+    if (m_pMDImport != NULL)
     {
         m_pMDImport->Release();
         m_pMDImport=NULL;
@@ -981,17 +973,15 @@ void PEAssembly::Attach()
 
 #ifndef DACCESS_COMPILE
 PEAssembly::PEAssembly(
-                CoreBindResult* pBindResultInfo,
+                BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
                 PEFile *creator,
                 BOOL system,
                 PEImage * pPEImageIL /*= NULL*/,
-                PEImage * pPEImageNI /*= NULL*/,
                 BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 
-  : PEFile(pBindResultInfo ? (pBindResultInfo->GetPEImage() ? pBindResultInfo->GetPEImage() :
-                                                              (pBindResultInfo->HasNativeImage() ? pBindResultInfo->GetNativeImage() : NULL)
-                              ): pPEImageIL? pPEImageIL:(pPEImageNI? pPEImageNI:NULL)),
+  : PEFile(pBindResultInfo ? pBindResultInfo->GetPEImage()
+                           : pPEImageIL),
     m_creator(clr::SafeAddRef(creator))
 {
     CONTRACTL
@@ -999,7 +989,7 @@ PEAssembly::PEAssembly(
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
         PRECONDITION(CheckPointer(creator, NULL_OK));
-        PRECONDITION(pBindResultInfo == NULL || (pPEImageIL == NULL && pPEImageNI == NULL));
+        PRECONDITION(pBindResultInfo == NULL || pPEImageIL == NULL);
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -1008,9 +998,8 @@ PEAssembly::PEAssembly(
     if (system)
         m_flags |= PEFILE_SYSTEM;
 
-    // If we have no native image, we require a mapping for the file.
-    if (!HasNativeImage() || !IsILOnly())
-        EnsureImageOpened();
+    // We require a mapping for the file.
+    EnsureImageOpened();
 
     // Open metadata eagerly to minimize failure windows
     if (pEmit == NULL)
@@ -1049,7 +1038,8 @@ PEAssembly::PEAssembly(
     {
         // Cannot have both pHostAssembly and a coreclr based bind
         _ASSERTE(pHostAssembly == nullptr);
-        pBindResultInfo->GetBindAssembly(&m_pHostAssembly);
+        pBindResultInfo = clr::SafeAddRef(pBindResultInfo);
+        m_pHostAssembly = pBindResultInfo;
     }
 
 #if _DEBUG
@@ -1066,7 +1056,6 @@ PEAssembly::PEAssembly(
 PEAssembly *PEAssembly::Open(
     PEAssembly *       pParent,
     PEImage *          pPEImageIL,
-    PEImage *          pPEImageNI,
     BINDER_SPACE::Assembly * pHostAssembly)
 {
     STANDARD_VM_CONTRACT;
@@ -1077,7 +1066,6 @@ PEAssembly *PEAssembly::Open(
         pParent,        // PEFile creator
         FALSE,          // isSystem
         pPEImageIL,
-        pPEImageNI,
         pHostAssembly);
 
     return pPEAssembly;
@@ -1102,7 +1090,7 @@ PEAssembly::~PEAssembly()
 }
 
 /* static */
-PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
+PEAssembly *PEAssembly::OpenSystem()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1110,7 +1098,7 @@ PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
 
     EX_TRY
     {
-        result = DoOpenSystem(pAppCtx);
+        result = DoOpenSystem();
     }
     EX_HOOK
     {
@@ -1127,7 +1115,7 @@ PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
 }
 
 /* static */
-PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
+PEAssembly *PEAssembly::DoOpenSystem()
 {
     CONTRACT(PEAssembly *)
     {
@@ -1137,18 +1125,13 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
     CONTRACT_END;
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
-    CoreBindResult bindResult;
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
-    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm, true));
-    if(pPrivAsm != NULL)
-    {
-        bindResult.Init(pPrivAsm);
-    }
+    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm));
 
-    RETURN new PEAssembly(&bindResult, NULL, NULL, TRUE, FALSE);
+    RETURN new PEAssembly(pPrivAsm, NULL, NULL, TRUE);
 }
 
-PEAssembly* PEAssembly::Open(CoreBindResult* pBindResult,
+PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult,
                                    BOOL isSystem)
 {
 
@@ -1398,10 +1381,10 @@ void PEFile::EnsureImageOpened()
 
 void PEFile::SetupAssemblyLoadContext()
 {
-    PTR_AssemblyBinder pBindingContext = GetBindingContext();
+    PTR_AssemblyBinder pBinder = GetBinder();
 
-    m_pAssemblyLoadContext = (pBindingContext != NULL) ?
-        (AssemblyLoadContext*)pBindingContext :
+    m_pAssemblyBinder = (pBinder != NULL) ?
+        pBinder :
         AppDomain::GetCurrentDomain()->CreateBinderContext();
 }
 
@@ -1504,11 +1487,11 @@ TADDR PEFile::GetMDInternalRWAddress()
 #endif
 
 // Returns the AssemblyBinder* instance associated with the PEFile
-PTR_AssemblyBinder PEFile::GetBindingContext()
+PTR_AssemblyBinder PEFile::GetBinder()
 {
     LIMITED_METHOD_CONTRACT;
 
-    PTR_AssemblyBinder pBindingContext = NULL;
+    PTR_AssemblyBinder pBinder = NULL;
 
     // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
     // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
@@ -1517,7 +1500,7 @@ PTR_AssemblyBinder PEFile::GetBindingContext()
         BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
         if (pHostAssembly)
         {
-            pBindingContext = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+            pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
         }
         else
         {
@@ -1526,10 +1509,10 @@ PTR_AssemblyBinder PEFile::GetBindingContext()
             // binder reference.
             if (IsDynamic())
             {
-                pBindingContext = GetFallbackLoadContextBinder();
+                pBinder = GetFallbackBinder();
             }
         }
     }
 
-    return pBindingContext;
+    return pBinder;
 }

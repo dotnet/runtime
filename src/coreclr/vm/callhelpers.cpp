@@ -353,7 +353,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
             // Check to see that any value type args have been loaded and restored.
             // This is because we may be calling a FramedMethodFrame which will use the sig
             // to trace the args, but if any are unloaded we will be stuck if a GC occurs.
-            _ASSERTE(m_pMD->IsRestored_NoLogging());
             CorElementType argType;
             while ((argType = m_methodSig.NextArg()) != ELEMENT_TYPE_END)
             {

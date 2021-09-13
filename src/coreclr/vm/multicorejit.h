@@ -258,7 +258,7 @@ public:
     void SetProfileRoot(const WCHAR * pProfilePath);
 
     // Multicore JIT API function: StartProfile
-    void StartProfile(AppDomain * pDomain, AssemblyBinder * pBinderContext, const WCHAR * pProfile, int suffix = -1);
+    void StartProfile(AppDomain * pDomain, AssemblyBinder * pBinder, const WCHAR * pProfile, int suffix = -1);
 
     // Multicore JIT API function (internal): AbortProfile
     void AbortProfile();
@@ -318,7 +318,7 @@ class MultiCoreJITNative
 public:
     static void QCALLTYPE InternalSetProfileRoot(__in_z LPCWSTR directoryPath);
 
-    static void QCALLTYPE InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyLoadContext);
+    static void QCALLTYPE InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder);
 };
 
 #endif // __MULTICORE_JIT_H__

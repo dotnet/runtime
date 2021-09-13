@@ -107,11 +107,6 @@ inline void PEFile::ValidateForExecution()
     }
     CONTRACTL_END;
 
-    // We do not need to check NGen images; if it had the attribute, it would have failed to load
-    // at NGen time and so there would be no NGen image.
-    if (HasNativeImage())
-        return;
-
     //
     // Ensure reference assemblies are not loaded for execution
     //
@@ -523,7 +518,7 @@ inline BOOL PEFile::IsIbcOptimized()
     return FALSE;
 }
 
-inline BOOL PEFile::IsILImageReadyToRun()
+inline BOOL PEFile::IsReadyToRun()
 {
     CONTRACTL
     {
@@ -952,37 +947,6 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
 // ------------------------------------------------------------
 // Native image access
 // ------------------------------------------------------------
-inline BOOL PEFile::HasNativeImage()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CANNOT_TAKE_LOCK;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return FALSE;
-}
-
-inline BOOL PEFile::HasNativeOrReadyToRunImage()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CANNOT_TAKE_LOCK;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return (HasNativeImage() || IsILImageReadyToRun());
-}
 
 inline PTR_PEImageLayout PEFile::GetLoadedIL()
 {
@@ -993,13 +957,6 @@ inline PTR_PEImageLayout PEFile::GetLoadedIL()
 
     return GetOpenedILimage()->GetLoadedLayout();
 };
-
-inline PTR_PEImageLayout PEFile::GetAnyILWithRef()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED);
-};
-
 
 inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/)
 {
@@ -1020,23 +977,7 @@ inline PTR_PEImageLayout PEFile::GetLoaded()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    return HasNativeImage()?GetLoadedNative():GetLoadedIL();
-};
-
-inline PTR_PEImageLayout PEFile::GetLoadedNative()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    // Should never get here
-    PRECONDITION(HasNativeImage());
-    return NULL;
+    return GetLoadedIL();
 };
 
 
@@ -1203,26 +1144,6 @@ inline HRESULT PEFile::GetFlagsNoTrigger(DWORD * pdwFlags)
 // Metadata access
 // ------------------------------------------------------------
 
-#ifndef DACCESS_COMPILE
-inline void PEFile::RestoreMDImport(IMDInternalImport* pImport)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pMetadataLock->LockTaken() && m_pMetadataLock->IsWriterLock());
-    if (m_pMDImport != NULL)
-        return;
-    m_pMDImport=pImport;
-    if(m_pMDImport)
-        m_pMDImport->AddRef();
-}
-#endif
 inline void PEFile::OpenMDImport()
 {
     WRAPPER_NO_CONTRACT;

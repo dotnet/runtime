@@ -81,8 +81,8 @@
       <ProjectFileTargetFrameworks>$(ProjectFileTargetFrameworks.Replace('&lt;/TargetFrameworks&gt;', ''))</ProjectFileTargetFrameworks>
       <!-- Strip away TargetFrameworkSuffixes -->
       <ProjectFileTargetFrameworks>$([System.Text.RegularExpressions.Regex]::Replace('$(ProjectFileTargetFrameworks)', '(-[^;]+)', ''))</ProjectFileTargetFrameworks>
-      <!-- Check for duplicates of pre-net5.0 frameworks -->
-      <ProjectFileTargetFrameworksHasDuplicates>$([System.Text.RegularExpressions.Regex]::IsMatch('$(ProjectFileTargetFrameworks);', '(netstandard.+|netcoreapp.+|net4.+)(?=.*;\1;)'))</ProjectFileTargetFrameworksHasDuplicates>
+      <!-- Check for duplicates of non .NETCoreApp frameworks -->
+      <ProjectFileTargetFrameworksHasDuplicates>$([System.Text.RegularExpressions.Regex]::IsMatch('$(ProjectFileTargetFrameworks);', '(netstandard.+|net4.+)(?=.*;\1;)'))</ProjectFileTargetFrameworksHasDuplicates>
     </PropertyGroup>
 
     <ItemGroup>

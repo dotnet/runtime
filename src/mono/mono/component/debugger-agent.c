@@ -7012,7 +7012,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			break;
 		}
 		MonoAssemblyByNameRequest byname_req;
-		mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+		mono_assembly_request_prepare_byname (&byname_req, mono_alc_get_default ());
 		MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
 		g_free (lookup_name);
 		if (!assembly) {

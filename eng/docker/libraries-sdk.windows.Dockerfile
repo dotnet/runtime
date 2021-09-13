@@ -4,7 +4,7 @@ ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-nanoserver-1809
 FROM $SDK_BASE_IMAGE as target
 
 ARG TESTHOST_LOCATION=".\\artifacts\\bin\\testhost"
-ARG TFM=net6.0
+ARG TFM=net7.0
 ARG OS=windows
 ARG ARCH=x64
 ARG CONFIGURATION=Release

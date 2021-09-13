@@ -530,7 +530,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
-            FastInterlockExchangePointer(pIMD->m_pPerInstInfo.GetValuePtr(), pNewDictionary);
+            FastInterlockExchangePointer(&pIMD->m_pPerInstInfo, pNewDictionary);
 
             pDictionary = pNewDictionary;
         }
@@ -589,7 +589,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 
             // Publish the new dictionary slots to the type.
             ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
-            Dictionary** pPerInstInfo = pMT->GetPerInstInfo()->GetValuePtr();
+            Dictionary** pPerInstInfo = pMT->GetPerInstInfo();
             FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, pNewDictionary);
 
             pDictionary = pNewDictionary;
@@ -725,7 +725,7 @@ Dictionary::PopulateEntry(
 
         // MethodTable is expected to be normalized
         Dictionary* pDictionary = pMT->GetDictionary();
-        _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex].GetValueMaybeNull());
+        _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex]);
 #endif
     }
 
@@ -1237,40 +1237,5 @@ Dictionary::PopulateEntry(
 
     return result;
 } // Dictionary::PopulateEntry
-
-//---------------------------------------------------------------------------------------
-//
-void
-Dictionary::PrepopulateDictionary(
-    MethodDesc *  pMD,
-    MethodTable * pMT,
-    BOOL          nonExpansive)
-{
-    STANDARD_VM_CONTRACT;
-
-    DictionaryLayout * pDictLayout = (pMT != NULL) ? pMT->GetClass()->GetDictionaryLayout() : pMD->GetDictionaryLayout();
-    DWORD numGenericArgs = (pMT != NULL) ? pMT->GetNumGenericArgs() : pMD->GetNumGenericMethodArgs();
-
-    if (pDictLayout != NULL)
-    {
-        for (DWORD i = 0; i < pDictLayout->GetNumUsedSlots(); i++)
-        {
-            if (IsSlotEmpty(numGenericArgs,i))
-            {
-                DictionaryEntry * pSlot;
-                DictionaryEntry entry;
-                entry = PopulateEntry(
-                    pMD,
-                    pMT,
-                    pDictLayout->GetEntryLayout(i)->m_signature,
-                    nonExpansive,
-                    &pSlot);
-
-                _ASSERT((entry == NULL) || (entry == GetSlot(numGenericArgs,i)));
-                _ASSERT((pSlot == NULL) || (pSlot == GetSlotAddr(numGenericArgs,i)));
-            }
-        }
-    }
-} // Dictionary::PrepopulateDictionary
 
 #endif //!DACCESS_COMPILE
