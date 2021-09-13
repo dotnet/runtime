@@ -59,7 +59,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Crossgen2SizeOnDiskWorkItem Include="@(SingleAssembly)" Condition="'$(Architecture)' == 'x64'">
+    <Crossgen2SizeOnDiskWorkItem Include="@(SingleAssembly)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>$(Python) $(Crossgen2Directory)pre.py crossgen2 --core-root $(CoreRoot) --single %(Identity) </PreCommands>
       <Command>$(Python) $(Crossgen2Directory)test.py sod --scenario-name &quot;Crossgen2 %(Identity) Size&quot; --dirs ./crossgen.out/</Command>
@@ -69,18 +69,18 @@
 
   <ItemGroup>
     <!-- Enable crossgen2 tests on Windows x64 and Linux x64 -->
-    <HelixWorkItem Include="@(Crossgen2WorkItem -> 'Crossgen2 %(Identity)')" Condition="'$(Architecture)' == 'x64'">
+    <HelixWorkItem Include="@(Crossgen2WorkItem -> 'Crossgen2 %(Identity)')">
       <Timeout>4:00</Timeout>
     </HelixWorkItem>
-    <HelixWorkItem Include="@(Crossgen2SingleThreadedWorkItem -> 'Crossgen2 single-threaded %(Identity)')" Condition="'$(Architecture)' == 'x64'">
+    <HelixWorkItem Include="@(Crossgen2SingleThreadedWorkItem -> 'Crossgen2 single-threaded %(Identity)')">
       <Timeout>4:00</Timeout>
     </HelixWorkItem>
-    <HelixWorkItem Include="Crossgen2 Composite Framework R2R" Condition="'$(Architecture)' == 'x64'">
+    <HelixWorkItem Include="Crossgen2 Composite Framework R2R">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>	
       <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --composite $(Crossgen2Directory)framework-r2r.dll.rsp</Command>
       <Timeout>1:00</Timeout>  
     </HelixWorkItem>
-    <HelixWorkItem Include="@(Crossgen2SizeOnDiskWorkItem -> 'Crossgen2 Size on Disk %(Identity)')" Condition="'$(Architecture)' == 'x64'">
+    <HelixWorkItem Include="@(Crossgen2SizeOnDiskWorkItem -> 'Crossgen2 Size on Disk %(Identity)')">
       <Timeout>4:00</Timeout>  
     </HelixWorkItem>
   </ItemGroup>

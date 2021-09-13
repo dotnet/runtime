@@ -151,6 +151,14 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<Version>? s_versionConverter;
 
         /// <summary>
+        /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.
+        /// </summary>
+        /// <typeparam name="T">The generic definition for the type.</typeparam>
+        /// <returns></returns>
+        public static JsonConverter<T> GetUnsupportedTypeConverter<T>()
+            => new UnsupportedTypeConverter<T>();
+
+        /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T"/> values.
         /// </summary>
         /// <typeparam name="T">The generic definition for the enum type.</typeparam>

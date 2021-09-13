@@ -62,6 +62,7 @@
     <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestStruct.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestStruct.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.SimpleTestStructWithFields.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.SimpleTestStructWithFields.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.ValueTypedMember.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ValueTypedMember.cs" />
+    <Compile Include="..\Common\UnsupportedTypesTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnsupportedTypesTests.cs" />
     <Compile Include="ContextClasses.cs" />
     <Compile Include="JsonSerializerContextTests.cs" />
     <Compile Include="Serialization\CollectionTests.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="SerializationLogicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
+    <Compile Include="Serialization\UnsupportedTypesTests.cs" />
     <Compile Include="TestClasses.cs" />
     <Compile Include="TestClasses.CustomConverters.cs" />
   </ItemGroup>

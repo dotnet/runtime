@@ -15,6 +15,12 @@
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETFrameworkTasks)'">
+    <!-- These versions should not be older than what Visual Studio MSBuild uses -->
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Json" Version="5.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="JsonToItemsTaskFactory.cs" />
   </ItemGroup>
