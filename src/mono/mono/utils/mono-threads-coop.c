@@ -125,10 +125,10 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 	if (info->thread_state.state != STATE_ASYNC_SUSPEND_REQUESTED)
 		return;
 
-#ifdef MONO_CROSS_COMPILE
+#if defined(MONO_CROSS_COMPILE)
 	g_error ("Unreachable path on cross-compiler");
 	return;
-#else
+#elif MONO_ARCH_HAS_MONO_CONTEXT
 	/* Spill all registers to the stack to make the GC aware of the references */
 	MonoContext ctx;
 	MONO_CONTEXT_GET_CURRENT (ctx);
