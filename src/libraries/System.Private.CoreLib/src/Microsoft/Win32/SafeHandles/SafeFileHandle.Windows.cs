@@ -118,9 +118,7 @@ namespace Microsoft.Win32.SafeHandles
                 fileHandle.Dispose();
                 Interop.Kernel32.DeleteFile(fullPath);
 
-                throw errorCode == Interop.Errors.ERROR_DISK_FULL
-                    ? new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize))
-                    : new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
+                throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL ? SR.IO_DiskFull_Path_AllocationSize : SR.IO_FileTooLarge_Path_AllocationSize), fullPath, preallocationSize);
             }
         }
 
