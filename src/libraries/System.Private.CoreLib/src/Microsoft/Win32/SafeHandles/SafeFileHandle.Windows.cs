@@ -34,7 +34,7 @@ namespace Microsoft.Win32.SafeHandles
                 // of converting DOS to NT file paths (RtlDosPathNameToRelativeNtPathName_U_WithStatus is not documented)
                 SafeFileHandle fileHandle = CreateFile(fullPath, mode, access, share, options);
 
-                if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode))
+                if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode, fileHandle))
                 {
                     Preallocate(fullPath, preallocationSize, fileHandle, mode);
                 }
@@ -106,20 +106,8 @@ namespace Microsoft.Win32.SafeHandles
             return fileHandle;
         }
 
-        // preallocationSize must be ignored for non-seekable files, unsupported file systems
-        // and other failures other than ERROR_DISK_FULL and ERROR_FILE_TOO_LARGE
         private static unsafe void Preallocate(string fullPath, long preallocationSize, SafeFileHandle fileHandle, FileMode mode)
         {
-            if (mode == FileMode.OpenOrCreate)
-            {
-                Interop.Kernel32.FILE_STANDARD_INFO info;
-                if (!Interop.Kernel32.GetFileInformationByHandleEx(fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO))
-                    || info.EndOfFile >= preallocationSize) // existing files must NOT be shrinked
-                {
-                    return;
-                }
-            }
-
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
                 EndOfFile = preallocationSize
@@ -131,6 +119,8 @@ namespace Microsoft.Win32.SafeHandles
                 &eofInfo,
                 (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
             {
+                // preallocationSize must be ignored for non-seekable files, unsupported file systems
+                // and other failures other than ERROR_DISK_FULL and ERROR_FILE_TOO_LARGE
                 int errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode != Interop.Errors.ERROR_DISK_FULL && errorCode != Interop.Errors.ERROR_FILE_TOO_LARGE)
                 {

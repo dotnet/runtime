@@ -114,9 +114,9 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(FileMode.OpenOrCreate, 20L)] // this can extend the file
-        [InlineData(FileMode.OpenOrCreate, 5L)] // this should NOT shink the file
-        public void WhenFileIsBeingOpenedWithOpenOrCreateModeTheLengthCanBeOnlyExtended(FileMode mode, long preallocationSize)
+        [InlineData(FileMode.OpenOrCreate, 20L)] // preallocationSize > initialSize
+        [InlineData(FileMode.OpenOrCreate, 5L)] // preallocationSize < initialSize
+        public void WhenExistingFileIsBeingOpenedWithOpenOrCreateModeTheLengthRemainsUnchanged(FileMode mode, long preallocationSize)
         {
             const int initialSize = 10;
             string filePath = GetPathToNonExistingFile();
@@ -125,14 +125,12 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.Equal(Math.Max(initialSize, preallocationSize), fs.Length); // it was not shrinked
+                Assert.Equal(initialSize, fs.Length); // it was not changed
                 Assert.Equal(0, fs.Position);
 
                 byte[] actualContent = new byte[initialData.Length];
                 Assert.Equal(actualContent.Length, fs.Read(actualContent));
                 AssertExtensions.SequenceEqual(initialData, actualContent); // the initial content was not changed
-
-                AssertFileContentHasBeenZeroed(initialSize, (int)fs.Length, fs);
             }
         }
 
