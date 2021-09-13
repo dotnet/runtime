@@ -46,12 +46,6 @@ check_prereqs()
     fi
 }
 
-copy_version_files()
-{
-    # Copy dummy version files if version files haven't already been generated
-    cp -r -n "$__RepoRootDir/eng/native/version/"* "$__RepoRootDir/artifacts/obj/"
-}
-
 build_native()
 {
     eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
