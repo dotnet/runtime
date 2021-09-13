@@ -143,8 +143,7 @@ void Compiler::optAddCopies()
         BlockSet paramImportantUseDom(BlockSetOps::MakeFull(this));
 
         // This will be threshold for determining heavier-than-average uses
-        BasicBlock::weight_t paramAvgWtdRefDiv2 =
-            (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
+        weight_t paramAvgWtdRefDiv2 = (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
 
         bool paramFoundImportantUse = false;
 
@@ -307,9 +306,9 @@ void Compiler::optAddCopies()
             /* dominates all the uses of the local variable         */
 
             /* Our default is to use the first block */
-            BasicBlock*          bestBlock  = fgFirstBB;
-            BasicBlock::weight_t bestWeight = bestBlock->getBBWeight(this);
-            BasicBlock*          block      = bestBlock;
+            BasicBlock* bestBlock  = fgFirstBB;
+            weight_t    bestWeight = bestBlock->getBBWeight(this);
+            BasicBlock* block      = bestBlock;
 
 #ifdef DEBUG
             if (verbose)
@@ -992,7 +991,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         else
         {
             //  If the local variable has its address exposed then bail
-            if (lclVar->lvAddrExposed)
+            if (lclVar->IsAddressExposed())
             {
                 goto DONE_ASSERTION; // Don't make an assertion
             }
@@ -1023,7 +1022,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         LclVarDsc* lclVar = &lvaTable[lclNum];
 
         //  If the local variable has its address exposed then bail
-        if (lclVar->lvAddrExposed)
+        if (lclVar->IsAddressExposed())
         {
             goto DONE_ASSERTION; // Don't make an assertion
         }
@@ -1211,7 +1210,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
 
                     //  If the local variable has its address exposed then bail
-                    if (lclVar2->lvAddrExposed)
+                    if (lclVar2->IsAddressExposed())
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
@@ -2648,17 +2647,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                     case TYP_REF:
                     case TYP_INT:
                         // Same type no conversion required
-                        conValTree = gtNewIconNode(static_cast<int>(value));
+                        conValTree = gtNewIconNode(value);
                         break;
 
                     case TYP_LONG:
                         // Implicit assignment conversion to larger integer
-                        conValTree = gtNewLconNode(static_cast<int>(value));
+                        conValTree = gtNewLconNode(value);
                         break;
 
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
-                        conValTree = gtNewDconNode(*(reinterpret_cast<float*>(&value)), TYP_FLOAT);
+                        conValTree = gtNewDconNode(*reinterpret_cast<float*>(&value), TYP_FLOAT);
                         break;
 
                     case TYP_DOUBLE:
@@ -2667,8 +2666,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         unreached();
                         break;
 
+                    case TYP_BOOL:
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                        assert(FitsIn(tree->TypeGet(), value));
+                        conValTree = gtNewIconNode(value);
+                        break;
+
                     default:
-                        // Do not support (e.g. bool(const int)).
+                        // Do not support (e.g. byref(const int)).
                         break;
                 }
             }

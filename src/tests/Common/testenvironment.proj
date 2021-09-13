@@ -221,8 +221,11 @@
       <!-- Mono interpreter -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
 
-      <!-- Hack: Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
+      <!-- Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
+
+      <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->

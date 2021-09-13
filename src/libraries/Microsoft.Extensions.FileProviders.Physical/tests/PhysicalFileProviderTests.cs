@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.FileProviders
                 }
             }
         }
-            
+
         private void GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(string path)
         {
             using (var provider = new PhysicalFileProvider(Path.GetTempPath()))
@@ -936,6 +936,7 @@ namespace Microsoft.Extensions.FileProviders
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58584", TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
         public void TokenForEmptyFilter()
         {
             using (var root = new DisposableFileSystem())

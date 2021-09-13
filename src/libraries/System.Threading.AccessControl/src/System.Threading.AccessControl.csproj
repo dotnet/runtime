@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0-windows;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
@@ -21,10 +21,6 @@ System.Security.AccessControl.SemaphoreSecurity</PackageDescription>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
-             Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
              Link="Common\Interop\Windows\Interop.Errors.cs" />
@@ -32,6 +28,8 @@ System.Security.AccessControl.SemaphoreSecurity</PackageDescription>
              Link="Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
+             Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EventWaitHandle.cs"
              Link="Interop\Windows\Kernel32\Interop.EventWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"

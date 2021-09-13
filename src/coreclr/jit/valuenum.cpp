@@ -4242,11 +4242,12 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
     var_types elemTyp = DecodeElemType(elemTypeEq);
     var_types indType = (tree == nullptr) ? elemTyp : tree->TypeGet();
     ValueNum  selectedElem;
+    unsigned  elemWidth = elemTyp == TYP_STRUCT ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemTyp);
 
-    if (fldSeq == FieldSeqStore::NotAField())
+    if ((fldSeq == FieldSeqStore::NotAField()) || (genTypeSize(indType) > elemWidth))
     {
         // This doesn't represent a proper array access
-        JITDUMP("    *** NotAField sequence encountered in fgValueNumberArrIndexVal\n");
+        JITDUMP("    *** Not a proper arrray access encountered in fgValueNumberArrIndexVal\n");
 
         // a new unique value number
         selectedElem = vnStore->VNForExpr(compCurBB, elemTyp);
@@ -9824,25 +9825,25 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_Dbl2Int;
             break;
         case CORINFO_HELP_DBL2INT_OVF:
-            vnf = VNF_Dbl2Int;
+            vnf = VNF_Dbl2IntOvf;
             break;
         case CORINFO_HELP_DBL2LNG:
             vnf = VNF_Dbl2Lng;
             break;
         case CORINFO_HELP_DBL2LNG_OVF:
-            vnf = VNF_Dbl2Lng;
+            vnf = VNF_Dbl2LngOvf;
             break;
         case CORINFO_HELP_DBL2UINT:
             vnf = VNF_Dbl2UInt;
             break;
         case CORINFO_HELP_DBL2UINT_OVF:
-            vnf = VNF_Dbl2UInt;
+            vnf = VNF_Dbl2UIntOvf;
             break;
         case CORINFO_HELP_DBL2ULNG:
             vnf = VNF_Dbl2ULng;
             break;
         case CORINFO_HELP_DBL2ULNG_OVF:
-            vnf = VNF_Dbl2ULng;
+            vnf = VNF_Dbl2ULngOvf;
             break;
         case CORINFO_HELP_FLTREM:
             vnf = VNFunc(GT_MOD);

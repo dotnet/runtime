@@ -775,7 +775,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         // See usage in native RCW code
         public void GetCurrentContextInfo(RuntimeTypeHandle rth, out bool isDesignTime, out IntPtr bstrKey)
         {
-            Type targetRcwTypeMaybe = Type.GetTypeFromHandle(rth);
+            Type targetRcwTypeMaybe = Type.GetTypeFromHandle(rth)!;
 
             // Types are as follows:
             // Type, out bool, out string -> LicenseContext

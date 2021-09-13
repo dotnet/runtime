@@ -265,6 +265,7 @@ unw_tdep_save_loc_t;
 typedef struct unw_tdep_context
   {
     unsigned long regs[16];
+    unsigned long long fpregs[16];
   }
 unw_tdep_context_t;
 
@@ -277,6 +278,8 @@ unw_tdep_context_t;
   register unsigned long *unw_base __asm__ ("r0") = unw_ctx->regs;      \
   __asm__ __volatile__ (                                                \
     "stmia %[base], {r0-r15}"                                           \
+    "adds %[base], #64"                                                 \
+    "vstmia %[base], {d0-d15}"                                          \
     : : [base] "r" (unw_base) : "memory");                              \
   }), 0)
 #else /* __thumb__ */
@@ -286,6 +289,8 @@ unw_tdep_context_t;
   __asm__ __volatile__ (                                                \
     ".align 2\nbx pc\nnop\n.code 32\n"                                  \
     "stmia %[base], {r0-r15}\n"                                         \
+    "adds %[base], #64\n"                                               \
+    "vstmia %[base], {d0-d15}\n"                                        \
     "orr %[base], pc, #1\nbx %[base]\n"                                 \
     ".code 16\n"							\
     : [base] "+r" (unw_base) : : "memory", "cc");                       \
