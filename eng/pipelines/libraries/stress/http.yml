@@ -23,10 +23,6 @@ variables:
     value: dotnet-sdk-libraries-current
   - name: share_root
     value: $(System.DefaultWorkingDirectory)/share
-  - name: server_share
-    value: $(share_root)/server
-  - name: client_share
-    value: $(share_root)/client
 
 jobs:
 - job: linux
@@ -55,19 +51,86 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
+      export CLIENT_SHARE="$(share_root)/client/3.0"
+      export SERVER_SHARE="$(share_root)/server/3.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -xops 10"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 3.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+  - bash: |
+      cd '$(httpStressProject)'
+      export CLIENT_SHARE="$(share_root)/client/2.0"
+      export SERVER_SHARE="$(share_root)/server/2.0"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 2.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+  - bash: |
+      cd '$(httpStressProject)'
+      export CLIENT_SHARE="$(share_root)/client/1.1"
+      export SERVER_SHARE="$(share_root)/server/1.1"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
   - bash: |
       sudo chown -R $(id -u):$(id -g) $(share_root)
     displayName: Own shared dumps and files
     condition: failed()
-
   - publish: $(share_root)
     artifact: DumpsAndLogs
     condition: failed()
+
+- job: windows
+  displayName: Docker NanoServer
+  timeoutInMinutes: 150
+  pool:
+    name: NetCorePublic-Pool
+    queue: BuildPool.Server.Amd64.VS2019.Open
+
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 5
+    lfs: false
+  - powershell: |
+      $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+    name: buildRuntime
+    displayName: Build CLR and Libraries
+  - powershell: |
+      $(httpStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+    name: buildStress
+    displayName: Build HttpStress
+    # Firewall is disabled for the test runs, since it can lead to unexpected TCP failures on CI machines, which are unrelated to the HTTP logic.
+    # See: https://github.com/dotnet/runtime/issues/50854
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
+    name: disableFirewall
+    displayName: Disable Firewall
+  - powershell: |
+      cd '$(httpStressProject)'
+      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
+      $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 2.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+  - powershell: |
+      cd '$(httpStressProject)'
+      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
+      $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 1.1
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
+    name: enableFirewall
+    displayName: Enable Firewall
 
 # TODO: deleting big part of pipeline to make the testing loop in CI faster, return it back once it's done.

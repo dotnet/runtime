@@ -26,12 +26,12 @@ if ($buildWindowsContainers)
   # Due to size concerns, we don't currently do docker builds on windows.
   # Build on the host machine, then simply copy artifacts to the target docker image.
   # This should result in significantly lower build times, for now.
-  & "$REPO_ROOT_DIR/build.cmd" clr+libs -ci -rc release -c $configuration
+  #& "$REPO_ROOT_DIR/build.cmd" clr+libs -ci -rc release -c $configuration
 
-  if (!$?)
-  {
-    exit $LASTEXITCODE
-  }
+  #if (!$?)
+  #{
+  #  exit $LASTEXITCODE
+  #}
 
   $dockerFile="$dockerFilePrefix.windows.Dockerfile"
 
@@ -39,7 +39,8 @@ if ($buildWindowsContainers)
     --build-arg CONFIGURATION=$configuration `
     --build-arg TESTHOST_LOCATION=. `
     --file $dockerFile `
-    "$REPO_ROOT_DIR/artifacts/bin/testhost"
+    $REPO_ROOT_DIR
+    #"$REPO_ROOT_DIR/artifacts/bin/testhost"
 }
 else
 {
