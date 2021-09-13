@@ -149,6 +149,9 @@ namespace ComWrappersTests.Common
 
         [DllImport(nameof(MockReferenceTrackerRuntime))]
         extern public static int Trigger_NotifyEndOfReferenceTrackingOnThread();
+
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static int IsTrackerObjectConnected(IntPtr instance);
     }
 
     [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
@@ -212,6 +215,12 @@ namespace ComWrappersTests.Common
             }
             else
             {
+                int isConnected = MockReferenceTrackerRuntime.IsTrackerObjectConnected(this.classNative.Instance);
+                if (isConnected != 0)
+                {
+                    throw new Exception("TrackerObject should be disconnected prior to finalization");
+                }
+
                 ComWrappersHelper.Cleanup(ref this.classNative);
             }
         }

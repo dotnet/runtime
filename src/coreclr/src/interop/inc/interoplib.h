@@ -85,8 +85,12 @@ namespace InteropLib
             _In_ size_t contextSize,
             _Out_ ExternalWrapperResult* result) noexcept;
 
+        // Inform the wrapper it is being collected.
+        void NotifyWrapperForExternalIsBeingCollected(_In_ void* context) noexcept;
+
         // Destroy the supplied wrapper.
-        void DestroyWrapperForExternal(_In_ void* context) noexcept;
+        // Optionally notify the wrapper of collection at the same time.
+        void DestroyWrapperForExternal(_In_ void* context, _In_ bool notifyIsBeingCollected = false) noexcept;
 
         // Separate the supplied wrapper from the tracker runtime.
         void SeparateWrapperFromTrackerRuntime(_In_ void* context) noexcept;
