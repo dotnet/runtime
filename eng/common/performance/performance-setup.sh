@@ -214,7 +214,7 @@ if [[ "$mono_dotnet" != "" ]] && [[ "$monointerpreter" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoMono"
 fi
 
-common_setup_arguments="--channel master --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
+common_setup_arguments="--channel main --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
 
@@ -231,7 +231,7 @@ if [[ "$run_from_perf_repo" = true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch master --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
+    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
     
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
