@@ -4223,7 +4223,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     if (fieldLclNum == varDsc->lvFieldLclStart)
                     {
                         lcl->SetLclNum(fieldLclNum);
-                        lcl->ChangeOper(GT_LCL_VAR);
+                        lcl->SetOperResetFlags(GT_LCL_VAR);
                         lcl->gtType = fieldVarDsc->TypeGet();
                         fieldLcl    = lcl;
                     }
