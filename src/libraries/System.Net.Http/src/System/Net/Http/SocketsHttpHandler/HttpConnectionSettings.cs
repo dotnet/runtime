@@ -75,8 +75,6 @@ namespace System.Net.Http
                 allowHttp3 && allowHttp2 ? HttpVersion.Version30 :
                 allowHttp2 ? HttpVersion.Version20 :
                 HttpVersion.Version11;
-            _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials);
-            _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials;
         }
 
         /// <summary>Creates a copy of the settings but with some values normalized to suit the implementation.</summary>
