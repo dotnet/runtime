@@ -3616,7 +3616,7 @@ PhaseStatus Compiler::optUnrollLoops()
         iterOperType = optLoopTable[lnum].lpIterOperType();
         unsTest      = (optLoopTable[lnum].lpTestTree->gtFlags & GTF_UNSIGNED) != 0;
 
-        if (lvaTable[lvar].lvAddrExposed)
+        if (lvaTable[lvar].IsAddressExposed())
         {
             // If the loop iteration variable is address-exposed then bail
             continue;
@@ -7738,7 +7738,7 @@ Compiler::fgWalkResult Compiler::optValidRangeCheckIndex(GenTree** pTree, fgWalk
 
     if (tree->gtOper == GT_LCL_VAR)
     {
-        if (pData->pCompiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvAddrExposed)
+        if (pData->pCompiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].IsAddressExposed())
         {
             pData->bValidIndex = false;
             return WALK_ABORT;
@@ -7785,7 +7785,7 @@ bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
             noway_assert(pArray->gtType == TYP_REF);
             noway_assert(pArray->AsLclVarCommon()->GetLclNum() < lvaCount);
 
-            if (lvaTable[pArray->AsLclVarCommon()->GetLclNum()].lvAddrExposed)
+            if (lvaTable[pArray->AsLclVarCommon()->GetLclNum()].IsAddressExposed())
             {
                 // If the array address has been taken, don't do the optimization
                 // (this restriction can be lowered a bit, but i don't think it's worth it)

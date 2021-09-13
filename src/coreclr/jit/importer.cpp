@@ -509,7 +509,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             for (unsigned level = 0; level < chkLevel; level++)
             {
                 assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum, false));
-                assert(!lvaTable[lclNum].lvAddrExposed ||
+                assert(!lvaTable[lclNum].IsAddressExposed() ||
                        (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT) == 0);
             }
         }
@@ -12010,7 +12010,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* If the local is aliased or pinned, we need to spill calls and
                    indirections from the stack. */
 
-                if ((lvaTable[lclNum].lvAddrExposed || lvaTable[lclNum].lvHasLdAddrOp || lvaTable[lclNum].lvPinned) &&
+                if ((lvaTable[lclNum].IsAddressExposed() || lvaTable[lclNum].lvHasLdAddrOp ||
+                     lvaTable[lclNum].lvPinned) &&
                     (verCurrentState.esStackDepth > 0))
                 {
                     impSpillSideEffects(false,
@@ -12176,7 +12177,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* The ARGLIST cookie is a hidden 'last' parameter, we have already
                    adjusted the arg count cos this is like fetching the last param */
                 assertImp(0 < numArgs);
-                assert(lvaTable[lvaVarargsHandleArg].lvAddrExposed);
+                assert(lvaTable[lvaVarargsHandleArg].IsAddressExposed());
                 lclNum = lvaVarargsHandleArg;
                 op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
                 op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
@@ -20336,7 +20337,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                 }
             }
 
-            assert(lvaTable[tmpNum].lvAddrExposed == 0);
+            assert(!lvaTable[tmpNum].IsAddressExposed());
             if (argInfo.argHasLdargaOp)
             {
                 lvaTable[tmpNum].lvHasLdAddrOp = 1;
@@ -22177,7 +22178,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         {
             unsigned valueLcl = valueIndex->AsLclVar()->GetLclNum();
             unsigned arrayLcl = array->AsLclVar()->GetLclNum();
-            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->lvAddrExposed)
+            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->IsAddressExposed())
             {
                 JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
                 return true;

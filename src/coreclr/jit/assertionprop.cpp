@@ -991,7 +991,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         else
         {
             //  If the local variable has its address exposed then bail
-            if (lclVar->lvAddrExposed)
+            if (lclVar->IsAddressExposed())
             {
                 goto DONE_ASSERTION; // Don't make an assertion
             }
@@ -1022,7 +1022,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         LclVarDsc* lclVar = &lvaTable[lclNum];
 
         //  If the local variable has its address exposed then bail
-        if (lclVar->lvAddrExposed)
+        if (lclVar->IsAddressExposed())
         {
             goto DONE_ASSERTION; // Don't make an assertion
         }
@@ -1210,7 +1210,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
 
                     //  If the local variable has its address exposed then bail
-                    if (lclVar2->lvAddrExposed)
+                    if (lclVar2->IsAddressExposed())
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
                     }

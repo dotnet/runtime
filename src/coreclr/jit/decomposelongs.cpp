@@ -363,7 +363,7 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     }
     else
     {
-        m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_LocalField));
+        m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LocalField));
         loResult->SetOper(GT_LCL_FLD);
         loResult->AsLclFld()->SetLclOffs(0);
         loResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
@@ -2152,7 +2152,7 @@ void DecomposeLongs::PromoteLongVars()
             if (isParam)
             {
                 fieldVarDsc->lvIsParam = true;
-                m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_LongParamField));
+                m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LongParamField));
             }
         }
     }

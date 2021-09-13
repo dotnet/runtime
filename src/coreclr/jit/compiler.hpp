@@ -1687,7 +1687,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
     // This will prevent it from being optimized away
     // TODO-CQ: We shouldn't have to go as far as to declare these
     // address-exposed -- DoNotEnregister should suffice?
-    lvaSetVarAddrExposed(lclNum);
+    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 
     // Note the implicit use
     varDsc->lvImplicitlyReferenced = 1;
@@ -2182,10 +2182,10 @@ inline bool Compiler::lvaIsOriginalThisArg(unsigned varNum)
         // copy to a new local, and mark the original as DoNotEnregister, to
         // ensure that it is stack-allocated.  It should not be the case that the original one can be modified -- it
         // should not be written to, or address-exposed.
-        assert(!varDsc->lvHasILStoreOp &&
-               (!varDsc->lvAddrExposed || ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
+        assert(!varDsc->lvHasILStoreOp && (!varDsc->IsAddressExposed() ||
+                                           ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
 #else
-        assert(!varDsc->lvHasILStoreOp && !varDsc->lvAddrExposed);
+        assert(!varDsc->lvHasILStoreOp && !varDsc->IsAddressExposed());
 #endif
     }
 #endif

@@ -297,7 +297,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                     lclNode->ClearMultiReg();
                     if (lclNode->TypeIs(TYP_STRUCT))
                     {
-                        comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+                        comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::BlockOp));
                     }
                 }
             }
@@ -357,10 +357,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
         {
-            // TODO-Cleanup: this is definitely not the best place for this detection,
-            // but for now it is the easiest. Move it to morph.
+
             const GenTreeLclVarCommon* lclAddr = node->AsLclVarCommon();
-            comp->lvaSetVarDoNotEnregister(lclAddr->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+            const LclVarDsc*           varDsc  = comp->lvaGetDesc(lclAddr);
+            if (!varDsc->lvDoNotEnregister)
+            {
+                // TODO-Cleanup: this is definitely not the best place for this detection,
+                // but for now it is the easiest. Move it to morph.
+                comp->lvaSetVarDoNotEnregister(lclAddr->GetLclNum() DEBUGARG(DoNotEnregisterReason::LclAddrNode));
+            }
         }
         break;
 
@@ -1239,7 +1244,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                         unsigned lclNum = objOp1->AsLclVarCommon()->GetLclNum();
                         if (comp->lvaTable[lclNum].lvType != TYP_STRUCT)
                         {
-                            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_VMNeedsStackAddr));
+                            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
                         }
                     }
 #endif // TARGET_X86
@@ -2069,11 +2074,15 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
         {
             tmpLclNum = comp->lvaGrabTemp(true DEBUGARG("Fast tail call lowering is creating a new local variable"));
 
-            LclVarDsc* callerArgDsc                     = comp->lvaGetDesc(lclNum);
-            var_types  tmpTyp                           = genActualType(callerArgDsc->TypeGet());
-            comp->lvaTable[tmpLclNum].lvType            = tmpTyp;
-            comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->GetLclNum()].lvDoNotEnregister;
-            GenTree* value                              = comp->gtNewLclvNode(lclNum, tmpTyp);
+            LclVarDsc* callerArgDsc          = comp->lvaGetDesc(lclNum);
+            var_types  tmpTyp                = genActualType(callerArgDsc->TypeGet());
+            comp->lvaTable[tmpLclNum].lvType = tmpTyp;
+            // TODO-CQ: I don't see why we should copy doNotEnreg.
+            comp->lvaTable[tmpLclNum].lvDoNotEnregister = callerArgDsc->lvDoNotEnregister;
+#ifdef DEBUG
+            comp->lvaTable[tmpLclNum].SetDoNotEnregReason(callerArgDsc->GetDoNotEnregReason());
+#endif // DEBUG
+            GenTree* value = comp->gtNewLclvNode(lclNum, tmpTyp);
 
             if (tmpTyp == TYP_STRUCT)
             {
@@ -3208,7 +3217,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             const unsigned lclNum = lclStore->GetLclNum();
             GenTreeLclVar* addr   = comp->gtNewLclVarAddrNode(lclNum, TYP_BYREF);
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
 
             addr->gtFlags |= GTF_VAR_DEF;
             assert(!addr->IsPartialLclFld(comp));
@@ -3428,7 +3437,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     {
         // TODO-1stClassStructs: We can no longer independently promote
         // or enregister this struct, since it is referenced as a whole.
-        comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
+        comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
     }
 
     if (varDsc->lvDoNotEnregister)
@@ -3633,7 +3642,7 @@ GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
 {
     // TODO-1stClassStructs: we can support this in codegen for `GT_STORE_BLK` without new temps.
     const unsigned spillNum = comp->lvaGrabTemp(true DEBUGARG("Return value temp for an odd struct return size"));
-    comp->lvaSetVarDoNotEnregister(spillNum DEBUGARG(Compiler::DNER_LocalField));
+    comp->lvaSetVarDoNotEnregister(spillNum DEBUGARG(DoNotEnregisterReason::LocalField));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     comp->lvaSetStruct(spillNum, retClsHnd, false);
     GenTreeLclFld* spill = new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, call->gtType, spillNum, 0);
@@ -4103,7 +4112,7 @@ void Lowering::InsertPInvokeMethodProlog()
         GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfCallSiteSP);
     storeSP->gtOp1 = PhysReg(REG_SPBASE);
     storeSP->gtFlags |= GTF_VAR_DEF;
-    comp->lvaSetVarDoNotEnregister(comp->lvaInlinedPInvokeFrameVar DEBUGARG(Compiler::DNER_LocalField));
+    comp->lvaSetVarDoNotEnregister(comp->lvaInlinedPInvokeFrameVar DEBUGARG(DoNotEnregisterReason::LocalField));
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
@@ -6384,7 +6393,7 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
         lclNode->ClearMultiReg();
         if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister)
         {
-            comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+            comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
     }
 #endif

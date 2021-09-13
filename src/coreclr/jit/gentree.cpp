@@ -1942,7 +1942,7 @@ Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTree** pTree, fgWalk
         unsigned   lclNum = tree->AsLclVarCommon()->GetLclNum();
         LclVarDsc* varDsc = &comp->lvaTable[lclNum];
 
-        if (varDsc->lvHasLdAddrOp || varDsc->lvAddrExposed)
+        if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
         {
             ((AddrTakenDsc*)data->pCallbackData)->hasAddrTakenLcl = true;
             return WALK_ABORT;
@@ -1954,7 +1954,7 @@ Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTree** pTree, fgWalk
 
 /*****************************************************************************
  *
- *  Return true if this tree contains locals with lvHasLdAddrOp or lvAddrExposed
+ *  Return true if this tree contains locals with lvHasLdAddrOp or IsAddressExposed()
  *  flag(s) set.
  */
 
@@ -10743,7 +10743,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
             if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_STORE_LCL_VAR)
             {
                 LclVarDsc* varDsc = &lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-                if (varDsc->lvAddrExposed)
+                if (varDsc->IsAddressExposed())
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
