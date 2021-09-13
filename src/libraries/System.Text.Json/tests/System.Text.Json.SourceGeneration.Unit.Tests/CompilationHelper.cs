@@ -265,11 +265,72 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateCompilationWithInitOnlyProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {                
+                public class Location
+                {
+                    public int Id { get; init; }
+                    public string Address1 { get; init; }
+                    public string Address2 { get; init; }
+                    public string City { get; init; }
+                    public string State { get; init; }
+                    public string PostalCode { get; init; }
+                    public string Name { get; init; }
+                    public string PhoneNumber { get; init; }
+                    public string Country { get; init; }
+                }
+
+                [JsonSerializable(typeof(Location))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithInaccessibleJsonIncludeProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {                
+                public class Location
+                {
+                    [JsonInclude]
+                    public int Id { get; private set; }
+                    [JsonInclude]
+                    public string Address1 { get; internal set; }
+                    [JsonInclude]
+                    private string Address2 { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber { internal get; set; }
+                    [JsonInclude]
+                    public string Country { private get; set; }
+                }
+
+                [JsonSerializable(typeof(Location))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
         internal static void CheckDiagnosticMessages(ImmutableArray<Diagnostic> diagnostics, DiagnosticSeverity level, string[] expectedMessages)
         {
             string[] actualMessages = diagnostics.Where(diagnostic => diagnostic.Severity == level).Select(diagnostic => diagnostic.GetMessage()).ToArray();
 
-            // Can't depending on reflection order when generating type metadata.
+            // Can't depend on reflection order when generating type metadata.
             Array.Sort(actualMessages);
             Array.Sort(expectedMessages);
 

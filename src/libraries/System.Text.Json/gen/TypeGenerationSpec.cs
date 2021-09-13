@@ -64,7 +64,7 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string? RuntimeTypeRef { get; private set; }
 
-        public TypeGenerationSpec? ExtensionDataPropertyTypeSpec {  get; private set; }
+        public TypeGenerationSpec? ExtensionDataPropertyTypeSpec { get; private set; }
 
         public string? ConverterInstantiationLogic { get; private set; }
 
@@ -160,7 +160,6 @@ namespace System.Text.Json.SourceGeneration
             for (int i = 0; i < PropertyGenSpecList.Count; i++)
             {
                 PropertyGenerationSpec propGenSpec = PropertyGenSpecList[i];
-                bool hasJsonInclude = propGenSpec.HasJsonInclude;
                 JsonIgnoreCondition? ignoreCondition = propGenSpec.DefaultIgnoreCondition;
 
                 if (ignoreCondition == JsonIgnoreCondition.WhenWritingNull && !propGenSpec.TypeGenerationSpec.CanBeNull)
@@ -168,17 +167,21 @@ namespace System.Text.Json.SourceGeneration
                     goto ReturnFalse;
                 }
 
-                if (!propGenSpec.IsPublic)
+                // In case of JsonInclude fail if either:
+                // 1. the getter is not accessible by the source generator or
+                // 2. neither getter or setter methods are public.
+                if (propGenSpec.HasJsonInclude && (!propGenSpec.CanUseGetter || !propGenSpec.IsPublic))
                 {
-                    if (hasJsonInclude)
-                    {
-                        goto ReturnFalse;
-                    }
+                    goto ReturnFalse;
+                }
 
+                // Discard any getters not accessible by the source generator.
+                if (!propGenSpec.CanUseGetter)
+                {
                     continue;
                 }
 
-                if (!propGenSpec.IsProperty && !hasJsonInclude && !options.IncludeFields)
+                if (!propGenSpec.IsProperty && !propGenSpec.HasJsonInclude && !options.IncludeFields)
                 {
                     continue;
                 }
@@ -223,7 +226,7 @@ namespace System.Text.Json.SourceGeneration
             castingRequiredForProps = PropertyGenSpecList.Count > serializableProperties.Count;
             return true;
 
-ReturnFalse:
+        ReturnFalse:
             serializableProperties = null;
             castingRequiredForProps = false;
             return false;
