@@ -11,7 +11,7 @@ namespace System
     {
         public LogcatStream(Encoding encoding) : base(encoding) {}
 
-        protected override unsafe void Print(ReadOnlySpan<char> line)
+        protected override void Print(ReadOnlySpan<char> line)
         {
             string log = line.ToString();
             Interop.Logcat.AndroidLogPrint(Interop.Logcat.LogLevel.Info, "DOTNET", log);

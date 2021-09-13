@@ -44,7 +44,7 @@ namespace System.IO
             }
         }
 
-        protected abstract unsafe void Print(ReadOnlySpan<char> line);
+        protected abstract void Print(ReadOnlySpan<char> line);
 
         private static void WriteOrCache(CachedConsoleStream stream, StringBuilder cache, Span<char> charBuffer)
         {
