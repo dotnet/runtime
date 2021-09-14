@@ -2022,6 +2022,7 @@ namespace System
             #region AppendFormatted T
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public bool AppendFormatted<T>(T value)
             {
                 // This method could delegate to AppendFormatted with a null format, but explicitly passing
@@ -2070,6 +2071,7 @@ namespace System
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public bool AppendFormatted<T>(T value, string? format)
             {
                 // If there's a custom formatter, always use it.
@@ -2114,6 +2116,7 @@ namespace System
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public bool AppendFormatted<T>(T value, int alignment)
             {
                 int startingPos = _pos;
@@ -2129,6 +2132,7 @@ namespace System
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public bool AppendFormatted<T>(T value, int alignment, string? format)
             {
                 int startingPos = _pos;
@@ -2254,6 +2258,7 @@ namespace System
             /// <summary>Formats the value using the custom formatter from the provider.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             [MethodImpl(MethodImplOptions.NoInlining)]
             private bool AppendCustomFormatter<T>(T value, string? format)
             {

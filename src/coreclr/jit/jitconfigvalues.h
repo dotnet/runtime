@@ -382,6 +382,10 @@ CONFIG_INTEGER(JitMinOptsTrackGCrefs, W("JitMinOptsTrackGCrefs"), JitMinOptsTrac
 // TODO-Cleanup: need to make 'MEASURE_MEM_ALLOC' well-defined here at all times.
 CONFIG_INTEGER(DisplayMemStats, W("JitMemStats"), 0) // Display JIT memory usage statistics
 
+#if defined(DEBUG)
+CONFIG_INTEGER(JitEnregStats, W("JitEnregStats"), 0) // Display JIT enregistration statistics
+#endif                                               // DEBUG
+
 CONFIG_INTEGER(JitAggressiveInlining, W("JitAggressiveInlining"), 0) // Aggressive inlining of all methods
 CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, emit Enter/Leave/TailCall callbacks
 CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
@@ -516,7 +520,8 @@ CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect 
 // Profile consumption options
 CONFIG_INTEGER(JitDisablePgo, W("JitDisablePgo"), 0) // Ignore pgo data for all methods
 #if defined(DEBUG)
-CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange")) // Enable pgo data for only some methods
+CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange"))         // Enable pgo data for only some methods
+CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute random values for edge counts
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
 #endif // debug

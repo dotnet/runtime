@@ -15,11 +15,11 @@ set "__RepoRootDir=%~dp0..\.."
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
-set "__RootBinDir=%~dp0..\..\..\artifacts"
+set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
-set "DotNetCli=%__ProjectDir%\..\..\..\dotnet.cmd"
+set "DotNetCli=%__RepoRootDir%\dotnet.cmd"
 
 set __Sequential=
 set __msbuildExtraArgs=
@@ -99,7 +99,7 @@ set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%_
 
 :: Default global test environment variables
 :: REVIEW: are these ever expected to be defined on entry to this script? Why? By whom?
-:: REVIEW: XunitTestReportDirBase is not used in this script. Who needs to have it set?
+:: REVIEW: XunitTestReportDirBase is not used in this script. Who needs to have it set? Used in run.proj _XunitProlog.
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 

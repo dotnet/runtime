@@ -381,7 +381,7 @@ namespace Internal.JitInterface
 
     // Represents the calling conventions supported with the extensible calling convention syntax
     // as well as the original metadata-encoded calling conventions.
-    enum CorInfoCallConvExtension
+    public enum CorInfoCallConvExtension
     {
         Managed,
         C,

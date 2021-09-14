@@ -2795,6 +2795,12 @@ insert_safepoints (MonoCompile *cfg)
 		}
 	}
 
+	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+		return;
+	}
+
 	if (cfg->verbose_level > 1)
 		printf ("INSERTING SAFEPOINTS\n");
 	if (cfg->verbose_level > 2)

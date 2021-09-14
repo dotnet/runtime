@@ -16,7 +16,7 @@
 #include "eeconfig.h"
 #include "generics.h"
 #include "typestring.h"
-#include "ngenhash.inl"
+#include "dacenumerablehash.inl"
 
 PTR_MethodDesc InstMethodHashEntry::GetMethod()
 {
@@ -331,14 +331,6 @@ void InstMethodHashTable::InsertMethodDesc(MethodDesc *pMD)
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
-void
-InstMethodHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    BaseEnumMemoryRegions(flags);
-}
-
 void InstMethodHashTable::EnumMemoryRegionsForEntry(InstMethodHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;

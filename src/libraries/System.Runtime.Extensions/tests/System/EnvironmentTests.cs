@@ -346,11 +346,8 @@ namespace System.Tests
                 Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
                 Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
             }
-            // tvOS effectively doesn't have a HOME
-            if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
-            {
-                Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-            }
+
+            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         }
 
         [Theory]

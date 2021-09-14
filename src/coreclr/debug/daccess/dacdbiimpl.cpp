@@ -78,7 +78,7 @@ IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 //            return; // DBI will then free this memory.
 //        }
 //        ...
-//        DeleteDbiMemory(p);
+//        DeleteDbiMemory(p); // DeleteDbiMemory(p, len); if it was an array allocation.
 //     }
 //
 //     Be very careful when using this on classes since Dbi and DAC may be in
@@ -155,6 +155,25 @@ template<class T> void DeleteDbiMemory(T *p)
     g_pAllocator->Free((BYTE*) p);
 }
 
+// Delete memory and invoke dtor for memory allocated with 'operator (forDbi) new[]'
+// There's an inherent risk here - where each element's destructor will get called within
+// the context of the DAC. If the destructor tries to use the CRT allocator logic expecting
+// to hit the DBI's, we could be in trouble. Those objects need to use an export allocator like this.
+template<class T> void DeleteDbiArrayMemory(T *p, int count)
+{
+    if (p == NULL)
+    {
+        return;
+    }
+
+    for (T *cur = p; cur < p + count; cur++)
+    {
+        cur->~T();
+    }
+
+    _ASSERTE(g_pAllocator != NULL);
+    g_pAllocator->Free((BYTE*) p);
+}
 
 //---------------------------------------------------------------------------------------
 // Creates the DacDbiInterface object, used by Dbi.
@@ -817,12 +836,6 @@ SIZE_T DacDbiInterfaceImpl::GetArgCount(MethodDesc * pMD)
 */
     return NumArguments;
 } //GetArgCount
-
-// Allocator to pass to DebugInfoStores, allocating forDBI
-BYTE* InfoStoreForDbiNew(void * pData, size_t cBytes)
-{
-    return new(forDbi) BYTE[cBytes];
-}
 
 // Allocator to pass to the debug-info-stores...
 BYTE* InfoStoreNew(void * pData, size_t cBytes)

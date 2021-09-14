@@ -13,6 +13,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the provided value into a <see cref="JsonDocument"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A <see cref="JsonDocument"/> representation of the JSON value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
@@ -56,6 +57,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the provided value into a <see cref="JsonDocument"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A <see cref="JsonDocument"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
