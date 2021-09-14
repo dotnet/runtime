@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private CacheEntryTokens _tokens; // might be null if user is not using the tokens or callbacks
         private TimeSpan _absoluteExpirationRelativeToNow;
-        private TimeSpan? _slidingExpiration;
+        private TimeSpan _slidingExpiration;
         private long _size = -1;
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
         private object _value;
@@ -65,10 +65,10 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public TimeSpan? SlidingExpiration
         {
-            get => _slidingExpiration;
+            get => _slidingExpiration.Ticks == 0 ? null : _slidingExpiration;
             set
             {
-                if (value <= TimeSpan.Zero)
+                if (value is { Ticks: <= 0 })
                 {
                     throw new ArgumentOutOfRangeException(
                         nameof(SlidingExpiration),
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Caching.Memory
                         "The sliding expiration value must be positive.");
                 }
 
-                _slidingExpiration = value;
+                _slidingExpiration = value.GetValueOrDefault();
             }
         }
 
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         private bool CheckForExpiredTime(in DateTimeOffset now)
         {
-            if (!AbsoluteExpiration.HasValue && !_slidingExpiration.HasValue)
+            if (!AbsoluteExpiration.HasValue && _slidingExpiration.Ticks == 0)
             {
                 return false;
             }
@@ -194,7 +194,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     return true;
                 }
 
-                if (_slidingExpiration.HasValue
+                if (_slidingExpiration.Ticks > 0
                     && (offset - LastAccessed) >= _slidingExpiration)
                 {
                     SetExpired(EvictionReason.Expired);
