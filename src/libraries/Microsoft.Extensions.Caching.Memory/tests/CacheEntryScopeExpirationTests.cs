@@ -44,8 +44,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 cache.Set(key, obj, new MemoryCacheEntryOptions().AddExpirationToken(expirationToken));
             }
 
-            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, ((CacheEntry)entry).ExpirationTokens.Count);
-            Assert.Null(((CacheEntry)entry).AbsoluteExpiration);
+            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, entry.ExpirationTokens.Count);
+            Assert.Null(entry.AbsoluteExpiration);
         }
 
         [Theory]
@@ -67,8 +67,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 cache.Set(key, obj, new MemoryCacheEntryOptions().SetAbsoluteExpiration(time));
             }
 
-            Assert.Empty(((CacheEntry)entry).ExpirationTokens);
-            Assert.Equal(trackLinkedCacheEntries ? time : null, ((CacheEntry)entry).AbsoluteExpiration);
+            Assert.Empty(entry.ExpirationTokens);
+            Assert.Equal(trackLinkedCacheEntries ? time : null, entry.AbsoluteExpiration);
         }
 
         [Theory]
@@ -353,8 +353,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
             Assert.Null(CacheEntryHelper.Current);
 
-            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, ((CacheEntry)entry).ExpirationTokens.Count);
-            Assert.Null(((CacheEntry)entry).AbsoluteExpiration);
+            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, entry.ExpirationTokens.Count);
+            Assert.Null(entry.AbsoluteExpiration);
         }
 
         [Theory]
@@ -389,10 +389,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
             Assert.Null(CacheEntryHelper.Current);
 
-            Assert.Single(((CacheEntry)entry1).ExpirationTokens);
-            Assert.Null(((CacheEntry)entry1).AbsoluteExpiration);
-            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, ((CacheEntry)entry).ExpirationTokens.Count);
-            Assert.Null(((CacheEntry)entry).AbsoluteExpiration);
+            Assert.Single(entry1.ExpirationTokens);
+            Assert.Null(entry1.AbsoluteExpiration);
+            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, entry.ExpirationTokens.Count);
+            Assert.Null(entry.AbsoluteExpiration);
         }
 
         [Theory]
@@ -428,13 +428,13 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            Assert.Equal(trackLinkedCacheEntries ? 2 : 1, ((CacheEntry)entry1).ExpirationTokens.Count());
-            Assert.NotNull(((CacheEntry)entry1).AbsoluteExpiration);
-            Assert.Equal(clock.UtcNow + TimeSpan.FromSeconds(10), ((CacheEntry)entry1).AbsoluteExpiration);
+            Assert.Equal(trackLinkedCacheEntries ? 2 : 1, entry1.ExpirationTokens.Count());
+            Assert.NotNull(entry1.AbsoluteExpiration);
+            Assert.Equal(clock.UtcNow + TimeSpan.FromSeconds(10), entry1.AbsoluteExpiration);
 
-            Assert.Single(((CacheEntry)entry2).ExpirationTokens);
-            Assert.NotNull(((CacheEntry)entry2).AbsoluteExpiration);
-            Assert.Equal(clock.UtcNow + TimeSpan.FromSeconds(15), ((CacheEntry)entry2).AbsoluteExpiration);
+            Assert.Single(entry2.ExpirationTokens);
+            Assert.NotNull(entry2.AbsoluteExpiration);
+            Assert.Equal(clock.UtcNow + TimeSpan.FromSeconds(15), entry2.AbsoluteExpiration);
         }
 
         [Fact]

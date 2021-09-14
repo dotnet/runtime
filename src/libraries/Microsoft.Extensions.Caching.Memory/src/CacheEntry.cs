@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,6 +24,8 @@ namespace Microsoft.Extensions.Caching.Memory
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
         private object _value;
         private CacheEntryState _state;
+        private short _absoluteExpirationOffsetMinutes;
+        private DateTime _absoluteExpiration;
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
@@ -32,10 +35,41 @@ namespace Microsoft.Extensions.Caching.Memory
             _state = new CacheEntryState(CacheItemPriority.Normal);
         }
 
-        /// <summary>
-        /// Gets or sets an absolute expiration date for the cache entry.
-        /// </summary>
-        public DateTimeOffset? AbsoluteExpiration { get; set; }
+        internal bool HasAbsoluteExpiration => Unsafe.As<DateTime, long>(ref _absoluteExpiration) != 0;
+
+        internal DateTime AbsoluteExpiration => _absoluteExpiration;
+
+        internal void SetAbsoluteExpirationUtc(DateTime value)
+        {
+            Debug.Assert(value.Kind == DateTimeKind.Utc);
+            _absoluteExpiration = value;
+            _absoluteExpirationOffsetMinutes = 0;
+        }
+
+        DateTimeOffset? ICacheEntry.AbsoluteExpiration
+        {
+            get
+            {
+                if (!HasAbsoluteExpiration)
+                    return null;
+
+                var offset = new TimeSpan(_absoluteExpirationOffsetMinutes * TimeSpan.TicksPerMinute);
+                return new DateTimeOffset(_absoluteExpiration.Ticks + offset.Ticks, offset);
+            }
+            set
+            {
+                if (value is null)
+                {
+                    _absoluteExpiration = default;
+                    _absoluteExpirationOffsetMinutes = default;
+                }
+                else
+                {
+                    _absoluteExpiration = value.GetValueOrDefault().UtcDateTime;
+                    _absoluteExpirationOffsetMinutes = (short)(value.GetValueOrDefault().Offset.Ticks / TimeSpan.TicksPerMinute);
+                }
+            }
+        }
 
         internal TimeSpan AbsoluteExpirationRelativeToNow => _absoluteExpirationRelativeToNow;
 
@@ -179,7 +213,7 @@ namespace Microsoft.Extensions.Caching.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         private bool CheckForExpiredTime(DateTime utcNow)
         {
-            if (!AbsoluteExpiration.HasValue && _slidingExpiration.Ticks == 0)
+            if (!HasAbsoluteExpiration && _slidingExpiration.Ticks == 0)
             {
                 return false;
             }
@@ -188,7 +222,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             bool FullCheck(DateTime utcNow)
             {
-                if (AbsoluteExpiration.HasValue && AbsoluteExpiration.Value.UtcDateTime <= utcNow)
+                if (HasAbsoluteExpiration && _absoluteExpiration <= utcNow)
                 {
                     SetExpired(EvictionReason.Expired);
                     return true;
@@ -222,7 +256,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         // this simple check very often allows us to avoid expensive call to PropagateOptions(CacheEntryHelper.Current)
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
-        internal bool CanPropagateOptions() => (_tokens != null && _tokens.CanPropagateTokens()) || AbsoluteExpiration.HasValue;
+        internal bool CanPropagateOptions() => (_tokens != null && _tokens.CanPropagateTokens()) || HasAbsoluteExpiration;
 
         internal void PropagateOptions(CacheEntry parent)
         {
@@ -235,12 +269,10 @@ namespace Microsoft.Extensions.Caching.Memory
             // We do this regardless of it gets cached because the tokens are associated with the value we'll return.
             _tokens?.PropagateTokens(parent);
 
-            if (AbsoluteExpiration.HasValue)
+            if (HasAbsoluteExpiration && (!parent.HasAbsoluteExpiration || _absoluteExpiration < parent._absoluteExpiration))
             {
-                if (!parent.AbsoluteExpiration.HasValue || AbsoluteExpiration < parent.AbsoluteExpiration)
-                {
-                    parent.AbsoluteExpiration = AbsoluteExpiration;
-                }
+                parent._absoluteExpiration = _absoluteExpiration;
+                parent._absoluteExpirationOffsetMinutes = _absoluteExpirationOffsetMinutes;
             }
         }
 

@@ -110,9 +110,9 @@ namespace Microsoft.Extensions.Caching.Memory
             if (entry.AbsoluteExpirationRelativeToNow.Ticks > 0)
             {
                 var absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
-                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration < entry.AbsoluteExpiration.Value)
+                if (!entry.HasAbsoluteExpiration || absoluteExpiration < entry.AbsoluteExpiration)
                 {
-                    entry.AbsoluteExpiration = absoluteExpiration;
+                    entry.SetAbsoluteExpirationUtc(absoluteExpiration);
                 }
             }
 
