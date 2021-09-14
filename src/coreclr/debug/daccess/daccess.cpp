@@ -6077,13 +6077,20 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
     NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
-
-    NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-    if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+    TADDR nativeCodeStartAddr;
+    if (address != NULL)
     {
-        return E_INVALIDARG;
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        {
+            return E_INVALIDARG;
+        }
+        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
     }
-    TADDR nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+    else
+    {
+        nativeCodeStartAddr - PCODEToPINSTR(methodDesc->GetNativeCode());
+    }
 
     DebugInfoRequest request;
     request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
@@ -6128,13 +6135,20 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
-
-    NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-    if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+    TADDR nativeCodeStartAddr;
+    if (address != NULL)
     {
-        return E_INVALIDARG;
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        {
+            return E_INVALIDARG;
+        }
+        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
     }
-    TADDR nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+    else
+    {
+        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+    }
 
     DebugInfoRequest request;
     request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
