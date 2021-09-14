@@ -557,7 +557,7 @@ namespace System.Diagnostics
                             retryOnTxtBsy = false;
 
                             // ETXTBSY means we're trying to execute a file that is open for write.
-                            // This may be a file that was just written and closed, but is still referenced 
+                            // This may be a file that was just written and closed, but is still referenced
                             // by another process that has forked but not yet exec-ed.
                             // Using the s_processStartLock we wait for all processes to finish exec-ing
                             // which causes the file to be closed (CLOEXEC).
