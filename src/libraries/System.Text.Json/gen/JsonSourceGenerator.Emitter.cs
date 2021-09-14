@@ -81,17 +81,17 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-            private readonly SourceProductionContext _sourceProductionContext;
+            private readonly JsonSourceGenerationContext _sourceGenerationContext;
 
             private ContextGenerationSpec _currentContext = null!;
 
-            private readonly SourceGenerationSpec _generationSpec = null!;
+            private readonly SourceGenerationSpec _generationSpec;
 
             private readonly HashSet<string> _emittedPropertyFileNames = new();
 
-            public Emitter(in SourceProductionContext sourceProductionContext, SourceGenerationSpec generationSpec)
+            public Emitter(in JsonSourceGenerationContext sourceGenerationContext, SourceGenerationSpec generationSpec)
             {
-                _sourceProductionContext = sourceProductionContext;
+                _sourceGenerationContext = sourceGenerationContext;
                 _generationSpec = generationSpec;
             }
 
@@ -179,7 +179,7 @@ namespace {@namespace}
                     sb.AppendLine("}");
                 }
 
-                _sourceProductionContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
+                _sourceGenerationContext.AddSource(fileName, SourceText.From(sb.ToString(), Encoding.UTF8));
             }
 
             private void GenerateTypeInfo(TypeGenerationSpec typeGenerationSpec)
@@ -267,7 +267,7 @@ namespace {@namespace}
                         break;
                     case ClassType.TypeUnsupportedBySourceGen:
                         {
-                            _sourceProductionContext.ReportDiagnostic(
+                            _sourceGenerationContext.ReportDiagnostic(
                                 Diagnostic.Create(TypeNotSupported, Location.None, new string[] { typeGenerationSpec.TypeRef }));
                             return;
                         }
@@ -286,7 +286,7 @@ namespace {@namespace}
                 }
                 else
                 {
-                    _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
+                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
                 }
             }
 

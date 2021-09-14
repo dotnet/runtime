@@ -11,6 +11,7 @@ using System.Text.Json.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -32,7 +33,7 @@ namespace System.Text.Json.SourceGeneration
             context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
-        private void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> contextClasses, SourceProductionContext context)
+        private void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> contextClasses, SourceProductionContext sourceProductionContext)
         {
 #if LAUNCH_DEBUGGER
             if (!Diagnostics.Debugger.IsAttached)
@@ -45,6 +46,7 @@ namespace System.Text.Json.SourceGeneration
                 return;
             }
 
+            JsonSourceGenerationContext context = new JsonSourceGenerationContext(sourceProductionContext);
             Parser parser = new(compilation, context);
             SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses);
             if (spec != null)
@@ -61,5 +63,25 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName, p => p.Type);
         private List<TypeGenerationSpec>? _rootTypes;
+    }
+
+    internal readonly struct JsonSourceGenerationContext
+    {
+        private readonly SourceProductionContext _context;
+
+        public JsonSourceGenerationContext(SourceProductionContext context)
+        {
+            _context = context;
+        }
+
+        public void ReportDiagnostic(Diagnostic diagnostic)
+        {
+            _context.ReportDiagnostic(diagnostic);
+        }
+
+        public void AddSource(string hintName, SourceText sourceText)
+        {
+            _context.AddSource(hintName, sourceText);
+        }
     }
 }
