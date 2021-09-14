@@ -325,7 +325,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(OutputType)}=Library' can not be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
-        return true;
+        return !Log.HasLoggedErrors;
     }
 
     public override bool Execute()
