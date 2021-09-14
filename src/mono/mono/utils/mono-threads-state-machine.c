@@ -105,7 +105,7 @@ unwrap_thread_state (MonoThreadInfo* info,
 static void
 check_thread_state (MonoThreadInfo* info)
 {
-#ifdef ENABLE_CHECKED_BUILD_THREAD
+#ifdef ENABLE_CHECKED_BUILD
 	int raw_state, cur_state, suspend_count;
 	gboolean no_safepoints;
 	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, no_safepoints, info);
