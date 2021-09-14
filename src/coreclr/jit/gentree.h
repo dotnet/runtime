@@ -1062,12 +1062,6 @@ public:
     {
         return (opKind & GTK_EXOP) != 0;
     }
-    // Returns the operKind with the GTK_EX_OP bit removed (the
-    // kind of operator, unary or binary, that is extended).
-    static unsigned StripExOp(unsigned opKind)
-    {
-        return opKind & ~GTK_EXOP;
-    }
 
     bool IsValue() const
     {
