@@ -447,7 +447,7 @@ namespace System.Xml
                             do
                             {
                                 IXmlSchemaInfo? schemaInfo = navigator.SchemaInfo;
-                                if (defattr || schemaInfo is not { IsDefault: true })
+                                if (defattr || (schemaInfo == null || !schemaInfo.IsDefault))
                                 {
                                     await WriteStartAttributeAsync(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI).ConfigureAwait(false);
                                     // copy string value to writer
