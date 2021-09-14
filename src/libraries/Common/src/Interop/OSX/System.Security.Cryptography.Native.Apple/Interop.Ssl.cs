@@ -60,6 +60,11 @@ internal static partial class Interop
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslCreateContext")]
         internal static partial System.Net.SafeSslHandle SslCreateContext(int isServer);
 
+        [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetConnection")]
+        internal static partial int SslSetConnection(
+            SafeSslHandle sslHandle,
+            IntPtr sslConnection);
+
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetMinProtocolVersion(
             SafeSslHandle sslHandle,
@@ -119,10 +124,10 @@ internal static partial class Interop
         private static partial int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
 
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetIoCallbacks")]
-        internal static partial int SslSetIoCallbacks(
+        internal static unsafe partial int SslSetIoCallbacks(
             SafeSslHandle sslHandle,
-            SSLReadFunc readCallback,
-            SSLWriteFunc writeCallback);
+            delegate* unmanaged<IntPtr, byte*, void**, int> readCallback,
+            delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback);
 
         [GeneratedDllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslWrite")]
         internal static unsafe partial PAL_TlsIo SslWrite(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);

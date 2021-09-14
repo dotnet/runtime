@@ -137,7 +137,6 @@
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
     <ILLinkDescriptorsXmls Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.EventSource.xml" />
 
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.iOS.xml"
@@ -266,11 +265,23 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
+      <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnv.cs">
+        <Link>Common\Interop\Unix\System.Native\Interop.GetEnv.cs</Link>
+      </Compile>
+      <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
+        <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
+      </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Environment.Android.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
         <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
+      </Compile>
+      <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.iOS.cs">
+        <Link>Common\Interop\OSX\Interop.SearchPath.iOS.cs</Link>
       </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">

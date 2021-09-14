@@ -81,31 +81,42 @@ namespace NetClient
             Assert.IsFalse(Marshal.AreComObjectsAvailableForCleanup());
         }
 
-        [STAThread]
         static int Main(string[] doNotUse)
         {
-            // RegFree COM is not supported on Windows Nano
+            // RegFree COM and STA apartments are not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)
             {
                 return 100;
             }
 
-            try
-            {
-                // Initialization for all future tests
-                Initialize();
-                Assert.IsTrue(GetAllocationCount != null);
+            int result = 101;
 
-                Validate_COMServer_CleanUp();
-                Validate_COMServer_DisableEagerCleanUp();
-            }
-            catch (Exception e)
+            // Run the test on a new STA thread since Nano Server doesn't support the STA
+            // and as a result, the main application thread can't be made STA with the STAThread attribute
+            Thread staThread = new Thread(() =>
             {
-                Console.WriteLine($"Test Failure: {e}");
-                return 101;
-            }
+                try
+                {
+                    // Initialization for all future tests
+                    Initialize();
+                    Assert.IsTrue(GetAllocationCount != null);
 
-            return 100;
+                    Validate_COMServer_CleanUp();
+                    Validate_COMServer_DisableEagerCleanUp();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Test Failure: {e}");
+                    result = 101;
+                }
+                result = 100;
+            });
+
+            staThread.SetApartmentState(ApartmentState.STA);
+            staThread.Start();
+            staThread.Join();
+
+            return result;
         }
     }
 }

@@ -11,6 +11,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
 - [Covariant Return Types](#covariant-return-types)
+- [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
 
 ## Signatures
 
@@ -467,7 +468,7 @@ static or instance members) or overrides (for virtual instance methods) a member
 simply substitute each generic parameter with its generic argument, and compare the resulting member
 signatures. [*Example*: The following illustrates this point:
 
-### II.9.11, Constrains on Generic Parameters
+### II.9.11, Constraints on Generic Parameters
 
 (Change first paragraph)
 
@@ -908,3 +909,33 @@ For this example, the behavior of calls on objects of various types is presented
 "
 ### II.22.27
 Edit rule 12 to specify that "The method signature defined by *MethodBody* shall match those defined by *MethodDeclaration* exactly if *MethodDeclaration* defines a method on an interface or be *covariant-return-compatible-with* (§I.8.7.1) if *MethodDeclaration* represents a method on a class."
+
+## Unsigned data conversion with overflow detection
+
+`conv.ovf.<to type>.un` opcode is purposed for converting a value on the stack to an integral value while treating the stack source as unsigned. Ecma does not distinguish signed and unsigned values on the stack so such opcode is needed as a complement for `conv.ovf.<to type>`.
+So if the value on the stack is 4-byte size integral created by `Ldc_I4 0xFFFFFFFF` the results of different conversion opcodes will be:
+
+* conv.ovf.i4 -> -1 (0xFFFFFFFF)
+* conv.ovf.u4 -> overflow
+* conv.ovf.i4.un -> overflow
+* conv.ovf.u4.un -> uint.MaxValue (0xFFFFFFFF)
+
+However, the source of these opcodes can be a float value and it was not clear how in such case .un should be treated. The ECMA was saying: "The item on the top of the stack is treated as an unsigned value before the conversion." but there was no definition of "treated" so the result of:
+
+```
+ldc.r4 -1
+conv.ovf.i4.un
+```
+was ambiguous, it could treat -1 as 0xFFFFFFFF and return 0xFFFFFFFF or it could throw an overflow exception.
+
+### III.3.19, conv.ovf.to type.un (page 354)
+(Edit 1st Description paragraph:)
+Convert the value on top of the stack to the type specified in the opcode, and leave that converted
+value on the top of the stack. If the value cannot be represented, an exception is thrown.
+
+(Edit 2nd Description paragraph:)
+
+Conversions from floating-point numbers to integral values truncate the number toward zero and used as-is ignoring .un suffix. The integral item
+on the top of the stack is reinterpreted as an unsigned value before the conversion.
+Note that integer values of less than 4 bytes are extended to int32 (not native int) on the
+evaluation stack.

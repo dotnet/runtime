@@ -259,8 +259,37 @@ namespace DebuggerTests
         {
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
-                "BreakOnDebuggerBreakCommand");
+                "dotnet://debugger-test.dll/debugger-test2.cs", 58, 8,
+                "BreakOnDebuggerBreakCommand",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 59, 8, "BreakOnDebuggerBreakCommand",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 60, 8, "BreakOnDebuggerBreakCommand",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 20);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 61, 8, "BreakOnDebuggerBreakCommand",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 50);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 62, 4, "BreakOnDebuggerBreakCommand",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 100);
+                }
+            );
         }
 
         [Fact]
@@ -297,10 +326,10 @@ namespace DebuggerTests
                     "MethodBody1", "StaticMethod1");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 14, 8, "StaticMethod1");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 16, "StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "b", 15);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 14, 8, "StaticMethod1");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 12, "StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckBool(locals, "c", true);
         }
@@ -315,10 +344,10 @@ namespace DebuggerTests
                     "MethodBody2", "StaticMethod1");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 23, 8, "StaticMethod1");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 23, 8, "StaticMethod1");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
         }
@@ -418,6 +447,135 @@ namespace DebuggerTests
             );
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == 3");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 3);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak");
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointInALoopStopMoreThanOnce()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i % 3 == 0");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 0);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 3);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 6);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 9);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak");
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointNoStopInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == \"10\"");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak"
+            );
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointNotBooleanInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i + 4");
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 0);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 1);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 2);
+                });
         }
     }
 }

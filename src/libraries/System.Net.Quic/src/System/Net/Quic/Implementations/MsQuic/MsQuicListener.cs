@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
@@ -12,7 +13,6 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
-using System.Security.Authentication;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private readonly IPEndPoint _listenEndPoint;
 
-        private sealed class State
+        internal sealed class State
         {
             // set immediately in ctor, but we need a GCHandle to State in order to create the handle.
             public SafeMsQuicListenerHandle Handle = null!;
@@ -34,6 +34,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public readonly SafeMsQuicConfigurationHandle? ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
+            public readonly ConcurrentDictionary<IntPtr, MsQuicConnection> PendingConnections;
 
             public QuicOptions ConnectionOptions = new QuicOptions();
             public SslServerAuthenticationOptions AuthenticationOptions = new SslServerAuthenticationOptions();
@@ -67,6 +68,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     ConnectionConfiguration = SafeMsQuicConfigurationHandle.Create(options, options.ServerAuthenticationOptions);
                 }
 
+                PendingConnections = new ConcurrentDictionary<IntPtr, MsQuicConnection>();
                 AcceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
                 {
                     SingleReader = true,
@@ -77,6 +79,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal MsQuicListener(QuicListenerOptions options)
         {
+            if (options.ListenEndPoint == null)
+            {
+                throw new ArgumentNullException(nameof(options.ListenEndPoint));
+            }
+
             _state = new State(options);
             _stateHandle = GCHandle.Alloc(_state);
             try
@@ -219,19 +226,17 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ListenerEvent evt)
         {
+            GCHandle gcHandle = GCHandle.FromIntPtr(context);
+            Debug.Assert(gcHandle.IsAllocated);
+            Debug.Assert(gcHandle.Target is not null);
+            var state = (State)gcHandle.Target;
             if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
             {
                 return MsQuicStatusCodes.InternalError;
             }
 
-            GCHandle gcHandle = GCHandle.FromIntPtr(context);
-            Debug.Assert(gcHandle.IsAllocated);
-            Debug.Assert(gcHandle.Target is not null);
-            var state = (State)gcHandle.Target;
-
             SafeMsQuicConnectionHandle? connectionHandle = null;
             MsQuicConnection? msQuicConnection = null;
-
             try
             {
                 ref NewConnectionInfo connectionInfo = ref *evt.Data.NewConnection.Info;
@@ -275,13 +280,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                 uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, connectionConfiguration);
                 if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {
-                    msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, connectionHandle, state.AuthenticationOptions.ClientCertificateRequired, state.AuthenticationOptions.CertificateRevocationCheckMode, state.AuthenticationOptions.RemoteCertificateValidationCallback);
+                    msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, state, connectionHandle, state.AuthenticationOptions.ClientCertificateRequired, state.AuthenticationOptions.CertificateRevocationCheckMode, state.AuthenticationOptions.RemoteCertificateValidationCallback);
                     msQuicConnection.SetNegotiatedAlpn(connectionInfo.NegotiatedAlpn, connectionInfo.NegotiatedAlpnLength);
 
-                    if (state.AcceptConnectionQueue.Writer.TryWrite(msQuicConnection))
+                    if (!state.PendingConnections.TryAdd(connectionHandle.DangerousGetHandle(), msQuicConnection))
                     {
-                        return MsQuicStatusCodes.Success;
+                        msQuicConnection.Dispose();
                     }
+
+                    return MsQuicStatusCodes.Success;
                 }
 
                 // If we fall-through here something wrong happened.

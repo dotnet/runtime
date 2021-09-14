@@ -247,7 +247,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         }
     }
 
-    // App paths and App NI paths.
+    // App paths.
     // Note: Keep this check outside of the loop above since the _last_ key wins
     // and that could indicate the app paths shouldn't be set.
     if (set_app_paths)
@@ -255,12 +255,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         if (!coreclr_properties.add(common_property::AppPaths, app_base.c_str()))
         {
             log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::AppPaths));
-            return StatusCode::LibHostDuplicateProperty;
-        }
-
-        if (!coreclr_properties.add(common_property::AppNIPaths, app_base.c_str()))
-        {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::AppNIPaths));
             return StatusCode::LibHostDuplicateProperty;
         }
     }

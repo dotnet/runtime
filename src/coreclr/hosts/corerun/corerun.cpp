@@ -5,6 +5,9 @@
 #include <coreclrhost.h>
 
 #include "corerun.hpp"
+#include "dotenv.hpp"
+
+#include <fstream>
 
 using char_t = pal::char_t;
 using string_t = pal::string_t;
@@ -50,6 +53,9 @@ struct configuration
 
     // Perform self test.
     bool self_test;
+
+    // configured .env file to load
+    dotenv dotenv_configuration;
 };
 
 namespace envvar
@@ -217,12 +223,6 @@ static int run(const configuration& config)
         pal::ensure_trailing_delimiter(app_path);
     }
 
-    // Define the NI app_path.
-    string_t app_path_ni = app_path + W("NI");
-    pal::ensure_trailing_delimiter(app_path_ni);
-    app_path_ni.append(1, pal::env_path_delim);
-    app_path_ni.append(app_path);
-
     // Accumulate path for native search path.
     pal::stringstream_t native_search_dirs;
     native_search_dirs << app_path << pal::env_path_delim;
@@ -268,6 +268,8 @@ static int run(const configuration& config)
         }
     }
 
+    config.dotenv_configuration.load_into_current_process();
+
     actions.before_coreclr_load();
 
     // Attempt to load CoreCLR.
@@ -291,7 +293,6 @@ static int run(const configuration& config)
     // Construct CoreCLR properties.
     pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(std::move(tpa_list));
     pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(std::move(app_path));
-    pal::string_utf8_t app_path_ni_utf8 = pal::convert_to_utf8(std::move(app_path_ni));
     pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
 
     std::vector<pal::string_utf8_t> user_defined_keys_utf8;
@@ -314,11 +315,6 @@ static int run(const configuration& config)
     // - The list of paths which will be probed by the assembly loader
     propertyKeys.push_back("APP_PATHS");
     propertyValues.push_back(app_path_utf8.c_str());
-
-    // APP_NI_PATHS
-    // - The list of additional paths that the assembly loader will probe for ngen images
-    propertyKeys.push_back("APP_NI_PATHS");
-    propertyValues.push_back(app_path_ni_utf8.c_str());
 
     // NATIVE_DLL_SEARCH_DIRECTORIES
     // - The list of paths that will be probed for native DLLs called by PInvoke
@@ -416,6 +412,7 @@ static void display_usage()
         W("                   If a property value contains spaces, quote the entire argument.\n")
         W("                   May be supplied multiple times. Format: <key>=<value>.\n")
         W("  -d, --debug - causes corerun to wait for a debugger to attach before executing.\n")
+        W("  -e, --env - path to a .env file with environment variables that corerun should set.\n")
         W("  -?, -h, --help - show this help.\n")
         W("\n")
         W("The runtime binary is searched for in --clr-path, CORE_ROOT environment variable, then\n")
@@ -519,6 +516,18 @@ static bool parse_args(
         {
             config.self_test = true;
             return true;
+        }
+        else if (pal::strcmp(option, W("e")) == 0 || (pal::strcmp(option, W("env")) == 0))
+        {
+            i++;
+            if (i >= argc)
+            {
+                pal::fprintf(stderr, W("Option %s: missing .env file path\n"), arg);
+                break;
+            }
+
+            std::ifstream dotenvFile{ pal::convert_to_utf8(argv[i]) };
+            config.dotenv_configuration = dotenv{ pal::string_t{ argv[i] }, dotenvFile};
         }
         else if ((pal::strcmp(option, W("?")) == 0 || (pal::strcmp(option, W("h")) == 0 || (pal::strcmp(option, W("help")) == 0))))
         {
@@ -651,6 +660,9 @@ static int self_test()
             THROW_IF_FALSE(pal::string_ends_with(W("ab.cd"), W(".cd")));
             THROW_IF_FALSE(!pal::string_ends_with(W("ab.cd"), W(".cde")));
             THROW_IF_FALSE(!pal::string_ends_with(W("ab.cd"), W("ab.cde")));
+        }
+        {
+            dotenv::self_test();
         }
     }
     catch (const char_t msg[])

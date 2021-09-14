@@ -1172,13 +1172,10 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public static SocketError SendFile(SafeSocketHandle handle, FileStream fileStream)
+        public static SocketError SendFile(SafeSocketHandle handle, SafeFileHandle fileHandle)
         {
             long offset = 0;
-            long length = fileStream.Length;
-
-            SafeFileHandle fileHandle = fileStream.SafeFileHandle;
-
+            long length = RandomAccess.GetLength(fileHandle);
             long bytesTransferred = 0;
 
             if (!handle.IsNonBlocking)
@@ -1918,7 +1915,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        public static async void SendPacketsAsync(
+        public static async Task SendPacketsAsync(
             Socket socket, TransmitFileOptions options, SendPacketsElement[] elements, SafeFileHandle[] fileHandles, CancellationToken cancellationToken, Action<long, SocketError> callback)
         {
             SocketError error = SocketError.Success;
@@ -2010,6 +2007,32 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, res);
             return res;
+        }
+
+        internal static bool HasNonBlockingConnectCompleted(SafeSocketHandle handle, out bool success)
+        {
+            Interop.Error err = Interop.Sys.Poll(handle, Interop.PollEvents.POLLOUT, timeout: 0, out Interop.PollEvents outEvents);
+            if (err != Interop.Error.SUCCESS)
+            {
+                throw new SocketException((int)GetSocketErrorForErrorCode(err));
+            }
+
+            // When connect completes the socket is writable.
+            if ((outEvents & Interop.PollEvents.POLLOUT) == 0)
+            {
+                success = false;
+                return false;
+            }
+
+            // Get the connect result from SocketOptionName.Error.
+            SocketError errorCode = GetSockOpt(handle, SocketOptionLevel.Socket, SocketOptionName.Error, out int optionValue);
+            if (errorCode != SocketError.Success)
+            {
+                throw new SocketException((int)errorCode);
+            }
+
+            success = (SocketError)optionValue == SocketError.Success;
+            return true;
         }
     }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
 
@@ -11,7 +12,7 @@ namespace System.Reflection.TypeLoading.Ecma
     /// </summary>
     internal sealed partial class EcmaAssembly
     {
-        public sealed override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
+        public sealed override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
             if (resourceName == null)
                 throw new ArgumentNullException(nameof(resourceName));
@@ -19,6 +20,11 @@ namespace System.Reflection.TypeLoading.Ecma
                 throw new ArgumentException(nameof(resourceName));
 
             InternalManifestResourceInfo internalManifestResourceInfo = GetEcmaManifestModule().GetInternalManifestResourceInfo(resourceName);
+
+            if (!internalManifestResourceInfo.Found)
+            {
+                return null;
+            }
 
             if (internalManifestResourceInfo.ResourceLocation == ResourceLocation.ContainedInAnotherAssembly)
             {
@@ -51,6 +57,8 @@ namespace System.Reflection.TypeLoading.Ecma
             return resourceNames;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:RequiresAssemblyFiles on Module.GetFile",
+            Justification = "ResourceLocation should never be ContainedInAnotherAssembly if embedded in a single-file")]
         public sealed override Stream? GetManifestResourceStream(string name)
         {
             if (name == null)
@@ -59,6 +67,12 @@ namespace System.Reflection.TypeLoading.Ecma
                 throw new ArgumentException(nameof(name));
 
             InternalManifestResourceInfo internalManifestResourceInfo = GetEcmaManifestModule().GetInternalManifestResourceInfo(name);
+
+            if (!internalManifestResourceInfo.Found)
+            {
+                return null;
+            }
+
             if ((internalManifestResourceInfo.ResourceLocation & ResourceLocation.Embedded) != 0)
             {
                 unsafe

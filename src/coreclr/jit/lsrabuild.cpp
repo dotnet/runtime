@@ -2536,7 +2536,7 @@ void LinearScan::buildIntervals()
                 LclVarDsc* varDsc   = compiler->lvaTable + varNum;
                 Interval*  interval = getIntervalForLocalVar(varIndex);
                 assert(interval->isWriteThru);
-                BasicBlock::weight_t weight = varDsc->lvRefCntWtd();
+                weight_t weight = varDsc->lvRefCntWtd();
 
                 // We'd like to only allocate registers for EH vars that have enough uses
                 // to compensate for the additional registers being live (and for the possibility
@@ -2549,9 +2549,9 @@ void LinearScan::buildIntervals()
                 // Incoming reg args are given an initial weight of 2 * BB_UNITY_WEIGHT
                 // (see lvaComputeRefCounts(); this may be reviewed/changed in future).
                 //
-                BasicBlock::weight_t initialWeight = (firstRefPosition->refType == RefTypeParamDef)
-                                                         ? (2 * BB_UNITY_WEIGHT)
-                                                         : blockInfo[firstRefPosition->bbNum].weight;
+                weight_t initialWeight = (firstRefPosition->refType == RefTypeParamDef)
+                                             ? (2 * BB_UNITY_WEIGHT)
+                                             : blockInfo[firstRefPosition->bbNum].weight;
                 weight -= initialWeight;
 
                 // If the remaining weight is less than the initial weight, we'd like to allocate it only
@@ -3141,7 +3141,7 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     if (use != nullptr)
     {
         // If node != rmwNode, then definitely node should be marked as "delayFree".
-        // However, if node == rmwNode, then we can mark node as "delayFree" only
+        // However, if node == rmwNode, then we can mark node as "delayFree" only if
         // none of the node/rmwNode are the last uses. If either of them are last use,
         // we can safely reuse the rmwNode as destination.
         if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
@@ -3413,6 +3413,8 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             {
                 // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
                 buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+                // This internal register must be different from the target register.
+                setInternalRegsDelayFree = true;
             }
         }
 #endif // FEATURE_SIMD && TARGET_X86 && TARGET_WINDOWS

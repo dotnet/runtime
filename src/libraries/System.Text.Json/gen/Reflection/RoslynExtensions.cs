@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal static class RoslynExtensions
+    internal static partial class RoslynExtensions
     {
         public static Type AsType(this ITypeSymbol typeSymbol, MetadataLoadContextInternal metadataLoadContext)
         {
@@ -30,5 +30,41 @@ namespace System.Text.Json.Reflection
                 t = t.BaseType;
             }
         }
+
+        public static MethodAttributes GetMethodAttributes(this IMethodSymbol methodSymbol)
+        {
+            MethodAttributes attributes = default(MethodAttributes);
+
+            if (methodSymbol.IsAbstract)
+            {
+                attributes |= MethodAttributes.Abstract;
+            }
+
+            if (methodSymbol.IsStatic)
+            {
+                attributes |= MethodAttributes.Static;
+            }
+
+            if (methodSymbol.IsVirtual || methodSymbol.IsOverride)
+            {
+                attributes |= MethodAttributes.Virtual;
+            }
+
+            switch (methodSymbol.DeclaredAccessibility)
+            {
+                case Accessibility.Public:
+                    attributes |= MethodAttributes.Public;
+                    break;
+                case Accessibility.Private:
+                    attributes |= MethodAttributes.Private;
+                    break;
+                case Accessibility.Internal:
+                    attributes |= MethodAttributes.Assembly;
+                    break;
+            }
+
+            return attributes;
+        }
     }
 }
+

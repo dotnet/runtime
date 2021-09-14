@@ -101,7 +101,7 @@ $(_XunitEpilog)
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
-    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppRuntimewinx64Version)</RuntimeFrameworkVersion>
     <RunAnalyzers>false</RunAnalyzers>
  </PropertyGroup>
 
@@ -579,8 +579,19 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllTestScripts Include="%(TestDirectories.Identity)\**\*.sh" />
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
-      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
-      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+
+      <TestAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
+      <TestAssemblies Include="%(TestAssemblyPaths.Identity)" Condition="Exists(%(TestAssemblyPaths.Identity))" />
+      <TestDirsWithDuplicates Include="$([System.IO.Path]::GetDirectoryName('%(TestAssemblies.Identity)'))" />
+    </ItemGroup>
+    <RemoveDuplicates Inputs="@(TestDirsWithDuplicates)">
+      <Output TaskParameter="Filtered" ItemName="TestDirs" />
+    </RemoveDuplicates>
+    <ItemGroup>
+      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" />
+      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll" />
+      <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
+      <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(CROSSCOMPILE)' == ''">
@@ -589,11 +600,12 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
-      <AotCompiler>$(MonoBinDir)/cross/$(PackageRID)/mono-aot-cross</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)/cross/$(PackageRID)</MonoLlvmPath>
+      <AotCompiler>$(MonoBinDir)/cross/$(OutputRid)/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross/$(OutputRid)</MonoLlvmPath>
     </PropertyGroup>
 
     <ItemGroup>
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
       <MonoAotOption Include="llvm" />
       <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
@@ -601,7 +613,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
       <MonoAotOption Include="mattr=crc" />
       <MonoAotOption Include="mattr=crypto" />
-      <MonoAotOption Include="mattr=neon" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'x64'">
       <MonoAotOption Include="mattr=sse4.2" />
@@ -614,18 +625,21 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
-      <MonoPath Condition="'$(CROSSCOMPILE)' != ''">$(CORE_ROOT)</MonoPath>
+      <MonoPath>$(CORE_ROOT)</MonoPath>
     </PropertyGroup>
+
+    <Message Importance="High" Text="Mono AOT options: $(MonoAotOptions)" />
+    <Message Importance="High" Text="Mono AOT MONO_PATH: $(MonoPath)" />
 
     <ItemGroup>
       <AotProject Include="../mono/msbuild/aot-compile.proj">
-        <Properties>_AotCompiler=$(AotCompiler);_TestDll=%(TestDlls.Identity);_MonoPath=$(MonoPath);_MonoAotOptions=$(MonoAotOptions)</Properties>
+        <Properties>_AotCompiler=$(AotCompiler);_TestDll=%(AllDlls.Identity);_MonoPath=$(MonoPath);_MonoAotOptions=$(MonoAotOptions)</Properties>
       </AotProject>
     </ItemGroup>
     <MSBuild
       Projects="@(AotProject)"
       Targets="AotCompile"
-      Condition="@(TestDlls->Count()) &gt; 0"
+      Condition="@(AllDlls->Count()) &gt; 0"
       BuildInParallel="true"
       />
   </Target>
@@ -708,6 +722,112 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildAndroidApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
   </Target>
 
+  <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+
+  <Target Name="BuildiOSApp">
+    <PropertyGroup>
+      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
+      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
+      <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
+      <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
+      <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
+      <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AssemblyName>$(Category)</AssemblyName>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.iossimulator-$(TargetArchitecture)/$(Configuration)/runtimes/iossimulator-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" />
+    </ItemGroup>
+    <ItemGroup>
+      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
+      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
+      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
+      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+      <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
+      <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
+    </ItemGroup>
+    <ItemGroup>
+      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
+        <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
+      </ExtraDlls>
+    </ItemGroup>
+    <PropertyGroup>
+      <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(BundleDir)" />
+    <RemoveDir Directories="$(BuildDir)" />
+
+    <MakeDir Directories="$(BuildDir)" />
+    <MakeDir Directories="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+
+    <Copy
+        SourceFiles="@(RuntimePackNativeLibs)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="%(TestDlls.Identity)"
+        DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+    <Copy
+        SourceFiles="%(ExtraDlls.Identity)"
+        DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
+
+    <AppleAppBuilderTask
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AssemblyName)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
+        Assemblies="@(BundleAssemblies)"
+        ForceInterpreter="$(MonoForceInterpreter)"
+        UseConsoleUITemplate="True"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        Optimized="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(BundleDir)"
+        AppDir="$(BuildDir)"
+        InvariantGlobalization="true"
+    >
+      <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+      <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+
+    <!-- Apparently MSBuild cannot move directories and recursively copying a
+         a directory requires writing some sort of recursive traversal
+         logic yourself. -->
+    <ItemGroup>
+      <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(FinalPath)" />
+    <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
+    <RemoveDir Directories="$(AppBundlePath)" />
+    <Message Importance="High" Text="App: $(FinalPath)" />
+  </Target>
+
+  <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <ItemGroup>
+      <RunProj Include="$(MSBuildProjectFile)">
+        <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
+      </RunProj>
+    </ItemGroup>
+    <MSBuild
+      Projects="@(RunProj)"
+      Targets="BuildiOSApp"
+      BuildInParallel="true"
+      />
+  </Target>
+
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
@@ -721,7 +841,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToCoreRoot"
-             Properties="Language=C#;PackageRID=$(PackageRID);RuntimeIdentifier=$(PackageRID)" />
+             Properties="Language=C#;OutputRid=$(OutputRid);RuntimeIdentifier=$(OutputRid)" />
   </Target>
 
   <Target Name="Build">

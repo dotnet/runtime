@@ -4,7 +4,7 @@ parameters:
   osSubgroup: ''
   archType: ''
   targetRid: ''
-  framework: 'net6.0'
+  framework: 'net7.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
@@ -199,4 +199,7 @@ jobs:
               - defaultpgo
               - dynamicpgo
               - fullpgo
+              - fullpgo_random_gdv
+              - fullpgo_random_edge
+              - fullpgo_random_gdv_edge
 

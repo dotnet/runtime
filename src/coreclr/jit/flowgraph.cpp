@@ -607,7 +607,7 @@ bool Compiler::fgMayExplicitTailCall()
 //
 //    jumpTarget[N] is set to 1 if IL offset N is a jump target in the method.
 //
-//    Also sets lvAddrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].
+//    Also sets m_addrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -930,7 +930,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -1144,7 +1144,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         assert(targetMethodHnd == nullptr);
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
         if (IsTargetAbi(CORINFO_CORERT_ABI))
@@ -2467,9 +2467,9 @@ private:
                     //
                     if (returnBlock->hasProfileWeight())
                     {
-                        BasicBlock::weight_t const oldWeight =
+                        weight_t const oldWeight =
                             mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : BB_ZERO_WEIGHT;
-                        BasicBlock::weight_t const newWeight = oldWeight + returnBlock->bbWeight;
+                        weight_t const newWeight = oldWeight + returnBlock->bbWeight;
 
                         JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to const return " FMT_BB "\n",
                                 returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);
@@ -2636,9 +2636,9 @@ void Compiler::fgAddInternal()
 #else  // JIT32_GCENCODER
             lva0CopiedForGenericsCtxt          = false;
 #endif // JIT32_GCENCODER
-            noway_assert(lva0CopiedForGenericsCtxt || !lvaTable[info.compThisArg].lvAddrExposed);
+            noway_assert(lva0CopiedForGenericsCtxt || !lvaTable[info.compThisArg].IsAddressExposed());
             noway_assert(!lvaTable[info.compThisArg].lvHasILStoreOp);
-            noway_assert(lvaTable[lvaArg0Var].lvAddrExposed || lvaTable[lvaArg0Var].lvHasILStoreOp ||
+            noway_assert(lvaTable[lvaArg0Var].IsAddressExposed() || lvaTable[lvaArg0Var].lvHasILStoreOp ||
                          lva0CopiedForGenericsCtxt);
 
             var_types thisType = lvaTable[info.compThisArg].TypeGet();
@@ -3632,13 +3632,12 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     }
 
     const static BBjumpKinds jumpKinds[] = {
-        BBJ_NONE,   // SCK_NONE
-        BBJ_THROW,  // SCK_RNGCHK_FAIL
-        BBJ_ALWAYS, // SCK_PAUSE_EXEC
-        BBJ_THROW,  // SCK_DIV_BY_ZERO
-        BBJ_THROW,  // SCK_ARITH_EXCP, SCK_OVERFLOW
-        BBJ_THROW,  // SCK_ARG_EXCPN
-        BBJ_THROW,  // SCK_ARG_RNG_EXCPN
+        BBJ_NONE,  // SCK_NONE
+        BBJ_THROW, // SCK_RNGCHK_FAIL
+        BBJ_THROW, // SCK_DIV_BY_ZERO
+        BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
+        BBJ_THROW, // SCK_ARG_EXCPN
+        BBJ_THROW, // SCK_ARG_RNG_EXCPN
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3702,9 +3701,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
             case SCK_RNGCHK_FAIL:
                 msg = " for RNGCHK_FAIL";
                 break;
-            case SCK_PAUSE_EXEC:
-                msg = " for PAUSE_EXEC";
-                break;
             case SCK_DIV_BY_ZERO:
                 msg = " for DIV_BY_ZERO";
                 break;
@@ -3764,9 +3760,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
         case SCK_ARG_RNG_EXCPN:
             helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
             break;
-
-        // case SCK_PAUSE_EXEC:
-        //     noway_assert(!"add code to pause exec");
 
         default:
             noway_assert(!"unexpected code addition kind");
@@ -4596,7 +4589,7 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
     assert(varTypeIsStruct(lvaTable[lclNum].lvType));
     if (lvaTable[lclNum].lvPromoted && lvaTable[lclNum].lvFieldCnt > 1)
     {
-        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
+        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
     }
 }
 

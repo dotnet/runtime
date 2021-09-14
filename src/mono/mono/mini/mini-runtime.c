@@ -68,7 +68,6 @@
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-proclib.h>
-#include <mono/utils/mono-state.h>
 #include <mono/utils/mono-time.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/components.h>
@@ -197,9 +196,23 @@ find_tramp (gpointer key, gpointer value, gpointer user_data)
 		ud->method = (MonoMethod*)key;
 }
 
+static char*
+mono_get_method_from_ip_u (void *ip);
+
 /* debug function */
 char*
 mono_get_method_from_ip (void *ip)
+{
+	char *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_get_method_from_ip_u (ip);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+/* debug function */
+static char*
+mono_get_method_from_ip_u (void *ip)
 {
 	MonoJitInfo *ji;
 	MonoMethod *method;
@@ -270,6 +283,12 @@ G_GNUC_UNUSED char *
 mono_pmip (void *ip)
 {
 	return mono_get_method_from_ip (ip);
+}
+
+G_GNUC_UNUSED char *
+mono_pmip_u (void *ip)
+{
+	return mono_get_method_from_ip_u (ip);
 }
 
 /**
@@ -523,7 +542,6 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoMemoryManager *mem_m
 		copy->uw_info_len = info->uw_info_len;
 	}
 
-	mono_save_trampoline_xdebug_info (info);
 	mono_lldb_save_trampoline_info (info);
 
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
@@ -2504,6 +2522,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
 		if (code)
 			return code;
+		return_val_if_nok (error, NULL);
 	}
 
 	if (mono_llvm_only)
@@ -2979,6 +2998,8 @@ typedef struct {
 	gpointer *wrapper_arg;
 } RuntimeInvokeInfo;
 
+#define MONO_SIZEOF_DYN_CALL_RET_BUF TARGET_SIZEOF_VOID_P
+
 static RuntimeInvokeInfo*
 create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt, gboolean use_interp, MonoError *error)
 {
@@ -3137,8 +3158,8 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 {
 	MonoMethodSignature *sig = info->sig;
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
-	gpointer retval_ptr;
-	guint8 retval [256];
+	int32_t retval_size = MONO_SIZEOF_DYN_CALL_RET_BUF;
+	gpointer retval = NULL;
 	int i, pindex;
 
 	error_init (error);
@@ -3165,8 +3186,21 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (sig->hasthis)
 		args [pindex ++] = &obj;
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		retval_ptr = &retval;
-		args [pindex ++] = &retval_ptr;
+		if (info->ret_box_class && !sig->ret->byref &&
+		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
+		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
+			// if the return type is a struct, allocate enough stack space to hold it
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (sig->ret);
+			g_assert (!mono_class_has_failure (ret_klass));
+			int32_t inst_size = mono_class_instance_size (ret_klass);
+			if (inst_size > MONO_SIZEOF_DYN_CALL_RET_BUF) {
+				retval_size = inst_size;
+			}
+		}
+	}
+	retval = g_alloca (retval_size);
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		args [pindex ++] = &retval;
 	}
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
@@ -3215,7 +3249,8 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 			if (sig->ret->byref) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
-				return mono_value_box_checked (info->ret_box_class, retval, error);
+				MonoObject *ret = mono_value_box_checked (info->ret_box_class, retval, error);
+				return ret;
 			}
 		} else {
 			if (sig->ret->byref)
@@ -3378,7 +3413,22 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		gpointer *args;
 		int i, pindex, buf_size;
 		guint8 *buf;
-		guint8 retval [256];
+		int32_t retval_size = MONO_SIZEOF_DYN_CALL_RET_BUF;
+		guint8 *retval = NULL;
+
+		/* if the return type is a struct and it's too big, allocate more space for it */
+		if (info->ret_box_class && !sig->ret->byref &&
+		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
+		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (sig->ret);
+			g_assert (!mono_class_has_failure (ret_klass));
+			int32_t inst_size = mono_class_instance_size (ret_klass);
+			if (inst_size > MONO_SIZEOF_DYN_CALL_RET_BUF) {
+				retval_size = inst_size;
+			}
+		}
+
+		retval = g_alloca (retval_size);
 
 		/* Convert the arguments to the format expected by start_dyn_call () */
 		args = (void **)g_alloca ((sig->param_count + sig->hasthis) * sizeof (gpointer));
@@ -3414,10 +3464,29 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			return NULL;
 		}
 
-		if (info->ret_box_class)
-			return mono_value_box_checked (info->ret_box_class, retval, error);
-		else
-			return *(MonoObject**)retval;
+		if (sig->ret->byref) {
+			if (*(gpointer*)retval == NULL) {
+				MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
+				MonoObject *ex = mono_object_new_checked (klass, error);
+				mono_error_assert_ok (error);
+				mono_error_set_exception_instance (error, (MonoException*)ex);
+				return NULL;
+			}
+		}
+
+		if (info->ret_box_class) {
+			if (sig->ret->byref) {
+				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
+			} else {
+				MonoObject *boxed_ret = mono_value_box_checked (info->ret_box_class, retval, error);
+				return boxed_ret;
+			}
+		} else {
+			if (sig->ret->byref)
+				return **(MonoObject***)retval;
+			else
+				return *(MonoObject**)retval;
+		}
 	}
 #endif
 
@@ -3472,8 +3541,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 			goto exit;
 
 		mono_sigctx_to_monoctx (ctx, &mctx);
-		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGFPE), &mctx, info);
+		mono_handle_native_crash (mono_get_signame (SIGFPE), &mctx, info);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			goto exit;
@@ -3496,11 +3564,10 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 		exit (1);
 
 	mono_sigctx_to_monoctx (ctx, &mctx);
-	if (mono_dump_start ())
 #if defined(HAVE_SIG_INFO) && !defined(HOST_WIN32) // info is a siginfo_t
-		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
+	mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
 #else
-		mono_handle_native_crash (mono_get_signame (SIGTERM), &mctx, info);
+	mono_handle_native_crash (mono_get_signame (SIGTERM), &mctx, info);
 #endif
 	if (mono_do_crash_chaining) {
 		mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -3584,8 +3651,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	if (!mono_domain_get () || !jit_tls) {
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
-		if (mono_dump_start())
-			mono_handle_native_crash (mono_get_signame (signo), &mctx, info);
+		mono_handle_native_crash (mono_get_signame (signo), &mctx, info);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
@@ -3629,8 +3695,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 			mono_arch_handle_altstack_exception (ctx, info, info->si_addr, FALSE);
 		} else {
 			// FIXME: This shouldn't run on the altstack
-			if (mono_dump_start ())
-				mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, info);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, info);
 		}
 #endif
 	}
@@ -3640,8 +3705,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 
-		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -3652,8 +3716,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	if (mono_is_addr_implicit_null_check (fault_addr)) {
 		mono_arch_handle_exception (ctx, NULL);
 	} else {
-		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
@@ -3934,7 +3997,7 @@ mini_parse_debug_option (const char *option)
 	else if (!strcmp (option, "dyn-runtime-invoke"))
 		mini_debug_options.dyn_runtime_invoke = TRUE;
 	else if (!strcmp (option, "gdb"))
-		mini_debug_options.gdb = TRUE;
+		fprintf (stderr, "MONO_DEBUG=gdb is deprecated.");
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
 	else if (!strcmp (option, "llvm-disable-inlining"))
@@ -4380,9 +4443,6 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.is_interpreter_enabled = mini_is_interpreter_enabled;
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
 
-#ifndef DISABLE_CRASH_REPORTING
-	callbacks.install_state_summarizer = mini_register_sigterm_handler;
-#endif
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
 	callbacks.init_mem_manager = init_jit_mem_manager;
@@ -4430,21 +4490,6 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_lldb_init ("");
 		mono_dont_free_domains = TRUE;
 	}
-
-#ifdef XDEBUG_ENABLED
-	char *mono_xdebug = g_getenv ("MONO_XDEBUG");
-	if (mono_xdebug) {
-		mono_xdebug_init (mono_xdebug);
-		g_free (mono_xdebug);
-		/* So methods for multiple domains don't have the same address */
-		mono_dont_free_domains = TRUE;
-		mono_using_xdebug = TRUE;
-	} else if (mini_debug_options.gdb) {
-		mono_xdebug_init ((char*)"gdb");
-		mono_dont_free_domains = TRUE;
-		mono_using_xdebug = TRUE;
-	}
-#endif
 
 #ifdef ENABLE_LLVM
 	if (mono_use_llvm)

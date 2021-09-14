@@ -2659,9 +2659,6 @@
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
   </data>
-  <data name="IO_InconsistentLinkType" xml:space="preserve">
-    <value>The link's file system entry type is inconsistent with that of its target: {0}</value>
-  </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
   </data>
@@ -3813,5 +3810,8 @@
   </data>
   <data name="TimeZoneNotFound_ValidTimeZoneFileMissing" xml:space="preserve">
     <value>Unable to properly load any time zone data files.</value>
+  </data>
+  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
+    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
   </data>
 </root>

@@ -668,52 +668,27 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls WriteMember")]
         private bool WriteEnumAndArrayTypes(StructMapping structMapping, object o, string n, string? ns)
         {
-            if (o is Enum)
-            {
-                Writer.WriteStartElement(n, ns);
+            Type objType = o.GetType();
 
-                EnumMapping? enumMapping = null;
-                Type enumType = o.GetType();
-                foreach (var m in _mapping.Scope!.TypeMappings)
+            foreach (var m in _mapping.Scope!.TypeMappings)
+            {
+                if (m is EnumMapping em && em.TypeDesc!.Type == objType)
                 {
-                    if (m is EnumMapping em && em.TypeDesc!.Type == enumType)
-                    {
-                        enumMapping = em;
-                        break;
-                    }
+                    Writer.WriteStartElement(n, ns);
+                    WriteXsiType(em.TypeName!, ns);
+                    Writer.WriteString(WriteEnumMethod(em, o));
+                    Writer.WriteEndElement();
+                    return true;
                 }
 
-                if (enumMapping == null)
-                    throw new InvalidOperationException(SR.XmlInternalError);
-
-                WriteXsiType(enumMapping.TypeName!, ns);
-                Writer.WriteString(WriteEnumMethod(enumMapping, o));
-                Writer.WriteEndElement();
-                return true;
-            }
-
-            if (o is Array)
-            {
-                Writer.WriteStartElement(n, ns);
-                ArrayMapping? arrayMapping = null;
-                Type arrayType = o.GetType();
-                foreach (var m in _mapping.Scope!.TypeMappings)
+                if (m is ArrayMapping am && am.TypeDesc!.Type == objType)
                 {
-                    if (m is ArrayMapping am && am.TypeDesc!.Type == arrayType)
-                    {
-                        arrayMapping = am;
-                        break;
-                    }
+                    Writer.WriteStartElement(n, ns);
+                    WriteXsiType(am.TypeName!, ns);
+                    WriteMember(o, null, am.ElementsSortedByDerivation!, null, null, am.TypeDesc!, true);
+                    Writer.WriteEndElement();
+                    return true;
                 }
-
-                if (arrayMapping == null)
-                    throw new InvalidOperationException(SR.XmlInternalError);
-
-                WriteXsiType(arrayMapping.TypeName!, ns);
-                WriteMember(o, null, arrayMapping.ElementsSortedByDerivation!, null, null, arrayMapping.TypeDesc!, true);
-                Writer.WriteEndElement();
-
-                return true;
             }
 
             return false;

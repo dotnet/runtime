@@ -341,7 +341,18 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
     // check for the POSIX standard environment variable
     if (pal::getenv(_X("HOME"), &directory))
     {
-        return is_read_write_able_directory(directory);
+        if (is_read_write_able_directory(directory))
+        {
+            return true;
+        }
+        else
+        {
+            trace::error(_X("Default extraction directory [%s] either doesn't exist or is not accessible for read/write."), directory.c_str());
+        }
+    }
+    else
+    {
+        trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined."));
     }
 
     return false;
@@ -367,6 +378,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
     else if (errno != EEXIST)
     {
+        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno));
         return false;
     }
 
@@ -379,18 +391,16 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
     return false;
 }
 
-bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
+pal::string_t pal::get_dotnet_self_registered_config_location()
 {
-    recv->assign(_X("/etc/dotnet/install_location"));
-
     //  ***Used only for testing***
     pal::string_t environment_install_location_override;
     if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH"), &environment_install_location_override))
     {
-        recv->assign(environment_install_location_override);
+        return environment_install_location_override;
     }
 
-    return true;
+    return _X("/etc/dotnet/install_location");
 }
 
 namespace
@@ -429,13 +439,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    pal::string_t install_location_file_path;
-    if (!get_dotnet_self_registered_config_location(&install_location_file_path))
-    {
-        return false;
-    }
-    //  ***************************
-
+    pal::string_t install_location_file_path = get_dotnet_self_registered_config_location();
     trace::verbose(_X("Looking for install_location file in '%s'."), install_location_file_path.c_str());
     FILE* install_location_file = pal::file_open(install_location_file_path, "r");
     if (install_location_file == nullptr)

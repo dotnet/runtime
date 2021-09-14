@@ -361,6 +361,51 @@ enum RefCountState
     RCS_NORMAL,  // normal ref counts (from lvaMarkRefs onward)
 };
 
+#ifdef DEBUG
+// Reasons why we can't enregister a local.
+enum class DoNotEnregisterReason
+{
+    None,
+    AddrExposed,      // the address of this local is exposed.
+    DontEnregStructs, // struct enregistration is disabled.
+    NotRegSizeStruct, // the struct size does not much any register size, usually the struct size is too big.
+    LocalField,       // the local is accessed with LCL_FLD, note we can do it not only for struct locals.
+    VMNeedsStackAddr,
+    LiveInOutOfHandler, // the local is alive in and out of exception handler and not signle def.
+    BlockOp,            // Is read or written via a block operation.
+    IsStructArg,        // Is a struct passed as an argument in a way that requires a stack location.
+    DepField,           // It is a field of a dependently promoted struct
+    NoRegVars,          // opts.compFlags & CLFLG_REGVAR is not set
+    MinOptsGC,          // It is a GC Ref and we are compiling MinOpts
+#if !defined(TARGET_64BIT)
+    LongParamField, // It is a decomposed field of a long parameter.
+#endif
+#ifdef JIT32_GCENCODER
+    PinningRef,
+#endif
+    LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
+    CastTakesAddr,
+    StoreBlkSrc,    // the local is used as STORE_BLK source.
+    OneAsgRetyping, // fgMorphOneAsgBlockOp prevents this local from being enregister.
+    SwizzleArg,     // the local is passed using LCL_FLD as another type.
+    BlockOpRet      // the struct is returned and it promoted or there is a cast.
+};
+
+enum class AddressExposedReason
+{
+    NONE,
+    PARENT_EXPOSED,   // This is a promoted field but the parent is exposed.
+    TOO_CONSERVATIVE, // Were marked as exposed to be conservative, fix these places.
+    ESCAPE_ADDRESS,   // The address is escaping, for example, passed as call argument.
+    WIDE_INDIR,       // We access via indirection with wider type.
+    OSR_EXPOSED,      // It was exposed in the original method, osr has to repeat it.
+    STRESS_LCL_FLD,   // Stress mode replaces localVar with localFld and makes them addrExposed.
+    COPY_FLD_BY_FLD,  // Field by field copy takes the address of the local, can be fixed.
+    DISPATCH_RET_BUF  // Caller return buffer dispatch.
+};
+
+#endif // DEBUG
+
 class LclVarDsc
 {
 public:
@@ -403,29 +448,20 @@ public:
     }
     unsigned char lvPinned : 1; // is this a pinned variable?
 
-    unsigned char lvMustInit : 1;    // must be initialized
-    unsigned char lvAddrExposed : 1; // The address of this variable is "exposed" -- passed as an argument, stored in a
-                                     // global location, etc.
-                                     // We cannot reason reliably about the value of the variable.
+    unsigned char lvMustInit : 1; // must be initialized
+
+private:
+    bool m_addrExposed : 1; // The address of this variable is "exposed" -- passed as an argument, stored in a
+                            // global location, etc.
+                            // We cannot reason reliably about the value of the variable.
+public:
     unsigned char lvDoNotEnregister : 1; // Do not enregister this variable.
     unsigned char lvFieldAccessed : 1;   // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
     unsigned char lvLiveInOutOfHndlr : 1; // The variable is live in or out of an exception handler, and therefore must
                                           // be on the stack (at least at those boundaries.)
 
-    unsigned char lvInSsa : 1; // The variable is in SSA form (set by SsaBuilder)
-
-#ifdef DEBUG
-    // These further document the reasons for setting "lvDoNotEnregister".  (Note that "lvAddrExposed" is one of the
-    // reasons;
-    // also, lvType == TYP_STRUCT prevents enregistration.  At least one of the reasons should be true.
-    unsigned char lvVMNeedsStackAddr : 1; // The VM may have access to a stack-relative address of the variable, and
-                                          // read/write its value.
-    unsigned char lvLclFieldExpr : 1;     // The variable is not a struct, but was accessed like one (e.g., reading a
-                                          // particular byte from an int).
-    unsigned char lvLclBlockOpAddr : 1;   // The variable was written to via a block operation that took its address.
-    unsigned char lvLiveAcrossUCall : 1;  // The variable is live across an unmanaged call.
-#endif
+    unsigned char lvInSsa : 1;       // The variable is in SSA form (set by SsaBuilder)
     unsigned char lvIsCSE : 1;       // Indicates if this LclVar is a CSE variable.
     unsigned char lvHasLdAddrOp : 1; // has ldloca or ldarga opcode on this local.
     unsigned char lvStackByref : 1;  // This is a compiler temporary of TYP_BYREF that is known to point into our local
@@ -502,6 +538,9 @@ public:
     unsigned char lvUnusedStruct : 1; // All references to this promoted struct are through its field locals.
                                       // I.e. there is no longer any reference to the struct directly.
                                       // In this case we can simply remove this struct local.
+
+    unsigned char lvUndoneStructPromotion : 1; // The struct promotion was undone and hence there should be no
+                                               // reference to the fields of this struct.
 #endif
 
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
@@ -671,6 +710,46 @@ public:
     bool lvIsMultiRegArgOrRet()
     {
         return lvIsMultiRegArg || lvIsMultiRegRet;
+    }
+
+#if defined(DEBUG)
+private:
+    DoNotEnregisterReason m_doNotEnregReason;
+
+    AddressExposedReason m_addrExposedReason;
+
+public:
+    void SetDoNotEnregReason(DoNotEnregisterReason reason)
+    {
+        m_doNotEnregReason = reason;
+    }
+
+    DoNotEnregisterReason GetDoNotEnregReason() const
+    {
+        return m_doNotEnregReason;
+    }
+
+    AddressExposedReason GetAddrExposedReason() const
+    {
+        return m_addrExposedReason;
+    }
+#endif // DEBUG
+
+public:
+    void SetAddressExposed(bool value DEBUGARG(AddressExposedReason reason))
+    {
+        m_addrExposed = value;
+        INDEBUG(m_addrExposedReason = reason);
+    }
+
+    void CleanAddressExposed()
+    {
+        m_addrExposed = false;
+    }
+
+    bool IsAddressExposed() const
+    {
+        return m_addrExposed;
     }
 
 private:
@@ -845,16 +924,16 @@ private:
                                // that fgMakeOutgoingStructArgCopy consults during global morph
                                // to determine if eliding its copy is legal.
 
-    BasicBlock::weight_t m_lvRefCntWtd; // weighted reference count
+    weight_t m_lvRefCntWtd; // weighted reference count
 
 public:
     unsigned short lvRefCnt(RefCountState state = RCS_NORMAL) const;
     void incLvRefCnt(unsigned short delta, RefCountState state = RCS_NORMAL);
     void setLvRefCnt(unsigned short newValue, RefCountState state = RCS_NORMAL);
 
-    BasicBlock::weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL) const;
-    void incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state = RCS_NORMAL);
-    void setLvRefCntWtd(BasicBlock::weight_t newValue, RefCountState state = RCS_NORMAL);
+    weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL) const;
+    void incLvRefCntWtd(weight_t delta, RefCountState state = RCS_NORMAL);
+    void setLvRefCntWtd(weight_t newValue, RefCountState state = RCS_NORMAL);
 
 private:
     int lvStkOffs; // stack offset of home in bytes.
@@ -944,24 +1023,17 @@ public:
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               (lvIsParam || lvAddrExposed || lvIsStructField);
+               (lvIsParam || m_addrExposed || lvIsStructField);
     }
 
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               !(lvIsParam || lvAddrExposed || lvIsStructField);
+               !(lvIsParam || m_addrExposed || lvIsStructField);
     }
 
-    void incRefCnts(BasicBlock::weight_t weight,
-                    Compiler*            pComp,
-                    RefCountState        state     = RCS_NORMAL,
-                    bool                 propagate = true);
-    bool IsFloatRegType() const
-    {
-        return varTypeUsesFloatReg(lvType) || lvIsHfaRegArg();
-    }
+    void incRefCnts(weight_t weight, Compiler* pComp, RefCountState state = RCS_NORMAL, bool propagate = true);
 
     var_types GetHfaType() const
     {
@@ -986,8 +1058,6 @@ public:
             assert(GetLvHfaElemKind() == elemKind);
         }
     }
-
-    var_types lvaArgType();
 
     // Returns true if this variable contains GC pointers (including being a GC pointer itself).
     bool HasGCPtr() const
@@ -1463,6 +1533,26 @@ struct FuncInfoDsc
     // that isn't shared between the main function body and funclets.
 };
 
+enum class NonStandardArgKind : unsigned
+{
+    None,
+    PInvokeFrame,
+    PInvokeTarget,
+    PInvokeCookie,
+    WrapperDelegateCell,
+    ShiftLow,
+    ShiftHigh,
+    FixedRetBuffer,
+    VirtualStubCell,
+    R2RIndirectionCell,
+
+    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate below
+};
+
+#ifdef DEBUG
+const char* getNonStandardArgKindName(NonStandardArgKind kind);
+#endif
+
 struct fgArgTabEntry
 {
     GenTreeCall::Use* use;     // Points to the argument's GenTreeCall::Use in gtCallArgs or gtCallThisArg.
@@ -1523,17 +1613,18 @@ public:
                        // struct is passed as a scalar type, this is that type.
                        // Note that if a struct is passed by reference, this will still be the struct type.
 
-    bool needTmp : 1;       // True when we force this argument's evaluation into a temp LclVar
-    bool needPlace : 1;     // True when we must replace this argument with a placeholder node
-    bool isTmp : 1;         // True when we setup a temp LclVar for this argument due to size issues with the struct
-    bool processed : 1;     // True when we have decided the evaluation order for this argument in the gtCallLateArgs
-    bool isBackFilled : 1;  // True when the argument fills a register slot skipped due to alignment requirements of
-                            // previous arguments.
-    bool isNonStandard : 1; // True if it is an arg that is passed in a reg other than a standard arg reg, or is forced
-                            // to be on the stack despite its arg list position.
-    bool isStruct : 1;      // True if this is a struct arg
-    bool _isVararg : 1;     // True if the argument is in a vararg context.
-    bool passedByRef : 1;   // True iff the argument is passed by reference.
+    bool needTmp : 1;      // True when we force this argument's evaluation into a temp LclVar
+    bool needPlace : 1;    // True when we must replace this argument with a placeholder node
+    bool isTmp : 1;        // True when we setup a temp LclVar for this argument due to size issues with the struct
+    bool processed : 1;    // True when we have decided the evaluation order for this argument in the gtCallLateArgs
+    bool isBackFilled : 1; // True when the argument fills a register slot skipped due to alignment requirements of
+                           // previous arguments.
+    NonStandardArgKind nonStandardArgKind : 4; // The non-standard arg kind. Non-standard args are args that are forced
+                                               // to be in certain registers or on the stack, regardless of where they
+                                               // appear in the arg list.
+    bool isStruct : 1;                         // True if this is a struct arg
+    bool _isVararg : 1;                        // True if the argument is in a vararg context.
+    bool passedByRef : 1;                      // True iff the argument is passed by reference.
 #ifdef FEATURE_ARG_SPLIT
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
@@ -1557,6 +1648,34 @@ public:
 #else
         NOWAY_MSG("SetHfaElemKind");
 #endif
+    }
+
+    bool isNonStandard() const
+    {
+        return nonStandardArgKind != NonStandardArgKind::None;
+    }
+
+    // Returns true if the IR node for this non-standarg arg is added by fgInitArgInfo.
+    // In this case, it must be removed by GenTreeCall::ResetArgInfo.
+    bool isNonStandardArgAddedLate() const
+    {
+        switch (nonStandardArgKind)
+        {
+            case NonStandardArgKind::None:
+            case NonStandardArgKind::PInvokeFrame:
+            case NonStandardArgKind::ShiftLow:
+            case NonStandardArgKind::ShiftHigh:
+            case NonStandardArgKind::FixedRetBuffer:
+                return false;
+            case NonStandardArgKind::WrapperDelegateCell:
+            case NonStandardArgKind::VirtualStubCell:
+            case NonStandardArgKind::PInvokeCookie:
+            case NonStandardArgKind::PInvokeTarget:
+            case NonStandardArgKind::R2RIndirectionCell:
+                return true;
+            default:
+                unreached();
+        }
     }
 
     bool isLateArg() const
@@ -3056,6 +3175,8 @@ public:
 
     GenTree* gtUnusedValNode(GenTree* expr);
 
+    GenTree* gtNewKeepAliveNode(GenTree* op);
+
     GenTreeCast* gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
 
     GenTreeCast* gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
@@ -3432,8 +3553,8 @@ public:
 #endif
 
     // Getters and setters for address-exposed and do-not-enregister local var properties.
-    bool lvaVarAddrExposed(unsigned varNum);
-    void lvaSetVarAddrExposed(unsigned varNum);
+    bool lvaVarAddrExposed(unsigned varNum) const;
+    void lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason));
     void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 
@@ -3442,31 +3563,6 @@ public:
     bool lvaEnregEHVars;
     bool lvaEnregMultiRegVars;
 
-#ifdef DEBUG
-    // Reasons why we can't enregister.  Some of these correspond to debug properties of local vars.
-    enum DoNotEnregisterReason
-    {
-        DNER_AddrExposed,
-        DNER_IsStruct,
-        DNER_LocalField,
-        DNER_VMNeedsStackAddr,
-        DNER_LiveInOutOfHandler,
-        DNER_LiveAcrossUnmanagedCall,
-        DNER_BlockOp,     // Is read or written via a block operation that explicitly takes the address.
-        DNER_IsStructArg, // Is a struct passed as an argument in a way that requires a stack location.
-        DNER_DepField,    // It is a field of a dependently promoted struct
-        DNER_NoRegVars,   // opts.compFlags & CLFLG_REGVAR is not set
-        DNER_MinOptsGC,   // It is a GC Ref and we are compiling MinOpts
-#if !defined(TARGET_64BIT)
-        DNER_LongParamVar,   // It is a long parameter.
-        DNER_LongParamField, // It is a decomposed field of a long parameter.
-#endif
-#ifdef JIT32_GCENCODER
-        DNER_PinningRef,
-#endif
-    };
-
-#endif
     void lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregisterReason reason));
 
     unsigned lvaVarargsHandleArg;
@@ -4185,6 +4281,8 @@ protected:
                                      CorInfoIntrinsics    intrinsicID);
     GenTree* impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig);
 
+    GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
+
     GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
@@ -4818,16 +4916,16 @@ public:
 
     // The following are boolean flags that keep track of the state of internal data structures
 
-    bool                 fgStmtListThreaded;       // true if the node list is now threaded
-    bool                 fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
-    bool                 fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
-    bool                 fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
-    bool                 fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
-    bool                 fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
-    bool                 fgNeedsUpdateFlowGraph;   // true if we need to run fgUpdateFlowGraph
-    BasicBlock::weight_t fgCalledCount;            // count of the number of times this method was called
-                                                   // This is derived from the profile data
-                                                   // or is BB_UNITY_WEIGHT when we don't have profile data
+    bool     fgStmtListThreaded;       // true if the node list is now threaded
+    bool     fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
+    bool     fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
+    bool     fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
+    bool     fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
+    bool     fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
+    bool     fgNeedsUpdateFlowGraph;   // true if we need to run fgUpdateFlowGraph
+    weight_t fgCalledCount;            // count of the number of times this method was called
+                                       // This is derived from the profile data
+                                       // or is BB_UNITY_WEIGHT when we don't have profile data
 
 #if defined(FEATURE_EH_FUNCLETS)
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
@@ -5196,6 +5294,10 @@ public:
     // Assign the proper value number to the tree
     void fgValueNumberTreeConst(GenTree* tree);
 
+    // If the VN store has been initialized, reassign the
+    // proper value number to the constant tree.
+    void fgUpdateConstTreeValueNumber(GenTree* tree);
+
     // Assumes that all inputs to "tree" have had value numbers assigned; assigns a VN to tree.
     // (With some exceptions: the VN of the lhs of an assignment is assigned as part of the
     // assignment.)
@@ -5203,6 +5305,8 @@ public:
 
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
+
+    bool fgValueNumberIsStructReinterpretation(GenTreeLclVarCommon* lhsLclVarTree, GenTreeLclVarCommon* rhsLclVarTree);
 
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
@@ -5620,9 +5724,9 @@ public:
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
-    void                 fgComputeBlockAndEdgeWeights();
-    BasicBlock::weight_t fgComputeMissingBlockWeights();
-    void fgComputeCalledCount(BasicBlock::weight_t returnWeight);
+    void     fgComputeBlockAndEdgeWeights();
+    weight_t fgComputeMissingBlockWeights();
+    void fgComputeCalledCount(weight_t returnWeight);
     void fgComputeEdgeWeights();
 
     bool fgReorderBlocks();
@@ -5703,8 +5807,8 @@ public:
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block);
 #endif
 
-    bool fgProfileWeightsEqual(BasicBlock::weight_t weight1, BasicBlock::weight_t weight2);
-    bool fgProfileWeightsConsistent(BasicBlock::weight_t weight1, BasicBlock::weight_t weight2);
+    static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2);
+    static bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2);
 
     static GenTree* fgGetFirstNode(GenTree* tree);
 
@@ -5812,7 +5916,7 @@ protected:
     }
 
     bool fgHaveProfileData();
-    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
+    bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, weight_t* weight);
 
     Instrumentor* fgCountInstrumentor;
     Instrumentor* fgClassInstrumentor;
@@ -5846,9 +5950,10 @@ public:
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
-    void fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t weight);
+    void fgSetProfileWeight(BasicBlock* block, weight_t weight);
     void fgApplyProfileScale();
     bool fgHaveSufficientProfileData();
+    bool fgHaveTrustedProfileData();
 
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method
     //                           or if we have some fake profile data for the stress mode
@@ -6086,6 +6191,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
@@ -6349,7 +6455,7 @@ protected:
     bool optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum);
 
     // Performs the hoisting 'tree' into the PreHeader for loop 'lnum'
-    void optHoistCandidate(GenTree* tree, unsigned lnum, LoopHoistContext* hoistCtxt);
+    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Returns true iff the ValueNum "vn" represents a value that is loop-invariant in "lnum".
     //   Constants and init values are always loop invariant.
@@ -6379,7 +6485,7 @@ private:
     bool optComputeLoopSideEffectsOfBlock(BasicBlock* blk);
 
     // Hoist the expression "expr" out of loop "lnum".
-    void optPerformHoistExpr(GenTree* expr, unsigned lnum);
+    void optPerformHoistExpr(GenTree* expr, BasicBlock* exprBb, unsigned lnum);
 
 public:
     void optOptimizeBools();
@@ -6391,7 +6497,7 @@ public:
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
-    void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
+    void optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
 
@@ -6833,8 +6939,8 @@ protected:
         unsigned short csdDefCount; // definition   count
         unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
 
-        BasicBlock::weight_t csdDefWtCnt; // weighted def count
-        BasicBlock::weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
+        weight_t csdDefWtCnt; // weighted def count
+        weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
         GenTree*    csdTree;  // treenode containing the 1st occurrence
         Statement*  csdStmt;  // stmt containing the 1st occurrence
@@ -6952,12 +7058,12 @@ protected:
     void optValnumCSE_Availablity();
     void optValnumCSE_Heuristic();
 
-    bool                 optDoCSE;             // True when we have found a duplicate CSE tree
-    bool                 optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
-    unsigned             optCSECandidateCount; // Count of CSE's candidates
-    unsigned             optCSEstart;          // The first local variable number that is a CSE
-    unsigned             optCSEcount;          // The total count of CSE's introduced.
-    BasicBlock::weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
+    bool     optDoCSE;             // True when we have found a duplicate CSE tree
+    bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
+    unsigned optCSECandidateCount; // Count of CSE's candidates
+    unsigned optCSEstart;          // The first local variable number that is a CSE
+    unsigned optCSEcount;          // The total count of CSE's introduced.
+    weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
 
@@ -8110,11 +8216,11 @@ public:
         return codeGen->doDoubleAlign();
     }
     DWORD getCanDoubleAlign();
-    bool shouldDoubleAlign(unsigned             refCntStk,
-                           unsigned             refCntReg,
-                           BasicBlock::weight_t refCntWtdReg,
-                           unsigned             refCntStkParam,
-                           BasicBlock::weight_t refCntWtdStkDbl);
+    bool shouldDoubleAlign(unsigned refCntStk,
+                           unsigned refCntReg,
+                           weight_t refCntWtdReg,
+                           unsigned refCntStkParam,
+                           weight_t refCntWtdStkDbl);
 #endif // DOUBLE_ALIGN
 
     bool IsFullPtrRegMapRequired()
@@ -8909,15 +9015,7 @@ public:
     }
 
 private:
-    unsigned getSIMDInitTempVarNum()
-    {
-        if (lvaSIMDInitTempVarNum == BAD_VAR_NUM)
-        {
-            lvaSIMDInitTempVarNum                  = lvaGrabTempWithImplicitUse(false DEBUGARG("SIMDInitTempVar"));
-            lvaTable[lvaSIMDInitTempVarNum].lvType = getSIMDVectorType();
-        }
-        return lvaSIMDInitTempVarNum;
-    }
+    unsigned getSIMDInitTempVarNum(var_types simdType);
 
 #else  // !FEATURE_SIMD
     bool isOpaqueSIMDLclVar(LclVarDsc* varDsc)
@@ -9300,7 +9398,7 @@ public:
             return !!(compFlags & optFlag);
         }
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
         bool IsReadyToRun()
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);
@@ -10128,6 +10226,55 @@ public:
     static void PrintAggregateLoopHoistStats(FILE* f);
 #endif // LOOP_HOIST_STATS
 
+#if TRACK_ENREG_STATS
+    class EnregisterStats
+    {
+    private:
+        unsigned m_totalNumberOfVars;
+        unsigned m_totalNumberOfStructVars;
+        unsigned m_totalNumberOfEnregVars;
+        unsigned m_totalNumberOfStructEnregVars;
+
+        unsigned m_addrExposed;
+        unsigned m_VMNeedsStackAddr;
+        unsigned m_localField;
+        unsigned m_blockOp;
+        unsigned m_dontEnregStructs;
+        unsigned m_notRegSizeStruct;
+        unsigned m_structArg;
+        unsigned m_lclAddrNode;
+        unsigned m_castTakesAddr;
+        unsigned m_storeBlkSrc;
+        unsigned m_oneAsgRetyping;
+        unsigned m_swizzleArg;
+        unsigned m_blockOpRet;
+        unsigned m_liveInOutHndlr;
+        unsigned m_depField;
+        unsigned m_noRegVars;
+        unsigned m_minOptsGC;
+#ifdef JIT32_GCENCODER
+        unsigned m_PinningRef;
+#endif // JIT32_GCENCODER
+#if !defined(TARGET_64BIT)
+        unsigned m_longParamField;
+#endif // !TARGET_64BIT
+        unsigned m_parentExposed;
+        unsigned m_tooConservative;
+        unsigned m_escapeAddress;
+        unsigned m_osrExposed;
+        unsigned m_stressLclFld;
+        unsigned m_copyFldByFld;
+        unsigned m_dispatchRetBuf;
+        unsigned m_wideIndir;
+
+    public:
+        void RecordLocal(const LclVarDsc* varDsc);
+        void Dump(FILE* fout) const;
+    };
+
+    static EnregisterStats s_enregisterStats;
+#endif // TRACK_ENREG_STATS
+
     bool compIsForImportOnly();
     bool compIsForInlining() const;
     bool compDonotInline();
@@ -10140,7 +10287,6 @@ public:
     VarName compVarName(regNumber reg, bool isFloatReg = false);
     const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
     const char* compRegNameForSize(regNumber reg, size_t size);
-    const char* compFPregVarName(unsigned fpReg, bool displayVar = false);
     void compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP);
     void compDspSrcLinesByLineNum(unsigned line, bool seek = false);
 #endif // DEBUG

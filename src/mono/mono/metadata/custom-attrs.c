@@ -397,7 +397,11 @@ MONO_RESTORE_WARNING
 		//  to decode some attributes in assemblies that Windows .NET Framework
 		//  and CoreCLR both manage to decode.
 		// See https://simonsapin.github.io/wtf-8/ for a description of wtf-8.
-		*out_obj = (MonoObject*)mono_string_new_wtf8_len_checked (p, slen, error);
+		// Always use string.Empty for empty strings
+		if (slen == 0)
+			*out_obj = (MonoObject*)mono_string_empty_internal (mono_domain_get ());
+		else
+			*out_obj = (MonoObject*)mono_string_new_wtf8_len_checked (p, slen, error);
 		return NULL;
 	}
 	case MONO_TYPE_CLASS: {

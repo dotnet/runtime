@@ -2129,6 +2129,47 @@ namespace System.Globalization
             return cultureId == CultureInfo.LOCALE_CUSTOM_DEFAULT || cultureId == CultureInfo.LOCALE_CUSTOM_UNSPECIFIED;
         }
 
+        private string[] GetNativeDigits()
+        {
+            string[] result = NumberFormatInfo.s_asciiDigits;
+
+            // LOCALE_SNATIVEDIGITS (array of 10 single character strings).
+            string digits = GetLocaleInfoCoreUserOverride(LocaleStringData.Digits);
+
+            // if digits.Length < NumberFormatInfo.s_asciiDigits.Length means the native digits setting is messed up in the host machine.
+            // Instead of throwing IndexOutOfRangeException that will be hard to diagnose after the fact, we'll fall back to use the ASCII digits instead.
+            if (digits.Length < NumberFormatInfo.s_asciiDigits.Length)
+            {
+                return result;
+            }
+
+            // Try to check if the digits are all ASCII so we can avoid the array allocation and use the static array NumberFormatInfo.s_asciiDigits instead.
+            // If we have non-ASCII digits, we should exit the loop very quickly.
+            int i = 0;
+            while (i < NumberFormatInfo.s_asciiDigits.Length)
+            {
+                if (digits[i] != NumberFormatInfo.s_asciiDigits[i][0])
+                {
+                    break;
+                }
+                i++;
+            }
+
+            if (i >= NumberFormatInfo.s_asciiDigits.Length)
+            {
+                return result;
+            }
+
+            // we have non-ASCII digits
+            result = new string[10];
+            for (i = 0; i < result.Length; i++)
+            {
+                result[i] = char.ToString(digits[i]);
+            }
+
+            return result;
+        }
+
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
             if (GlobalizationMode.Invariant || IsInvariantCulture)
@@ -2168,13 +2209,7 @@ namespace System.Globalization
                 nfi._currencyNegativePattern = GetLocaleInfoCoreUserOverride(LocaleNumberData.NegativeMonetaryNumberFormat);
                 nfi._numberNegativePattern = GetLocaleInfoCoreUserOverride(LocaleNumberData.NegativeNumberFormat);
 
-                // LOCALE_SNATIVEDIGITS (array of 10 single character strings).
-                string digits = GetLocaleInfoCoreUserOverride(LocaleStringData.Digits);
-                nfi._nativeDigits = new string[10];
-                for (int i = 0; i < nfi._nativeDigits.Length; i++)
-                {
-                    nfi._nativeDigits[i] = char.ToString(digits[i]);
-                }
+                nfi._nativeDigits = GetNativeDigits();
 
                 Debug.Assert(_sRealName != null);
                 nfi._digitSubstitution = ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(LocaleNumberData.DigitSubstitution) : IcuGetDigitSubstitution(_sRealName);
@@ -2308,7 +2343,7 @@ namespace System.Globalization
             DecimalSeparator = 0x0000000E,
             /// <summary>thousand separator (corresponds to LOCALE_STHOUSAND)</summary>
             ThousandSeparator = 0x0000000F,
-            /// <summary>digit grouping (corresponds to LOCALE_SGROUPING)</summary>
+            /// <summary>native digits for 0-9, eg "0123456789" (corresponds to LOCALE_SNATIVEDIGITS)</summary>
             Digits = 0x00000013,
             /// <summary>local monetary symbol (corresponds to LOCALE_SCURRENCY)</summary>
             MonetarySymbol = 0x00000014,

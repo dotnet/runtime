@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -9,7 +10,11 @@ namespace System.Text.Json.SourceGeneration.Tests
 {
     public interface ITestContext
     {
+        public JsonSourceGenerationMode JsonSourceGenerationMode { get; }
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
+
         public JsonTypeInfo<Location> Location { get; }
+        public JsonTypeInfo<NumberTypes> NumberTypes { get; }
         public JsonTypeInfo<RepeatedTypes.Location> RepeatedLocation { get; }
         public JsonTypeInfo<ActiveOrUpcomingEvent> ActiveOrUpcomingEvent { get; }
         public JsonTypeInfo<CampaignSummaryViewModel> CampaignSummaryViewModel { get; }
@@ -27,7 +32,18 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
         public JsonTypeInfo<object[]> ObjectArray { get; }
         public JsonTypeInfo<string> String { get; }
+        public JsonTypeInfo<(string Label1, int Label2, bool)> ValueTupleStringInt32Boolean { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
+        public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
+        public JsonTypeInfo<StructWithCustomConverter> StructWithCustomConverter { get; }
+        public JsonTypeInfo<ClassWithCustomConverterFactory> ClassWithCustomConverterFactory { get; }
+        public JsonTypeInfo<StructWithCustomConverterFactory> StructWithCustomConverterFactory { get; }
+        public JsonTypeInfo<ClassWithCustomConverterProperty> ClassWithCustomConverterProperty { get; }
+        public JsonTypeInfo<StructWithCustomConverterProperty> StructWithCustomConverterProperty { get; }
+        public JsonTypeInfo<ClassWithCustomConverterPropertyFactory> ClassWithCustomConverterPropertyFactory { get; }
+        public JsonTypeInfo<StructWithCustomConverterPropertyFactory> StructWithCustomConverterPropertyFactory { get; }
+        public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
+        public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext
@@ -66,14 +82,13 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 if (_JsonMessage == null)
                 {
-                    JsonTypeInfo<JsonMessage> objectInfo = JsonMetadataServices.CreateObjectInfo<JsonMessage>(
-                        Options,
-                        createObjectFunc: static () => new JsonMessage(),
-                        propInitFunc: null,
-                        default,
-                        serializeFunc: JsonMessageSerialize);
+                    JsonObjectInfoValues<JsonMessage> objectInfo = new()
+                    {
+                        ObjectCreator = static () => new JsonMessage(),
+                        SerializeHandler = JsonMessageSerialize
+                    };
 
-                    _JsonMessage = objectInfo;
+                    _JsonMessage = JsonMetadataServices.CreateObjectInfo<JsonMessage>(Options, objectInfo);
                 }
 
                 return _JsonMessage;

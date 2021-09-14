@@ -15,6 +15,7 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-time.h>
@@ -108,6 +109,7 @@ typedef struct {
 	LLVMContextRef context;
 	LLVMValueRef sentinel_exception;
 	LLVMValueRef gc_safe_point_flag_var;
+	LLVMValueRef interrupt_flag_var;
 	void *di_builder, *cu;
 	GHashTable *objc_selector_to_var;
 	GPtrArray *cfgs;
@@ -528,23 +530,27 @@ ThisType (void)
 	return TARGET_SIZEOF_VOID_P == 8 ? LLVMPointerType (LLVMInt64Type (), 0) : LLVMPointerType (LLVMInt32Type (), 0);
 }
 
+typedef struct {
+	int32_t size;
+	uint32_t align;
+} MonoSizeAlign;
+
 /*
  * get_vtype_size:
  *
  *   Return the size of the LLVM representation of the vtype T.
  */
-static guint32
-get_vtype_size (MonoType *t)
+static MonoSizeAlign
+get_vtype_size_align (MonoType *t)
 {
-	int size;
-
-	size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
+	uint32_t align = 0;
+	int32_t size = mono_class_value_size (mono_class_from_mono_type_internal (t), &align);
 
 	/* LLVMArgAsIArgs depends on this since it stores whole words */
 	while (size < 2 * TARGET_SIZEOF_VOID_P && mono_is_power_of_two (size) == -1)
 		size ++;
-
-	return size;
+	MonoSizeAlign ret = { size, align };
+	return ret;
 }
 
 /*
@@ -679,11 +685,17 @@ create_llvm_type_for_type (MonoLLVMModule *module, MonoClass *klass)
 		for (i = 0; i < size; ++i)
 			eltypes [i] = esize == 4 ? LLVMFloatType () : LLVMDoubleType ();
 	} else {
-		size = get_vtype_size (t);
-
-		eltypes = g_new (LLVMTypeRef, size);
-		for (i = 0; i < size; ++i)
-			eltypes [i] = LLVMInt8Type ();
+		MonoSizeAlign size_align = get_vtype_size_align (t);
+		eltypes = g_new (LLVMTypeRef, size_align.size);
+		size = 0;
+		uint32_t bytes = 0;
+		uint32_t chunk = size_align.align < TARGET_SIZEOF_VOID_P ? size_align.align : TARGET_SIZEOF_VOID_P;
+		for (; chunk > 0; chunk = chunk >> 1) {
+			for (; (bytes + chunk) <= size_align.size; bytes += chunk) {
+				eltypes [size] = LLVMIntType (chunk * 8);
+				++size;
+			}
+		}
 	}
 
 	name = mono_type_full_name (m_class_get_byval_arg (klass));
@@ -1909,15 +1921,6 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 	guint32 got_offset;
 	LLVMValueRef load;
 
-	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
-		const char *symbol = "mono_polling_required";
-		if (!module->gc_safe_point_flag_var) {
-			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
-			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
-		}
-		return module->gc_safe_point_flag_var;
-	}
-
 	MonoJumpInfo tmp_ji;
 	tmp_ji.type = type;
 	tmp_ji.data.target = data;
@@ -1932,6 +1935,23 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 
 	if (out_got_offset)
 		*out_got_offset = got_offset;
+
+	if (module->static_link && type == MONO_PATCH_INFO_GC_SAFE_POINT_FLAG) {
+		if (!module->gc_safe_point_flag_var) {
+			const char *symbol = "mono_polling_required";
+			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
+		}
+		return module->gc_safe_point_flag_var;
+	}
+	if (module->static_link && type == MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG) {
+		if (!module->interrupt_flag_var) {
+			const char *symbol = "mono_thread_interruption_request_flag";
+			module->interrupt_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
+			LLVMSetLinkage (module->interrupt_flag_var, LLVMExternalLinkage);
+		}
+		return module->interrupt_flag_var;
+	}
 
 	LLVMValueRef const_var = g_hash_table_lookup (module->aotconst_vars, GINT_TO_POINTER (got_offset));
 	if (!const_var) {
@@ -2662,11 +2682,11 @@ static void
 emit_vtype_to_args (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMValueRef address, LLVMArgInfo *ainfo, LLVMValueRef *args, guint32 *nargs)
 {
 	int pindex = 0;
-	int j, size, nslots;
+	int j, nslots;
 	LLVMTypeRef arg_type;
 
 	t = mini_get_underlying_type (t);
-	size = get_vtype_size (t);
+	int32_t size = get_vtype_size_align (t).size;
 
 	if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (t)))
 		address = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (LLVMInt8Type (), 0), "");
@@ -7332,7 +7352,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				} else if (ainfo->storage == LLVMArgVtypeAddr || values [ins->sreg1] == addresses [ins->sreg1]) {
 					/* LLVMArgVtypeByRef/LLVMArgVtypeAddr, have to make a copy */
 					addresses [ins->dreg] = build_alloca (ctx, t);
-					LLVMValueRef v = LLVMBuildLoad (builder, addresses [ins->sreg1], "");
+					LLVMValueRef v = LLVMBuildLoad (builder, addresses [ins->sreg1], "llvm_outarg_vt_copy");
 					LLVMBuildStore (builder, convert (ctx, v, type_to_llvm_type (ctx, t)), addresses [ins->dreg]);
 				} else {
 					addresses [ins->dreg] = addresses [ins->sreg1];
@@ -11437,25 +11457,29 @@ emit_method_inner (EmitContext *ctx)
 		}
 	}
 	if (cfg->method->wrapper_type) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
-
-		switch (info->subtype) {
-		case WRAPPER_SUBTYPE_GSHAREDVT_IN:
-		case WRAPPER_SUBTYPE_GSHAREDVT_OUT:
-		case WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG:
-		case WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG:
-			/* Arguments are not used after the call */
+		if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
 			requires_safepoint = FALSE;
-			break;
+		} else {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+
+			switch (info->subtype) {
+			case WRAPPER_SUBTYPE_GSHAREDVT_IN:
+			case WRAPPER_SUBTYPE_GSHAREDVT_OUT:
+			case WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG:
+			case WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG:
+				/* Arguments are not used after the call */
+				requires_safepoint = FALSE;
+				break;
+			}
 		}
 	}
 	ctx->has_safepoints = requires_safepoint;
 
 	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
-		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC) {
+		if (!cfg->compile_aot) {
 			LLVMSetGC (method, "coreclr");
 			emit_gc_safepoint_poll (ctx->module, ctx->lmodule, cfg);
-		} else if (cfg->compile_aot) {
+		} else {
 			LLVMSetGC (method, "coreclr");
 		}
 	}
@@ -11464,7 +11488,7 @@ emit_method_inner (EmitContext *ctx)
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
 
 	if (cfg->disable_omit_fp)
-		mono_llvm_add_func_attr_nv (method, "no-frame-pointer-elim", "true");
+		mono_llvm_add_func_attr_nv (method, "frame-pointer", "all");
 
 	if (cfg->compile_aot) {
 		if (mono_aot_is_externally_callable (cfg->method)) {
