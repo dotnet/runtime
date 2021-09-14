@@ -728,6 +728,7 @@ endif()
 # EXTRACT VERSION
 ######################################
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../eng/native/configurepaths.cmake")
+include_directories(${ARTIFACTS_OBJ_DIR})
 if(NOT EXISTS "${VERSION_HEADER_PATH}")
   if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     file(WRITE "${VERSION_HEADER_PATH}" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")

@@ -1,6 +1,5 @@
 project(mscordbi)
 
-include_directories(${ARTIFACTS_OBJ_DIR})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
