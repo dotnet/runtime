@@ -8,6 +8,11 @@
     <PropertyGroup Condition="'$(EnableDllImportGenerator)' == 'true'">
         <DllImportGenerator_UseMarshalType>true</DllImportGenerator_UseMarshalType>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib' or
+                              ('@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)')))">
+        <DllImportGenerator_UseInternalUnsafeType>true</DllImportGenerator_UseInternalUnsafeType>
+        <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
+    </PropertyGroup>
     <ItemGroup Condition="'$(EnableDllImportGenerator)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
         <PackageReference Include="Microsoft.Interop.DllImportGenerator" Version="$(MicrosoftInteropDllImportGeneratorVersion)" PrivateAssets="all" />
 
@@ -15,6 +20,7 @@
             This is mimicking the case where the source generator always generates the attributes. -->
         <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/GeneratedDllImportAttribute.cs" />
         <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/GeneratedMarshallingAttribute.cs" />
+        <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/ArrayMarshaller.cs" />
     </ItemGroup>
   </Target>
 
@@ -28,7 +34,10 @@
       <EnableDllImportGenerator Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableDllImportGenerator>
 
       <!-- Enable DllImportGenerator by default for NETCoreApp libraries that reference either System.Runtime.InteropServices or System.Private.CoreLib -->
-      <EnableDllImportGenerator Condition="'@(Reference)' != '' and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))">true</EnableDllImportGenerator>
+      <EnableDllImportGenerator Condition="'@(Reference)' != ''
+                                          and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))
+                                          and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe'))
+                                          and @(Reference->AnyHaveMetadataValue('Identity', 'System.Memory'))">true</EnableDllImportGenerator>
       <EnableDllImportGenerator Condition="'@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">true</EnableDllImportGenerator>
     </PropertyGroup>
   </Target>
