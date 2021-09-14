@@ -1860,12 +1860,12 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 {
     PCODE pbRetVal = NULL;
 
-    Module* pModule = NULL;
-    FrameWithCookie<ExternalMethodFrame> frame(pTransitionBlock);
-    ExternalMethodFrame * pEMFrame = &frame;
-    pModule = ExecutionManager::FindReadyToRunModule((TADDR)(((BYTE*)pEMFrame->GetReturnAddress())-1));
-
     BEGIN_PRESERVE_LAST_ERROR;
+
+    TADDR pRetAddr = dac_cast<TADDR>(pTransitionBlock) + TransitionBlock::GetOffsetOfReturnAddress();
+    TADDR retAddr = (pRetAddr != NULL) ? *PTR_PCODE(pRetAddr) : NULL;
+    Module* pModule = NULL;
+    pModule = ExecutionManager::FindReadyToRunModule((TADDR)(((BYTE*)retAddr)-1));
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
