@@ -95,7 +95,7 @@ coop_tls_pop (gpointer received_cookie)
 static void
 check_info (MonoThreadInfo *info, const gchar *action, const gchar *state, const char *func)
 {
-#ifdef ENABLE_CHECKED_BUILD_GC
+#ifdef ENABLE_CHECKED_BUILD
 	g_assertf (info, "%s Cannot %s GC %s region if the thread is not attached", func, action, state);
 	g_assertf (mono_thread_info_is_current (info), "%s [%p] Cannot %s GC %s region on a different thread", func, mono_thread_info_get_tid (info), action, state);
 	g_assertf (mono_thread_info_is_live (info), "%s [%p] Cannot %s GC %s region if the thread is not live", func, mono_thread_info_get_tid (info), action, state);
