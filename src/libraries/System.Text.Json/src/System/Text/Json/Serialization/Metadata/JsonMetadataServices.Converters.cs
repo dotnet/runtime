@@ -179,7 +179,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.
         /// </summary>
         /// <typeparam name="T">The generic definition for the type.</typeparam>
-        /// <returns></returns>
+        /// <returns>A <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/></returns>
         public static JsonConverter<T> GetUnsupportedTypeConverter<T>()
             => new UnsupportedTypeConverter<T>();
 
@@ -188,7 +188,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <typeparam name="T">The generic definition for the enum type.</typeparam>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use for serialization and deserialization.</param>
-        /// <returns></returns>
+        /// <returns>A <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T"/> values.</returns>
         public static JsonConverter<T> GetEnumConverter<T>(JsonSerializerOptions options) where T : struct, Enum
             => new EnumConverter<T>(EnumConverterOptions.AllowNumbers, options ?? throw new ArgumentNullException(nameof(options)));
 
@@ -197,7 +197,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <typeparam name="T">The generic definition for the underlying nullable type.</typeparam>
         /// <param name="underlyingTypeInfo">Serialization metadata for the underlying nullable type.</param>
-        /// <returns></returns>
+        /// <returns>A <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T?"/> values</returns>
         public static JsonConverter<T?> GetNullableConverter<T>(JsonTypeInfo<T> underlyingTypeInfo) where T : struct
         {
             if (underlyingTypeInfo == null)

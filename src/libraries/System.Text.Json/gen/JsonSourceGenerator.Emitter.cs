@@ -23,10 +23,12 @@ namespace System.Text.Json.SourceGeneration
             private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
+            private const string ElementInfoPropName = "ElementInfo";
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
             private const string InfoVarName = "info";
             private const string JsonSerializerContextName = "JsonSerializerContext";
             internal const string JsonContextVarName = "jsonContext";
+            private const string KeyInfoPropName = "KeyInfo";
             private const string NumberHandlingPropName = "NumberHandling";
             private const string ObjectCreatorPropName = "ObjectCreator";
             private const string OptionsInstanceVariableName = "Options";
@@ -510,8 +512,8 @@ namespace {@namespace}
                 string metadataInitSource = @$"{JsonCollectionInfoValuesTypeRef}<{typeRef}> {InfoVarName} = new {JsonCollectionInfoValuesTypeRef}<{typeRef}>()
                 {{
                     {ObjectCreatorPropName} = {objectCreatorValue},
-                    KeyInfo = {keyTypeMetadataPropertyName!},
-                    ElementInfo = {valueTypeMetadataPropertyName},
+                    {KeyInfoPropName} = {keyTypeMetadataPropertyName!},
+                    {ElementInfoPropName} = {valueTypeMetadataPropertyName},
                     {NumberHandlingPropName} = {numberHandlingArg},
                     {SerializeHandlerPropName} = {serializeHandlerValue}
                 }};
