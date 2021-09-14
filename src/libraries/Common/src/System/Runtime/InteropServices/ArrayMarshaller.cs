@@ -16,55 +16,54 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
     internal unsafe ref struct ArrayMarshaller<T>
     {
-        private T[]? managedArray;
-        private readonly int sizeOfNativeElement;
-        private IntPtr allocatedMemory;
+        private T[]? _managedArray;
+        private readonly int _sizeOfNativeElement;
+        private IntPtr _allocatedMemory;
 
         public ArrayMarshaller(int sizeOfNativeElement)
             :this()
         {
-            this.sizeOfNativeElement = sizeOfNativeElement;
+            _sizeOfNativeElement = sizeOfNativeElement;
         }
 
         public ArrayMarshaller(T[]? managed, int sizeOfNativeElement)
         {
-            allocatedMemory = default;
-            this.sizeOfNativeElement = sizeOfNativeElement;
+            _allocatedMemory = default;
+            _sizeOfNativeElement = sizeOfNativeElement;
             if (managed is null)
             {
-                managedArray = null;
+                _managedArray = null;
                 NativeValueStorage = default;
                 return;
             }
-            managedArray = managed;
-            this.sizeOfNativeElement = sizeOfNativeElement;
+            _managedArray = managed;
             // Always allocate at least one byte when the array is zero-length.
-            int spaceToAllocate = Math.Max(managed.Length * sizeOfNativeElement, 1);
-            allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-            NativeValueStorage = new Span<byte>((void*)allocatedMemory, spaceToAllocate);
+            int spaceToAllocate = Math.Max(managed.Length * _sizeOfNativeElement, 1);
+            _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+            NativeValueStorage = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
         }
 
         public ArrayMarshaller(T[]? managed, Span<byte> stackSpace, int sizeOfNativeElement)
         {
-            allocatedMemory = default;
-            this.sizeOfNativeElement = sizeOfNativeElement;
+            _allocatedMemory = default;
+            _sizeOfNativeElement = sizeOfNativeElement;
             if (managed is null)
             {
-                managedArray = null;
+                _managedArray = null;
                 NativeValueStorage = default;
                 return;
             }
-            managedArray = managed;
+            _managedArray = managed;
             // Always allocate at least one byte when the array is zero-length.
-            int spaceToAllocate = Math.Max(managed.Length * sizeOfNativeElement, 1);
+            int spaceToAllocate = Math.Max(managed.Length * _sizeOfNativeElement, 1);
             if (spaceToAllocate <= stackSpace.Length)
             {
                 NativeValueStorage = stackSpace[0..spaceToAllocate];
             }
             else
             {
-                allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-                NativeValueStorage = new Span<byte>((void*)allocatedMemory, spaceToAllocate);
+                _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+                NativeValueStorage = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
             }
         }
 
@@ -75,7 +74,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// </summary>
         public const int StackBufferSize = 0x200;
 
-        public Span<T> ManagedValues => managedArray;
+        public Span<T> ManagedValues => _managedArray;
 
         public Span<byte> NativeValueStorage { get; private set; }
 
@@ -83,93 +82,92 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
 
         public void SetUnmarshalledCollectionLength(int length)
         {
-            managedArray = new T[length];
+            _managedArray = new T[length];
         }
 
         public byte* Value
         {
             get
             {
-                Debug.Assert(managedArray is null || allocatedMemory != IntPtr.Zero);
-                return (byte*)allocatedMemory;
+                Debug.Assert(_managedArray is null || _allocatedMemory != IntPtr.Zero);
+                return (byte*)_allocatedMemory;
             }
             set
             {
                 if (value == null)
                 {
-                    managedArray = null;
+                    _managedArray = null;
                     NativeValueStorage = default;
                 }
                 else
                 {
-                    allocatedMemory = (IntPtr)value;
-                    NativeValueStorage = new Span<byte>(value, (managedArray?.Length ?? 0) * sizeOfNativeElement);
+                    _allocatedMemory = (IntPtr)value;
+                    NativeValueStorage = new Span<byte>(value, (_managedArray?.Length ?? 0) * _sizeOfNativeElement);
                 }
             }
         }
 
-        public T[]? ToManaged() => managedArray;
+        public T[]? ToManaged() => _managedArray;
 
         public void FreeNative()
         {
-            if (allocatedMemory != IntPtr.Zero)
+            if (_allocatedMemory != IntPtr.Zero)
             {
-                Marshal.FreeCoTaskMem(allocatedMemory);
+                Marshal.FreeCoTaskMem(_allocatedMemory);
             }
         }
     }
 
     internal unsafe ref struct PtrArrayMarshaller<T> where T : unmanaged
     {
-        private T*[]? managedArray;
-        private readonly int sizeOfNativeElement;
-        private IntPtr allocatedMemory;
+        private T*[]? _managedArray;
+        private readonly int _sizeOfNativeElement;
+        private IntPtr _allocatedMemory;
 
         public PtrArrayMarshaller(int sizeOfNativeElement)
             : this()
         {
-            this.sizeOfNativeElement = sizeOfNativeElement;
+            _sizeOfNativeElement = sizeOfNativeElement;
         }
 
         public PtrArrayMarshaller(T*[]? managed, int sizeOfNativeElement)
         {
-            allocatedMemory = default;
-            this.sizeOfNativeElement = sizeOfNativeElement;
+            _allocatedMemory = default;
+            _sizeOfNativeElement = sizeOfNativeElement;
             if (managed is null)
             {
-                managedArray = null;
+                _managedArray = null;
                 NativeValueStorage = default;
                 return;
             }
-            managedArray = managed;
-            this.sizeOfNativeElement = sizeOfNativeElement;
+            _managedArray = managed;
             // Always allocate at least one byte when the array is zero-length.
-            int spaceToAllocate = Math.Max(managed.Length * sizeOfNativeElement, 1);
-            allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-            NativeValueStorage = new Span<byte>((void*)allocatedMemory, spaceToAllocate);
+            int spaceToAllocate = Math.Max(managed.Length * _sizeOfNativeElement, 1);
+            _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+            NativeValueStorage = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
         }
 
         public PtrArrayMarshaller(T*[]? managed, Span<byte> stackSpace, int sizeOfNativeElement)
         {
-            allocatedMemory = default;
-            this.sizeOfNativeElement = sizeOfNativeElement;
+            _allocatedMemory = default;
+            _sizeOfNativeElement = sizeOfNativeElement;
             if (managed is null)
             {
-                managedArray = null;
+                _managedArray = null;
                 NativeValueStorage = default;
                 return;
             }
-            managedArray = managed;
+            _managedArray = managed;
             // Always allocate at least one byte when the array is zero-length.
-            int spaceToAllocate = Math.Max(managed.Length * sizeOfNativeElement, 1);
+            int spaceToAllocate = Math.Max(managed.Length * _sizeOfNativeElement, 1);
             if (spaceToAllocate <= stackSpace.Length)
             {
                 NativeValueStorage = stackSpace[0..spaceToAllocate];
             }
             else
             {
-                allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-                NativeValueStorage = new Span<byte>((void*)allocatedMemory, spaceToAllocate);
+                _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+                NativeValueStorage = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
             }
         }
 
@@ -180,7 +178,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// </summary>
         public const int StackBufferSize = 0x200;
 
-        public Span<IntPtr> ManagedValues => Unsafe.As<IntPtr[]>(managedArray);
+        public Span<IntPtr> ManagedValues => Unsafe.As<IntPtr[]>(_managedArray);
 
         public Span<byte> NativeValueStorage { get; private set; }
 
@@ -188,39 +186,39 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
 
         public void SetUnmarshalledCollectionLength(int length)
         {
-            managedArray = new T*[length];
+            _managedArray = new T*[length];
         }
 
         public byte* Value
         {
             get
             {
-                Debug.Assert(managedArray is null || allocatedMemory != IntPtr.Zero);
-                return (byte*)allocatedMemory;
+                Debug.Assert(_managedArray is null || _allocatedMemory != IntPtr.Zero);
+                return (byte*)_allocatedMemory;
             }
             set
             {
                 if (value == null)
                 {
-                    managedArray = null;
+                    _managedArray = null;
                     NativeValueStorage = default;
                 }
                 else
                 {
-                    allocatedMemory = (IntPtr)value;
-                    NativeValueStorage = new Span<byte>(value, (managedArray?.Length ?? 0) * sizeOfNativeElement);
+                    _allocatedMemory = (IntPtr)value;
+                    NativeValueStorage = new Span<byte>(value, (_managedArray?.Length ?? 0) * _sizeOfNativeElement);
                 }
 
             }
         }
 
-        public T*[]? ToManaged() => managedArray;
+        public T*[]? ToManaged() => _managedArray;
 
         public void FreeNative()
         {
-            if (allocatedMemory != IntPtr.Zero)
+            if (_allocatedMemory != IntPtr.Zero)
             {
-                Marshal.FreeCoTaskMem(allocatedMemory);
+                Marshal.FreeCoTaskMem(_allocatedMemory);
             }
         }
     }
