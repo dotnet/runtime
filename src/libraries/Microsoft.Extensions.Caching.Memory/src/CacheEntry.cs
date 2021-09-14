@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private CacheEntryTokens _tokens; // might be null if user is not using the tokens or callbacks
         private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
-        private long? _size;
+        private long _size = -1;
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
         private object _value;
         private CacheEntryState _state;
@@ -97,12 +97,11 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public CacheItemPriority Priority { get => _state.Priority; set => _state.Priority = value; }
 
-        /// <summary>
-        /// Gets or sets the size of the cache entry value.
-        /// </summary>
-        public long? Size
+        internal long Size => _size;
+
+        long? ICacheEntry.Size
         {
-            get => _size;
+            get => _size < 0 ? null : _size;
             set
             {
                 if (value < 0)
@@ -110,7 +109,11 @@ namespace Microsoft.Extensions.Caching.Memory
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
                 }
 
-                _size = value;
+                // disallow entry size changes after it has been committed
+                if (_state.IsDisposed)
+                    return;
+
+                _size = value ?? -1;
             }
         }
 

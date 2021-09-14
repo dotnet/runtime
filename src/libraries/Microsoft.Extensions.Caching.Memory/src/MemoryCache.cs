@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 return;
             }
 
-            if (_options.SizeLimit.HasValue && !entry.Size.HasValue)
+            if (_options.SizeLimit.HasValue && entry.Size < 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.CacheEntryHasEmptySize, nameof(entry.Size), nameof(_options.SizeLimit)));
             }
@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.Caching.Memory
                         if (_options.SizeLimit.HasValue)
                         {
                             // The prior entry was removed, decrease the by the prior entry's size
-                            Interlocked.Add(ref _cacheSize, -priorEntry.Size.Value);
+                            Interlocked.Add(ref _cacheSize, -priorEntry.Size);
                         }
                     }
                     else
@@ -180,7 +180,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     if (_options.SizeLimit.HasValue)
                     {
                         // Entry could not be added, reset cache size
-                        Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                        Interlocked.Add(ref _cacheSize, -entry.Size);
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -256,7 +256,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (_options.SizeLimit.HasValue)
                 {
-                    Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                    Interlocked.Add(ref _cacheSize, -entry.Size);
                 }
 
                 entry.SetExpired(EvictionReason.Removed);
@@ -272,7 +272,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (_options.SizeLimit.HasValue)
                 {
-                    Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                    Interlocked.Add(ref _cacheSize, -entry.Size);
                 }
                 entry.InvokeEvictionCallbacks();
             }
@@ -329,7 +329,7 @@ namespace Microsoft.Extensions.Caching.Memory
             for (int i = 0; i < 100; i++)
             {
                 long sizeRead = Interlocked.Read(ref _cacheSize);
-                newSize = sizeRead + entry.Size.Value;
+                newSize = sizeRead + entry.Size;
 
                 if (newSize < 0 || newSize > _options.SizeLimit)
                 {
@@ -363,7 +363,7 @@ namespace Microsoft.Extensions.Caching.Memory
             double? lowWatermark = cache._options.SizeLimit * (1 - cache._options.CompactionPercentage);
             if (currentSize > lowWatermark)
             {
-                cache.Compact(currentSize - (long)lowWatermark, entry => entry.Size.Value);
+                cache.Compact(currentSize - (long)lowWatermark, entry => entry.Size);
             }
 
             cache._logger.LogDebug($"Overcapacity compaction executed. New size {Interlocked.Read(ref cache._cacheSize)}");
