@@ -189,6 +189,6 @@
     <WixPackageVersion>3.14.0-dotnet</WixPackageVersion>
     <MonoWorkloadManifestVersion>6.0.0-preview.5.21275.7</MonoWorkloadManifestVersion>
     <!-- Experimental -->
-    <MicrosoftInteropDllImportGeneratorVersion>1.0.0-alpha.21301.2</MicrosoftInteropDllImportGeneratorVersion>
+    <MicrosoftInteropDllImportGeneratorVersion>1.0.0-alpha.21464.1</MicrosoftInteropDllImportGeneratorVersion>
   </PropertyGroup>
 </Project>

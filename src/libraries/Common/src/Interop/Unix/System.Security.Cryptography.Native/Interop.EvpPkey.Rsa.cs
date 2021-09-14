@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [GeneratedDllImport(Libraries.CryptoNative)]
-        private static extern SafeEvpPKeyHandle CryptoNative_EvpPKeyCreateRsa(IntPtr rsa);
+        private static partial SafeEvpPKeyHandle CryptoNative_EvpPKeyCreateRsa(IntPtr rsa);
 
         internal static SafeEvpPKeyHandle EvpPKeyCreateRsa(IntPtr rsa)
         {
@@ -29,8 +29,8 @@ internal static partial class Interop
             return pkey;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
 
         internal static SafeEvpPKeyHandle RsaGenerateKey(int keySize)
         {
