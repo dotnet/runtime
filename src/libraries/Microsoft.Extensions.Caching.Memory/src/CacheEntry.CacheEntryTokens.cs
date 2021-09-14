@@ -25,12 +25,13 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal void AttachTokens(CacheEntry cacheEntry)
             {
-                if (_expirationTokens != null)
+                if (_expirationTokens is { } expirationTokens)
                 {
                     lock (this)
                     {
-                        foreach (IChangeToken expirationToken in _expirationTokens)
+                        for (int i = 0; i < expirationTokens.Count; i++)
                         {
+                            IChangeToken expirationToken = expirationTokens[i];
                             if (expirationToken.ActiveChangeCallbacks)
                             {
                                 _expirationTokenRegistrations ??= new List<IDisposable>(1);
@@ -44,10 +45,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool CheckForExpiredTokens(CacheEntry cacheEntry)
             {
-                if (_expirationTokens != null)
+                if (_expirationTokens is { } expirationTokens)
                 {
-                    foreach (IChangeToken expiredToken in _expirationTokens)
+                    for (int i = 0; i < expirationTokens.Count; i++)
                     {
+                        IChangeToken expiredToken = expirationTokens[i];
                         if (expiredToken.HasChanged)
                         {
                             cacheEntry.SetExpired(EvictionReason.TokenExpired);
