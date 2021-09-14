@@ -1090,6 +1090,66 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
+        [Fact]
+        public async Task Test()
+        {
+            Console.WriteLine("https://github.com/dotnet/runtime/issues/57619");
+            var message = new byte[1024];
+            var readBuffer = new byte[1024];
+            var random = new Random(0);
+            random.NextBytes(message);
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            Http3LoopbackConnection connection = null;
+            Http3LoopbackStream serverStream = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                serverStream = await connection.AcceptRequestStreamAsync();
+
+                await serverStream.HandleRequestAsync().WaitAsync(TimeSpan.FromSeconds(60));
+            });
+
+            StreamingHttpContent requestContent = new StreamingHttpContent();
+
+            using HttpClient client = CreateHttpClient();
+            client.Timeout = TimeSpan.FromSeconds(0.3); // set small timeout
+            using HttpRequestMessage request = new()
+            {
+                Method = HttpMethod.Post,
+                RequestUri = server.Address,
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                Content = requestContent
+            };
+
+            var responseTask = client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(60));
+
+            Stream requestStream = await requestContent.GetStreamAsync();
+            // Send headers
+            await requestStream.FlushAsync();
+
+            await requestStream.WriteAsync(message).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            await requestStream.FlushAsync();
+            
+            await Task.Delay(TimeSpan.FromSeconds(2)); // longer than client.Timeout
+
+            // client is properly canceled on timeout
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => requestStream.WriteAsync(message).AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
+            var tce = await Assert.ThrowsAsync<TaskCanceledException>(() => responseTask);
+            Assert.IsType<TimeoutException>(tce.InnerException);
+
+            // server receives cancellation
+            var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverTask.WaitAsync(TimeSpan.FromSeconds(60)));
+            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ErrorCode);
+
+            Assert.NotNull(serverStream);
+            serverStream.Dispose();
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
         public static TheoryData<HttpStatusCode, bool> StatusCodesTestData()
         {
             var statuses = Enum.GetValues(typeof(HttpStatusCode)).Cast<HttpStatusCode>().Where(s => s >= HttpStatusCode.OK); // exclude informational
