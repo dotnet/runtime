@@ -49,7 +49,7 @@
           DependsOnTargets="GenerateRunScript;ZipTestArchive" />
   
   <Target Name="ZipTestArchive"
-          Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'MacCatalyst'">
+          Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'MacCatalyst' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOSSimulator'">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <PropertyGroup>

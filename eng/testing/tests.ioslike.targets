@@ -100,6 +100,8 @@
   </Target>
 
   <Target Name="PrepareForAppleBuildApp">
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
+
     <PropertyGroup>
       <Optimized>true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
@@ -120,8 +122,6 @@
 
       <AppleNativeFilesToBundle Include="$(PublishDir)\*.*" Exclude="$(PublishDir)\*.dll" />
     </ItemGroup>
-
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
   </Target>
 
   <Target Name="_CopyTestArchive"

@@ -13,12 +13,14 @@
     <InstallWorkloadForTesting Condition="'$(TestUsingWorkloads)' == 'true' and '$(ArchiveTests)' != 'true'">true</InstallWorkloadForTesting>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress linker warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <!-- Can be removed when SDK update picks up https://github.com/dotnet/sdk/pull/18655. -->
     <NoWarn>$(NoWarn);IL2111</NoWarn>
+    <!-- Warns about missing Xamarin.iOS.dll -->
+    <NoWarn Condition="'$(EnableSoftTrimming)' == 'true'">$(NoWarn);IL2035</NoWarn>
     <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
 
@@ -144,19 +146,28 @@
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
   should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
-  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true' And '$(SkipConfigureTrimming)' != 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
+  <Target Name="ConfigureTrimming" Condition="('$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true') And '$(SkipConfigureTrimming)' != 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
     <PropertyGroup>
-      <TrimMode>link</TrimMode>
+      <TrimMode Condition="'$(EnableAggressiveTrimming)' == 'true'">link</TrimMode>
+      <TrimMode Condition="'$(EnableSoftTrimming)' == 'true'">copyused</TrimMode>
     </PropertyGroup>
 
     <ItemGroup>
       <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
-      <ResolvedFileToPublish TrimMode="link" />
+      <ResolvedFileToPublish TrimMode="$(TrimMode)" />
 
       <!-- Don't trim the main assembly.
            TrimMode="" is needed so the root assemblies are correctly identified -->
       <ResolvedFileToPublish TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
 
+      <!-- TODO: find out why these assemblies aren't copied by copyused even though they're referenced -->
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Diagnostics.FileVersionInfo'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Drawing.Primitives'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Memory'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Runtime.Serialization.Formatters'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.AccessControl'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
+      
       <!-- Even though we are trimming the test runner assembly, we want it to be treated
            as a root -->
       <TrimmerRootAssembly
