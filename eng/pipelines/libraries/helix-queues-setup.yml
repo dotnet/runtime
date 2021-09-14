@@ -97,7 +97,6 @@ jobs:
         - OSX.1014.Amd64.Open
         - OSX.1015.Amd64.Open
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - OSX.1014.Amd64.Open
         - OSX.1015.Amd64.Open
 
     # Android
