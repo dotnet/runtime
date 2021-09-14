@@ -369,12 +369,12 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
             }
             else
             {
-                trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and directory reported by getpwuid(3) [%s] either doesn't exist or is not accessible for read/write."), pwuid->pw_dir);
+                trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and directory reported by getpwuid() [%s] either doesn't exist or is not accessible for read/write."), pwuid->pw_dir);
             }
         }
         else
         {
-            trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and getpwuid(3) returned NULL."));
+            trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and getpwuid() returned NULL."));
         }
     }
 
