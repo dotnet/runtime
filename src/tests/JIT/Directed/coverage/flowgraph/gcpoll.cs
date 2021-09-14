@@ -11,9 +11,10 @@ public class TestClass13
     {
         Console.WriteLine();
     }
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         TestClass13 objTestClass13 = new TestClass13();
         objTestClass13.Method0();
+        return 100;
     }
 }
