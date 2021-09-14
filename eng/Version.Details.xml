@@ -182,13 +182,13 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b7e10374429b5af32debc4660aa9bce41cfb903e</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="7.0.0-alpha.1.21456.1">
+    <Dependency Name="System.Text.Json" Version="7.0.0-alpha.1.21463.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>b7e10374429b5af32debc4660aa9bce41cfb903e</Sha>
+      <Sha>0becd27f728f9e1eeb2a168789418ad4191ade99</Sha>
     </Dependency>
-    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="7.0.0-alpha.1.21456.1">
+    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="7.0.0-alpha.1.21463.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>b7e10374429b5af32debc4660aa9bce41cfb903e</Sha>
+      <Sha>0becd27f728f9e1eeb2a168789418ad4191ade99</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.21460.1">
       <Uri>https://github.com/mono/linker</Uri>
