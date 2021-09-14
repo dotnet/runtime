@@ -10,11 +10,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-<<<<<<< HEAD
-=======
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Shared.Extensions;
->>>>>>> 6e956734def (Use GetBestTypeByMetadataName instead of GetTypeByMetadataName)
 
 namespace Microsoft.Extensions.Logging.Generators
 {
