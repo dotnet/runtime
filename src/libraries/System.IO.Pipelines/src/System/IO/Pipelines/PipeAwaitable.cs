@@ -50,6 +50,8 @@ namespace System.IO.Pipelines
             // Don't register if already completed, we would immediately unregistered in ObserveCancellation
             if (cancellationToken.CanBeCanceled && !IsCompleted)
             {
+                var previousAwaitableState = _awaitableState;
+
                 _cancellationTokenRegistration = cancellationToken.UnsafeRegister(callback, state);
 
                 // If we get back the default CancellationTokenRegistration then it means the
@@ -57,6 +59,8 @@ namespace System.IO.Pipelines
                 // the state of the awaitable as yet.
                 if (_cancellationTokenRegistration == default(CancellationTokenRegistration))
                 {
+                    Debug.Assert(previousAwaitableState == _awaitableState, "The awaitable state changed!");
+
                     cancellationToken.ThrowIfCancellationRequested();
                 }
 
