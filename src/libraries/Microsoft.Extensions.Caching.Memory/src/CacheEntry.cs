@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly MemoryCache _cache;
 
         private CacheEntryTokens _tokens; // might be null if user is not using the tokens or callbacks
-        private TimeSpan? _absoluteExpirationRelativeToNow;
+        private TimeSpan _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long _size = -1;
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
@@ -37,18 +37,17 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public DateTimeOffset? AbsoluteExpiration { get; set; }
 
-        /// <summary>
-        /// Gets or sets an absolute expiration time, relative to now.
-        /// </summary>
-        public TimeSpan? AbsoluteExpirationRelativeToNow
+        internal TimeSpan AbsoluteExpirationRelativeToNow => _absoluteExpirationRelativeToNow;
+
+        TimeSpan? ICacheEntry.AbsoluteExpirationRelativeToNow
         {
-            get => _absoluteExpirationRelativeToNow;
+            get => _absoluteExpirationRelativeToNow.Ticks == 0 ? null : _absoluteExpirationRelativeToNow;
             set
             {
                 // this method does not set AbsoluteExpiration as it would require calling Clock.UtcNow twice:
                 // once here and once in MemoryCache.SetEntry
 
-                if (value <= TimeSpan.Zero)
+                if (value is { Ticks: <= 0 })
                 {
                     throw new ArgumentOutOfRangeException(
                         nameof(AbsoluteExpirationRelativeToNow),
@@ -56,7 +55,7 @@ namespace Microsoft.Extensions.Caching.Memory
                         "The relative expiration value must be positive.");
                 }
 
-                _absoluteExpirationRelativeToNow = value;
+                _absoluteExpirationRelativeToNow = value.GetValueOrDefault();
             }
         }
 

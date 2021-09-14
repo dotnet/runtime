@@ -111,9 +111,9 @@ namespace Microsoft.Extensions.Caching.Memory
             // Applying the option's absolute expiration only if it's not already smaller.
             // This can be the case if a dependent cache entry has a smaller value, and
             // it was set by cascading it to its parent.
-            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
+            if (entry.AbsoluteExpirationRelativeToNow.Ticks > 0)
             {
-                var absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow.Value;
+                var absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
                 if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration < entry.AbsoluteExpiration.Value)
                 {
                     entry.AbsoluteExpiration = absoluteExpiration;
