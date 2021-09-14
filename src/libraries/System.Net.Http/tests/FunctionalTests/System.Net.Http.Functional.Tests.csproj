@@ -309,7 +309,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs"
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
     <Compile Include="NtAuthTests.Windows.cs" />
-    <Compile Include="ImpersonificatedAuthTests.cs" />
+    <Compile Include="ImpersonatedAuthTests.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true'">

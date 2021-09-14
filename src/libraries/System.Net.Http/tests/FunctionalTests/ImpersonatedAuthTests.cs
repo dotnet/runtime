@@ -12,13 +12,13 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class ImpersonificatedAuthTests : IClassFixture<WindowsIdentityFixture>
+    public class ImpersonatedAuthTests: IClassFixture<WindowsIdentityFixture>
     {
-        public static bool CanRunImpersonificatedTests = PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer;
+        public static bool CanRunImpersonatedTests = PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer;
         private readonly WindowsIdentityFixture _fixture;
         private readonly ITestOutputHelper _output;
 
-        public ImpersonificatedAuthTests(WindowsIdentityFixture windowsIdentityFixture, ITestOutputHelper output)
+        public  ImpersonatedAuthTests(WindowsIdentityFixture windowsIdentityFixture, ITestOutputHelper output)
         {
             _output = output;
             _fixture = windowsIdentityFixture;
@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(CanRunImpersonificatedTests))]
+        [ConditionalTheory(nameof(CanRunImpersonatedTests))]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]
