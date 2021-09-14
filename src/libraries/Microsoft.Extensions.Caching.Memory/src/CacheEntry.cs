@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        internal DateTimeOffset LastAccessed { get; set; }
+        internal DateTime LastAccessed { get; set; }
 
         internal EvictionReason EvictionReason { get => _state.EvictionReason; private set => _state.EvictionReason = value; }
 
@@ -161,9 +161,9 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
-        internal bool CheckExpired(in DateTimeOffset now)
+        internal bool CheckExpired(DateTime utcNow)
             => _state.IsExpired
-                || CheckForExpiredTime(now)
+                || CheckForExpiredTime(utcNow)
                 || (_tokens != null && _tokens.CheckForExpiredTokens(this));
 
         internal void SetExpired(EvictionReason reason)
@@ -177,25 +177,25 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
-        private bool CheckForExpiredTime(in DateTimeOffset now)
+        private bool CheckForExpiredTime(DateTime utcNow)
         {
             if (!AbsoluteExpiration.HasValue && _slidingExpiration.Ticks == 0)
             {
                 return false;
             }
 
-            return FullCheck(now);
+            return FullCheck(utcNow);
 
-            bool FullCheck(in DateTimeOffset offset)
+            bool FullCheck(DateTime utcNow)
             {
-                if (AbsoluteExpiration.HasValue && AbsoluteExpiration.Value <= offset)
+                if (AbsoluteExpiration.HasValue && AbsoluteExpiration.Value.UtcDateTime <= utcNow)
                 {
                     SetExpired(EvictionReason.Expired);
                     return true;
                 }
 
                 if (_slidingExpiration.Ticks > 0
-                    && (offset - LastAccessed) >= _slidingExpiration)
+                    && (utcNow - LastAccessed) >= _slidingExpiration)
                 {
                     SetExpired(EvictionReason.Expired);
                     return true;

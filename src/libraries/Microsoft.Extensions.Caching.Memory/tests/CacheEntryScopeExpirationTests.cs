@@ -519,22 +519,22 @@ namespace Microsoft.Extensions.Caching.Memory
                 Task.Run(() => SetExpiredManyTimes(entry)),
                 Task.Run(() => SetExpiredManyTimes(entry)));
 
-            Assert.True(entry.CheckExpired(DateTimeOffset.UtcNow));
+            Assert.True(entry.CheckExpired(DateTime.UtcNow));
 
             static void SetExpiredManyTimes(CacheEntry cacheEntry)
             {
-                var now = DateTimeOffset.UtcNow;
+                var utcNow = DateTime.UtcNow;
                 for (int i = 0; i < 1_000; i++)
                 {
                     cacheEntry.SetExpired(EvictionReason.Expired); // modifies CacheEntry._state
-                    Assert.True(cacheEntry.CheckExpired(now));
+                    Assert.True(cacheEntry.CheckExpired(utcNow));
                     cacheEntry.Value = cacheEntry; // modifies CacheEntry._state
-                    Assert.True(cacheEntry.CheckExpired(now));
+                    Assert.True(cacheEntry.CheckExpired(utcNow));
 
                     cacheEntry.SetExpired(EvictionReason.Expired); // modifies CacheEntry._state
-                    Assert.True(cacheEntry.CheckExpired(now));
+                    Assert.True(cacheEntry.CheckExpired(utcNow));
                     cacheEntry.Dispose(); // might modify CacheEntry._state
-                    Assert.True(cacheEntry.CheckExpired(now));
+                    Assert.True(cacheEntry.CheckExpired(utcNow));
                 }
             }
         }

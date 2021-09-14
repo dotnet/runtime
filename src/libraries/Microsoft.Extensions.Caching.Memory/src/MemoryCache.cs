@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -27,7 +26,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private long _cacheSize;
         private bool _disposed;
-        private DateTimeOffset _lastExpirationScan;
+        private DateTime _lastExpirationScan;
 
         /// <summary>
         /// Creates a new <see cref="MemoryCache"/> instance.
@@ -58,14 +57,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
             _entries = new ConcurrentDictionary<object, CacheEntry>();
 
-            if (_options.Clock == null)
-            {
-                _options.Clock = new SystemClock();
-            }
-
-            _lastExpirationScan = _options.Clock.UtcNow;
+            _lastExpirationScan = UtcNow;
             TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime
         }
+
+        private DateTime UtcNow => _options.Clock?.UtcNow.UtcDateTime ?? DateTime.UtcNow;
 
         /// <summary>
         /// Cleans up the background collection events.
@@ -106,7 +102,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 throw new InvalidOperationException(SR.Format(SR.CacheEntryHasEmptySize, nameof(entry.Size), nameof(_options.SizeLimit)));
             }
 
-            DateTimeOffset utcNow = _options.Clock.UtcNow;
+            DateTime utcNow = UtcNow;
 
             // Applying the option's absolute expiration only if it's not already smaller.
             // This can be the case if a dependent cache entry has a smaller value, and
@@ -211,7 +207,7 @@ namespace Microsoft.Extensions.Caching.Memory
             ValidateCacheKey(key);
             CheckDisposed();
 
-            DateTimeOffset utcNow = _options.Clock.UtcNow;
+            DateTime utcNow = UtcNow;
 
             if (_entries.TryGetValue(key, out CacheEntry entry))
             {
@@ -263,7 +259,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.InvokeEvictionCallbacks();
             }
 
-            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
+            StartScanForExpiredItemsIfNeeded(UtcNow);
         }
 
         private void RemoveEntry(CacheEntry entry)
@@ -282,38 +278,38 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             // TODO: For efficiency consider processing these expirations in batches.
             RemoveEntry(entry);
-            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
+            StartScanForExpiredItemsIfNeeded(UtcNow);
         }
 
         // Called by multiple actions to see how long it's been since we last checked for expired items.
         // If sufficient time has elapsed then a scan is initiated on a background task.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void StartScanForExpiredItemsIfNeeded(DateTimeOffset utcNow)
+        private void StartScanForExpiredItemsIfNeeded(DateTime utcNow)
         {
             if (_options.ExpirationScanFrequency < utcNow - _lastExpirationScan)
             {
                 ScheduleTask(utcNow);
             }
 
-            void ScheduleTask(DateTimeOffset utcNow)
+            void ScheduleTask(DateTime utcNow)
             {
                 _lastExpirationScan = utcNow;
-                Task.Factory.StartNew(state => ScanForExpiredItems((MemoryCache)state), this,
+                Task.Factory.StartNew(state => ((MemoryCache)state).ScanForExpiredItems(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
         }
 
-        private static void ScanForExpiredItems(MemoryCache cache)
+        private void ScanForExpiredItems()
         {
-            DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
+            DateTime utcNow = _lastExpirationScan = UtcNow;
 
-            foreach (KeyValuePair<object, CacheEntry> item in cache._entries)
+            foreach (KeyValuePair<object, CacheEntry> item in _entries)
             {
                 CacheEntry entry = item.Value;
 
-                if (entry.CheckExpired(now))
+                if (entry.CheckExpired(utcNow))
                 {
-                    cache.RemoveEntry(entry);
+                    RemoveEntry(entry);
                 }
             }
         }
@@ -351,22 +347,22 @@ namespace Microsoft.Extensions.Caching.Memory
             _logger.LogDebug("Overcapacity compaction triggered");
 
             // Spawn background thread for compaction
-            ThreadPool.QueueUserWorkItem(s => OvercapacityCompaction((MemoryCache)s), this);
+            ThreadPool.QueueUserWorkItem(s => ((MemoryCache)s).OvercapacityCompaction(), this);
         }
 
-        private static void OvercapacityCompaction(MemoryCache cache)
+        private void OvercapacityCompaction()
         {
-            long currentSize = Interlocked.Read(ref cache._cacheSize);
+            long currentSize = Interlocked.Read(ref _cacheSize);
 
-            cache._logger.LogDebug($"Overcapacity compaction executing. Current size {currentSize}");
+            _logger.LogDebug($"Overcapacity compaction executing. Current size {currentSize}");
 
-            double? lowWatermark = cache._options.SizeLimit * (1 - cache._options.CompactionPercentage);
+            double? lowWatermark = _options.SizeLimit * (1 - _options.CompactionPercentage);
             if (currentSize > lowWatermark)
             {
-                cache.Compact(currentSize - (long)lowWatermark, entry => entry.Size);
+                Compact(currentSize - (long)lowWatermark, entry => entry.Size);
             }
 
-            cache._logger.LogDebug($"Overcapacity compaction executed. New size {Interlocked.Read(ref cache._cacheSize)}");
+            _logger.LogDebug($"Overcapacity compaction executed. New size {Interlocked.Read(ref _cacheSize)}");
         }
 
         /// Remove at least the given percentage (0.10 for 10%) of the total entries (or estimated memory?), according to the following policy:
@@ -391,11 +387,11 @@ namespace Microsoft.Extensions.Caching.Memory
             long removedSize = 0;
 
             // Sort items by expired & priority status
-            DateTimeOffset now = _options.Clock.UtcNow;
+            DateTime utcNow = UtcNow;
             foreach (KeyValuePair<object, CacheEntry> item in _entries)
             {
                 CacheEntry entry = item.Value;
-                if (entry.CheckExpired(now))
+                if (entry.CheckExpired(utcNow))
                 {
                     entriesToRemove.Add(entry);
                     removedSize += computeEntrySize(entry);
