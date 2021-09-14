@@ -8361,6 +8361,8 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
                 preservedAreaSize += REGSIZE_BYTES;
             }
 
+            // HACKATHON: StackMem registration needs to do something here...
+
             // bool in synchronized methods that tracks whether the lock has been taken (takes 4 bytes on stack)
             preservedAreaSize += 4;
         }

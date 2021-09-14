@@ -236,6 +236,12 @@ PhaseStatus Compiler::fgTransformPatchpoints()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    if (lvaStackallocList != BAD_VAR_NUM)
+    {
+        JITDUMP("\n -- unable to handle StackMem methods\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     if (opts.IsReversePInvoke())
     {
         JITDUMP(" -- unable to handle Reverse P/Invoke\n");

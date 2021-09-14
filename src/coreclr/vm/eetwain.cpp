@@ -4414,6 +4414,154 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
 
 INDEBUG(void* forceStack1;)
 
+#ifdef DACCESS_COMPILE
+/*********************************************************************/
+unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
+{
+// HACKATHON     STANDARD_VM_CONTRACT;
+
+    unsigned result = 0;
+
+    _ASSERTE(pMT->IsValueType());
+
+    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
+    {
+        if (gcPtrs[0] == TYPE_GC_NONE)
+        {
+            gcPtrs[0] = TYPE_GC_BYREF;
+            result++;
+        }
+        else if (gcPtrs[0] != TYPE_GC_BYREF)
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+        return result;
+    }
+
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        int fieldStartIndex = pFD->GetOffset() / TARGET_POINTER_SIZE;
+
+        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+        {
+            if (pFD->IsObjRef())
+            {
+                if (gcPtrs[fieldStartIndex] == TYPE_GC_NONE)
+                {
+                    gcPtrs[fieldStartIndex] = TYPE_GC_REF;
+                    result++;
+                }
+                else if (gcPtrs[fieldStartIndex] != TYPE_GC_REF)
+                {
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+        }
+        else
+        {
+            MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
+        }
+    }
+    return result;
+}
+#endif // DACCESS_COMPILE
+
+struct StackMemWrapperData
+{
+    LPVOID hCallBack;
+    GCEnumCallback pCallBack;
+};
+
+struct GCRegistrationLinkedListEntry
+{
+    intptr_t MagicNumber; // Magic number known to GC to that these things can be reported correctly;
+    intptr_t ElemCount; // Indicates how many elements follow. A negative number indicates that the memory was allocated via LocAlloc
+    MethodTable* MethodTablePointer;
+    GCRegistrationLinkedListEntry* Next;
+};
+
+unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs);
+
+void GcEnumObjectWithPotentialStackMem(LPVOID pData, OBJECTREF *pObj, uint32_t flags
+    DAC_ARG(DacSlotLocation loc))    // where the reference came from) HACKATHON ... this doesn't quite work for the stackmem data
+{
+    StackMemWrapperData* actualCallback = (StackMemWrapperData*)pData;
+
+    if (flags == 0)
+    {
+        intptr_t** pObjRaw = (intptr_t**)pObj;
+
+        if (pObjRaw == NULL)
+        {
+            return;
+        }
+
+        if (*pObjRaw == NULL)
+        {
+            return;
+        }
+
+        if (**pObjRaw == 0x1236) // Magic number from RuntimeHelpers.CoreCLR.cs
+        {
+            GCRegistrationLinkedListEntry *pEntry = *(GCRegistrationLinkedListEntry **)pObj;
+            while (pEntry != (GCRegistrationLinkedListEntry *)0x1236)
+            {
+                intptr_t elemCount = pEntry->ElemCount;
+                if (elemCount < 0)
+                    elemCount = -elemCount;
+                
+                if (pEntry->MethodTablePointer != NULL && (pEntry->MethodTablePointer->ContainsPointers() || pEntry->MethodTablePointer->IsByRefLike() || !pEntry->MethodTablePointer->IsValueType()))
+                {
+                    OBJECTREF *pObjStart = (OBJECTREF*)(pEntry + 1);
+                    OBJECTREF *pObjCurrent = pObjStart;
+                    if (pEntry->MethodTablePointer->IsValueType())
+                    {
+                        int gcSlotCount = pEntry->MethodTablePointer->GetNumInstanceFieldBytes() / sizeof(intptr_t);
+                        BYTE* gcLayout = (BYTE*)malloc(gcSlotCount);
+                        unsigned gcPointerCount = ComputeGCLayout(pEntry->MethodTablePointer, gcLayout);
+
+                        if (gcPointerCount != 0)
+                        {
+                            for (intptr_t curElem = 0; curElem < elemCount; curElem++)
+                            {
+                                for (int iGcSlot = 0; iGcSlot < gcSlotCount; iGcSlot++, pObjCurrent++)
+                                {
+                                    if (gcLayout[iGcSlot] == TYPE_GC_BYREF)
+                                    {
+                                        actualCallback->pCallBack(actualCallback->hCallBack, pObjCurrent, GC_CALL_INTERIOR DAC_ARG(loc));
+                                    }
+                                    else if (gcLayout[iGcSlot] == TYPE_GC_REF)
+                                    {
+                                        actualCallback->pCallBack(actualCallback->hCallBack, pObjCurrent, 0 DAC_ARG(loc));
+                                    }
+                                }
+                            }
+                        }
+
+                        free(gcLayout);
+                    }
+                    else
+                    {
+                        for (intptr_t curElem = 0; curElem < elemCount; curElem++)
+                        {
+                            actualCallback->pCallBack(actualCallback->hCallBack, pObjCurrent, 0 DAC_ARG(loc));
+                            pObjCurrent++;
+                        }
+                    }
+                }
+                pEntry = pEntry->Next;
+            }
+
+            return;
+        }
+
+        // If this isn't a StackMem situation... just call the callback with enthusiasm
+        actualCallback->pCallBack(actualCallback->hCallBack, pObj, flags DAC_ARG(loc));
+    }
+}
+
 #ifndef USE_GC_INFO_DECODER
 
 /*****************************************************************************
@@ -4442,6 +4590,14 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         return true;
     }
 #endif // FEATURE_EH_FUNCLETS
+
+    // HACKATHON : Add yet another wrapper
+    StackMemWrapperData stackMemWrapped;
+    stackMemWrapped.pCallBack = pCallBack;
+    stackMemWrapped.hCallBack = hCallBack;
+    hCallBack = &stackMemWrapped;
+    pCallBack = GcEnumObjectWithPotentialStackMem;
+    // END HACKATHON
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned  curOffs = pCodeInfo->GetRelOffset();
@@ -5142,6 +5298,14 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
+
+    // HACKATHON : Add yet another wrapper
+    StackMemWrapperData stackMemWrapped;
+    stackMemWrapped.pCallBack = pCallBack;
+    stackMemWrapped.hCallBack = hCallBack;
+    hCallBack = &stackMemWrapped;
+    pCallBack = GcEnumObjectWithPotentialStackMem;
+    // END HACKATHON
 
     unsigned curOffs = pCodeInfo->GetRelOffset();
 

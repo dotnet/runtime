@@ -2069,9 +2069,9 @@ bool CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
 }
 
 /*********************************************************************/
-static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
+unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 {
-    STANDARD_VM_CONTRACT;
+// HACKATHON     STANDARD_VM_CONTRACT;
 
     unsigned result = 0;
 

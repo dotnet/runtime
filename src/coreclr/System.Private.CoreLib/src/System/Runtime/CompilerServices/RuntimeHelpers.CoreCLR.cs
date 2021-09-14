@@ -349,6 +349,104 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
+
+        // If any of the helper functions are used, then the magic registration token must be passed to them
+        // - There is only one of those per stack frame
+        // - It is pointer sized, and reported to the GC as a normal object reference
+        // - However, it doesn't actually point to an object, instead it points to a RegistrationLinkedListEntry (It knows this by virtue of the MagicNumber)
+
+
+        internal unsafe struct GCRegistrationLinkedListEntry
+        {
+            public nuint MagicNumber; // Magic number known to GC to that these things can be reported correctly;
+            public nint ElemCount; // Indicates how many elements follow. A negative number indicates that the memory was allocated via LocAlloc
+            public MethodTable* MethodTablePointer;
+            public GCRegistrationLinkedListEntry* Next;
+        }
+
+        private const int MagicNumber = 0x1236;
+
+        internal static unsafe byte* AllocateAndOrRegisterAllocatedMemoryWithGC(GCRegistrationLinkedListEntry* allocatedMemory, nuint allocationSize, nuint elemCount, MethodTable* methodTablePtr, ref GCRegistrationLinkedListEntry* magicRegistrationToken)
+        {
+            Debug.Assert(allocationSize < (nuint)int.MaxValue);
+            Debug.Assert(elemCount < (nuint)int.MaxValue);
+            if (allocatedMemory != null)
+            {
+                Debug.Assert(elemCount != 0); // Calling this with elemCount 0 and allocated memory is invalid, as that will trigger an attempt to free this memory
+                allocatedMemory->ElemCount = -(nint)elemCount;
+            }
+            else
+            {
+                allocatedMemory = (GCRegistrationLinkedListEntry*)NativeMemory.Alloc(allocationSize);
+                allocatedMemory->ElemCount = (nint)elemCount;
+            }
+            allocatedMemory->MagicNumber = MagicNumber;
+
+            allocatedMemory->MethodTablePointer = methodTablePtr;
+            if (magicRegistrationToken == null)
+            {
+                allocatedMemory->Next = (GCRegistrationLinkedListEntry*)MagicNumber;
+            }
+            else
+            {
+                allocatedMemory->Next = magicRegistrationToken;
+            }
+            magicRegistrationToken = allocatedMemory;
+            return (byte*)(allocatedMemory + 1);
+        }
+
+        internal static unsafe byte* AllocatedNonProtectedRegion(nuint allocationSize, ref GCRegistrationLinkedListEntry* magicRegistrationToken)
+        {
+            Debug.Assert(allocationSize > 0);
+            Debug.Assert(allocationSize >= (nuint)sizeof(GCRegistrationLinkedListEntry));
+            Debug.Assert(allocationSize < (nuint)int.MaxValue);
+            GCRegistrationLinkedListEntry* allocatedMemory = (GCRegistrationLinkedListEntry*)NativeMemory.Alloc(allocationSize);
+            allocatedMemory->MagicNumber = MagicNumber;
+            allocatedMemory->ElemCount = (nint)allocationSize;
+            allocatedMemory->MethodTablePointer = null;
+            if (magicRegistrationToken == null)
+            {
+                allocatedMemory->Next = (GCRegistrationLinkedListEntry*)MagicNumber;
+            }
+            else
+            {
+                allocatedMemory->Next = magicRegistrationToken;
+            }
+            magicRegistrationToken = allocatedMemory;
+            return (byte*)(allocatedMemory + 1);
+        }
+
+        internal static unsafe void CleanupStackAllocatedRegions(ref GCRegistrationLinkedListEntry* magicRegistrationToken)
+        {
+            GCRegistrationLinkedListEntry* next = magicRegistrationToken;
+            if (next == null)
+            {
+                return; // There is nothing to do.
+            }
+
+            magicRegistrationToken = null;
+            // At this point, the memory is no longer GC reported
+
+            if (next->MagicNumber != MagicNumber)
+            {
+                Environment.FailFast("Invalid Magic Number");
+            }
+
+            while (next != (GCRegistrationLinkedListEntry*)MagicNumber)
+            {
+                GCRegistrationLinkedListEntry* current = next;
+                next = next->Next;
+                if ((next != (GCRegistrationLinkedListEntry*)MagicNumber) &&
+                    (next->MagicNumber != MagicNumber))
+                {
+                    Environment.FailFast("Invalid Magic Number");
+                }
+
+                // Positive numbers indicate a heap allocation
+                if (current->ElemCount >= 0)
+                    NativeMemory.Free(current);
+            }
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

@@ -1494,8 +1494,6 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     }
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 /*****************************************************************************
  *
  *  Add a single exception table entry at index 'XTnum', [0 <= XTnum <= compHndBBtabCount].
@@ -1601,8 +1599,6 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
     compHndBBtabCount++;
     return compHndBBtab + XTnum;
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 #if !FEATURE_EH
 
