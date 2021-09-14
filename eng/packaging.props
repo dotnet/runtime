@@ -23,7 +23,7 @@
     <PackageVersion Condition="'$(PackageVersion)' == ''">$(ProductVersion)</PackageVersion>
     <!-- major.minor.release version of the platforms package we're currently building
          Pre-release will be appended during build -->
-    <PlatformPackageVersion>5.0.3</PlatformPackageVersion>
+    <PlatformPackageVersion>5.0.4</PlatformPackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
