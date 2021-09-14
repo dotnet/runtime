@@ -341,7 +341,18 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
     // check for the POSIX standard environment variable
     if (pal::getenv(_X("HOME"), &directory))
     {
-        return is_read_write_able_directory(directory);
+        if (is_read_write_able_directory(directory))
+        {
+            return true;
+        }
+        else
+        {
+            trace::error(_X("Default extraction directory [%s] either doesn't exist or is not accessible for read/write."), directory.c_str());
+        }
+    }
+    else
+    {
+        trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined."));
     }
 
     return false;
@@ -367,6 +378,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
     else if (errno != EEXIST)
     {
+        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno));
         return false;
     }
 

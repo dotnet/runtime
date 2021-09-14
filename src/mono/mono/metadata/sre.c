@@ -1268,11 +1268,6 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 		}
 	}
 
-	/* SRE assemblies are loaded into the individual loading context, ie,
-	 * they only fire AssemblyResolve events, they don't cause probing for
-	 * referenced assemblies to happen. */
-	assembly->assembly.context.kind = MONO_ASMCTX_INDIVIDUAL;
-
 	char *assembly_name = mono_string_to_utf8_checked_internal (assemblyb->name, error);
 	return_if_nok (error);
 	image = mono_dynamic_image_create (assembly, assembly_name, g_strdup ("RefEmit_YouForgotToDefineAModule"));

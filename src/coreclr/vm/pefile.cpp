@@ -47,9 +47,9 @@ PEFile::PEFile(PEImage *identity) :
     m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
     m_refCount(1),
     m_flags(0),
-    m_pAssemblyLoadContext(nullptr),
+    m_pAssemblyBinder(nullptr),
     m_pHostAssembly(nullptr),
-    m_pFallbackLoadContextBinder(nullptr)
+    m_pFallbackBinder(nullptr)
 {
     CONTRACTL
     {
@@ -347,10 +347,10 @@ BOOL PEFile::Equals(PEFile *pFile)
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
     if (pFile->HasHostAssembly() && this->HasHostAssembly())
     {
-        AssemblyBinder* fileBinderId = pFile->GetHostAssembly()->GetBinder();
-        AssemblyBinder* thisBinderId = this->GetHostAssembly()->GetBinder();
+        AssemblyBinder* fileBinder = pFile->GetHostAssembly()->GetBinder();
+        AssemblyBinder* thisBinder = this->GetHostAssembly()->GetBinder();
 
-        if (fileBinderId != thisBinderId || fileBinderId == NULL)
+        if (fileBinder != thisBinder || fileBinder == NULL)
             return FALSE;
     }
 
@@ -973,7 +973,7 @@ void PEAssembly::Attach()
 
 #ifndef DACCESS_COMPILE
 PEAssembly::PEAssembly(
-                CoreBindResult* pBindResultInfo,
+                BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
                 PEFile *creator,
                 BOOL system,
@@ -1038,7 +1038,8 @@ PEAssembly::PEAssembly(
     {
         // Cannot have both pHostAssembly and a coreclr based bind
         _ASSERTE(pHostAssembly == nullptr);
-        pBindResultInfo->GetBindAssembly(&m_pHostAssembly);
+        pBindResultInfo = clr::SafeAddRef(pBindResultInfo);
+        m_pHostAssembly = pBindResultInfo;
     }
 
 #if _DEBUG
@@ -1124,18 +1125,13 @@ PEAssembly *PEAssembly::DoOpenSystem()
     CONTRACT_END;
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
-    CoreBindResult bindResult;
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm));
-    if(pPrivAsm != NULL)
-    {
-        bindResult.Init(pPrivAsm);
-    }
 
-    RETURN new PEAssembly(&bindResult, NULL, NULL, TRUE);
+    RETURN new PEAssembly(pPrivAsm, NULL, NULL, TRUE);
 }
 
-PEAssembly* PEAssembly::Open(CoreBindResult* pBindResult,
+PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult,
                                    BOOL isSystem)
 {
 
@@ -1385,10 +1381,10 @@ void PEFile::EnsureImageOpened()
 
 void PEFile::SetupAssemblyLoadContext()
 {
-    PTR_AssemblyBinder pBindingContext = GetBindingContext();
+    PTR_AssemblyBinder pBinder = GetBinder();
 
-    m_pAssemblyLoadContext = (pBindingContext != NULL) ?
-        (AssemblyLoadContext*)pBindingContext :
+    m_pAssemblyBinder = (pBinder != NULL) ?
+        pBinder :
         AppDomain::GetCurrentDomain()->CreateBinderContext();
 }
 
@@ -1491,11 +1487,11 @@ TADDR PEFile::GetMDInternalRWAddress()
 #endif
 
 // Returns the AssemblyBinder* instance associated with the PEFile
-PTR_AssemblyBinder PEFile::GetBindingContext()
+PTR_AssemblyBinder PEFile::GetBinder()
 {
     LIMITED_METHOD_CONTRACT;
 
-    PTR_AssemblyBinder pBindingContext = NULL;
+    PTR_AssemblyBinder pBinder = NULL;
 
     // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
     // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
@@ -1504,7 +1500,7 @@ PTR_AssemblyBinder PEFile::GetBindingContext()
         BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
         if (pHostAssembly)
         {
-            pBindingContext = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+            pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
         }
         else
         {
@@ -1513,10 +1509,10 @@ PTR_AssemblyBinder PEFile::GetBindingContext()
             // binder reference.
             if (IsDynamic())
             {
-                pBindingContext = GetFallbackLoadContextBinder();
+                pBinder = GetFallbackBinder();
             }
         }
     }
 
-    return pBindingContext;
+    return pBinder;
 }

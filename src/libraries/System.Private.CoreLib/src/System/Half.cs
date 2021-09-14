@@ -1059,6 +1059,31 @@ namespace System
         static Half IFloatingPoint<Half>.Truncate(Half x)
             => (Half)MathF.Truncate((float)x);
 
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsFinite(Half x) => IsFinite(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsInfinity(Half x) => IsInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNaN(Half x) => IsNaN(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNegative(Half x) => IsNegative(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNegativeInfinity(Half x) => IsNegativeInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNormal(Half x) => IsNormal(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsPositiveInfinity(Half x) => IsPositiveInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsSubnormal(Half x) => IsSubnormal(x);
+
+
         // static Half IFloatingPoint<Half>.AcosPi(Half x)
         //     => (Half)MathF.AcosPi((float)x);
         //
