@@ -60,7 +60,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct Decimal : ISpanFormattable, IComparable, IConvertible, IComparable<decimal>, IEquatable<decimal>, ISerializable, IDeserializationCallback
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IMinMaxValue<decimal>,
           ISignedNumber<decimal>
 #pragma warning restore SA1001, CA2252
