@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -271,6 +272,32 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(instance);
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57333")]
+        public void CallSiteFactoryResolvesIEnumerableOfOpenGenericServiceAfterResolvingClosedImplementation()
+        {
+            IServiceCollection descriptors = new ServiceCollection();
+            descriptors.Add(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<int>), typeof(FakeIntService)));
+            descriptors.Add(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>)));
+
+            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
+
+            IFakeOpenGenericService<int> processor = GetServiceFromCallSiteFactory<IFakeOpenGenericService<int>>(provider);
+            IEnumerable<IFakeOpenGenericService<int>> processors = GetServiceFromCallSiteFactory<IEnumerable<IFakeOpenGenericService<int>>>(provider);
+
+            Assert.Equal(typeof(FakeIntService), processor.GetType());
+
+            Type[] implementationTypes = processors.Select(p => p.GetType()).ToArray();
+            Assert.Equal(2, implementationTypes.Length);
+            Assert.Equal(typeof(FakeIntService), implementationTypes[0]);
+            Assert.Equal(typeof(FakeOpenGenericService<int>), implementationTypes[1]);
+        }
+
+        private class FakeIntService : IFakeOpenGenericService<int>
+        {
+            public int Value => 0;
+        }
+
         private interface IServiceG
         {
         }
@@ -359,6 +386,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             public void Dispose()
             {
             }
+        }
+
+        private static T GetServiceFromCallSiteFactory<T>(ServiceProvider provider)
+        {
+            var callSite = provider.CallSiteFactory.GetCallSite(typeof(T), new CallSiteChain());
+            var compiledCallSite = CompileCallSite(callSite, provider);
+            return (T)compiledCallSite(provider.Root);
         }
 
         private static object Invoke(ServiceCallSite callSite, ServiceProviderEngineScope scope)
