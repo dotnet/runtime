@@ -107,22 +107,12 @@ namespace System.Threading.Tests
             Assert.Equal(43u, value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void InterlockedDecrement_Int32()
         {
             int value = 42;
             Assert.Equal(41, Interlocked.Decrement(ref value));
             Assert.Equal(41, value);
-
-            List<Task> threads = new List<Task>();
-            int count = 0;
-            for (int i = 0; i < 10000; i++)
-            {
-                threads.Add(Task.Run(() => Interlocked.Increment(ref count)));
-                threads.Add(Task.Run(() => Interlocked.Decrement(ref count)));
-            }
-            Task.WaitAll(threads.ToArray());
-            Assert.Equal(0, count);
         }
 
         [Fact]
@@ -133,22 +123,12 @@ namespace System.Threading.Tests
             Assert.Equal(41u, value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void InterlockedDecrement_Int64()
         {
             long value = 42;
             Assert.Equal(41, Interlocked.Decrement(ref value));
             Assert.Equal(41, value);
-
-            List<Task> threads = new List<Task>();
-            long count = 0;
-            for (int i = 0; i < 10000; i++)
-            {
-                threads.Add(Task.Run(() => Interlocked.Increment(ref count)));
-                threads.Add(Task.Run(() => Interlocked.Decrement(ref count)));
-            }
-            Task.WaitAll(threads.ToArray());
-            Assert.Equal(0, count);
         }
 
         [Fact]
@@ -416,7 +396,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x17755771u, value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedIncrement_Multithreaded_Int32()
         {
             const int ThreadCount = 10;
@@ -453,7 +433,7 @@ namespace System.Threading.Tests
             Assert.Equal(ThreadCount * IterationCount, Interlocked.CompareExchange(ref value, 0, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedCompareExchange_Multithreaded_Double()
         {
             const int ThreadCount = 10;
@@ -501,7 +481,7 @@ namespace System.Threading.Tests
             Assert.Equal(ThreadCount * IterationCount * Increment, Interlocked.CompareExchange(ref value, 0, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedAddAndRead_Multithreaded_Int64()
         {
             const int ThreadCount = 10;

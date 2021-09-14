@@ -177,11 +177,14 @@ namespace System.Threading.Tests
                 ms[i].ReleaseMutex();
                 Assert.Throws<ApplicationException>(() => ms[i].ReleaseMutex());
             }
+        }
 
-            // Mutual exclusion
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void MutualExclusionTest()
+        {
             var threadLocked = new AutoResetEvent(false);
             var continueThread = new AutoResetEvent(false);
-            m = new Mutex();
+            var m = new Mutex();
             Thread t = ThreadTestHelpers.CreateGuardedThread(out Action waitForThread, () =>
             {
                 Assert.True(m.WaitOne(0));
