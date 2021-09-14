@@ -2885,7 +2885,8 @@
       "StableVersions": [
         "4.5.0",
         "4.6.0",
-        "5.0.0"
+        "5.0.0",
+        "5.0.1"
       ],
       "BaselineVersion": "5.0.0",
       "InboxOn": {

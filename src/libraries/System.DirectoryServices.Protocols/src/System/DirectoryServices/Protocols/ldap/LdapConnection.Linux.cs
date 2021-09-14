@@ -24,13 +24,39 @@ namespace System.DirectoryServices.Protocols
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
         {
             int error;
-            if (tempCredential == null && (AuthType == AuthType.External || AuthType == AuthType.Kerberos))
+
+            if (LocalAppContextSwitches.UseBasicAuthFallback)
             {
-                error = BindSasl();
+                if (tempCredential == null && (AuthType == AuthType.External || AuthType == AuthType.Kerberos))
+                {
+                    error = BindSasl();
+                }
+                else
+                {
+                    error = Interop.Ldap.ldap_simple_bind(_ldapHandle, cred.user, cred.password);
+                }
             }
             else
             {
-                error = Interop.Ldap.ldap_simple_bind(_ldapHandle, cred.user, cred.password);
+                if (method == BindMethod.LDAP_AUTH_NEGOTIATE)
+                {
+                    if (tempCredential == null)
+                    {
+                        error = BindSasl();
+                    }
+                    else
+                    {
+                        // Explicit credentials were provided.  If we call ldap_bind_s it will
+                        // return LDAP_NOT_SUPPORTED, so just skip the P/Invoke.
+                        error = (int)LdapError.NotSupported;
+                    }
+                }
+                else
+                {
+                    // Basic and Anonymous are handled elsewhere.
+                    Debug.Assert(AuthType != AuthType.Anonymous && AuthType != AuthType.Basic);
+                    error = (int)LdapError.AuthUnknown;
+                }
             }
 
             return error;

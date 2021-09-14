@@ -664,11 +664,17 @@ namespace System.DirectoryServices.Protocols
                         response.ResponseName = "1.3.6.1.4.1.1466.20037";
                         throw new TlsOperationException(response);
                     }
-                    else if (Utility.IsLdapError((LdapError)error))
+
+                    // Turn OpenLDAP error values into Windows error values.  e.g. LDAP_NOT_SUPPORTED (-12) => 92
+                    int normalizedError = error < 0 && error >= -17 ? 80 - error : error;
+
+                    if (Utility.IsLdapError((LdapError)normalizedError))
                     {
-                        string errorMessage = LdapErrorMappings.MapResultCode(error);
-                        throw new LdapException(error, errorMessage);
+                        string errorMessage = LdapErrorMappings.MapResultCode(normalizedError);
+                        throw new LdapException(normalizedError, errorMessage);
                     }
+
+                    throw new LdapException(error);
                 }
             }
             finally
