@@ -23,16 +23,20 @@ namespace Microsoft.Extensions.Caching.Memory
         private long _size = -1;
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
         private object _value;
-        private CacheEntryState _state;
-        private short _absoluteExpirationOffsetMinutes;
         private DateTime _absoluteExpiration;
+        private short _absoluteExpirationOffsetMinutes;
+        private bool _isDisposed;
+        private bool _isExpired;
+        private bool _isValueSet;
+        private byte _evictionReason;
+        private byte _priority;
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
             _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
             _previous = memoryCache.TrackLinkedCacheEntries ? CacheEntryHelper.EnterScope(this) : null;
-            _state = new CacheEntryState(CacheItemPriority.Normal);
+            _priority = (byte)CacheItemPriority.Normal;
         }
 
         internal bool HasAbsoluteExpiration => Unsafe.As<DateTime, long>(ref _absoluteExpiration) != 0;
@@ -128,7 +132,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets or sets the priority for keeping the cache entry in the cache during a
         /// memory pressure triggered cleanup. The default is <see cref="CacheItemPriority.Normal"/>.
         /// </summary>
-        public CacheItemPriority Priority { get => _state.Priority; set => _state.Priority = value; }
+        public CacheItemPriority Priority { get => (CacheItemPriority)_priority; set => _priority = (byte)value; }
 
         internal long Size => _size;
 
@@ -143,7 +147,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
 
                 // disallow entry size changes after it has been committed
-                if (_state.IsDisposed)
+                if (_isDisposed)
                     return;
 
                 _size = value ?? -1;
@@ -158,19 +162,19 @@ namespace Microsoft.Extensions.Caching.Memory
             set
             {
                 _value = value;
-                _state.IsValueSet = true;
+                _isValueSet = true;
             }
         }
 
         internal DateTime LastAccessed { get; set; }
 
-        internal EvictionReason EvictionReason { get => _state.EvictionReason; private set => _state.EvictionReason = value; }
+        internal EvictionReason EvictionReason { get => (EvictionReason)_evictionReason; private set => _evictionReason = (byte)value; }
 
         public void Dispose()
         {
-            if (!_state.IsDisposed)
+            if (!_isDisposed)
             {
-                _state.IsDisposed = true;
+                _isDisposed = true;
 
                 if (_cache.TrackLinkedCacheEntries)
                 {
@@ -180,7 +184,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 // Don't commit or propagate options if the CacheEntry Value was never set.
                 // We assume an exception occurred causing the caller to not set the Value successfully,
                 // so don't use this entry.
-                if (_state.IsValueSet)
+                if (_isValueSet)
                 {
                     _cache.SetEntry(this);
 
@@ -196,7 +200,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         internal bool CheckExpired(DateTime utcNow)
-            => _state.IsExpired
+            => _isExpired
                 || CheckForExpiredTime(utcNow)
                 || (_tokens != null && _tokens.CheckForExpiredTokens(this));
 
@@ -206,7 +210,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 EvictionReason = reason;
             }
-            _state.IsExpired = true;
+            _isExpired = true;
             _tokens?.DetachTokens();
         }
 
