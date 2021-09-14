@@ -47,16 +47,25 @@ namespace System.IO.Pipelines
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            _awaitableState |= AwaitableState.Running;
-
             // Don't register if already completed, we would immediately unregistered in ObserveCancellation
             if (cancellationToken.CanBeCanceled && !IsCompleted)
             {
+                _cancellationTokenRegistration = cancellationToken.UnsafeRegister(callback, state);
+
+                // If we get back the default CancellationTokenRegistration then it means the
+                // callback synchronously and we can throw inline. This is safe because we haven't changed
+                // the state of the awaitable as yet.
+                if (_cancellationTokenRegistration == default(CancellationTokenRegistration))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
 #if (NETSTANDARD2_0 || NETFRAMEWORK)
                 _cancellationToken = cancellationToken;
 #endif
-                _cancellationTokenRegistration = cancellationToken.UnsafeRegister(callback, state);
             }
+
+            _awaitableState |= AwaitableState.Running;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
