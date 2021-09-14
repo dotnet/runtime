@@ -474,7 +474,7 @@ namespace System.Text.Json.Serialization
         {
             // Adding a dependency to an assembly that has internal definitions of public types
             // should not result in a collision and break generation.
-            // This verifies the usage of GetBestTypeByMetadataName() instead of GetTypeByMetadataName().
+            // Verify usage of the extension GetBestTypeByMetadataName(this Compilation) instead of Compilation.GetTypeByMetadataName().
             var referencedSource = @"
                 namespace System.Text.Json.Serialization
                 {
