@@ -507,7 +507,7 @@ namespace System.Diagnostics
 
             // Lock to avoid races with OnSigChild
             // By using a ReaderWriterLock we allow multiple processes to start concurrently.
-            s_processStartLock.EnterReadLock();
+            s_processStartLock.EnterUpgradeableReadLock();
             try
             {
                 if (usesTerminal)
@@ -515,46 +515,65 @@ namespace System.Diagnostics
                     ConfigureTerminalForChildProcesses(1);
                 }
 
-                int childPid;
-
-                // Invoke the shim fork/execve routine.  It will create pipes for all requested
-                // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
-                // descriptors, and execve to execute the requested process.  The shim implementation
-                // is used to fork/execve as executing managed code in a forked process is not safe (only
-                // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
-                int errno = Interop.Sys.ForkAndExecProcess(
-                    resolvedFilename, argv, envp, cwd,
-                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
-                    setCredentials, userId, groupId, groups,
-                    out childPid, out stdinFd, out stdoutFd, out stderrFd);
-
-                if (errno == 0)
+                bool retryOnTxtBsy = true;
+                do
                 {
-                    // Ensure we'll reap this process.
-                    // note: SetProcessId will set this if we don't set it first.
-                    _waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true, usesTerminal);
+                    int childPid;
 
-                    // Store the child's information into this Process object.
-                    Debug.Assert(childPid >= 0);
-                    SetProcessId(childPid);
-                    SetProcessHandle(new SafeProcessHandle(_processId, GetSafeWaitHandle()));
+                    // Invoke the shim fork/execve routine.  It will create pipes for all requested
+                    // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
+                    // descriptors, and execve to execute the requested process.  The shim implementation
+                    // is used to fork/execve as executing managed code in a forked process is not safe (only
+                    // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
+                    int errno = Interop.Sys.ForkAndExecProcess(
+                        resolvedFilename, argv, envp, cwd,
+                        startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                        setCredentials, userId, groupId, groups,
+                        out childPid, out stdinFd, out stdoutFd, out stderrFd);
 
-                    return true;
-                }
-                else
-                {
-                    if (!throwOnNoExec &&
-                        new Interop.ErrorInfo(errno).Error == Interop.Error.ENOEXEC)
+                    if (errno == 0)
                     {
-                        return false;
-                    }
+                        // Ensure we'll reap this process.
+                        // note: SetProcessId will set this if we don't set it first.
+                        _waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true, usesTerminal);
 
-                    throw CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
-                }
+                        // Store the child's information into this Process object.
+                        Debug.Assert(childPid >= 0);
+                        SetProcessId(childPid);
+                        SetProcessHandle(new SafeProcessHandle(_processId, GetSafeWaitHandle()));
+
+                        return true;
+                    }
+                    else
+                    {
+                        Interop.ErrorInfo errorInfo = new Interop.ErrorInfo(errno);
+                        if (!throwOnNoExec && errorInfo.Error == Interop.Error.ENOEXEC)
+                        {
+                            return false;
+                        }
+
+                        if (retryOnTxtBsy && errorInfo.Error == Interop.Error.ETXTBSY)
+                        {
+                            retryOnTxtBsy = false;
+
+                            // ETXTBSY means we're trying to execute a file that is open for write.
+                            // This may be a file that was just written and closed, but is still referenced 
+                            // by another process that has forked but not yet exec-ed.
+                            // Using the s_processStartLock we wait for all processes to finish exec-ing
+                            // which causes the file to be closed (CLOEXEC).
+                            s_processStartLock.EnterWriteLock();
+                            s_processStartLock.ExitWriteLock();
+
+                            continue;
+                        }
+
+                        throw CreateExceptionForErrorStartingProcess(errorInfo.GetErrorMessage(), errno, resolvedFilename, cwd);
+                    }
+                } while (true);
             }
             finally
             {
-                s_processStartLock.ExitReadLock();
+                s_processStartLock.ExitUpgradeableReadLock();
 
                 if (_waitStateHolder == null && usesTerminal)
                 {

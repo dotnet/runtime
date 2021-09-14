@@ -525,6 +525,43 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, e.NativeErrorCode);
         }
 
+        [Fact]
+        public void TestConcurrentExecuteAfterWrite()
+        {
+            // Linux fails to execute a process with 'ETXTBSY' when the file is still opened for writing.
+            // Even though we closed the file in the .NET application, it may still remain open
+            // for a short time because other processes that are started have forked, but not yet exec-ed.
+            // .NET specifically supports this case by waiting till all pending forks exec-ed, and then
+            // retrying to start the process.
+
+            var threads = new Thread[20];
+            for (int i = 0; i < threads.Length; i++)
+            {
+                string directory = GetTestFileName(i);
+                Directory.CreateDirectory(directory);
+
+                threads[i] = new Thread(WriteAndExecute) { IsBackground = true };
+                threads[i].Start(directory);
+            }
+
+            for (int i = 0; i < threads.Length; i++)
+            {
+                threads[i].Join();
+            }
+
+            void WriteAndExecute(object o)
+            {
+                var directory = o as string;
+                for (int i = 0; i < 100; i++)
+                {
+                    WriteScriptFile(directory, "script", 42);
+                    using var process = Process.Start(Path.Combine(directory, "script"));
+                    process.WaitForExit();
+                    Assert.Equal(42, process.ExitCode);
+                }
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestStartWithNonExistingUserThrows()
         {

@@ -17,7 +17,7 @@ namespace System.Diagnostics
             int childrenUsingTerminalRemaining = Interlocked.Add(ref s_childrenUsingTerminalCount, increment);
             if (increment > 0)
             {
-                Debug.Assert(s_processStartLock.IsReadLockHeld);
+                Debug.Assert(s_processStartLock.IsUpgradeableReadLockHeld);
                 Debug.Assert(configureConsole);
 
                 // At least one child is using the terminal.
