@@ -324,7 +324,7 @@ namespace Internal.TypeSystem.Ecma
                             }
                             if (implementation is ResolutionFailure failure)
                             {
-                                GetTypeResolutionFailure = failure;
+                                ModuleDesc.GetTypeResolutionFailure = failure;
                                 return null;
                             }
                             // TODO
