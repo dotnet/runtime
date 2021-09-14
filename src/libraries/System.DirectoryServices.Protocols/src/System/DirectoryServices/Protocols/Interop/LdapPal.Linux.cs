@@ -123,7 +123,31 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        internal static int StartTls(ConnectionHandle ldapHandle, ref int ServerReturnValue, ref IntPtr Message, IntPtr ServerControls, IntPtr ClientControls) => Interop.Ldap.ldap_start_tls(ldapHandle, ref ServerReturnValue, ref Message, ServerControls, ClientControls);
+        internal static int StartTls(ConnectionHandle ldapHandle, ref int serverReturnValue, ref IntPtr message, IntPtr serverControls, IntPtr clientControls)
+        {
+            // Windows and Linux have different signatures for ldap_start_tls_s.
+            // On Linux, we don't have a serverReturnValue or the message/result parameter.
+            //
+            // So in the PAL here, just emulate.
+
+            int error = Interop.Ldap.ldap_start_tls(ldapHandle, serverControls, clientControls);
+
+            // On Windows, serverReturnValue only has meaning if the result code is LDAP_OTHER.
+            // If OpenLDAP returns that, we don't have a better code, so assign that through.
+            // If we get any other error, assign serverReturnValue to 0 since it shouldn't be read.
+            if (error == (int)ResultCode.Other)
+            {
+                serverReturnValue = error;
+            }
+            else
+            {
+                serverReturnValue = 0;
+            }
+
+            // We don't have a referrer/message/result value, so just set it to NULL.
+            message = IntPtr.Zero;
+            return error;
+        }
 
         // openldap doesn't have a ldap_stop_tls function. Returning true as no-op for Linux.
         internal static byte StopTls(ConnectionHandle ldapHandle) => 1;
