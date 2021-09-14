@@ -6089,7 +6089,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     }
     else
     {
-        nativeCodeStartAddr - PCODEToPINSTR(methodDesc->GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
     }
 
     DebugInfoRequest request;
