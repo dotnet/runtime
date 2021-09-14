@@ -29,9 +29,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     lock (this)
                     {
-                        for (int i = 0; i < _expirationTokens.Count; i++)
+                        foreach (IChangeToken expirationToken in _expirationTokens)
                         {
-                            IChangeToken expirationToken = _expirationTokens[i];
                             if (expirationToken.ActiveChangeCallbacks)
                             {
                                 _expirationTokenRegistrations ??= new List<IDisposable>(1);
@@ -47,9 +46,8 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (_expirationTokens != null)
                 {
-                    for (int i = 0; i < _expirationTokens.Count; i++)
+                    foreach (IChangeToken expiredToken in _expirationTokens)
                     {
-                        IChangeToken expiredToken = _expirationTokens[i];
                         if (expiredToken.HasChanged)
                         {
                             cacheEntry.SetExpired(EvictionReason.TokenExpired);
@@ -68,12 +66,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     lock (this)
                     {
-                        lock (parentEntry.GetOrCreateTokens())
+                        CacheEntryTokens parentTokens = parentEntry.GetOrCreateTokens();
+                        lock (parentTokens)
                         {
-                            foreach (IChangeToken expirationToken in _expirationTokens)
-                            {
-                                parentEntry.AddExpirationToken(expirationToken);
-                            }
+                            parentTokens.ExpirationTokens.AddRange(_expirationTokens);
                         }
                     }
                 }
