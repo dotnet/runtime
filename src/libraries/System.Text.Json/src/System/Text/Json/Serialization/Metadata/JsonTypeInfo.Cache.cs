@@ -613,6 +613,16 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
+                if (jsonPropertyInfo.SrcGen_IsExtensionData)
+                {
+                    // Source generator compile-time type inspection has performed this validation for us.
+                    Debug.Assert(DataExtensionProperty == null);
+                    Debug.Assert(IsValidDataExtensionProperty(jsonPropertyInfo));
+
+                    DataExtensionProperty = jsonPropertyInfo;
+                    continue;
+                }
+
                 CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 
