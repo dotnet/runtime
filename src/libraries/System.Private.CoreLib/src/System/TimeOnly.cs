@@ -13,7 +13,7 @@ namespace System
     /// </summary>
     public readonly struct TimeOnly : IComparable, IComparable<TimeOnly>, IEquatable<TimeOnly>, ISpanFormattable
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IComparisonOperators<TimeOnly, TimeOnly>,
           IMinMaxValue<TimeOnly>,
           ISpanParseable<TimeOnly>,

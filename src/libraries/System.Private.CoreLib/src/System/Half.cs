@@ -19,7 +19,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half : IComparable, ISpanFormattable, IComparable<Half>, IEquatable<Half>
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IBinaryFloatingPoint<Half>,
           IMinMaxValue<Half>
 #pragma warning restore SA1001, CA2252

@@ -28,7 +28,7 @@ namespace System
     [Serializable]
     public readonly struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, ISpanFormattable
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>,
           IAdditiveIdentity<TimeSpan, TimeSpan>,
           IComparisonOperators<TimeSpan, TimeSpan>,

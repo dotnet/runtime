@@ -15,7 +15,7 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Int32 : IComparable, IConvertible, ISpanFormattable, IComparable<int>, IEquatable<int>
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IBinaryInteger<int>,
           IMinMaxValue<int>,
           ISignedNumber<int>
