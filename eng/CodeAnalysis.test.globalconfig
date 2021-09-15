@@ -532,7 +532,7 @@ dotnet_diagnostic.CA2250.severity = none
 dotnet_diagnostic.CA2251.severity = none
 
 # CA2252: This API requires opting into preview features
-dotnet_diagnostic.CA2252.severity = none
+dotnet_diagnostic.CA2252.severity = error
 
 # CA2253: Named placeholders should not be numeric values
 dotnet_diagnostic.CA2253.severity = none
