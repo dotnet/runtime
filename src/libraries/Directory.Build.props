@@ -25,6 +25,13 @@
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" Condition="'$(UseTargetFrameworkSDK)' != 'false'" />
 
+  <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
+  <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
+    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <!-- To suppress warnings about reseting the assembly version.-->
+    <AssemblyVersion />
+  </PropertyGroup>
+
   <!-- Define test projects and companions -->
   <PropertyGroup Condition="'$(IsSourceProject)' != 'true'">
     <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
