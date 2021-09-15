@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 namespace System.Text.RegularExpressions.Tests
 {
     public static class RegexHelpers
@@ -24,6 +28,66 @@ namespace System.Text.RegularExpressions.Tests
             }
             return start == 0;
         }
+
+        public static IEnumerable<object[]> AvailableEngines_MemberData =>
+            from engine in AvailableEngines
+            select new object[] { engine };
+
+        public static IEnumerable<object[]> PrependEngines(IEnumerable<object[]> cases)
+        {
+            foreach (RegexEngine engine in AvailableEngines)
+            {
+                foreach (object[] additionalParameters in cases)
+                {
+                    var parameters = new object[additionalParameters.Length + 1];
+                    additionalParameters.CopyTo(parameters, 1);
+                    parameters[0] = engine;
+                    yield return parameters;
+                }
+            }
+        }
+
+        public static IEnumerable<RegexEngine> AvailableEngines
+        {
+            get
+            {
+                yield return RegexEngine.Interpreter;
+                yield return RegexEngine.Compiled;
+                if (PlatformDetection.IsNetCore &&
+                    PlatformDetection.IsReflectionEmitSupported && // the source generator doesn't use reflection emit, but it does use Roslyn for the equivalent
+                    PlatformDetection.IsNotBrowser)
+                {
+                    yield return RegexEngine.SourceGenerated;
+                }
+            }
+        }
+
+        public static async Task<Regex> GetRegex(RegexEngine engine, string pattern, RegexOptions options = RegexOptions.None, int matchTimeout = -1)
+        {
+            switch (engine)
+            {
+                case RegexEngine.Interpreter:
+                    return new Regex(pattern, options, TimeSpan.FromMilliseconds(matchTimeout));
+
+                case RegexEngine.Compiled:
+                    return new Regex(pattern, options | RegexOptions.Compiled, TimeSpan.FromMilliseconds(matchTimeout));
+
+                case RegexEngine.SourceGenerated:
+                    return await RegexGeneratorHelper.SourceGenRegex(pattern, options, matchTimeout);
+            }
+
+            throw new ArgumentException($"Unknown engine: {engine}");
+        }
+
+        public static Task<Regex> GetRegex(RegexEngine engine, string pattern, RegexOptions options, TimeSpan timeout) =>
+            GetRegex(engine, pattern, options, (int)timeout.TotalMilliseconds);
+    }
+
+    public enum RegexEngine
+    {
+        Interpreter,
+        Compiled,
+        SourceGenerated
     }
 
     public class CaptureData

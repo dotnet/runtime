@@ -17,6 +17,10 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Generator.Tests
 {
+    // Tests don't actually use reflection emit, but they do generate assembly via Roslyn in-memory at run time and expect it to be JIT'd.
+    // The tests also use typeof(object).Assembly.Location, which returns an empty string on wasm.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public class RegexGeneratorParserTests
     {
         [Theory]
@@ -391,19 +395,10 @@ namespace System.Text.RegularExpressions.Generator.Tests
         private async Task<IReadOnlyList<Diagnostic>> RunGenerator(
             string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, CancellationToken cancellationToken = default)
         {
-            string corelib = Assembly.GetAssembly(typeof(object))!.Location;
-            string runtimeDir = Path.GetDirectoryName(corelib)!;
-            var refs = new List<MetadataReference>()
-            {
-                MetadataReference.CreateFromFile(corelib),
-                MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Runtime.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Text.RegularExpressions.dll"))
-            };
-
             var proj = new AdhocWorkspace()
                 .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                 .AddProject("RegexGeneratorTest", "RegexGeneratorTest.dll", "C#")
-                .WithMetadataReferences(refs)
+                .WithMetadataReferences(s_refs)
                 .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithNullableContextOptions(NullableContextOptions.Enable))
                 .WithParseOptions(new CSharpParseOptions(langVersion))
@@ -427,6 +422,20 @@ namespace System.Text.RegularExpressions.Generator.Tests
             EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
 
             return generatorResults.Diagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
+        }
+
+        private static readonly MetadataReference[] s_refs = CreateReferences();
+
+        private static MetadataReference[] CreateReferences()
+        {
+            string corelib = Assembly.GetAssembly(typeof(object))!.Location;
+            string runtimeDir = Path.GetDirectoryName(corelib)!;
+            return new[]
+            {
+                MetadataReference.CreateFromFile(corelib),
+                MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Text.RegularExpressions.dll"))
+            };
         }
     }
 }
