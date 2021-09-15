@@ -16,12 +16,9 @@
     <Content Include="index.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <WasmExtraFilesToDeploy Include="index.html" />
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
-
-  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(WasmAppDir)" />
-  </Target>
 
   <Target Name="PreserveEnCAssembliesFromLinking"
           Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
