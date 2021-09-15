@@ -33,9 +33,6 @@ namespace HttpStress
                 return (int)ExitCode.CliError;
             }
 
-            // TODO: Remove, just for testing.
-            Environment.FailFast("Manicka crashy crash");
-
             return (int)await Run(config);
         }
 
