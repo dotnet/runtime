@@ -700,9 +700,9 @@ namespace System.Numerics.Tests
                         BitOperations.RotateLeft((nuint)0b01010101_11111111_01010101_01010101u, 0));
                     Assert.Equal((nuint)0b10000000_00000000_00000000_00000000u,
                         BitOperations.RotateLeft((nuint)0b00000000_00000000_00000000_00000001u, -1));
-                    Assert.Equal((nuint)0b10000000_00000000_00000000_00000000u,
+                    Assert.Equal((nuint)0b01000000_00000000_00000000_00000000u,
                         BitOperations.RotateLeft((nuint)0b00000000_00000000_00000000_00000001u, -2));
-                    Assert.Equal((nuint)0b10000000_00000000_00000000_00000000u,
+                    Assert.Equal((nuint)0b00100000_00000000_00000000_00000000u,
                         BitOperations.RotateLeft((nuint)0b00000000_00000000_00000000_00000001u, -3));
                     Assert.Equal((nuint)0b01010101_11111111_01010101_01010101u,
                         BitOperations.RotateLeft((nuint)0b01010101_11111111_01010101_01010101u,
@@ -782,7 +782,7 @@ namespace System.Numerics.Tests
                     Assert.Equal((nuint)0b00000000_00000000_00000000_00000001u,
                         BitOperations.RotateRight((nuint)0b10000000_00000000_00000000_00000000u, -1));
                     Assert.Equal((nuint)0b00000000_00000000_00000000_00000100u,
-                        BitOperations.RotateRight((nuint)0b00000000_00000000_00000000_00000100u, -2));
+                        BitOperations.RotateRight((nuint)0b00000000_00000000_00000000_00010000u, -2));
                     Assert.Equal((nuint)0b00000000_00000000_00000000_00000010u,
                         BitOperations.RotateRight((nuint)0b01000000_00000000_00000000_00000000u, -3));
                     Assert.Equal((nuint)0b01010101_11111111_01010101_01010101u,
