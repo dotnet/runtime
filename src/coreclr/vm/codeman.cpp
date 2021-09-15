@@ -4456,8 +4456,11 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
 
         //negative case
         if ((m_LastUsedRSIndex != 0)
-            && ((addr < LowAddress) && ((LastUsedRSIndex == 0)
-                || (addr >= m_RangeSectionHandleArray[LastUsedRSIndex - 1].pRS->HighAddress))))
+            && (addr < LowAddress)
+            && (addr >= m_RangeSectionHandleArray[LastUsedRSIndex - 1].pRS->HighAddress))
+                return NULL;
+
+        if ((addr < LowAddress) && (LastUsedRSIndex == 0))
             return NULL;
     }
 #endif
