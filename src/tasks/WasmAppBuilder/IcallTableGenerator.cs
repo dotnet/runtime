@@ -23,6 +23,9 @@ public class IcallTableGenerator : Task
     [Required, NotNull]
     public string? OutputPath { get; set; }
 
+    [Output]
+    public string? FileWrites { get; private set; } = "";
+
     private List<Icall> _icalls = new List<Icall> ();
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass> ();
 
@@ -58,6 +61,7 @@ public class IcallTableGenerator : Task
             Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{OutputPath}'.");
         else
             Log.LogMessage(MessageImportance.Low, $"Icall table in {OutputPath} is unchanged.");
+        FileWrites = OutputPath;
 
         File.Delete(tmpFileName);
     }
