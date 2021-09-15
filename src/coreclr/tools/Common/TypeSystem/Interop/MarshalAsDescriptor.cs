@@ -26,6 +26,7 @@ namespace Internal.TypeSystem
         LPTStr = 0x16,        // Ptr to OS preferred (SBCS/Unicode) string
         ByValTStr = 0x17,     // OS preferred (SBCS/Unicode) inline string (only valid in structs)
         IUnknown = 0x19,
+        IDispatch = 0x1a,
         Struct = 0x1b,
         Intf = 0x1c,
         SafeArray = 0x1d,

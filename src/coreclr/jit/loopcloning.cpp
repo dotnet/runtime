@@ -968,7 +968,14 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         else if (loop->lpFlags & LPFLG_VAR_INIT)
         {
             // initVar >= 0
-            LC_Condition geZero(GT_GE, LC_Expr(LC_Ident(loop->lpVarInit, LC_Ident::Var)),
+            const unsigned initLcl = loop->lpVarInit;
+            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+            {
+                JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
+                return false;
+            }
+
+            LC_Condition geZero(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)),
                                 LC_Expr(LC_Ident(0, LC_Ident::Const)));
             context->EnsureConditions(loopNum)->Push(geZero);
         }
@@ -992,9 +999,14 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         }
         else if (loop->lpFlags & LPFLG_VAR_LIMIT)
         {
-            unsigned limitLcl = loop->lpVarLimit();
-            ident             = LC_Ident(limitLcl, LC_Ident::Var);
+            const unsigned limitLcl = loop->lpVarLimit();
+            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+            {
+                JITDUMP("> Limit var V%02u not compatible with TYP_INT\n", limitLcl);
+                return false;
+            }
 
+            ident = LC_Ident(limitLcl, LC_Ident::Var);
             LC_Condition geZero(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0, LC_Ident::Const)));
 
             context->EnsureConditions(loopNum)->Push(geZero);
@@ -1631,7 +1643,7 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
 //    loopInd       - index of loop to process
 //    ambientWeight - weight to give the new head, if created.
 //
-void Compiler::optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight)
+void Compiler::optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight)
 {
     LoopDsc& loop = optLoopTable[loopInd];
 
@@ -1710,11 +1722,11 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
             loop.lpBottom->bbNum, loop.lpChild);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
-    unsigned             depth         = optLoopDepth(loopInd);
-    BasicBlock::weight_t ambientWeight = 1;
+    unsigned depth         = optLoopDepth(loopInd);
+    weight_t ambientWeight = 1;
     for (unsigned j = 0; j < depth; j++)
     {
-        BasicBlock::weight_t lastWeight = ambientWeight;
+        weight_t lastWeight = ambientWeight;
         ambientWeight *= BB_LOOP_WEIGHT_SCALE;
         assert(ambientWeight > lastWeight);
     }
@@ -1727,8 +1739,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // The slow path will, correspondingly, get only 1% of the block weights. It could be argued that we should
     // mark the slow path as "run rarely", since it really shouldn't execute (given the currently optimized loop
     // conditions) except under exceptional circumstances.
-    const BasicBlock::weight_t fastPathWeightScaleFactor = 0.99f;
-    const BasicBlock::weight_t slowPathWeightScaleFactor = 1.0f - fastPathWeightScaleFactor;
+    const weight_t fastPathWeightScaleFactor = 0.99;
+    const weight_t slowPathWeightScaleFactor = 1.0 - fastPathWeightScaleFactor;
 
     // This is the containing loop, if any -- to label any blocks we create that are outside
     // the loop being cloned.

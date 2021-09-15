@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -128,6 +130,12 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
             yield return new object[] { @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
             yield return new object[] { @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
+            yield return new object[] { @"^(\d{2,3}){2}$", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"(\d{2,3}){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"((\d{2,3})){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+            yield return new object[] { @"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "123" };
+            yield return new object[] { @"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "123" };
+            yield return new object[] { @"(abc\d{2,3}){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc456" };
             foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
             {
                 yield return new object[] { @".*", "abc", lineOption, 1, 2, true, "bc" };
@@ -549,12 +557,12 @@ namespace System.Text.RegularExpressions.Tests
         private static void VerifyMatch(Match match, bool expectedSuccess, string expectedValue)
         {
             Assert.Equal(expectedSuccess, match.Success);
-            Assert.Equal(expectedValue, match.Value);
+            RegexAssert.Equal(expectedValue, match);
 
             // Groups can never be empty
             Assert.True(match.Groups.Count >= 1);
             Assert.Equal(expectedSuccess, match.Groups[0].Success);
-            Assert.Equal(expectedValue, match.Groups[0].Value);
+            RegexAssert.Equal(expectedValue, match.Groups[0]);
         }
 
         [Theory]
@@ -576,7 +584,7 @@ namespace System.Text.RegularExpressions.Tests
             Match m = r.Match(input);
 
             Assert.True(m.Success);
-            Assert.Equal(input, m.Value);
+            RegexAssert.Equal(input, m);
             Assert.Equal(count + 1, m.Groups.Count);
         }
 
@@ -586,7 +594,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex regex = new Regex(@"\p{Lu}", RegexOptions.IgnoreCase, TimeSpan.FromHours(1));
             Match match = regex.Match("abc");
             Assert.True(match.Success);
-            Assert.Equal("a", match.Value);
+            RegexAssert.Equal("a", match);
         }
 
         [Theory]
@@ -1057,12 +1065,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             Assert.Equal(expectedSuccess, match.Success);
 
-            Assert.Equal(expected[0].Value, match.Value);
+            RegexAssert.Equal(expected[0].Value, match);
             Assert.Equal(expected[0].Index, match.Index);
             Assert.Equal(expected[0].Length, match.Length);
 
             Assert.Equal(1, match.Captures.Count);
-            Assert.Equal(expected[0].Value, match.Captures[0].Value);
+            RegexAssert.Equal(expected[0].Value, match.Captures[0]);
             Assert.Equal(expected[0].Index, match.Captures[0].Index);
             Assert.Equal(expected[0].Length, match.Captures[0].Length);
 
@@ -1071,14 +1079,14 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Assert.Equal(expectedSuccess, match.Groups[i].Success);
 
-                Assert.Equal(expected[i].Value, match.Groups[i].Value);
+                RegexAssert.Equal(expected[i].Value, match.Groups[i]);
                 Assert.Equal(expected[i].Index, match.Groups[i].Index);
                 Assert.Equal(expected[i].Length, match.Groups[i].Length);
 
                 Assert.Equal(expected[i].Captures.Length, match.Groups[i].Captures.Count);
                 for (int j = 0; j < match.Groups[i].Captures.Count; j++)
                 {
-                    Assert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j].Value);
+                    RegexAssert.Equal(expected[i].Captures[j].Value, match.Groups[i].Captures[j]);
                     Assert.Equal(expected[i].Captures[j].Index, match.Groups[i].Captures[j].Index);
                     Assert.Equal(expected[i].Captures[j].Length, match.Groups[i].Captures[j].Length);
                 }
@@ -1213,10 +1221,10 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // take too long due to backtracking
         [Theory]
-        [InlineData(@"(\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
-        [InlineData(@"(a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
-        [InlineData(@"(x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
-        public void IsMatch_SucceedQuicklyDueToAutoAtomicity(string regex, string input, bool expected)
+        [InlineData(@"(?:\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(?:a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(?:x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
+        public void IsMatch_SucceedQuicklyDueToLoopReduction(string regex, string input, bool expected)
         {
             Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.None));
             Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.Compiled));
@@ -1227,14 +1235,60 @@ namespace System.Text.RegularExpressions.Tests
         {
             var m = new Regex("abc").Match("abc");
             Assert.True(m.Success);
-            Assert.Equal("abc", m.Value);
+            RegexAssert.Equal("abc", m);
 
             var m2 = System.Text.RegularExpressions.Match.Synchronized(m);
             Assert.Same(m, m2);
             Assert.True(m2.Success);
-            Assert.Equal("abc", m2.Value);
+            RegexAssert.Equal("abc", m2);
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
+        }
+
+        public static IEnumerable<object[]> UseRegexConcurrently_ThreadSafe_Success_MemberData()
+        {
+            foreach (TimeSpan timeout in new[] { Timeout.InfiniteTimeSpan, TimeSpan.FromMinutes(1) })
+            {
+                yield return new object[] { RegexOptions.None, timeout };
+                yield return new object[] { RegexOptions.Compiled, timeout };
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(UseRegexConcurrently_ThreadSafe_Success_MemberData))]
+        [OuterLoop("Takes several seconds")]
+        public void UseRegexConcurrently_ThreadSafe_Success(RegexOptions options, TimeSpan timeout)
+        {
+            const string Input = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue massa. Fusce posuere, magna sed pulvinar ultricies, purus lectus malesuada libero, sit amet commodo magna eros quis urna. Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Proin pharetra nonummy pede. Mauris et orci. Aenean nec lorem. In porttitor. abcdefghijklmnx Donec laoreet nonummy augue. Suspendisse dui purus, scelerisque at, vulputate vitae, pretium mattis, nunc. Mauris eget neque at sem venenatis eleifend. Ut nonummy. Fusce aliquet pede non pede. Suspendisse dapibus lorem pellentesque magna. Integer nulla. Donec blandit feugiat ligula. Donec hendrerit, felis et imperdiet euismod, purus ipsum pretium metus, in lacinia nulla nisl eget sapien. Donec ut est in lectus consequat consequat. Etiam eget dui. Aliquam erat volutpat. Sed at lorem in nunc porta tristique. Proin nec augue. Quisque aliquam tempor magna. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nunc ac magna. Maecenas odio dolor, vulputate vel, auctor ac, accumsan id, felis. Pellentesque cursus sagittis felis. Pellentesque porttitor, velit lacinia egestas auctor, diam eros tempus arcu, nec vulputate augue magna vel risus.nmlkjihgfedcbax";
+            const int Trials = 100;
+            const int IterationsPerTask = 10;
+
+            using var b = new Barrier(Environment.ProcessorCount);
+
+            for (int trial = 0; trial < Trials; trial++)
+            {
+                var r = new Regex("[a-q][^u-z]{13}x", options, timeout);
+                Task.WaitAll(Enumerable.Range(0, b.ParticipantCount).Select(_ => Task.Factory.StartNew(() =>
+                             {
+                                 b.SignalAndWait();
+                                 for (int i = 0; i < IterationsPerTask; i++)
+                                 {
+                                     Match m = r.Match(Input);
+                                     Assert.NotNull(m);
+                                     Assert.True(m.Success);
+                                     Assert.Equal("abcdefghijklmnx", m.Value);
+
+                                     m = m.NextMatch();
+                                     Assert.NotNull(m);
+                                     Assert.True(m.Success);
+                                     Assert.Equal("nmlkjihgfedcbax", m.Value);
+
+                                     m = m.NextMatch();
+                                     Assert.NotNull(m);
+                                     Assert.False(m.Success);
+                                 }
+                             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
+            }
         }
     }
 }

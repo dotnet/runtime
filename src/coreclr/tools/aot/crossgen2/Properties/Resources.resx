@@ -132,6 +132,9 @@
   <data name="EmittingPEFile" xml:space="preserve">
     <value>Emitting R2R PE file: {0}</value>
   </data>
+  <data name="MovingPEFile" xml:space="preserve">
+    <value>Moving R2R PE file: {0} to {1}</value>
+  </data>
   <data name="EnableOptimizationsOption" xml:space="preserve">
     <value>Enable optimizations</value>
   </data>
@@ -148,7 +151,7 @@
     <value>Method layout must be either DefaultSort or MethodOrder.</value>
   </data>
   <data name="InvalidMethodLayout" xml:space="preserve">
-    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, or CallFrequency.</value>
+    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, CallFrequency or PettisHansen.</value>
   </data>
   <data name="CompileNoMethodsOption" xml:space="preserve">
     <value>True to skip compiling methods into the R2R image (default = false)</value>
@@ -171,9 +174,6 @@
   <data name="InstructionSetMustNotBe" xml:space="preserve">
     <value>Instruction set '{0}' is not valid for this architecture and operating system</value>
   </data>
-  <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
-    <value>Instruction set(s) specified without also specifying input-bubble</value>
-  </data>
   <data name="InstructionSetInvalidImplication" xml:space="preserve">
     <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
   </data>
@@ -194,6 +194,9 @@
   </data>
   <data name="MissingOutputFile" xml:space="preserve">
     <value>Output filename must be specified (--out &lt;file&gt;)</value>
+  </data>
+  <data name="MissingOutNearInput" xml:space="preserve">
+    <value>Single file compilation mode requires --out-near-input option</value>
   </data>
   <data name="InputWasNotLoadable" xml:space="preserve">
     <value>No input files are loadable</value>
@@ -359,5 +362,11 @@
   </data>
   <data name="InstructionSetHelp" xml:space="preserve">
     <value>The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'</value>
+  </data>
+  <data name="MakeReproPathHelp" xml:space="preserve">
+    <value>Make a repro zip file in the specified path. This is used for sending error reports to the .NET team.</value>
+  </data>
+  <data name="UnsupportedInputFileExtension" xml:space="preserve">
+    <value>Input file with '{0}' extension not supported</value>
   </data>
 </root>

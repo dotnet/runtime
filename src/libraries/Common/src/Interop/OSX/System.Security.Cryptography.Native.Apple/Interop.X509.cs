@@ -21,12 +21,12 @@ internal static partial class Interop
             out int pOSStatus);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509GetSubjectSummary(
+        private static partial int AppleCryptoNative_X509GetSubjectSummary(
             SafeSecCertificateHandle cert,
             out SafeCFStringHandle cfSubjectSummaryOut);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyRefHandle publicKey, out int pOSStatus);
+        private static partial int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyRefHandle publicKey, out int pOSStatus);
 
         internal static X509ContentType X509GetContentType(ReadOnlySpan<byte> data)
         {

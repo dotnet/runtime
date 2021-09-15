@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Test.Cryptography;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -336,11 +337,19 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52199", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RoundtripEmptyArray()
         {
+            if (OperatingSystem.IsIOS() && !OperatingSystem.IsIOSVersionAtLeast(13, 6))
+            {
+                throw new SkipTestException("iOS prior to 13.6 does not reliably support RSA encryption of empty data.");
+            }
+            if (OperatingSystem.IsTvOS() && !OperatingSystem.IsTvOSVersionAtLeast(14, 0))
+            {
+                throw new SkipTestException("tvOS prior to 14.0 does not reliably support RSA encryption of empty data.");
+            }
+
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
                 void RoundtripEmpty(RSAEncryptionPadding paddingMode)

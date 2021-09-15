@@ -63,6 +63,10 @@ jobs:
       - name : buildProductArtifactName
         value : 'MonoProduct___$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
+    - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+      - name : buildProductArtifactName
+        value : 'MonoProduct__llvmaot_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
 

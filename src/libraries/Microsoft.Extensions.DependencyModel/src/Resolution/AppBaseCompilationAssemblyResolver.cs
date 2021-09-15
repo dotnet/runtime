@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
@@ -31,13 +32,18 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal AppBaseCompilationAssemblyResolver(IFileSystem fileSystem, string basePath, DependencyContextPaths dependencyContextPaths)
         {
-            _fileSystem = fileSystem;
-            _basePath = basePath;
-            _dependencyContextPaths = dependencyContextPaths;
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+            _basePath = basePath ?? throw new ArgumentNullException(nameof(basePath));
+            _dependencyContextPaths = dependencyContextPaths ?? throw new ArgumentNullException(nameof(dependencyContextPaths));
         }
 
-        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
+        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
+            if (library is null)
+            {
+                throw new ArgumentNullException(nameof(library));
+            }
+
             bool isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(library.Type, "msbuildproject", StringComparison.OrdinalIgnoreCase);
 
@@ -71,10 +77,12 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             }
 
             // Only packages can come from shared runtime
-            string sharedPath = _dependencyContextPaths.SharedRuntime;
+            string? sharedPath = _dependencyContextPaths.SharedRuntime;
             if (isPublished && isPackage && !string.IsNullOrEmpty(sharedPath))
             {
-                string sharedDirectory = Path.GetDirectoryName(sharedPath);
+                string? sharedDirectory = Path.GetDirectoryName(sharedPath);
+                Debug.Assert(sharedDirectory != null);
+
                 string sharedRefs = Path.Combine(sharedDirectory, RefsDirectoryName);
                 if (_fileSystem.Directory.Exists(sharedRefs))
                 {

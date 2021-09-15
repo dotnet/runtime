@@ -141,24 +141,22 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         if (node->TypeIs(TYP_FLOAT))
         {
             float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
-            intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
-            type         = TYP_UINT;
+            intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
+            type         = TYP_INT;
         }
 #ifdef TARGET_AMD64
         else
         {
             assert(node->TypeIs(TYP_DOUBLE));
-            intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
-            type   = TYP_ULONG;
+            intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
+            type   = TYP_LONG;
         }
 #endif
 
         if (type != TYP_UNKNOWN)
         {
             data->SetContained();
-            data->ChangeOperConst(GT_CNS_INT);
-            data->AsIntCon()->SetIconValue(intCns);
-            data->ChangeType(type);
+            data->BashToConst(intCns, type);
             node->ChangeType(type);
         }
     }
@@ -280,7 +278,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
@@ -452,10 +450,10 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         unsigned prevOffset        = putArgStk->GetStackByteSize();
         for (GenTreeFieldList::Use& use : fieldList->Uses())
         {
-            GenTree* const  fieldNode   = use.GetNode();
-            const var_types fieldType   = fieldNode->TypeGet();
-            const unsigned  fieldOffset = use.GetOffset();
-            assert(fieldType != TYP_LONG);
+            GenTree* const fieldNode   = use.GetNode();
+            const unsigned fieldOffset = use.GetOffset();
+
+            assert(!fieldNode->TypeIs(TYP_LONG));
 
             // We can treat as a slot any field that is stored at a slot boundary, where the previous
             // field is not in the same slot. (Note that we store the fields in reverse order.)

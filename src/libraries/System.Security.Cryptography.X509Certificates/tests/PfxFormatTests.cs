@@ -107,7 +107,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             int altWin32Error = 0);
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NoMac()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -116,7 +115,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NoMac_ArbitraryPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -128,7 +126,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_EmptyPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -140,7 +137,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_NullPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -152,7 +148,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public void EmptyPfx_BadPassword()
         {
             Pkcs12Builder builder = new Pkcs12Builder();
@@ -163,6 +158,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_NoKeys_EncryptedNullPassword_NoMac()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
@@ -180,6 +176,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_NoKeys_EncryptedEmptyPassword_NoMac()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
@@ -201,6 +198,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_EncryptedEmptyPassword_OneKey_EncryptedNullPassword_NoMac(bool encryptKeySafe, bool associateKey)
         {
             // This test shows that while a null or empty password will result in both
@@ -242,6 +240,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_MismatchedKey()
         {
             string pw = nameof(OneCert_MismatchedKey);
@@ -290,6 +289,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_TwoKeys_FirstWins(bool correctKeyFirst)
         {
             string pw = nameof(OneCert_TwoKeys_FirstWins);
@@ -361,6 +361,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void TwoCerts_OneKey(bool certWithKeyFirst)
         {
             string pw = nameof(TwoCerts_OneKey);
@@ -405,6 +406,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_ExtraKeyWithUnknownAlgorithm()
         {
             string pw = nameof(OneCert_ExtraKeyWithUnknownAlgorithm);
@@ -450,6 +452,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_ExtraKeyBadEncoding(bool badTag)
         {
             string pw = nameof(OneCert_ExtraKeyBadEncoding);
@@ -508,6 +511,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_NoKey_WithLocalKeyId()
         {
             string pw = nameof(OneCert_NoKey_WithLocalKeyId);
@@ -529,6 +533,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void OneCert_TwentyKeys_NoMatches()
         {
             string pw = nameof(OneCert_NoKey_WithLocalKeyId);
@@ -567,6 +572,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void TwoCerts_TwentyKeys_NoMatches(bool msCertFirst)
         {
             string pw = nameof(OneCert_NoKey_WithLocalKeyId);
@@ -640,6 +646,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertAndKey_NoLocalKeyId()
         {
             string pw = nameof(CertAndKey_NoLocalKeyId);
@@ -666,6 +673,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void SameCertTwice_NoKeys(bool addLocalKeyId)
         {
             string pw = nameof(SameCertTwice_NoKeys);
@@ -697,6 +705,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void TwoCerts_CrossedKeys()
         {
             string pw = nameof(TwoCerts_CrossedKeys);
@@ -771,6 +780,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, false)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertAndKeyTwice(bool addLocalKeyId, bool crossIdentifiers)
         {
             string pw = nameof(CertAndKeyTwice);
@@ -826,6 +836,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertAndKeyTwice_KeysUntagged()
         {
             string pw = nameof(CertAndKeyTwice);
@@ -871,13 +882,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         cert,
                         new[] { cert, cert },
                         CheckMultiBoundKeyConsistency);
-                }    
+                }
             }
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertTwice_KeyOnce(bool addLocalKeyId)
         {
             string pw = nameof(CertTwice_KeyOnce);
@@ -935,6 +947,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void CertTwice_KeyOnce_OtherCertBetter(bool addLocalKeyId)
         {
             string pw = nameof(CertTwice_KeyOnce);
@@ -995,6 +1008,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public void TwoCerts_TwoKeys_ManySafeContentsValues(bool invertCertOrder, bool invertKeyOrder)
         {
             string pw = nameof(TwoCerts_TwoKeys_ManySafeContentsValues);

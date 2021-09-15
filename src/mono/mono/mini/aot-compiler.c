@@ -1149,7 +1149,7 @@ arch_init (MonoAotCompile *acfg)
 
 			if (strstr (acfg->aot_opts.mtriple, "ios")) {
 				g_string_append (acfg->llc_args, " -mattr=+v7");
-				g_string_append (acfg->llc_args, " -exception-model=dwarf -disable-fp-elim");
+				g_string_append (acfg->llc_args, " -exception-model=dwarf -frame-pointer=all");
 			}
 		}
 
@@ -14299,7 +14299,7 @@ emit_aot_image (MonoAotCompile *acfg)
 		return 1;
 	}
 	if (acfg->fp)
-		acfg->w = mono_img_writer_create (acfg->fp, FALSE);
+		acfg->w = mono_img_writer_create (acfg->fp);
 
 	/* Compute symbols for methods */
 	for (i = 0; i < acfg->nmethods; ++i) {

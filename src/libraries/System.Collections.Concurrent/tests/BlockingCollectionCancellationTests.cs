@@ -97,7 +97,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50576", TestPlatforms.Android)]
         public static void ExternalCancel_AddToAny()
         {
             for (int test = 0; test < 3; test++)

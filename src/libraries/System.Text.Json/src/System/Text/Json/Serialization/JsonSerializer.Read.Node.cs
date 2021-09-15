@@ -14,6 +14,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the <see cref="JsonNode"/> representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="node">The <see cref="JsonNode"/> to convert.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
@@ -27,7 +28,8 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<TValue>(this JsonNode? node, JsonSerializerOptions? options = null)
         {
-            return ReadUsingOptions<TValue>(node, typeof(TValue), options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return ReadNode<TValue>(node, jsonTypeInfo);
         }
 
         /// <summary>
@@ -52,12 +54,14 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            return ReadUsingOptions<object?>(node, returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadNode<object?>(node, jsonTypeInfo);
         }
 
         /// <summary>
         /// Converts the <see cref="JsonNode"/> representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="node">The <see cref="JsonNode"/> to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -78,7 +82,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadUsingMetadata<TValue>(node, jsonTypeInfo);
+            return ReadNode<TValue>(node, jsonTypeInfo);
         }
 
         /// <summary>
@@ -125,17 +129,13 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return ReadUsingMetadata<object?>(node, GetTypeInfo(context, returnType));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
+            return ReadNode<object?>(node, jsonTypeInfo);
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static TValue? ReadUsingOptions<TValue>(JsonNode? node, Type returnType, JsonSerializerOptions? options) =>
-            ReadUsingMetadata<TValue>(node, GetTypeInfo(returnType, options));
-
-        private static TValue? ReadUsingMetadata<TValue>(JsonNode? node, JsonTypeInfo jsonTypeInfo)
+        private static TValue? ReadNode<TValue>(JsonNode? node, JsonTypeInfo jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            Debug.Assert(options != null);
 
             // For performance, share the same buffer across serialization and deserialization.
             using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
@@ -151,7 +151,7 @@ namespace System.Text.Json
                 }
             }
 
-            return ReadUsingMetadata<TValue>(output.WrittenMemory.Span, jsonTypeInfo);
+            return ReadFromSpan<TValue>(output.WrittenMemory.Span, jsonTypeInfo);
         }
     }
 }

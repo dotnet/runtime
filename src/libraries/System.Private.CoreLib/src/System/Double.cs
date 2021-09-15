@@ -56,7 +56,6 @@ namespace System
 
         internal const ulong SignMask = 0x8000_0000_0000_0000;
         internal const int SignShift = 63;
-        internal const uint ShiftedSignMask = (uint)(SignMask >> SignShift);
 
         internal const ulong ExponentMask = 0x7FF0_0000_0000_0000;
         internal const int ExponentShift = 52;
@@ -188,6 +187,7 @@ namespace System
             throw new ArgumentException(SR.Arg_MustBeDouble);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(double value)
         {
             if (m_value < value) return -1;
@@ -755,6 +755,30 @@ namespace System
         [RequiresPreviewFeatures]
         static double IFloatingPoint<double>.Truncate(double x)
             => Math.Truncate(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsFinite(double d) => IsFinite(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsInfinity(double d) => IsInfinity(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsNaN(double d) => IsNaN(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsNegative(double d) => IsNegative(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsNegativeInfinity(double d) => IsNegativeInfinity(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsNormal(double d) => IsNormal(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsPositiveInfinity(double d) => IsPositiveInfinity(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsSubnormal(double d) => IsSubnormal(d);
 
         // static double IFloatingPoint<double>.AcosPi(double x)
         //     => Math.AcosPi(x);

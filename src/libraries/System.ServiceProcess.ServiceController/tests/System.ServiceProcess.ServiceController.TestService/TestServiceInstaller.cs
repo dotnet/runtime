@@ -31,6 +31,7 @@ namespace System.ServiceProcess.Tests
 
         public string ServiceCommandLine { get; set; }
 
+        // Install and start the test service, after starting any prerequisite services it depends on
         public unsafe void Install()
         {
             string username = Username;
@@ -53,6 +54,7 @@ namespace System.ServiceProcess.Tests
             }
 
             // Build servicesDependedOn string
+            // These are prerequisite services that must be started before this service
             string servicesDependedOn = null;
             if (ServicesDependedOn.Length > 0)
             {
@@ -74,6 +76,8 @@ namespace System.ServiceProcess.Tests
             {
                 if (serviceManagerHandle.IsInvalid)
                     throw new InvalidOperationException("Cannot open Service Control Manager");
+
+                TestService.DebugTrace($"TestServiceInstaller: creating service {ServiceName} with prerequisite services {servicesDependedOn}");
 
                 // Install the service
                 using (var serviceHandle = new SafeServiceHandle(Interop.Advapi32.CreateService(serviceManagerHandle, ServiceName,
@@ -102,10 +106,14 @@ namespace System.ServiceProcess.Tests
                     {
                         if (svc.Status != ServiceControllerStatus.Running)
                         {
-                            TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Start service " + ServiceName);
+                            TestService.DebugTrace($"TestServiceInstaller: instructing ServiceController to start service {ServiceName}");
                             svc.Start();
                             if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
                                 svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(120));
+                        }
+                        else
+                        {
+                            TestService.DebugTrace("TestServiceInstaller: service {ServiceName} already running");
                         }
                     }
                 }

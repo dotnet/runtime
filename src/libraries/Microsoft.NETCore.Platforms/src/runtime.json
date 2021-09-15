@@ -752,6 +752,41 @@
         "debian-x86"
       ]
     },
+    "debian.11": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.11-arm": {
+      "#import": [
+        "debian.11",
+        "debian-arm"
+      ]
+    },
+    "debian.11-arm64": {
+      "#import": [
+        "debian.11",
+        "debian-arm64"
+      ]
+    },
+    "debian.11-armel": {
+      "#import": [
+        "debian.11",
+        "debian-armel"
+      ]
+    },
+    "debian.11-x64": {
+      "#import": [
+        "debian.11",
+        "debian-x64"
+      ]
+    },
+    "debian.11-x86": {
+      "#import": [
+        "debian.11",
+        "debian-x86"
+      ]
+    },
     "debian.8": {
       "#import": [
         "debian"
@@ -1068,6 +1103,23 @@
     "fedora.35-x64": {
       "#import": [
         "fedora.35",
+        "fedora-x64"
+      ]
+    },
+    "fedora.36": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.36-arm64": {
+      "#import": [
+        "fedora.36",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.36-x64": {
+      "#import": [
+        "fedora.36",
         "fedora-x64"
       ]
     },
@@ -2532,6 +2584,29 @@
       "#import": [
         "tizen.6.0.0",
         "tizen.5.5.0-x86"
+      ]
+    },
+    "tizen.6.5.0": {
+      "#import": [
+        "tizen.6.0.0"
+      ]
+    },
+    "tizen.6.5.0-arm64": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-arm64"
+      ]
+    },
+    "tizen.6.5.0-armel": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-armel"
+      ]
+    },
+    "tizen.6.5.0-x86": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-x86"
       ]
     },
     "tvos": {

@@ -465,13 +465,47 @@ class MonEnterTests
         {
             threads.Add(new Thread(delegate() { Assert(false, "this thread should never run"); }));
         }
-        Thread highThread = new Thread(delegate()
+
+        List<Thread> highThreads = new List<Thread>();
+        while (true)
+        {
+            Thread highThread = new Thread(delegate()
+                {
+                    Assert(Thread.CurrentThread.ManagedThreadId > 1024, "Managed thread id not high");
+                    ContentionVariants();
+                });
+
+            // The newly allocated thread can have an id <= 1024 if the thread pool frees threads
+            // as just the right time such that the newly allocated thread has a low thread id.
+            // This is quite unlikely, but under GC stress it can happen
+            if (highThread.ManagedThreadId <= 1024)
             {
-                Assert(Thread.CurrentThread.ManagedThreadId > 1024);
-                ContentionVariants();
-            });
-        highThread.Start();
-        highThread.Join();
+                Assert(highThread.ManagedThreadId >= 0, "Thread id greater than 0");
+                highThreads.Add(highThread);
+                Console.WriteLine($"Allocated thread has low thread id {highThread.ManagedThreadId} {highThreads.Count} threads parked");
+
+                // Validate that there are no thread id overlaps
+                foreach (var thread in threads)
+                {
+                    Assert(thread.ManagedThreadId != highThread.ManagedThreadId, "ManagedThreadId duplicate");
+                }
+
+                // If this happens more than 512 times, something is very clearly broken
+                if (highThreads.Count > 512)
+                {
+                    Assert(false, "Unable to create thread with ThreadId > 1024");
+                    break;
+                }
+
+                // Retry with another parked thread id
+                continue;
+            }
+
+            highThread.Start();
+            highThread.Join();
+            // Ran high thread id tests to completion
+            break;
+        }
     }
 
     int Run()

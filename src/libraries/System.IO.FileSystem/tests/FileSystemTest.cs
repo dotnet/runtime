@@ -11,8 +11,8 @@ namespace System.IO.Tests
     {
         public static readonly byte[] TestBuffer = { 0xBA, 0x5E, 0xBA, 0x11, 0xF0, 0x07, 0xBA, 0x11 };
 
-        protected const TestPlatforms CaseInsensitivePlatforms = TestPlatforms.Windows | TestPlatforms.OSX;
-        protected const TestPlatforms CaseSensitivePlatforms = TestPlatforms.AnyUnix & ~TestPlatforms.OSX;
+        protected const TestPlatforms CaseInsensitivePlatforms = TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.MacCatalyst;
+        protected const TestPlatforms CaseSensitivePlatforms = TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.MacCatalyst;
 
         public static bool AreAllLongPathsAvailable => PathFeatures.AreAllLongPathsAvailable();
 
@@ -72,7 +72,7 @@ namespace System.IO.Tests
             string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
             int availableLength = MinUdsPathLength - prefix.Length - 1; // 1 - for possible null terminator
             Assert.True(availableLength >= MinAvailableForSufficientRandomness, $"UDS prefix {prefix} length {prefix.Length} is too long");
-            
+
             return string.Create(availableLength, 0, (span, _) =>
             {
                 for (int i = 0; i < span.Length; i++)

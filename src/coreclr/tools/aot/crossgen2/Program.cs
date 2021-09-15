@@ -155,6 +155,7 @@ namespace ILCompiler
                     "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
                     "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
+                    "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
@@ -233,11 +234,6 @@ namespace ILCompiler
             if (_commandLineOptions.InstructionSet != null)
             {
                 List<string> instructionSetParams = new List<string>();
-
-                // At this time, instruction sets may only be specified with --input-bubble, as
-                // we do not yet have a stable ABI for all vector parameter/return types.
-                if (!_commandLineOptions.InputBubble)
-                    throw new CommandLineException(SR.InstructionSetWithoutInputBubble);
 
                 // Normalize instruction set format to include implied +.
                 string[] instructionSetParamsInput = _commandLineOptions.InstructionSet.Split(",");
@@ -328,6 +324,9 @@ namespace ILCompiler
 
             if (_commandLineOptions.OutputFilePath == null && !_commandLineOptions.OutNearInput)
                 throw new CommandLineException(SR.MissingOutputFile);
+
+            if (_commandLineOptions.SingleFileCompilation && !_commandLineOptions.OutNearInput)
+                throw new CommandLineException(SR.MissingOutNearInput);
 
             ConfigureTarget();
             InstructionSetSupport instructionSetSupport = ConfigureInstructionSetSupport();
@@ -498,10 +497,25 @@ namespace ILCompiler
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext);
+                        typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
+                        typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
                     }
 
                     RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext);
+                }
+
+                // In case of inputbubble ni.dll are created as ni.dll.tmp in order to not interfere with crossgen2, move them all to ni.dll
+                // See https://github.com/dotnet/runtime/issues/55663#issuecomment-898161751 for more details
+                if (_commandLineOptions.InputBubble)
+                {
+                    foreach (var inputFile in inputFilePaths)
+                    {
+                        var tmpOutFile = inputFile.Value.Replace(".dll", ".ni.dll.tmp");
+                        var outFile = inputFile.Value.Replace(".dll", ".ni.dll");
+                        Console.WriteLine($@"Moving R2R PE file: {tmpOutFile} to {outFile}");
+                        System.IO.File.Move(tmpOutFile, outFile);
+                    }
                 }
             }
             else
@@ -517,7 +531,21 @@ namespace ILCompiler
             //
             // Initialize output filename
             //
-            var outFile = _commandLineOptions.OutNearInput ? inFilePaths.First().Value.Replace(".dll", ".ni.dll") : _commandLineOptions.OutputFilePath;
+            string inFilePath = inFilePaths.First().Value;
+            string inputFileExtension = Path.GetExtension(inFilePath);
+            string nearOutFilePath = inputFileExtension switch
+            {
+                ".dll" => Path.ChangeExtension(inFilePath,
+                    _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble
+                        ? ".ni.dll.tmp"
+                        : ".ni.dll"),
+                ".exe" => Path.ChangeExtension(inFilePath,
+                    _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble
+                        ? ".ni.exe.tmp"
+                        : ".ni.exe"),
+                _ => throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension))
+            };
+            string outFile = _commandLineOptions.OutNearInput ? nearOutFilePath : _commandLineOptions.OutputFilePath;
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
@@ -993,14 +1021,7 @@ namespace ILCompiler
 #if DEBUG
             try
             {
-                try
-                {
-                    return new Program().Run(args);
-                }
-                finally
-                {
-                    ReadyToRunCodegenCompilationBuilder.ShutdownJit();
-                }
+                return new Program().Run(args);
             }
             catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))
             {
@@ -1009,14 +1030,7 @@ namespace ILCompiler
 #else
             try
             {
-                try
-                {
-                    return new Program().Run(args);
-                }
-                finally
-                {
-                    ReadyToRunCodegenCompilationBuilder.ShutdownJit();
-                }
+                return new Program().Run(args);
             }
             catch (Exception e)
             {

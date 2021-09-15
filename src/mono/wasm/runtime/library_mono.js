@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+"use strict";
+
 /**
  * @typedef WasmId
  * @type {object}
@@ -50,30 +52,43 @@
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
+		active_frames: [],
 		pump_count: 0,
 		timeout_queue: [],
+		spread_timers_maximum:0,
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
+		num_icu_assets_loaded_successfully: 0,
+		_async_method_objectId: 0,
+		_next_id_var: 0,
+		_next_call_function_res_id: 0,
+		_scratch_root_buffer: null,
+		_scratch_root_free_indices: null,
+		_scratch_root_free_indices_count: 0,
+		_scratch_root_free_instances: [],
+		_vt_stack: [],
 
 		/** @type {object.<string, object>} */
 		_id_table: {},
 
 		pump_message: function () {
-			if (!this.mono_background_exec)
-				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
+			if (!MONO.mono_background_exec)
+				MONO.mono_background_exec = Module.cwrap ("mono_background_exec", null);
 			while (MONO.timeout_queue.length > 0) {
 				--MONO.pump_count;
 				MONO.timeout_queue.shift()();
 			}
 			while (MONO.pump_count > 0) {
 				--MONO.pump_count;
-				this.mono_background_exec ();
+				MONO.mono_background_exec ();
 			}
 		},
 
 		export_functions: function (module) {
 			module ["pump_message"] = MONO.pump_message.bind(MONO);
+			module ["prevent_timer_throttling"] = MONO.prevent_timer_throttling.bind(MONO);
+			module ["mono_wasm_set_timeout_exec"] = MONO.mono_wasm_set_timeout_exec.bind(MONO);
 			module ["mono_load_runtime_and_bcl"] = MONO.mono_load_runtime_and_bcl.bind(MONO);
 			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args.bind(MONO);
 			module ["mono_wasm_load_bytes_into_heap"] = MONO.mono_wasm_load_bytes_into_heap.bind(MONO);
@@ -247,11 +262,6 @@ var MonoSupportLib = {
 			}
 		},
 
-		_scratch_root_buffer: null,
-		_scratch_root_free_indices: null,
-		_scratch_root_free_indices_count: 0,
-		_scratch_root_free_instances: [],
-
 		_mono_wasm_root_prototype: {
 			/** @returns {NativePointer} */
 			get_address: function () {
@@ -297,20 +307,20 @@ var MonoSupportLib = {
 			if (index === undefined)
 				return;
 
-			this._scratch_root_buffer.set (index, 0);
-			this._scratch_root_free_indices[this._scratch_root_free_indices_count] = index;
-			this._scratch_root_free_indices_count++;
+			MONO._scratch_root_buffer.set (index, 0);
+			MONO._scratch_root_free_indices[MONO._scratch_root_free_indices_count] = index;
+			MONO._scratch_root_free_indices_count++;
 		},
 
 		_mono_wasm_claim_scratch_index: function () {
-			if (!this._scratch_root_buffer) {
+			if (!MONO._scratch_root_buffer) {
 				const maxScratchRoots = 8192;
-				this._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
+				MONO._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
 
-				this._scratch_root_free_indices = new Int32Array (maxScratchRoots);
-				this._scratch_root_free_indices_count = maxScratchRoots;
+				MONO._scratch_root_free_indices = new Int32Array (maxScratchRoots);
+				MONO._scratch_root_free_indices_count = maxScratchRoots;
 				for (var i = 0; i < maxScratchRoots; i++)
-					this._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
+					MONO._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
 
 				Object.defineProperty (this._mono_wasm_root_prototype, "value", {
 					get: this._mono_wasm_root_prototype.get,
@@ -319,11 +329,11 @@ var MonoSupportLib = {
 				});
 			}
 
-			if (this._scratch_root_free_indices_count < 1)
+			if (MONO._scratch_root_free_indices_count < 1)
 				throw new Error ("Out of scratch root space");
 
-			var result = this._scratch_root_free_indices[this._scratch_root_free_indices_count - 1];
-			this._scratch_root_free_indices_count--;
+			var result = MONO._scratch_root_free_indices[MONO._scratch_root_free_indices_count - 1];
+			MONO._scratch_root_free_indices_count--;
 			return result;
 		},
 
@@ -420,11 +430,11 @@ var MonoSupportLib = {
 		mono_wasm_new_root: function (value) {
 			var result;
 
-			if (this._scratch_root_free_instances.length > 0) {
-				result = this._scratch_root_free_instances.pop ();
+			if (MONO._scratch_root_free_instances.length > 0) {
+				result = MONO._scratch_root_free_instances.pop ();
 			} else {
 				var index = this._mono_wasm_claim_scratch_index ();
-				var buffer = this._scratch_root_buffer;
+				var buffer = MONO._scratch_root_buffer;
 
 				result = Object.create (this._mono_wasm_root_prototype);
 				result.__buffer = buffer;
@@ -485,7 +495,6 @@ var MonoSupportLib = {
 			}
 		},
 
-		mono_text_decoder: undefined,
 		string_decoder: {
 			copy: function (mono_string) {
 				if (mono_string === 0)
@@ -674,7 +683,7 @@ var MonoSupportLib = {
 		},
 
 		_cache_call_function_res: function (obj) {
-			const id = `dotnet:cfo_res:${this._next_call_function_res_id++}`;
+			const id = `dotnet:cfo_res:${MONO._next_call_function_res_id++}`;
 			this._call_function_res_cache[id] = obj;
 			return id;
 		},
@@ -769,8 +778,8 @@ var MonoSupportLib = {
 		},
 
 		_clear_per_step_state: function () {
-			this._next_id_var = 0;
-			this._id_table = {};
+			MONO._next_id_var = 0;
+			MONO._id_table = {};
 		},
 
 		mono_wasm_debugger_resume: function () {
@@ -820,11 +829,11 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_runtime_ready: function () {
-			this.mono_wasm_runtime_is_ready = true;
+			MONO.mono_wasm_runtime_is_ready = true;
 			this._clear_per_step_state ();
 
 			// FIXME: where should this go?
-			this._next_call_function_res_id = 0;
+			MONO._next_call_function_res_id = 0;
 			this._call_function_res_cache = {};
 
 			this._c_fn_table = {};
@@ -1106,15 +1115,13 @@ var MonoSupportLib = {
 			return memoryOffset;
 		},
 
-		num_icu_assets_loaded_successfully: 0,
-
 		// @offset must be the address of an ICU data archive in the native heap.
 		// returns true on success.
 		mono_wasm_load_icu_data: function (offset) {
 			var fn = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']);
 			var ok = (fn (offset)) === 1;
 			if (ok)
-				this.num_icu_assets_loaded_successfully++;
+				MONO.num_icu_assets_loaded_successfully++;
 			return ok;
 		},
 
@@ -1317,7 +1324,7 @@ var MonoSupportLib = {
 				invariantMode = true;
 
 			if (!invariantMode) {
-				if (this.num_icu_assets_loaded_successfully > 0) {
+				if (MONO.num_icu_assets_loaded_successfully > 0) {
 					console.debug ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
 				} else if (globalization_mode !== "icu") {
 					console.debug ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
@@ -1375,7 +1382,7 @@ var MonoSupportLib = {
 
 			var manifest;
 			try {
-				manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+				var manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
 				manifest = JSON.parse(manifestContent);
 				if (!(manifest instanceof Array))
 					return false;
@@ -1402,7 +1409,7 @@ var MonoSupportLib = {
 				Module['FS_createPath'](prefix, folder, true, true);
 			});
 
-			for (row of manifest) {
+			for (var row of manifest) {
 				var name = row[0];
 				var length = row[1];
 				var bytes = data.slice(0, length);
@@ -1457,6 +1464,28 @@ var MonoSupportLib = {
 			} finally {
 				Module.removeRunDependency(configFilePath);
 			}
+		},
+		mono_wasm_set_timeout_exec: function(id){
+			if (!this.mono_set_timeout_exec)
+				this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
+			this.mono_set_timeout_exec (id);
+		},
+		prevent_timer_throttling: function () {
+			// this will schedule timers every second for next 6 minutes, it should be called from WebSocket event, to make it work
+			// on next call, it would only extend the timers to cover yet uncovered future
+			let now = new Date().valueOf();
+			const desired_reach_time = now + (1000 * 60 * 6);
+			const next_reach_time = Math.max(now + 1000, this.spread_timers_maximum);
+			const light_throttling_frequency = 1000;
+			for (var schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
+				const delay = schedule - now;
+				setTimeout(() => {
+					this.mono_wasm_set_timeout_exec(0);
+					MONO.pump_count++;
+					MONO.pump_message();
+				}, delay);
+			}
+			this.spread_timers_maximum = desired_reach_time;
 		}
 	},
 	schedule_background_exec: function () {
@@ -1467,17 +1496,15 @@ var MonoSupportLib = {
 	},
 
 	mono_set_timeout: function (timeout, id) {
-		if (!this.mono_set_timeout_exec)
-			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
 		if (typeof globalThis.setTimeout === 'function') {
 			globalThis.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_wasm_set_timeout_exec (id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;
 			MONO.timeout_queue.push(function() {
-				this.mono_set_timeout_exec (id);
+				MONO.mono_wasm_set_timeout_exec (id);
 			})
 		}
 	},

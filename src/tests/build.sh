@@ -43,12 +43,23 @@ build_test_wrappers()
 build_mono_aot()
 {
     __RuntimeFlavor="mono"
-    __Exclude="$__RepoRootDir/src/tests/issues.targets"
     __TestBinDir="$__TestWorkingDir"
+    __Exclude="$__RepoRootDir/src/tests/issues.targets"
     CORE_ROOT="$__TestBinDir"/Tests/Core_Root
+    __MonoFullAotPropVal="false"
+    if [[ "$__MonoFullAot" -eq 1 ]]; then
+        __MonoFullAotPropVal="true"
+    fi
     export __Exclude
     export CORE_ROOT
-    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir"
+    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir" "/p:MonoFullAot=$__MonoFullAotPropVal"
+}
+
+build_ios_apps()
+{
+    __RuntimeFlavor="mono" \
+    __Exclude="$__RepoRootDir/src/tests/issues.targets" \
+    build_MSBuild_projects "Create_iOS_App" "$__RepoRootDir/src/tests/run.proj" "Create iOS Apps" "/t:BuildAlliOSApp"
 }
 
 generate_layout()
@@ -57,14 +68,6 @@ generate_layout()
 
     __ProjectFilesDir="$__TestDir"
     __TestBinDir="$__TestWorkingDir"
-
-    if [[ "$__RebuildTests" -ne 0 ]]; then
-        if [[ -d "${__TestBinDir}" ]]; then
-            echo "Removing tests build dir: ${__TestBinDir}"
-            rm -rf "$__TestBinDir"
-        fi
-    fi
-
     __CMakeBinDir="${__TestBinDir}"
 
     if [[ -z "$__TestIntermediateDir" ]]; then
@@ -256,7 +259,7 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
+    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
         build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
@@ -292,7 +295,7 @@ build_Tests()
     if [[ "$__CopyNativeTestBinaries" == 1 ]]; then
         echo "Copying native test binaries to output..."
 
-        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "/p:RuntimeFlavor=$__RuntimeFlavor" "/t:CopyAllNativeProjectReferenceBinaries" "/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/copy_native_test_binaries${__RuntimeFlavor}.binlog"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: copying native test binaries failed. Refer to the build log files for details (above)"
@@ -363,6 +366,9 @@ build_MSBuild_projects()
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
             buildArgs+=("/p:__SkipPackageRestore=true");
             buildArgs+=("/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_managed_tests_${testGroupToBuild}.binlog");
+            buildArgs+=("/p:BuildTestProject=${__BuildTestProject}");
+            buildArgs+=("/p:BuildTestDir=${__BuildTestDir}");
+            buildArgs+=("/p:BuildTestTree=${__BuildTestTree}");
 
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
@@ -425,6 +431,10 @@ usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 
+usage_list+=("-test:xxx - only build a single test project");
+usage_list+=("-dir:xxx - build all tests in a given directory");
+usage_list+=("-tree:xxx - build all tests in a given subtree");
+
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
 usage_list+=("-allTargets: Build managed tests for all target platforms.")
@@ -485,6 +495,24 @@ handle_arguments_local() {
             __RebuildTests=1
             ;;
 
+        test*|-test*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
+            ;;
+
+        dir*|-dir*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
+            ;;
+
+        tree*|-tree*)
+            local arg="$1"
+            local parts=(${arg//:/ })
+            __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
+            ;;
+
         runtests|-runtests)
             __RunTests=1
             ;;
@@ -504,6 +532,11 @@ handle_arguments_local() {
         mono_aot|-mono_aot)
             __Mono=1
             __MonoAot=1
+            ;;
+
+        mono_fullaot|-mono_fullaot)
+            __Mono=1
+            __MonoFullAot=1
             ;;
 
         *)
@@ -534,6 +567,9 @@ __DistroRid=""
 __DoCrossgen2=0
 __CompositeBuildMode=0
 __TestBuildMode=
+__BuildTestProject="%3B"
+__BuildTestDir="%3B"
+__BuildTestTree="%3B"
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __IsMSBuildOnNETCoreSupported=0
@@ -559,6 +595,7 @@ __CMakeArgs=""
 __priority1=
 __Mono=0
 __MonoAot=0
+__MonoFullAot=0
 CORE_ROOT=
 
 source $__RepoRootDir/src/coreclr/_build-commons.sh
@@ -567,7 +604,7 @@ if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
-if [[ "$__CrossBuild" == 1 ]]; then
+if [[ "$__CrossBuild" == 1 && "$__TargetOS" != "Android" ]]; then
     __UnprocessedBuildArgs+=("/p:CrossBuild=true")
 fi
 
@@ -604,11 +641,18 @@ if [[ -z "$HOME" ]]; then
     echo "HOME not defined; setting it to $HOME"
 fi
 
-if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") && ("$__MonoAot" -eq 0) ]]; then
+if [[ "$__RebuildTests" -ne 0 ]]; then
+    if [[ -d "${__TestWorkingDir}" ]]; then
+        echo "Removing tests build dir: ${__TestWorkingDir}"
+        rm -rf "${__TestWorkingDir}"
+    fi
+fi
+
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") && ("$__MonoAot" -eq 0) && ("$__MonoFullAot" -eq 0) ]]; then
     build_Tests
 elif [[ ! -z "$__BuildTestWrappersOnly" ]]; then
     build_test_wrappers
-elif [[ "$__MonoAot" -eq 1 ]]; then
+elif [[ ("$__MonoAot" -eq 1) || ("$__MonoFullAot" -eq 1) ]]; then
     build_mono_aot
 else
     generate_layout
@@ -624,6 +668,8 @@ echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 
 if [ "$__TargetOS" == "Android" ]; then
     build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
+elif [ "$__TargetOS" == "iOS" ] || [ "$__TargetOS" == "iOSSimulator" ]; then
+    build_ios_apps
 fi
 
 if [[ "$__RunTests" -ne 0 ]]; then

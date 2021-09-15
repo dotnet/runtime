@@ -24,7 +24,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal static unsafe SOCKADDR_INET IPEndPointToINet(IPEndPoint endpoint)
         {
             SOCKADDR_INET socketAddress = default;
-            if (endpoint.Address != IPAddress.Any && endpoint.Address != IPAddress.IPv6Any)
+            if (!endpoint.Address.Equals(IPAddress.Any) && !endpoint.Address.Equals(IPAddress.IPv6Any))
             {
                 switch (endpoint.Address.AddressFamily)
                 {

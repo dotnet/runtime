@@ -76,7 +76,6 @@ TypeName::~TypeName()
         m_genericArguments[i]->Release();
 }
 
-#if!defined(CROSSGEN_COMPILE)
 SAFEHANDLE TypeName::GetSafeHandle()
 {
     CONTRACTL
@@ -308,7 +307,6 @@ void QCALLTYPE TypeName::QGetAssemblyName(TypeName * pTypeName, QCall::StringHan
 
     END_QCALL;
 }
-#endif//!CROSSGEN_COMPILE
 
 //
 // TypeName::TypeNameParser
@@ -902,7 +900,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     BOOL bProhibitAsmQualifiedName,
     Assembly* pRequestingAssembly,
     OBJECTREF *pKeepAlive,
-    ICLRPrivBinder * pPrivHostBinder)
+    AssemblyBinder * pBinder)
 {
     STANDARD_VM_CONTRACT;
 
@@ -945,7 +943,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         /*fEnableCASearchRules = */TRUE,
         bProhibitAsmQualifiedName,
         pRequestingAssembly,
-        pPrivHostBinder,
+        pBinder,
         pKeepAlive);
 
     if (bPeriodPrefix && result.IsNull())
@@ -973,7 +971,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
             /*fEnableCASearchRules = */TRUE,
             bProhibitAsmQualifiedName,
             pRequestingAssembly,
-            pPrivHostBinder,
+            pBinder,
             pKeepAlive);
     }
 
@@ -1117,7 +1115,7 @@ TypeHandle TypeName::GetTypeFromAsm()
     BOOL fEnableCASearchRules,
     BOOL bProhibitAsmQualifiedName,
     Assembly* pRequestingAssembly,
-    ICLRPrivBinder * pPrivHostBinder,
+    AssemblyBinder * pBinder,
     OBJECTREF *pKeepAlive)
 {
     CONTRACT(TypeHandle)
@@ -1158,7 +1156,7 @@ TypeHandle TypeName::GetTypeFromAsm()
         }
 
         DomainAssembly *pDomainAssembly = LoadDomainAssembly(GetAssembly(), pRequestingAssembly,
-                                                                pPrivHostBinder,
+                                                                pBinder,
                                                                 bThrowIfNotFound);
         if (pDomainAssembly)
         {
@@ -1212,11 +1210,6 @@ TypeHandle TypeName::GetTypeFromAsm()
 
     if (!th.IsNull() && (!m_genericArguments.IsEmpty() || !m_signature.IsEmpty()))
     {
-#ifdef CROSSGEN_COMPILE
-        // This method is used to parse type names in custom attributes. We do not support
-        // that these custom attributes will contain composed types.
-        CrossGenNotSupported("GetTypeWorker");
-#else
         struct _gc
         {
             PTRARRAYREF refGenericArguments;
@@ -1244,7 +1237,7 @@ TypeHandle TypeName::GetTypeFromAsm()
             TypeHandle thGenericArg = m_genericArguments[i]->GetTypeWorker(
                 bThrowIfNotFound, bIgnoreCase,
                 pAssemblyGetType, fEnableCASearchRules, bProhibitAsmQualifiedName, pRequestingAssembly,
-                pPrivHostBinder,
+                pBinder,
                 (pKeepAlive != NULL) ? &gc.keepAlive : NULL /* Only pass a keepalive parameter if we were passed a keepalive parameter */);
 
             if (thGenericArg.IsNull())
@@ -1283,7 +1276,6 @@ TypeHandle TypeName::GetTypeFromAsm()
             th = TypeHandle();
         }
         GCPROTECT_END();
-#endif // CROSSGEN_COMPILE
     }
 
     if (th.IsNull() && bThrowIfNotFound)
@@ -1339,7 +1331,6 @@ TypeName::GetTypeHaveAssemblyHelper(
 
     NameHandle typeName(pManifestModule, mdtBaseType);
 
-#ifndef CROSSGEN_COMPILE
     if (pAssembly->IsCollectible())
     {
         if (pKeepAlive == NULL)
@@ -1348,7 +1339,6 @@ TypeName::GetTypeHaveAssemblyHelper(
         }
         *pKeepAlive = pAssembly->GetLoaderAllocator()->GetExposedObject();
     }
-#endif
 
     // Set up the name handle
     if (bIgnoreCase)
@@ -1454,7 +1444,7 @@ TypeName::GetTypeHaveAssemblyHelper(
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
-    ICLRPrivBinder * pPrivHostBinder,
+    AssemblyBinder * pBinder,
     BOOL       bThrowIfNotFound)
 {
     CONTRACTL
@@ -1480,17 +1470,17 @@ DomainAssembly * LoadDomainAssembly(
 
     // Have we been passed the reference to the binder against which this load should be triggered?
     // If so, then use it to set the fallback load context binder.
-    if (pPrivHostBinder != NULL)
+    if (pBinder != NULL)
     {
-        spec.SetFallbackLoadContextBinderForRequestingAssembly(pPrivHostBinder);
-        spec.SetPreferFallbackLoadContextBinder();
+        spec.SetFallbackBinderForRequestingAssembly(pBinder);
+        spec.SetPreferFallbackBinder();
     }
     else if (pRequestingAssembly != NULL)
     {
         // If the requesting assembly has Fallback LoadContext binder available,
         // then set it up in the AssemblySpec.
         PEFile *pRequestingAssemblyManifestFile = pRequestingAssembly->GetManifestFile();
-        spec.SetFallbackLoadContextBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackLoadContextBinder());
+        spec.SetFallbackBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackBinder());
     }
 
     if (bThrowIfNotFound)
