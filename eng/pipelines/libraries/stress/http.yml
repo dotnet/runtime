@@ -59,8 +59,8 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
-      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.StagingDirectory):/logs"
-      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -reportFile /logs/linux-http30.xml"
+      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.ArtifactStagingDirectory):/reports"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -reportFile /reports/linux-http30.xml"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 3.0
@@ -86,10 +86,10 @@ jobs:
 
   - task: PublishBuildArtifacts@1
     inputs:
-      pathToPublish: '$(Build.StagingDirectory)/linux-http11.json'
+      pathToPublish: '$(Build.ArtifactStagingDirectory)/linux-http30.xml'
       PublishLocation: Container
-      artifactName: Linux-HTTP11
-    displayName: Publish artifacts
+      artifactName: Linux-HTTP30
+    displayName: Publish Linux HTTP/3.0 report
     condition: always()
 
 - job: windows
