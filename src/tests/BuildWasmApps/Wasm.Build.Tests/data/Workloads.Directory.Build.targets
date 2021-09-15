@@ -1,14 +1,7 @@
 <Project>
   <PropertyGroup>
-    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
   </PropertyGroup>
-
-  <Target Name="PrepareForWasmBuild">
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\**\*.dll" />
-    </ItemGroup>
-  </Target>
 
   <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />

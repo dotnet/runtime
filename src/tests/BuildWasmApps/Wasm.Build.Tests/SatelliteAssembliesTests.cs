@@ -40,12 +40,13 @@ namespace Wasm.Build.Tests
                                               string id)
         {
             string projectName = $"sat_asm_from_main_asm";
-            bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
+            // Release+publish defaults to native relinking
+            bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT && buildArgs.Config != "Release";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
                                         projectTemplate: s_resourcesProjectTemplate,
-                                        extraProperties: $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>");
+                                        extraProperties: nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty);
 
             BuildProject(buildArgs,
                         initProject: () =>
