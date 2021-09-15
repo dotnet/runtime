@@ -9,10 +9,25 @@
 #define FEATURE_CFI_SUPPORT
 #endif
 
+// Undefine all of the target OS macros
+// Within the JIT codebase we use the TargetOS features
+#ifdef TARGET_UNIX
+#undef TARGET_UNIX
+#endif
+
+#ifdef TARGET_OSX
+#undef TARGET_OSX
+#endif
+
+#ifdef TARGET_WINDOWS
+#undef TARGET_WINDOWS
+#endif
+
+
 // Native Varargs are not supported on Unix (all architectures) and Windows ARM
-#define compFeatureVarArg() (TargetOS::IsWindows && !TargetArchitecture::IsArm32)
-#define compMacOsArm64Abi() (TargetArchitecture::IsArm64 && TargetOS::IsMacOS)
-#define compFeatureArgSplit() ( TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64) )
+inline bool compFeatureVarArg() { return TargetOS::IsWindows && !TargetArchitecture::IsArm32; }
+inline bool compMacOsArm64Abi() { return TargetArchitecture::IsArm64 && TargetOS::IsMacOS; }
+inline bool compFeatureArgSplit() { return TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64); }
 
 /*****************************************************************************/
 // The following are human readable names for the target architectures
