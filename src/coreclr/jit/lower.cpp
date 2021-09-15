@@ -3554,7 +3554,9 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
 #ifdef FEATURE_SIMD
             case GT_STORE_LCL_FLD:
-                assert(varTypeIsSIMD(user) && (returnType == user->TypeGet()));
+                // If the call type was ever updated (in importer) to TYP_SIMD*, it should match the user type.
+                // If not, the user type should match the struct's returnType.
+                assert((varTypeIsSIMD(user) && user->TypeIs(origType)) || (returnType == user->TypeGet()));
                 break;
 #endif // FEATURE_SIMD
 
