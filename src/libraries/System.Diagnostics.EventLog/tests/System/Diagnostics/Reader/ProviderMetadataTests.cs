@@ -23,6 +23,9 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public void ProviderNameTests(bool noProviderName)
         {
+            if (PlatformDetection.IsWindows10Version22000OrGreater) // ActiveIssue("https://github.com/dotnet/runtime/issues/58829")
+                return;
+
             string log = "Application";
             string source = "Source_" + nameof(ProviderNameTests);
             using (var session = new EventLogSession())
