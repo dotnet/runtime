@@ -28,6 +28,8 @@ jobs:
 - job: linux
   displayName: Docker Linux
   timeoutInMinutes: 180
+  variables:
+    IMAGE_SHARE: "/share"
   pool:
     name: NetCorePublic-Pool
     queue: BuildPool.Ubuntu.1804.Amd64.Open
@@ -51,8 +53,8 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(shareRoot)/client/linux/3.0"
-      export SERVER_SHARE="$(shareRoot)/server/linux/3.0"
+      export CLIENT_SHARE="$(shareRoot)/client/3.0"
+      export SERVER_SHARE="$(shareRoot)/server/3.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -xops 10"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -60,8 +62,8 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(shareRoot)/client/linux/2.0"
-      export SERVER_SHARE="$(shareRoot)/server/linux/2.0"
+      export CLIENT_SHARE="$(shareRoot)/client/2.0"
+      export SERVER_SHARE="$(shareRoot)/server/2.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -69,8 +71,8 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(shareRoot)/client/linux/1.1"
-      export SERVER_SHARE="$(shareRoot)/server/linux/1.1"
+      export CLIENT_SHARE="$(shareRoot)/client/1.1"
+      export SERVER_SHARE="$(shareRoot)/server/1.1"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
@@ -82,12 +84,14 @@ jobs:
     displayName: Own shared dumps and files
     condition: failed()
   - publish: $(shareRoot)
-    artifact: DumpsAndLogs
+    artifact: DumpsLinux
     condition: failed()
 
 - job: windows
   displayName: Docker NanoServer
   timeoutInMinutes: 150
+  variables:
+    IMAGE_SHARE: "C:/share"
   pool:
     name: NetCorePublic-Pool
     queue: BuildPool.Server.Amd64.VS2019.Open
@@ -115,9 +119,10 @@ jobs:
     displayName: Disable Firewall
   - powershell: |
       cd '$(httpStressProject)'
-      $env:COMPOSE_CONVERT_WINDOWS_PATHS=1
-      $env:CLIENT_SHARE="$(shareRoot)/client/windows/2.0"
-      $env:SERVER_SHARE="$(shareRoot)/server/windows/2.0"
+      $env:CLIENT_SHARE="$(shareRoot)/client/2.0"
+      $env:SERVER_SHARE="$(shareRoot)/server/2.0"
+      New-Item -Force $env:CLIENT_SHARE -ItemType Directory
+      New-Item -Force $env:SERVER_SHARE -ItemType Directory
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
       $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -125,9 +130,10 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - powershell: |
       cd '$(httpStressProject)'
-      $env:COMPOSE_CONVERT_WINDOWS_PATHS=1
-      $env:CLIENT_SHARE="$(shareRoot)/client/windows/1.1"
-      $env:SERVER_SHARE="$(shareRoot)/server/windows/1.1"
+      $env:CLIENT_SHARE="$(shareRoot)/client/1.1"
+      $env:SERVER_SHARE="$(shareRoot)/server/1.1"
+      New-Item -Force $env:CLIENT_SHARE -ItemType Directory
+      New-Item -Force $env:SERVER_SHARE -ItemType Directory
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
       $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
@@ -135,12 +141,10 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
   - publish: $(shareRoot)
-    artifact: DumpsAndLogs
+    artifact: DumpsWindows
     condition: failed()
 
   - powershell: |
       Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
     name: enableFirewall
     displayName: Enable Firewall
-
-# TODO: deleting big part of pipeline to make the testing loop in CI faster, return it back once it's done.

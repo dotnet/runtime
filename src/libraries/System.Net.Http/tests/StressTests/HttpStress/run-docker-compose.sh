@@ -94,6 +94,7 @@ if ! docker-compose --file "$compose_file" build $build_args; then
 fi
 
 if [[ $buildonly -eq 0 ]]; then
+    export IMAGE_SHARE="/share"
     export CLIENT_SHARE="${CLIENT_SHARE:-$(mktemp -d)}"
     export SERVER_SHARE="${SERVER_SHARE:-$(mktemp -d)}"
     mkdir -p ${CLIENT_SHARE}

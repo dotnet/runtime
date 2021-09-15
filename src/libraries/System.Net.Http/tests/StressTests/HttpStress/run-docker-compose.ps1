@@ -73,13 +73,14 @@ finally {
 
 if (!$buildOnly)
 {
+    $env:IMAGE_SHARE="C:/share"
     if (!$env:CLIENT_SHARE) {
         $env:CLIENT_SHARE=Join-Path $env:Temp $(New-Guid)
     }
     if (!$env:SERVER_SHARE) {
         $env:SERVER_SHARE=Join-Path $env:Temp $(New-Guid)
     }
-    New-Item -Force $env:SERVER_SHARE -ItemType Directory
+    New-Item -Force $env:CLIENT_SHARE -ItemType Directory
     New-Item -Force $env:SERVER_SHARE -ItemType Directory
 
     $env:HTTPSTRESS_CLIENT_ARGS = $clientStressArgs

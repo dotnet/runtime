@@ -6,7 +6,7 @@ services:
       dockerfile: ${DOCKERFILE:-Dockerfile}
     image: httpstress
     volumes:
-      - "${CLIENT_SHARE}://c/share"
+      - "${CLIENT_SHARE}:${IMAGE_SHARE}"
     cap_add:
       - SYS_PTRACE
     links:
@@ -19,7 +19,7 @@ services:
       dockerfile: ${DOCKERFILE:-Dockerfile}
     image: httpstress
     volumes:
-      - "${SERVER_SHARE}://c/share"
+      - "${SERVER_SHARE}:${IMAGE_SHARE}"
     cap_add:
       - SYS_PTRACE
     ports:
