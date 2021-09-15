@@ -24,10 +24,10 @@ namespace Wasm.Build.Tests
             Output = output;
         }
 
-        public CommandResult EnsureSuccessful(string messagePrefix = "", bool suppressOutput = false)
+        public void EnsureSuccessful(string messagePrefix = "", bool suppressOutput = false)
             => EnsureExitCode(0, messagePrefix, suppressOutput);
 
-        public CommandResult EnsureExitCode(int expectedExitCode = 0, string messagePrefix = "", bool suppressOutput = false)
+        public void EnsureExitCode(int expectedExitCode = 0, string messagePrefix = "", bool suppressOutput = false)
         {
             if (ExitCode != expectedExitCode)
             {
@@ -43,8 +43,6 @@ namespace Wasm.Build.Tests
 
                 throw new XunitException(message.ToString());
             }
-
-            return this;
         }
     }
 }

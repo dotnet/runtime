@@ -212,7 +212,7 @@ internal static class Utils
             throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
 
         bool areDifferent = !File.Exists(dst) ||
-                                (useHash && ComputeHash(src) != ComputeHash(dst)) ||
+                                (useHash && Utils.ComputeHash(src) != Utils.ComputeHash(dst)) ||
                                 (File.ReadAllText(src) != File.ReadAllText(dst));
 
         if (areDifferent)

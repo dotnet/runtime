@@ -16,20 +16,15 @@ namespace Wasm.Build.Tests
         public Dictionary<BuildArgs, BuildProduct> _buildPaths = new();
 
         public void CacheBuild(BuildArgs buildArgs, BuildProduct product)
-        {
-            if (product == null)
-                throw new ArgumentNullException(nameof(product));
-            if (buildArgs == null)
-                throw new ArgumentNullException(nameof(buildArgs));
-            _buildPaths.Add(buildArgs, product);
-        }
+            => _buildPaths.Add(buildArgs, product);
 
         public void RemoveFromCache(string buildPath, bool keepDir=true)
         {
-            BuildArgs? foundBuildArgs = _buildPaths.Where(kvp => kvp.Value.ProjectDir == buildPath).Select(kvp => kvp.Key).SingleOrDefault();
-            if (foundBuildArgs is not null)
-                _buildPaths.Remove(foundBuildArgs);
+            KeyValuePair<BuildArgs, BuildProduct>? foundKvp = _buildPaths.Where(kvp => kvp.Value.ProjectDir == buildPath).SingleOrDefault();
+            if (foundKvp == null)
+                throw new Exception($"Could not find build path {buildPath} in cache to remove.");
 
+            _buildPaths.Remove(foundKvp.Value.Key);
             if (!keepDir)
                 RemoveDirectory(buildPath);
         }

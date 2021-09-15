@@ -5,7 +5,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunAnalyzers>false</RunAnalyzers>
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
-    <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
   </PropertyGroup>
 
   <ItemGroup>

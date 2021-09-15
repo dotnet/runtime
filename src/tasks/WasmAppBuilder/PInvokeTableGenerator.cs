@@ -16,43 +16,20 @@ using Microsoft.Build.Utilities;
 
 public class PInvokeTableGenerator : Task
 {
-    [Required, NotNull]
-    public string[]? Modules { get; set; }
-    [Required, NotNull]
-    public string[]? Assemblies { get; set; }
+    [Required]
+    public ITaskItem[]? Modules { get; set; }
+    [Required]
+    public ITaskItem[]? Assemblies { get; set; }
 
     [Required, NotNull]
     public string? OutputPath { get; set; }
-
-    [Output]
-    public string FileWrites { get; private set; } = string.Empty;
 
     private static char[] s_charsToReplace = new[] { '.', '-', };
 
     public override bool Execute()
     {
-        if (Assemblies.Length == 0)
-        {
-            Log.LogError($"No assemblies given to scan for pinvokes");
-            return false;
-        }
-
-        if (Modules.Length == 0)
-        {
-            Log.LogError($"{nameof(PInvokeTableGenerator)}.{nameof(Modules)} cannot be empty");
-            return false;
-        }
-
-        try
-        {
-            GenPInvokeTable(Modules, Assemblies);
-            return !Log.HasLoggedErrors;
-        }
-        catch (LogAsErrorException laee)
-        {
-            Log.LogError(laee.Message);
-            return false;
-        }
+        GenPInvokeTable(Modules!.Select(item => item.ItemSpec).ToArray(), Assemblies!.Select(item => item.ItemSpec).ToArray());
+        return true;
     }
 
     public void GenPInvokeTable(string[] pinvokeModules, string[] assemblies)
@@ -84,7 +61,6 @@ public class PInvokeTableGenerator : Task
             Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{OutputPath}'.");
         else
             Log.LogMessage(MessageImportance.Low, $"PInvoke table in {OutputPath} is unchanged.");
-        FileWrites = OutputPath;
 
         File.Delete(tmpFileName);
     }
@@ -363,7 +339,11 @@ public class PInvokeTableGenerator : Task
             return false;
     }
 
-    private static void Error (string msg) => throw new LogAsErrorException(msg);
+    private static void Error (string msg)
+    {
+        // FIXME:
+        throw new Exception(msg);
+    }
 }
 
 internal class PInvoke

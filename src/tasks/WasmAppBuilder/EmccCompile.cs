@@ -45,19 +45,6 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
         public override bool Execute()
         {
-            try
-            {
-                return ExecuteActual();
-            }
-            catch (LogAsErrorException laee)
-            {
-                Log.LogError(laee.Message);
-                return false;
-            }
-        }
-
-        private bool ExecuteActual()
-        {
             if (SourceFiles.Length == 0)
             {
                 Log.LogError($"No SourceFiles to compile");
@@ -146,7 +133,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     });
 
                     if (!result.IsCompleted && !Log.HasLoggedErrors)
-                        Log.LogError("Unknown failure occured while compiling. Check logs to get more details.");
+                        Log.LogError("Unknown failed occured while compiling");
                 }
 
                 if (!Log.HasLoggedErrors)
@@ -224,7 +211,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
         private bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
         {
             if (!File.Exists(srcFile))
-                throw new LogAsErrorException($"Could not find source file {srcFile}");
+                throw new ArgumentException($"Could not find source file {srcFile}");
 
             if (!File.Exists(objFile))
             {
@@ -241,7 +228,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     return true;
             }
 
-            reason = "everything is up-to-date";
+            reason = "everything is up-to-date.";
             return false;
 
             bool IsNewerThanOutput(string inFile, string outFile, out string reason)

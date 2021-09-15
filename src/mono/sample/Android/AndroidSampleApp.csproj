@@ -72,7 +72,6 @@
         AotModulesTablePath="$(_AotModulesTablePath)"
         ToolPrefix="$(_AotToolPrefix)"
         LibraryFormat="$(_AotLibraryFormat)"
-        IntermediateOutputPath="$(IntermediateOutputPath)"
         UseLLVM="$(UseLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />

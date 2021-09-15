@@ -5,7 +5,8 @@
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <UseMonoRuntime>true</UseMonoRuntime>
 
-    <_WasmBuildCoreDependsOn>
+    <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Publish</WasmBuildAppAfterThisTarget>
+    <WasmBuildAppDependsOn>
         _InitializeCommonProperties;
         _BeforeWasmBuildApp;
         _WasmResolveReferences;
@@ -14,16 +15,6 @@
         _WasmBuildNativeCore;
         _WasmGenerateAppBundle;
         _AfterWasmBuildApp
-    </_WasmBuildCoreDependsOn>
-
-    <WasmBuildAppDependsOn>
-      _PrepareForAfterBuild;
-      $(_WasmBuildCoreDependsOn)
     </WasmBuildAppDependsOn>
-
-    <WasmNestedPublishAppDependsOn>
-      _PrepareForNestedPublish;
-      $(_WasmBuildCoreDependsOn)
-    </WasmNestedPublishAppDependsOn>
   </PropertyGroup>
 </Project>

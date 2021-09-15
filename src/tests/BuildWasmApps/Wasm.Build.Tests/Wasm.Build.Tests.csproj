@@ -7,6 +7,7 @@
     <BundleXunitRunner>true</BundleXunitRunner>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <TestFramework>xunit</TestFramework>
+    <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
@@ -17,7 +18,7 @@
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
 
     <!-- don't run any wasm build steps -->
-    <IsWasmProject>false</IsWasmProject>
+    <WasmBuildAppAfterThisTarget />
   </PropertyGroup>
 
   <PropertyGroup>

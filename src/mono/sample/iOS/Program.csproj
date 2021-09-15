@@ -60,7 +60,6 @@
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         OutputDir="$(PublishDir)"
-        IntermediateOutputPath="$(IntermediateOutputPath)"
         UseLLVM="$(UseLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />

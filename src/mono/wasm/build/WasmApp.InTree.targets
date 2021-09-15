@@ -17,7 +17,7 @@
                            Condition="'$(_LocalMicrosoftNetCoreAppRuntimePackDir)' != '' and
                                       '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
-    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory) for $(MSBuildProjectName)" Importance="normal" />
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">
@@ -35,9 +35,9 @@
   </Target>
 
   <Target Name="CopyAppZipToHelixTestDir"
-          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true'"
           AfterTargets="Build"
-          DependsOnTargets="WasmTriggerPublishApp">
+          DependsOnTargets="Publish">
     <PropertyGroup>
       <WasmHelixTestAppRelativeDir Condition="'$(WasmHelixTestAppRelativeDir)' == ''">$(MSBuildProjectName)</WasmHelixTestAppRelativeDir>
       <!-- Helix properties -->

@@ -7,4 +7,8 @@
   </PropertyGroup>
 
   <Import Project="$(_WasmTargetsDir)WasmApp.LocalBuild.props" Condition="Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.props')" />
+
+  <PropertyGroup>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
 </Project>

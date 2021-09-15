@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -13,7 +12,7 @@ using System.Text;
 
 #nullable enable
 
-namespace Wasm.Build.NativeRebuild.Tests
+namespace Wasm.Build.Tests
 {
     // TODO: test for runtime components
     public class NativeRebuildTestsBase : BuildTestBase
@@ -137,6 +136,29 @@ namespace Wasm.Build.NativeRebuild.Tests
                 throw new XunitException($"CompareStat failed:{Environment.NewLine}{msg}");
         }
 
+        internal IDictionary<string, FileStat> StatFiles(IEnumerable<string> fullpaths)
+        {
+            Dictionary<string, FileStat> table = new();
+            foreach (string file in fullpaths)
+            {
+                if (File.Exists(file))
+                    table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(file), Length: new FileInfo(file).Length));
+                else
+                    table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: false, LastWriteTimeUtc: DateTime.MinValue, Length: 0));
+            }
+
+            return table;
+        }
+
+        internal BuildPaths GetBuildPaths(BuildArgs buildArgs)
+        {
+            string objDir = GetObjDir(buildArgs.Config);
+            string bundleDir = Path.Combine(GetBinDir(baseDir: _projectDir, config: buildArgs.Config), "AppBundle");
+            string wasmDir = Path.Combine(objDir, "wasm");
+
+            return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config), bundleDir);
+        }
+
         internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(BuildArgs buildArgs, BuildPaths paths, bool unchanged)
         {
             List<string> files = new()
@@ -181,4 +203,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Assert.DoesNotContain(substring, full);
         }
     }
+
+    internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
+    internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
 }

@@ -2,6 +2,13 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, '$(MSBuildThisFileDirectory)..'))" />
 
   <PropertyGroup>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
   </PropertyGroup>
+
+  <Target Name="PrepareForWasmBuild">
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
+    </ItemGroup>
+  </Target>
 </Project>
