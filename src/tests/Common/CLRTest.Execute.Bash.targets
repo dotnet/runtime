@@ -376,23 +376,7 @@ CLRTestExitCode=$?
       </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
       <![CDATA[
-# run Android app
-__Command=""
-if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-  __Command+=" $__TestDotNetCmd"
-else
-  __Command+=" dotnet"
-fi
-
-if [ ! -z "$XHARNESS_CLI_PATH" ]; then
-	# When running in CI, we only have the .NET runtime available
-	# We need to call the XHarness CLI DLL directly via dotnet exec
-	HARNESS_RUNNER="exec $XHARNESS_CLI_PATH"
-else
-	HARNESS_RUNNER="xharness"
-fi
-
-$__Command $HARNESS_RUNNER android run --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --output-directory="$__OutputDir" --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
+xharness android run --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --output-directory="$__OutputDir" --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
 CLRTestExitCode=$?
 
 # Exit code of xharness is zero when tests finished successfully
@@ -401,28 +385,13 @@ CLRTestExpectedExitCode=0
       </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'iOSSimulator' ">
       <![CDATA[
-__Command=""
-if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-  __Command+=" $__TestDotNetCmd"
-else
-  __Command+=" dotnet"
-fi
-
-if [ ! -z "$XHARNESS_CLI_PATH" ]; then
-	# When running in CI, we only have the .NET runtime available
-	# We need to call the XHarness CLI DLL directly via dotnet exec
-	HARNESS_RUNNER="exec $XHARNESS_CLI_PATH"
-else
-	HARNESS_RUNNER="xharness"
-fi
-
-$__Command $HARNESS_RUNNER apple just-run %5c
+xharness apple just-run %5c
   --app="net.dot.$__Category" %5c
   --output-directory="$__OutputDir" %5c
   --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=testdir-$(MsBuildProjectName)/$(MsBuildProjectName).dll" %5c
   --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=testdir-$(MsBuildProjectName)" %5c
   --expected-exit-code=100 %5c
-  --targets ios-simulator-64 %5c
+  --target="$target" %5c
   -v
 CLRTestExitCode=$?
 
