@@ -167,4 +167,19 @@ namespace WebAssemblyInfo
             return $"(func (param {Parameters}){results})";
         }
     }
+
+    enum CustomSubSectionId
+    {
+        ModuleName = 0,
+        FunctionNames = 1,
+        LocalNames = 2,
+        // extended names
+        LabelNames = 3,
+        TypeNames = 4,
+        TableNames = 5,
+        MemoryNames = 6,
+        GlobalNames = 7,
+        ElemSegmentNames = 8,
+        DataSegmentNames = 9,
+    }
 }

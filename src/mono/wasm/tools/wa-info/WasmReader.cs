@@ -72,7 +72,7 @@ namespace WebAssemblyInfo
             switch (id)
             {
                 case SectionId.Custom:
-                    ReadCustomSection();
+                    ReadCustomSection(size);
                     break;
                 case SectionId.Type:
                     ReadTypeSection();
@@ -436,10 +436,60 @@ namespace WebAssemblyInfo
             return (instructions.ToArray(), b);
         }
 
-        void ReadCustomSection()
+        void ReadCustomSection(UInt32 size)
         {
+            var start = reader.BaseStream.Position;
+            var name = ReadString();
             if (Program.Verbose)
-                Console.Write($" name: {ReadString()}");
+                Console.Write($" name: {name}");
+
+            if (name == "name")
+            {
+                ReadCustomNameSection(size - (UInt32)(reader.BaseStream.Position - start));
+            }
+        }
+
+        string moduleName = "<Unknown>";
+
+        void ReadCustomNameSection(UInt32 size)
+        {
+            var start = reader.BaseStream.Position;
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            while (reader.BaseStream.Position - start < size)
+            {
+                var id = (CustomSubSectionId)reader.ReadByte();
+                UInt32 subSectionSize = ReadU32();
+                var subSectionStart = reader.BaseStream.Position;
+
+                switch (id)
+                {
+                    case CustomSubSectionId.ModuleName:
+                        moduleName = ReadString();
+                        if (Program.Verbose2)
+                            Console.WriteLine($"  module name: {moduleName}");
+                        break;
+                    case CustomSubSectionId.FunctionNames:
+                        var count = ReadU32();
+                        if (Program.Verbose2)
+                            Console.WriteLine($"  function names count: {count}");
+                        break;
+                    case CustomSubSectionId.LocalNames:
+                        count = ReadU32();
+                        if (Program.Verbose2)
+                            Console.WriteLine($"  local names count: {count}");
+                        break;
+                    default:
+                        if (Program.Verbose2)
+                            Console.WriteLine($"  subsection {id}");
+                        break;
+                }
+
+                reader.BaseStream.Seek(subSectionStart + subSectionSize, SeekOrigin.Begin);
+            }
+
         }
 
         Export[]? exports;
