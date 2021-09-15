@@ -1,17 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>0436</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFramework)' == 'net461'"
+    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"
              Link="Common\System\Collections\DictionaryExtensions.cs" />
     <Compile Include="BadHasher.cs" />
     <Compile Include="EverythingEqual.cs" />
     <Compile Include="ImmutableArrayExtensionsTest.cs" />
     <Compile Include="ImmutableArrayTest.cs" />
     <Compile Include="ImmutableArrayTestBase.cs" />
+    <Compile Include="ImmutableArray\ImmutableArray.Generic.Tests.cs" />
     <Compile Include="ImmutableArray\ImmutableArray.NonGeneric.Tests.cs" />
     <Compile Include="ImmutableDictionaryBuilderTestBase.cs" />
     <Compile Include="GenericParameterHelper.cs" />
@@ -74,7 +76,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />
-    <Compile Include="ImmutableArray\ImmutableArray.Generic.Tests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
@@ -96,7 +97,7 @@
     <Compile Include="ImmutableSortedSetBuilderTest.nonnetstandard.cs" />
     <Compile Include="ImmutableSortedDictionaryTest.nonnetstandard.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
 </Project>

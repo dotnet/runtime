@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -37,6 +38,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type? runtimePropertyType,
             ConverterStrategy runtimeClassType,
             MemberInfo? memberInfo,
+            bool isVirtual,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonNumberHandling? parentTypeNumberHandling,
@@ -48,6 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
                 runtimePropertyType,
                 runtimeClassType,
                 memberInfo,
+                isVirtual,
                 converter,
                 ignoreCondition,
                 parentTypeNumberHandling,
@@ -116,13 +119,16 @@ namespace System.Text.Json.Serialization.Metadata
         internal void InitializeForSourceGen(
             JsonSerializerOptions options,
             bool isProperty,
+            bool isPublic,
             Type declaringType,
             JsonTypeInfo typeInfo,
             JsonConverter<T> converter,
-            Func<object, T>? getter,
-            Action<object, T>? setter,
-            JsonIgnoreCondition ignoreCondition,
-            JsonNumberHandling numberHandling,
+            Func<object, T?>? getter,
+            Action<object, T?>? setter,
+            JsonIgnoreCondition? ignoreCondition,
+            bool hasJsonInclude,
+            bool isExtensionData,
+            JsonNumberHandling? numberHandling,
             string propertyName,
             string? jsonPropertyName)
         {
@@ -150,6 +156,12 @@ namespace System.Text.Json.Serialization.Metadata
             NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
             EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
 
+            SrcGen_IsPublic = isPublic;
+            SrcGen_HasJsonInclude = hasJsonInclude;
+            SrcGen_IsExtensionData = isExtensionData;
+            DeclaredPropertyType = typeof(T);
+            ConverterBase = converter;
+
             if (ignoreCondition == JsonIgnoreCondition.Always)
             {
                 IsIgnored = true;
@@ -158,13 +170,11 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                Get = getter;
+                Get = getter!;
                 Set = setter;
                 HasGetter = Get != null;
                 HasSetter = Set != null;
-                ConverterBase = converter;
                 RuntimeTypeInfo = typeInfo;
-                DeclaredPropertyType = typeof(T);
                 DeclaringType = declaringType;
                 IgnoreCondition = ignoreCondition;
                 MemberType = isProperty ? MemberTypes.Property : MemberTypes.Field;
@@ -289,9 +299,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (Converter.HandleNullOnWrite)
                 {
-                    // No object, collection, or re-entrancy converter handles null.
-                    Debug.Assert(Converter.ConverterStrategy == ConverterStrategy.Value);
-
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
                         state.Current.PropertyState = StackFramePropertyState.Name;

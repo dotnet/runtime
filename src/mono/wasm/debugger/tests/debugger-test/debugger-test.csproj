@@ -11,6 +11,7 @@
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
     <WasmExtraFilesToDeploy Include="other.js" />
     <WasmExtraFilesToDeploy Include="runtime-debugger.js" />
+    <WasmExtraFilesToDeploy Include="weather.json" />
 
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" Private="true"/>
@@ -18,13 +19,15 @@
     <ProjectReference Include="..\library-dependency-debugger-test1\library-dependency-debugger-test1.csproj" Private="true"/>
     <ProjectReference Include="..\library-dependency-debugger-test2\library-dependency-debugger-test2.csproj" Private="true"/>
     <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" Private="true"/>
+    <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
-      <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">1</WasmDebugLevel>
+      <!-- like is used on blazor -->
+      <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
 
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
     </PropertyGroup>
@@ -36,6 +39,30 @@
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 
       <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="PreserveEnCAssembliesFromLinking"
+          Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
+          BeforeTargets="ConfigureTrimming">
+    <ItemGroup>
+      <!-- Don't modify EnC test assemblies -->
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('ApplyUpdateReferencedAssembly.dll'))"
+          Include="%(ResolvedFileToPublish.FullPath)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="IncludeDeltasInWasmBundle"
+          BeforeTargets="PrepareForWasmBuildApp"
+          Condition="'$(TargetOS)' == 'Browser'">
+    <ItemGroup>
+      <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
+      <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->
+      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
+                                      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dmeta'))" />
+      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
+                                      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dil'))" />
+      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)"
+                                      Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
     </ItemGroup>
   </Target>
 

@@ -331,7 +331,7 @@ namespace System.IO.Hashing.Tests
 
                 foreach (byte b in input)
                 {
-                    builder.Append(b.ToString("X2"));
+                    builder.Append($"{b:X2}");
                 }
 
                 return builder.ToString();

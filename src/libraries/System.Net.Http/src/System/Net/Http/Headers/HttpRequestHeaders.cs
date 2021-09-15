@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -101,6 +100,8 @@ namespace System.Net.Http.Headers
                 {
                     value = null;
                 }
+
+                CheckContainsNewLine(value);
 
                 SetOrRemoveParsedValue(KnownHeaders.From.Descriptor, value);
             }

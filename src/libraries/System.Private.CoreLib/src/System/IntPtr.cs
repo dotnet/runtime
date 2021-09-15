@@ -278,11 +278,11 @@ namespace System
         {
             if (Environment.Is64BitProcess)
             {
-                return BitOperations.LeadingZeroCount((uint)value);
+                return BitOperations.LeadingZeroCount((ulong)value);
             }
             else
             {
-                return BitOperations.LeadingZeroCount((ulong)value);
+                return BitOperations.LeadingZeroCount((uint)value);
             }
         }
 
@@ -291,38 +291,38 @@ namespace System
         {
             if (Environment.Is64BitProcess)
             {
-                return BitOperations.PopCount((uint)value);
-            }
-            else
-            {
                 return BitOperations.PopCount((ulong)value);
             }
-        }
-
-        [RequiresPreviewFeatures]
-        static nint IBinaryInteger<nint>.RotateLeft(nint value, nint rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)BitOperations.RotateLeft((uint)value, (int)rotateAmount);
-            }
             else
             {
-                return (nint)BitOperations.RotateLeft((ulong)value, (int)rotateAmount);
+                return BitOperations.PopCount((uint)value);
             }
         }
 
         [RequiresPreviewFeatures]
-        static nint IBinaryInteger<nint>.RotateRight(nint value, nint rotateAmount)
+        static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return (nint)BitOperations.RotateLeft((ulong)value, rotateAmount);
+            }
+            else
+            {
+                return (nint)BitOperations.RotateLeft((uint)value, rotateAmount);
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount)
 
         {
             if (Environment.Is64BitProcess)
             {
-                return (nint)BitOperations.RotateRight((uint)value, (int)rotateAmount);
+                return (nint)BitOperations.RotateRight((ulong)value, rotateAmount);
             }
             else
             {
-                return (nint)BitOperations.RotateRight((ulong)value, (int)rotateAmount);
+                return (nint)BitOperations.RotateRight((uint)value, rotateAmount);
             }
         }
 
@@ -331,11 +331,11 @@ namespace System
         {
             if (Environment.Is64BitProcess)
             {
-                return BitOperations.TrailingZeroCount((uint)value);
+                return BitOperations.TrailingZeroCount((ulong)value);
             }
             else
             {
-                return BitOperations.TrailingZeroCount((ulong)value);
+                return BitOperations.TrailingZeroCount((uint)value);
             }
         }
 
@@ -357,11 +357,11 @@ namespace System
 
             if (Environment.Is64BitProcess)
             {
-                return BitOperations.Log2((uint)value);
+                return BitOperations.Log2((ulong)value);
             }
             else
             {
-                return BitOperations.Log2((ulong)value);
+                return BitOperations.Log2((uint)value);
             }
         }
 
@@ -411,11 +411,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static nint IDecrementOperators<nint>.operator --(nint value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked nint IDecrementOperators<nint>.operator --(nint value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -447,11 +447,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static nint IIncrementOperators<nint>.operator ++(nint value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked nint IIncrementOperators<nint>.operator ++(nint value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue
@@ -585,7 +585,7 @@ namespace System
         {
             if (typeof(TOther) == typeof(byte))
             {
-                return (nint)(object)value;
+                return (byte)(object)value;
             }
             else if (typeof(TOther) == typeof(char))
             {

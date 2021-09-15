@@ -31,7 +31,7 @@ HRESULT GCProfiler::Shutdown()
 
     if (_gcStarts == 0)
     {
-        printf("GCProfiler::Shutdown: FAIL: Expected GarbaseCollectionStarted to be called\n");
+        printf("GCProfiler::Shutdown: FAIL: Expected GarbageCollectionStarted to be called\n");
     }
     else if (_gcFinishes == 0)
     {

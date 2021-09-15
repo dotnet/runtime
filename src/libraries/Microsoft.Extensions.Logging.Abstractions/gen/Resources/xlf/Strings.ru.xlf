@@ -4,157 +4,157 @@
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
         <source>Argument '{0}' is not referenced from the logging message</source>
-        <target state="new">Argument '{0}' is not referenced from the logging message</target>
+        <target state="translated">В сообщении ведения журнала нет ссылки на аргумент "{0}"</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
         <source>Argument is not referenced from the logging message</source>
-        <target state="new">Argument is not referenced from the logging message</target>
+        <target state="translated">В сообщении ведения журнала нет ссылки на аргумент</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratingForMax6ArgumentsMessage">
         <source>Generating more than 6 arguments is not supported</source>
-        <target state="new">Generating more than 6 arguments is not supported</target>
+        <target state="translated">Формирование более 6 аргументов не поддерживается</target>
         <note />
       </trans-unit>
       <trans-unit id="InconsistentTemplateCasingMessage">
         <source>Can't have the same template with different casing</source>
-        <target state="new">Can't have the same template with different casing</target>
+        <target state="translated">Невозможно использовать шаблон с таким же именем в другом регистре</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodNameMessage">
         <source>Logging method names cannot start with _</source>
-        <target state="new">Logging method names cannot start with _</target>
+        <target state="translated">Имена методов ведения журнала не могут начинаться с символа "_"</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterNameMessage">
         <source>Logging method parameter names cannot start with _</source>
-        <target state="new">Logging method parameter names cannot start with _</target>
+        <target state="translated">Имена параметров метода ведения журнала не могут начинаться с символа "_"</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
-        <target state="new">Logging methods cannot have a body</target>
+        <target state="translated">У методов ведения журнала не может быть текста</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodIsGenericMessage">
         <source>Logging methods cannot be generic</source>
-        <target state="new">Logging methods cannot be generic</target>
+        <target state="translated">Методы ведения журнала не могут быть универсальными</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
         <source>Logging methods must be partial</source>
-        <target state="new">Logging methods must be partial</target>
+        <target state="translated">Методы ведения журнала должны быть частичными</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
         <source>Logging methods must return void</source>
-        <target state="new">Logging methods must return void</target>
+        <target state="translated">Методы ведения журнала должны возвращать значение void</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
         <source>Logging methods must be static</source>
-        <target state="new">Logging methods must be static</target>
+        <target state="translated">Методы ведения журнала должны быть статическими</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
+        <target state="translated">Для строк формата не допускается неправильный формат (висячие символы "{" и т. п.)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
         <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
-        <target state="new">A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</target>
+        <target state="translated">Значение LogLevel должно быть указано в атрибуте LoggerMessage или в качестве параметра метода ведения журнала</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLoggerArgumentMessage">
         <source>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</source>
-        <target state="new">One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</target>
+        <target state="translated">Один из аргументов статического метода ведения журнала "{0}" должен реализовывать интерфейс Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerArgumentTitle">
         <source>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
-        <target state="new">One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</target>
+        <target state="translated">Один из аргументов статического метода ведения журнала должен реализовывать интерфейс Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldMessage">
         <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
-        <target state="new">Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</target>
+        <target state="translated">В классе {0} не найдены поля типа Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldTitle">
         <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</source>
-        <target state="new">Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</target>
+        <target state="translated">Не удалось найти поле типа Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingRequiredTypeMessage">
         <source>Could not find definition for type {0}</source>
-        <target state="new">Could not find definition for type {0}</target>
+        <target state="translated">Не найдено определение для типа {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingRequiredTypeTitle">
         <source>Could not find a required type definition</source>
-        <target state="new">Could not find a required type definition</target>
+        <target state="translated">Не найдено требуемое определение типа</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleLoggerFieldsMessage">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
-        <target state="new">Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</target>
+        <target state="translated">В классе {0} обнаружено несколько полей типа Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MultipleLoggerFieldsTitle">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
-        <target state="new">Found multiple fields of type Microsoft.Extensions.Logging.ILogger</target>
+        <target state="translated">Обнаружено несколько полей типа Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="new">Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</target>
+        <target state="translated">Удалите избыточный квалификатор (Info:, Warning:, Error:, и т. п.) из сообщения журнала, поскольку квалификатор подразумевается на указанном уровне ведения журнала.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
         <source>Redundant qualifier in logging message</source>
-        <target state="new">Redundant qualifier in logging message</target>
+        <target state="translated">Избыточный квалификатор в сообщении журнала</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionExceptionInMessageTitle">
         <source>Don't include exception parameters as templates in the logging message</source>
-        <target state="new">Don't include exception parameters as templates in the logging message</target>
+        <target state="translated">Не включайте параметры исключений в качестве шаблонов в сообщение ведения журнала</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionInTemplateMessage">
         <source>Don't include a template for {0} in the logging message since it is implicitly taken care of</source>
-        <target state="new">Don't include a template for {0} in the logging message since it is implicitly taken care of</target>
+        <target state="translated">Не включайте шаблон для {0} в сообщение ведения журнала, поскольку он используется неявным образом</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionLogLevelInMessageTitle">
         <source>Don't include log level parameters as templates in the logging message</source>
-        <target state="new">Don't include log level parameters as templates in the logging message</target>
+        <target state="translated">Не включайте параметры уровня журнала в качестве шаблонов в сообщение ведения журнала</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionLoggerInMessageTitle">
         <source>Don't include logger parameters as templates in the logging message</source>
-        <target state="new">Don't include logger parameters as templates in the logging message</target>
+        <target state="translated">Не включайте параметры средства ведения журнала в качестве шаблонов в сообщение ведения журнала</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventIdsMessage">
         <source>Multiple logging methods are using event id {0} in class {1}</source>
-        <target state="new">Multiple logging methods are using event id {0} in class {1}</target>
+        <target state="translated">Несколько методов ведения журнала используют идентификатор события {0} в классе {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
-        <target state="new">Multiple logging methods cannot use the same event id within a class</target>
+        <target state="translated">Несколько методов ведения журнала не могут использовать одинаковый ИД события в пределах класса</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
-        <target state="new">Template '{0}' is not provided as argument to the logging method</target>
+        <target state="translated">Шаблон "{0}" не указан в качестве аргумента для метода ведения журнала</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
-        <target state="new">Logging template has no corresponding method argument</target>
+        <target state="translated">У шаблона журнала нет соответствующего аргумента метода</target>
         <note />
       </trans-unit>
     </body>

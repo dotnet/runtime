@@ -962,7 +962,7 @@ namespace System.Net
                                                 if (NetEventSource.Log.IsEnabled())
                                                 {
                                                     NetEventSource.Info(this,
-                                                        $"HandleAuthentication creating new WindowsIdentity from user context: {userContext.DangerousGetHandle().ToString("x8")}");
+                                                        $"HandleAuthentication creating new WindowsIdentity from user context: {userContext.DangerousGetHandle():x8}");
                                                 }
 
                                                 WindowsPrincipal windowsPrincipal = new WindowsPrincipal(
@@ -1881,7 +1881,7 @@ namespace System.Net
 
             private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {((IntPtr)nativeOverlapped).ToString("x")}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {(IntPtr)nativeOverlapped:x}");
                 // take the DisconnectAsyncResult object from the state
                 DisconnectAsyncResult asyncResult = (DisconnectAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
                 IOCompleted(asyncResult, errorCode, numBytes, nativeOverlapped);

@@ -667,6 +667,9 @@ typedef enum
 
     COR_PRF_HIGH_MONITOR_EVENT_PIPE                 = 0x00000080,
 
+    // Enables the pinned object allocation monitoring.
+    COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED     = 0x00000100,
+
     COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED |
                                                       COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS |
                                                       COR_PRF_HIGH_BASIC_GC |

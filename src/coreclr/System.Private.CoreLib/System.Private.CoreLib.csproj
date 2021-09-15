@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -136,7 +136,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymWriter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Enum.CoreCLR.cs" />
@@ -155,7 +154,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
@@ -167,7 +165,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ISymWrapperCore.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
@@ -194,6 +191,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeConstructorInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeCustomAttributeData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFieldInfo.cs" />
@@ -214,6 +212,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DynamicInterfaceCastableHelpers.cs" />

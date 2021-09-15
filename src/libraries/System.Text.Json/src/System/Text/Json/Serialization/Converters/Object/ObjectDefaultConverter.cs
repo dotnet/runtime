@@ -14,6 +14,8 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal class ObjectDefaultConverter<T> : JsonObjectConverter<T> where T : notnull
     {
+        internal override bool CanHaveIdMetadata => true;
+
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
@@ -35,6 +37,11 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 obj = jsonTypeInfo.CreateObject!()!;
+
+                if (obj is IJsonOnDeserializing onDeserializing)
+                {
+                    onDeserializing.OnDeserializing();
+                }
 
                 // Process all properties.
                 while (true)
@@ -107,6 +114,11 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     obj = jsonTypeInfo.CreateObject!()!;
+
+                    if (obj is IJsonOnDeserializing onDeserializing)
+                    {
+                        onDeserializing.OnDeserializing();
+                    }
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
@@ -216,13 +228,20 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
+            if (obj is IJsonOnDeserialized onDeserialized)
+            {
+                onDeserialized.OnDeserialized();
+            }
+
+            // Unbox
+            Debug.Assert(obj != null);
+            value = (T)obj;
+
             // Check if we are trying to build the sorted cache.
             if (state.Current.PropertyRefCache != null)
             {
                 jsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
             }
-
-            value = (T)obj;
 
             return true;
         }
@@ -235,21 +254,25 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            // Minimize boxing for structs by only boxing once here
-            object objectValue = value!;
+            object obj = value; // box once
 
             if (!state.SupportContinuation)
             {
                 writer.WriteStartObject();
                 if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                 {
-                    if (JsonSerializer.WriteReferenceForObject(this, objectValue, ref state, writer) == MetadataPropertyName.Ref)
+                    if (JsonSerializer.WriteReferenceForObject(this, obj, ref state, writer) == MetadataPropertyName.Ref)
                     {
                         return true;
                     }
                 }
 
-                List<KeyValuePair<string, JsonPropertyInfo?>> properties = state.Current.JsonTypeInfo.PropertyCache!.List;
+                if (obj is IJsonOnSerializing onSerializing)
+                {
+                    onSerializing.OnSerializing();
+                }
+
+                List<KeyValuePair<string, JsonPropertyInfo?>> properties = jsonTypeInfo.PropertyCache!.List;
                 for (int i = 0; i < properties.Count; i++)
                 {
                     JsonPropertyInfo jsonPropertyInfo = properties[i].Value!;
@@ -259,7 +282,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
                         state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
-                        bool success = jsonPropertyInfo.GetMemberAndWriteJson(objectValue, ref state, writer);
+                        bool success = jsonPropertyInfo.GetMemberAndWriteJson(obj, ref state, writer);
                         // Converters only return 'false' when out of data which is not possible in fast path.
                         Debug.Assert(success);
 
@@ -268,21 +291,20 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Write extension data after the normal properties.
-                JsonPropertyInfo? dataExtensionProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtensionProperty = jsonTypeInfo.DataExtensionProperty;
                 if (dataExtensionProperty?.ShouldSerialize == true)
                 {
                     // Remember the current property for JsonPath support if an exception is thrown.
                     state.Current.DeclaredJsonPropertyInfo = dataExtensionProperty;
                     state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
 
-                    bool success = dataExtensionProperty.GetMemberAndWriteJsonExtensionData(objectValue, ref state, writer);
+                    bool success = dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer);
                     Debug.Assert(success);
 
                     state.Current.EndProperty();
                 }
 
                 writer.WriteEndObject();
-                return true;
             }
             else
             {
@@ -291,16 +313,21 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WriteStartObject();
                     if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                     {
-                        if (JsonSerializer.WriteReferenceForObject(this, objectValue, ref state, writer) == MetadataPropertyName.Ref)
+                        if (JsonSerializer.WriteReferenceForObject(this, obj, ref state, writer) == MetadataPropertyName.Ref)
                         {
                             return true;
                         }
                     }
 
+                    if (obj is IJsonOnSerializing onSerializing)
+                    {
+                        onSerializing.OnSerializing();
+                    }
+
                     state.Current.ProcessedStartToken = true;
                 }
 
-                List<KeyValuePair<string, JsonPropertyInfo?>>? propertyList = state.Current.JsonTypeInfo.PropertyCache!.List!;
+                List<KeyValuePair<string, JsonPropertyInfo?>>? propertyList = jsonTypeInfo.PropertyCache!.List!;
                 while (state.Current.EnumeratorIndex < propertyList.Count)
                 {
                     JsonPropertyInfo? jsonPropertyInfo = propertyList![state.Current.EnumeratorIndex].Value;
@@ -310,7 +337,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
                         state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
-                        if (!jsonPropertyInfo.GetMemberAndWriteJson(objectValue!, ref state, writer))
+                        if (!jsonPropertyInfo.GetMemberAndWriteJson(obj!, ref state, writer))
                         {
                             Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value ||
                                          jsonPropertyInfo.ConverterBase.TypeToConvert == JsonTypeInfo.ObjectType);
@@ -335,14 +362,14 @@ namespace System.Text.Json.Serialization.Converters
                 // Write extension data after the normal properties.
                 if (state.Current.EnumeratorIndex == propertyList.Count)
                 {
-                    JsonPropertyInfo? dataExtensionProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
+                    JsonPropertyInfo? dataExtensionProperty = jsonTypeInfo.DataExtensionProperty;
                     if (dataExtensionProperty?.ShouldSerialize == true)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
                         state.Current.DeclaredJsonPropertyInfo = dataExtensionProperty;
                         state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
 
-                        if (!dataExtensionProperty.GetMemberAndWriteJsonExtensionData(objectValue, ref state, writer))
+                        if (!dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer))
                         {
                             return false;
                         }
@@ -366,14 +393,21 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.ProcessedEndToken = true;
                     writer.WriteEndObject();
                 }
-
-                return true;
             }
+
+            if (obj is IJsonOnSerialized onSerialized)
+            {
+                onSerialized.OnSerialized();
+            }
+
+            value = (T)obj; // unbox
+
+            return true;
         }
 
         // AggressiveInlining since this method is only called from two locations and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void ReadPropertyValue(
+        protected static void ReadPropertyValue(
             object obj,
             ref ReadStack state,
             ref Utf8JsonReader reader,
@@ -404,7 +438,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.EndProperty();
         }
 
-        protected bool ReadAheadPropertyValue(ref ReadStack state, ref Utf8JsonReader reader, JsonPropertyInfo jsonPropertyInfo)
+        protected static bool ReadAheadPropertyValue(ref ReadStack state, ref Utf8JsonReader reader, JsonPropertyInfo jsonPropertyInfo)
         {
             // Returning false below will cause the read-ahead functionality to finish the read.
             state.Current.PropertyState = StackFramePropertyState.ReadValue;
@@ -437,6 +471,11 @@ namespace System.Text.Json.Serialization.Converters
 
             object obj = state.Current.JsonTypeInfo.CreateObject!()!;
             state.Current.ReturnValue = obj;
+
+            if (obj is IJsonOnDeserializing onDeserializing)
+            {
+                onDeserializing.OnDeserializing();
+            }
         }
     }
 }

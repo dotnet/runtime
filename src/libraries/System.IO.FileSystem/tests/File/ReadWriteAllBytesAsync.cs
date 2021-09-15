@@ -94,8 +94,7 @@ namespace System.IO.Tests
             Assert.Equal(overwriteBytes, await File.ReadAllBytesAsync(path));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public async Task OpenFile_ThrowsIOExceptionAsync()
         {
             string path = GetTestFilePath();

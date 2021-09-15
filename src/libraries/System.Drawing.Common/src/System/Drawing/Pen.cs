@@ -161,7 +161,7 @@ namespace System.Drawing
 #endif
                     Gdip.GdipDeletePen(new HandleRef(this, NativePen));
 #if DEBUG
-                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
                 }
                 catch (Exception ex) when (!ClientUtils.IsSecurityOrCriticalException(ex))

@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization.Json
                     break;
                 case JsonGlobals.arrayString:
                     // Read as object array
-                    return DataContractJsonSerializerImpl.ReadJsonValue(DataContract.GetDataContract(Globals.TypeOfObjectArray), jsonReader, context);
+                    return DataContractJsonSerializer.ReadJsonValue(DataContract.GetDataContract(Globals.TypeOfObjectArray), jsonReader, context);
                 default:
                     throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, contentMode));
             }

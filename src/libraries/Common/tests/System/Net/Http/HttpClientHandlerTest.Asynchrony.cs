@@ -26,6 +26,11 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(ResponseHeadersRead_SynchronizationContextNotUsedByHandler_MemberData))]
         public async Task ResponseHeadersRead_SynchronizationContextNotUsedByHandler(bool responseHeadersRead, LoopbackServer.ContentMode contentMode)
         {
+            if (IsWinHttpHandler && (PlatformDetection.IsWindows7 || PlatformDetection.IsWindows8x))
+            {   // [ActiveIssue("https://github.com/dotnet/runtime/issues/54034")]
+                return;
+            }
+
             await Task.Run(async delegate // escape xunit's sync ctx
             {
                 await LoopbackServer.CreateClientAndServerAsync(uri =>

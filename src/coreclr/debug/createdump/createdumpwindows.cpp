@@ -8,7 +8,7 @@
 // The Windows create dump code
 //
 bool
-CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType)
+CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool crashReport, int crashThread, int signal)
 {
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hProcess = NULL;

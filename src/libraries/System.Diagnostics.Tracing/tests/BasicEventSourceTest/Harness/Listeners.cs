@@ -235,7 +235,7 @@ namespace BasicEventSourceTests
 
         private void mListenerEventWritten(object sender, EventWrittenEventArgs eventData)
         {
-            OnEvent(new EventListenerEvent(eventData));
+            OnEvent?.Invoke(new EventListenerEvent(eventData));
         }
 
         private class HelperEventListener : EventListener

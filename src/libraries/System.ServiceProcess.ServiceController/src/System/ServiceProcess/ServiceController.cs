@@ -283,7 +283,7 @@ namespace System.ServiceProcess
         }
 
         /// <summary>
-        /// A set of services on which the given service object is depend upon.
+        /// A set of services on which the given service object is dependent upon.
         /// </summary>
         public unsafe ServiceController[] ServicesDependedOn
         {
@@ -927,7 +927,7 @@ namespace System.ServiceProcess
         /// <param name="stopDependentServices">
         /// <c>true</c> to stop all running dependent services together with the service; <c>false</c> to stop only the service.
         /// </param>
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         public
 #else
         private

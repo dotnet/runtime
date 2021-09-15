@@ -19,7 +19,7 @@ namespace System.Drawing.Printing
         /// Determines if a converter can convert an object of the given source
         /// type to the native type of the converter.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             if (sourceType == typeof(string))
             {
@@ -68,7 +68,7 @@ namespace System.Drawing.Printing
                     for (int i = 0; i < values.Length; i++)
                     {
                         // Note: ConvertFromString will raise exception if value cannot be converted.
-                        values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i]);
+                        values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i])!;
                     }
                     if (values.Length != 4)
                     {
@@ -91,7 +91,7 @@ namespace System.Drawing.Printing
         /// type is string. If this cannot convert to the desitnation type, this will
         /// throw a NotSupportedException.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -107,7 +107,7 @@ namespace System.Drawing.Printing
                     }
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = GetIntConverter();
-                    string[] args = new string[4];
+                    string?[] args = new string[4];
                     int nArg = 0;
 
                     // Note: ConvertToString will raise exception if value cannot be converted.

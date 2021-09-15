@@ -27,38 +27,15 @@ namespace System.IO.Strategies
             internal const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
         }
 
-        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
-        {
-            if (UseNet5CompatStrategy)
-            {
-                // The .NET 5 Compat strategy does not support bufferSize == 0.
-                // To minimize the risk of introducing bugs to it, we just pass 1 to disable the buffering.
-                return new Net5CompatFileStreamStrategy(handle, access, bufferSize == 0 ? 1 : bufferSize, isAsync);
-            }
+        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
+            isAsync ?
+                new AsyncWindowsFileStreamStrategy(handle, access) :
+                new SyncWindowsFileStreamStrategy(handle, access);
 
-            WindowsFileStreamStrategy strategy = isAsync
-                ? new AsyncWindowsFileStreamStrategy(handle, access, share)
-                : new SyncWindowsFileStreamStrategy(handle, access, share);
-
-            return EnableBufferingIfNeeded(strategy, bufferSize);
-        }
-
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
-        {
-            if (UseNet5CompatStrategy)
-            {
-                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize == 0 ? 1 : bufferSize, options, preallocationSize);
-            }
-
-            WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
-                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize)
-                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize);
-
-            return EnableBufferingIfNeeded(strategy, bufferSize);
-        }
-
-        internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
-            => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
+            (options & FileOptions.Asynchronous) != 0 ?
+                new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize) :
+                new SyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize);
 
         internal static void FlushToDisk(SafeFileHandle handle)
         {
@@ -86,6 +63,9 @@ namespace System.IO.Strategies
 
             return ret;
         }
+
+        internal static void ThrowInvalidArgument(SafeFileHandle handle) =>
+            throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_PARAMETER, handle.Path);
 
         internal static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
         {
@@ -116,7 +96,7 @@ namespace System.IO.Strategies
             return errorCode;
         }
 
-        internal static void Lock(SafeFileHandle handle, long position, long length)
+        internal static void Lock(SafeFileHandle handle, bool canWrite, long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
@@ -142,33 +122,17 @@ namespace System.IO.Strategies
             }
         }
 
-        internal static void ValidateFileTypeForNonExtendedPaths(SafeFileHandle handle, string originalPath)
+        internal static unsafe void SetFileLength(SafeFileHandle handle, long length)
         {
-            if (!PathInternal.IsExtended(originalPath))
+            if (!TrySetFileLength(handle, length, out int errorCode))
             {
-                // To help avoid stumbling into opening COM/LPT ports by accident, we will block on non file handles unless
-                // we were explicitly passed a path that has \\?\. GetFullPath() will turn paths like C:\foo\con.txt into
-                // \\.\CON, so we'll only allow the \\?\ syntax.
-
-                int fileType = handle.GetFileType();
-                if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
-                {
-                    int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
-                        ? Marshal.GetLastPInvokeError()
-                        : Interop.Errors.ERROR_SUCCESS;
-
-                    handle.Dispose();
-
-                    if (errorCode != Interop.Errors.ERROR_SUCCESS)
-                    {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                    }
-                    throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
-                }
+                throw errorCode == Interop.Errors.ERROR_INVALID_PARAMETER
+                    ? new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig)
+                    : Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
             }
         }
 
-        internal static unsafe void SetFileLength(SafeFileHandle handle, long length)
+        internal static unsafe bool TrySetFileLength(SafeFileHandle handle, long length, out int errorCode)
         {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
@@ -181,13 +145,13 @@ namespace System.IO.Strategies
                 &eofInfo,
                 (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
             {
-                int errorCode = Marshal.GetLastPInvokeError();
-                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+                errorCode = Marshal.GetLastPInvokeError();
+                return false;
             }
-        }
 
+            errorCode = Interop.Errors.ERROR_SUCCESS;
+            return true;
+        }
 
         internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
         {
@@ -195,7 +159,6 @@ namespace System.IO.Strategies
 
             int r;
             int numBytesRead = 0;
-
             fixed (byte* p = &MemoryMarshal.GetReference(bytes))
             {
                 r = overlapped == null

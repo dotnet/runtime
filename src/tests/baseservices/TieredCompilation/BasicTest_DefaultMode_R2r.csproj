@@ -4,18 +4,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <CLRTestPriority>0</CLRTestPriority>
+
+    <!-- This is an explicit crossgen test -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTest.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-"%CORE_ROOT%\crossgen" -ReadyToRun -Platform_Assemblies_Paths "%CORE_ROOT%" -out $(MSBuildProjectName).ni.dll $(MSBuildProjectName).dll
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-"$CORE_ROOT/crossgen" -ReadyToRun -Platform_Assemblies_Paths "$CORE_ROOT" -out $(MSBuildProjectName).ni.dll $(MSBuildProjectName).dll
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

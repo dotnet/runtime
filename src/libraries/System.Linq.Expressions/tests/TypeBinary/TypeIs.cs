@@ -57,7 +57,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [MemberData(nameof(ExpressionAndTypeCombinations))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
         public void TypePropertyMatches(Expression expression, Type type)
         {
             Assert.Equal(type, Expression.TypeIs(expression, type).TypeOperand);

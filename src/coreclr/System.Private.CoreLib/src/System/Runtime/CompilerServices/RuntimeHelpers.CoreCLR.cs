@@ -45,6 +45,7 @@ namespace System.Runtime.CompilerServices
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void RunClassConstructor(QCallTypeHandle type);
 
+        [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             RuntimeType rt = type.GetRuntimeType();
@@ -349,12 +350,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern long GetILBytesJitted();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMethodsJittedCount();
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

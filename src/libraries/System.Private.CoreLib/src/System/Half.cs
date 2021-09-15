@@ -31,7 +31,6 @@ namespace System
 
         private const ushort SignMask = 0x8000;
         private const ushort SignShift = 15;
-        private const ushort ShiftedSignMask = SignMask >> SignShift;
 
         private const ushort ExponentMask = 0x7C00;
         private const ushort ExponentShift = 10;
@@ -126,7 +125,8 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative && !AreZero(left, right);
             }
-            return (left._value < right._value) ^ leftIsNegative;
+
+            return (left._value != right._value) && ((left._value < right._value) ^ leftIsNegative);
         }
 
         public static bool operator >(Half left, Half right)
@@ -151,7 +151,8 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative || AreZero(left, right);
             }
-            return (left._value <= right._value) ^ leftIsNegative;
+
+            return (left._value == right._value) || ((left._value < right._value) ^ leftIsNegative);
         }
 
         public static bool operator >=(Half left, Half right)
@@ -802,7 +803,7 @@ namespace System
         static Half IDecrementOperators<Half>.operator --(Half value)
         {
             var tmp = (float)value;
-            tmp--;
+            --tmp;
             return (Half)tmp;
         }
 
@@ -810,7 +811,7 @@ namespace System
         // static checked Half IDecrementOperators<Half>.operator --(Half value)
         // {
         //     var tmp = (float)value;
-        //     tmp--;
+        //     --tmp;
         //     return (Half)tmp;
         // }
 
@@ -1058,6 +1059,31 @@ namespace System
         static Half IFloatingPoint<Half>.Truncate(Half x)
             => (Half)MathF.Truncate((float)x);
 
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsFinite(Half x) => IsFinite(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsInfinity(Half x) => IsInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNaN(Half x) => IsNaN(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNegative(Half x) => IsNegative(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNegativeInfinity(Half x) => IsNegativeInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNormal(Half x) => IsNormal(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsPositiveInfinity(Half x) => IsPositiveInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsSubnormal(Half x) => IsSubnormal(x);
+
+
         // static Half IFloatingPoint<Half>.AcosPi(Half x)
         //     => (Half)MathF.AcosPi((float)x);
         //
@@ -1132,7 +1158,7 @@ namespace System
         static Half IIncrementOperators<Half>.operator ++(Half value)
         {
             var tmp = (float)value;
-            tmp++;
+            ++tmp;
             return (Half)tmp;
         }
 
@@ -1140,7 +1166,7 @@ namespace System
         // static checked Half IIncrementOperators<Half>.operator ++(Half value)
         // {
         //     var tmp = (float)value;
-        //     tmp++;
+        //     ++tmp;
         //     return (Half)tmp;
         // }
 

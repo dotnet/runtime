@@ -259,7 +259,7 @@ class StubLinker
         // helper will preserve ALL registers.
         VOID EmitUnwindInfoCheck();
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 protected:
 
         // Injects a call to the given label.
@@ -395,7 +395,7 @@ private:
 
         // Writes out the code element into memory following the
         // stub object.
-        bool EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap);
+        bool EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap);
 
         CodeRun *GetLastCodeRunIfAny();
 

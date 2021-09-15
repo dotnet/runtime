@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Tests;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
@@ -314,6 +315,74 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 }
 
                 // No exception should be thrown.
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public static void EnormousRead()
+        {
+            // 0x6000_0000 / 3 => 0x2000_0000 * 4 => 0x8000_0000 (overflow)
+            // (output bytes) / (output block size) * (input block size) == (input bytes requested)
+            const int OutputBufferLength = 0x6000_0000;
+            byte[] output;
+
+            try
+            {
+                output = new byte[OutputBufferLength];
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Could not create a large enough array");
+            }
+
+            // The input portion doesn't matter, the overflow happens before the call to the inner
+            // stream's read.
+            //
+            // When changing this flow from an OverflowException, there are two reasonable changes:
+            // A really big buffer (but the interior logic clamping the temp read buffer to Array.MaxLength
+            //   will still get it in one read)
+            // A stream that produces more than Array.MaxLength bytes.  Like, oh, 0x8000_0000U of them.
+            byte[] buffer = Array.Empty<byte>();
+
+            using (MemoryStream stream = new MemoryStream(buffer))
+            using (ICryptoTransform transform = new FromBase64Transform())
+            using (CryptoStream cryptoStream = new CryptoStream(stream, transform, CryptoStreamMode.Read))
+            {
+                Assert.Throws<OverflowException>(() => cryptoStream.Read(output, 0, output.Length));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public static void EnormousWrite()
+        {
+            // 0x6000_0000 / 3 => 0x2000_0000 * 4 => 0x8000_0000 (overflow)
+            // (input bytes) / (input block size) * (output block size) => (output bytes to write)
+            const int InputBufferLength = 0x60000000;
+
+            byte[] buffer;
+
+            try
+            {
+                buffer = new byte[InputBufferLength];
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Could not create a large enough array");
+            }
+
+            // In the Read scenario the overflow comes from a reducing transform.
+            // In the Write scenario it comes from an expanding transform.
+            //
+            // When making the write not overflow change the test to use an output stream
+            // that isn't bounded by Array.MaxLength.  e.g. a counting stream, or a stream
+            // that just computes some hash of the input (so total correctness can be measured)
+            byte[] output = Array.Empty<byte>();
+
+            using (MemoryStream stream = new MemoryStream(output))
+            using (ICryptoTransform transform = new ToBase64Transform())
+            using (CryptoStream cryptoStream = new CryptoStream(stream, transform, CryptoStreamMode.Write, leaveOpen: true))
+            {
+                Assert.Throws<OverflowException>(() => cryptoStream.Write(buffer, 0, buffer.Length));
             }
         }
 

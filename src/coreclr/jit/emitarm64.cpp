@@ -3715,7 +3715,11 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insOpts opt /* = INS_OPTS_NONE */)
+void emitter::emitIns_R_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg,
+                          ssize_t     imm,
+                          insOpts opt /* = INS_OPTS_NONE */ DEBUGARG(GenTreeFlags gtFlags))
 {
     emitAttr  size      = EA_SIZE(attr);
     emitAttr  elemsize  = EA_UNKNOWN;
@@ -3965,6 +3969,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     id->idInsOpt(opt);
 
     id->idReg1(reg);
+    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
 
     dispIns(id);
     appendToCurIG(id);
@@ -8098,7 +8103,7 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 void emitter::emitIns_R_AI(instruction ins,
                            emitAttr    attr,
                            regNumber   ireg,
-                           ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
+                           ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr));
     emitAttr      size    = EA_SIZE(attr);
@@ -12257,7 +12262,6 @@ void emitter::emitDispIns(
         ssize_t      index2;
         unsigned     registerListSize;
         const char*  targetName;
-        const WCHAR* stringLiteral;
 
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
@@ -12286,7 +12290,7 @@ void emitter::emitDispIns(
             }
             else if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             }
             else
             {
@@ -12324,7 +12328,7 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg1(), size, true);
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             }
             else
             {
@@ -12338,7 +12342,7 @@ void emitter::emitDispIns(
             emitDispImm(emitGetInsSC(id), true);
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             }
             else
             {
@@ -12363,9 +12367,8 @@ void emitter::emitDispIns(
         case IF_LARGEADR:
             assert(insOptsNone(id->idInsOpt()));
             emitDispReg(id->idReg1(), size, true);
-            imm           = emitGetInsSC(id);
-            targetName    = nullptr;
-            stringLiteral = nullptr;
+            imm        = emitGetInsSC(id);
+            targetName = nullptr;
 
             /* Is this actually a reference to a data section? */
             if (fmt == IF_LARGEADR)
@@ -12398,8 +12401,7 @@ void emitter::emitDispIns(
                 {
                     printf("HIGH RELOC ");
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
-                    size_t   targetHandle = id->idDebugOnlyInfo()->idMemCookie;
-                    unsigned idFlags      = id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK;
+                    size_t targetHandle = id->idDebugOnlyInfo()->idMemCookie;
 
                     if (targetHandle == THT_IntializeArrayIntrinsics)
                     {
@@ -12413,57 +12415,10 @@ void emitter::emitDispIns(
                     {
                         targetName = "SetGlobalSecurityCookie";
                     }
-                    else if (idFlags == GTF_ICON_CONST_PTR)
-                    {
-                        targetName = "const ptr";
-                    }
-                    else if (idFlags == GTF_ICON_GLOBAL_PTR)
-                    {
-                        targetName = "global ptr";
-                    }
-                    else if (idFlags == GTF_ICON_STR_HDL)
-                    {
-                        stringLiteral = emitComp->eeGetCPString(targetHandle);
-                        // Note that eGetCPString isn't currently implemented on Linux/ARM
-                        // and instead always returns nullptr. However, use it here, so in
-                        // future, once it is is implemented, no changes will be needed here.
-                        if (stringLiteral == nullptr)
-                        {
-                            targetName = "String handle";
-                        }
-                    }
-                    else if (idFlags == GTF_ICON_FIELD_HDL)
-                    {
-                        targetName = emitComp->eeGetFieldName((CORINFO_FIELD_HANDLE)targetHandle);
-                    }
-                    else if (idFlags == GTF_ICON_STATIC_HDL)
-                    {
-                        targetName = "Static handle";
-                    }
-                    else if (idFlags == GTF_ICON_METHOD_HDL)
-                    {
-                        targetName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)targetHandle);
-                    }
-                    else if (idFlags == GTF_ICON_FTN_ADDR)
-                    {
-                        targetName = "Function address";
-                    }
-                    else if (idFlags == GTF_ICON_CLASS_HDL)
-                    {
-                        targetName = emitComp->eeGetClassName((CORINFO_CLASS_HANDLE)targetHandle);
-                    }
-                    else if (idFlags == GTF_ICON_TOKEN_HDL)
-                    {
-                        targetName = "Token handle";
-                    }
-                    else
-                    {
-                        targetName = "Unknown";
-                    }
                 }
                 else if (id->idIsBound())
                 {
-                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                    emitPrintLabel(id->idAddr()->iiaIGlabel);
                 }
                 else
                 {
@@ -12475,9 +12430,9 @@ void emitter::emitDispIns(
             {
                 printf("      // [%s]", targetName);
             }
-            else if (stringLiteral != nullptr)
+            else
             {
-                printf("      // [%S]", stringLiteral);
+                emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             }
             break;
 
@@ -15626,16 +15581,18 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         regNumber prevSrc    = emitLastIns->idReg2();
         insFormat lastInsfmt = emitLastIns->idInsFmt();
 
-        if ((prevDst == dst) && (prevSrc == src))
+        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
+        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
+        //
+        const bool isValidLastInsFormats =
+            ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
+
+        if (isValidLastInsFormats && (prevDst == dst) && (prevSrc == src))
         {
             assert(emitLastIns->idOpSize() == size);
             JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
             return true;
         }
-
-        // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
-        // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
-        bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
 
         if ((prevDst == src) && (prevSrc == dst) && isValidLastInsFormats)
         {
@@ -15742,7 +15699,11 @@ bool emitter::IsRedundantLdStr(
         // Make sure src and dst registers are not same.
         //  ldr x0, [x0, #4]
         //  str x0, [x0, #4]  <-- can't eliminate because [x0+3] is not same destination as previous source.
-        if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm))
+        // Note, however, that we can not eliminate store in the following sequence
+        //  ldr wzr, [x0, #4]
+        //  str wzr, [x0, #4]
+        // since load operation doesn't (and can't) change the value of its destination register.
+        if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm) && (reg1 != REG_ZR))
         {
             JITDUMP("\n -- suppressing 'str reg%u [reg%u, #%u]' as previous 'ldr reg%u [reg%u, #%u]' was from same "
                     "location.\n",

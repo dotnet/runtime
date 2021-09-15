@@ -292,12 +292,12 @@ namespace System
             => (ulong)BitOperations.PopCount(value);
 
         [RequiresPreviewFeatures]
-        static ulong IBinaryInteger<ulong>.RotateLeft(ulong value, ulong rotateAmount)
-            => BitOperations.RotateLeft(value, (int)rotateAmount);
+        static ulong IBinaryInteger<ulong>.RotateLeft(ulong value, int rotateAmount)
+            => BitOperations.RotateLeft(value, rotateAmount);
 
         [RequiresPreviewFeatures]
-        static ulong IBinaryInteger<ulong>.RotateRight(ulong value, ulong rotateAmount)
-            => BitOperations.RotateRight(value, (int)rotateAmount);
+        static ulong IBinaryInteger<ulong>.RotateRight(ulong value, int rotateAmount)
+            => BitOperations.RotateRight(value, rotateAmount);
 
         [RequiresPreviewFeatures]
         static ulong IBinaryInteger<ulong>.TrailingZeroCount(ulong value)
@@ -361,11 +361,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static ulong IDecrementOperators<ulong>.operator --(ulong value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked ulong IDecrementOperators<ulong>.operator --(ulong value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -397,11 +397,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static ulong IIncrementOperators<ulong>.operator ++(ulong value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked ulong IIncrementOperators<ulong>.operator ++(ulong value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

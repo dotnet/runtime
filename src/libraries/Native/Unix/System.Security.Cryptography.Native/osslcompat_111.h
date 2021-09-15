@@ -7,6 +7,7 @@
 #include "pal_types.h"
 
 #undef SSL_CTX_set_options
+#undef SSL_set_options
 #undef SSL_session_reused
 
 typedef struct ossl_init_settings_st OPENSSL_INIT_SETTINGS;
@@ -30,6 +31,8 @@ int32_t EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX* ctx);
 void EVP_MD_CTX_free(EVP_MD_CTX* ctx);
 EVP_MD_CTX* EVP_MD_CTX_new(void);
 RSA* EVP_PKEY_get0_RSA(EVP_PKEY* pkey);
+int EVP_PKEY_check(EVP_PKEY_CTX* ctx);
+int EVP_PKEY_public_check(EVP_PKEY_CTX* ctx);
 int32_t EVP_PKEY_up_ref(EVP_PKEY* pkey);
 void HMAC_CTX_free(HMAC_CTX* ctx);
 HMAC_CTX* HMAC_CTX_new(void);
@@ -56,6 +59,7 @@ int SSL_CTX_config(SSL_CTX* ctx, const char* name);
 unsigned long SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
 void SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
 int32_t SSL_is_init_finished(SSL* ssl);
+unsigned long SSL_set_options(SSL* ctx, unsigned long options);
 int SSL_session_reused(SSL* ssl);
 const SSL_METHOD* TLS_method(void);
 const ASN1_TIME* X509_CRL_get0_nextUpdate(const X509_CRL* crl);

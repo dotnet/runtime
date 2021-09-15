@@ -43,6 +43,7 @@ namespace System.Drawing.Tests
                 "animated-timer-10fps-repeat-infinite.gif",
                 "animated-timer-100fps-repeat-2.gif",
                 "animated-timer-100fps-repeat-infinite.gif",
+                "animated-timer-0-delay-all-frames.gif",
             };
 
             Dictionary<string, EventHandler> handlers = new();

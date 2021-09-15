@@ -17,31 +17,88 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal sealed class SafeMsQuicConfigurationHandle : SafeHandle
     {
         private static readonly FieldInfo _contextCertificate = typeof(SslStreamCertificateContext).GetField("Certificate", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        private static readonly FieldInfo _contextChain= typeof(SslStreamCertificateContext).GetField("IntermediateCertificates", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo _contextChain = typeof(SslStreamCertificateContext).GetField("IntermediateCertificates", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicConfigurationHandle()
+        public SafeMsQuicConfigurationHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         { }
 
         protected override bool ReleaseHandle()
         {
             MsQuicApi.Api.ConfigurationCloseDelegate(handle);
+            SetHandle(IntPtr.Zero);
             return true;
         }
 
         // TODO: consider moving the static code from here to keep all the handle classes small and simple.
-        public static unsafe SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
+        public static SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
-            // TODO: lots of ClientAuthenticationOptions are not yet supported by MsQuic.
-            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: null, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols);
+            X509Certificate? certificate = null;
+
+            if (options.ClientAuthenticationOptions != null)
+            {
+                if (options.ClientAuthenticationOptions.CipherSuitesPolicy != null)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
+                }
+
+                if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
+                }
+
+                if (options.ClientAuthenticationOptions.ClientCertificates != null)
+                {
+                    foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
+                    {
+                        try
+                        {
+                            if (((X509Certificate2)cert).HasPrivateKey)
+                            {
+                                // Pick first certificate with private key.
+                                certificate = cert;
+                                break;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+
+            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols);
         }
 
-        public static unsafe SafeMsQuicConfigurationHandle Create(QuicListenerOptions options)
+        public static SafeMsQuicConfigurationHandle Create(QuicOptions options, SslServerAuthenticationOptions? serverAuthenticationOptions, string? targetHost = null)
         {
-            // TODO: lots of ServerAuthenticationOptions are not yet supported by MsQuic.
-            return Create(options, QUIC_CREDENTIAL_FLAGS.NONE, options.ServerAuthenticationOptions?.ServerCertificate, options.ServerAuthenticationOptions?.ServerCertificateContext, options.ServerAuthenticationOptions?.ApplicationProtocols);
+            QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.NONE;
+            X509Certificate? certificate = serverAuthenticationOptions?.ServerCertificate;
+
+            if (serverAuthenticationOptions != null)
+            {
+                if (serverAuthenticationOptions.CipherSuitesPolicy != null)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.CipherSuitesPolicy)));
+                }
+
+                if (serverAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.EncryptionPolicy)));
+                }
+
+                if (serverAuthenticationOptions.ClientCertificateRequired)
+                {
+                    flags |= QUIC_CREDENTIAL_FLAGS.REQUIRE_CLIENT_AUTHENTICATION | QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
+                }
+
+                if (certificate == null && serverAuthenticationOptions?.ServerCertificateSelectionCallback != null && targetHost != null)
+                {
+                    certificate = serverAuthenticationOptions.ServerCertificateSelectionCallback(options, targetHost);
+                }
+            }
+
+            return Create(options, flags, certificate, serverAuthenticationOptions?.ServerCertificateContext, serverAuthenticationOptions?.ApplicationProtocols);
         }
 
         // TODO: this is called from MsQuicListener and when it fails it wreaks havoc in MsQuicListener finalizer.

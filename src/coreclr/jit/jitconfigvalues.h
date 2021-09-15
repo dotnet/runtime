@@ -68,6 +68,9 @@ CONFIG_INTEGER(JitAlignLoopAdaptive,
                W("JitAlignLoopAdaptive"),
                1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
 
+// Print the alignment boundaries in disassembly.
+CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
+
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
 CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)               // Uses only ASCII characters in tree dumps
@@ -379,6 +382,10 @@ CONFIG_INTEGER(JitMinOptsTrackGCrefs, W("JitMinOptsTrackGCrefs"), JitMinOptsTrac
 // TODO-Cleanup: need to make 'MEASURE_MEM_ALLOC' well-defined here at all times.
 CONFIG_INTEGER(DisplayMemStats, W("JitMemStats"), 0) // Display JIT memory usage statistics
 
+#if defined(DEBUG)
+CONFIG_INTEGER(JitEnregStats, W("JitEnregStats"), 0) // Display JIT enregistration statistics
+#endif                                               // DEBUG
+
 CONFIG_INTEGER(JitAggressiveInlining, W("JitAggressiveInlining"), 0) // Aggressive inlining of all methods
 CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, emit Enter/Leave/TailCall callbacks
 CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
@@ -460,10 +467,20 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 // Extended version of DefaultPolicy that includes a more precise IL scan,
 // relies on PGO if it exists and generally is more aggressive.
 CONFIG_INTEGER(JitExtDefaultPolicy, W("JitExtDefaultPolicy"), 1)
-CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x64)
+CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x80)
+CONFIG_INTEGER(JitExtDefaultPolicyMaxILProf, W("JitExtDefaultPolicyMaxILProf"), 0x400)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 7)
-CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfScale"), 0x2A)
+
+// Inliner uses the following formula for PGO-driven decisions:
+//
+//    BM = BM * ((1.0 - ProfTrust) + ProfWeight * ProfScale)
+//
+// Where BM is a benefit multiplier composed from various observations (e.g. "const arg makes a branch foldable").
+// If a profile data can be trusted for 100% we can safely just give up on inlining anything inside cold blocks
+// (except the cases where inlining in cold blocks improves type info/escape analysis for the whole caller).
+// For now, it's only applied for dynamic PGO.
 CONFIG_INTEGER(JitExtDefaultPolicyProfTrust, W("JitExtDefaultPolicyProfTrust"), 0x7)
+CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfScale"), 0x2A)
 
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
@@ -503,7 +520,8 @@ CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect 
 // Profile consumption options
 CONFIG_INTEGER(JitDisablePgo, W("JitDisablePgo"), 0) // Ignore pgo data for all methods
 #if defined(DEBUG)
-CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange")) // Enable pgo data for only some methods
+CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange"))         // Enable pgo data for only some methods
+CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute random values for edge counts
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
 #endif // debug
@@ -543,8 +561,7 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-// Allow to enregister locals with struct type.
-CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0)
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 1) // Allow to enregister locals with struct type.
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

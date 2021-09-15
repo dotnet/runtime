@@ -153,9 +153,9 @@ if ($iOSMono) {
         mkdir $WorkItemDirectory
     }
     if($iOSLlvmBuild) {
-        Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
+        Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
     } else {
-        Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
+        Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'

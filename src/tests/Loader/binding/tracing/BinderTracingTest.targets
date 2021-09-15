@@ -38,15 +38,16 @@
   <Target Name="MoveDependentAssembliesToSubdirectory" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <AssemblyToLoadResourceCulture>fr-FR</AssemblyToLoadResourceCulture>
+      <DependentAssembliesDirectory>$(OutDir)/DependentAssemblies</DependentAssembliesDirectory>
     </PropertyGroup>
     <ItemGroup>
-      <SatelliteAssembliesToMove Include="$(OutDir)/**/AssemblyToLoad_*.resources.*" />
+      <SatelliteAssembliesToMove Include="$(OutDir)/**/AssemblyToLoad_*.resources.*" Exclude="$(DependentAssembliesDirectory)/**" />
       <AssembliesToCopy Include="$(OutDir)/AssemblyToLoad.dll" />
       <AssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.*" />
       <AssembliesToMove Include="$(OutDir)/AssemblyToLoadDependency.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFolder="$(OutDir)/DependentAssemblies" />
-    <Move SourceFiles="@(AssembliesToMove)" DestinationFolder="$(OutDir)/DependentAssemblies" />
-    <Move SourceFiles="@(SatelliteAssembliesToMove)" DestinationFolder="$(OutDir)/DependentAssemblies/$(AssemblyToLoadResourceCulture)" />
+    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFolder="$(DependentAssembliesDirectory)" />
+    <Move SourceFiles="@(AssembliesToMove)" DestinationFolder="$(DependentAssembliesDirectory)" />
+    <Move SourceFiles="@(SatelliteAssembliesToMove)" DestinationFolder="$(DependentAssembliesDirectory)/$(AssemblyToLoadResourceCulture)" />
   </Target>
 </Project>

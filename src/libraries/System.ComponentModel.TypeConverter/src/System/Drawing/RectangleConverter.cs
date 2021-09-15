@@ -12,17 +12,17 @@ namespace System.Drawing
 {
     public class RectangleConverter : TypeConverter
     {
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string strValue)
             {
@@ -45,7 +45,7 @@ namespace System.Drawing
                 for (int i = 0; i < values.Length; i++)
                 {
                     // Note: ConvertFromString will raise exception if value cannot be converted.
-                    values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i]);
+                    values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i])!;
                 }
 
                 if (values.Length != 4)
@@ -59,7 +59,7 @@ namespace System.Drawing
             return base.ConvertFrom(context, culture, value);
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -79,7 +79,7 @@ namespace System.Drawing
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
 
                     // Note: ConvertToString will raise exception if value cannot be converted.
-                    var args = new string[]
+                    var args = new string?[]
                     {
                         intConverter.ConvertToString(context, culture, rect.X),
                         intConverter.ConvertToString(context, culture, rect.Y),
@@ -90,7 +90,7 @@ namespace System.Drawing
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo ctor = typeof(Rectangle).GetConstructor(new Type[] {
+                    ConstructorInfo? ctor = typeof(Rectangle).GetConstructor(new Type[] {
                         typeof(int), typeof(int), typeof(int), typeof(int)});
 
                     if (ctor != null)
@@ -104,17 +104,17 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
             if (propertyValues == null)
             {
                 throw new ArgumentNullException(nameof(propertyValues));
             }
 
-            object x = propertyValues["X"];
-            object y = propertyValues["Y"];
-            object width = propertyValues["Width"];
-            object height = propertyValues["Height"];
+            object? x = propertyValues["X"];
+            object? y = propertyValues["Y"];
+            object? width = propertyValues["Width"];
+            object? height = propertyValues["Height"];
 
             if (x == null || y == null || width == null || height == null ||
                 !(x is int) || !(y is int) || !(width is int) || !(height is int))
@@ -125,17 +125,17 @@ namespace System.Drawing
             return new Rectangle((int)x, (int)y, (int)width, (int)height);
         }
 
-        public override bool GetCreateInstanceSupported(ITypeDescriptorContext context) => true;
+        public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
         private static readonly string[] s_propertySort = { "X", "Y", "Width", "Height" };
 
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes)
         {
             PropertyDescriptorCollection props = TypeDescriptor.GetProperties(typeof(Rectangle), attributes);
             return props.Sort(s_propertySort);
         }
 
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
     }
 }

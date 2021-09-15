@@ -116,7 +116,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_STOREIND:
-            LowerStoreIndirCommon(node->AsIndir());
+            LowerStoreIndirCommon(node->AsStoreInd());
             break;
 
         case GT_ADD:
@@ -297,7 +297,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                     lclNode->ClearMultiReg();
                     if (lclNode->TypeIs(TYP_STRUCT))
                     {
-                        comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+                        comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::BlockOp));
                     }
                 }
             }
@@ -357,10 +357,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
         {
-            // TODO-Cleanup: this is definitely not the best place for this detection,
-            // but for now it is the easiest. Move it to morph.
+
             const GenTreeLclVarCommon* lclAddr = node->AsLclVarCommon();
-            comp->lvaSetVarDoNotEnregister(lclAddr->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+            const LclVarDsc*           varDsc  = comp->lvaGetDesc(lclAddr);
+            if (!varDsc->lvDoNotEnregister)
+            {
+                // TODO-Cleanup: this is definitely not the best place for this detection,
+                // but for now it is the easiest. Move it to morph.
+                comp->lvaSetVarDoNotEnregister(lclAddr->GetLclNum() DEBUGARG(DoNotEnregisterReason::LclAddrNode));
+            }
         }
         break;
 
@@ -1239,7 +1244,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                         unsigned lclNum = objOp1->AsLclVarCommon()->GetLclNum();
                         if (comp->lvaTable[lclNum].lvType != TYP_STRUCT)
                         {
-                            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_VMNeedsStackAddr));
+                            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
                         }
                     }
 #endif // TARGET_X86
@@ -1507,6 +1512,11 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
 #ifdef TARGET_ARM
     if (floatType == TYP_DOUBLE)
     {
+        // A special case when we introduce TYP_LONG
+        // during lowering for arm32 softFP to pass double
+        // in int registers.
+        assert(comp->opts.compUseSoftFP);
+
         regNumber nextReg                  = REG_NEXT(regNum);
         intArg->AsMultiRegOp()->gtOtherReg = nextReg;
     }
@@ -2064,19 +2074,23 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
         {
             tmpLclNum = comp->lvaGrabTemp(true DEBUGARG("Fast tail call lowering is creating a new local variable"));
 
-            LclVarDsc* callerArgDsc                     = comp->lvaGetDesc(lclNum);
-            var_types  tmpTyp                           = genActualType(callerArgDsc->TypeGet());
-            comp->lvaTable[tmpLclNum].lvType            = tmpTyp;
-            comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->GetLclNum()].lvDoNotEnregister;
-            GenTree* value                              = comp->gtNewLclvNode(lclNum, tmpTyp);
+            LclVarDsc* callerArgDsc          = comp->lvaGetDesc(lclNum);
+            var_types  tmpTyp                = genActualType(callerArgDsc->TypeGet());
+            comp->lvaTable[tmpLclNum].lvType = tmpTyp;
+            // TODO-CQ: I don't see why we should copy doNotEnreg.
+            comp->lvaTable[tmpLclNum].lvDoNotEnregister = callerArgDsc->lvDoNotEnregister;
+#ifdef DEBUG
+            comp->lvaTable[tmpLclNum].SetDoNotEnregReason(callerArgDsc->GetDoNotEnregReason());
+#endif // DEBUG
+            GenTree* value = comp->gtNewLclvNode(lclNum, tmpTyp);
 
             if (tmpTyp == TYP_STRUCT)
             {
                 comp->lvaSetStruct(tmpLclNum, comp->lvaGetStruct(lclNum), false);
             }
             GenTreeLclVar* storeLclVar = comp->gtNewStoreLclVar(tmpLclNum, value);
-            ContainCheckRange(value, storeLclVar);
             BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeLclVar));
+            ContainCheckRange(value, storeLclVar);
             LowerNode(storeLclVar);
         }
 
@@ -2476,7 +2490,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
 #ifdef TARGET_XARCH
     var_types op1Type = op1->TypeGet();
-    if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genSmallTypeCanRepresentValue(op1Type, op2Value))
+    if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
     {
         //
         // If op1's type is small then try to narrow op2 so it has the same type as op1.
@@ -2979,9 +2993,8 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     // There are two kinds of retyping:
     // - A simple bitcast can be inserted when:
     //   - We're returning a floating type as an integral type or vice-versa, or
-    //   - We're returning a struct as a primitive type and using the old form of retyping.
-    // - If we're returning a struct as a primitive type and *not* using old retying, we change the type of
-    //   'retval' in 'LowerRetStructLclVar()'
+    // - If we're returning a struct as a primitive type, we change the type of
+    // 'retval' in 'LowerRetStructLclVar()'
     bool needBitcast =
         (ret->TypeGet() != TYP_VOID) && (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1()));
     bool doPrimitiveBitcast = false;
@@ -3160,7 +3173,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #endif // !WINDOWS_AMD64_ABI
             convertToStoreObj = false;
         }
-        else if (!varDsc->IsEnregisterable())
+        else if (!varDsc->IsEnregisterableType())
         {
             convertToStoreObj = true;
         }
@@ -3204,7 +3217,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             const unsigned lclNum = lclStore->GetLclNum();
             GenTreeLclVar* addr   = comp->gtNewLclVarAddrNode(lclNum, TYP_BYREF);
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
 
             addr->gtFlags |= GTF_VAR_DEF;
             assert(!addr->IsPartialLclFld(comp));
@@ -3310,9 +3323,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 // Do not expect `initblock` for SIMD* types,
                 // only 'initobj'.
                 assert(retVal->AsIntCon()->IconValue() == 0);
-                retVal->ChangeOperConst(GT_CNS_DBL);
-                retVal->ChangeType(TYP_FLOAT);
-                retVal->AsDblCon()->gtDconVal = 0;
+                retVal->BashToConst(0.0, TYP_FLOAT);
             }
             break;
 
@@ -3403,6 +3414,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     unsigned   lclNum = lclVar->GetLclNum();
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
 
+    bool replacedInLowering = false;
     if (varDsc->CanBeReplacedWithItsField(comp))
     {
         // We can replace the struct with its only field and keep the field on a register.
@@ -3415,32 +3427,64 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
                 "[%06u]\n",
                 lclNum, fieldLclNum, comp->dspTreeID(ret));
         lclVar->ChangeType(fieldDsc->lvType);
-        lclNum = fieldLclNum;
-        varDsc = comp->lvaGetDesc(lclNum);
+        lclNum             = fieldLclNum;
+        varDsc             = comp->lvaGetDesc(lclNum);
+        replacedInLowering = true;
     }
-    else if (!varDsc->lvRegStruct && !varTypeIsEnregisterable(varDsc))
-
+    else if (varDsc->lvPromoted)
     {
-        // TODO-1stClassStructs: We can no longer promote or enregister this struct,
-        // since it is referenced as a whole.
-        comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
+        // TODO-1stClassStructs: We can no longer independently promote
+        // or enregister this struct, since it is referenced as a whole.
+        comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
     }
 
     if (varDsc->lvDoNotEnregister)
     {
         lclVar->ChangeOper(GT_LCL_FLD);
         lclVar->AsLclFld()->SetLclOffs(0);
-        lclVar->ChangeType(ret->TypeGet());
+
+        // We are returning as a primitive type and the lcl is of struct type.
+        assert(comp->info.compRetNativeType != TYP_STRUCT);
+        assert((genTypeSize(comp->info.compRetNativeType) == genTypeSize(ret)) ||
+               (varTypeIsIntegral(ret) && varTypeIsIntegral(comp->info.compRetNativeType) &&
+                (genTypeSize(comp->info.compRetNativeType) <= genTypeSize(ret))));
+        // If the actual return type requires normalization, then make sure we
+        // do so by using the correct small type for the GT_LCL_FLD. It would
+        // be conservative to check just compRetNativeType for this since small
+        // structs are normalized to primitive types when they are returned in
+        // registers, so we would normalize for them as well.
+        if (varTypeIsSmall(comp->info.compRetType))
+        {
+            assert(genTypeSize(comp->info.compRetNativeType) == genTypeSize(comp->info.compRetType));
+            lclVar->ChangeType(comp->info.compRetType);
+        }
+        else
+        {
+            // Otherwise we don't mind that we leave the upper bits undefined.
+            lclVar->ChangeType(ret->TypeGet());
+        }
     }
     else
     {
-        var_types lclVarType = varDsc->GetRegisterType(lclVar);
+        const var_types lclVarType = varDsc->GetRegisterType(lclVar);
         assert(lclVarType != TYP_UNDEF);
-        lclVar->ChangeType(lclVarType);
+
+        if (varDsc->lvNormalizeOnLoad() && replacedInLowering)
+        {
+            // For a normalize-on-load var that we replaced late we need to insert a cast
+            // as morph would typically be responsible for this.
+            GenTreeCast* cast = comp->gtNewCastNode(TYP_INT, lclVar, false, lclVarType);
+            ret->gtOp1        = cast;
+            BlockRange().InsertBefore(ret, cast);
+            ContainCheckCast(cast);
+        }
+
+        const var_types actualType = genActualType(lclVarType);
+        lclVar->ChangeType(actualType);
 
         if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVarType))
         {
-            GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), lclVar);
+            GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
             ret->gtOp1       = bitcast;
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
@@ -3558,7 +3602,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
     {
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
-        LowerStoreIndirCommon(store);
+        LowerStoreIndirCommon(store->AsStoreInd());
         return;
     }
     else
@@ -3595,7 +3639,7 @@ GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
 {
     // TODO-1stClassStructs: we can support this in codegen for `GT_STORE_BLK` without new temps.
     const unsigned spillNum = comp->lvaGrabTemp(true DEBUGARG("Return value temp for an odd struct return size"));
-    comp->lvaSetVarDoNotEnregister(spillNum DEBUGARG(Compiler::DNER_LocalField));
+    comp->lvaSetVarDoNotEnregister(spillNum DEBUGARG(DoNotEnregisterReason::LocalField));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     comp->lvaSetStruct(spillNum, retClsHnd, false);
     GenTreeLclFld* spill = new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, call->gtType, spillNum, 0);
@@ -3626,7 +3670,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     InfoAccessType  accessType;
     CorInfoHelpFunc helperNum = comp->eeGetHelperNum(call->gtCallMethHnd);
 
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     if (call->gtEntryPoint.addr != nullptr)
     {
         accessType = call->gtEntryPoint.accessType;
@@ -3701,12 +3745,12 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
         case IAT_PVALUE:
         {
             bool isR2RRelativeIndir = false;
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
             // Skip inserting the indirection node to load the address that is already
             // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
             // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
             isR2RRelativeIndir = call->IsR2RRelativeIndir();
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
             if (!isR2RRelativeIndir)
             {
@@ -4039,12 +4083,12 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, argList);
 
     // some sanity checks on the frame list root vardsc
-    LclVarDsc* varDsc = &comp->lvaTable[comp->info.compLvFrameListRoot];
+    const unsigned   lclNum = comp->info.compLvFrameListRoot;
+    const LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
     noway_assert(!varDsc->lvIsParam);
     noway_assert(varDsc->lvType == TYP_I_IMPL);
 
-    GenTree* store =
-        new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot);
+    GenTree* store       = new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, TYP_I_IMPL, lclNum);
     store->AsOp()->gtOp1 = call;
     store->gtFlags |= GTF_VAR_DEF;
 
@@ -4065,6 +4109,7 @@ void Lowering::InsertPInvokeMethodProlog()
         GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfCallSiteSP);
     storeSP->gtOp1 = PhysReg(REG_SPBASE);
     storeSP->gtFlags |= GTF_VAR_DEF;
+    comp->lvaSetVarDoNotEnregister(comp->lvaInlinedPInvokeFrameVar DEBUGARG(DoNotEnregisterReason::LocalField));
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
@@ -4099,7 +4144,7 @@ void Lowering::InsertPInvokeMethodProlog()
         // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
         DISPTREERANGE(firstBlockRange, frameUpd);
     }
 #endif // TARGET_64BIT
@@ -4162,7 +4207,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     {
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
         returnBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
 }
 
@@ -4324,7 +4369,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // Stubs do this once per stub, not once per call.
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
 #endif // TARGET_64BIT
 
@@ -4334,7 +4379,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     //  [tcb + offsetOfGcState] = 0
     GenTree* storeGCState = SetGCState(0);
     BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, storeGCState));
-    ContainCheckStoreIndir(storeGCState->AsIndir());
+    ContainCheckStoreIndir(storeGCState->AsStoreInd());
 
     // Indicate that codegen has switched this thread to preemptive GC.
     // This tree node doesn't generate any code, but impacts LSRA and gc reporting.
@@ -4380,7 +4425,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
     GenTree* tree = SetGCState(1);
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-    ContainCheckStoreIndir(tree->AsIndir());
+    ContainCheckStoreIndir(tree->AsStoreInd());
 
     tree = CreateReturnTrapSeq();
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
@@ -4395,7 +4440,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     {
         tree = CreateFrameLinkUpdate(PopFrame);
         BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-        ContainCheckStoreIndir(tree->AsIndir());
+        ContainCheckStoreIndir(tree->AsStoreInd());
     }
 #else
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
@@ -4520,7 +4565,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                     // a direct call within range of hardware relative call instruction
                     // stash the address for codegen
                     call->gtDirectCallAddress = addr;
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
                     call->gtEntryPoint.addr       = nullptr;
                     call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
@@ -4768,14 +4813,14 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         {
 
             bool shouldOptimizeVirtualStubCall = false;
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
             // Skip inserting the indirection node to load the address that is already
             // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
             // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
             // However, for tail calls, the call target is always computed in RBM_FASTTAILCALL_TARGET
             // and so do not optimize virtual stub calls for such cases.
             shouldOptimizeVirtualStubCall = !call->IsTailCall();
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+#endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
             if (!shouldOptimizeVirtualStubCall)
             {
@@ -5220,8 +5265,8 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
         assert(divMod->MarkedDivideByConstOptimized());
 
-        const bool                 requiresDividendMultiuse = !isDiv;
-        const BasicBlock::weight_t curBBWeight              = m_block->getBBWeight(comp);
+        const bool     requiresDividendMultiuse = !isDiv;
+        const weight_t curBBWeight              = m_block->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
         {
@@ -5248,7 +5293,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
             firstNode = preShiftBy;
         }
-        else if (type != TYP_I_IMPL)
+        else if (type != TYP_I_IMPL
+#ifdef TARGET_ARM64
+                 && !simpleMul // On ARM64 we will use a 32x32->64 bit multiply as that's faster.
+#endif
+                 )
         {
             adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
@@ -5263,6 +5312,14 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 #endif
 
         divisor->gtType = TYP_I_IMPL;
+
+#ifdef TARGET_ARM64
+        if (simpleMul)
+        {
+            divisor->gtType = TYP_INT;
+        }
+#endif
+
         divisor->AsIntCon()->SetIconValue(magic);
 
         if (isDiv && !postShift && type == TYP_I_IMPL)
@@ -5886,6 +5943,16 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif // !defined(TARGET_64BIT)
 
+    if (!comp->compEnregLocals())
+    {
+        // Lowering is checking if lvDoNotEnregister is already set for contained optimizations.
+        // If we are running without `CLFLG_REGVAR` flag set (`compEnregLocals() == false`)
+        // then we already know that we won't enregister any locals and it is better to set
+        // `lvDoNotEnregister` flag before we start reading it.
+        // The main reason why this flag is not set is that we are running in minOpts.
+        comp->lvSetMinOptsDoNotEnreg();
+    }
+
     for (BasicBlock* const block : comp->Blocks())
     {
         /* Make the block publicly available */
@@ -6323,7 +6390,7 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
         lclNode->ClearMultiReg();
         if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister)
         {
-            comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(Compiler::DNER_BlockOp));
+            comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
     }
 #endif
@@ -6410,7 +6477,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckReturnTrap(node->AsOp());
             break;
         case GT_STOREIND:
-            ContainCheckStoreIndir(node->AsIndir());
+            ContainCheckStoreIndir(node->AsStoreInd());
             break;
         case GT_IND:
             ContainCheckIndir(node->AsIndir());
@@ -6524,7 +6591,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
             assert(varDsc->lvIsMultiRegRet || (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
 
             // Mark var as contained if not enregisterable.
-            if (!varTypeIsEnregisterable(op1))
+            if (!varDsc->IsEnregisterableLcl())
             {
                 if (!op1->IsMultiRegLclVar())
                 {
@@ -6593,9 +6660,8 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 // Arguments:
 //    ind - the store indirection node we are lowering.
 //
-void Lowering::LowerStoreIndirCommon(GenTreeIndir* ind)
+void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
-    assert(ind->OperIs(GT_STOREIND));
     assert(ind->TypeGet() != TYP_STRUCT);
     TryCreateAddrMode(ind->Addr(), true);
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
@@ -6720,7 +6786,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
-    if (comp->opts.OptimizationEnabled())
+    if (!comp->opts.OptimizationEnabled())
     {
         return false;
     }
@@ -6741,7 +6807,9 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         return false;
     }
-    if (varTypeIsSIMD(regType))
+
+    GenTree* src = blkNode->Data();
+    if (varTypeIsSIMD(regType) && src->IsConstInitVal())
     {
         // TODO-CQ: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
         return false;
@@ -6754,13 +6822,12 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    GenTree* src = blkNode->Data();
     if (src->OperIsInitVal() && !src->IsConstInitVal())
     {
         return false;
     }
 
-    if (varTypeIsSmall(regType) && !src->IsConstInitVal())
+    if (varTypeIsSmall(regType) && !src->IsConstInitVal() && !src->IsLocal())
     {
         // source operand INDIR will use a widening instruction
         // and generate worse code, like `movzx` instead of `mov`
@@ -6795,6 +6862,6 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         assert(src->TypeIs(regType) || src->IsCnsIntOrI() || src->IsCall());
     }
-    LowerStoreIndirCommon(blkNode);
+    LowerStoreIndirCommon(blkNode->AsStoreInd());
     return true;
 }

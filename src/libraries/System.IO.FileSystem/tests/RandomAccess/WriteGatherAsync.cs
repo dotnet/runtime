@@ -13,9 +13,9 @@ namespace System.IO.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
-    public class RandomAccess_WriteGatherAsync : RandomAccess_Base<ValueTask<long>>
+    public class RandomAccess_WriteGatherAsync : RandomAccess_Base<ValueTask>
     {
-        protected override ValueTask<long> MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
+        protected override ValueTask MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
             => RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { bytes }, fileOffset);
 
         [Theory]
@@ -56,12 +56,28 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetSyncAsyncOptions))]
-        public async Task WriteUsingEmptyBufferReturnsZeroAsync(FileOptions options)
+        public async Task WriteUsingEmptyBufferReturnsAsync(FileOptions options)
         {
             using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
-                Assert.Equal(0, await RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { Array.Empty<byte>() }, fileOffset: 0));
+                await RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { Array.Empty<byte>() }, fileOffset: 0);
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public async Task WriteBeyondEndOfFileExtendsTheFileAsync(FileOptions options)
+        {
+            string filePath = GetTestFilePath();
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, options: options))
+            {
+                Assert.Equal(0, RandomAccess.GetLength(handle));
+                await RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { new byte[1] { 1 } }, fileOffset: 1);
+                Assert.Equal(2, RandomAccess.GetLength(handle));
+            }
+
+            Assert.Equal(new byte[] { 0, 1 }, await File.ReadAllBytesAsync(filePath));
         }
 
         [Theory]
@@ -75,7 +91,6 @@ namespace System.IO.Tests
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, options))
             {
                 long total = 0;
-                long current = 0;
 
                 while (total != fileSize)
                 {
@@ -83,7 +98,7 @@ namespace System.IO.Tests
                     Memory<byte> buffer_1 = content.AsMemory((int)total, firstBufferLength);
                     Memory<byte> buffer_2 = content.AsMemory((int)total + firstBufferLength);
 
-                    current = await RandomAccess.WriteAsync(
+                    await RandomAccess.WriteAsync(
                         handle,
                         new ReadOnlyMemory<byte>[]
                         {
@@ -93,9 +108,7 @@ namespace System.IO.Tests
                         },
                         fileOffset: total);
 
-                    Assert.InRange(current, 0, buffer_1.Length + buffer_2.Length);
-
-                    total += current;
+                    total += buffer_1.Length + buffer_2.Length;
                 }
             }
 
@@ -114,7 +127,7 @@ namespace System.IO.Tests
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, options: options))
             {
-                Assert.Equal(repeatCount, await RandomAccess.WriteAsync(handle, buffers, fileOffset: 0));
+                await RandomAccess.WriteAsync(handle, buffers, fileOffset: 0);
             }
 
             byte[] actualContent = File.ReadAllBytes(filePath);

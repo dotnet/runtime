@@ -209,14 +209,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        public string Signature
-        {
-            get
-            {
-                return "constructor signature";
-            }
-        }
-
         public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // The 0th ParameterBuilder does not correspond to an
@@ -313,16 +305,11 @@ namespace System.Reflection.Emit
             iattrs = attributes;
         }
 
-        public Module GetModule()
-        {
-            return type.Module;
-        }
-
         public override Module Module
         {
             get
             {
-                return GetModule();
+                return type.Module;
             }
         }
 
@@ -360,18 +347,7 @@ namespace System.Reflection.Emit
                     TypeBuilder.ResolveUserTypes(types);
             }
         }
-        /*
-                internal void GenerateDebugInfo (ISymbolWriter symbolWriter)
-                {
-                    if (ilgen != null && ilgen.HasDebugInfo) {
-                        SymbolToken token = new SymbolToken (GetToken().Token);
-                        symbolWriter.OpenMethod (token);
-                        symbolWriter.SetSymAttribute (token, "__name", System.Text.Encoding.UTF8.GetBytes (Name));
-                        ilgen.GenerateDebugInfo (symbolWriter);
-                        symbolWriter.CloseMethod ();
-                    }
-                }
-        */
+
         internal override int get_next_table_index(object obj, int table, int count)
         {
             return type.get_next_table_index(obj, table, count);

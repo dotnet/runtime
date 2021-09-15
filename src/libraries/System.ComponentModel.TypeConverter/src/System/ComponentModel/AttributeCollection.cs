@@ -19,7 +19,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly AttributeCollection Empty = new AttributeCollection(null);
 
-        private static Hashtable s_defaultAttributes;
+        private static Hashtable? s_defaultAttributes;
 
         private readonly Attribute[] _attributes;
 
@@ -33,14 +33,14 @@ namespace System.ComponentModel
 
         private const int FoundTypesLimit = 5;
 
-        private AttributeEntry[] _foundAttributeTypes;
+        private AttributeEntry[]? _foundAttributeTypes;
 
         private int _index;
 
         /// <summary>
         /// Creates a new AttributeCollection.
         /// </summary>
-        public AttributeCollection(params Attribute[] attributes)
+        public AttributeCollection(params Attribute[]? attributes)
         {
             _attributes = attributes ?? Array.Empty<Attribute>();
 
@@ -60,7 +60,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new AttributeCollection from an existing AttributeCollection
         /// </summary>
-        public static AttributeCollection FromExisting(AttributeCollection existing, params Attribute[] newAttributes)
+        public static AttributeCollection FromExisting(AttributeCollection existing, params Attribute[]? newAttributes)
         {
             if (existing == null)
             {
@@ -135,7 +135,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attribute with the specified type.
         /// </summary>
-        public virtual Attribute this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType]
+        public virtual Attribute? this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType]
         {
             get
             {
@@ -219,14 +219,14 @@ namespace System.ComponentModel
         /// Determines if this collection of attributes has the specified attribute.
         /// </summary>
         [RequiresUnreferencedCode(FilterRequiresUnreferencedCodeMessage)]
-        public bool Contains(Attribute attribute)
+        public bool Contains(Attribute? attribute)
         {
             if (attribute == null)
             {
                 return false;
             }
 
-            Attribute attr = this[attribute.GetType()];
+            Attribute? attr = this[attribute.GetType()];
             return attr != null && attr.Equals(attribute);
         }
 
@@ -235,7 +235,7 @@ namespace System.ComponentModel
         /// the specified attributes in the attribute array.
         /// </summary>
         [RequiresUnreferencedCode(FilterRequiresUnreferencedCodeMessage)]
-        public bool Contains(Attribute[] attributes)
+        public bool Contains(Attribute[]? attributes)
         {
             if (attributes == null)
             {
@@ -257,7 +257,7 @@ namespace System.ComponentModel
         /// Returns the default value for an attribute. This uses the following heuristic:
         /// 1. It looks for a public static field named "Default".
         /// </summary>
-        protected Attribute GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType)
+        protected Attribute? GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType)
         {
             if (attributeType == null)
             {
@@ -274,22 +274,22 @@ namespace System.ComponentModel
                 // If we have already encountered this, use what's in the table.
                 if (s_defaultAttributes.ContainsKey(attributeType))
                 {
-                    return (Attribute)s_defaultAttributes[attributeType];
+                    return (Attribute?)s_defaultAttributes[attributeType];
                 }
 
-                Attribute attr = null;
+                Attribute? attr = null;
 
                 // Not in the table, so do the legwork to discover the default value.
                 Type reflect = TypeDescriptor.GetReflectionType(attributeType);
-                FieldInfo field = reflect.GetField("Default", BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField);
+                FieldInfo? field = reflect.GetField("Default", BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField);
 
                 if (field != null && field.IsStatic)
                 {
-                    attr = (Attribute)field.GetValue(null);
+                    attr = (Attribute?)field.GetValue(null);
                 }
                 else
                 {
-                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Type.EmptyTypes);
+                    ConstructorInfo? ci = reflect.UnderlyingSystemType.GetConstructor(Type.EmptyTypes);
                     if (ci != null)
                     {
                         attr = (Attribute)ci.Invoke(Array.Empty<object>());
@@ -317,7 +317,7 @@ namespace System.ComponentModel
         /// Determines if a specified attribute is the same as an attribute
         /// in the collection.
         /// </summary>
-        public bool Matches(Attribute attribute)
+        public bool Matches(Attribute? attribute)
         {
             for (int i = 0; i < Attributes.Length; i++)
             {
@@ -333,7 +333,7 @@ namespace System.ComponentModel
         /// Determines if the attributes in the specified array are
         /// the same as the attributes in the collection.
         /// </summary>
-        public bool Matches(Attribute[] attributes)
+        public bool Matches(Attribute[]? attributes)
         {
             if (attributes == null)
             {

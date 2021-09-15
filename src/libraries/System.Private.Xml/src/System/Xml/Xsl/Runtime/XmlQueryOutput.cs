@@ -418,7 +418,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void StartTree(XPathNodeType rootType)
         {
-            Debug.Assert(_xstate == XmlState.WithinSequence, "StartTree cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinSequence, $"StartTree cannot be called in the {_xstate} state.");
             Writer = _seqwrt.StartTree(rootType, _nsmgr, _runtime.NameTable);
             _rootType = rootType;
             _xstate = (rootType == XPathNodeType.Attribute || rootType == XPathNodeType.Namespace) ? XmlState.EnumAttrs : XmlState.WithinContent;
@@ -429,7 +429,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void EndTree()
         {
-            Debug.Assert(_xstate == XmlState.EnumAttrs || _xstate == XmlState.WithinContent, "EndTree cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.EnumAttrs || _xstate == XmlState.WithinContent, $"EndTree cannot be called in the {_xstate} state.");
             _seqwrt.EndTree();
             _xstate = XmlState.WithinSequence;
             Writer = null;
@@ -445,7 +445,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteStartElementUnchecked(string prefix, string localName, string ns)
         {
-            Debug.Assert(_xstate == XmlState.WithinContent, "WriteStartElement cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinContent, $"WriteStartElement cannot be called in the {_xstate} state.");
             if (_nsmgr != null) _nsmgr.PushScope();
             Writer.WriteStartElement(prefix, localName, ns);
             //reset when enter element
@@ -468,7 +468,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void StartElementContentUnchecked()
         {
-            Debug.Assert(_xstate == XmlState.EnumAttrs, "StartElementContent cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.EnumAttrs, $"StartElementContent cannot be called in the {_xstate} state.");
 
             // Output any cached namespaces
             if (_cntNmsp != 0)
@@ -483,7 +483,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteEndElementUnchecked(string prefix, string localName, string ns)
         {
-            Debug.Assert(_xstate == XmlState.EnumAttrs || _xstate == XmlState.WithinContent, "WriteEndElement cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.EnumAttrs || _xstate == XmlState.WithinContent, $"WriteEndElement cannot be called in the {_xstate} state.");
             Writer.WriteEndElement(prefix, localName, ns);
             _xstate = XmlState.WithinContent;
             _depth--;
@@ -503,7 +503,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteStartAttributeUnchecked(string prefix, string localName, string ns)
         {
-            Debug.Assert(_xstate == XmlState.EnumAttrs, "WriteStartAttribute cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.EnumAttrs, $"WriteStartAttribute cannot be called in the {_xstate} state.");
             Writer.WriteStartAttribute(prefix, localName, ns);
             _xstate = XmlState.WithinAttr;
             _depth++;
@@ -522,7 +522,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteEndAttributeUnchecked()
         {
-            Debug.Assert(_xstate == XmlState.WithinAttr, "WriteEndAttribute cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinAttr, $"WriteEndAttribute cannot be called in the {_xstate} state.");
             Writer.WriteEndAttribute();
             _xstate = XmlState.EnumAttrs;
             _depth--;
@@ -538,7 +538,7 @@ namespace System.Xml.Xsl.Runtime
         public void WriteNamespaceDeclarationUnchecked(string prefix, string ns)
         {
             Debug.Assert(prefix != null && ns != null);
-            Debug.Assert(_xstate == XmlState.EnumAttrs, "WriteNamespaceDeclaration cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.EnumAttrs, $"WriteNamespaceDeclaration cannot be called in the {_xstate} state.");
 
             // xmlns:foo="" is illegal
             Debug.Assert(prefix.Length == 0 || ns.Length != 0);
@@ -571,7 +571,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteStringUnchecked(string text)
         {
-            Debug.Assert(_xstate != XmlState.WithinSequence && _xstate != XmlState.EnumAttrs, "WriteTextBlock cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate != XmlState.WithinSequence && _xstate != XmlState.EnumAttrs, $"WriteTextBlock cannot be called in the {_xstate} state.");
             Writer.WriteString(text);
         }
 
@@ -580,7 +580,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteRawUnchecked(string text)
         {
-            Debug.Assert(_xstate != XmlState.WithinSequence && _xstate != XmlState.EnumAttrs, "WriteTextBlockNoEntities cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate != XmlState.WithinSequence && _xstate != XmlState.EnumAttrs, $"WriteTextBlockNoEntities cannot be called in the {_xstate} state.");
             Writer.WriteRaw(text);
         }
 
@@ -761,7 +761,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteNamespaceString(string text)
         {
-            Debug.Assert(_xstate == XmlState.WithinNmsp, "WriteNamespaceString cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinNmsp, $"WriteNamespaceString cannot be called in the {_xstate} state.");
             _nodeText.ConcatNoDelimiter(text);
         }
 
@@ -770,7 +770,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteEndNamespace()
         {
-            Debug.Assert(_xstate == XmlState.WithinNmsp, "WriteEndNamespace cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinNmsp, $"WriteEndNamespace cannot be called in the {_xstate} state.");
 
             _xstate = XmlState.EnumAttrs;
             _depth--;
@@ -800,7 +800,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteCommentString(string text)
         {
-            Debug.Assert(_xstate == XmlState.WithinComment, "WriteCommentString cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinComment, $"WriteCommentString cannot be called in the {_xstate} state.");
             _nodeText.ConcatNoDelimiter(text);
         }
 
@@ -809,7 +809,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteEndComment()
         {
-            Debug.Assert(_xstate == XmlState.WithinComment, "WriteEndComment cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinComment, $"WriteEndComment cannot be called in the {_xstate} state.");
 
             Writer.WriteComment(_nodeText.GetResult());
 
@@ -843,7 +843,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteProcessingInstructionString(string text)
         {
-            Debug.Assert(_xstate == XmlState.WithinPI, "WriteProcessingInstructionString cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinPI, $"WriteProcessingInstructionString cannot be called in the {_xstate} state.");
             _nodeText.ConcatNoDelimiter(text);
         }
 
@@ -852,7 +852,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteEndProcessingInstruction()
         {
-            Debug.Assert(_xstate == XmlState.WithinPI, "WriteEndProcessingInstruction cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinPI, $"WriteEndProcessingInstruction cannot be called in the {_xstate} state.");
 
             Writer.WriteProcessingInstruction(_piTarget, _nodeText.GetResult());
 
@@ -1205,7 +1205,7 @@ namespace System.Xml.Xsl.Runtime
         private void EndCopy(XPathNavigator navigator, bool callChk)
         {
             Debug.Assert(navigator.NodeType == XPathNodeType.Element);
-            Debug.Assert(_xstate == XmlState.WithinContent, "EndCopy cannot be called in the " + _xstate + " state.");
+            Debug.Assert(_xstate == XmlState.WithinContent, $"EndCopy cannot be called in the {_xstate} state.");
 
             if (callChk)
                 WriteEndElement();

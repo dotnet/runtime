@@ -954,8 +954,6 @@ namespace System.Data
         #endregion
 
         #region IBindingList implementation
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         bool IBindingList.AllowNew => AllowNew;
         object IBindingList.AddNew() => AddNew();
         bool IBindingList.AllowEdit => AllowEdit;
@@ -966,9 +964,9 @@ namespace System.Data
         bool IBindingList.SupportsSorting => true;
         bool IBindingList.IsSorted => Sort.Length != 0;
 
-        PropertyDescriptor IBindingList.SortProperty => GetSortProperty();
+        PropertyDescriptor? IBindingList.SortProperty => GetSortProperty();
 
-        internal PropertyDescriptor GetSortProperty()
+        internal PropertyDescriptor? GetSortProperty()
         {
             if (_table != null && _index != null && _index._indexFields.Length == 1)
             {
@@ -980,7 +978,6 @@ namespace System.Data
         ListSortDirection IBindingList.SortDirection => (_index!._indexFields.Length == 1 && _index._indexFields[0].IsDescending) ?
             ListSortDirection.Descending :
             ListSortDirection.Ascending;
-#nullable enable
         #endregion
 
         #region ListChanged & Initialized events
@@ -1085,7 +1082,7 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.ArgumentContainsNull(nameof(sorts));
                 }
-                PropertyDescriptor property = sort.PropertyDescriptor;
+                PropertyDescriptor? property = sort.PropertyDescriptor;
 
                 if (property == null)
                 {
@@ -1128,8 +1125,6 @@ namespace System.Data
             return resultString.ToString();
         }
 
-        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Safe because filter is set to empty string.")]
         void IBindingListView.RemoveFilter()
@@ -1138,12 +1133,12 @@ namespace System.Data
             RowFilter = string.Empty;
         }
 
-        string IBindingListView.Filter
+        string? IBindingListView.Filter
         {
             get { return RowFilter; }
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set { RowFilter = value; }
         }
-#nullable enable
 
         ListSortDescriptionCollection IBindingListView.SortDescriptions => GetSortDescriptions();
 
@@ -1656,40 +1651,40 @@ namespace System.Data
             }
         }
 
-        internal void ChildRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
+        internal void ChildRelationCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataRelationPropertyDescriptor? NullProp = null;
             OnListChanged(
-                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
-                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
             /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
-        internal void ParentRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
+        internal void ParentRelationCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataRelationPropertyDescriptor? NullProp = null;
             OnListChanged(
-                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
-                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
             /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
-        protected virtual void ColumnCollectionChanged(object sender, CollectionChangeEventArgs e)
+        protected virtual void ColumnCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataColumnPropertyDescriptor? NullProp = null;
             OnListChanged(
-                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element)) :
+                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element!)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
-                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element)) :
+                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element!)) :
                 /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
-        internal void ColumnCollectionChangedInternal(object sender, CollectionChangeEventArgs e) =>
+        internal void ColumnCollectionChangedInternal(object? sender, CollectionChangeEventArgs e) =>
             ColumnCollectionChanged(sender, e);
 
         public DataTable ToTable() =>

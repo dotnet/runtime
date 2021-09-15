@@ -26,6 +26,7 @@ namespace System.Security.Cryptography
             /// <exception cref="ArgumentNullException">if <paramref name="curve" /> is null.</exception>
             public ECDsaOpenSsl(ECCurve curve)
             {
+                ThrowIfNotSupported();
                 _key = new ECOpenSsl(curve);
                 ForceSetKeySize(_key.KeySize);
             }
@@ -44,6 +45,7 @@ namespace System.Security.Cryptography
             /// <param name="keySize">Size of the key to generate, in bits.</param>
             public ECDsaOpenSsl(int keySize)
             {
+                ThrowIfNotSupported();
                 // Use the base setter to get the validation and field assignment without the
                 // side effect of dereferencing _key.
                 base.KeySize = keySize;
@@ -360,6 +362,8 @@ namespace System.Security.Cryptography
                     );
                 }
             }
+
+            static partial void ThrowIfNotSupported();
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

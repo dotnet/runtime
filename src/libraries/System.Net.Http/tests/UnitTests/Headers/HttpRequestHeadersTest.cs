@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Mail;
-using System.Text;
 
 using Xunit;
 
@@ -71,7 +68,7 @@ namespace System.Net.Http.Tests
         public void Accept_UseAddMethod_AddedValueCanBeRetrievedUsingProperty()
         {
             headers.TryAddWithoutValidation("Accept",
-                ",, , ,,text/plain; charset=iso-8859-1; q=1.0,\r\n */xml; charset=utf-8; q=0.5,,,");
+                ",, , ,,text/plain; charset=iso-8859-1; q=1.0, */xml; charset=utf-8; q=0.5,,,");
 
             MediaTypeWithQualityHeaderValue value1 = new MediaTypeWithQualityHeaderValue("text/plain");
             value1.CharSet = "iso-8859-1";
@@ -100,6 +97,12 @@ namespace System.Net.Http.Tests
             Assert.Equal(0, headers.Accept.Count);
             Assert.Equal(1, headers.GetValues("Accept").Count());
             Assert.Equal("text/plain application/xml", headers.GetValues("Accept").First());
+
+            headers.Clear();
+            headers.TryAddWithoutValidation("Accept", "text/plain; charset=iso-8859-1; q=1.0,\r\n */xml; charset=utf-8; q=0.5,,,");
+
+            Assert.Equal(0, headers.Accept.Count);
+            Assert.False(headers.Contains("Accept"));
         }
 
         [Fact]
@@ -121,7 +124,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void AcceptCharset_UseAddMethod_AddedValueCanBeRetrievedUsingProperty()
         {
-            headers.TryAddWithoutValidation("Accept-Charset", ", ,,iso-8859-5 , \r\n utf-8 ; q=0.300 ,,,");
+            headers.TryAddWithoutValidation("Accept-Charset", ", ,,iso-8859-5 , utf-8 ; q=0.300 ,,,");
 
             Assert.Equal(new StringWithQualityHeaderValue("iso-8859-5"),
                 headers.AcceptCharset.ElementAt(0));
@@ -142,6 +145,11 @@ namespace System.Net.Http.Tests
             Assert.Equal(0, headers.AcceptCharset.Count);
             Assert.Equal(1, headers.GetValues("Accept-Charset").Count());
             Assert.Equal("utf-8; q=1; q=0.3", headers.GetValues("Accept-Charset").First());
+
+            headers.Clear();
+            headers.TryAddWithoutValidation("Accept-Charset", "iso-8859-5, \r\n utf-8; q=0.300");
+            Assert.Equal(0, headers.AcceptCharset.Count);
+            Assert.False(headers.Contains("Accept-Charset"));
         }
 
         [Fact]
@@ -480,7 +488,7 @@ namespace System.Net.Http.Tests
         public void TE_UseAddMethod_AddedValueCanBeRetrievedUsingProperty()
         {
             headers.TryAddWithoutValidation("TE",
-                ",custom1; param1=value1; q=1.0,,\r\n custom2; param2=value2; q=0.5  ,");
+                ",custom1; param1=value1; q=1.0,, custom2; param2=value2; q=0.5  ,");
 
             TransferCodingWithQualityHeaderValue value1 = new TransferCodingWithQualityHeaderValue("custom1");
             value1.Parameters.Add(new NameValueHeaderValue("param1", "value1"));
@@ -760,6 +768,13 @@ namespace System.Net.Http.Tests
             Assert.Equal("info@", headers.GetParsedValues(KnownHeaders.From.Descriptor));
             Assert.Equal(1, headers.GetValues("From").Count());
             Assert.Equal("info@", headers.GetValues("From").First());
+        }
+
+        [Fact]
+        public void From_ValueContainsNewLineCharacters_Throws()
+        {
+            Assert.Throws<FormatException>(() => headers.From = "Foo\r\nBar");
+            Assert.Throws<FormatException>(() => headers.Add("From", "Foo\r\nBar"));
         }
 
         [Fact]

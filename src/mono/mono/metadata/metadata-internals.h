@@ -186,23 +186,9 @@ struct MonoTypeNameParse {
 };
 
 
-typedef enum MonoAssemblyContextKind {
-	/* Default assembly context: Load(String) and assembly references */
-	MONO_ASMCTX_DEFAULT = 0,
-	/* LoadFrom context: LoadFrom() and references */
-	MONO_ASMCTX_LOADFROM = 1,
-	/* Individual assembly context (.NET Framework docs call this "not in
-	 * any context"): LoadFile(String) and Load(byte[]) are here.
-	 */
-	MONO_ASMCTX_INDIVIDUAL = 2,
-	/* Used internally by the runtime, not visible to managed code */
-	MONO_ASMCTX_INTERNAL = 3,
-
-	MONO_ASMCTX_LAST = 3
-} MonoAssemblyContextKind;
-
 typedef struct _MonoAssemblyContext {
-	MonoAssemblyContextKind kind;
+	/* Don't fire managed load event for this assembly */
+	guint8 no_managed_load_event : 1;
 } MonoAssemblyContext;
 
 struct _MonoAssembly {
@@ -329,9 +315,6 @@ struct _MonoImage {
 	/* Whenever this image contains metadata only without PE data */
 	guint8 metadata_only : 1;
 
-	/*  Whether this image belongs to load-from context */
-	guint8 load_from_context: 1;
-
 	guint8 checked_module_cctor : 1;
 	guint8 has_module_cctor : 1;
 
@@ -339,7 +322,7 @@ struct _MonoImage {
 	guint8 idx_guid_wide : 1;
 	guint8 idx_blob_wide : 1;
 
-	/* Whenever this image is considered as platform code for the CoreCLR security model */
+	/* NOT SUPPORTED: Whenever this image is considered as platform code for the CoreCLR security model */
 	guint8 core_clr_platform_code : 1;
 
 	/* Whether a #JTD stream was present. Indicates that this image was a minimal delta and its heaps only include the new heap entries */
@@ -802,14 +785,22 @@ mono_metadata_has_updates (void)
 	return mono_metadata_update_data_private.has_updates != 0;
 }
 
+/* components can't call the inline function directly since the private data isn't exported */
+MONO_COMPONENT_API
+gboolean
+mono_metadata_has_updates_api (void);
+
 void
 mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
+
+gboolean
+mono_metadata_update_has_modified_rows (const MonoTableInfo *t);
 
 static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 	if (G_UNLIKELY (mono_metadata_has_updates ())) {
-		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)))) {
+		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)) || mono_metadata_update_has_modified_rows (*t))) {
 			mono_image_effective_table_slow (t, idx);
 		}
 	}
@@ -818,8 +809,13 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
+enum MonoEnCDeltaOrigin {
+        MONO_ENC_DELTA_API = 0,
+        MONO_ENC_DELTA_DBG = 1,
+};
+
 MONO_COMPONENT_API void
-mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+mono_image_load_enc_delta (int delta_origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error);
 
 gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);
@@ -1090,9 +1086,6 @@ mono_type_in_image (MonoType *type, MonoImage *image);
 
 gboolean
 mono_type_is_valid_generic_argument (MonoType *type);
-
-MonoAssemblyContextKind
-mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
 
 void
 mono_metadata_get_class_guid (MonoClass* klass, uint8_t* guid, MonoError *error);

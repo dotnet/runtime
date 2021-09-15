@@ -353,7 +353,7 @@ namespace System.Xml.Xsl.Runtime
             }
             else
             {
-                Debug.Assert(itemType == XsltConvert.BooleanType, "Unexpected type of atomic value " + itemType.ToString());
+                Debug.Assert(itemType == XsltConvert.BooleanType, $"Unexpected type of atomic value {itemType}");
                 return TypeCode.Boolean;
             }
         }

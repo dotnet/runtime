@@ -293,12 +293,12 @@ namespace System
             => (uint)BitOperations.PopCount(value);
 
         [RequiresPreviewFeatures]
-        static uint IBinaryInteger<uint>.RotateLeft(uint value, uint rotateAmount)
-            => BitOperations.RotateLeft(value, (int)rotateAmount);
+        static uint IBinaryInteger<uint>.RotateLeft(uint value, int rotateAmount)
+            => BitOperations.RotateLeft(value, rotateAmount);
 
         [RequiresPreviewFeatures]
-        static uint IBinaryInteger<uint>.RotateRight(uint value, uint rotateAmount)
-            => BitOperations.RotateRight(value, (int)rotateAmount);
+        static uint IBinaryInteger<uint>.RotateRight(uint value, int rotateAmount)
+            => BitOperations.RotateRight(value, rotateAmount);
 
         [RequiresPreviewFeatures]
         static uint IBinaryInteger<uint>.TrailingZeroCount(uint value)
@@ -362,11 +362,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static uint IDecrementOperators<uint>.operator --(uint value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked uint IDecrementOperators<uint>.operator --(uint value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -398,11 +398,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static uint IIncrementOperators<uint>.operator ++(uint value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked uint IIncrementOperators<uint>.operator ++(uint value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

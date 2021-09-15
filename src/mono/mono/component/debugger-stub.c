@@ -54,9 +54,6 @@ stub_debugger_single_step_from_context (MonoContext *ctx);
 static void
 stub_debugger_breakpoint_from_context (MonoContext *ctx);
 
-static void
-stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause);
-
 static gboolean 
 stub_debugger_transport_handshake (void);
 
@@ -65,6 +62,9 @@ stub_mono_wasm_breakpoint_hit (void);
 
 static void
 stub_mono_wasm_single_step_hit (void);
+
+static void 
+stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 
 static MonoComponentDebugger fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
@@ -82,12 +82,14 @@ static MonoComponentDebugger fn_table = {
 	&stub_debugger_end_exception_filter,
 	&stub_debugger_debug_log,
 	&stub_debugger_debug_log_is_enabled,
-	&stub_debugger_send_crash,
 	&stub_debugger_transport_handshake,
 
 	//wasm
 	&stub_mono_wasm_breakpoint_hit,
-	&stub_mono_wasm_single_step_hit
+	&stub_mono_wasm_single_step_hit,
+
+	//HotReload
+	&stub_send_enc_delta,
 };
 
 static bool
@@ -181,11 +183,6 @@ stub_debugger_breakpoint_from_context (MonoContext *ctx)
 	g_assert_not_reached ();
 }
 
-static void
-stub_debugger_send_crash (char *json_dump, MonoStackHash *hashes, int pause)
-{
-}
-
 static gboolean 
 stub_debugger_transport_handshake (void)
 {
@@ -201,3 +198,37 @@ static void
 stub_mono_wasm_single_step_hit (void)
 {
 }
+
+static void 
+stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len)
+{
+}
+
+#ifdef HOST_WASM
+
+#include <emscripten.h>
+
+//functions exported to be used by JS
+G_BEGIN_DECLS
+
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command (int id, int command_set, int command, guint8* data, unsigned int size);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command_with_parms (int id, int command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue);
+
+G_END_DECLS
+
+
+EMSCRIPTEN_KEEPALIVE gboolean 
+mono_wasm_send_dbg_command_with_parms (int id, int command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue)
+{
+	return false;
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean 
+mono_wasm_send_dbg_command (int id, int command_set, int command, guint8* data, unsigned int size)
+{
+	return false;
+}
+
+#endif // HOST_WASM
+
+

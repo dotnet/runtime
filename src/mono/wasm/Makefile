@@ -17,7 +17,7 @@ BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
 PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
-NATIVE_BIN_DIR?=$(BINDIR)/native/net6.0-Browser-$(CONFIG)-wasm
+NATIVE_BIN_DIR?=$(BINDIR)/native/net7.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
@@ -71,7 +71,7 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
-EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DDEBUG=1
+EMCC_DEBUG_FLAGS =-g -Os -s -DDEBUG=1
 EMCC_RELEASE_FLAGS=-Oz
 
 ifeq ($(NOSTRIP),)
@@ -119,10 +119,10 @@ $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c $(EMCC_DEFAULT_RSP) | $
 $(EMCC_DEFAULT_RSP): $(CURDIR)/wasm.proj | $(NATIVE_BIN_DIR)/src Makefile
 	$(DOTNET) build $(CURDIR)/wasm.proj /p:Configuration=$(CONFIG) /t:GenerateEmccPropsAndRspFiles
 
-$(NATIVE_BIN_DIR)/src/Emcc.props: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
+$(NATIVE_BIN_DIR)/src/emcc-props.json: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
 	$(DOTNET) build $(CURDIR)/wasm.proj /p:Configuration=$(CONFIG) /t:GenerateEmccPropsAndRspFiles
 
-build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-default.rsp $(NATIVE_BIN_DIR)/src/Emcc.props
+build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-default.rsp $(NATIVE_BIN_DIR)/src/emcc-props.json
 
 endef
 

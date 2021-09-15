@@ -2,8 +2,10 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs" />
     <TestConsoleAppSourceFiles Include="XmlSchema.Write.cs" />
+    <TestConsoleAppSourceFiles Include="XmlSerializer.Deserialize.cs" />
+    <TestConsoleAppSourceFiles Include="XmlSerializer.Serialize.cs" />
+    <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

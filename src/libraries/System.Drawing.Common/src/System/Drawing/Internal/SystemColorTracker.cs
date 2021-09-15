@@ -55,7 +55,7 @@ namespace System.Drawing.Internal
                     list[index] = new WeakReference(obj);
                 else
                 {
-                    Debug.Assert(list[index].Target == null, "Trying to reuse a weak reference that isn't broken yet: list[" + index + "], length =" + list.Length);
+                    Debug.Assert(list[index].Target == null, $"Trying to reuse a weak reference that isn't broken yet: list[{index}], length = {list.Length}");
                     list[index].Target = obj;
                 }
             }

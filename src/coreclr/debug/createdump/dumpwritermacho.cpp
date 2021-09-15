@@ -4,7 +4,9 @@
 #include "createdump.h"
 #include "specialthreadinfo.h"
 
+//
 // Write the core dump file
+//
 bool
 DumpWriter::WriteDump()
 {

@@ -110,6 +110,28 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
+    #include <sys/vfs.h>
+    int main(void)
+    {
+        struct statfs s;
+        return 0;
+    }
+    "
+    HAVE_STATFS_VFS)
+
+check_c_source_compiles(
+    "
+    #include <sys/mount.h>
+    int main(void)
+    {
+        struct statfs s;
+        return 0;
+    }
+    "
+    HAVE_STATFS_MOUNT)
+
+check_c_source_compiles(
+    "
     #include <fcntl.h>
     int main(void)
     {
@@ -960,7 +982,7 @@ set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
 if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
-    set (CMAKE_REQUIRED_LIBRARIES "-linotify -L/usr/local/lib")
+    set (CMAKE_REQUIRED_LIBRARIES "-linotify -L${CROSS_ROOTFS}/usr/local/lib")
 endif()
 
 check_symbol_exists(

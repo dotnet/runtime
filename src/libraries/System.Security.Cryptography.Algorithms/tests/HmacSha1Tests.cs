@@ -64,16 +64,18 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             using (HMACSHA1 h1 = new HMACSHA1(key))
             {
                 VerifyHmac_KeyAlreadySet(h1, 1, digest);
-                using (HMACSHA1 h2 = new HMACSHA1(key, true))
+#pragma warning disable SYSLIB0030 // useManagedSha1 is obsolete
+                using (HMACSHA1 h2 = new HMACSHA1(key, useManagedSha1: true))
                 {
                     VerifyHmac_KeyAlreadySet(h2, 1, digest);
                     Assert.Equal(h1.Key, h2.Key);
                 }
-                using (HMACSHA1 h2 = new HMACSHA1(key, false))
+                using (HMACSHA1 h2 = new HMACSHA1(key, useManagedSha1: false))
                 {
                     VerifyHmac_KeyAlreadySet(h1, 1, digest);
                     Assert.Equal(h1.Key, h2.Key);
                 }
+#pragma warning restore SYSLIB0030
             }
         }
 

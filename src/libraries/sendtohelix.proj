@@ -12,15 +12,11 @@
     "correlation payload", which is the set of files used by all Helix submissions
     (which we compress into a single file).
 -->
-<Project Sdk="Microsoft.Build.NoTargets">
+<Project Sdk="Microsoft.Build.NoTargets" InitialTargets="_SetTestArchiveRuntimeFile">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <BuildTargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</BuildTargetFramework>
+    <BuildTargetFramework Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)</BuildTargetFramework>
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
-
-    <!-- The Helix correlation payload file -->
-    <TestArchiveRuntimeFile Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(NetCoreAppCurrentBuildSettings).zip</TestArchiveRuntimeFile>
 
     <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
          (which is when this project is invoked to call the "CreateOneScenarioTestEnvFile" target). -->
@@ -28,6 +24,14 @@
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
   </PropertyGroup>
+  
+  <!-- The Helix correlation payload file -->
+  <Target Name="_SetTestArchiveRuntimeFile"
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
+    <PropertyGroup>
+      <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(NetCoreAppCurrentBuildSettings).zip</TestArchiveRuntimeFile>
+    </PropertyGroup>
+  </Target>
 
   <Target Name="RunInParallelForEachScenario"
           AfterTargets="Build">
@@ -66,10 +70,24 @@
       <_Scenarios Include="$(_Scenarios.Split(','))" />
 
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
-      <_ProjectsToBuild Include="$(PerScenarioProjectFile)">
+      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
-        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_ProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
-      </_ProjectsToBuild>
+        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BaseProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
+      </_BaseProjectsToBuild>
+    </ItemGroup>
+
+    <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
+    <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
+      <_TestUsingWorkloadsValues Include="true;false" />
+
+      <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingWorkloadsValues.Identity)</AdditionalProperties>
+        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
+      </_BuildWasmAppsProjectsToBuild>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -83,12 +101,8 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" />
   </Target>
 
-  <PropertyGroup>
-  </PropertyGroup>
-
   <Target Name="CreateOneScenarioTestEnvFile">
     <!-- This target creates one __TestEnv file for the single $(Scenario). -->
-
     <Error Condition="'$(Scenario)' == ''" Text="No Scenario specified" />
 
     <PropertyGroup>
@@ -157,7 +171,6 @@
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(TargetsMobile)' != 'true' and
                      '$(TestArchiveRuntimeFile)' != ''">
-
     <!-- Compress the test files, testhost, and per-scenario scripts into a single ZIP file for sending to the Helix machines. -->
 
     <Message Importance="High" Text="Compressing runtime directory" />
@@ -168,7 +181,6 @@
     <ZipDirectory SourceDirectory="$(NetCoreAppCurrentTestHostPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
                   Overwrite="true" />
-
   </Target>
 
   <!--

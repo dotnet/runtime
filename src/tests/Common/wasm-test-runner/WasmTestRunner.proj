@@ -4,6 +4,7 @@
   <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existant</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
@@ -12,6 +13,8 @@
 
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <JsonToItemsTaskFactoryTasksAssemblyPath>$(CORE_ROOT)\JsonToItemsTaskFactory\JsonToItemsTaskFactory.dll</JsonToItemsTaskFactoryTasksAssemblyPath>
+    <RuntimeConfigParserTasksAssemblyPath>$(CORE_ROOT)\RuntimeConfigParser\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
   </PropertyGroup>
 
   <Target Name="BuildApp" BeforeTargets="WasmBuildApp">

@@ -19,6 +19,12 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
+
+#if defined(GSS_SHIM)
+#include <dlfcn.h>
+#include "pal_atomic.h"
+#endif
 
 c_static_assert(PAL_GSS_C_DELEG_FLAG == GSS_C_DELEG_FLAG);
 c_static_assert(PAL_GSS_C_MUTUAL_FLAG == GSS_C_MUTUAL_FLAG);
@@ -47,6 +53,103 @@ static char gss_ntlm_oid_value[] =
 static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_value) - 1,
                                               .elements = gss_ntlm_oid_value};
 #endif
+
+#if defined(GSS_SHIM)
+
+#define FOR_ALL_GSS_FUNCTIONS \
+    PER_FUNCTION_BLOCK(gss_accept_sec_context) \
+    PER_FUNCTION_BLOCK(gss_acquire_cred) \
+    PER_FUNCTION_BLOCK(gss_acquire_cred_with_password) \
+    PER_FUNCTION_BLOCK(gss_delete_sec_context) \
+    PER_FUNCTION_BLOCK(gss_display_name) \
+    PER_FUNCTION_BLOCK(gss_display_status) \
+    PER_FUNCTION_BLOCK(gss_import_name) \
+    PER_FUNCTION_BLOCK(gss_indicate_mechs) \
+    PER_FUNCTION_BLOCK(gss_init_sec_context) \
+    PER_FUNCTION_BLOCK(gss_inquire_context) \
+    PER_FUNCTION_BLOCK(gss_mech_krb5) \
+    PER_FUNCTION_BLOCK(gss_oid_equal) \
+    PER_FUNCTION_BLOCK(gss_release_buffer) \
+    PER_FUNCTION_BLOCK(gss_release_cred) \
+    PER_FUNCTION_BLOCK(gss_release_name) \
+    PER_FUNCTION_BLOCK(gss_release_oid_set) \
+    PER_FUNCTION_BLOCK(gss_unwrap) \
+    PER_FUNCTION_BLOCK(gss_wrap) \
+    PER_FUNCTION_BLOCK(GSS_C_NT_USER_NAME) \
+    PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE)
+
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
+#define FOR_ALL_GSS_FUNCTIONS FOR_ALL_GSS_FUNCTIONS \
+    PER_FUNCTION_BLOCK(gss_set_cred_option)
+
+#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
+// define indirection pointers for all functions, like
+// static TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
+#define PER_FUNCTION_BLOCK(fn) \
+static TYPEOF(fn)* fn##_ptr;
+
+FOR_ALL_GSS_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
+
+static void* volatile s_gssLib = NULL;
+
+// remap gss function use to use indirection pointers
+#define gss_accept_sec_context(...)         gss_accept_sec_context_ptr(__VA_ARGS__)
+#define gss_acquire_cred(...)               gss_acquire_cred_ptr(__VA_ARGS__)
+#define gss_acquire_cred_with_password(...) gss_acquire_cred_with_password_ptr(__VA_ARGS__)
+#define gss_delete_sec_context(...)         gss_delete_sec_context_ptr(__VA_ARGS__)
+#define gss_display_name(...)               gss_display_name_ptr(__VA_ARGS__)
+#define gss_display_status(...)             gss_display_status_ptr(__VA_ARGS__)
+#define gss_import_name(...)                gss_import_name_ptr(__VA_ARGS__)
+#define gss_indicate_mechs(...)             gss_indicate_mechs_ptr(__VA_ARGS__)
+#define gss_init_sec_context(...)           gss_init_sec_context_ptr(__VA_ARGS__)
+#define gss_inquire_context(...)            gss_inquire_context_ptr(__VA_ARGS__)
+#define gss_oid_equal(...)                  gss_oid_equal_ptr(__VA_ARGS__)
+#define gss_release_buffer(...)             gss_release_buffer_ptr(__VA_ARGS__)
+#define gss_release_cred(...)               gss_release_cred_ptr(__VA_ARGS__)
+#define gss_release_name(...)               gss_release_name_ptr(__VA_ARGS__)
+#define gss_release_oid_set(...)            gss_release_oid_set_ptr(__VA_ARGS__)
+#define gss_unwrap(...)                     gss_unwrap_ptr(__VA_ARGS__)
+#define gss_wrap(...)                       gss_wrap_ptr(__VA_ARGS__)
+
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+#define gss_set_cred_option(...)            gss_set_cred_option_ptr(__VA_ARGS__)
+#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
+
+#define GSS_C_NT_USER_NAME                  (*GSS_C_NT_USER_NAME_ptr)
+#define GSS_C_NT_HOSTBASED_SERVICE          (*GSS_C_NT_HOSTBASED_SERVICE_ptr)
+#define gss_mech_krb5                       (*gss_mech_krb5_ptr)
+
+#define gss_lib_name "libgssapi_krb5.so"
+
+static int32_t ensure_gss_shim_initialized()
+{
+    void* lib = dlopen(gss_lib_name, RTLD_LAZY);
+    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+
+    // check is someone else has opened and published s_gssLib already
+    if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
+    {
+        dlclose(lib);
+    }
+
+    // initialize indirection pointers for all functions, like:
+    //   gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
+    //   if (gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
+#define PER_FUNCTION_BLOCK(fn) \
+    fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+
+    FOR_ALL_GSS_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
+
+    return 0;
+}
+
+#endif // GSS_SHIM
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
 static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* targetBuffer)
@@ -566,4 +669,13 @@ uint32_t NetSecurityNative_IsNtlmInstalled()
     }
 
     return foundNtlm;
+}
+
+int32_t NetSecurityNative_EnsureGssInitialized()
+{
+#if defined(GSS_SHIM)
+    return ensure_gss_shim_initialized();
+#else
+    return 0;
+#endif
 }

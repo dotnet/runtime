@@ -214,14 +214,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class Frame
     {
-        public Frame(MethodInfo method, SourceLocation location, int id)
+        public Frame(MethodInfoWithDebugInformation method, SourceLocation location, int id)
         {
             this.Method = method;
             this.Location = location;
             this.Id = id;
         }
 
-        public MethodInfo Method { get; private set; }
+        public MethodInfoWithDebugInformation Method { get; private set; }
         public SourceLocation Location { get; private set; }
         public int Id { get; private set; }
     }
@@ -267,9 +267,17 @@ namespace Microsoft.WebAssembly.Diagnostics
         Out
     }
 
+    internal enum PauseOnExceptionsKind
+    {
+        Unset,
+        None,
+        Uncaught,
+        All
+    }
+
     internal class ExecutionContext
     {
-        public string DebuggerId { get; set; }
+        public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
 
         public TaskCompletionSource<DebugStore> ready;
@@ -279,8 +287,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; set; }
         public object AuxData { get; set; }
 
-        public bool PauseOnUncaught { get; set; }
-        public bool PauseOnCaught { get; set; }
+        public PauseOnExceptionsKind PauseOnExceptions { get; set; }
 
         public List<Frame> CallStack { get; set; }
 
@@ -301,13 +308,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public PerScopeCache GetCacheForScope(int scope_id)
+        public PerScopeCache GetCacheForScope(int scopeId)
         {
-            if (perScopeCaches.TryGetValue(scope_id, out PerScopeCache cache))
+            if (perScopeCaches.TryGetValue(scopeId, out PerScopeCache cache))
                 return cache;
 
             cache = new PerScopeCache();
-            perScopeCaches[scope_id] = cache;
+            perScopeCaches[scopeId] = cache;
             return cache;
         }
 
@@ -322,5 +329,16 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();
+        public Dictionary<string, JObject> ObjectFields { get; } = new Dictionary<string, JObject>();
+        public PerScopeCache(JArray objectValues)
+        {
+            foreach (var objectValue in objectValues)
+            {
+                ObjectFields[objectValue["name"].Value<string>()] = objectValue.Value<JObject>();
+            }
+        }
+        public PerScopeCache()
+        {
+        }
     }
 }

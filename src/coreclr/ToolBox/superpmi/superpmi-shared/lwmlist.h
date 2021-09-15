@@ -137,7 +137,6 @@ LWM(GetUnboxedEntry, DWORDLONG, DLD);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
 LWM(GetVarArgsHandle, GetVarArgsHandleValue, DLDL)
 LWM(GetVars, DWORDLONG, Agnostic_GetVars)
-DENSELWM(HandleException, DWORD)
 LWM(InitClass, Agnostic_InitClass, DWORD)
 LWM(IsCompatibleDelegate, Agnostic_IsCompatibleDelegate, DD)
 LWM(IsDelegateCreationAllowed, DLDL, DWORD)
@@ -158,6 +157,7 @@ LWM(TryResolveToken, Agnostic_CORINFO_RESOLVED_TOKENin, TryResolveTokenValue)
 LWM(SatisfiesClassConstraints, DWORDLONG, DWORD)
 LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
+LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
 
 #undef LWM

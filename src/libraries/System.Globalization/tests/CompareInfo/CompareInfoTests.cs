@@ -259,9 +259,13 @@ namespace System.Globalization.Tests
 
             // Turkish
             yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.None, 1 };
-            yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
+                yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
+            }
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
-            yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "i", "I", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "i", "I", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
@@ -370,7 +374,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
             SortKey sk1 = compareInfo.GetSortKey(string1, options);

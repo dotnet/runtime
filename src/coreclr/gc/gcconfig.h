@@ -98,6 +98,7 @@ public:
     INT_CONFIG   (GCHighMemPercent,       "GCHighMemPercent",       "System.GC.HighMemoryPercent",    0,                 "The percent for GC to consider as high memory")                                          \
     INT_CONFIG   (GCProvModeStress,       "GCProvModeStress",       NULL,                             0,                 "Stress the provisional modes")                                                           \
     INT_CONFIG   (GCGen0MaxBudget,        "GCGen0MaxBudget",        NULL,                             0,                 "Specifies the largest gen0 allocation budget")                                           \
+    INT_CONFIG   (GCGen1MaxBudget,        "GCGen1MaxBudget",        NULL,                             0,                 "Specifies the largest gen1 allocation budget")                                           \
     INT_CONFIG   (GCLowSkipRatio,         "GCLowSkipRatio",         NULL,                             30,                "Specifies the low generation skip ratio")                                                \
     INT_CONFIG   (GCHeapHardLimit,        "GCHeapHardLimit",        "System.GC.HeapHardLimit",        0,                 "Specifies a hard limit for the GC heap")                                                 \
     INT_CONFIG   (GCHeapHardLimitPercent, "GCHeapHardLimitPercent", "System.GC.HeapHardLimitPercent", 0,                 "Specifies the GC heap usage as a percentage of the total memory")                        \
@@ -132,6 +133,7 @@ public:
     INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", "System.GC.HeapHardLimitLOHPercent", 0,        "Specifies the GC heap LOH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", 0,        "Specifies the GC heap POH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,       "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
+    INT_CONFIG   (GCConserveMem,           "GCConserveMemory",      NULL,                             0,                 "Specifies how hard GC should try to conserve memory - values 0-9")                       \
 
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.

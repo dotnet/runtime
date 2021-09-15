@@ -243,8 +243,13 @@ struct insGroup
     insGroup* igSelf; // for consistency checking
 #endif
 #if defined(DEBUG) || defined(LATE_DISASM)
-    BasicBlock::weight_t igWeight;    // the block weight used for this insGroup
-    double               igPerfScore; // The PerfScore for this insGroup
+    weight_t igWeight;    // the block weight used for this insGroup
+    double   igPerfScore; // The PerfScore for this insGroup
+#endif
+
+#ifdef DEBUG
+    BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
+    jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
 #endif
 
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
@@ -505,6 +510,8 @@ protected:
 
     void emitRecomputeIGoffsets();
 
+    void emitDispCommentForHandle(size_t handle, GenTreeFlags flags);
+
     /************************************************************************/
     /*          The following describes a single instruction                */
     /************************************************************************/
@@ -540,7 +547,7 @@ protected:
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
         size_t            idMemCookie;   // for display of method name  (also used by switch table)
-        unsigned          idFlags;       // for determining type of handle in idMemCookie
+        GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
@@ -877,16 +884,6 @@ protected:
         }
         void idCodeSize(unsigned sz)
         {
-            if (sz > 15)
-            {
-                // This is a temporary workaround for non-precise instr size
-                // estimator on XARCH. It often overestimates sizes and can
-                // return value more than 15 that doesn't fit in 4 bits _idCodeSize.
-                // If somehow we generate instruction that needs more than 15 bytes we
-                // will fail on another assert in emit.cpp: noway_assert(id->idCodeSize() >= csz).
-                // Issue https://github.com/dotnet/runtime/issues/12840.
-                sz = 15;
-            }
             assert(sz <= 15); // Intel decoder limit.
             _idCodeSize = sz;
             assert(sz == _idCodeSize);
@@ -1229,6 +1226,8 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ILLEGAL -1024.0f
 
+#define PERFSCORE_THROUGHPUT_ZERO 0.0f // Only used for pseudo-instructions that don't generate code
+
 #define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
 #define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
 #define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
@@ -1349,7 +1348,7 @@ protected:
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-    BasicBlock::weight_t getCurrentBlockWeight();
+    weight_t getCurrentBlockWeight();
 
     void dispIns(instrDesc* id);
 
@@ -1482,6 +1481,10 @@ protected:
 
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
+
+#ifdef DEBUG
+    inline static emitAttr emitGetMemOpSize(instrDesc* id);
+#endif // DEBUG
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -1762,12 +1765,12 @@ private:
     void          emitJumpDistBind(); // Bind all the local jumps in method
 
 #if FEATURE_LOOP_ALIGN
-    instrDescAlign* emitCurIGAlignList;          // list of align instructions in current IG
-    unsigned        emitLastInnerLoopStartIgNum; // Start IG of last inner loop
-    unsigned        emitLastInnerLoopEndIgNum;   // End IG of last inner loop
-    unsigned        emitLastAlignedIgNum;        // last IG that has align instruction
-    instrDescAlign* emitAlignList;               // list of local align instructions in method
-    instrDescAlign* emitAlignLast;               // last align instruction in method
+    instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
+    unsigned        emitLastLoopStart;    // Start IG of last inner loop
+    unsigned        emitLastLoopEnd;      // End IG of last inner loop
+    unsigned        emitLastAlignedIgNum; // last IG that has align instruction
+    instrDescAlign* emitAlignList;        // list of local align instructions in method
+    instrDescAlign* emitAlignLast;        // last align instruction in method
     unsigned getLoopSize(insGroup* igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
     void emitLoopAlignment();
@@ -1902,12 +1905,17 @@ private:
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
                        regMaskTP        gcrefRegs,
                        regMaskTP        byrefRegs,
-                       bool isFinallyTarget = false DEBUG_ARG(unsigned bbNum = 0));
+                       bool             isFinallyTarget = false DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
+
+#ifdef DEBUG
+    void emitPrintLabel(insGroup* ig);
+    const char* emitLabelString(insGroup* ig);
+#endif
 
 #ifdef TARGET_ARMARCH
 
@@ -2788,6 +2796,68 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         return (unsigned)cns;
     }
 }
+
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// emitGetMemOpSize: Get the memory operand size of instrDesc.
+//
+// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
+// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
+// and a 128-bit input (register or memory).
+// This method is mainly used for such instructions to return the appropriate memory operand
+// size, otherwise returns the regular operand size of the instruction.
+
+//  Arguments:
+//       id - Instruction descriptor
+//
+/* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
+{
+    emitAttr defaultSize = id->idOpSize();
+    emitAttr newSize     = defaultSize;
+    switch (id->idIns())
+    {
+        case INS_vextractf128:
+        case INS_vextracti128:
+        case INS_vinsertf128:
+        case INS_vinserti128:
+        {
+            return EA_16BYTE;
+        }
+
+        case INS_pextrb:
+        case INS_pinsrb:
+        {
+            return EA_1BYTE;
+        }
+
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+        case INS_pinsrw:
+        {
+            return EA_2BYTE;
+        }
+
+        case INS_extractps:
+        case INS_insertps:
+        case INS_pextrd:
+        case INS_pinsrd:
+        {
+            return EA_4BYTE;
+        }
+
+        case INS_pextrq:
+        case INS_pinsrq:
+        {
+            return EA_8BYTE;
+        }
+
+        default:
+        {
+            return id->idOpSize();
+        }
+    }
+}
+#endif // DEBUG
 
 #endif // TARGET_XARCH
 

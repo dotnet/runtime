@@ -737,7 +737,7 @@ namespace System.Net.Security
             {
                 if (token.Failed)
                 {
-                    NetEventSource.Error(this, $"Authentication failed. Status: {status.ToString()}, Exception message: {token.GetException()!.Message}");
+                    NetEventSource.Error(this, $"Authentication failed. Status: {status}, Exception message: {token.GetException()!.Message}");
                 }
             }
             return token;
@@ -818,7 +818,7 @@ namespace System.Net.Security
                     // This call may bump up the credential reference count further.
                     // Note that thumbPrint is retrieved from a safe cert object that was possible cloned from the user passed cert.
                     //
-                    if (!cachedCreds && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
+                    if (!cachedCreds && status.ErrorCode == SecurityStatusPalErrorCode.OK && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
                     {
                         SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
                     }
@@ -922,7 +922,7 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             sslPolicyErrors = SslPolicyErrors.None;
             chainStatus = X509ChainStatusFlags.NoError;
@@ -937,7 +937,7 @@ namespace System.Net.Security
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, out remoteCertificateStore);
 
                 if (_remoteCertificate != null && certificate != null &&
-                    certificate.RawData.AsSpan().SequenceEqual(_remoteCertificate.RawData))
+                    certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
                     // This is renegotiation or TLS 1.3 and the certificate did not change.
                     // There is no reason to process callback again as we already established trust.
@@ -963,6 +963,19 @@ namespace System.Net.Security
                     if (remoteCertificateStore != null)
                     {
                         chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
+                    }
+
+                    if (trust != null)
+                    {
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        if (trust._store != null)
+                        {
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                        }
+                        if (trust._trustList != null)
+                        {
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                        }
                     }
 
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(

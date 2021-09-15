@@ -18,6 +18,8 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
+#include "gcinfodecoder.h"
+
 #ifdef FEATURE_EH_FUNCLETS
 #define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 #endif
@@ -713,14 +715,12 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     // get our caller's PSP, or our caller's caller's SP.
     while (!ExecutionManager::IsManagedCode(uControlPc))
     {
-#ifdef FEATURE_WRITEBARRIER_COPY
         if (IsIPInWriteBarrierCodeCopy(uControlPc))
         {
             // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
             uControlPc = AdjustWriteBarrierIP(uControlPc);
             SetIP(pContext, uControlPc);
         }
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
         uControlPc = VirtualUnwindCallFrame(pContext);
@@ -3137,6 +3137,12 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
     m_exInfoWalk.WalkToPosition(GetRegdisplaySP(m_crawl.pRD), (m_flags & POPFRAMES));
 #endif // ELIMINATE_FEF
 
+#ifdef TARGET_X86
+    hdrInfo gcHdrInfo;
+    DecodeGCHdrInfo(m_crawl.codeInfo.GetGCInfoToken(), 0, &gcHdrInfo);
+    bool hasReversePInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+#endif // TARGET_X86
+
     ProcessIp(GetControlPC(m_crawl.pRD));
 
     // if we have unwound to a native stack frame, stop and set the frame state accordingly
@@ -3145,6 +3151,18 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
         m_frameState = SFITER_NATIVE_MARKER_FRAME;
         m_crawl.isNativeMarker = true;
     }
+#ifdef TARGET_X86
+    else if (hasReversePInvoke)
+    {
+        // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
+        // frame, that means that the method was called from managed code without any native frames in between. 
+        // On x86, the InlinedCallFrame of the pinvoke would get skipped as we've just unwound to the pinvoke IL stub and
+        // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
+        // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
+        _ASSERTE(InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame));
+        m_crawl.isFrameless = false;
+    }
+#endif    
 } // StackFrameIterator::PostProcessingForManagedFrames()
 
 //---------------------------------------------------------------------------------------

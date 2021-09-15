@@ -22,6 +22,7 @@ minorVersion="$4"
 # clear the existing CC and CXX from environment
 CC=
 CXX=
+LDFLAGS=
 
 if [[ "$compiler" == "gcc" ]]; then cxxCompiler="g++"; fi
 
@@ -45,7 +46,7 @@ if [[ -z "$CLR_CC" ]]; then
     # Set default versions
     if [[ -z "$majorVersion" ]]; then
         # note: gcc (all versions) and clang versions higher than 6 do not have minor version in file name, if it is zero.
-        if [[ "$compiler" == "clang" ]]; then versions=( 11 10 9 8 7 6.0 5.0 4.0 3.9 3.8 3.7 3.6 3.5 )
+        if [[ "$compiler" == "clang" ]]; then versions=( 12 11 10 9 8 7 6.0 5.0 4.0 3.9 3.8 3.7 3.6 3.5 )
         elif [[ "$compiler" == "gcc" ]]; then versions=( 11 10 9 8 7 6 5 4.9 ); fi
 
         for version in "${versions[@]}"; do
@@ -106,6 +107,15 @@ if [[ -z "$CC" ]]; then
     exit 1
 fi
 
+if [[ "$compiler" == "clang" ]]; then
+    if command -v "lld$desired_version" > /dev/null; then
+        # Only lld version >= 9 can be considered stable
+        if [[ "$majorVersion" -ge 9 ]]; then
+            LDFLAGS="-fuse-ld=lld"
+        fi
+    fi
+fi
+
 SCAN_BUILD_COMMAND="$(command -v "scan-build$desired_version")"
 
-export CC CXX SCAN_BUILD_COMMAND
+export CC CXX LDFLAGS SCAN_BUILD_COMMAND

@@ -637,12 +637,11 @@ typedef struct {
 	void     (*free_method) (MonoMethod *method);
 	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
-	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
 	void (*free_mem_manager)(MonoMemoryManager*);
 	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
-	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes);
+	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes, gint64 *jit_time);
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
@@ -664,11 +663,6 @@ typedef struct {
 	gboolean (*mono_above_abort_threshold) (void);
 	void (*mono_clear_abort_threshold) (void);
 	void (*mono_reraise_exception) (MonoException *ex);
-	void (*mono_summarize_managed_stack) (MonoThreadSummary *out);
-	void (*mono_summarize_unmanaged_stack) (MonoThreadSummary *out);
-	void (*mono_summarize_exception) (MonoException *exc, MonoThreadSummary *out);
-	void (*mono_register_native_library) (const char *module_path, const char *module_name);
-	void (*mono_allow_all_native_libraries) (void);
 } MonoRuntimeExceptionHandlingCallbacks;
 
 MONO_COLD void mono_set_pending_exception (MonoException *exc);
@@ -1068,6 +1062,7 @@ typedef struct {
 	MonoArray *cattrs;
 	MonoString *version;
 	MonoString *culture;
+	MonoArray *public_key_token;
 	MonoArray *loaded_modules;
 	guint32 access;
 } MonoReflectionAssemblyBuilder;
@@ -1493,6 +1488,9 @@ mono_array_new_checked (MonoClass *eclass, uintptr_t n, MonoError *error);
 MONO_COMPONENT_API MonoArray*
 mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
 
+MonoArray*
+mono_array_new_jagged_checked (MonoClass *klass, int n, uintptr_t *lengths, MonoError *error);
+
 ICALL_EXPORT
 MonoArray*
 ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n);
@@ -1596,7 +1594,7 @@ mono_class_try_get_vtable (MonoClass *klass);
 gboolean
 mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error);
 
 void
@@ -1945,7 +1943,7 @@ mono_string_hash_internal (MonoString *s);
 MONO_COMPONENT_API int
 mono_object_hash_internal (MonoObject* obj);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_value_copy_internal (void* dest, const void* src, MonoClass *klass);
 
@@ -2030,7 +2028,7 @@ mono_gchandle_new_internal (MonoObject *obj, mono_bool pinned);
 MONO_COMPONENT_API MonoGCHandle
 mono_gchandle_new_weakref_internal (MonoObject *obj, mono_bool track_resurrection);
 
-MONO_COMPONENT_API ICALL_EXTERN_C
+MONO_COMPONENT_API
 MonoObject*
 mono_gchandle_get_target_internal (MonoGCHandle gchandle);
 
@@ -2072,7 +2070,7 @@ mono_gc_wbarrier_generic_store_internal (void volatile* ptr, MonoObject* value);
 void
 mono_gc_wbarrier_generic_store_atomic_internal (void *ptr, MonoObject *value);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_gc_wbarrier_generic_nostore_internal (void* ptr);
 

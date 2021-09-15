@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Moq;
 using Xunit;
 
@@ -104,6 +105,25 @@ namespace System.Text.Tests
                     Assert.NotEqual(codePage, encodingInfo.CodePage);
                 }
             });
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RegisterProvider_EncodingsAreUsable()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    Encoding.RegisterProvider(new NullEncodingProvider());
+                    Assert.Same(Encoding.UTF8, Encoding.GetEncoding(65001));
+                }
+            }).Dispose();
+        }
+
+        private sealed class NullEncodingProvider : EncodingProvider
+        {
+            public override Encoding GetEncoding(int codepage) => null;
+            public override Encoding GetEncoding(string name) => null;
         }
 
         private sealed class ThreadStaticEncodingProvider : EncodingProvider

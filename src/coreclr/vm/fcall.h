@@ -954,7 +954,7 @@ extern RAW_KEYWORD(volatile) int FC_NO_TAILCALL;
     FC_COMMON_PROLOG(__me, FCallAssert)
 
 
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE) && !defined(__GNUC__)
+#if defined(_DEBUG) && !defined(__GNUC__)
 // Build the list of all fcalls signatures. It is used in binder.cpp to verify
 // compatibility of managed and unmanaged fcall signatures. The check is currently done
 // for x86 only.

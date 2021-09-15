@@ -301,7 +301,7 @@ namespace System.Text
             {
                 if (strBytes.Length > 0)
                     strBytes.Append(' ');
-                strBytes.AppendFormat(CultureInfo.InvariantCulture, "\\x{0:X2}", bytesUnknown[i]);
+                strBytes.Append($"\\x{bytesUnknown[i]:X2}");
             }
             // In case the string's really long
             if (i == 20)

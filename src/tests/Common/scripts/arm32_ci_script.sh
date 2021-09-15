@@ -246,13 +246,13 @@ function cross_build_coreclr_with_docker {
         # TODO: For arm, we are going to embed RootFS inside Docker image.
         case $__linuxCodeName in
         trusty)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-0cd4667-20172211042239"
+            __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-cross-0cd4667-20172211042239"
             __skipRootFS=1
             __dockerEnvironmentVariables+=" -e ROOTFS_DIR=/crossrootfs/arm"
             __runtimeOS="ubuntu.14.04"
         ;;
         xenial)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548"
+            __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548"
             __skipRootFS=1
             __dockerEnvironmentVariables+=" -e ROOTFS_DIR=/crossrootfs/arm"
             __runtimeOS="ubuntu.16.04"
@@ -372,12 +372,12 @@ function run_tests_using_docker {
     if [ "$__buildArch" == "arm" ]; then
         case $__linuxCodeName in
         trusty)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v3"
+            __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu1404_cross_prereqs_v3"
             __skipRootFS=1
             __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/arm"
         ;;
         xenial)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3"
+            __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu1604_cross_prereqs_v3"
             __skipRootFS=1
             __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/arm"
         ;;

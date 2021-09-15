@@ -143,6 +143,27 @@ namespace System
         public static System.ReadOnlySpan<T> Trim<T>(this System.ReadOnlySpan<T> span, T trimElement) where T : System.IEquatable<T> { throw null; }
         public static System.Span<T> Trim<T>(this System.Span<T> span, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
         public static System.Span<T> Trim<T>(this System.Span<T> span, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static bool TryWrite(this System.Span<char> destination, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination")] ref System.MemoryExtensions.TryWriteInterpolatedStringHandler handler, out int charsWritten) { throw null; }
+        public static bool TryWrite(this System.Span<char> destination, IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination", "provider")] ref System.MemoryExtensions.TryWriteInterpolatedStringHandler handler, out int charsWritten) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
+        public ref struct TryWriteInterpolatedStringHandler
+        {
+            private readonly object _dummy;
+            private readonly int _dummyPrimitive;
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<char> destination, out bool shouldAppend) { throw null; }
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<char> destination, IFormatProvider? provider, out bool shouldAppend) { throw null; }
+            public bool AppendLiteral(string value) { throw null; }
+            public bool AppendFormatted(System.ReadOnlySpan<char> value) { throw null; }
+            public bool AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { throw null; }
+            public bool AppendFormatted<T>(T value) { throw null; }
+            public bool AppendFormatted<T>(T value, string? format) { throw null; }
+            public bool AppendFormatted<T>(T value, int alignment) { throw null; }
+            public bool AppendFormatted<T>(T value, int alignment, string? format) { throw null; }
+            public bool AppendFormatted(object? value, int alignment = 0, string? format = null) { throw null; }
+            public bool AppendFormatted(string? value) { throw null; }
+            public bool AppendFormatted(string? value, int alignment = 0, string? format = null) { throw null; }
+        }
     }
     public readonly partial struct SequencePosition : System.IEquatable<System.SequencePosition>
     {

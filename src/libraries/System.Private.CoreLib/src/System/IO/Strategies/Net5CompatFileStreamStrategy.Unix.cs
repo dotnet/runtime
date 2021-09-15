@@ -79,6 +79,18 @@ namespace System.IO.Strategies
             }
         }
 
+        /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
+        /// <param name="position">The beginning of the range to lock.</param>
+        /// <param name="length">The range to be locked.</param>
+        internal override void Lock(long position, long length) =>
+            FileStreamHelpers.Lock(_fileHandle, CanWrite, position, length);
+
+        /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
+        /// <param name="position">The beginning of the range to unlock.</param>
+        /// <param name="length">The range to be unlocked.</param>
+        internal override void Unlock(long position, long length) =>
+            FileStreamHelpers.Unlock(_fileHandle, position, length);
+
         /// <summary>Releases the unmanaged resources used by the stream.</summary>
         /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing)
@@ -139,26 +151,6 @@ namespace System.IO.Strategies
             }
 
             return base.DisposeAsync();
-        }
-
-        /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
-        private void FlushOSBuffer()
-        {
-            if (Interop.Sys.FSync(_fileHandle) < 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                switch (errorInfo.Error)
-                {
-                    case Interop.Error.EROFS:
-                    case Interop.Error.EINVAL:
-                    case Interop.Error.ENOTSUP:
-                        // Ignore failures due to the FileStream being bound to a special file that
-                        // doesn't support synchronization.  In such cases there's nothing to flush.
-                        break;
-                    default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, _fileHandle.Path, isDirectory: false);
-                }
-            }
         }
 
         private void FlushWriteBufferForWriteByte()
@@ -586,26 +578,6 @@ namespace System.IO.Strategies
             }
 
             // Return the new position
-            return pos;
-        }
-
-        /// <summary>Sets the current position of this stream to the given value.</summary>
-        /// <param name="fileHandle">The file handle on which to seek.</param>
-        /// <param name="offset">The point relative to origin from which to begin seeking. </param>
-        /// <param name="origin">
-        /// Specifies the beginning, the end, or the current position as a reference
-        /// point for offset, using a value of type SeekOrigin.
-        /// </param>
-        /// <param name="closeInvalidHandle">not used in Unix implementation</param>
-        /// <returns>The new position in the stream.</returns>
-        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
-        {
-            Debug.Assert(!fileHandle.IsInvalid);
-            Debug.Assert(fileHandle.CanSeek);
-            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
-
-            long pos = FileStreamHelpers.CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin), fileHandle.Path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
-            _filePosition = pos;
             return pos;
         }
 

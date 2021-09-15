@@ -2,9 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <PackageDescription>Provides support for code-page based encodings, including Windows-1252, Shift-JIS, and GB2312.
-
-Commonly Used Types:
-System.Text.CodePagesEncodingProvider</PackageDescription>
   </PropertyGroup>
 </Project>
