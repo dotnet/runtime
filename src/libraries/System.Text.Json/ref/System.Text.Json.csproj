@@ -1,38 +1,41 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Text.Json.cs" />
   </ItemGroup>
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\ref\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="netstandard" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\ref\Microsoft.Bcl.AsyncInterfaces.csproj" />
-  </ItemGroup>
-  <!-- Since S.T.E.W continues to be built live within this repo (as both an in-box library and a standalone netstandard2.0 assembly),
-    we should use ProjectReference instead of Reference to make sure that its ref assembly gets built first before S.T.Json, regardless of the TFM. -->
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
 </Project>

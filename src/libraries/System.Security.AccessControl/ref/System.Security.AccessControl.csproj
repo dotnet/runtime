@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.AccessControl.cs" />
-    <Compile Include="System.Security.AccessControl.Evidence.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -87,6 +88,12 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<JsonElement>? s_jsonElementConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonObject"/> values.
+        /// </summary>
+        public static JsonConverter<JsonObject> JsonObjectConverter => s_jsonObjectConverter ??= new JsonObjectConverter();
+        private static JsonConverter<JsonObject>? s_jsonObjectConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="object"/> values.
         /// </summary>
         public static JsonConverter<object?> ObjectConverter => s_objectConverter ??= new ObjectConverter();
@@ -149,6 +156,14 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public static JsonConverter<Version> VersionConverter => s_versionConverter ??= new VersionConverter();
         private static JsonConverter<Version>? s_versionConverter;
+
+        /// <summary>
+        /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.
+        /// </summary>
+        /// <typeparam name="T">The generic definition for the type.</typeparam>
+        /// <returns></returns>
+        public static JsonConverter<T> GetUnsupportedTypeConverter<T>()
+            => new UnsupportedTypeConverter<T>();
 
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T"/> values.

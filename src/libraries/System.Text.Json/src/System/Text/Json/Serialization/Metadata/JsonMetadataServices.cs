@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -28,6 +27,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="ignoreCondition">Specifies a condition for the property to be ignored.</param>
         /// <param name="numberHandling">If the property or field is a number, specifies how it should processed when serializing and deserializing.</param>
         /// <param name="hasJsonInclude">Whether the property was annotated with <see cref="JsonIncludeAttribute"/>.</param>
+        /// <param name="isExtensionData">Whether the property was annotated with <see cref="JsonExtensionDataAttribute"/>.</param>
         /// <param name="propertyName">The CLR name of the property or field.</param>
         /// <param name="jsonPropertyName">The name to be used when processing the property or field, specified by <see cref="JsonPropertyNameAttribute"/>.</param>
         /// <returns>A <see cref="JsonPropertyInfo"/> instance intialized with the provided metadata.</returns>
@@ -43,6 +43,7 @@ namespace System.Text.Json.Serialization.Metadata
             Action<object, T?>? setter,
             JsonIgnoreCondition? ignoreCondition,
             bool hasJsonInclude,
+            bool isExtensionData,
             JsonNumberHandling? numberHandling,
             string propertyName,
             string? jsonPropertyName)
@@ -93,6 +94,7 @@ namespace System.Text.Json.Serialization.Metadata
                 setter,
                 ignoreCondition,
                 hasJsonInclude,
+                isExtensionData,
                 numberHandling,
                 propertyName,
                 jsonPropertyName);

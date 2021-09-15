@@ -509,7 +509,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             for (unsigned level = 0; level < chkLevel; level++)
             {
                 assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum, false));
-                assert(!lvaTable[lclNum].lvAddrExposed ||
+                assert(!lvaTable[lclNum].IsAddressExposed() ||
                        (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT) == 0);
             }
         }
@@ -4532,15 +4532,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_GC_KeepAlive:
             {
-                retNode = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, impPopStack().val);
-
-                // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
-                // very subtle and hard to observe. Thus we are conservatively marking it with both
-                // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
-                // necessary. The conservative side-effects are unlikely to have negative impact
-                // on code quality in this case.
-                retNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
-
+                retNode = impKeepAliveIntrinsic(impPopStack().val);
                 break;
             }
 
@@ -5275,6 +5267,66 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         return arrElem;
     }
+}
+
+//------------------------------------------------------------------------
+// impKeepAliveIntrinsic: Import the GC.KeepAlive intrinsic call
+//
+// Imports the intrinsic as a GT_KEEPALIVE node, and, as an optimization,
+// if the object to keep alive is a GT_BOX, removes its side effects and
+// uses the address of a local (copied from the box's source if needed)
+// as the operand for GT_KEEPALIVE. For the BOX optimization, if the class
+// of the box has no GC fields, a GT_NOP is returned.
+//
+// Arguments:
+//    objToKeepAlive - the intrinisic call's argument
+//
+// Return Value:
+//    The imported GT_KEEPALIVE or GT_NOP - see description.
+//
+GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
+{
+    assert(objToKeepAlive->TypeIs(TYP_REF));
+
+    if (opts.OptimizationEnabled() && objToKeepAlive->IsBoxedValue())
+    {
+        CORINFO_CLASS_HANDLE boxedClass = lvaGetDesc(objToKeepAlive->AsBox()->BoxOp()->AsLclVar())->lvClassHnd;
+        ClassLayout*         layout     = typGetObjLayout(boxedClass);
+
+        if (!layout->HasGCPtr())
+        {
+            gtTryRemoveBoxUpstreamEffects(objToKeepAlive, BR_REMOVE_AND_NARROW);
+            JITDUMP("\nBOX class has no GC fields, KEEPALIVE is a NOP");
+
+            return gtNewNothingNode();
+        }
+
+        GenTree* boxSrc = gtTryRemoveBoxUpstreamEffects(objToKeepAlive, BR_REMOVE_BUT_NOT_NARROW);
+        if (boxSrc != nullptr)
+        {
+            unsigned boxTempNum;
+            if (boxSrc->OperIs(GT_LCL_VAR))
+            {
+                boxTempNum = boxSrc->AsLclVarCommon()->GetLclNum();
+            }
+            else
+            {
+                boxTempNum            = lvaGrabTemp(true DEBUGARG("Temp for the box source"));
+                GenTree*   boxTempAsg = gtNewTempAssign(boxTempNum, boxSrc);
+                Statement* boxAsgStmt = objToKeepAlive->AsBox()->gtCopyStmtWhenInlinedBoxValue;
+                boxAsgStmt->SetRootNode(boxTempAsg);
+            }
+
+            JITDUMP("\nImporting KEEPALIVE(BOX) as KEEPALIVE(ADDR(LCL_VAR V%02u))", boxTempNum);
+
+            GenTree* boxTemp     = gtNewLclvNode(boxTempNum, boxSrc->TypeGet());
+            GenTree* boxTempAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, boxTemp);
+
+            return gtNewKeepAliveNode(boxTempAddr);
+        }
+    }
+
+    return gtNewKeepAliveNode(objToKeepAlive);
 }
 
 bool Compiler::verMergeEntryStates(BasicBlock* block, bool* changed)
@@ -9693,7 +9745,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     {
         assert(varTypeIsSIMD(simdReturnType));
         JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
-                varTypeName(returnType));
+                varTypeName(simdReturnType));
         call->ChangeType(simdReturnType);
     }
 
@@ -11958,7 +12010,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* If the local is aliased or pinned, we need to spill calls and
                    indirections from the stack. */
 
-                if ((lvaTable[lclNum].lvAddrExposed || lvaTable[lclNum].lvHasLdAddrOp || lvaTable[lclNum].lvPinned) &&
+                if ((lvaTable[lclNum].IsAddressExposed() || lvaTable[lclNum].lvHasLdAddrOp ||
+                     lvaTable[lclNum].lvPinned) &&
                     (verCurrentState.esStackDepth > 0))
                 {
                     impSpillSideEffects(false,
@@ -12124,7 +12177,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* The ARGLIST cookie is a hidden 'last' parameter, we have already
                    adjusted the arg count cos this is like fetching the last param */
                 assertImp(0 < numArgs);
-                assert(lvaTable[lvaVarargsHandleArg].lvAddrExposed);
+                assert(lvaTable[lvaVarargsHandleArg].IsAddressExposed());
                 lclNum = lvaVarargsHandleArg;
                 op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
                 op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
@@ -19174,7 +19227,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     // for this method, so we won't prematurely conclude this method should never
     // be inlined.
     //
-    BasicBlock::weight_t weight = 0;
+    weight_t weight = 0;
 
     if (pInlineInfo != nullptr)
     {
@@ -19182,8 +19235,8 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
     else
     {
-        const float prejitHotCallerWeight = 1000000.0f;
-        weight                            = prejitHotCallerWeight;
+        const weight_t prejitHotCallerWeight = 1000000.0;
+        weight                               = prejitHotCallerWeight;
     }
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
@@ -19196,10 +19249,10 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     //
     if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
     {
-        const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
-        const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
-        profileFreq                               = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
-        hasProfile                                = true;
+        const weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        const weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        profileFreq                   = fgProfileWeightsEqual(entryWeight, 0.0) ? 0.0 : callSiteWeight / entryWeight;
+        hasProfile                    = true;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
@@ -20284,7 +20337,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                 }
             }
 
-            assert(lvaTable[tmpNum].lvAddrExposed == 0);
+            assert(!lvaTable[tmpNum].IsAddressExposed());
             if (argInfo.argHasLdargaOp)
             {
                 lvaTable[tmpNum].lvHasLdAddrOp = 1;
@@ -22125,7 +22178,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         {
             unsigned valueLcl = valueIndex->AsLclVar()->GetLclNum();
             unsigned arrayLcl = array->AsLclVar()->GetLclNum();
-            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->lvAddrExposed)
+            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->IsAddressExposed())
             {
                 JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
                 return true;
@@ -22184,9 +22237,11 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         return true;
     }
 
-    // Check for T[] with T exact.
-    if (!impIsClassExact(arrayElementHandle))
+    const bool arrayTypeIsSealed = impIsClassExact(arrayElementHandle);
+
+    if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
     {
+        // Bail out if we don't know array's exact type
         return false;
     }
 
@@ -22194,7 +22249,16 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     bool                 valueIsNonNull = false;
     CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(value, &valueIsExact, &valueIsNonNull);
 
-    if (valueHandle == arrayElementHandle)
+    // Array's type is sealed and equals to value's type
+    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
+    {
+        JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
+        return true;
+    }
+
+    // Array's type is not sealed but we know its exact type
+    if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) &&
+        (info.compCompHnd->compareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState::Must))
     {
         JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
         return true;

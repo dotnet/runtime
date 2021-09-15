@@ -9,9 +9,9 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         public static readonly string DotNetReferenceAssembliesPathEnv = "DOTNET_REFERENCE_ASSEMBLIES_PATH";
 
-        internal static string Resolve(IEnvironment environment, IFileSystem fileSystem)
+        internal static string? Resolve(IEnvironment environment, IFileSystem fileSystem)
         {
-            string path = environment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
+            string? path = environment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
             if (!string.IsNullOrEmpty(path))
             {
                 return path;
@@ -20,12 +20,12 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             return GetDefaultDotNetReferenceAssembliesPath(fileSystem);
         }
 
-        public static string Resolve()
+        public static string? Resolve()
         {
             return Resolve(EnvironmentWrapper.Default, FileSystemWrapper.Default);
         }
 
-        private static string GetDefaultDotNetReferenceAssembliesPath(IFileSystem fileSystem)
+        private static string? GetDefaultDotNetReferenceAssembliesPath(IFileSystem fileSystem)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
