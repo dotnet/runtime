@@ -151,11 +151,7 @@ namespace Internal.Cryptography
             }
             else
             {
-#if NET5_0_OR_GREATER
                 byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
-#else
-                byte[] buffer = new byte[inputCount];
-#endif
                 int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
                 Debug.Assert(written == buffer.Length);
                 return buffer;

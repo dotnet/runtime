@@ -803,6 +803,12 @@ void local_SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level)
     (void)level;
 }
 
+void local_SSL_set_security_level(SSL* ssl, int32_t level)
+{
+    (void)ssl;
+    (void)level;
+}
+
 int local_BIO_up_ref(BIO *bio)
 {
     if (!bio)

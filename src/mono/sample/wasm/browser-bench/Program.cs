@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace Sample
 {
@@ -18,17 +20,21 @@ namespace Sample
         BenchTask[] tasks =
         {
             new ExceptionsTask(),
-            new JsonTask ()
+            new JsonTask (),
+            new WebSocketTask()
         };
         static Test instance = new Test ();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static string RunBenchmark()
+        public static Task<string> RunBenchmark()
         {
             return instance.RunTasks ();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        // the constructors of the task we care about are already used when createing tasks field
+        [UnconditionalSuppressMessage("Trim analysis error", "IL2057")]
+        [UnconditionalSuppressMessage("Trim analysis error", "IL2072")]
         public static void SetTasks(string taskNames)
         {
             Regex pattern;
@@ -111,7 +117,7 @@ namespace Sample
             return false;
         }
 
-        public string RunTasks()
+        public async Task<string> RunTasks()
         {
             if (resultsReturned)
                 return "";
@@ -129,7 +135,7 @@ namespace Sample
 
             runIdx++;
 
-            return Task.RunBatch(results, measurementIdx);
+            return await Task.RunBatch(results, measurementIdx);
         }
 
         string ResultsSummary ()
@@ -164,7 +170,7 @@ namespace Sample
                     time *= 1000;
                     unit = "us";
                 }
-                sb.Append($"| {key,32} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
+                sb.Append($"| {key.Replace('_',' '),38} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
             }
             sb.Append("</tt>");
 

@@ -1,13 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <PropertyGroup>
-    <!-- Set to true to build this project -->
-    <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
-    <PreviousNetCoreApp>net5.0</PreviousNetCoreApp>
-    <PreviousNetCoreAppPackageId>microsoft.netcore.app.ref</PreviousNetCoreAppPackageId>
-    <PreviousNetCoreAppPackageVersion>5.0.0</PreviousNetCoreAppPackageVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- Run API compat against the following 1:1 assemblies but don't include them in the list that is used to generate facades -->
     <NetFxReference Include="System.DirectoryServices" />
@@ -16,7 +8,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageDownload Include="$(PreviousNetCoreAppPackageId)" Version="[$(PreviousNetCoreAppPackageVersion)]" />
+    <PackageDownload Include="microsoft.netcore.app.ref" Version="[$(NetCoreAppLatestStablePackageBaselineVersion)]" />
     <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
     <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatVersion)" IsImplicitlyDefined="true" />
@@ -92,14 +84,13 @@
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(NetCoreAppCurrent)" />
  
     <PropertyGroup>
-      <PreviousNetCoreAppRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', '$(PreviousNetCoreAppPackageId)', '$(PreviousNetCoreAppPackageVersion)', 'ref', '$(PreviousNetCoreApp)'))</PreviousNetCoreAppRefPath>
+      <PreviousNetCoreAppRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(NetCoreAppLatestStablePackageBaselineVersion)', 'ref', '$(NetCoreAppLatestStable)'))</PreviousNetCoreAppRefPath>
       <_previousNetCoreAppBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.PreviousNetCoreApp.txt</_previousNetCoreAppBaselineFile>
       <_previousNetCoreAppBaselineParam>--baseline &quot;$(_previousNetCoreAppBaselineFile)&quot;</_previousNetCoreAppBaselineParam>
       <_previousNetCoreAppBaselineParam Condition="'$(UpdatePreviousNetCoreAppBaseline)' == 'true'">&gt; &quot;$(_previousNetCoreAppBaselineFile)&quot;</_previousNetCoreAppBaselineParam>
     </PropertyGroup>
  
-    <Error Condition="'$(NetCoreAppCurrent)' != 'net6.0'" Text="Update value of PreviousNetCoreApp" />
-    <Error Condition="!Exists($(PreviousNetCoreAppRefPath))" Text="Missing reference assemblies for '$(PreviousNetCoreApp)'" />
+    <Error Condition="!Exists($(PreviousNetCoreAppRefPath))" Text="Missing reference assemblies for '$(NetCoreAppLatestStable)'" />
     <Exec Command="$(_ApiCompatCommand) &quot;$(PreviousNetCoreAppRefPath.TrimEnd('\/'))&quot;  @&quot;$(ApiCompatResponseFile)&quot; $(_previousNetCoreAppBaselineParam)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
@@ -107,7 +98,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(PreviousNetCoreApp) to $(NetCoreAppCurrent). If this breaking change is intentional, the ApiCompat baseline can be updated by running 'dotnet build $(MSBuildThisFileFullPath) /p:UpdatePreviousNetCoreAppBaseline=true'" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NetCoreAppLatestStable) to $(NetCoreAppCurrent). If this breaking change is intentional, the ApiCompat baseline can be updated by running 'dotnet build $(MSBuildThisFileFullPath) /p:UpdatePreviousNetCoreAppBaseline=true'" />
   </Target>
 
   <Target Name="CleanAdditionalFiles" AfterTargets="Clean">

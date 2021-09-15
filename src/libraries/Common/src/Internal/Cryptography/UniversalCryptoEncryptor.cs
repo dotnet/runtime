@@ -45,12 +45,7 @@ namespace Internal.Cryptography
 
         protected override byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            byte[] buffer;
-#if NET5_0_OR_GREATER
-            buffer = GC.AllocateUninitializedArray<byte>(GetCiphertextLength(inputCount));
-#else
-            buffer = new byte[GetCiphertextLength(inputCount)];
-#endif
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(GetCiphertextLength(inputCount));
             int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
             Debug.Assert(written == buffer.Length);
             return buffer;
