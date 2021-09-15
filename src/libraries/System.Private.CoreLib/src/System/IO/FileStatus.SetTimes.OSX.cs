@@ -14,13 +14,20 @@ namespace System.IO
             // setattrlist()", so we fall back to the method used on other unix
             // platforms, otherwise we throw an error if we get one, or invalidate
             // the cache if successful because otherwise it has invalid information.
+            // Note: the unix fallback implementation doesn't have a test as we are
+            // yet to determine which volume types it can fail on, so modify with
+            // great care.
             Interop.Error error = SetCreationTimeCore(path, time);
 
-            if (error == Interop.Error.ENOTSUP)
+            if (error == Interop.Error.SUCCESS)
+            {
+                InvalidateCaches();
+            }
+            else if (error == Interop.Error.ENOTSUP)
             {
                 SetAccessOrWriteTimeCore(path, time, isAccessTime: false, checkCreationTime: false);
             }
-            else if (error != Interop.Error.SUCCESS)
+            else
             {
                 Interop.CheckIo(error, path, InitiallyDirectory);
             }
@@ -41,11 +48,6 @@ namespace System.IO
             attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
 
             Interop.Error error =  (Interop.Error)Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), default(CULong));
-
-            if (error == Interop.Error.SUCCESS)
-            {
-                InvalidateCaches();
-            }
 
             return error;
         }

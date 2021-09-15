@@ -317,10 +317,14 @@ namespace System.IO
 #endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
 
-            // On OSX platforms, when the modification time is less than the creation time, the creation time
-            // is broken; so these api calls revert the creation time when it shouldn't be set (since we're
-            // setting modification time and access time here). checkCreationTime is only true on OSX
-            // platforms. allowFallbackToLastWriteTime is ignored on non OSX platforms.
+            // On OSX-like platforms, when the modification time is less than the creation time (including
+            // when the modification time is already less than but access time is being set), the creation
+            // time is set to the modification time due to the api we're currently using; this is not
+            // desirable behaviour since it is inconsistent with windows behaviour and is not logical to
+            // the programmer (ie. we'd have to document it), so these api calls revert the creation time
+            // when it shouldn't be set (since we're setting modification time and access time here).
+            // checkCreationTime is only true on OSX-like platforms.
+            // allowFallbackToLastWriteTime is ignored on non OSX-like platforms.
             bool updateCreationTime = checkCreationTime && (_fileCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0 &&
                                         (buf[1].TvSec < _fileCache.BirthTime || (buf[1].TvSec == _fileCache.BirthTime && buf[1].TvNsec < _fileCache.BirthTimeNsec));
 

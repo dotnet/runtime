@@ -101,7 +101,7 @@ namespace System.IO.Tests
             // [0] = (access, write, False),    [1] = (access, write, True),
             // [2] = (write, access, False),    [3] = (write, access, True)
 
-            var timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
+            IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
             var booleanArray = new bool[] { false, true };
             Assert.All(timeFunctionsUtc.SelectMany((x) => timeFunctionsUtc.SelectMany((y) => booleanArray.Select((reverse) => (x, y, reverse)))).Where((fs) => fs.x.Getter != fs.y.Getter), (functions) =>
             {
