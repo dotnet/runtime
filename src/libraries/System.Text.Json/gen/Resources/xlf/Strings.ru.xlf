@@ -32,6 +32,31 @@
         <target state="translated">Дублирующееся имя типа.</target>
         <note />
       </trans-unit>
+      <trans-unit id="Exception_InaccessibleJsonIncludePropertiesNotSupported">
+        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
+        <target state="new">The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Exception_IncompatibleConverterType">
+        <source>The converter '{0}' is not compatible with the type '{1}'.</source>
+        <target state="new">The converter '{0}' is not compatible with the type '{1}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Exception_InitOnlyPropertyDeserializationNotSupported">
+        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
+        <target state="new">Deserialization of init-only properties is currently not supported in source generation mode.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Exception_InvalidJsonConverterFactoryOutput">
+        <source>The converter '{0}' cannot return null or a JsonConverterFactory instance.</source>
+        <target state="new">The converter '{0}' cannot return null or a JsonConverterFactory instance.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Exception_InvalidSerializablePropertyConfiguration">
+        <source>Invalid serializable-property configuration specified for type '{0}'. For more information, see 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="new">Invalid serializable-property configuration specified for type '{0}'. For more information, see 'JsonSourceGenerationMode.Serialization'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
         <target state="new">The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</target>
