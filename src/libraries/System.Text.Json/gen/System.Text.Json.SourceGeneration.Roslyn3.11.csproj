@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AnalyzerRoslynVersion>3.11</AnalyzerRoslynVersion>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11)</RoslynApiVersion>
+  </PropertyGroup>
+
+  <Import Project="System.Text.Json.SourceGeneration.targets" />
+
+  <ItemGroup>
+    <Compile Include="JsonSourceGenerator.Roslyn3.11.cs" />
+  </ItemGroup>
+
+</Project>

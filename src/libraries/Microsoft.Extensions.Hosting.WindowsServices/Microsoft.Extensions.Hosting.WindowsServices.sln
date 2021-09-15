@@ -67,8 +67,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hostin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting", "..\Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj", "{36FAE390-EAAE-4193-98E7-34F10D3FA8E1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.csproj", "{9CECED3B-385A-4C54-9E07-74E8341EB52D}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{723957C4-C433-4B6D-BF0C-28AE36AEDDBD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{E5F61C36-FB9B-4DA7-96C0-056FBEADBB53}"
@@ -130,8 +128,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ServiceProcess.ServiceController", "..\System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj", "{3636C4FF-4BBD-4BB8-B60B-E62F2C429EA4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "..\System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj", "{2D8B86CE-7A3A-45F0-9127-AE6CDCEC6EA5}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.csproj", "{CC36DF9A-6602-47D9-B44B-C2D2C33A80D0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json", "..\System.Text.Json\src\System.Text.Json.csproj", "{C50BBD27-2445-4DF4-9A1D-C7919D016BBC}"
 EndProject
@@ -419,10 +415,6 @@ Global
 		{B7ACDBBE-C64B-482B-B80D-3DC002AD450B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7ACDBBE-C64B-482B-B80D-3DC002AD450B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7ACDBBE-C64B-482B-B80D-3DC002AD450B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CC36DF9A-6602-47D9-B44B-C2D2C33A80D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CC36DF9A-6602-47D9-B44B-C2D2C33A80D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CC36DF9A-6602-47D9-B44B-C2D2C33A80D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CC36DF9A-6602-47D9-B44B-C2D2C33A80D0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2D8B86CE-7A3A-45F0-9127-AE6CDCEC6EA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2D8B86CE-7A3A-45F0-9127-AE6CDCEC6EA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D8B86CE-7A3A-45F0-9127-AE6CDCEC6EA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -509,7 +501,6 @@ Global
 		{C50BBD27-2445-4DF4-9A1D-C7919D016BBC} = {76933DF1-12AA-4B5B-8863-EF38F10B1EC9}
 		{83D8F9FB-0A8D-4E48-A7CF-D169432A41AD} = {76933DF1-12AA-4B5B-8863-EF38F10B1EC9}
 		{BAE78100-3020-4AAE-BDBF-ACF9D1D1BA2F} = {76933DF1-12AA-4B5B-8863-EF38F10B1EC9}
-		{CC36DF9A-6602-47D9-B44B-C2D2C33A80D0} = {76933DF1-12AA-4B5B-8863-EF38F10B1EC9}
 		{2D8B86CE-7A3A-45F0-9127-AE6CDCEC6EA5} = {76933DF1-12AA-4B5B-8863-EF38F10B1EC9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
