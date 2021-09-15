@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 namespace HttpStress.ReportAnalyzer
 {
-    internal class FailureType
+    public class FailureType
     {
         public string Fingerprint { get; }
 
@@ -22,27 +22,30 @@ namespace HttpStress.ReportAnalyzer
         }
     }
 
-    internal class ReportAggregator
+    public class ReportAggregator
     {
-        private Dictionary<string, FailureType> _failures = new();
+        private Dictionary<string, FailureType> _failureTypes = new();
         public ReportAggregator()
         {
 
         }
+
+        public IEnumerable<FailureType> FailureTypes => _failureTypes.Values;
 
         public void AppendReportXml(XDocument doc)
         {
             foreach (XElement failureElement in doc.Descendants("Failure"))
             {
                 string fingerprint = failureElement.Attribute("FailureTypeFingerprint")!.Value;
-                if (!_failures.TryGetValue(fingerprint, out FailureType? failureType))
+                if (!_failureTypes.TryGetValue(fingerprint, out FailureType? failureType))
                 {
                     XCData failureTextNode = (XCData)failureElement.Element("FailureText")!.FirstNode!;
                     string errorText = failureTextNode.Value;
                     failureType = new FailureType(fingerprint, errorText);
+                    _failureTypes[fingerprint] = failureType;
                 }
 
-                failureType.Count++;
+                failureType.Count+= (int)failureElement.Attribute("FailureCount")!;
             }
         }
     }
