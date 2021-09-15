@@ -1689,7 +1689,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
 
     if (scheduleTieringBackgroundWork)
     {
-        tieredCompilationManager->ScheduleBackgroundWork(); // requires GC_TRIGGERS
+        tieredCompilationManager->TryScheduleBackgroundWorkerWithoutGCTrigger_Locked();
     }
 }
 
@@ -5928,7 +5928,8 @@ void Interpreter::NewObj()
             CorInfoHelpFunc newHelper;
             {
                 GCX_PREEMP();
-                newHelper = m_interpCeeInfo.getNewHelper(&methTok, m_methInfo->m_method);
+                bool sideEffect;
+                newHelper = m_interpCeeInfo.getNewHelper(&methTok, m_methInfo->m_method, &sideEffect);
             }
 
             MethodTable * pNewObjMT = GetMethodTableFromClsHnd(methTok.hClass);
@@ -7224,7 +7225,7 @@ void Interpreter::LdFld(FieldDesc* fldIn)
     if (valCit == CORINFO_TYPE_VALUECLASS)
     {
         GCX_PREEMP();
-        valCit = m_interpCeeInfo.getFieldType(CORINFO_FIELD_HANDLE(fld), &valClsHnd);
+        valCit = m_interpCeeInfo.getFieldType(CORINFO_FIELD_HANDLE(fld), &valClsHnd, nullptr);
         structValIT = InterpreterType(&m_interpCeeInfo, valClsHnd);
     }
 
@@ -9009,7 +9010,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         GCX_PREEMP();
 
         CORINFO_SIG_INFO sigInfoFull;
-        m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull);
+        m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull, nullptr);
         sigInfo.retTypeClass = sigInfoFull.retTypeClass;
         sigInfo.numArgs = sigInfoFull.numArgs;
         sigInfo.callConv = sigInfoFull.callConv;
@@ -9024,7 +9025,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     CorInfoIntrinsics intrinsicId;
     {
         GCX_PREEMP();
-        intrinsicId = m_interpCeeInfo.getIntrinsicID(CORINFO_METHOD_HANDLE(methToCall));
+        intrinsicId = m_interpCeeInfo.getIntrinsicID(CORINFO_METHOD_HANDLE(methToCall), nullptr);
     }
 
 #if INTERP_TRACING
@@ -9649,7 +9650,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             BOOL fNeedUnboxingStub = virtualCall && TypeHandle(exactClass).IsValueType() && methToCall->IsVirtual();
             methToCall = MethodDesc::FindOrCreateAssociatedMethodDesc(methToCall,
                 TypeHandle(exactClass).GetMethodTable(), fNeedUnboxingStub, methodInst, FALSE, TRUE);
-            m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull);
+            m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull, nullptr);
             sigInfo.retTypeClass = sigInfoFull.retTypeClass;
             sigInfo.numArgs = sigInfoFull.numArgs;
             sigInfo.callConv = sigInfoFull.callConv;
@@ -11562,7 +11563,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     length += strlen(methodName) + 1;
 
     CORINFO_SIG_INFO sig;
-    info->getMethodSig(hnd, &sig);
+    info->getMethodSig(hnd, &sig, nullptr);
     CORINFO_ARG_LIST_HANDLE argLst = sig.args;
 
     CORINFO_CLASS_HANDLE dummyCls;
