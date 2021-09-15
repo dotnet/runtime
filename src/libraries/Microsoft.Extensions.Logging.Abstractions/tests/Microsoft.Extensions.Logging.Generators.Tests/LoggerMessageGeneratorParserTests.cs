@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -677,6 +679,59 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Empty(diagnostics);    // should fail quietly on broken code
+        }
+
+        [Fact]
+        public void TestMultipleDefinitions()
+        {
+            // Adding a dependency to an assembly that has internal definitions of public types
+            // should not result in a collision and break generation.
+            // Verify usage of the extension GetBestTypeByMetadataName(this Compilation) instead of Compilation.GetTypeByMetadataName().
+            var referencedSource = @"
+                namespace System
+                {
+                    internal class Exception { }
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    internal class LoggerMessageAttribute { }
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    internal interface ILogger { }
+                    internal enum LogLevel { }
+                }";
+
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateCompilation(referencedSource);
+
+            // Obtain the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            // Generate the code
+            string source = @"
+                namespace Test
+                {
+                    using Microsoft.Extensions.Logging;
+
+                    partial class C
+                    {
+                        [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""M1"")]
+                        static partial void M1(ILogger logger);
+                    }
+                }";
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+            LoggerMessageGenerator generator = new LoggerMessageGenerator();
+
+            (ImmutableArray<Diagnostic> diagnostics, ImmutableArray<GeneratedSourceResult> generatedSources) =
+                RoslynTestUtils.RunGenerator(compilation, generator);
+
+            // Make sure compilation was successful.
+            Assert.Empty(diagnostics.Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+            Assert.Equal(1, generatedSources.Length);
+            Assert.Equal(21, generatedSources[0].SourceText.Lines.Count);
         }
 
         private static async Task<IReadOnlyList<Diagnostic>> RunGenerator(

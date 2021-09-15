@@ -487,16 +487,7 @@ namespace System.Text.Json.Serialization
             Compilation referencedCompilation = CompilationHelper.CreateCompilation(referencedSource);
 
             // Obtain the image of the referenced assembly.
-            byte[] referencedImage;
-            using (MemoryStream ms = new MemoryStream())
-            {
-                var emitResult = referencedCompilation.Emit(ms);
-                if (!emitResult.Success)
-                {
-                    throw new InvalidOperationException();
-                }
-                referencedImage = ms.ToArray();
-            }
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
 
             // Generate the code
             string source = @"

@@ -174,6 +174,31 @@ namespace SourceGenerators.Tests
         }
 
         /// <summary>
+        /// Runs a Roslyn generator given a Compilation.
+        /// </summary>
+        public static (ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>) RunGenerator(
+            Compilation compilation,
+#if ROSLYN4_0_OR_GREATER
+            IIncrementalGenerator generator)
+#else
+            ISourceGenerator generator)
+#endif
+        {
+#if ROSLYN4_0_OR_GREATER
+            // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
+            CSharpParseOptions options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
+            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator.AsSourceGenerator() }, parseOptions: options);
+#else
+            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator });
+#endif
+
+            GeneratorDriver gd = cgd.RunGenerators(compilation);
+
+            GeneratorDriverRunResult r = gd.GetRunResult();
+            return (r.Results[0].Diagnostics, r.Results[0].GeneratedSources);
+        }
+
+        /// <summary>
         /// Runs a Roslyn analyzer over a set of source files.
         /// </summary>
         public static async Task<IList<Diagnostic>> RunAnalyzer(
