@@ -121,6 +121,8 @@ namespace System
             IriCanonical = 0x78000000000,
             UnixPath = 0x100000000000,
 
+            DisablePathAndQueryCanonicalization = 0x200000000000,
+
             /// <summary>
             /// Used to ensure that InitializeAndValidate is only called once per Uri instance and only from an override of InitializeAndValidate
             /// </summary>
@@ -267,6 +269,8 @@ namespace System
             return syntax is null || syntax.InFact(UriSyntaxFlags.AllowIriParsing);
         }
 
+        internal bool DisablePathAndQueryCanonicalization => (_flags & Flags.DisablePathAndQueryCanonicalization) != 0;
+
         internal bool UserDrivenParsing
         {
             get
@@ -407,6 +411,15 @@ namespace System
                 throw new ArgumentNullException(nameof(uriString));
 
             CreateThis(uriString, false, uriKind);
+            DebugSetLeftCtor();
+        }
+
+        public Uri(string uriString, in UriCreationOptions creationOptions)
+        {
+            if (uriString is null)
+                throw new ArgumentNullException(nameof(uriString));
+
+            CreateThis(uriString, false, UriKind.Absolute, in creationOptions);
             DebugSetLeftCtor();
         }
 
@@ -1639,6 +1652,9 @@ namespace System
             // canonicalize the comparand, making comparison possible
             if (obj is null)
             {
+                if (DisablePathAndQueryCanonicalization)
+                    return false;
+
                 if (!(comparand is string s))
                     return false;
 
@@ -1648,6 +1664,9 @@ namespace System
                 if (!TryCreate(s, UriKind.RelativeOrAbsolute, out obj))
                     return false;
             }
+
+            if (DisablePathAndQueryCanonicalization != obj.DisablePathAndQueryCanonicalization)
+                return false;
 
             if (ReferenceEquals(OriginalString, obj.OriginalString))
             {
@@ -2553,7 +2572,7 @@ namespace System
         //
         internal string GetParts(UriComponents uriParts, UriFormat formatAs)
         {
-            return GetComponents(uriParts, formatAs);
+            return InternalGetComponents(uriParts, formatAs);
         }
 
         private string GetEscapedParts(UriComponents uriParts)
@@ -3158,9 +3177,6 @@ namespace System
             idx = _info.Offset.Path;
             origIdx = _info.Offset.Path;
 
-            //Some uris do not have a query
-            //    When '?' is passed as delimiter, then it's special case
-            //    so both '?' and '#' will work as delimiters
             if (buildIriStringFromPath)
             {
                 DebugAssertInCtor();
@@ -3180,6 +3196,45 @@ namespace System
 
                 _info.Offset.Path = (ushort)_string.Length;
                 idx = _info.Offset.Path;
+            }
+
+            // If the user explicitly disabled canonicalization, only figure out the offsets
+            if (DisablePathAndQueryCanonicalization)
+            {
+                if (buildIriStringFromPath)
+                {
+                    DebugAssertInCtor();
+                    _string += _originalUnicodeString.Substring(origIdx);
+                }
+
+                string str = _string;
+
+                if (IsImplicitFile || (syntaxFlags & UriSyntaxFlags.MayHaveQuery) == 0)
+                {
+                    idx = str.Length;
+                }
+                else
+                {
+                    idx = str.IndexOf('?');
+                    if (idx == -1)
+                    {
+                        idx = str.Length;
+                    }
+                }
+
+                _info.Offset.Query = (ushort)idx;
+                _info.Offset.Fragment = (ushort)str.Length; // There is no fragment in UseRawTarget mode
+                _info.Offset.End = (ushort)str.Length;
+
+                goto Done;
+            }
+
+            //Some uris do not have a query
+            //    When '?' is passed as delimiter, then it's special case
+            //    so both '?' and '#' will work as delimiters
+            if (buildIriStringFromPath)
+            {
+                DebugAssertInCtor();
 
                 int offset = origIdx;
                 if (IsImplicitFile || ((syntaxFlags & (UriSyntaxFlags.MayHaveQuery | UriSyntaxFlags.MayHaveFragment)) == 0))
