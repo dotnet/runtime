@@ -534,22 +534,18 @@ namespace System.Diagnostics.Tests
             // .NET specifically supports this case by waiting till all pending forks exec-ed, and then
             // retrying to start the process.
 
-            var threads = new Thread[20];
-            for (int i = 0; i < threads.Length; i++)
+            var tasks = new Task[20];
+            for (int i = 0; i < tasks.Length; i++)
             {
                 string directory = GetTestFileName(i);
                 Directory.CreateDirectory(directory);
 
-                threads[i] = new Thread(WriteAndExecute) { IsBackground = true };
-                threads[i].Start(directory);
+                tasks[i] = Task.Factory.StartNew(WriteAndExecute, directory, TaskCreationOptions.LongRunning);
             }
 
-            for (int i = 0; i < threads.Length; i++)
-            {
-                threads[i].Join();
-            }
+            Task.WaitAll(tasks);
 
-            void WriteAndExecute(object o)
+            static void WriteAndExecute(object o)
             {
                 var directory = o as string;
                 for (int i = 0; i < 100; i++)
@@ -1033,7 +1029,7 @@ namespace System.Diagnostics.Tests
 
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 
-        private string WriteScriptFile(string directory, string name, int returnValue)
+        private static string WriteScriptFile(string directory, string name, int returnValue)
         {
             string filename = Path.Combine(directory, name);
             File.WriteAllText(filename, $"#!/bin/sh\nexit {returnValue}\n");

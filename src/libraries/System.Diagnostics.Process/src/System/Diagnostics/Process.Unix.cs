@@ -547,6 +547,7 @@ namespace System.Diagnostics
                     else
                     {
                         Interop.ErrorInfo errorInfo = new Interop.ErrorInfo(errno);
+
                         if (!throwOnNoExec && errorInfo.Error == Interop.Error.ENOEXEC)
                         {
                             return false;
