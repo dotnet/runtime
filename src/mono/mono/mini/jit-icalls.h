@@ -203,7 +203,7 @@ ICALL_EXPORT
 void
 ves_icall_mono_delegate_ctor_interp (MonoObject *this_obj, MonoObject *target, gpointer addr);
 
-ICALL_EXPORT MonoObject* mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args);
+ICALL_EXPORT MonoObject* mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args);
 
 ICALL_EXPORT void mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass);
 
