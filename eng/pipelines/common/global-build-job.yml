@@ -119,6 +119,13 @@ jobs:
         inputs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
+    
+    - ${{ if eq(parameters.buildingOnSourceBuildImage, true) }}:
+      - template: /eng/common/templates/steps/source-build.yml
+        parameters:
+          platform:
+            buildScript: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt)
+            nonPortable: true
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
@@ -140,10 +147,11 @@ jobs:
         displayName: Install native dependencies
 
     # Build
-    - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
-      displayName: Build product
-      ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
-        continueOnError: ${{ parameters.shouldContinueOnError }}
+    - ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:
+      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
+        displayName: Build product
+        ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
+          continueOnError: ${{ parameters.shouldContinueOnError }}
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |
