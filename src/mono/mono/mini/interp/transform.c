@@ -9644,6 +9644,12 @@ retry:
 	mono_jit_info_table_add (jinfo);
 #endif
 
+	if (td->n_data_items >= 32000) {
+		char *meth_name = mono_method_get_full_name (method);
+		g_warning ("method '%s' used 0x%x data items\n", meth_name, td->n_data_items);
+		g_free (meth_name);
+	}
+	
 exit:
 	g_free (td->in_offsets);
 	g_free (td->clause_indexes);
