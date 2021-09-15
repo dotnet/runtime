@@ -601,7 +601,7 @@ private:
         if (varDsc->lvTracked && !varDsc->lvDoNotEnregister)
         {
             assert(!m_lsra->isRegCandidate(varDsc));
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(Compiler::DNER_LocalField));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
         }
     }
 

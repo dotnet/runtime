@@ -818,7 +818,7 @@ namespace System.Net.Security
                     // This call may bump up the credential reference count further.
                     // Note that thumbPrint is retrieved from a safe cert object that was possible cloned from the user passed cert.
                     //
-                    if (!cachedCreds && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
+                    if (!cachedCreds && status.ErrorCode == SecurityStatusPalErrorCode.OK && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
                     {
                         SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
                     }

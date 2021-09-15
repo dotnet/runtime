@@ -16,9 +16,6 @@ using System.Collections.Generic;
 /// Classed used for all logging infrastructure
 /// </summary>
 internal class RFLogging
-#if !PROJECTK_BUILD
-    : MarshalByRefObject
-#endif
 {
     private Queue<string> _messageQueue;
     private Queue<string> _instrumentationMessageQueue;
@@ -44,9 +41,6 @@ internal class RFLogging
         _closeLogFile = false;
         _loggingThread = new Thread(new ThreadStart(LogWorker));
         _loggingThread.IsBackground = true;
-#if !PROJECTK_BUILD
-        loggingThread.Priority = ThreadPriority.Highest;
-#endif
         _loggingThread.Start();
     }
 
@@ -95,9 +89,6 @@ internal class RFLogging
             {
                 if (null != _logFile)
                 {
-#if !PROJECTK_BUILD
-                    logFile.Close();
-#endif
                     _logFile = null;
                 }
                 _closeLogFile = false;
@@ -169,9 +160,6 @@ internal class RFLogging
     {
         if (_logFile != null)
         {
-#if !PROJECTK_BUILD
-            logFile.Close();
-#endif
             _logFile = null;
         }
         // open the log file if the user hasn't disabled it.

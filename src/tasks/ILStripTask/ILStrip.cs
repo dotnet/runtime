@@ -8,10 +8,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Mono.Cecil;
-using Mono.Cecil.Binary;
-using Mono.Cecil.Cil;
-using Mono.Cecil.Metadata;
+using CilStrip.Mono.Cecil;
+using CilStrip.Mono.Cecil.Binary;
+using CilStrip.Mono.Cecil.Cil;
+using CilStrip.Mono.Cecil.Metadata;
 
 public class ILStrip : Microsoft.Build.Utilities.Task
 {

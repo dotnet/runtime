@@ -1348,10 +1348,22 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             count++;
 
 #ifdef USING_VARIABLE_LIVE_RANGE
-            if (bb->bbPrev != nullptr && VarSetOps::IsMember(compiler, bb->bbPrev->bbLiveOut, varIndex))
+            BasicBlock* prevReportedBlock = bb->bbPrev;
+            if (bb->bbPrev != nullptr && bb->bbPrev->isBBCallAlwaysPairTail())
             {
-                // varDsc was alive on previous block end ("bb->bbPrev->bbLiveOut"), so it has an open
-                // "VariableLiveRange" which should change to be according "getInVarToRegMap"
+                // For callf+always pair we generate the code for the always
+                // block in genCallFinally and skip it, so we don't report
+                // anything for it (it has only trivial instructions, so that
+                // does not matter much). So whether we need to rehome or not
+                // depends on what we reported at the end of the callf block.
+                prevReportedBlock = bb->bbPrev->bbPrev;
+            }
+
+            if (prevReportedBlock != nullptr && VarSetOps::IsMember(compiler, prevReportedBlock->bbLiveOut, varIndex))
+            {
+                // varDsc was alive on previous block end so it has an open
+                // "VariableLiveRange" which should change to be according to
+                // "getInVarToRegMap"
                 compiler->codeGen->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
             }
 #endif // USING_VARIABLE_LIVE_RANGE
@@ -1490,18 +1502,22 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
     // references when using the general GC encoding.
     unsigned lclNum = (unsigned)(varDsc - compiler->lvaTable);
-    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterableType() ||
+    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
         (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
     {
 #ifdef DEBUG
-        Compiler::DoNotEnregisterReason dner;
-        if (varDsc->lvAddrExposed)
+        DoNotEnregisterReason dner;
+        if (varDsc->IsAddressExposed())
         {
-            dner = Compiler::DNER_AddrExposed;
+            dner = DoNotEnregisterReason::AddrExposed;
+        }
+        else if (!varDsc->IsEnregisterableType())
+        {
+            dner = DoNotEnregisterReason::NotRegSizeStruct;
         }
         else
         {
-            dner = Compiler::DNER_IsStruct;
+            dner = DoNotEnregisterReason::DontEnregStructs;
         }
 #endif // DEBUG
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
@@ -1511,7 +1527,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     {
         varDsc->lvTracked = 0;
 #ifdef JIT32_GCENCODER
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_PinningRef));
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif // JIT32_GCENCODER
         return false;
     }
@@ -1522,7 +1538,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     //
     if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
     {
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_LiveInOutOfHandler));
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
     }
 
     if (varDsc->lvDoNotEnregister)
@@ -1751,7 +1767,7 @@ void LinearScan::identifyCandidates()
                 if (parentVarDsc->lvIsMultiRegRet && !parentVarDsc->lvDoNotEnregister)
                 {
                     JITDUMP("Setting multi-reg struct V%02u as not enregisterable:", varDsc->lvParentLcl);
-                    compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(Compiler::DNER_BlockOp));
+                    compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(DoNotEnregisterReason::BlockOp));
                     for (unsigned int i = 0; i < parentVarDsc->lvFieldCnt; i++)
                     {
                         LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(parentVarDsc->lvFieldLclStart + i);
@@ -9226,9 +9242,8 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
             }
             else
             {
-                regNumber reg       = tree->GetRegNum();
-                int       charCount = _snprintf_s(operandString, operandStringLength, operandStringLength, "%s%s",
-                                            getRegName(reg, genIsValidFloatReg(reg)), lastUseChar);
+                int charCount = _snprintf_s(operandString, operandStringLength, operandStringLength, "%s%s",
+                                            getRegName(tree->GetRegNum()), lastUseChar);
                 operandString += charCount;
                 operandStringLength -= charCount;
 
@@ -9239,9 +9254,8 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
                                             : tree->GetMultiRegCount();
                     for (unsigned regIndex = 1; regIndex < regCount; regIndex++)
                     {
-                        regNumber reg = tree->GetRegByIndex(regIndex);
-                        charCount     = _snprintf_s(operandString, operandStringLength, operandStringLength, ",%s%s",
-                                                getRegName(reg, genIsValidFloatReg(reg)), lastUseChar);
+                        charCount = _snprintf_s(operandString, operandStringLength, operandStringLength, ",%s%s",
+                                                getRegName(tree->GetRegByIndex(regIndex)), lastUseChar);
                         operandString += charCount;
                         operandStringLength -= charCount;
                     }
@@ -9450,10 +9464,10 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 assert(reg == assignedReg || varDsc->lvRegister == false);
                 if (reg != argReg)
                 {
-                    printf(getRegName(argReg, isFloatRegType(interval->registerType)));
+                    printf(getRegName(argReg));
                     printf("=>");
                 }
-                printf("%s)", getRegName(reg, isFloatRegType(interval->registerType)));
+                printf("%s)", getRegName(reg));
             }
         }
         printf("\n");
@@ -9580,8 +9594,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                                 {
                                     assert(genMaxOneBit(currentRefPosition->registerAssignment));
                                     assert(lastFixedRegRefPos != nullptr);
-                                    printf(" Fixed:%s(#%d)", getRegName(currentRefPosition->assignedReg(),
-                                                                        isFloatRegType(interval->registerType)),
+                                    printf(" Fixed:%s(#%d)", getRegName(currentRefPosition->assignedReg()),
                                            lastFixedRegRefPos->rpNum);
                                     lastFixedRegRefPos = nullptr;
                                 }
@@ -9605,8 +9618,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                             if (currentRefPosition->isFixedRegRef)
                             {
                                 assert(genMaxOneBit(currentRefPosition->registerAssignment));
-                                printf(" %s", getRegName(currentRefPosition->assignedReg(),
-                                                         isFloatRegType(interval->registerType)));
+                                printf(" %s", getRegName(currentRefPosition->assignedReg()));
                             }
                             if (currentRefPosition->isLocalDefUse)
                             {
@@ -9629,8 +9641,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                                 printf("\n        Kill: ");
                                 killPrinted = true;
                             }
-                            printf(getRegName(currentRefPosition->assignedReg(),
-                                              isFloatRegType(currentRefPosition->getReg()->registerType)));
+                            printf(getRegName(currentRefPosition->assignedReg()));
                             printf(" ");
                             break;
                         case RefTypeFixedReg:

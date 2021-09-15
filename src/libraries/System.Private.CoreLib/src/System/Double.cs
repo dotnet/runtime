@@ -756,6 +756,30 @@ namespace System
         static double IFloatingPoint<double>.Truncate(double x)
             => Math.Truncate(x);
 
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsFinite(double d) => IsFinite(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsInfinity(double d) => IsInfinity(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsNaN(double d) => IsNaN(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsNegative(double d) => IsNegative(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsNegativeInfinity(double d) => IsNegativeInfinity(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsNormal(double d) => IsNormal(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsPositiveInfinity(double d) => IsPositiveInfinity(d);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<double>.IsSubnormal(double d) => IsSubnormal(d);
+
         // static double IFloatingPoint<double>.AcosPi(double x)
         //     => Math.AcosPi(x);
         //

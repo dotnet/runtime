@@ -26,7 +26,7 @@ void Compiler::gsGSChecksInitCookie()
     lvaGSSecurityCookie = lvaGrabTempWithImplicitUse(false DEBUGARG("GSSecurityCookie"));
 
     // Prevent cookie init/check from being optimized
-    lvaSetVarAddrExposed(lvaGSSecurityCookie);
+    lvaSetVarAddrExposed(lvaGSSecurityCookie DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
     lvaTable[lvaGSSecurityCookie].lvType = type;
 
     info.compCompHnd->getGSCookie(&gsGlobalSecurityCookieVal, &gsGlobalSecurityCookieAddr);
@@ -402,13 +402,10 @@ void Compiler::gsParamsToShadows()
 #endif
         shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;
 
-        shadowVarDsc->lvAddrExposed     = varDsc->lvAddrExposed;
+        shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
-        shadowVarDsc->lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
-        shadowVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
-        shadowVarDsc->lvLclFieldExpr     = varDsc->lvLclFieldExpr;
-        shadowVarDsc->lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
+        shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
 #endif
         shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
         if (varTypeIsStruct(type))

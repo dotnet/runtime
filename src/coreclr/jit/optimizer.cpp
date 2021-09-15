@@ -2910,9 +2910,24 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// optLoopContains: Check if one loop contains another
+//
+// Arguments:
+//    l1 -- loop num of containing loop (must be valid loop num)
+//    l2 -- loop num of contained loop (valid loop num, or NOT_IN_LOOP)
+//
+// Returns:
+//    True if loop described by l2 is contained within l1.
+//
+// Notes:
+//    A loop contains itself.
+//
 bool Compiler::optLoopContains(unsigned l1, unsigned l2)
 {
-    assert(l1 != BasicBlock::NOT_IN_LOOP);
+    assert(l1 < optLoopCount);
+    assert((l2 < optLoopCount) || (l2 == BasicBlock::NOT_IN_LOOP));
+
     if (l1 == l2)
     {
         return true;
@@ -3601,7 +3616,7 @@ PhaseStatus Compiler::optUnrollLoops()
         iterOperType = optLoopTable[lnum].lpIterOperType();
         unsTest      = (optLoopTable[lnum].lpTestTree->gtFlags & GTF_UNSIGNED) != 0;
 
-        if (lvaTable[lvar].lvAddrExposed)
+        if (lvaTable[lvar].IsAddressExposed())
         {
             // If the loop iteration variable is address-exposed then bail
             continue;
@@ -4876,9 +4891,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit)
                 {
-                    tree->ChangeOperConst(GT_CNS_INT);
-                    tree->gtType                = TYP_INT;
-                    tree->AsIntCon()->gtIconVal = (int)lval;
+                    tree->BashToConst(static_cast<int32_t>(lval));
                     if (vnStore != nullptr)
                     {
                         fgValueNumberTreeConst(tree);
@@ -6750,7 +6763,18 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
         else if (funcApp.m_func == VNF_MemOpaque)
         {
             const unsigned vnLoopNum = funcApp.m_args[0];
-            res                      = !optLoopContains(lnum, vnLoopNum);
+
+            // Check for the special "ambiguous" loop MemOpaque VN.
+            // This is considered variant in every loop.
+            //
+            if (vnLoopNum == BasicBlock::MAX_LOOP_NUM)
+            {
+                res = false;
+            }
+            else
+            {
+                res = !optLoopContains(lnum, vnLoopNum);
+            }
         }
         else
         {
@@ -7712,7 +7736,7 @@ Compiler::fgWalkResult Compiler::optValidRangeCheckIndex(GenTree** pTree, fgWalk
 
     if (tree->gtOper == GT_LCL_VAR)
     {
-        if (pData->pCompiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvAddrExposed)
+        if (pData->pCompiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].IsAddressExposed())
         {
             pData->bValidIndex = false;
             return WALK_ABORT;
@@ -7759,7 +7783,7 @@ bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
             noway_assert(pArray->gtType == TYP_REF);
             noway_assert(pArray->AsLclVarCommon()->GetLclNum() < lvaCount);
 
-            if (lvaTable[pArray->AsLclVarCommon()->GetLclNum()].lvAddrExposed)
+            if (lvaTable[pArray->AsLclVarCommon()->GetLclNum()].IsAddressExposed())
             {
                 // If the array address has been taken, don't do the optimization
                 // (this restriction can be lowered a bit, but i don't think it's worth it)

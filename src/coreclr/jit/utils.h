@@ -778,6 +778,36 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 
 double CachedCyclesPerSecond();
 
+template <typename T>
+bool FitsIn(var_types type, T value)
+{
+    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                          std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+
+    switch (type)
+    {
+        case TYP_BYTE:
+            return FitsIn<int8_t>(value);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return FitsIn<uint8_t>(value);
+        case TYP_SHORT:
+            return FitsIn<int16_t>(value);
+        case TYP_USHORT:
+            return FitsIn<uint16_t>(value);
+        case TYP_INT:
+            return FitsIn<int32_t>(value);
+        case TYP_UINT:
+            return FitsIn<uint32_t>(value);
+        case TYP_LONG:
+            return FitsIn<int64_t>(value);
+        case TYP_ULONG:
+            return FitsIn<uint64_t>(value);
+        default:
+            unreached();
+    }
+}
+
 namespace CheckedOps
 {
 const bool Unsigned = true;

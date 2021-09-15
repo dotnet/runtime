@@ -31,7 +31,7 @@ namespace System
     //
     // The Decimal class implements widening conversions from the
     // ubyte, char, short, int, and long types
-    // to Decimal. These widening conversions never loose any information
+    // to Decimal. These widening conversions never lose any information
     // and never throw exceptions. The Decimal class also implements
     // narrowing conversions from Decimal to ubyte, char,
     // short, int, and long. These narrowing conversions round
@@ -49,7 +49,7 @@ namespace System
     //
     // The Decimal class provides narrowing conversions to and from the
     // float and double types. A conversion from Decimal to
-    // float or double may loose precision, but will not loose
+    // float or double may lose precision, but will not lose
     // information about the overall magnitude of the numeric value, and will never
     // throw an exception. A conversion from float or double to
     // Decimal throws an OverflowException if the value is not within

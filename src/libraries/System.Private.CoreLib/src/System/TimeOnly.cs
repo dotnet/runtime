@@ -974,6 +974,13 @@ namespace System
         // [RequiresPreviewFeatures]
         // static checked TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator -(TimeOnly left, TimeOnly right)
         //     => checked(left - right);
+
+        [RequiresPreviewFeatures]
+        static TimeOnly IMinMaxValue<TimeOnly>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures]
+        static TimeOnly IMinMaxValue<TimeOnly>.MaxValue => MaxValue;
+
 #endif // FEATURE_GENERIC_MATH
     }
 }
