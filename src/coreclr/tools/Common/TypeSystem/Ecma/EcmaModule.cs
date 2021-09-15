@@ -282,47 +282,58 @@ namespace Internal.TypeSystem.Ecma
 
         public sealed override MetadataType GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
         {
-            var stringComparer = _metadataReader.StringComparer;
-
-            // TODO: More efficient implementation?
-            foreach (var typeDefinitionHandle in _metadataReader.TypeDefinitions)
+            var currentModule = this;
+            // src/coreclr/vm/clsload.cpp use the same restriction to detect a loop in the type forwarding.
+            for (int typeForwardingChainSize = 0; typeForwardingChainSize <= 1024; typeForwardingChainSize++)
             {
-                var typeDefinition = _metadataReader.GetTypeDefinition(typeDefinitionHandle);
-                if (stringComparer.Equals(typeDefinition.Name, name) &&
-                    stringComparer.Equals(typeDefinition.Namespace, nameSpace))
+                var metadataReader = currentModule._metadataReader;
+                var stringComparer = metadataReader.StringComparer;
+                // TODO: More efficient implementation?
+                foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
                 {
-                    return (MetadataType)GetType((EntityHandle)typeDefinitionHandle);
-                }
-            }
-
-            foreach (var exportedTypeHandle in _metadataReader.ExportedTypes)
-            {
-                var exportedType = _metadataReader.GetExportedType(exportedTypeHandle);
-                if (stringComparer.Equals(exportedType.Name, name) &&
-                    stringComparer.Equals(exportedType.Namespace, nameSpace))
-                {
-                    if (exportedType.IsForwarder)
+                    var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+                    if (stringComparer.Equals(typeDefinition.Name, name) &&
+                        stringComparer.Equals(typeDefinition.Namespace, nameSpace))
                     {
-                        Object implementation = GetObject(exportedType.Implementation, notFoundBehavior);
+                        return (MetadataType)currentModule.GetType(typeDefinitionHandle);
+                    }
+                }
 
-                        if (implementation == null)
-                            return null;
-
-                        if (implementation is ModuleDesc)
+                foreach (var exportedTypeHandle in metadataReader.ExportedTypes)
+                {
+                    var exportedType = metadataReader.GetExportedType(exportedTypeHandle);
+                    if (stringComparer.Equals(exportedType.Name, name) &&
+                        stringComparer.Equals(exportedType.Namespace, nameSpace))
+                    {
+                        if (exportedType.IsForwarder)
                         {
-                            return ((ModuleDesc)(implementation)).GetType(nameSpace, name);
-                        }
-                        else if (implementation is ResolutionFailure failure)
-                        {
-                            ModuleDesc.GetTypeResolutionFailure = failure;
-                            return null;
+                            object implementation = currentModule.GetObject(exportedType.Implementation, notFoundBehavior);
+
+                            if (implementation == null)
+                            {
+                                return null;
+                            }
+                            if (implementation is EcmaModule ecmaModule)
+                            {
+                                currentModule = ecmaModule;
+                                break;
+                            }
+                            if (implementation is ModuleDesc moduleDesc)
+                            {
+                                return moduleDesc.GetType(nameSpace, name);
+                            }
+                            if (implementation is ResolutionFailure failure)
+                            {
+                                ModuleDesc.GetTypeResolutionFailure = failure;
+                                return null;
+                            }
+                            // TODO
+                            throw new NotImplementedException();
                         }
 
-                        // TODO
+                        // TODO:
                         throw new NotImplementedException();
                     }
-                    // TODO:
-                    throw new NotImplementedException();
                 }
             }
 
