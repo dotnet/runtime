@@ -5,7 +5,6 @@
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>Exe</OutputType>
     <RootNamespace>DependencyLogViewer</RootNamespace>
-    <AssemblyName>ILCompiler-DependencyGraph-Viewer</AssemblyName>
 
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
@@ -13,5 +12,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
       <Version>$(TraceEventVersion)</Version>
-    </PackageReference>  </ItemGroup>
+    </PackageReference>
+  </ItemGroup>
 </Project>
