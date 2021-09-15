@@ -65,8 +65,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hostin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting", "..\Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj", "{6AD51705-102E-4E9D-B62E-6BF19025F3A7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.csproj", "{0641221C-4409-4805-8CA4-4023809D5AD1}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{EFFB59C1-CAF4-4347-B996-4C773E1AFAA8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{56D37CB2-68A3-42D3-AA0E-416813ABAD8B}"
@@ -130,8 +128,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Permissions", "..\System.Security.Permissions\ref\System.Security.Permissions.csproj", "{64388157-7D8E-41C3-B514-943A0E6E4250}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "..\System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj", "{59D31D62-3BF9-4F4A-9FF7-3A61F297F714}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.csproj", "{850A0E3B-1C09-40EF-8F3E-D61D93663C4E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json", "..\System.Text.Json\src\System.Text.Json.csproj", "{D7CEC738-5D2D-4FCB-9268-9650EB01BF31}"
 EndProject
@@ -401,10 +397,6 @@ Global
 		{6F7512BA-9B15-4395-AE05-C546F0770344}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F7512BA-9B15-4395-AE05-C546F0770344}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F7512BA-9B15-4395-AE05-C546F0770344}.Release|Any CPU.Build.0 = Release|Any CPU
-		{850A0E3B-1C09-40EF-8F3E-D61D93663C4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{850A0E3B-1C09-40EF-8F3E-D61D93663C4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{850A0E3B-1C09-40EF-8F3E-D61D93663C4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{850A0E3B-1C09-40EF-8F3E-D61D93663C4E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{59D31D62-3BF9-4F4A-9FF7-3A61F297F714}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{59D31D62-3BF9-4F4A-9FF7-3A61F297F714}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59D31D62-3BF9-4F4A-9FF7-3A61F297F714}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -509,7 +501,6 @@ Global
 		{429C9D71-4BBD-489D-9C86-EC240F652008} = {7028EE0A-D314-4F48-91CA-51A1633BC3F4}
 		{0641221C-4409-4805-8CA4-4023809D5AD1} = {7028EE0A-D314-4F48-91CA-51A1633BC3F4}
 		{9175023F-6982-45CD-B360-C4FC1E145B25} = {7028EE0A-D314-4F48-91CA-51A1633BC3F4}
-		{850A0E3B-1C09-40EF-8F3E-D61D93663C4E} = {7028EE0A-D314-4F48-91CA-51A1633BC3F4}
 		{59D31D62-3BF9-4F4A-9FF7-3A61F297F714} = {7028EE0A-D314-4F48-91CA-51A1633BC3F4}
 		{B82AF93C-33D7-4B48-B36E-A9873D74601C} = {7028EE0A-D314-4F48-91CA-51A1633BC3F4}
 		{99007CDD-4840-4B94-8A8A-FECF72BCEE3F} = {7028EE0A-D314-4F48-91CA-51A1633BC3F4}

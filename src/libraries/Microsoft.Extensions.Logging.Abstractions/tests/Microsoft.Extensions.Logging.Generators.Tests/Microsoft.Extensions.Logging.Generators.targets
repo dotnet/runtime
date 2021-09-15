@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
@@ -14,9 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(RoslynApiVersion)" />
     <PackageReference Include="SQLitePCLRaw.bundle_green" Version="$(SQLitePCLRawbundle_greenVersion)" />
-    <ProjectReference Include="..\..\gen\Microsoft.Extensions.Logging.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
   <ItemGroup>

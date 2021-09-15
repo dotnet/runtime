@@ -1,14 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(RoslynApiVersion)" />
 
     <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
-    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,13 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <AssemblyName>$(MSBuildThisFileName)</AssemblyName>
+    <RootNamespace>$(MSBuildThisFileName)</RootNamespace>
+    <StringResourcesClassName>SR</StringResourcesClassName>
+    <StringResourcesName>FxResources.$(RootNamespace).$(StringResourcesClassName)</StringResourcesName>
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
     <!-- Suppress warning: XML comment has cref attribute that could not be resolved -->
     <NoWarn>CS1574</NoWarn>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
-    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
@@ -17,10 +20,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynApiVersion)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
-
-    <PackageDestination Include="analyzers\dotnet\cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,7 +42,6 @@
     <Compile Include="ClassType.cs" />
     <Compile Include="CollectionType.cs" />
     <Compile Include="JsonConstants.cs" />
-    <Compile Include="JsonSourceGenerator.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Parser.cs" />
     <Compile Include="ObjectConstructionStrategy.cs" />
