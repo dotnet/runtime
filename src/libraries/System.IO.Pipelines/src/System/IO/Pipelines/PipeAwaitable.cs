@@ -50,7 +50,9 @@ namespace System.IO.Pipelines
             // Don't register if already completed, we would immediately unregistered in ObserveCancellation
             if (cancellationToken.CanBeCanceled && !IsCompleted)
             {
+#if DEBUG
                 var previousAwaitableState = _awaitableState;
+#endif
 
                 _cancellationTokenRegistration = cancellationToken.UnsafeRegister(callback, state);
 
