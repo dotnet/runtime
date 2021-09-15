@@ -15,7 +15,7 @@ using System.IO;
 
 namespace HttpStress
 {
-    public static class FailureReportExporter
+    public static class StressRunReportExporter
     {
         public static string GetFailureFingerprint((Type, string, string)[] key)
         {
@@ -43,13 +43,13 @@ namespace HttpStress
             StressFailureType b = TestGetFailureFingerpint1("b")!;
             StressFailureType c = TestGetFailureFingerpint2()!;
             StressFailureType d = TestGetFailureFingerpint3()!;
-            XDocument doc = ExportFailures(new Configuration() { HttpVersion = new Version(1, 1) }, new[] { a, b, c, d });
+            XDocument doc = ExportReportXml(new Configuration() { HttpVersion = new Version(1, 1) }, new[] { a, b, c, d });
             Console.WriteLine(doc);
         }
 
-        internal static XDocument ExportFailures(Configuration configuration, IEnumerable<StressFailureType> failures)
+        internal static XDocument ExportReportXml(Configuration configuration, IEnumerable<StressFailureType> failures)
         {
-            XElement root = new XElement("FailureReport",
+            XElement root = new XElement("StressRunReport",
                 new XAttribute("Timestamp", DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)),
                 new XAttribute("HttpVersion", configuration.HttpVersion),
                 new XAttribute("OSDescription", RuntimeInformation.OSDescription),

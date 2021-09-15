@@ -300,7 +300,7 @@ namespace HttpStress
                 void RecordFailureType()
                 {
                     (Type, string, string)[] key = ClassifyFailure(exn);
-                    string fingerprint = FailureReportExporter.GetFailureFingerprint(key);
+                    string fingerprint = StressRunReportExporter.GetFailureFingerprint(key);
 
                     StressFailureType failureType = _failureTypes.GetOrAdd(key, _ => new StressFailureType(exn.ToString(), fingerprint));
 
@@ -477,7 +477,7 @@ namespace HttpStress
 
             public void SaveFailureReport(Configuration configuration)
             {
-                XDocument doc = FailureReportExporter.ExportFailures(configuration, _failureTypes.Values);
+                XDocument doc = StressRunReportExporter.ExportReportXml(configuration, _failureTypes.Values);
                 doc.Save(configuration.ReportFile);
             }
         }
