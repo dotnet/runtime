@@ -16,6 +16,9 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public bool IsProperty { get; init; }
 
+        /// <summary>
+        /// If representing a property, returns true if either the getter or setter are public.
+        /// </summary>
         public bool IsPublic { get; init; }
 
         public bool IsVirtual { get; init; }
@@ -38,6 +41,11 @@ namespace System.Text.Json.SourceGeneration
         /// Whether the property has a set method.
         /// </summary>
         public bool IsReadOnly { get; init; }
+
+        /// <summary>
+        /// Whether the property has an init-only set method.
+        /// </summary>
+        public bool IsInitOnlySetter { get; init; }
 
         /// <summary>
         /// Whether the property has a public or internal (only usable when JsonIncludeAttribute is specified)
