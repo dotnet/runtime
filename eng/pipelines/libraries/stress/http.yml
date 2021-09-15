@@ -89,6 +89,8 @@ jobs:
       pathToPublish: '$(Build.StagingDirectory)/linux-http11.json'
       PublishLocation: Container
       artifactName: Linux-HTTP11
+    displayName: Publish artifacts
+    condition: always()
 
 - job: windows
   displayName: Docker NanoServer
