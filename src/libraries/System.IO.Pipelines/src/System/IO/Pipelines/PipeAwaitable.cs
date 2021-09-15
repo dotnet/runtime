@@ -61,7 +61,9 @@ namespace System.IO.Pipelines
                 // the state of the awaitable as yet.
                 if (_cancellationTokenRegistration == default(CancellationTokenRegistration))
                 {
+#if DEBUG
                     Debug.Assert(previousAwaitableState == _awaitableState, "The awaitable state changed!");
+#endif
 
                     cancellationToken.ThrowIfCancellationRequested();
                 }
