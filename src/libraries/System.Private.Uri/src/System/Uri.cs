@@ -121,6 +121,9 @@ namespace System
             IriCanonical = 0x78000000000,
             UnixPath = 0x100000000000,
 
+            /// <summary>
+            /// Disables any validation/normalization past the authority. Fragments will always be empty. GetComponents will throw for Path/Query.
+            /// </summary>
             DisablePathAndQueryCanonicalization = 0x200000000000,
 
             /// <summary>
@@ -414,6 +417,11 @@ namespace System
             DebugSetLeftCtor();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Uri"/> class with the specified URI and additional <see cref="UriCreationOptions"/>.
+        /// </summary>
+        /// <param name="uriString">A string that identifies the resource to be represented by the <see cref="Uri"/> instance.</param>
+        /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
         public Uri(string uriString, in UriCreationOptions creationOptions)
         {
             if (uriString is null)

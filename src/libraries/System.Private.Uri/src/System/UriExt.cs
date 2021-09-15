@@ -262,6 +262,13 @@ namespace System
             return e is null && result != null;
         }
 
+        /// <summary>
+        /// Creates a new <see cref="Uri"/> using the specified <see cref="string"/> instance and <see cref="UriCreationOptions"/>.
+        /// </summary>
+        /// <param name="uriString">The string representation of the <see cref="Uri"/>.</param>
+        /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
+        /// <param name="result">The constructed <see cref="Uri"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="Uri"/> was successfully created; otherwise, <see langword="false"/>.</returns>
         public static bool TryCreate([NotNullWhen(true)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
