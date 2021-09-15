@@ -36,6 +36,9 @@ namespace System.Tests
             Assert.Equal(4, c.I);
 
             Activator.CreateInstance(typeof(StructTypeWithoutReflectionMetadata));
+
+            StructWithPublicDefaultConstructor s = (StructWithPublicDefaultConstructor)Activator.CreateInstance(typeof(StructWithPublicDefaultConstructor));
+            Assert.True(s.ConstructorInvoked);
         }
 
         [Fact]

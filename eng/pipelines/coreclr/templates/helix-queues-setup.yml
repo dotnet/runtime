@@ -36,7 +36,7 @@ jobs:
 
     # Android x64
     - ${{ if in(parameters.platform, 'Android_x64') }}:
-      - Ubuntu.1804.Amd64.Android.Open
+      - Ubuntu.1804.Amd64.Android.29.Open
 
     # Browser wasm
     - ${{ if eq(parameters.platform, 'Browser_wasm') }}:

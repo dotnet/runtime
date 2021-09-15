@@ -24,13 +24,14 @@
   </ItemGroup>
 
   <Target Name="PublishBuilder"
-          AfterTargets="Build">
+          AfterTargets="Build"
+          Condition="'$(_RunningForPublishBuilder)' != 'true'">
 
     <!-- needed for publishing with multi-targeting. We are publishing essentially to get the SR.MetadataLoadContext.dll :/ -->
     <ItemGroup>
       <_PublishFramework Include="$(TargetFrameworks)" />
     </ItemGroup>
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="TargetFramework=%(_PublishFramework.Identity)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="TargetFramework=%(_PublishFramework.Identity);_RunningForPublishBuilder=true" />
   </Target>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">

@@ -26,11 +26,16 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
+    [JsonSerializable(typeof(StructWithCustomConverterFactory))]
     [JsonSerializable(typeof(ClassWithCustomConverterProperty))]
     [JsonSerializable(typeof(StructWithCustomConverterProperty))]
+    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory))]
+    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     internal partial class SerializationContext : JsonSerializerContext, ITestContext
@@ -57,11 +62,16 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
@@ -69,7 +79,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
     }
 
-    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, IncludeFields = true)]
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RepeatedTypes.Location), GenerationMode = JsonSourceGenerationMode.Serialization, TypeInfoPropertyName = "RepeatedLocation")]
     [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -89,11 +99,16 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationContextWithCamelCase : JsonSerializerContext, ITestContext
@@ -132,9 +147,12 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationContext.Default.MyNestedNestedClass.Serialize);
             Assert.Null(SerializationContext.Default.ObjectArray.Serialize);
             Assert.Null(SerializationContext.Default.String.Serialize);
+            Assert.NotNull(SerializationContext.Default.ValueTupleStringInt32Boolean.Serialize);
             Assert.NotNull(SerializationContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.Null(SerializationContext.Default.ClassWithCustomConverter.Serialize);
             Assert.Null(SerializationContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Null(SerializationContext.Default.ClassWithCustomConverterFactory.Serialize);
+            Assert.Null(SerializationContext.Default.StructWithCustomConverterFactory.Serialize);
             Assert.Null(SerializationContext.Default.ClassWithCustomConverterProperty.Serialize);
             Assert.Null(SerializationContext.Default.StructWithCustomConverterProperty.Serialize);
             Assert.Throws<InvalidOperationException>(() => SerializationContext.Default.ClassWithBadCustomConverter.Serialize);
@@ -395,12 +413,18 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyNestedClass.Serialize);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyNestedNestedClass.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ObjectArray.Serialize);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.SampleEnum.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.String.Serialize);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.Serialize);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ClassWithCustomConverter.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.StructWithCustomConverter.Serialize);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.ClassWithCustomConverterFactory.Serialize);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.StructWithCustomConverterFactory.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ClassWithCustomConverterProperty.Serialize);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.StructWithCustomConverterProperty.Serialize);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.ClassWithCustomConverterPropertyFactory.Serialize);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.StructWithCustomConverterPropertyFactory.Serialize);
             Assert.Throws<InvalidOperationException>(() => SerializationWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.Serialize);
             Assert.Throws<InvalidOperationException>(() => SerializationWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.Serialize);
         }

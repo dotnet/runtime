@@ -4,42 +4,282 @@
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Security.Cryptography.Xml.SignedXml.XmlDsigSHA256Url</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net461/System.Security.Cryptography.Xml.dll</Right>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Security.Cryptography.Xml.SignedXml.XmlDsigRSASHA256Url</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net461/System.Security.Cryptography.Xml.dll</Right>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Security.Cryptography.Xml.SignedXml.XmlDsigSHA384Url</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net461/System.Security.Cryptography.Xml.dll</Right>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Security.Cryptography.Xml.SignedXml.XmlDsigRSASHA384Url</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net461/System.Security.Cryptography.Xml.dll</Right>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Security.Cryptography.Xml.SignedXml.XmlDsigSHA512Url</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net461/System.Security.Cryptography.Xml.dll</Right>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Security.Cryptography.Xml.SignedXml.XmlDsigRSASHA512Url</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net461/System.Security.Cryptography.Xml.dll</Right>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net461/System.Security.Cryptography.Xml.dll</Right>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CipherData</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CipherReference</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.DataObject</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.DataReference</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.DSAKeyValue</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.EncryptedData</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.EncryptedKey</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.EncryptedReference</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.EncryptedType</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.EncryptedXml</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.EncryptionMethod</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.EncryptionProperty</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.EncryptionPropertyCollection</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.IRelDecryptor</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.KeyInfo</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.KeyInfoClause</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.KeyInfoEncryptedKey</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.KeyInfoName</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.KeyInfoNode</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.KeyInfoRetrievalMethod</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.KeyInfoX509Data</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.KeyReference</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.Reference</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.ReferenceList</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.RSAKeyValue</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.Signature</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.SignedInfo</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.SignedXml</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.Transform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.TransformChain</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDecryptionTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDsigBase64Transform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDsigC14NTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDsigC14NWithCommentsTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDsigEnvelopedSignatureTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDsigExcC14NTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDsigExcC14NWithCommentsTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDsigXPathTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlDsigXsltTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.XmlLicenseTransform</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
 </Suppressions>
