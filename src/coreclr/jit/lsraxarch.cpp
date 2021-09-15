@@ -2390,9 +2390,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     }
 
                 }
-                else
+                else if (overwrittenOpNum == 2)
                 {
-                    assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
 
                     if (op1->isContained())
                     {
@@ -2412,6 +2411,81 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         srcCount += 1;
                         srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
                         srcCount += BuildDelayFreeUses(op1, op2);
+                    }
+                }
+                else
+                {
+                    // No overwritten:
+                    // result = (op1 * op2) + op3
+                    // decide form with contained op and lastUse
+                    assert(overwrittenOpNum == 0);
+                    if (op2->isContained())
+                    {
+                        if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
+                        {
+                            // result = (op1 * [op2]) + op3
+                            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+
+                            tgtPrefUse = BuildUse(op1);
+                            srcCount += 1;
+                            srcCount += BuildOperandUses(op2);
+                            srcCount += BuildDelayFreeUses(op3, op1);
+                        }
+                        else
+                        {
+                            // result = (op1 * [op2]) + op3
+                            // 231 form XMM1 = XMM2 * [XMM3] + XMM1
+
+                            tgtPrefUse = BuildUse(op3);
+                            srcCount += 1;
+                            srcCount += BuildOperandUses(op2);
+                            srcCount += BuildDelayFreeUses(op1, op3);
+                        }
+                    }
+                    else if (op1->isContained())
+                    {
+                        if (op2->OperIs(GT_LCL_VAR) && op2->IsLastUse(0))
+                        {
+                            // result = ([op1] * op2) + op3
+                            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+
+                            tgtPrefUse = BuildUse(op2);
+                            srcCount += 1;
+                            srcCount += BuildOperandUses(op1);
+                            srcCount += BuildDelayFreeUses(op3, op2);
+                        }
+                        else
+                        {
+                            // result = ([op1] * op2) + op3
+                            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+
+                            tgtPrefUse = BuildUse(op3);
+
+                            srcCount += BuildOperandUses(op1);
+                            srcCount += BuildDelayFreeUses(op2, op1);
+                            srcCount += 1;
+                        }
+                    }
+                    else
+                    {
+                        // op3 isContained or regOptional
+                        // result = (op1 * op2) + [op3]
+                        // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+
+                        //if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
+                        //{
+                            tgtPrefUse = BuildUse(op1);
+                            srcCount += 1;
+                            srcCount += BuildDelayFreeUses(op2, op1);
+                        //}
+                        //else
+                        //{
+                        //    tgtPrefUse = BuildUse(op2);
+                        //    srcCount += 1;
+                        //    srcCount += BuildDelayFreeUses(op1, op2);
+                        //}
+
+                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
                     }
                 }
 

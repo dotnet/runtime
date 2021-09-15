@@ -6371,9 +6371,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 break;
                             }
-                            default:
+                            case 2:
                             {
-                                assert(overwrittenOpNum == 2 || overwrittenOpNum == 0);
                                 if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional) && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                                 {
                                     // op2 = ([op1] * op2) + op3
@@ -6397,6 +6396,46 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                                     // op2 = (op1 * op2) + [op3]
                                     // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+                                    op3->SetRegOptional();
+                                }
+                                break;
+                            }
+                            default:
+                            {
+                                // No overwritten:
+                                // result = (op1 * op2) + op3
+                                // decide form with contained op and lastUse
+                                assert(overwrittenOpNum == 0);
+                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                                {
+                                    // result = (op1 * op2) + [op3]
+                                    MakeSrcContained(node, op3);
+                                }
+                                else if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    // result = (op1 * [op2]) + op3
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                                {
+                                    // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
+
+                                    if (!HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
+                                    {
+                                        // result = ([op1] * op2) + op3
+                                        MakeSrcContained(node, op1);
+                                    }
+                                }
+                                else
+                                {
+                                    assert(supportsRegOptional);
+
+                                    // TODO-XArch-CQ: Technically any one of the three operands can
+                                    //                be reg-optional. With a limitation on op1 where
+                                    //                it can only be so if CopyUpperBits is off.
+                                    //                https://github.com/dotnet/runtime/issues/6358
+
+                                    // result = (op1 * op2) + op3
                                     op3->SetRegOptional();
                                 }
                             }
