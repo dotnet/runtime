@@ -324,7 +324,7 @@ namespace {@namespace}
                             }}
                             else
                             {{
-                                throw new {InvalidOperationExceptionTypeRef}(string.Format(""{SR.Exception_IncompatibleConverterType}"", converter.GetType(), typeToConvert));
+                                throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.IncompatibleConverterType}"", converter.GetType(), typeToConvert));
                             }}
                         }}");
                 }
@@ -333,7 +333,7 @@ namespace {@namespace}
                     metadataInitSource.Append($@"
                         if (!converter.CanConvert(typeToConvert))
                         {{
-                            throw new {InvalidOperationExceptionTypeRef}(string.Format(""{SR.Exception_IncompatibleConverterType}"", converter.GetType(), typeToConvert));
+                            throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.IncompatibleConverterType}"", converter.GetType(), typeToConvert));
                         }}");
                 }
 
@@ -716,7 +716,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "getter: null",
                         { CanUseGetter: true } => $"getter: static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}",
                         { CanUseGetter: false, HasJsonInclude: true }
-                            => @$"getter: static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{SR.Format(SR.Exception_InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ClrName)}"")",
+                            => @$"getter: static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ClrName)}"")",
                         _ => "getter: null"
                     };
 
@@ -724,13 +724,13 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "setter: null",
                         { CanUseSetter: true, IsInitOnlySetter: true }
-                            => @$"setter: static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{SR.Exception_InitOnlyPropertyDeserializationNotSupported}"")",
+                            => @$"setter: static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{ExceptionMessages.InitOnlyPropertyDeserializationNotSupported}"")",
                         { CanUseSetter: true } when typeGenerationSpec.IsValueType
                             => $@"setter: static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value!",
                         { CanUseSetter: true }
                             => @$"setter: static (obj, value) => (({declaringTypeCompilableName})obj).{clrPropertyName} = value!",
                         { CanUseSetter: false, HasJsonInclude: true }
-                            => @$"setter: static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{SR.Format(SR.Exception_InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ClrName)}"")",
+                            => @$"setter: static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ClrName)}"")",
                         _ => "setter: null",
                     };
 
@@ -824,7 +824,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
                     out bool castingRequiredForProps))
                 {
-                    string exceptionMessage = SR.Format(SR.Exception_InvalidSerializablePropertyConfiguration, typeRef);
+                    string exceptionMessage = string.Format(ExceptionMessages.InvalidSerializablePropertyConfiguration, typeRef);
 
                     return GenerateFastPathFuncForType(
                         serializeMethodName,
@@ -1205,7 +1205,7 @@ private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ g
                 converter = factory.CreateConverter(type, {OptionsInstanceVariableName});
                 if (converter == null || converter is {JsonConverterFactoryTypeRef})
                 {{
-                    throw new {InvalidOperationExceptionTypeRef}(string.Format(""{SR.Exception_InvalidJsonConverterFactoryOutput}"", factory.GetType()));
+                    throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.InvalidJsonConverterFactoryOutput}"", factory.GetType()));
                 }}
             }}
 
@@ -1236,7 +1236,7 @@ private {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({TypeTypeRef}
     {JsonConverterTypeRef}? converter = factory.CreateConverter(type, {Emitter.OptionsInstanceVariableName});
     if (converter == null || converter is {JsonConverterFactoryTypeRef})
     {{
-        throw new {InvalidOperationExceptionTypeRef}(string.Format(""{SR.Exception_InvalidJsonConverterFactoryOutput}"", factory.GetType()));
+        throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.InvalidJsonConverterFactoryOutput}"", factory.GetType()));
     }}
      
     return converter;
