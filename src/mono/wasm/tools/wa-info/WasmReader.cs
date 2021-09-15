@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+using NameMap = System.Collections.Generic.Dictionary<System.UInt32, string>;
+
 namespace WebAssemblyInfo
 {
     class WasmReader
@@ -450,6 +452,10 @@ namespace WebAssemblyInfo
         }
 
         string moduleName = "<Unknown>";
+        NameMap functionNames = new();
+        NameMap globalNames = new();
+        NameMap dataSegmentNames = new();
+        Dictionary<UInt32, NameMap> localNames = new();
 
         void ReadCustomNameSection(UInt32 size)
         {
@@ -472,14 +478,16 @@ namespace WebAssemblyInfo
                             Console.WriteLine($"  module name: {moduleName}");
                         break;
                     case CustomSubSectionId.FunctionNames:
-                        var count = ReadU32();
-                        if (Program.Verbose2)
-                            Console.WriteLine($"  function names count: {count}");
+                        ReadNameMap(functionNames, "function");
                         break;
                     case CustomSubSectionId.LocalNames:
-                        count = ReadU32();
-                        if (Program.Verbose2)
-                            Console.WriteLine($"  local names count: {count}");
+                        ReadIndirectNameMap(localNames, "local", "function");
+                        break;
+                    case CustomSubSectionId.GlobalNames:
+                        ReadNameMap(globalNames, "global");
+                        break;
+                    case CustomSubSectionId.DataSegmentNames:
+                        ReadNameMap(dataSegmentNames, "data segment");
                         break;
                     default:
                         if (Program.Verbose2)
@@ -489,7 +497,51 @@ namespace WebAssemblyInfo
 
                 reader.BaseStream.Seek(subSectionStart + subSectionSize, SeekOrigin.Begin);
             }
+        }
 
+        void ReadIndirectNameMap(Dictionary<UInt32, NameMap> indirectMap, string mapName, string indiceName)
+        {
+            var count = ReadU32();
+            if (Program.Verbose2)
+                Console.WriteLine($"  {mapName} names count: {count}");
+
+            for (int i = 0; i < count; i++)
+            {
+                var idx = ReadU32();
+                if (Program.Verbose2)
+                    Console.WriteLine($"    {mapName} map for {indiceName}: {idx}");
+
+                var map = ReadNameMap(null, mapName);
+                if (indirectMap.ContainsKey(idx))
+                    Console.WriteLine($"\nwarning: duplicate {indiceName} idx: {idx} in {mapName} names indirect map ignored");
+                else
+                    indirectMap[idx] = map;
+            }
+        }
+
+        Dictionary<UInt32, string> ReadNameMap(Dictionary<UInt32, string>? map, string mapName)
+        {
+            var count = ReadU32();
+            if (Program.Verbose2)
+                Console.WriteLine($"      {mapName} names count: {count}");
+
+            if (map == null)
+                map = new Dictionary<UInt32, string>();
+
+            for (int i = 0; i < count; i++)
+            {
+                var idx = ReadU32();
+                var name = ReadString();
+                if (Program.Verbose2)
+                    Console.WriteLine($"        {mapName} idx: {idx} name: {name}");
+
+                if (map.ContainsKey(idx))
+                    Console.WriteLine($"\nwarning: duplicate {mapName} idx: {idx} = '{name}' in {mapName} names map ignored");
+                else
+                    map[idx] = name;
+            }
+
+            return map;
         }
 
         Export[]? exports;
