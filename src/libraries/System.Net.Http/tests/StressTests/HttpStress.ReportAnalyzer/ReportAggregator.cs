@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,16 +10,26 @@ namespace HttpStress.ReportAnalyzer
 {
     public class FailureType
     {
+        private List<(DateTime Timestamp, int Count)> _failures = new ();
+
         public string Fingerprint { get; }
 
         public string ErrorText { get; }
 
-        public int Count { get; set; }
+        public IEnumerable<(DateTime Timestamp, int Count)> Failures => _failures;
+
+        public int TotalFailureCount { get; private set; }
 
         public FailureType(string fingerprint, string errorText)
         {
             Fingerprint = fingerprint;
             ErrorText = errorText;
+        }
+
+        internal void RegisterFailures(DateTime timeStemp, int count)
+        {
+            _failures.Add((timeStemp, count));
+            TotalFailureCount += count;
         }
     }
 
@@ -34,6 +45,8 @@ namespace HttpStress.ReportAnalyzer
 
         public void AppendReportXml(XDocument doc)
         {
+            DateTime failureTimeStamp = DateTime.Parse(doc.Root!.Attribute("Timestamp")!.Value, CultureInfo.InvariantCulture);
+
             foreach (XElement failureElement in doc.Descendants("Failure"))
             {
                 string fingerprint = failureElement.Attribute("FailureTypeFingerprint")!.Value;
@@ -45,7 +58,9 @@ namespace HttpStress.ReportAnalyzer
                     _failureTypes[fingerprint] = failureType;
                 }
 
-                failureType.Count+= (int)failureElement.Attribute("FailureCount")!;
+                
+                int failureCount = (int)failureElement.Attribute("FailureCount")!;
+                failureType.RegisterFailures(failureTimeStamp, failureCount);
             }
         }
     }
