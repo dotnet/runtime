@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Configuration
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
         void Load();
         void Set(string key, string? value);
-        bool TryGet(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value);
+        bool TryGet(string key, out string? value);
     }
     public partial interface IConfigurationRoot : Microsoft.Extensions.Configuration.IConfiguration
     {

@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <returns><c>True</c> if a value for the specified key was found, otherwise <c>false</c>.</returns>
-        bool TryGet(string key, [MaybeNullWhen(false)] out string value);
+        bool TryGet(string key, out string? value);
 
         /// <summary>
         /// Sets a configuration value for the specified key.
