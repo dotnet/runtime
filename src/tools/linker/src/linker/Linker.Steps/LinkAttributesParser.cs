@@ -287,7 +287,7 @@ namespace Mono.Linker.Steps
 
 				return new CustomAttributeArgument (typeref, type);
 			default:
-				// No support for null and arrays, consider adding - mono/linker/issues/1957
+				// No support for null and arrays, consider adding - dotnet/linker/issues/1957
 				_context.LogError ($"Unexpected attribute argument type '{typeref.GetDisplayName ()}'.", 1045);
 				return null;
 			}

@@ -37,7 +37,7 @@ stages:
     parameters:
 
       enableTelemetry: true # send helix telemetry
-      helixRepo: mono/linker
+      helixRepo: dotnet/linker
       enablePublishUsingPipelines: true
       enablePublishBuildArtifacts: true # publish build logs to pipeline storage
       ${{ if eq(variables.officialBuild, 'false') }}:

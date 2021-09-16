@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	/// This test depends on a functioning peverify / il verify in order to fail if the scope of type references on security attributes
 	/// were not correctly updated.
 	///
-	/// In order words, until https://github.com/mono/linker/issues/1703 is addressed this test will pass with or without the fix to update the scope on security attributes
+	/// In order words, until https://github.com/dotnet/linker/issues/1703 is addressed this test will pass with or without the fix to update the scope on security attributes
 	/// </summary>
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[SetupLinkerArgument ("--strip-security", "false")]

@@ -923,7 +923,7 @@ namespace Mono.Linker.Steps
 				//
 				// Resolve to type definition to remove any type forwarding imports
 				//
-				// Workaround for https://github.com/mono/linker/issues/2260
+				// Workaround for https://github.com/dotnet/linker/issues/2260
 				// Context has a cache which stores ref->def mapping. This code runs during sweeping
 				// which can remove the type-def from its assembly, effectively making the ref unresolvable.
 				// But the cache doesn't know that, it would still "resolve" the type-ref to now defunct type-def.

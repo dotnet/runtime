@@ -96,7 +96,7 @@ namespace ILLink.Tasks
 
 		/// <summary>
 		///   A list of XML root descriptor files specifying linker
-		///   roots at a granular level. See the mono/linker
+		///   roots at a granular level. See the dotnet/linker
 		///   documentation for details about the format.
 		///   Maps to '-x'.
 		/// </summary>

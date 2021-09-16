@@ -136,7 +136,7 @@ namespace Mono.Linker.Steps
 					continue;
 
 				if (processAllAssemblies) {
-					// We could avoid loading all references in this case: https://github.com/mono/linker/issues/1708
+					// We could avoid loading all references in this case: https://github.com/dotnet/linker/issues/1708
 					foreach (AssemblyDefinition assembly in _context.GetReferencedAssemblies ())
 						ProcessAssembly (assembly, assemblyNav, warnOnUnresolvedTypes: false);
 				} else {

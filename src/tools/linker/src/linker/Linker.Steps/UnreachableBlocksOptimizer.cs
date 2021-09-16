@@ -369,7 +369,7 @@ namespace Mono.Linker.Steps
 
 					// Allow inlining results of instance methods which are explicitly annotated
 					// but don't allow inling results of any other instance method.
-					// See https://github.com/mono/linker/issues/1243 for discussion as to why.
+					// See https://github.com/dotnet/linker/issues/1243 for discussion as to why.
 					// Also explicitly prevent inlining results of virtual methods.
 					if (!md.IsStatic &&
 						(md.IsVirtual || !explicitlyAnnotated))
