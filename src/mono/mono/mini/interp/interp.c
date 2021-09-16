@@ -5444,6 +5444,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_STSFLD_VT_W) {
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [READ32 (ip + 2)];
+			INIT_VTABLE (vtable);
+			gpointer addr = frame->imethod->data_items [READ32 (ip + 4)];
+			memcpy (addr, locals + ip [1], ip [6]);
+			ip += 7;
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_STOBJ_VT) {
 			MonoClass *c = (MonoClass*)frame->imethod->data_items [ip [3]];
 			mono_value_copy_internal (LOCAL_VAR (ip [1], gpointer), locals + ip [2], c);

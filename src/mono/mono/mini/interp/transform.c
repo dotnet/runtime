@@ -1098,6 +1098,30 @@ get_data_item_index (TransformData *td, void *ptr)
 {
 	gpointer p = g_hash_table_lookup (td->data_hash, ptr);
 	guint index;
+	if (p != NULL) {
+		index = GPOINTER_TO_UINT (p) - 1;
+		if (index > UINT16_MAX)
+			g_warning ("Interpreter data item index 0x%x for method '%s'  is out of range", index, td->method->name);
+		return index;
+	}
+	if (td->max_data_items == td->n_data_items) {
+		td->max_data_items = td->n_data_items == 0 ? 16 : 2 * td->max_data_items;
+		td->data_items = (gpointer*)g_realloc (td->data_items, td->max_data_items * sizeof(td->data_items [0]));
+	}
+	index = td->n_data_items;
+	td->data_items [index] = ptr;
+	++td->n_data_items;
+	g_assertf (index < (UINT16_MAX - 1), "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
+
+	g_hash_table_insert (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
+	return index;
+}
+
+static uint32_t
+get_data_item_wide_index (TransformData *td, void *ptr)
+{
+	gpointer p = g_hash_table_lookup (td->data_hash, ptr);
+	uint32_t index;
 	if (p != NULL)
 		return GPOINTER_TO_UINT (p) - 1;
 	if (td->max_data_items == td->n_data_items) {
@@ -1107,8 +1131,16 @@ get_data_item_index (TransformData *td, void *ptr)
 	index = td->n_data_items;
 	td->data_items [index] = ptr;
 	++td->n_data_items;
+	g_assertf (index < (UINT32_MAX - 1), "Interpreter data item 32-bit wide index 0x%x for method '%s' overflows", index, td->method->name);
+
 	g_hash_table_insert (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
 	return index;
+}
+
+static gboolean
+is_data_item_wide_index (TransformData *td)
+{
+	return td->n_data_items >= (int)(UINT16_MAX - 1);
 }
 
 static guint16
@@ -1346,6 +1378,9 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, g
 		break;
 	case MintOpTwoShorts:
 		g_string_append_printf (str, " %u,%u", *(guint16*)data, *(guint16 *)(data + 1));
+		break;
+	case MintOpTwoInts:
+		g_string_append_printf (str, " %u,%u", (guint32)READ32(data), (guint32)READ32(data + 2));
 		break;
 	case MintOpShortAndInt:
 		g_string_append_printf (str, " %u,%u", *(guint16*)data, (guint32)READ32(data + 1));
@@ -4189,11 +4224,13 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				td->last_ins->data [0] = get_data_item_index (td, field_class);
 		}
 	} else {
+		gboolean wide_data = is_data_item_wide_index (td);
 		gpointer field_addr = mono_static_field_get_addr (vtable, field);
 		int size = 0;
-		if (mt == MINT_TYPE_VT)
+		if (mt == MINT_TYPE_VT || wide_data)
 			size = mono_class_value_size (field_class, NULL);
 		if (is_load) {
+			g_assert (!wide_data);
 			MonoType *ftype = mono_field_get_type_internal (field);
 			if (ftype->attrs & FIELD_ATTRIBUTE_INIT_ONLY && vtable->initialized) {
 				if (interp_emit_load_const (td, field_addr, mt))
@@ -4208,15 +4245,26 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			}
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 		} else {
-			interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
+			if (G_LIKELY (!wide_data))
+				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
+			else
+				interp_add_ins (td, MINT_STSFLD_VT_W);
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 		}
 
-		td->last_ins->data [0] = get_data_item_index (td, vtable);
-		td->last_ins->data [1] = get_data_item_index (td, (char*)field_addr);
-		if (mt == MINT_TYPE_VT)
-			td->last_ins->data [2] = size;
+		if (G_LIKELY (!wide_data)) {
+			td->last_ins->data [0] = get_data_item_index (td, vtable);
+			td->last_ins->data [1] = get_data_item_index (td, (char*)field_addr);
+			if (mt == MINT_TYPE_VT)
+				td->last_ins->data [2] = size;
+		} else {
+			uint32_t vtable_idx = get_data_item_wide_index (td, vtable);
+			uint32_t field_addr_idx = get_data_item_wide_index (td, (char*)field_addr);
+			WRITE32_INS (td->last_ins, 0, &vtable_idx);
+			WRITE32_INS (td->last_ins, 2, &field_addr_idx);
+			td->last_ins->data [4] = size;
+		}
 
 	}
 }
@@ -9578,6 +9626,13 @@ retry:
 		dump_interp_code (td->new_code, td->new_code_end);
 	}
 
+
+	if (td->n_data_items >= 16000) {
+		char *meth_name = mono_method_get_full_name (method);
+		g_warning ("method '%s' used 0x%x data items\n", meth_name, td->n_data_items);
+		g_free (meth_name);
+	}
+
 	/* Check if we use excessive stack space */
 	if (td->max_stack_height > header->max_stack * 3 && header->max_stack > 16)
 		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);
@@ -9643,12 +9698,6 @@ retry:
 	/* debugging aid, it makes `mono_pmip` work. */
 	mono_jit_info_table_add (jinfo);
 #endif
-
-	if (td->n_data_items >= 32000) {
-		char *meth_name = mono_method_get_full_name (method);
-		g_warning ("method '%s' used 0x%x data items\n", meth_name, td->n_data_items);
-		g_free (meth_name);
-	}
 	
 exit:
 	g_free (td->in_offsets);
