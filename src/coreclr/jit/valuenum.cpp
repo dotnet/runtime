@@ -479,6 +479,29 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     {
         m_mapSelectBudget = DEFAULT_MAP_SELECT_BUDGET;
     }
+
+#ifdef DEBUG
+    if (comp->compStressCompile(Compiler::STRESS_VN_BUDGET, 50))
+    {
+        // Bias toward smaller budgets as we want to stress returning
+        // unexpectedly opaque results.
+        //
+        CLRRandom* random = comp->m_inlineStrategy->GetRandom(comp->info.compMethodHash());
+        double     p      = random->NextDouble();
+
+        if (p <= 0.5)
+        {
+            m_mapSelectBudget = random->Next(0, 5);
+        }
+        else
+        {
+            int limit         = random->Next(1, DEFAULT_MAP_SELECT_BUDGET + 1);
+            m_mapSelectBudget = random->Next(0, limit);
+        }
+
+        JITDUMP("VN Stress: setting select budget to %u\n", m_mapSelectBudget);
+    }
+#endif
 }
 
 //

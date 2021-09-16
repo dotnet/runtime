@@ -1502,18 +1502,22 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
     // references when using the general GC encoding.
     unsigned lclNum = (unsigned)(varDsc - compiler->lvaTable);
-    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterableType() ||
+    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
         (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
     {
 #ifdef DEBUG
-        Compiler::DoNotEnregisterReason dner;
-        if (varDsc->lvAddrExposed)
+        DoNotEnregisterReason dner;
+        if (varDsc->IsAddressExposed())
         {
-            dner = Compiler::DNER_AddrExposed;
+            dner = DoNotEnregisterReason::AddrExposed;
+        }
+        else if (!varDsc->IsEnregisterableType())
+        {
+            dner = DoNotEnregisterReason::NotRegSizeStruct;
         }
         else
         {
-            dner = Compiler::DNER_IsStruct;
+            dner = DoNotEnregisterReason::DontEnregStructs;
         }
 #endif // DEBUG
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
@@ -1523,7 +1527,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     {
         varDsc->lvTracked = 0;
 #ifdef JIT32_GCENCODER
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_PinningRef));
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif // JIT32_GCENCODER
         return false;
     }
@@ -1534,7 +1538,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     //
     if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
     {
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_LiveInOutOfHandler));
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
     }
 
     if (varDsc->lvDoNotEnregister)
@@ -1763,7 +1767,7 @@ void LinearScan::identifyCandidates()
                 if (parentVarDsc->lvIsMultiRegRet && !parentVarDsc->lvDoNotEnregister)
                 {
                     JITDUMP("Setting multi-reg struct V%02u as not enregisterable:", varDsc->lvParentLcl);
-                    compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(Compiler::DNER_BlockOp));
+                    compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(DoNotEnregisterReason::BlockOp));
                     for (unsigned int i = 0; i < parentVarDsc->lvFieldCnt; i++)
                     {
                         LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(parentVarDsc->lvFieldLclStart + i);

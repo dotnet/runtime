@@ -32,6 +32,26 @@
         <target state="translated">重複類型名稱。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
+        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
+        <target state="new">The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
+        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
+        <target state="new">Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
+        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
+        <target state="new">The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
+        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
+        <target state="new">Deserialization of init-only properties is currently not supported in source generation mode.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
         <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
         <target state="translated">類型 '{0}' 包含多個以 'JsonConstructorAttribute' 註解的建構函式。</target>
