@@ -94,6 +94,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
+    container: debian-11-gcc11-amd64-20210916125744-f42d766
     jobParameters:
       testGroup: innerloop
       compilerName: gcc
