@@ -3140,62 +3140,6 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
-
-        [Fact]
-        public async Task Test()
-        {
-            Console.WriteLine("https://github.com/dotnet/runtime/issues/57619");
-            var message = new byte[1024];
-            var readBuffer = new byte[1024];
-            var random = new Random(0);
-
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            Http2LoopbackConnection connection = null;
-
-            Task serverTask = Task.Run(async () =>
-            {
-                connection = await server.AcceptConnectionAsync();
-
-                await connection.HandleRequestAsync().WaitAsync(TimeSpan.FromSeconds(60));
-            });
-
-            StreamingHttpContent requestContent = new StreamingHttpContent();
-
-            using HttpClient client = CreateHttpClient();
-            client.Timeout = TimeSpan.FromSeconds(0.3);
-            using HttpRequestMessage request = new()
-            {
-                Method = HttpMethod.Post,
-                RequestUri = server.Address,
-                Version = HttpVersion.Version20,
-                VersionPolicy = HttpVersionPolicy.RequestVersionExact,
-                Content = requestContent
-            };
-
-            var responseTask = client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(60));
-
-            Stream requestStream = await requestContent.GetStreamAsync();
-            // Send headers
-            await requestStream.FlushAsync();
-
-            for (int i = 0; i < 5; ++i)
-            {
-                random.NextBytes(message);
-                await requestStream.WriteAsync(message).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
-                await requestStream.FlushAsync();
-                Console.WriteLine("will sleep 2s");
-                await Task.Delay(2_000);
-            }
-            // Send FIN
-            requestContent.CompleteStream();
-            // Receive reply
-            using HttpResponseMessage response = await responseTask;
-
-            await serverTask.WaitAsync(TimeSpan.FromSeconds(60));
-
-            Assert.NotNull(connection);
-            connection.Dispose();
-        }
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]

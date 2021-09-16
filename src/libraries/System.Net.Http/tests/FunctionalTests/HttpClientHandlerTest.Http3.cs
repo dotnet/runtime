@@ -1091,8 +1091,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task Test()
+        [OuterLoop("Uses Task.Delay")]
+        public async Task RequestContentStreaming_Timeout_BothClientAndServerReceiveCancellation()
         {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             Console.WriteLine("https://github.com/dotnet/runtime/issues/57619");
             var message = new byte[1024];
             var readBuffer = new byte[1024];
@@ -1200,11 +1206,7 @@ namespace System.Net.Http.Functional.Tests
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             _getStreamTcs.TrySetResult(stream);
-
-            var cancellationTcs = new TaskCompletionSource();
-            cancellationToken.Register(() => cancellationTcs.TrySetCanceled());
-
-            await Task.WhenAny(_completeTcs.Task, cancellationTcs.Task);
+            await _completeTcs.Task.WaitAsync(cancellationToken);
         }
 
         protected override bool TryComputeLength(out long length)
