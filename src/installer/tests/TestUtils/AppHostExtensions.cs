@@ -39,26 +39,40 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static void SetWindowsGraphicalUserInterfaceBit(string appHostPath)
         {
-            using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostPath))
+            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
+            // overwrite app.exe and edit in place, because the file is opened as "write" for
+            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
+            // executing a file opened in "write" mode.
+            string tempPath = appHostPath + ".tmp";
+            File.Copy(appHostPath, tempPath, true);
+            using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(tempPath))
             {
                 using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
                 {
                     SetWindowsGraphicalUserInterfaceBit(accessor);
                 }
             }
+            File.Move(tempPath, appHostPath, true);
         }
 
         public static void BindAppHost(string appHostPath)
         {
             string appDll = $"{Path.GetFileNameWithoutExtension(appHostPath)}.dll";
 
+            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
+            // overwrite app.exe and edit in place, because the file is opened as "write" for
+            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
+            // executing a file opened in "write" mode.
+            string tempPath = appHostPath + ".tmp";
+            File.Copy(appHostPath, tempPath, true);
             using (var sha256 = SHA256.Create())
             {
                 // Replace the hash with the managed DLL name.
                 var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
                 var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
-                BinaryUtils.SearchAndReplace(appHostPath, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll));
+                BinaryUtils.SearchAndReplace(tempPath, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll));
             }
+            File.Move(tempPath, appHostPath, true);
         }
 
         /// <summary>
