@@ -123,7 +123,7 @@ namespace ILLink.RoslynAnalyzer
 					ImmutableArray<IMethodSymbol> staticConstructors)
 				{
 					foreach (var staticConstructor in staticConstructors) {
-						if (staticConstructor.HasAttribute (RequiresAttributeName) && TryGetRequiresAttribute (staticConstructor, out var requiresAttribute))
+						if (TryGetRequiresAttribute (staticConstructor, out var requiresAttribute))
 							ReportRequiresDiagnostic (operationContext, staticConstructor, requiresAttribute);
 					}
 				}
@@ -138,10 +138,11 @@ namespace ILLink.RoslynAnalyzer
 					// Do not emit any diagnostic if caller is annotated with the attribute too.
 					if (containingSymbol.HasAttribute (RequiresAttributeName))
 						return;
+
 					// Check also for RequiresAttribute in the associated symbol
-					if (containingSymbol is IMethodSymbol methodSymbol && methodSymbol.AssociatedSymbol is not null && methodSymbol.AssociatedSymbol!.HasAttribute (RequiresAttributeName)) {
+					if (containingSymbol is IMethodSymbol methodSymbol && methodSymbol.AssociatedSymbol is not null && methodSymbol.AssociatedSymbol!.HasAttribute (RequiresAttributeName))
 						return;
-					}
+
 					// If calling an instance constructor, check first for any static constructor since it will be called implicitly
 					if (member.ContainingType is { } containingType && operationContext.Operation is IObjectCreationOperation)
 						CheckStaticConstructors (operationContext, containingType.StaticConstructors);
@@ -278,14 +279,14 @@ namespace ILLink.RoslynAnalyzer
 		private bool TryGetRequiresAttribute (ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
 		{
 			requiresAttribute = null;
-			foreach (var _attribute in member.GetAttributes ()) {
-				if (_attribute.AttributeClass is { } attrClass &&
-					attrClass.HasName (RequiresAttributeFullyQualifiedName) &&
-					VerifyAttributeArguments (_attribute)) {
-					requiresAttribute = _attribute;
-					return true;
-				}
+			if (!member.TryGetAttribute (RequiresAttributeFullyQualifiedName, out var _attribute))
+				return false;
+
+			if (VerifyAttributeArguments (_attribute)) {
+				requiresAttribute = _attribute;
+				return true;
 			}
+
 			return false;
 		}
 

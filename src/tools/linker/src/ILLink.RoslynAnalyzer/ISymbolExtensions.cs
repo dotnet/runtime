@@ -22,6 +22,51 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
+		internal static bool TryGetAttribute (this ISymbol member, string attributeName, [NotNullWhen (returnValue: true)] out AttributeData? attribute)
+		{
+			attribute = null;
+			foreach (var _attribute in member.GetAttributes ()) {
+				if (_attribute.AttributeClass is { } attrClass &&
+					attrClass.HasName (attributeName)) {
+					attribute = _attribute;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		internal static bool TryGetDynamicallyAccessedMemberTypes (this ISymbol symbol, out DynamicallyAccessedMemberTypes? dynamicallyAccessedMemberTypes)
+		{
+			dynamicallyAccessedMemberTypes = null;
+			if (!TryGetAttribute (symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))
+				return false;
+
+			dynamicallyAccessedMemberTypes = (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers!.ConstructorArguments[0].Value!;
+			return true;
+		}
+
+		internal static bool TryGetDynamicallyAccessedMemberTypesOnReturnType (this ISymbol symbol, out DynamicallyAccessedMemberTypes? dynamicallyAccessedMemberTypes)
+		{
+			dynamicallyAccessedMemberTypes = null;
+			if (symbol is not IMethodSymbol methodSymbol)
+				return false;
+
+			AttributeData? dynamicallyAccessedMembers = null;
+			foreach (var returnTypeAttribute in methodSymbol.GetReturnTypeAttributes ())
+				if (returnTypeAttribute.AttributeClass is var attrClass && attrClass != null &&
+					attrClass.HasName (DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute)) {
+					dynamicallyAccessedMembers = returnTypeAttribute;
+					break;
+				}
+
+			if (dynamicallyAccessedMembers == null)
+				return false;
+
+			dynamicallyAccessedMemberTypes = (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
+			return true;
+		}
+
 		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overridenMember)
 		{
 			overridenMember = symbol switch {

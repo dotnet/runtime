@@ -34,6 +34,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static DiagnosticResult Diagnostic (DiagnosticDescriptor descriptor)
 			=> CSharpAnalyzerVerifier<TAnalyzer, XUnitVerifier>.Diagnostic (descriptor);
 
+		public static DiagnosticResult Diagnostic (DiagnosticId diagnosticId)
+			=> CSharpAnalyzerVerifier<TAnalyzer, XUnitVerifier>.Diagnostic (DiagnosticDescriptors.GetDiagnosticDescriptor (diagnosticId));
+
 		public static Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel)> CreateCompilation (
 			string src,
 			(string, string)[]? globalAnalyzerOptions = null,
