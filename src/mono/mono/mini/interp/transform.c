@@ -9633,12 +9633,6 @@ retry:
 	}
 
 
-	if (td->n_data_items >= 16000) {
-		char *meth_name = mono_method_get_full_name (method);
-		g_warning ("method '%s' used 0x%x data items\n", meth_name, td->n_data_items);
-		g_free (meth_name);
-	}
-
 	/* Check if we use excessive stack space */
 	if (td->max_stack_height > header->max_stack * 3 && header->max_stack > 16)
 		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);
