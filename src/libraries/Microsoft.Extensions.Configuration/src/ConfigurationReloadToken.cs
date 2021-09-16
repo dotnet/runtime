@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class ConfigurationReloadToken : IChangeToken
     {
-        private CancellationTokenSource _cts = new CancellationTokenSource();
+        private CancellationTokenSource _cts = new();
 
         /// <summary>
         /// Indicates if this token will proactively raise callbacks. Callbacks are still guaranteed to be invoked, eventually.

@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IList<IConfigurationProvider> _providers;
         private readonly IList<IDisposable> _changeTokenRegistrations;
-        private ConfigurationReloadToken _changeToken = new ConfigurationReloadToken();
+        private ConfigurationReloadToken _changeToken = new();
 
         /// <summary>
         /// Initializes a Configuration root with a list of providers.

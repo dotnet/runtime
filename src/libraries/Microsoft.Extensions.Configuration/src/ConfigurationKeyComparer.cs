@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// The default instance.
         /// </summary>
-        public static ConfigurationKeyComparer Instance { get; } = new ConfigurationKeyComparer();
+        public static ConfigurationKeyComparer Instance { get; } = new();
 
         /// <summary>A comparer delegate with the default instance.</summary>
         internal static Comparison<string> Comparison { get; } = Instance.Compare;
