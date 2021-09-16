@@ -184,13 +184,19 @@
 
         <RunTimeDependencyCopyLocal
           Include="$(MonoAOTCompilerDir)\**"
-          TargetDir="monoaotcompiler/"
+          TargetDir="MonoAotCompiler/"
+        />
+
+        <!-- TODO: Need to find a way to compute this path instead of hard coding-->
+        <RuntimeDependencyCopyLocal
+           Include="$(ArtifactsBinDir)/mono/Browser.wasm.Debug/cross/browser-wasm/*"
+           TargetDir="monoaotcross/"
         />
 
     </ItemGroup>
 
 
-     <Message Text="!!!naricc_debug!!!: EmSdkDir: $(EmSdkDir) CopyDependencyToCoreRoot: MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir): TagetArchitecture: $(TargetArchitecture): RuntimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal) " Importance="high" />
+     <Message Text="!!!naricc_debug!!!: MonoAotCrossCompiler: $(MonoAotCrossCompiler) MonoAotCompilerDir: $(MonoAOTCompilerDir) EmSdkDir: $(EmSdkDir) CopyDependencyToCoreRoot: MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir): TagetArchitecture: $(TargetArchitecture): RuntimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal) " Importance="high" />
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />

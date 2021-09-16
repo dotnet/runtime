@@ -20,6 +20,7 @@
     <JsonToItemsTaskFactoryTasksAssemblyPath>$(CORE_ROOT)\JsonToItemsTaskFactory\JsonToItemsTaskFactory.dll</JsonToItemsTaskFactoryTasksAssemblyPath>
     <RuntimeConfigParserTasksAssemblyPath>$(CORE_ROOT)\RuntimeConfigParser\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
     <EMSDK_PATH>$(CORE_ROOT)\emsdk</EMSDK_PATH>
+    <MonoAOTCompilerDir>$(CORE_ROOT)\monoaotcompiler</MonoAOTCompilerDir>
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
