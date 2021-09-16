@@ -349,7 +349,7 @@
     <value>The JSON property name for '{0}.{1}' cannot be null.</value>
   </data>
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
-    <value>The data extension property '{0}.{1}' does not match the required signature of 'IDictionary&lt;string, JsonElement&gt;', 'IDictionary&lt;string, object&gt;' or 'JsonObject'.</value>
+    <value>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
@@ -492,7 +492,7 @@
     <value>The type '{0}' is invalid for serialization or deserialization because it is a pointer type, is a ref struct, or contains generic parameters that have not been replaced by specific types.</value>
   </data>
   <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
-    <value>Serialization and deserialization of '{0}' instances are not supported and should be avoided since they can lead to security issues.</value>
+    <value>Serialization and deserialization of '{0}' instances are not supported.</value>
   </data>
   <data name="JsonIncludeOnNonPublicInvalid" xml:space="preserve">
     <value>The non-public property '{0}' on type '{1}' is annotated with 'JsonIncludeAttribute' which is invalid.</value>

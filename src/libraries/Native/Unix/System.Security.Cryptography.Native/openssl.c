@@ -564,7 +564,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
             if (answer)
             {
                 BIO* b = BIO_new(BIO_s_mem());
-                ASN1_STRING_print_ex(b, answer, 0);
+                ASN1_STRING_print_ex(b, answer, ASN1_STRFLGS_UTF8_CONVERT);
                 return b;
             }
         }
@@ -646,7 +646,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                     if (str)
                     {
                         BIO* b = BIO_new(BIO_s_mem());
-                        ASN1_STRING_print_ex(b, str, 0);
+                        ASN1_STRING_print_ex(b, str, ASN1_STRFLGS_UTF8_CONVERT);
                         sk_GENERAL_NAME_free(altNames);
                         return b;
                     }

@@ -224,7 +224,7 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
 
                 if (!curBlk->hasProfileWeight())
                 {
-                    BasicBlock::weight_t scale = BB_LOOP_WEIGHT_SCALE;
+                    weight_t scale = BB_LOOP_WEIGHT_SCALE;
 
                     if (!dominates)
                     {
@@ -340,7 +340,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             //
             if (!curBlk->isMaxBBWeight() && !curBlk->hasProfileWeight())
             {
-                BasicBlock::weight_t scale = 1.0f / BB_LOOP_WEIGHT_SCALE;
+                weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
 
                 if (!fgDominate(curBlk, endBlk))
                 {
@@ -2851,7 +2851,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
                 JITDUMP("in optCanonicalizeLoop: block " FMT_BB " will also contribute to the weight of " FMT_BB "\n",
                         newT->bbNum, topPredBlock->bbNum);
 
-                BasicBlock::weight_t newWeight = newT->getBBWeight(this) + topPredBlock->getBBWeight(this);
+                weight_t newWeight = newT->getBBWeight(this) + topPredBlock->getBBWeight(this);
                 newT->setBBProfileWeight(newWeight);
             }
         }
@@ -2910,9 +2910,24 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// optLoopContains: Check if one loop contains another
+//
+// Arguments:
+//    l1 -- loop num of containing loop (must be valid loop num)
+//    l2 -- loop num of contained loop (valid loop num, or NOT_IN_LOOP)
+//
+// Returns:
+//    True if loop described by l2 is contained within l1.
+//
+// Notes:
+//    A loop contains itself.
+//
 bool Compiler::optLoopContains(unsigned l1, unsigned l2)
 {
-    assert(l1 != BasicBlock::NOT_IN_LOOP);
+    assert(l1 < optLoopCount);
+    assert((l2 < optLoopCount) || (l2 == BasicBlock::NOT_IN_LOOP));
+
     if (l1 == l2)
     {
         return true;
@@ -3601,7 +3616,7 @@ PhaseStatus Compiler::optUnrollLoops()
         iterOperType = optLoopTable[lnum].lpIterOperType();
         unsTest      = (optLoopTable[lnum].lpTestTree->gtFlags & GTF_UNSIGNED) != 0;
 
-        if (lvaTable[lvar].lvAddrExposed)
+        if (lvaTable[lvar].IsAddressExposed())
         {
             // If the loop iteration variable is address-exposed then bail
             continue;
@@ -3818,7 +3833,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     // Note this is not quite right, as we may not have upscaled by this amount
                     // and we might not have upscaled at all, if we had profile data.
                     //
-                    newBlock->scaleBBWeight(1.0f / BB_LOOP_WEIGHT_SCALE);
+                    newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
                     assert(newBlock->bbJumpDest == nullptr);
@@ -4212,11 +4227,11 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         estDupCostSz += tree->GetCostSz();
     }
 
-    BasicBlock::weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
-    bool                       allProfileWeightsAreValid = false;
-    BasicBlock::weight_t const weightBlock               = block->bbWeight;
-    BasicBlock::weight_t const weightTest                = bTest->bbWeight;
-    BasicBlock::weight_t const weightNext                = block->bbNext->bbWeight;
+    weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
+    bool           allProfileWeightsAreValid = false;
+    weight_t const weightBlock               = block->bbWeight;
+    weight_t const weightTest                = bTest->bbWeight;
+    weight_t const weightNext                = block->bbNext->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -4467,13 +4482,13 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Note "next" is the loop top block, not bTest's bbNext,
         // we'll call this latter block "after".
         //
-        BasicBlock::weight_t const testToNextLikelihood  = min(1.0f, weightNext / weightTest);
-        BasicBlock::weight_t const testToAfterLikelihood = 1.0f - testToNextLikelihood;
+        weight_t const testToNextLikelihood  = min(1.0, weightNext / weightTest);
+        weight_t const testToAfterLikelihood = 1.0 - testToNextLikelihood;
 
         // Adjust edges out of bTest (which now has weight weightNext)
         //
-        BasicBlock::weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
-        BasicBlock::weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
+        weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
+        weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
 
         flowList* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
         flowList* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
@@ -4490,11 +4505,11 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         //
         JITDUMP("Profile weight of " FMT_BB " remains unchanged at " FMT_WT "\n", block->bbNum, weightBlock);
 
-        BasicBlock::weight_t const blockToNextLikelihood  = testToNextLikelihood;
-        BasicBlock::weight_t const blockToAfterLikelihood = testToAfterLikelihood;
+        weight_t const blockToNextLikelihood  = testToNextLikelihood;
+        weight_t const blockToAfterLikelihood = testToAfterLikelihood;
 
-        BasicBlock::weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
-        BasicBlock::weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
+        weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
+        weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
         flowList* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
         flowList* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
@@ -4876,9 +4891,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit)
                 {
-                    tree->ChangeOperConst(GT_CNS_INT);
-                    tree->gtType                = TYP_INT;
-                    tree->AsIntCon()->gtIconVal = (int)lval;
+                    tree->BashToConst(static_cast<int32_t>(lval));
                     if (vnStore != nullptr)
                     {
                         fgValueNumberTreeConst(tree);
@@ -6643,8 +6656,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
     while (!blocks->Empty())
     {
-        BasicBlock*          block       = blocks->Pop();
-        BasicBlock::weight_t blockWeight = block->getBBWeight(this);
+        BasicBlock* block       = blocks->Pop();
+        weight_t    blockWeight = block->getBBWeight(this);
 
         JITDUMP("    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB
                 ">, firstBlock is %s\n",
@@ -6750,7 +6763,18 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
         else if (funcApp.m_func == VNF_MemOpaque)
         {
             const unsigned vnLoopNum = funcApp.m_args[0];
-            res                      = !optLoopContains(lnum, vnLoopNum);
+
+            // Check for the special "ambiguous" loop MemOpaque VN.
+            // This is considered variant in every loop.
+            //
+            if (vnLoopNum == BasicBlock::MAX_LOOP_NUM)
+            {
+                res = false;
+            }
+            else
+            {
+                res = !optLoopContains(lnum, vnLoopNum);
+            }
         }
         else
         {
@@ -6874,9 +6898,9 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             if (allValidProfileWeights)
             {
-                BasicBlock::weight_t loopEnteredCount;
-                BasicBlock::weight_t loopSkippedCount;
-                bool                 useEdgeWeights = fgHaveValidEdgeWeights;
+                weight_t loopEnteredCount;
+                weight_t loopSkippedCount;
+                bool     useEdgeWeights = fgHaveValidEdgeWeights;
 
                 if (useEdgeWeights)
                 {
@@ -6885,8 +6909,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     noway_assert(edgeToNext != nullptr);
                     noway_assert(edgeToJump != nullptr);
 
-                    loopEnteredCount = (edgeToNext->edgeWeightMin() + edgeToNext->edgeWeightMax()) / 2.0f;
-                    loopSkippedCount = (edgeToJump->edgeWeightMin() + edgeToJump->edgeWeightMax()) / 2.0f;
+                    loopEnteredCount = (edgeToNext->edgeWeightMin() + edgeToNext->edgeWeightMax()) / 2.0;
+                    loopSkippedCount = (edgeToJump->edgeWeightMin() + edgeToJump->edgeWeightMax()) / 2.0;
 
                     // Watch out for cases where edge weights were not properly maintained
                     // so that it appears no profile flow enters the loop.
@@ -6900,14 +6924,14 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     loopSkippedCount = head->bbJumpDest->bbWeight;
                 }
 
-                BasicBlock::weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
+                weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
 
                 JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
                         fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
                         loopSkippedCount, loopTakenRatio);
 
                 // Calculate a good approximation of the preHead's block weight
-                BasicBlock::weight_t preHeadWeight = (head->bbWeight * loopTakenRatio);
+                weight_t preHeadWeight = (head->bbWeight * loopTakenRatio);
                 preHead->setBBProfileWeight(preHeadWeight);
                 noway_assert(!preHead->isRunRarely());
             }
@@ -7712,7 +7736,7 @@ Compiler::fgWalkResult Compiler::optValidRangeCheckIndex(GenTree** pTree, fgWalk
 
     if (tree->gtOper == GT_LCL_VAR)
     {
-        if (pData->pCompiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvAddrExposed)
+        if (pData->pCompiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()].IsAddressExposed())
         {
             pData->bValidIndex = false;
             return WALK_ABORT;
@@ -7759,7 +7783,7 @@ bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
             noway_assert(pArray->gtType == TYP_REF);
             noway_assert(pArray->AsLclVarCommon()->GetLclNum() < lvaCount);
 
-            if (lvaTable[pArray->AsLclVarCommon()->GetLclNum()].lvAddrExposed)
+            if (lvaTable[pArray->AsLclVarCommon()->GetLclNum()].IsAddressExposed())
             {
                 // If the array address has been taken, don't do the optimization
                 // (this restriction can be lowered a bit, but i don't think it's worth it)
@@ -8294,8 +8318,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         assert(edge1 != nullptr);
         assert(edge2 != nullptr);
 
-        BasicBlock::weight_t edgeSumMin = edge1->edgeWeightMin() + edge2->edgeWeightMin();
-        BasicBlock::weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
+        weight_t edgeSumMin = edge1->edgeWeightMin() + edge2->edgeWeightMin();
+        weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
         if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
         {
             edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->bbJumpDest);

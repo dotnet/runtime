@@ -16,11 +16,11 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct SByte : IComparable, IConvertible, ISpanFormattable, IComparable<sbyte>, IEquatable<sbyte>
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IBinaryInteger<sbyte>,
           IMinMaxValue<sbyte>,
           ISignedNumber<sbyte>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         private readonly sbyte m_value; // Do not rename (binary serialization)

@@ -385,12 +385,14 @@ namespace System.Reflection
 
                 for (int i = 0, offset = 0; i < genericArguments.Length; i++)
                 {
-                    if (!genericArguments[i].IsValueType)
+                    Type t = Nullable.GetUnderlyingType(genericArguments[i]) ?? genericArguments[i];
+
+                    if (!t.IsValueType || t.IsGenericType)
                     {
                         offset++;
                     }
 
-                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, offset);
+                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, index + offset);
                 }
             }
 
@@ -480,7 +482,7 @@ namespace System.Reflection
             {
                 NullabilityState state = nullability.ReadState;
 
-                if (!ParseNullableState(metaType.GetCustomAttributesData(), 0, ref state))
+                if (state == NullabilityState.NotNull && !ParseNullableState(metaType.GetCustomAttributesData(), 0, ref state))
                 {
                     state = GetNullableContext(metaType);
                 }

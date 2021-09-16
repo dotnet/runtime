@@ -2998,7 +2998,7 @@ typedef struct {
 	gpointer *wrapper_arg;
 } RuntimeInvokeInfo;
 
-#define MONO_SIZEOF_DYN_CALL_RET_BUF 256
+#define MONO_SIZEOF_DYN_CALL_RET_BUF TARGET_SIZEOF_VOID_P
 
 static RuntimeInvokeInfo*
 create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt, gboolean use_interp, MonoError *error)
@@ -3158,9 +3158,8 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 {
 	MonoMethodSignature *sig = info->sig;
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
-	gboolean retval_malloc = FALSE;
-	gpointer retval_ptr;
-	guint8 retval [MONO_SIZEOF_DYN_CALL_RET_BUF];
+	int32_t retval_size = MONO_SIZEOF_DYN_CALL_RET_BUF;
+	gpointer retval = NULL;
 	int i, pindex;
 
 	error_init (error);
@@ -3190,19 +3189,18 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 		if (info->ret_box_class && !sig->ret->byref &&
 		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
 		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
-			// if the return type is a struct and its too big for the stack buffer, malloc instead
+			// if the return type is a struct, allocate enough stack space to hold it
 			MonoClass *ret_klass = mono_class_from_mono_type_internal (sig->ret);
 			g_assert (!mono_class_has_failure (ret_klass));
 			int32_t inst_size = mono_class_instance_size (ret_klass);
 			if (inst_size > MONO_SIZEOF_DYN_CALL_RET_BUF) {
-				retval_malloc = TRUE;
-				retval_ptr = g_new0 (guint8, inst_size);
-				g_assert (retval_ptr);
+				retval_size = inst_size;
 			}
 		}
-		if (!retval_malloc)
-			retval_ptr = &retval;
-		args [pindex ++] = &retval_ptr;
+	}
+	retval = g_alloca (retval_size);
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		args [pindex ++] = &retval;
 	}
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
@@ -3251,9 +3249,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 			if (sig->ret->byref) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
-				MonoObject *ret = mono_value_box_checked (info->ret_box_class, retval_ptr, error);
-				if (retval_malloc)
-					g_free (retval_ptr);
+				MonoObject *ret = mono_value_box_checked (info->ret_box_class, retval, error);
 				return ret;
 			}
 		} else {
@@ -3417,25 +3413,22 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		gpointer *args;
 		int i, pindex, buf_size;
 		guint8 *buf;
-		guint8 retbuf [MONO_SIZEOF_DYN_CALL_RET_BUF];
-		guint8 *retval = &retbuf[0];
-		gboolean retval_malloc = FALSE;
+		int32_t retval_size = MONO_SIZEOF_DYN_CALL_RET_BUF;
+		guint8 *retval = NULL;
 
-		/* if the return value is too big, put it in a dynamically allocated temporary */
+		/* if the return type is a struct and it's too big, allocate more space for it */
 		if (info->ret_box_class && !sig->ret->byref &&
 		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
 		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
-			// if the return type is a struct and its too big for the stack buffer, malloc instead
 			MonoClass *ret_klass = mono_class_from_mono_type_internal (sig->ret);
 			g_assert (!mono_class_has_failure (ret_klass));
 			int32_t inst_size = mono_class_instance_size (ret_klass);
 			if (inst_size > MONO_SIZEOF_DYN_CALL_RET_BUF) {
-				retval_malloc = TRUE;
-				retval = g_new0 (guint8, inst_size);
-				g_assert (retval);
+				retval_size = inst_size;
 			}
 		}
 
+		retval = g_alloca (retval_size);
 
 		/* Convert the arguments to the format expected by start_dyn_call () */
 		args = (void **)g_alloca ((sig->param_count + sig->hasthis) * sizeof (gpointer));
@@ -3486,8 +3479,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
 				MonoObject *boxed_ret = mono_value_box_checked (info->ret_box_class, retval, error);
-				if (retval_malloc)
-					g_free (retval);
 				return boxed_ret;
 			}
 		} else {

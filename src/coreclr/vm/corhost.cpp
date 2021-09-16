@@ -674,7 +674,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
         SString sPlatformResourceRoots(pwzPlatformResourceRoots);
         SString sAppPaths(pwzAppPaths);
 
-        DefaultAssemblyBinder *pBinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
         _ASSERTE(pBinder != NULL);
         IfFailThrow(pBinder->SetupBindingPaths(
             sTrustedPlatformAssemblies,

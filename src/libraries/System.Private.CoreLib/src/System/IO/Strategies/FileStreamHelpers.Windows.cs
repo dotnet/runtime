@@ -124,6 +124,16 @@ namespace System.IO.Strategies
 
         internal static unsafe void SetFileLength(SafeFileHandle handle, long length)
         {
+            if (!TrySetFileLength(handle, length, out int errorCode))
+            {
+                throw errorCode == Interop.Errors.ERROR_INVALID_PARAMETER
+                    ? new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig)
+                    : Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+            }
+        }
+
+        internal static unsafe bool TrySetFileLength(SafeFileHandle handle, long length, out int errorCode)
+        {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
                 EndOfFile = length
@@ -135,11 +145,12 @@ namespace System.IO.Strategies
                 &eofInfo,
                 (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
             {
-                int errorCode = Marshal.GetLastPInvokeError();
-                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+                errorCode = Marshal.GetLastPInvokeError();
+                return false;
             }
+
+            errorCode = Interop.Errors.ERROR_SUCCESS;
+            return true;
         }
 
         internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)

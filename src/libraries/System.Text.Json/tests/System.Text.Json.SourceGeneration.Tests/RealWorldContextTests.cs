@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Serialization.Tests;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -108,6 +109,31 @@ namespace System.Text.Json.SourceGeneration.Tests
             RepeatedTypes.Location obj = JsonSerializer.Deserialize(json, DefaultContext.RepeatedLocation);
 
             VerifyRepeatedLocation(expected, obj);
+        }
+
+        [Fact]
+        public virtual void RoundTripValueTuple()
+        {
+            bool isIncludeFieldsEnabled = DefaultContext.IsIncludeFieldsEnabled;
+
+            var tuple = (Label1: "string", Label2: 42, true);
+            string expectedJson = isIncludeFieldsEnabled
+                ? "{\"Item1\":\"string\",\"Item2\":42,\"Item3\":true}"
+                : "{}";
+
+            string json = JsonSerializer.Serialize(tuple, DefaultContext.ValueTupleStringInt32Boolean);
+            Assert.Equal(expectedJson, json);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                // Deserialization not supported in fast path serialization only mode
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean));
+            }
+            else
+            {
+                var deserializedTuple = JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean);
+                Assert.Equal(isIncludeFieldsEnabled ? tuple : default, deserializedTuple);
+            }
         }
 
         [Fact]
@@ -218,11 +244,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public virtual void RoundTripWithCustomPropertyConverterFactory_Class()
         {
-            const string Json = "{\"MyEnum\":\"A\"}";
+            const string Json = "{\"MyEnum\":\"One\"}";
 
             ClassWithCustomConverterPropertyFactory obj = new()
             {
-                MyEnum = SampleEnum.A
+                MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
@@ -242,18 +268,18 @@ namespace System.Text.Json.SourceGeneration.Tests
             else
             {
                 obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterPropertyFactory);
-                Assert.Equal(SampleEnum.A, obj.MyEnum);
+                Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
 
         [Fact]
         public virtual void RoundTripWithCustomPropertyConverterFactory_Struct()
         {
-            const string Json = "{\"MyEnum\":\"A\"}";
+            const string Json = "{\"MyEnum\":\"One\"}";
 
             StructWithCustomConverterPropertyFactory obj = new()
             {
-                MyEnum = SampleEnum.A
+                MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
@@ -273,7 +299,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             else
             {
                 obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterPropertyFactory);
-                Assert.Equal(SampleEnum.A, obj.MyEnum);
+                Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
 

@@ -770,3 +770,15 @@ public class MainPage
     }
 }
 
+public class LoopClass
+{
+    public static void LoopToBreak()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            Console.WriteLine($"should pause only on i == 3");
+        }
+        Console.WriteLine("breakpoint to check");
+    }
+}
+

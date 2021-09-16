@@ -49,7 +49,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Parameterized_WrapperForICollection))]
         [JsonSerializable(typeof(Point_2D_Struct))]
         [JsonSerializable(typeof(Point_2D_Struct_WithAttribute))]
-        [JsonSerializable(typeof(ClassWithConstructor_SimpleAndComplexParameters))]
+        [JsonSerializable(typeof(ObjWCtorMixedParams))]
         [JsonSerializable(typeof(Person_Class))]
         [JsonSerializable(typeof(Point_2D))]
         [JsonSerializable(typeof(Point_MultipleMembers_BindTo_OneConstructorParameter))]
@@ -123,6 +123,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(MyRecord))]
         [JsonSerializable(typeof(AgeRecord))]
         [JsonSerializable(typeof(JsonElement))]
+        [JsonSerializable(typeof(Parameterized_Class_With_ComplexTuple))]
+        [JsonSerializable(typeof(Parameterized_Person_Simple))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -163,7 +165,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Parameterized_WrapperForICollection))]
         [JsonSerializable(typeof(Point_2D_Struct))]
         [JsonSerializable(typeof(Point_2D_Struct_WithAttribute))]
-        [JsonSerializable(typeof(ClassWithConstructor_SimpleAndComplexParameters))]
+        [JsonSerializable(typeof(ObjWCtorMixedParams))]
         [JsonSerializable(typeof(Person_Class))]
         [JsonSerializable(typeof(Point_2D))]
         [JsonSerializable(typeof(Point_MultipleMembers_BindTo_OneConstructorParameter))]
@@ -237,6 +239,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(MyRecord))]
         [JsonSerializable(typeof(AgeRecord))]
         [JsonSerializable(typeof(JsonElement))]
+        [JsonSerializable(typeof(Parameterized_Class_With_ComplexTuple))]
+        [JsonSerializable(typeof(Parameterized_Person_Simple))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

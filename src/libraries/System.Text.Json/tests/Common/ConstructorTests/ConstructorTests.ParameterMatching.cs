@@ -291,9 +291,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task OtherPropertiesAreSet()
         {
             var personClass = await JsonSerializerWrapperForString.DeserializeWrapper<Person_Class>(Person_Class.s_json);
@@ -312,9 +309,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task ExtraProperties_GoInExtensionData_IfPresent()
         {
             Point_2D_With_ExtData point = await JsonSerializerWrapperForString.DeserializeWrapper<Point_2D_With_ExtData>(@"{""X"":1,""y"":2,""b"":3}");
@@ -368,7 +362,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task NumerousSimpleAndComplexParameters()
         {
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_json);
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_json);
             obj.Verify();
         }
 
@@ -565,7 +559,7 @@ namespace System.Text.Json.Serialization.Tests
 #endif
         public async Task TupleDeserializationWorks_ClassWithParameterizedCtor()
         {
-            string classJson = ClassWithConstructor_SimpleAndComplexParameters.s_json;
+            string classJson = ObjWCtorMixedParams.s_json;
 
             StringBuilder sb = new StringBuilder();
             sb.Append("{");
@@ -579,13 +573,13 @@ namespace System.Text.Json.Serialization.Tests
             string complexTupleJson = sb.ToString();
 
             var complexTuple = await JsonSerializerWrapperForString.DeserializeWrapper<Tuple<
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters,
-                ClassWithConstructor_SimpleAndComplexParameters>>(complexTupleJson);
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams,
+                ObjWCtorMixedParams>>(complexTupleJson);
 
             complexTuple.Item1.Verify();
             complexTuple.Item2.Verify();
@@ -793,9 +787,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task LastParameterWins_DoesNotGoToExtensionData()
         {
             string json = @"{
@@ -823,9 +814,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task HonorExtensionDataGeneric()
         {
             var obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithParameterizedCtor_GenericDictionary_JsonElementExt>(@"{""key"": ""value""}");

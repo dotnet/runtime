@@ -835,7 +835,7 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipDeleteRegion(HandleRef region);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillRegion(HandleRef graphics, HandleRef brush, HandleRef region);
 
             [DllImport(LibraryName, ExactSpelling = true)]
@@ -1183,127 +1183,127 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSaveGraphics(HandleRef graphics, out int state);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawArc(HandleRef graphics, HandleRef pen, float x, float y, float width, float height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawArcI(HandleRef graphics, HandleRef pen, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawLinesI(HandleRef graphics, HandleRef pen, Point* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawBezier(HandleRef graphics, HandleRef pen, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawEllipse(HandleRef graphics, HandleRef pen, float x, float y, float width, float height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawEllipseI(HandleRef graphics, HandleRef pen, int x, int y, int width, int height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawLine(HandleRef graphics, HandleRef pen, float x1, float y1, float x2, float y2);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawLineI(HandleRef graphics, HandleRef pen, int x1, int y1, int x2, int y2);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawLines(HandleRef graphics, HandleRef pen, PointF* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawPath(HandleRef graphics, HandleRef pen, HandleRef path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawPie(HandleRef graphics, HandleRef pen, float x, float y, float width, float height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawPieI(HandleRef graphics, HandleRef pen, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawPolygon(HandleRef graphics, HandleRef pen, PointF* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawPolygonI(HandleRef graphics, HandleRef pen, Point* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillEllipse(HandleRef graphics, HandleRef brush, float x, float y, float width, float height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillEllipseI(HandleRef graphics, HandleRef brush, int x, int y, int width, int height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillPolygon(HandleRef graphics, HandleRef brush, PointF* points, int count, FillMode brushMode);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillPolygonI(HandleRef graphics, HandleRef brush, Point* points, int count, FillMode brushMode);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillRectangle(HandleRef graphics, HandleRef brush, float x, float y, float width, float height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillRectangleI(HandleRef graphics, HandleRef brush, int x, int y, int width, int height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillRectangles(HandleRef graphics, HandleRef brush, RectangleF* rects, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillRectanglesI(HandleRef graphics, HandleRef brush, Rectangle* rects, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
             internal static extern int GdipDrawString(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, HandleRef brush);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImageRectI(HandleRef graphics, HandleRef image, int x, int y, int width, int height);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGraphicsClear(HandleRef graphics, int argb);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawClosedCurve(HandleRef graphics, HandleRef pen, PointF* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawClosedCurveI(HandleRef graphics, HandleRef pen, Point* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawClosedCurve2(HandleRef graphics, HandleRef pen, PointF* points, int count, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawClosedCurve2I(HandleRef graphics, HandleRef pen, Point* points, int count, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawCurve(HandleRef graphics, HandleRef pen, PointF* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawCurveI(HandleRef graphics, HandleRef pen, Point* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawCurve2(HandleRef graphics, HandleRef pen, PointF* points, int count, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawCurve2I(HandleRef graphics, HandleRef pen, Point* points, int count, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawCurve3(HandleRef graphics, HandleRef pen, PointF* points, int count, int offset, int numberOfSegments, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawCurve3I(HandleRef graphics, HandleRef pen, Point* points, int count, int offset, int numberOfSegments, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillClosedCurve(HandleRef graphics, HandleRef brush, PointF* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillClosedCurveI(HandleRef graphics, HandleRef brush, Point* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillClosedCurve2(HandleRef graphics, HandleRef brush, PointF* points, int count, float tension, FillMode mode);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillClosedCurve2I(HandleRef graphics, HandleRef brush, Point* points, int count, float tension, FillMode mode);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillPie(HandleRef graphics, HandleRef brush, float x, float y, float width, float height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipFillPieI(HandleRef graphics, HandleRef brush, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
@@ -1312,49 +1312,49 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipMeasureCharacterRanges(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] region);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImageI(HandleRef graphics, HandleRef image, int x, int y);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImage(HandleRef graphics, HandleRef image, float x, float y);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImagePoints(HandleRef graphics, HandleRef image, PointF* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImagePointsI(HandleRef graphics, HandleRef image, Point* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImageRectRectI(HandleRef graphics, HandleRef image, int dstx, int dsty, int dstwidth, int dstheight, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort? callback, HandleRef callbackdata);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImagePointsRect(HandleRef graphics, HandleRef image, PointF* points, int count, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort? callback, HandleRef callbackdata);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImageRectRect(HandleRef graphics, HandleRef image, float dstx, float dsty, float dstwidth, float dstheight, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort? callback, HandleRef callbackdata);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImagePointsRectI(HandleRef graphics, HandleRef image, Point* points, int count, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort? callback, HandleRef callbackdata);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImageRect(HandleRef graphics, HandleRef image, float x, float y, float width, float height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImagePointRect(HandleRef graphics, HandleRef image, float x, float y, float srcx, float srcy, float srcwidth, float srcheight, int srcunit);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawImagePointRectI(HandleRef graphics, HandleRef image, int x, int y, int srcx, int srcy, int srcwidth, int srcheight, int srcunit);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawRectangle(HandleRef graphics, HandleRef pen, float x, float y, float width, float height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawRectangleI(HandleRef graphics, HandleRef pen, int x, int y, int width, int height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawRectangles(HandleRef graphics, HandleRef pen, RectangleF* rects, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName, ExactSpelling = true, SetLastError = true)]
             internal static extern int GdipDrawRectanglesI(HandleRef graphics, HandleRef pen, Rectangle* rects, int count);
 
             [DllImport(LibraryName, ExactSpelling = true)]
