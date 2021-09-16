@@ -480,41 +480,10 @@ namespace System.Threading.Tasks
                 }
                 else
                 {
-                    // Fault with all of the received exceptions, but filter out those due to inner cancellation,
-                    // as they're effectively an implementation detail and stem from the original exception. However,
-                    // if _all_ of the exceptions are OperationCanceledExceptions that contain the internal cancellation
-                    // token, then they were all thrown by the user code explicitly without cancellation having been
-                    // requested (since without the external token being canceled, the only way internal cancellation
-                    // would be triggered is upon receipt of an exception).  In such a case, just treat all of them
-                    // as real exceptions.
-                    Debug.Assert(_exceptions.Count > 0, "If _exceptions was created, it should have also been populated.");
-                    Debug.Assert(Cancellation.IsCancellationRequested, "Any exception should trigger internal cancellation being requested.");
-
-                    // Count how many of the exceptions are for internal cancellation
-                    int oceCount = 0;
-                    foreach (Exception e in _exceptions)
-                    {
-                        if (e is OperationCanceledException oce && oce.CancellationToken == Cancellation.Token)
-                        {
-                            oceCount++;
-                        }
-                    }
-
-                    // If some but not all were, filter them out.
-                    if (oceCount > 0 && oceCount < _exceptions.Count)
-                    {
-                        for (int i = 0; i < _exceptions.Count; i++)
-                        {
-                            if (_exceptions[i] is OperationCanceledException oce && oce.CancellationToken == Cancellation.Token)
-                            {
-                                _exceptions[i] = null!;
-                            }
-                        }
-                        _exceptions.RemoveAll(e => e is null);
-                        Debug.Assert(_exceptions.Count > 0, "Since external cancellation wasn't requested, there should have been a non-cancellation exception that triggered internal cancellation.");
-                    }
-
-                    // Fail the task with the resulting exceptions
+                    // Fail the task with the resulting exceptions.  The first should be the initial
+                    // exception that triggered the operation to shut down.  The others, if any, may
+                    // include cancellation exceptions from other concurrent operations being canceled
+                    // in response to the primary exception.
                     taskSet = TrySetException(_exceptions);
                 }
 

@@ -650,7 +650,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(2, 4)]
         [InlineData(3, 4)]
         [InlineData(4, 4)]
-        public async Task Cancellation_InternalCancellationExceptionsFilteredWhenOtherExceptions(int numThrowingNonCanceledOce, int total)
+        public async Task Cancellation_InternalCancellationExceptionsArentFilteredOut(int numThrowingNonCanceledOce, int total)
         {
             var cts = new CancellationTokenSource();
 
@@ -672,19 +672,8 @@ namespace System.Threading.Tasks.Tests
             });
 
             await Assert.ThrowsAnyAsync<Exception>(() => t);
-            if (numThrowingNonCanceledOce == 0)
-            {
-                Assert.Equal(total, t.Exception.InnerExceptions.Count(e => e is FormatException));
-            }
-            else if (numThrowingNonCanceledOce == total)
-            {
-                Assert.Equal(total, t.Exception.InnerExceptions.Count(e => e is OperationCanceledException));
-            }
-            else
-            {
-                Assert.Equal(total - numThrowingNonCanceledOce, t.Exception.InnerExceptions.Count);
-                Assert.All(t.Exception.InnerExceptions, e => Assert.IsType<FormatException>(e));
-            }
+            Assert.Equal(total, t.Exception.InnerExceptions.Count);
+            Assert.Equal(numThrowingNonCanceledOce, t.Exception.InnerExceptions.Count(e => e is OperationCanceledException));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -741,7 +730,6 @@ namespace System.Threading.Tasks.Tests
             Task t = Parallel.ForEachAsync(Iterate(), (item, cancellationToken) => default);
             await Assert.ThrowsAsync<FormatException>(() => t);
             Assert.True(t.IsFaulted);
-            Assert.Equal(1, t.Exception.InnerExceptions.Count);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -763,7 +751,6 @@ namespace System.Threading.Tasks.Tests
             Task t = Parallel.ForEachAsync(Iterate(), (item, cancellationToken) => default);
             await Assert.ThrowsAsync<FormatException>(() => t);
             Assert.True(t.IsFaulted);
-            Assert.Equal(1, t.Exception.InnerExceptions.Count);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -840,7 +827,6 @@ namespace System.Threading.Tasks.Tests
             Task t = Parallel.ForEachAsync((IEnumerable<int>)new ThrowsExceptionFromDispose(), (item, cancellationToken) => default);
             await Assert.ThrowsAsync<FormatException>(() => t);
             Assert.True(t.IsFaulted);
-            Assert.Equal(1, t.Exception.InnerExceptions.Count);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -849,7 +835,6 @@ namespace System.Threading.Tasks.Tests
             Task t = Parallel.ForEachAsync((IAsyncEnumerable<int>)new ThrowsExceptionFromDispose(), (item, cancellationToken) => default);
             await Assert.ThrowsAsync<DivideByZeroException>(() => t);
             Assert.True(t.IsFaulted);
-            Assert.Equal(1, t.Exception.InnerExceptions.Count);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
