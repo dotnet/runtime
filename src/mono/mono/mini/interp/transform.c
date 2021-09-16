@@ -9288,8 +9288,8 @@ interp_alloc_offsets (TransformData *td)
 			if (ins->flags & INTERP_INST_FLAG_CALL) {
 				int *call_args = ins->info.call_args;
 				if (call_args) {
-					int pair_sregs [MINT_MOV_PAIRS_MAX];
-					int pair_dregs [MINT_MOV_PAIRS_MAX];
+					guint16 pair_sregs [MINT_MOV_PAIRS_MAX];
+					guint16 pair_dregs [MINT_MOV_PAIRS_MAX];
 					int num_pairs = 0;
 					int var = *call_args;
 
@@ -9303,9 +9303,10 @@ interp_alloc_offsets (TransformData *td)
 							td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 
 							int mt = mint_type (td->locals [var].type);
-							if (mt != MINT_TYPE_VT && num_pairs < MINT_MOV_PAIRS_MAX) {
-								pair_sregs [num_pairs] = var;
-								pair_dregs [num_pairs] = new_var;
+							if (mt != MINT_TYPE_VT && num_pairs < MINT_MOV_PAIRS_MAX && var <= G_MAXUINT16 && new_var <= G_MAXUINT16) {
+								// We store these in the instruction data slots so we do this optimizations only if they fit
+								pair_sregs [num_pairs] = (guint16)var;
+								pair_dregs [num_pairs] = (guint16)new_var;
 								num_pairs++;
 								// The arg of the call is no longer global
 								*call_args = new_var;
