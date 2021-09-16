@@ -16,6 +16,7 @@
     <MacOSComponentNamePackType>sharedhost</MacOSComponentNamePackType>
     <IncludeVersionInMacOSComponentName>false</IncludeVersionInMacOSComponentName>
     <MacOSScriptsDirectory>osx_scripts/host</MacOSScriptsDirectory>
+    <MacOSScriptsDirectory Condition="'$(TargetArchitecture)' == 'x64">osx_scripts/host-x64</MacOSScriptsDirectory>
     <MacOSPackageDescription>The .NET Shared Host.</MacOSPackageDescription>
     <RpmScriptsDirectory>$(MSBuildThisFileDirectory)rpm_scripts/host</RpmScriptsDirectory>
     <RpmAfterInstallScript>$(RpmScriptsDirectory)/after_install.sh</RpmAfterInstallScript>
