@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions.Tests
             string result = "Fail.";
             try
             {
-                Regex re = await RegexHelpers.GetRegex(engine, pattern, options);
+                Regex re = await RegexHelpers.GetRegexAsync(engine, pattern, options);
                 Match m = re.Match(input);
 
                 if (m.Success)

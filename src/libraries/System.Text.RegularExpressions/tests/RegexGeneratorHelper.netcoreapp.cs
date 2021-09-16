@@ -28,6 +28,12 @@ namespace System.Text.RegularExpressions.Tests
 
         private static MetadataReference[] CreateReferences()
         {
+            if (PlatformDetection.IsBrowser)
+            {
+                // These tests that use Roslyn don't work well on browser wasm today
+                return new MetadataReference[0];
+            }
+
             // Typically we'd want to use the right reference assemblies, but as we're not persisting any
             // assets and only using this for testing purposes, referencing implementation assemblies is sufficient.
 
@@ -41,7 +47,7 @@ namespace System.Text.RegularExpressions.Tests
             };
         }
 
-        internal static async Task<Regex> SourceGenRegex(
+        internal static async Task<Regex> SourceGenRegexAsync(
             string pattern, RegexOptions options = RegexOptions.None, int matchTimeout = -1, CancellationToken cancellationToken = default)
         {
             // Create the source boilerplate for the pattern

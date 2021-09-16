@@ -378,11 +378,11 @@ namespace System.Text.RegularExpressions.Tests
             {
                 if (captures == "BADBR")
                 {
-                    await Assert.ThrowsAnyAsync<ArgumentException>(async () => (await RegexHelpers.GetRegex(engine, pattern)).IsMatch(input));
+                    await Assert.ThrowsAnyAsync<ArgumentException>(async () => (await RegexHelpers.GetRegexAsync(engine, pattern)).IsMatch(input));
                     return;
                 }
 
-                Regex r = await RegexHelpers.GetRegex(engine, pattern);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
 
                 if (captures == "NOMATCH")
                 {

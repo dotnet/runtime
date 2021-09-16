@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }}
             ");
 
-            Assert.Equal(DiagnosticDescriptors.InvalidRegexArguments.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
         }
 
         [Theory]
@@ -52,7 +52,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }}
             ");
 
-            Assert.Equal(DiagnosticDescriptors.InvalidRegexArguments.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
         }
 
         [Theory]
@@ -69,7 +69,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }}
             ");
 
-            Assert.Equal(DiagnosticDescriptors.InvalidRegexArguments.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -84,7 +84,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }
             ");
 
-            Assert.Equal(DiagnosticDescriptors.RegexMethodMustReturnRegex.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -99,7 +99,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }
             ");
 
-            Assert.Equal(DiagnosticDescriptors.RegexMethodMustBeStatic.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }
             ");
 
-            Assert.Equal(DiagnosticDescriptors.RegexMethodMustNotBeGeneric.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -129,7 +129,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }
             ");
 
-            Assert.Equal(DiagnosticDescriptors.RegexMethodMustBeParameterless.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -144,7 +144,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }
             ");
 
-            Assert.Equal(DiagnosticDescriptors.RegexMethodMustBePartial.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
         [ActiveIssue("https://github.com/dotnet/roslyn/pull/55866")]
@@ -160,7 +160,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 }
             ", langVersion: LanguageVersion.CSharp9);
 
-            Assert.Equal(DiagnosticDescriptors.InvalidLangVersion.Id, Assert.Single(diagnostics).Id);
+            Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -392,6 +392,70 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
+        [Fact]
+        public async Task Valid_OnStruct()
+        {
+            Assert.Empty(await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                internal partial struct C
+                {
+                    [RegexGenerator(""ab"")]
+                    private static partial Regex Valid();
+                }
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_OnRecord()
+        {
+            Assert.Empty(await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                internal partial record C
+                {
+                    [RegexGenerator(""ab"")]
+                    private static partial Regex Valid();
+                }
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_OnRecordStruct()
+        {
+            Assert.Empty(await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                internal partial record struct C
+                {
+                    [RegexGenerator(""ab"")]
+                    private static partial Regex Valid();
+                }
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_NestedVaryingTypes()
+        {
+            Assert.Empty(await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                public partial class A
+                {
+                    public partial record class B
+                    {
+                        public partial record struct C
+                        {
+                            public partial record D
+                            {
+                                public partial struct E
+                                {
+                                    [RegexGenerator(""ab"")]
+                                    public static partial Regex Valid();
+                                }
+                            }
+                        }
+                    }
+                }
+            ", compile: true));
+        }
+
         private async Task<IReadOnlyList<Diagnostic>> RunGenerator(
             string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, CancellationToken cancellationToken = default)
         {
@@ -420,6 +484,12 @@ namespace System.Text.RegularExpressions.Generator.Tests
 
             comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
             EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
+            if (!results.Success)
+            {
+                throw new ArgumentException(
+                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)) + Environment.NewLine +
+                    string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => t.ToString())));
+            }
 
             return generatorResults.Diagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
         }

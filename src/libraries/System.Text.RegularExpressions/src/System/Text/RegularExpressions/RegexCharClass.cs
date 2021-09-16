@@ -1558,44 +1558,22 @@ namespace System.Text.RegularExpressions
             return desc.Append(']').ToString();
         }
 
-        /// <summary>
-        /// Produces a human-readable description for a single character.
-        /// </summary>
+        /// <summary>Produces a human-readable description for a single character.</summary>
         [ExcludeFromCodeCoverage]
-        public static string CharDescription(char ch)
-        {
-            if (ch == '\\')
+        public static string CharDescription(char ch) =>
+            ch switch
             {
-                return "\\\\";
-            }
-
-            if (ch >= ' ' && ch <= '~')
-            {
-                return ch.ToString();
-            }
-
-            var sb = new StringBuilder();
-            int shift;
-
-            if (ch < 256)
-            {
-                sb.Append("\\x");
-                shift = 8;
-            }
-            else
-            {
-                sb.Append("\\u");
-                shift = 16;
-            }
-
-            while (shift > 0)
-            {
-                shift -= 4;
-                sb.Append(HexConverter.ToCharLower(ch >> shift));
-            }
-
-            return sb.ToString();
-        }
+                '\a' => "\\a",
+                '\b' => "\\b",
+                '\t' => "\\t",
+                '\r' => "\\r",
+                '\v' => "\\v",
+                '\f' => "\\f",
+                '\n' => "\\n",
+                '\\' => "\\\\",
+                >= ' ' and <= '~' => ch.ToString(),
+                _ => $"\\u{(uint)ch:X4}"
+            };
 
         [ExcludeFromCodeCoverage]
         private static string CategoryDescription(char ch)

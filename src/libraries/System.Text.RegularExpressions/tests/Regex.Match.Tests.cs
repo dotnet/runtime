@@ -476,7 +476,7 @@ namespace System.Text.RegularExpressions.Tests
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, beginning);
             bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, length);
 
-            Regex r = await RegexHelpers.GetRegex(engine, pattern, options);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             if (isDefaultStart && isDefaultCount)
             {
@@ -559,7 +559,7 @@ namespace System.Text.RegularExpressions.Tests
             string pattern = string.Concat(Enumerable.Repeat(Start, count)) + string.Concat(Enumerable.Repeat(End, count));
             string input = string.Concat(Enumerable.Repeat(Match, count));
 
-            Regex r = await RegexHelpers.GetRegex(engine, pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
             Match m = r.Match(input);
 
             Assert.True(m.Success);
@@ -571,7 +571,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_Timeout(RegexEngine engine)
         {
-            Regex regex = await RegexHelpers.GetRegex(engine, @"\p{Lu}", RegexOptions.IgnoreCase, TimeSpan.FromHours(1));
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"\p{Lu}", RegexOptions.IgnoreCase, TimeSpan.FromHours(1));
             Match match = regex.Match("abc");
             Assert.True(match.Success);
             RegexAssert.Equal("a", match);
@@ -584,7 +584,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
             string input = new string('a', 50) + "@a.a";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(100));
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(100));
             Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
         }
 
@@ -646,7 +646,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_Timeout_Loop_Throws(RegexEngine engine)
         {
-            Regex regex = await RegexHelpers.GetRegex(engine, @"a\s+", RegexOptions.None, TimeSpan.FromSeconds(1));
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s+", RegexOptions.None, TimeSpan.FromSeconds(1));
             string input = "a" + new string(' ', 800_000_000) + " ";
             Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
         }
@@ -659,7 +659,7 @@ namespace System.Text.RegularExpressions.Tests
         public async Task Match_Timeout_Repetition_Throws(RegexEngine engine)
         {
             int repetitionCount = 800_000_000;
-            Regex regex = await RegexHelpers.GetRegex(engine, @"a\s{" + repetitionCount + "}", RegexOptions.None, TimeSpan.FromSeconds(1));
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s{" + repetitionCount + "}", RegexOptions.None, TimeSpan.FromSeconds(1));
             string input = @"a" + new string(' ', repetitionCount) + @"b";
             Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
         }
@@ -952,7 +952,7 @@ namespace System.Text.RegularExpressions.Tests
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, beginning);
             bool isDefaultCount = RegexHelpers.IsDefaultStart(input, options, length);
 
-            Regex r = await RegexHelpers.GetRegex(engine, pattern, options);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             if (isDefaultStart && isDefaultCount)
             {
@@ -999,7 +999,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Match_StartatDiffersFromBeginning_MemberData))]
         public async Task Match_StartatDiffersFromBeginning(RegexEngine engine, string pattern, string input, RegexOptions options, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
         {
-            Regex r = await RegexHelpers.GetRegex(engine, pattern, options);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
             Assert.Equal(expectedSuccessStartAt, r.Match(input, startat).Success);
@@ -1099,17 +1099,17 @@ namespace System.Text.RegularExpressions.Tests
                 // Should not throw out of memory
 
                 // Repeaters
-                Assert.False((await RegexHelpers.GetRegex(engine, @"a{2147483647,}")).IsMatch("a"));
-                Assert.False((await RegexHelpers.GetRegex(engine, @"a{50,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in debug
-                Assert.False((await RegexHelpers.GetRegex(engine, @"a{51,}")).IsMatch("a"));
-                Assert.False((await RegexHelpers.GetRegex(engine, @"a{50_000,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in release
-                Assert.False((await RegexHelpers.GetRegex(engine, @"a{50_001,}")).IsMatch("a"));
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{2147483647,}")).IsMatch("a"));
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in debug
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{51,}")).IsMatch("a"));
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_000,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in release
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_001,}")).IsMatch("a"));
 
                 // Multis
                 foreach (int length in new[] { 50, 51, 50_000, 50_001, char.MaxValue + 1 }) // based on knowledge of cut-offs used in Boyer-Moore
                 {
                     string s = "bcd" + new string('a', length) + "efg";
-                    Assert.True((await RegexHelpers.GetRegex(engine, @$"a{{{length}}}")).IsMatch(s));
+                    Assert.True((await RegexHelpers.GetRegexAsync(engine, @$"a{{{length}}}")).IsMatch(s));
                 }
             }, engine.ToString()).Dispose();
         }
@@ -1182,7 +1182,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(IsMatch_SucceedQuicklyDueToLoopReduction_MemberData))]
         public async Task IsMatch_SucceedQuicklyDueToLoopReduction(RegexEngine engine, string pattern, string input, bool expected)
         {
-            Regex r = await RegexHelpers.GetRegex(engine, pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
             Assert.Equal(expected, r.IsMatch(input));
         }
 
@@ -1223,7 +1223,7 @@ namespace System.Text.RegularExpressions.Tests
 
             for (int trial = 0; trial < Trials; trial++)
             {
-                Regex r = await RegexHelpers.GetRegex(engine, "[a-q][^u-z]{13}x", RegexOptions.None, timeout);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, "[a-q][^u-z]{13}x", RegexOptions.None, timeout);
                 Task.WaitAll(Enumerable.Range(0, b.ParticipantCount).Select(_ => Task.Factory.StartNew(() =>
                              {
                                  b.SignalAndWait();

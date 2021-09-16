@@ -6,6 +6,7 @@ using System.Threading;
 namespace System.Text.RegularExpressions;
 
 /// <summary>Instructs the System.Text.RegularExpressions source generator to generate an implementation of the specified regular expression.</summary>
+/// <remarks>The generator associated with this attribute only supports C#.  It only supplies an implementation when applied to static, partial, parameterless, non-generic methods that are typed to return <see cref="Regex"/>.</remarks>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
 public sealed class RegexGeneratorAttribute : Attribute
 {
@@ -25,12 +26,12 @@ public sealed class RegexGeneratorAttribute : Attribute
     /// <summary>Initializes a new instance of the <see cref="RegexGeneratorAttribute"/> with the specified pattern, options, and timeout.</summary>
     /// <param name="pattern">The regular expression pattern to match.</param>
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
-    /// <param name="matchTimeout">A time-out interval (milliseconds), or <see cref="Timeout.Infinite"/> to indicate that the method should not time out.</param>
-    public RegexGeneratorAttribute(string pattern, RegexOptions options, int matchTimeout)
+    /// <param name="matchTimeoutMilliseconds">A time-out interval (milliseconds), or <see cref="Timeout.Infinite"/> to indicate that the method should not time out.</param>
+    public RegexGeneratorAttribute(string pattern, RegexOptions options, int matchTimeoutMilliseconds)
     {
         Pattern = pattern;
         Options = options;
-        MatchTimeout = matchTimeout;
+        MatchTimeoutMilliseconds = matchTimeoutMilliseconds;
     }
 
     /// <summary>Gets the regular expression pattern to match.</summary>
@@ -40,5 +41,5 @@ public sealed class RegexGeneratorAttribute : Attribute
     public RegexOptions Options { get; }
 
     /// <summary>Gets a time-out interval (milliseconds), or <see cref="Timeout.Infinite"/> to indicate that the method should not time out.</summary>
-    public int MatchTimeout { get; }
+    public int MatchTimeoutMilliseconds { get; }
 }

@@ -30,7 +30,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="regexClasses">A list of classes containing a regex method to be generated.</param>
         /// <param name="cancellationToken">CancellationToken used to request cancellation of the code generation.</param>
         /// <returns>A string containing the emitted code.</returns>
-        private static string Emit(IReadOnlyList<RegexClass> regexClasses, CancellationToken cancellationToken)
+        private static string Emit(IReadOnlyList<RegexType> regexClasses, CancellationToken cancellationToken)
         {
             var sb = new StringBuilder(4096);
 
@@ -42,16 +42,17 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("#pragma warning disable CS0164 // Unreferenced label");
             writer.WriteLine();
             writer.WriteLine("using System;");
-            writer.WriteLine("using System.Diagnostics;");
-            writer.WriteLine("using System.Collections;");
             writer.WriteLine("using System.CodeDom.Compiler;");
+            writer.WriteLine("using System.Collections;");
+            writer.WriteLine("using System.ComponentModel;");
+            writer.WriteLine("using System.Diagnostics;");
             writer.WriteLine("using System.Globalization;");
             writer.WriteLine("using System.Runtime.CompilerServices;");
             writer.WriteLine("using System.Text.RegularExpressions;");
             writer.WriteLine("using System.Threading;");
 
             int counter = 0;
-            foreach (RegexClass rc in regexClasses)
+            foreach (RegexType rc in regexClasses)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 writer.WriteLine();
@@ -62,7 +63,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Generates the code for one regular expression class.</summary>
-        private static void GenerateRegexClass(IndentedTextWriter writer, RegexClass regexClass, ref int counter)
+        private static void GenerateRegexClass(IndentedTextWriter writer, RegexType regexClass, ref int counter)
         {
             // Emit the namespace
             if (!string.IsNullOrWhiteSpace(regexClass.Namespace))
@@ -73,7 +74,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emit containing types
-            RegexClass parent = regexClass.ParentClass;
+            RegexType parent = regexClass.ParentClass;
             var parentClasses = new Stack<string>();
             while (parent != null)
             {
@@ -150,6 +151,7 @@ namespace System.Text.RegularExpressions.Generator
                 $"TimeSpan.FromMilliseconds({rm.MatchTimeout.Value.ToString(CultureInfo.InvariantCulture)})";
 
             writer.WriteLine(s_generatedCodeAttribute);
+            writer.WriteLine("[EditorBrowsable(EditorBrowsableState.Never)]");
             writer.WriteLine($"{rm.Modifiers} Regex {rm.MethodName}() => {id}.Instance;");
             writer.WriteLine();
             writer.WriteLine(s_generatedCodeAttribute);
@@ -209,7 +211,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"        {{");
 
             // Main implementation methods
-            writer.WriteLine($"            protected override void InitTrackCount() => runtrackcount = {rm.Code.TrackCount};"); // TODO: Make this a nop
+            writer.WriteLine($"            protected override void InitTrackCount() => runtrackcount = {rm.Code.TrackCount};");
             writer.WriteLine();
             writer.WriteLine($"            protected override bool FindFirstChar()");
             writer.WriteLine($"            {{");
@@ -359,7 +361,7 @@ namespace System.Text.RegularExpressions.Generator
                             }
                             else
                             {
-                                // TODO: This differs subtely between interpreted and compiled. Why?
+                                // TODO: This differs subtly between interpreted and compiled. Why?
                                 using (EmitBlock(writer, "if (runtextpos < runtextend - 1 || (runtextpos == runtextend - 1 && runtext[runtextpos] != '\\n'))"))
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
@@ -2662,7 +2664,7 @@ namespace System.Text.RegularExpressions.Generator
 
 
             /// <summary>
-            /// Branch to the MSIL corresponding to the regex code at i
+            /// Branch to the label corresponding to the regex code at i
             /// </summary>
             /// <remarks>
             /// A trick: since track and stack space is gobbled up unboundedly

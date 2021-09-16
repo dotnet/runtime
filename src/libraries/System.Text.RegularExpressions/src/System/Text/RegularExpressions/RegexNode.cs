@@ -1764,7 +1764,7 @@ namespace System.Text.RegularExpressions
         {
             bool supported = false;
 
-            // We only support the default left-to-right, not right-to-left, which requires more complication in the gerated code.
+            // We only support the default left-to-right, not right-to-left, which requires more complication in the generated code.
             // (Right-to-left is only employed when explicitly asked for by the developer or by lookbehind assertions.)
             // We also limit the recursion involved to prevent stack dives; this limitation can be removed by switching
             // away from a recursive implementation (done for convenience) to an iterative one that's more complicated

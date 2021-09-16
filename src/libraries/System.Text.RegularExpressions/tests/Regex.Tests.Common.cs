@@ -62,7 +62,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        public static async Task<Regex> GetRegex(RegexEngine engine, string pattern, RegexOptions options = RegexOptions.None, int matchTimeout = -1)
+        public static async Task<Regex> GetRegexAsync(RegexEngine engine, string pattern, RegexOptions options = RegexOptions.None, int matchTimeout = -1)
         {
             switch (engine)
             {
@@ -73,14 +73,14 @@ namespace System.Text.RegularExpressions.Tests
                     return new Regex(pattern, options | RegexOptions.Compiled, TimeSpan.FromMilliseconds(matchTimeout));
 
                 case RegexEngine.SourceGenerated:
-                    return await RegexGeneratorHelper.SourceGenRegex(pattern, options, matchTimeout);
+                    return await RegexGeneratorHelper.SourceGenRegexAsync(pattern, options, matchTimeout);
             }
 
             throw new ArgumentException($"Unknown engine: {engine}");
         }
 
-        public static Task<Regex> GetRegex(RegexEngine engine, string pattern, RegexOptions options, TimeSpan timeout) =>
-            GetRegex(engine, pattern, options, (int)timeout.TotalMilliseconds);
+        public static Task<Regex> GetRegexAsync(RegexEngine engine, string pattern, RegexOptions options, TimeSpan timeout) =>
+            GetRegexAsync(engine, pattern, options, (int)timeout.TotalMilliseconds);
     }
 
     public enum RegexEngine

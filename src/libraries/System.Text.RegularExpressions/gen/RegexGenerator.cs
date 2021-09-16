@@ -20,24 +20,24 @@ using Microsoft.CodeAnalysis.Text;
 namespace System.Text.RegularExpressions.Generator
 {
     /// <summary>Generates C# source code to implement regular expressions.</summary>
-    [Generator]
+    [Generator(LanguageNames.CSharp)]
     public partial class RegexGenerator : IIncrementalGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
+            IncrementalValuesProvider<TypeDeclarationSyntax> classDeclarations = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     static (s, _) => IsSyntaxTargetForGeneration(s),
                     static (ctx, _) => GetSemanticTargetForGeneration(ctx))
                 .Where(static m => m is not null);
 
-            IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
+            IncrementalValueProvider<(Compilation, ImmutableArray<TypeDeclarationSyntax>)> compilationAndClasses =
                 context.CompilationProvider.Combine(classDeclarations.Collect());
 
             context.RegisterImplementationSourceOutput(compilationAndClasses, static (context, source) =>
             {
-                ImmutableArray<ClassDeclarationSyntax> classes = source.Item2;
-                if (classes.IsDefaultOrEmpty)
+                ImmutableArray<TypeDeclarationSyntax> types = source.Item2;
+                if (types.IsDefaultOrEmpty)
                 {
                     return;
                 }
@@ -46,16 +46,17 @@ namespace System.Text.RegularExpressions.Generator
                 try
                 {
                     Compilation compilation = source.Item1;
-                    IReadOnlyList<RegexClass> regexClasses = GetRegexClassesToEmit(compilation, context.ReportDiagnostic, classes.Distinct(), context.CancellationToken);
-                    if (regexClasses.Count != 0)
+                    IReadOnlyList<RegexType> regexTypes = GetRegexTypesToEmit(compilation, context.ReportDiagnostic, types.Distinct(), context.CancellationToken);
+                    if (regexTypes.Count != 0)
                     {
-                        result = Emit(regexClasses, context.CancellationToken);
+                        result = Emit(regexTypes, context.CancellationToken);
                     }
                 }
                 catch (Exception e) when (!(e is OperationCanceledException))
                 {
-                    result = "// ERROR:" + Environment.NewLine + string.Join(Environment.NewLine,
-                        e.ToString().Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).Select(s => $"// {SymbolDisplay.FormatLiteral(s, quote: true)}"));
+                    result =
+                        "// ERROR:" + Environment.NewLine +
+                        string.Join(Environment.NewLine, e.ToString().Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).Select(s => $"// {SymbolDisplay.FormatLiteral(s, quote: false)}"));
                 }
 
                 if (result.Length > 0)

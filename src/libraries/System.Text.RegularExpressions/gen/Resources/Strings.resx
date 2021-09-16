@@ -126,23 +126,8 @@
   <data name="InvalidRegexArgumentsMessage" xml:space="preserve">
     <value>The specified regex is invalid. '{0}'</value>
   </data>
-  <data name="RegexMethodHasBodyMessage" xml:space="preserve">
-    <value>Regex method cannot have a body.</value>
-  </data>
-  <data name="RegexMethodMustBeStaticMessage" xml:space="preserve">
-    <value>Regex method must be static.</value>
-  </data>
-  <data name="RegexMethodMustBePartialMessage" xml:space="preserve">
-    <value>Regex method must be partial</value>
-  </data>
-  <data name="RegexMethodMustNotBeGenericMessage" xml:space="preserve">
-    <value>Regex method must not be generic.</value>
-  </data>
-  <data name="RegexMethodMustBeParameterlessMessage" xml:space="preserve">
-    <value>Regex method must be parameterless.</value>
-  </data>
-  <data name="RegexMethodMustReturnRegexMessage" xml:space="preserve">
-    <value>Regex method must return Regex.</value>
+  <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
+    <value>Regex method must be static, partial, parameterless, non-generic, and return Regex.</value>
   </data>
   <data name="InvalidLangVersionMessage" xml:space="preserve">
     <value>C# LangVersion of 10 or greater is required.</value>

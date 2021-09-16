@@ -221,10 +221,10 @@ namespace System.Text.RegularExpressions
     {
         public RegexGeneratorAttribute(string pattern) { }
         public RegexGeneratorAttribute(string pattern, System.Text.RegularExpressions.RegexOptions options) { }
-        public RegexGeneratorAttribute(string pattern, System.Text.RegularExpressions.RegexOptions options, int matchTimeout) { }
+        public RegexGeneratorAttribute(string pattern, System.Text.RegularExpressions.RegexOptions options, int matchTimeoutMilliseconds) { }
         public string Pattern { get; }
         public System.Text.RegularExpressions.RegexOptions Options { get; }
-        public int MatchTimeout { get; }
+        public int MatchTimeoutMilliseconds { get; }
     }
     public partial class RegexMatchTimeoutException : System.TimeoutException, System.Runtime.Serialization.ISerializable
     {

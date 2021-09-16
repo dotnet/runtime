@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions.Tests
                 "<A HREF=\"http://blogs.msdn.com/bclteam\">" +
                 ".NET Base Class Library blog</A></P>";
 
-            Regex r = await RegexHelpers.GetRegex(engine, HrefPattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, HrefPattern, RegexOptions.IgnoreCase);
 
             Match m = r.Match(InputString);
             Assert.True(m.Success);
@@ -57,7 +57,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_Examples_MDYtoDMY(RegexEngine engine)
         {
-            Regex r = await RegexHelpers.GetRegex(engine, @"\b(?<month>\d{1,2})/(?<day>\d{1,2})/(?<year>\d{2,4})\b");
+            Regex r = await RegexHelpers.GetRegexAsync(engine, @"\b(?<month>\d{1,2})/(?<day>\d{1,2})/(?<year>\d{2,4})\b");
 
             string dt = new DateTime(2020, 1, 8, 0, 0, 0, DateTimeKind.Utc).ToString("d", DateTimeFormatInfo.InvariantInfo);
             Assert.Equal("08-01-2020", r.Replace(dt, "${day}-${month}-${year}"));
@@ -68,7 +68,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_Examples_ExtractProtocolPort(RegexEngine engine)
         {
-            Regex r = await RegexHelpers.GetRegex(engine, @"^(?<proto>\w+)://[^/]+?(?<port>:\d+)?/");
+            Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(?<proto>\w+)://[^/]+?(?<port>:\d+)?/");
             Match m = r.Match("http://www.contoso.com:8080/letters/readme.html");
             Assert.True(m.Success);
             Assert.Equal("http:8080", m.Result("${proto}${port}"));
@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions.Tests
 
                 try
                 {
-                    Regex r = await RegexHelpers.GetRegex(engine, @"(@)(.+)$", matchTimeout: 200);
+                    Regex r = await RegexHelpers.GetRegexAsync(engine, @"(@)(.+)$", matchTimeout: 200);
 
                     // Normalize the domain part of the email
                     email = r.Replace(email, match =>
@@ -131,7 +131,7 @@ namespace System.Text.RegularExpressions.Tests
 
                 try
                 {
-                    Regex r = await RegexHelpers.GetRegex(
+                    Regex r = await RegexHelpers.GetRegexAsync(
                         engine,
                         @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
                         @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-0-9a-z]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$",
@@ -155,7 +155,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"(\w+)\s(\1)";
             const string Input = "He said that that was the the correct answer.";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             Match match = r.Match(Input);
 
@@ -181,7 +181,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"(?<duplicateWord>\w+)\s\k<duplicateWord>\W(?<nextWord>\w+)";
             const string Input = "He said that that was the the correct answer.";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             Match match = r.Match(Input);
 
@@ -207,7 +207,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\D+(?<digit>\d+)\D+(?<digit>\d+)?";
             string[] inputs = { "abc123def456", "abc123def" };
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             var actual = new StringBuilder();
             foreach (string input in inputs)
@@ -254,7 +254,7 @@ namespace System.Text.RegularExpressions.Tests
                  "(?(Open)(?!))$";
             const string Input = "<abc><mno<xyz>>";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             var actual = new StringBuilder();
             Match m = r.Match(Input);
@@ -309,7 +309,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"(?:\b(?:\w+)\W*)+\.";
             const string Input = "This is a short sentence.";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             Match match = r.Match(Input);
             Assert.True(match.Success);
@@ -325,7 +325,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\b(?ix: d \w+)\s";
             const string Input = "Dogs are decidedly good pets.";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             Match match = r.Match(Input);
             Assert.True(match.Success);
@@ -348,7 +348,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\b\w+(?=\sis\b)";
             Match match;
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             match = r.Match("The dog is a Malamute.");
             Assert.True(match.Success);
@@ -373,7 +373,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\b(?!un)\w+\b";
             const string Input = "unite one unethical ethics use untie ultimate";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             MatchCollection matches = r.Matches(Input);
             Assert.Equal("one", matches[0].Value);
@@ -390,7 +390,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"(?<=\b20)\d{2}\b";
             const string Input = "2010 1999 1861 2140 2009";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             MatchCollection matches = r.Matches(Input);
             Assert.Equal("10", matches[0].Value);
@@ -404,7 +404,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             const string Pattern = @"(?<!(Saturday|Sunday) )\b\w+ \d{1,2}, \d{4}\b";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             Assert.Equal("February 1, 2010", r.Match("Monday February 1, 2010").Value);
             Assert.Equal("February 3, 2010", r.Match("Wednesday February 3, 2010").Value);
@@ -418,8 +418,8 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_GroupingConstructs_NonbacktrackingSubexpressions(RegexEngine engine)
         {
-            Regex rBack = await RegexHelpers.GetRegex(engine, @"(\w)\1+.\b");
-            Regex rNoBack = await RegexHelpers.GetRegex(engine, @"(?>(\w)\1+).\b");
+            Regex rBack = await RegexHelpers.GetRegexAsync(engine, @"(\w)\1+.\b");
+            Regex rNoBack = await RegexHelpers.GetRegexAsync(engine, @"(?>(\w)\1+).\b");
             string[] inputs = { "aaad", "aaaa" };
 
             Match back, noback;
@@ -453,7 +453,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"(\b(\w+)\W+)+";
             const string Input = "This is a short sentence.";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             Match match = r.Match(Input);
 
@@ -496,7 +496,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"((\w+)[\s.])+";
             const string Input = "Yes. This dog is very friendly.";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             var actual = new StringBuilder();
             foreach (Match match in r.Matches(Input))
@@ -548,7 +548,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"^([a-z]+)(\d+)?\.([a-z]+(\d)*)$";
             string[] values = { "AC10", "Za203.CYM", "XYZ.CoA", "ABC.x170" };
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             var actual = new StringBuilder();
             foreach (var value in values)
@@ -638,7 +638,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"e{2}\w\b";
             const string Input = "needing a reed";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             MatchCollection matches = r.Matches(Input);
             Assert.Equal(1, matches.Count);
@@ -654,7 +654,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = ".*(es)";
             const string Input = "Essential services are provided by regular expressions.";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             Match m = r.Match(Input);
             Assert.True(m.Success);
@@ -671,7 +671,7 @@ namespace System.Text.RegularExpressions.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/57891")] // takes too long due to backtracking
         public async Task Docs_Backtracking_WithNestedOptionalQuantifiers_ExcessiveBacktracking(RegexEngine engine)
         {
-            Regex r = await RegexHelpers.GetRegex(engine, "^(([0-9a-fA-F]{1,4}:)*([0-9a-fA-F]{1,4}))*(::)$");
+            Regex r = await RegexHelpers.GetRegexAsync(engine, "^(([0-9a-fA-F]{1,4}:)*([0-9a-fA-F]{1,4}))*(::)$");
             Assert.False(r.IsMatch("b51:4:1DB:9EE1:5:27d60:f44:D4:cd:E:5:0A5:4a:D24:41Ad:"));
         }
 
@@ -680,7 +680,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_Backtracking_WithNestedOptionalQuantifiers_BacktrackingEliminated(RegexEngine engine)
         {
-            Regex r = await RegexHelpers.GetRegex(engine, "^((?>[0-9a-fA-F]{1,4}:)*(?>[0-9a-fA-F]{1,4}))*(::)$");
+            Regex r = await RegexHelpers.GetRegexAsync(engine, "^((?>[0-9a-fA-F]{1,4}:)*(?>[0-9a-fA-F]{1,4}))*(::)$");
             Assert.False(r.IsMatch("b51:4:1DB:9EE1:5:27d60:f44:D4:cd:E:5:0A5:4a:D24:41Ad:"));
         }
 
@@ -691,10 +691,10 @@ namespace System.Text.RegularExpressions.Tests
         {
             const string Input = "test@contoso.com";
 
-            Regex rPattern = await RegexHelpers.GetRegex(engine, @"^[0-9A-Z]([-.\w]*[0-9A-Z])?@", RegexOptions.IgnoreCase);
+            Regex rPattern = await RegexHelpers.GetRegexAsync(engine, @"^[0-9A-Z]([-.\w]*[0-9A-Z])?@", RegexOptions.IgnoreCase);
             Assert.True(rPattern.IsMatch(Input));
 
-            Regex rBehindPattern = await RegexHelpers.GetRegex(engine, @"^[0-9A-Z][-.\w]*(?<=[0-9A-Z])@", RegexOptions.IgnoreCase);
+            Regex rBehindPattern = await RegexHelpers.GetRegexAsync(engine, @"^[0-9A-Z][-.\w]*(?<=[0-9A-Z])@", RegexOptions.IgnoreCase);
             Assert.True(rBehindPattern.IsMatch(Input));
         }
 
@@ -704,7 +704,7 @@ namespace System.Text.RegularExpressions.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/57891")] // takes too long due to backtracking
         public async Task Docs_Backtracking_LookaheadAssertions_ExcessiveBacktracking(RegexEngine engine)
         {
-            Regex r = await RegexHelpers.GetRegex(engine, @"^(([A-Z]\w*)+\.)*[A-Z]\w*$", RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(([A-Z]\w*)+\.)*[A-Z]\w*$", RegexOptions.IgnoreCase);
             Assert.False(r.IsMatch("aaaaaaaaaaaaaaaaaaaaaa."));
         }
 
@@ -713,7 +713,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_Backtracking_LookaheadAssertions_BacktrackingEliminated(RegexEngine engine)
         {
-            Regex r = await RegexHelpers.GetRegex(engine, @"^((?=[A-Z])\w+\.)*[A-Z]\w*$", RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, @"^((?=[A-Z])\w+\.)*[A-Z]\w*$", RegexOptions.IgnoreCase);
             Assert.False(r.IsMatch("aaaaaaaaaaaaaaaaaaaaaa."));
         }
 
@@ -724,12 +724,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             const string Input = "This sentence ends with the number 107325.";
 
-            Regex rGreedy = await RegexHelpers.GetRegex(engine, @".+(\d+)\.");
+            Regex rGreedy = await RegexHelpers.GetRegexAsync(engine, @".+(\d+)\.");
             Match match = rGreedy.Match(Input);
             Assert.True(match.Success);
             Assert.Equal("5", match.Groups[1].Value);
 
-            Regex rLazy = await RegexHelpers.GetRegex(engine, @".+?(\d+)\.");
+            Regex rLazy = await RegexHelpers.GetRegexAsync(engine, @".+?(\d+)\.");
             match = rLazy.Match(Input);
             Assert.True(match.Success);
             Assert.Equal("107325", match.Groups[1].Value);
@@ -743,7 +743,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\b[A-Z]+\b(?=\P{P})";
             const string Input = "If so, what comes next?";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             MatchCollection matches = r.Matches(Input);
             Assert.Equal(3, matches.Count);
@@ -760,7 +760,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\b(?!non)\w+\b";
             const string Input = "Nonsense is not always non-functional.";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             MatchCollection matches = r.Matches(Input);
             Assert.Equal(4, matches.Count);
@@ -778,7 +778,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\b(?(\d{2}-)\d{2}-\d{7}|\d{3}-\d{2}-\d{4})\b";
             const string Input = "01-9999999 020-333333 777-88-9999";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             MatchCollection matches = r.Matches(Input);
             Assert.Equal(2, matches.Count);
@@ -798,8 +798,8 @@ namespace System.Text.RegularExpressions.Tests
             const string GreedyPattern = @".+(\d+)\.";
             const string Input = "This sentence ends with the number 107325.";
 
-            Regex rLTR = await RegexHelpers.GetRegex(engine, GreedyPattern);
-            Regex rRTL = await RegexHelpers.GetRegex(engine, GreedyPattern, RegexOptions.RightToLeft);
+            Regex rLTR = await RegexHelpers.GetRegexAsync(engine, GreedyPattern);
+            Regex rRTL = await RegexHelpers.GetRegexAsync(engine, GreedyPattern, RegexOptions.RightToLeft);
 
             // Match from left-to-right using lazy quantifier .+?.
             Match match = rLTR.Match(Input);
@@ -819,7 +819,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             const string Pattern = @"^[A-Z0-9]([-!#$%&'.*+/=?^`{}|~\w])*(?<=[A-Z0-9])$";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern, RegexOptions.IgnoreCase);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
             Assert.True(r.IsMatch("jack.sprat"));
             Assert.False(r.IsMatch("dog#"));
@@ -837,7 +837,7 @@ namespace System.Text.RegularExpressions.Tests
 
             var actual = new StringBuilder();
 
-            foreach (Match match in (await RegexHelpers.GetRegex(engine, @"\b(D\w+)\s(d\w+)\b")).Matches(Input))
+            foreach (Match match in (await RegexHelpers.GetRegexAsync(engine, @"\b(D\w+)\s(d\w+)\b")).Matches(Input))
             {
                 actual.AppendLine(match.Value);
                 if (match.Groups.Count > 1)
@@ -850,7 +850,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             actual.AppendLine();
 
-            foreach (Match match in (await RegexHelpers.GetRegex(engine, @"\b(D\w+)(?ixn) \s (d\w+) \b")).Matches(Input))
+            foreach (Match match in (await RegexHelpers.GetRegexAsync(engine, @"\b(D\w+)(?ixn) \s (d\w+) \b")).Matches(Input))
             {
                 actual.AppendLine(match.Value);
                 if (match.Groups.Count > 1)
@@ -883,7 +883,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\b((?# case-sensitive comparison)D\w+)\s(?ixn)((?#case-insensitive comparison)d\w+)\b";
             const string Input = "double dare double Double a Drooling dog The Dreaded Deep";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             Match match = r.Match(Input);
             Assert.True(match.Success);
@@ -908,7 +908,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\{\d+(,-*\d+)*(\:\w{1,4}?)*\}(?x) # Looks for a composite format item.";
             const string Input = "{0,-3:F}";
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             Assert.True(r.IsMatch(Input));
         }
@@ -922,7 +922,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Pattern = @"\G(\w+\s?\w*),?";
             string[] expected = new[] { "capybara", "squirrel", "chipmunk", "porcupine" };
 
-            Regex r = await RegexHelpers.GetRegex(engine, Pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
             Match m = r.Match(Input);
 
@@ -954,7 +954,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegex(engine, @"/providers/(.+?)\?");
+                Regex r = await RegexHelpers.GetRegexAsync(engine, @"/providers/(.+?)\?");
                 Match m = r.Match(url);
                 Assert.True(m.Success);
                 Assert.Equal(2, m.Groups.Count);
@@ -985,7 +985,7 @@ namespace System.Text.RegularExpressions.Tests
 
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegex(engine, IdentifierRegex);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, IdentifierRegex);
                 Assert.Equal(isExpectedMatch, r.IsMatch(value));
             }
         }
@@ -1003,7 +1003,7 @@ namespace System.Text.RegularExpressions.Tests
 
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegex(engine, CommentLineRegex);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, CommentLineRegex);
                 Assert.Equal(isExpectedMatch, r.IsMatch(value));
             }
         }
@@ -1022,7 +1022,7 @@ namespace System.Text.RegularExpressions.Tests
 
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegex(engine, SectionLineRegex);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, SectionLineRegex);
                 Assert.Equal(isExpectedMatch, r.IsMatch(value));
             }
         }
@@ -1042,7 +1042,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegex(engine, @"(?<value>-?\d+(\.\d+)?)");
+                Regex r = await RegexHelpers.GetRegexAsync(engine, @"(?<value>-?\d+(\.\d+)?)");
                 Match m = r.Match(value);
                 Assert.True(m.Success);
                 Assert.Equal(expected, m.Groups["value"].Value);
@@ -1056,7 +1056,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegex(engine, @"\w{2}-\w(\d+\.\d+\.\d+\.\d+)");
+                Regex r = await RegexHelpers.GetRegexAsync(engine, @"\w{2}-\w(\d+\.\d+\.\d+\.\d+)");
                 Match m = r.Match(value);
                 Assert.True(m.Success);
                 Assert.Equal(expected, m.Groups[1].Value);
@@ -1072,7 +1072,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegex(engine, @"^(.+)!(.+)\.([^.]+)$");
+                Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(.+)!(.+)\.([^.]+)$");
                 Match m = r.Match(value);
                 Assert.True(m.Success);
                 Assert.Equal(a, m.Groups[1].Value);
