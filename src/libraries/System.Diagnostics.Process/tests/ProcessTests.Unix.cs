@@ -526,9 +526,10 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // OSX doesn't fail when executing a file that is open for writing.
         public async Task ExecutingFileThatIsOpenForWritingDoesntHang()
         {
-            // A process fails to execute with 'ETXTBSY' when the executable is open for writing.
+            // On Linux, a process fails to execute with 'ETXTBSY' when the executable is open for writing.
             // Process.Unix has some special handling for that.
             // This test verifies it doesn't cause 'Process.Start' to hang indefinitely when the handle remains open.
 
