@@ -23,6 +23,7 @@ typedef enum
 	MintOpFieldToken,
 	MintOpClassToken,
 	MintOpTwoShorts,
+	MintOpTwoInts,
 	MintOpShortAndInt,
 	MintOpShortAndShortBranch,
 	MintOpPair2,

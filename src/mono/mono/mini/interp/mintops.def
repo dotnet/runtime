@@ -96,6 +96,7 @@ OPDEF(MINT_STSFLD_R4, "stsfld.r4", 4, 0, 1, MintOpUShortInt)
 OPDEF(MINT_STSFLD_R8, "stsfld.r8", 4, 0, 1, MintOpUShortInt)
 OPDEF(MINT_STSFLD_O, "stsfld.o", 4, 0, 1, MintOpUShortInt)
 OPDEF(MINT_STSFLD_VT, "stsfld.vt", 5, 0, 1, MintOpTwoShorts)
+OPDEF(MINT_STSFLD_VT_W, "stsfld.vt.w", 7, 0, 1, MintOpTwoInts)
 OPDEF(MINT_LDSFLDA, "ldsflda", 4, 1, 0, MintOpTwoShorts)
 OPDEF(MINT_LDTSFLDA, "ldtsflda", 4, 1, 0, MintOpInt)
 
