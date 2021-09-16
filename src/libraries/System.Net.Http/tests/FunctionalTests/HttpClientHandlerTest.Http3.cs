@@ -1099,9 +1099,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            Console.WriteLine("https://github.com/dotnet/runtime/issues/57619");
             var message = new byte[1024];
-            var readBuffer = new byte[1024];
             var random = new Random(0);
             random.NextBytes(message);
 
