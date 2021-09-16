@@ -282,12 +282,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
 
-            IFakeOpenGenericService<int> processor = GetServiceFromCallSiteFactory<IFakeOpenGenericService<int>>(provider);
-            IEnumerable<IFakeOpenGenericService<int>> processors = GetServiceFromCallSiteFactory<IEnumerable<IFakeOpenGenericService<int>>>(provider);
-
-            Assert.Equal(typeof(FakeIntService), processor.GetType());
+            IFakeOpenGenericService<int> processor = provider.GetService<IFakeOpenGenericService<int>>();
+            IEnumerable<IFakeOpenGenericService<int>> processors = provider.GetService<IEnumerable<IFakeOpenGenericService<int>>>();
 
             Type[] implementationTypes = processors.Select(p => p.GetType()).ToArray();
+            Assert.Equal(typeof(FakeIntService), processor.GetType());
             Assert.Equal(2, implementationTypes.Length);
             Assert.Equal(typeof(FakeIntService), implementationTypes[0]);
             Assert.Equal(typeof(FakeOpenGenericService<int>), implementationTypes[1]);
@@ -386,13 +385,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             public void Dispose()
             {
             }
-        }
-
-        private static T GetServiceFromCallSiteFactory<T>(ServiceProvider provider)
-        {
-            var callSite = provider.CallSiteFactory.GetCallSite(typeof(T), new CallSiteChain());
-            var compiledCallSite = CompileCallSite(callSite, provider);
-            return (T)compiledCallSite(provider.Root);
         }
 
         private static object Invoke(ServiceCallSite callSite, ServiceProviderEngineScope scope)
