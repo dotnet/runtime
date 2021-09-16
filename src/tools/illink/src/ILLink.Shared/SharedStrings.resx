@@ -165,6 +165,81 @@
   <data name="RequiresOnBaseClassTitle" xml:space="preserve">
     <value>Types that derive from a base class with 'RequiresUnreferencedCodeAttribute' need to explicitly use the 'RequiresUnreferencedCodeAttribute' or suppress this warning</value>
   </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {3} in '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {2} in call to '{0}'. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {3} in call to '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {4} in '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {3} in call to '{0}'. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {4} in call to '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {3} in '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {2} in call to '{0}'. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {3} in call to '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {3} in '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {2} in call to '{0}'. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {3} in call to '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {4} in '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {3} in call to '{0}'. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {4} in call to '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
   <data name="DynamicTypeInvocationMessage" xml:space="preserve">
     <value>Invoking members on dynamic types is not trimming-compatible. Types or members might have been removed by the trimmer.</value>
   </data>

@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
@@ -19,17 +19,6 @@ namespace Mono.Linker.Dataflow
 	{
 		readonly MarkStep _markStep;
 		readonly MarkScopeStack _scopeStack;
-		static readonly DynamicallyAccessedMemberTypes[] AllDynamicallyAccessedMemberTypes = GetAllDynamicallyAccessedMemberTypes ();
-
-		static DynamicallyAccessedMemberTypes[] GetAllDynamicallyAccessedMemberTypes ()
-		{
-			HashSet<DynamicallyAccessedMemberTypes> values = Enum.GetValues (typeof (DynamicallyAccessedMemberTypes))
-								.Cast<DynamicallyAccessedMemberTypes> ()
-								.ToHashSet ();
-			if (!values.Contains (DynamicallyAccessedMemberTypesOverlay.Interfaces))
-				values.Add (DynamicallyAccessedMemberTypesOverlay.Interfaces);
-			return values.ToArray ();
-		}
 
 		public static bool RequiresReflectionMethodBodyScannerForCallSite (LinkContext context, MethodReference calledMethod)
 		{
@@ -2005,29 +1994,6 @@ namespace Mono.Linker.Dataflow
 			return missingMemberTypes;
 		}
 
-		string GetMemberTypesString (DynamicallyAccessedMemberTypes memberTypes)
-		{
-			Debug.Assert (memberTypes != DynamicallyAccessedMemberTypes.None);
-
-			if (memberTypes == DynamicallyAccessedMemberTypes.All)
-				return $"'{nameof (DynamicallyAccessedMemberTypes)}.{nameof (DynamicallyAccessedMemberTypes.All)}'";
-
-			var memberTypesList = AllDynamicallyAccessedMemberTypes
-				.Where (damt => (memberTypes & damt) == damt && damt != DynamicallyAccessedMemberTypes.None)
-				.ToList ();
-
-			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
-				memberTypesList.Remove (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
-
-			return string.Join (", ", memberTypesList.Select (mt => {
-				string mtName = mt == DynamicallyAccessedMemberTypesOverlay.Interfaces
-					? nameof (DynamicallyAccessedMemberTypesOverlay.Interfaces)
-					: mt.ToString ();
-
-				return $"'{nameof (DynamicallyAccessedMemberTypes)}.{mtName}'";
-			}));
-		}
-
 		void RequireDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberTypes requiredMemberTypes, ValueNode value, IMetadataTokenProvider targetContext)
 		{
 			foreach (var uniqueValue in value.UniqueValues ()) {
@@ -2038,200 +2004,10 @@ namespace Mono.Linker.Dataflow
 					reflectionContext.RecordHandledPattern ();
 				} else if (uniqueValue is LeafValueWithDynamicallyAccessedMemberNode valueWithDynamicallyAccessedMember) {
 					var availableMemberTypes = valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberTypes;
-					var missingMemberTypesValue = GetMissingMemberTypes (requiredMemberTypes, availableMemberTypes);
-					if (missingMemberTypesValue != DynamicallyAccessedMemberTypes.None) {
-						var missingMemberTypes = GetMemberTypesString (missingMemberTypesValue);
-
-						switch ((valueWithDynamicallyAccessedMember.SourceContext, targetContext)) {
-						case (ParameterDefinition sourceParameter, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (2067, string.Format (Resources.Strings.IL2067,
-								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
-								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
-								missingMemberTypes));
-							break;
-						case (ParameterDefinition sourceParameter, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (2068, string.Format (Resources.Strings.IL2068,
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
-								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
-								missingMemberTypes));
-							break;
-						case (ParameterDefinition sourceParameter, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (2069, string.Format (Resources.Strings.IL2069,
-								targetField.GetDisplayName (),
-								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
-								missingMemberTypes));
-							break;
-						case (ParameterDefinition sourceParameter, MethodDefinition targetMethod):
-							reflectionContext.RecordUnrecognizedPattern (2070, string.Format (Resources.Strings.IL2070,
-								targetMethod.GetDisplayName (),
-								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
-								missingMemberTypes));
-							break;
-						case (ParameterDefinition sourceParameter, GenericParameter targetGenericParameter):
-							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-							reflectionContext.RecordUnrecognizedPattern (2071, string.Format (Resources.Strings.IL2071,
-								targetGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
-								DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method),
-								missingMemberTypes));
-							break;
-
-						case (MethodReturnType sourceMethodReturnType, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (2072, string.Format (Resources.Strings.IL2072,
-								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
-								missingMemberTypes));
-							break;
-						case (MethodReturnType sourceMethodReturnType, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (2073, string.Format (Resources.Strings.IL2073,
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
-								missingMemberTypes));
-							break;
-						case (MethodReturnType sourceMethodReturnType, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (2074, string.Format (Resources.Strings.IL2074,
-								targetField.GetDisplayName (),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
-								missingMemberTypes));
-							break;
-						case (MethodReturnType sourceMethodReturnType, MethodDefinition targetMethod):
-							reflectionContext.RecordUnrecognizedPattern (2075, string.Format (Resources.Strings.IL2075,
-								targetMethod.GetDisplayName (),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
-								missingMemberTypes));
-							break;
-						case (MethodReturnType sourceMethodReturnType, GenericParameter targetGenericParameter):
-							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-							reflectionContext.RecordUnrecognizedPattern (2076, string.Format (Resources.Strings.IL2076,
-								targetGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method),
-								missingMemberTypes));
-							break;
-
-						case (FieldDefinition sourceField, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (2077, string.Format (Resources.Strings.IL2077,
-								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
-								sourceField.GetDisplayName (),
-								missingMemberTypes));
-							break;
-						case (FieldDefinition sourceField, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (2078, string.Format (Resources.Strings.IL2078,
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
-								sourceField.GetDisplayName (),
-								missingMemberTypes));
-							break;
-						case (FieldDefinition sourceField, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (2079, string.Format (Resources.Strings.IL2079,
-								targetField.GetDisplayName (),
-								sourceField.GetDisplayName (),
-								missingMemberTypes));
-							break;
-						case (FieldDefinition sourceField, MethodDefinition targetMethod):
-							reflectionContext.RecordUnrecognizedPattern (2080, string.Format (Resources.Strings.IL2080,
-								targetMethod.GetDisplayName (),
-								sourceField.GetDisplayName (),
-								missingMemberTypes));
-							break;
-						case (FieldDefinition sourceField, GenericParameter targetGenericParameter):
-							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-							reflectionContext.RecordUnrecognizedPattern (2081, string.Format (Resources.Strings.IL2081,
-								targetGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
-								sourceField.GetDisplayName (),
-								missingMemberTypes));
-							break;
-
-						case (MethodDefinition sourceMethod, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (2082, string.Format (Resources.Strings.IL2082,
-								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
-								sourceMethod.GetDisplayName (),
-								missingMemberTypes));
-							break;
-						case (MethodDefinition sourceMethod, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (2083, string.Format (Resources.Strings.IL2083,
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
-								sourceMethod.GetDisplayName (),
-								missingMemberTypes));
-							break;
-						case (MethodDefinition sourceMethod, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (2084, string.Format (Resources.Strings.IL2084,
-								targetField.GetDisplayName (),
-								sourceMethod.GetDisplayName (),
-								missingMemberTypes));
-							break;
-						case (MethodDefinition sourceMethod, MethodDefinition targetMethod):
-							reflectionContext.RecordUnrecognizedPattern (2085, string.Format (Resources.Strings.IL2085,
-								targetMethod.GetDisplayName (),
-								sourceMethod.GetDisplayName (),
-								missingMemberTypes));
-							break;
-						case (MethodDefinition sourceMethod, GenericParameter targetGenericParameter):
-							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-							reflectionContext.RecordUnrecognizedPattern (2086, string.Format (Resources.Strings.IL2086,
-								targetGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
-								sourceMethod.GetDisplayName (),
-								missingMemberTypes));
-							break;
-
-						case (GenericParameter sourceGenericParameter, ParameterDefinition targetParameter):
-							reflectionContext.RecordUnrecognizedPattern (2087, string.Format (Resources.Strings.IL2087,
-								DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter),
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method),
-								sourceGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
-								missingMemberTypes));
-							break;
-						case (GenericParameter sourceGenericParameter, MethodReturnType targetMethodReturnType):
-							reflectionContext.RecordUnrecognizedPattern (2088, string.Format (Resources.Strings.IL2088,
-								DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method),
-								sourceGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
-								missingMemberTypes));
-							break;
-						case (GenericParameter sourceGenericParameter, FieldDefinition targetField):
-							reflectionContext.RecordUnrecognizedPattern (2089, string.Format (Resources.Strings.IL2089,
-								targetField.GetDisplayName (),
-								sourceGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
-								missingMemberTypes));
-							break;
-						case (GenericParameter sourceGenericParameter, MethodDefinition targetMethod):
-							// Currently this is never generated, it might be possible one day if we try to validate annotations on results of reflection
-							// For example code like this should ideally one day generate the warning
-							// void TestMethod<T>()
-							// {
-							//    // This passes the T as the "this" parameter to Type.GetMethods()
-							//    typeof(Type).GetMethod("GetMethods").Invoke(typeof(T), new object[] {});
-							// }
-							reflectionContext.RecordUnrecognizedPattern (2090, string.Format (Resources.Strings.IL2090,
-								targetMethod.GetDisplayName (),
-								sourceGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
-								missingMemberTypes));
-							break;
-						case (GenericParameter sourceGenericParameter, GenericParameter targetGenericParameter):
-							reflectionContext.RecordUnrecognizedPattern (2091, string.Format (Resources.Strings.IL2091,
-								targetGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter),
-								sourceGenericParameter.Name,
-								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter),
-								missingMemberTypes));
-							break;
-
-						default:
-							throw new NotImplementedException ($"unsupported source context {valueWithDynamicallyAccessedMember.SourceContext} or target context {targetContext}");
-						};
+					if (!Annotations.SourceHasRequiredAnnotations (availableMemberTypes, requiredMemberTypes, out var missingMemberTypes)) {
+						DiagnosticId diagnosticId = GetDiagnosticId (valueWithDynamicallyAccessedMember.SourceContext, targetContext);
+						var diagnosticArguments = GetDiagnosticArguments (valueWithDynamicallyAccessedMember.SourceContext, targetContext, missingMemberTypes);
+						reflectionContext.RecordUnrecognizedPattern ((int) diagnosticId, new DiagnosticString (diagnosticId).GetMessage (diagnosticArguments));
 					} else {
 						reflectionContext.RecordHandledPattern ();
 					}
@@ -2284,6 +2060,60 @@ namespace Mono.Linker.Dataflow
 			}
 
 			reflectionContext.RecordHandledPattern ();
+
+			static DiagnosticId GetDiagnosticId (IMetadataTokenProvider source, IMetadataTokenProvider target)
+				=> (source, target) switch {
+					(ParameterDefinition, ParameterDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter,
+					(ParameterDefinition, MethodReturnType) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType,
+					(ParameterDefinition, FieldDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField,
+					(ParameterDefinition, MethodDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter,
+					(ParameterDefinition, GenericParameter) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsGenericParameter,
+					(MethodReturnType, ParameterDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter,
+					(MethodReturnType, MethodReturnType) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType,
+					(MethodReturnType, FieldDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField,
+					(MethodReturnType, MethodDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter,
+					(MethodReturnType, GenericParameter) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameter,
+					(FieldDefinition, ParameterDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter,
+					(FieldDefinition, MethodReturnType) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType,
+					(FieldDefinition, FieldDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField,
+					(FieldDefinition, MethodDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter,
+					(FieldDefinition, GenericParameter) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsGenericParameter,
+					(MethodDefinition, ParameterDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter,
+					(MethodDefinition, MethodReturnType) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType,
+					(MethodDefinition, FieldDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField,
+					(MethodDefinition, MethodDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter,
+					(MethodDefinition, GenericParameter) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameter,
+					(GenericParameter, ParameterDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter,
+					(GenericParameter, MethodReturnType) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType,
+					(GenericParameter, FieldDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField,
+					(GenericParameter, MethodDefinition) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter,
+					(GenericParameter, GenericParameter) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter,
+					_ => throw new NotImplementedException ($"Unsupported source context {source} or target context {target}.")
+				};
+		}
+
+		static string[] GetDiagnosticArguments (IMetadataTokenProvider source, IMetadataTokenProvider target, string missingAnnotations)
+		{
+			var args = new List<string> ();
+			args.AddRange (GetDiagnosticArguments (target));
+			args.AddRange (GetDiagnosticArguments (source));
+			args.Add (missingAnnotations);
+			return args.ToArray ();
+		}
+
+		static IEnumerable<string> GetDiagnosticArguments (IMetadataTokenProvider mdTokenProvider)
+		{
+			var args = new List<string> ();
+			args.AddRange (mdTokenProvider switch {
+				ParameterDefinition targetParameter => new List<string> () { DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter), DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method) },
+				MethodReturnType targetReturnType => new List<string> () { DiagnosticUtilities.GetMethodSignatureDisplayName (targetReturnType.Method) },
+				FieldDefinition targetField => new List<string> () { targetField.GetDisplayName () },
+				MethodDefinition targetMethod => new List<string> () { targetMethod.GetDisplayName () },
+				GenericParameter targetGenericParameter => new List<string> () { targetGenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter) },
+				_ => throw new NotImplementedException ($"Unsuported target {mdTokenProvider}")
+			});
+
+			return args;
 		}
 
 		static BindingFlags? GetBindingFlagsFromValue (ValueNode parameter) => (BindingFlags?) parameter.AsConstInt ();
