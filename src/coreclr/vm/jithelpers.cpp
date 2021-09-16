@@ -643,44 +643,6 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
 HCIMPLEND
 
 
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
-
-HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
-{
-    FCALL_CONTRACT;
-
-    return((INT64)val);
-}
-HCIMPLEND
-
-HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two31 = 2147483648.0;
-
-        // Note that this expression also works properly for val = NaN case
-    if (val > -two31 - 1 && val < two31)
-        return((INT32)val);
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two63  = 2147483648.0 * 4294967296.0;
-
-    // Note that this expression also works properly for val = NaN case
-    // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-    if (val > -two63 - 0x402 && val < two63)
-        return((INT64)val);
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
 
 
 HCIMPL1_V(int, JIT_Dbl2IntXCompat, double val)
@@ -790,6 +752,46 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULngXCompatOvf, double val)
     FCThrow(kOverflowException);
 }
 HCIMPLEND
+
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+
+HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
+{
+    FCALL_CONTRACT;
+
+    return((INT64)val);
+}
+HCIMPLEND
+
+HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
+{
+    FCALL_CONTRACT;
+
+    const double two31 = 2147483648.0;
+
+        // Note that this expression also works properly for val = NaN case
+    if (val > -two31 - 1 && val < two31)
+        return((INT32)val);
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
+{
+    FCALL_CONTRACT;
+
+    const double two63  = 2147483648.0 * 4294967296.0;
+
+    // Note that this expression also works properly for val = NaN case
+    // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
+    if (val > -two63 - 0x402 && val < two63)
+        return((INT64)val);
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
 
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
