@@ -280,7 +280,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             descriptors.Add(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<int>), typeof(FakeIntService)));
             descriptors.Add(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>)));
 
-            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
+            ServiceProvider provider = descriptors.BuildServiceProvider();
 
             IFakeOpenGenericService<int> processor = provider.GetService<IFakeOpenGenericService<int>>();
             IEnumerable<IFakeOpenGenericService<int>> processors = provider.GetService<IEnumerable<IFakeOpenGenericService<int>>>();
