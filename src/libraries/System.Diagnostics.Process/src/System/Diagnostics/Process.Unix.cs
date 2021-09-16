@@ -560,8 +560,10 @@ namespace System.Diagnostics
                             // ETXTBSY means we're trying to execute a file that is open for write.
                             // This may be a file that was just written and closed, but is still referenced
                             // by another process that has forked but not yet exec-ed.
-                            // Using the s_processStartLock we wait for all processes to finish exec-ing
-                            // which causes the file to be closed (CLOEXEC).
+                            // Using the s_processStartLock we wait for all processes to finish exec-ing.
+                            // 'ForkAndExecProcess' returns when the a pipe gets closed by exec.
+                            // Unfortunately, the handle we care about may be closed after that. So this
+                            // doesn't work all the time.
                             s_processStartLock.EnterWriteLock();
                             s_processStartLock.ExitWriteLock();
 

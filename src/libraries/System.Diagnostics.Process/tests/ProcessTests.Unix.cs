@@ -526,36 +526,17 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestConcurrentExecuteAfterWrite()
+        public async Task ExecutingFileThatIsOpenForWritingDoesntHang()
         {
-            // Linux fails to execute a process with 'ETXTBSY' when the file is still opened for writing.
-            // Even though we closed the file in the .NET application, it may still remain open
-            // for a short time because other processes that are started have forked, but not yet exec-ed.
-            // .NET specifically supports this case by waiting till all pending forks exec-ed, and then
-            // retrying to start the process.
+            // A process fails to execute with 'ETXTBSY' when the executable is open for writing.
+            // Process.Unix has some special handling for that.
+            // This test verifies it doesn't cause 'Process.Start' to hang indefinitely when the handle remains open.
 
-            var tasks = new Task[20];
-            for (int i = 0; i < tasks.Length; i++)
-            {
-                string directory = GetTestFileName(i);
-                Directory.CreateDirectory(directory);
+            string scriptFile = WriteScriptFile(TestDirectory, GetTestFileName(), 42);
+            using var handle = File.OpenHandle(scriptFile, FileMode.Open, FileAccess.Write);
 
-                tasks[i] = Task.Factory.StartNew(WriteAndExecute, directory, TaskCreationOptions.LongRunning);
-            }
-
-            Task.WaitAll(tasks);
-
-            static void WriteAndExecute(object o)
-            {
-                var directory = o as string;
-                for (int i = 0; i < 100; i++)
-                {
-                    WriteScriptFile(directory, "script", 42);
-                    using var process = Process.Start(Path.Combine(directory, "script"));
-                    process.WaitForExit();
-                    Assert.Equal(42, process.ExitCode);
-                }
-            }
+            await Assert.ThrowsAsync<Win32Exception>(() =>
+                Task.Run(() => Process.Start(scriptFile)).WaitAsync(TimeSpan.FromSeconds(30)));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
