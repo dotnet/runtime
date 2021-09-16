@@ -145,13 +145,13 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
         copy->gtOtherRegs[0]      = (regNumberSmall)reg;
     }
 #endif // FEATURE_MULTIREG_RET
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
     else if (tree->OperIsPutArgSplit())
     {
         GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
         putArg->SetRegNumByIdx(reg, regIdx);
     }
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     else if (tree->OperIs(GT_HWINTRINSIC))
     {
@@ -6910,7 +6910,7 @@ void LinearScan::resolveRegisters()
                                 GenTreeCall* call = treeNode->AsCall();
                                 call->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
                             else if (treeNode->OperIsPutArgSplit())
                             {
                                 GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
@@ -6923,7 +6923,7 @@ void LinearScan::resolveRegisters()
                                 multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
 #endif // TARGET_ARM
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
                         }
 
                         // If the value is reloaded or moved to a different register, we need to insert

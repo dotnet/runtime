@@ -1044,7 +1044,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
     }
 #endif
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
     // Struct can be split into register(s) and stack on ARM
     if (compFeatureArgSplit() && info->IsSplit())
     {
@@ -1115,7 +1115,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
         }
     }
     else
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
     {
         if (!isOnStack)
         {
@@ -6497,9 +6497,9 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
             // The regNum must have been set by the lowering of the call.
             assert(node->GetRegNum() != REG_NA);
             break;

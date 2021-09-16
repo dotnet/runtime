@@ -92,6 +92,7 @@ def main(main_args):
     os_name = "win" if platform_name.lower() == "windows" else "unix"
     arch_name = coreclr_args.arch
     host_arch_name = "x64" if arch_name.endswith("64") else "x86"
+    os_name = "universal" if arch_name.startswith("arm") else os_name
     jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     print("Running superpmi.py download")

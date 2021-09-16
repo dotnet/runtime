@@ -398,11 +398,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genPutArgReg(treeNode->AsOp());
             break;
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
         case GT_PUTARG_SPLIT:
             genPutArgSplit(treeNode->AsPutArgSplit());
             break;
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
 
         case GT_CALL:
             genCallInstruction(treeNode->AsCall());
@@ -1142,7 +1140,6 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     genProduceReg(tree);
 }
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
 //---------------------------------------------------------------------
 // genPutArgSplit - generate code for a GT_PUTARG_SPLIT node
 //
@@ -1363,7 +1360,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     }
     genProduceReg(treeNode);
 }
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
 
 #ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------
@@ -2313,9 +2309,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // TARGET_ARM
             }
         }
-#if FEATURE_ARG_SPLIT_SUPPORTED
-        else if (compFeatureArgSplit() && curArgTabEntry->IsSplit())
+        else if (curArgTabEntry->IsSplit())
         {
+            assert(compFeatureArgSplit());
             assert(curArgTabEntry->numRegs >= 1);
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());
             for (unsigned idx = 0; idx < curArgTabEntry->numRegs; idx++)
@@ -2326,7 +2322,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                                 emitActualTypeSize(TYP_I_IMPL));
             }
         }
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
         else
         {
             regNumber argReg = curArgTabEntry->GetRegNum();

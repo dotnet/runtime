@@ -1883,9 +1883,9 @@ private:
 #endif // FEATURE_HW_INTRINSICS
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
     int BuildPutArgSplit(GenTreePutArgSplit* tree);
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 };
 

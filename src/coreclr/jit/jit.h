@@ -218,7 +218,7 @@
 // On all platforms except Arm64 OSX arguments on the stack are taking
 // register size slots. On these platforms we could check that stack slots count
 // matches our new byte size calculations.
-#define DEBUG_ARG_SLOTS_ASSERT(x) assert(compMacOsArm64Abi() || x)
+#define DEBUG_ARG_SLOTS_ASSERT(x) assert(compMacOsArm64Abi() || (x))
 #else
 #define DEBUG_ARG_SLOTS_ARG(x)
 #define DEBUG_ARG_SLOTS_ONLY(x)
@@ -251,9 +251,9 @@
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
-#define FEATURE_ARG_SPLIT_SUPPORTED 1
+#define FEATURE_ARG_SPLIT 1
 #else
-#define FEATURE_ARG_SPLIT_SUPPORTED 0
+#define FEATURE_ARG_SPLIT 0
 #endif
 
 // To get rid of warning 4701 : local variable may be used without being initialized

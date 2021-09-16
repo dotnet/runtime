@@ -1392,13 +1392,13 @@ void fgArgInfo::ArgsComplete()
             continue;
 #endif
         }
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
         else if (curArgTabEntry->IsSplit())
         {
             hasStructRegArg = true;
             assert(hasStackArgs == true);
         }
-#endif       // FEATURE_ARG_SPLIT_SUPPORTED
+#endif       // FEATURE_ARG_SPLIT
         else // we have a register argument, next we look for a struct type.
         {
             if (varTypeIsStruct(argx) UNIX_AMD64_ABI_ONLY(|| curArgTabEntry->isStruct))
@@ -1521,12 +1521,12 @@ void fgArgInfo::ArgsComplete()
                 {
                     prevArgTabEntry->needPlace = true;
                 }
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
                 else if (prevArgTabEntry->IsSplit())
                 {
                     prevArgTabEntry->needPlace = true;
                 }
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
 #endif
             }
         }
@@ -3612,7 +3612,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 {
                     if (!isNonStandard)
                     {
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
                         // Check for a split (partially enregistered) struct
                         if (compFeatureArgSplit() && !passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
                         {
@@ -3623,7 +3623,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                             assert((unsigned char)numRegsPartial == numRegsPartial);
                             call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
                         }
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
 
                         if (passUsingFloatRegs)
                         {

@@ -1292,9 +1292,10 @@ public:
 
     bool OperIsPutArgSplit() const
     {
-#if FEATURE_ARG_SPLIT_SUPPORTED
-        return compFeatureArgSplit() && (gtOper == GT_PUTARG_SPLIT);
-#else // !FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
+        assert((gtOper != GT_PUTARG_SPLIT) || compFeatureArgSplit());
+        return gtOper == GT_PUTARG_SPLIT;
+#else // !FEATURE_ARG_SPLIT
         return false;
 #endif
     }
@@ -6530,7 +6531,7 @@ public:
 #endif
 };
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
 // Represent the struct argument: split value in register(s) and stack
 struct GenTreePutArgSplit : public GenTreePutArgStk
 {
@@ -6691,7 +6692,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     }
 #endif
 };
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
 
 // Represents GT_COPY or GT_RELOAD node
 //
@@ -7620,7 +7621,7 @@ inline bool GenTree::IsMultiRegNode() const
         return true;
     }
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
     if (OperIsPutArgSplit())
     {
         return true;
@@ -7668,7 +7669,7 @@ inline unsigned GenTree::GetMultiRegCount()
         return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
     if (OperIsPutArgSplit())
     {
         return AsPutArgSplit()->gtNumRegs;
@@ -7738,7 +7739,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsCall()->GetRegNumByIdx(regIndex);
     }
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
     if (OperIsPutArgSplit())
     {
         return AsPutArgSplit()->GetRegNumByIdx(regIndex);
@@ -7798,7 +7799,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
         return AsCall()->AsCall()->GetReturnTypeDesc()->GetReturnRegType(regIndex);
     }
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
     if (OperIsPutArgSplit())
     {
         return AsPutArgSplit()->GetRegType(regIndex);
@@ -7862,7 +7863,7 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
         return AsCall()->GetRegSpillFlagByIdx(regIndex);
     }
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
     if (OperIsPutArgSplit())
     {
         return AsPutArgSplit()->GetRegSpillFlagByIdx(regIndex);

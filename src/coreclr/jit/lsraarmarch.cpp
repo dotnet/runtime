@@ -280,7 +280,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 srcCount++;
             }
         }
-#if FEATURE_ARG_SPLIT_SUPPORTED
         else if (argNode->OperGet() == GT_PUTARG_SPLIT)
         {
             unsigned regCount = argNode->AsPutArgSplit()->gtNumRegs;
@@ -291,7 +290,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             srcCount += regCount;
         }
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
         else
         {
             assert(argNode->OperIs(GT_PUTARG_REG));
@@ -334,11 +332,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
             assert(curArgTabEntry != nullptr);
-#if FEATURE_ARG_SPLIT_SUPPORTED
             // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they
             // define registers used by the call.
             assert(arg->OperGet() != GT_PUTARG_SPLIT);
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
             if (arg->gtOper == GT_PUTARG_STK)
             {
                 assert(curArgTabEntry->GetRegNum() == REG_STK);
@@ -477,7 +473,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
     return srcCount;
 }
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
 //------------------------------------------------------------------------
 // BuildPutArgSplit: Set the NodeInfo for a GT_PUTARG_SPLIT node
 //
@@ -579,7 +574,6 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     BuildDefs(argNode, dstCount, argMask);
     return srcCount;
 }
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
 
 //------------------------------------------------------------------------
 // BuildBlockStore: Build the RefPositions for a block store node.

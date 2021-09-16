@@ -1794,7 +1794,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
-#if FEATURE_ARG_SPLIT_SUPPORTED
+#if FEATURE_ARG_SPLIT
 //------------------------------------------------------------------------
 // genConsumeArgRegSplit: Consume register(s) in Call node to set split struct argument.
 //                        Liveness update for the PutArgSplit node is not needed
@@ -1817,7 +1817,7 @@ void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
 
     genCheckConsumeNode(putArgNode);
 }
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
 
 //------------------------------------------------------------------------
 // genPutArgStkFieldList: Generate code for a putArgStk whose source is a GT_FIELD_LIST
@@ -2133,9 +2133,10 @@ void CodeGen::genProduceReg(GenTree* tree)
                     }
                 }
             }
-#if FEATURE_ARG_SPLIT_SUPPORTED
-            else if (compFeatureArgSplit() && tree->OperIsPutArgSplit())
+#if FEATURE_ARG_SPLIT
+            else if (tree->OperIsPutArgSplit())
             {
+                assert(compFeatureArgSplit());
                 GenTreePutArgSplit* argSplit = tree->AsPutArgSplit();
                 unsigned            regCount = argSplit->gtNumRegs;
 
@@ -2168,7 +2169,7 @@ void CodeGen::genProduceReg(GenTree* tree)
                 }
             }
 #endif // TARGET_ARM
-#endif // FEATURE_ARG_SPLIT_SUPPORTED
+#endif // FEATURE_ARG_SPLIT
             else
             {
                 regSet.rsSpillTree(tree->GetRegNum(), tree);

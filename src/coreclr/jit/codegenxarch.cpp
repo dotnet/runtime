@@ -2004,7 +2004,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
         }
     }
 #elif defined(TARGET_AMD64)
-    assert(!TargetOS::IsWindows && !"Multireg store to SIMD reg not supported on Windows x64");
+    assert(!TargetOS::IsWindows || !"Multireg store to SIMD reg not supported on Windows x64");
 #else
 #error Unsupported or unset target architecture
 #endif
