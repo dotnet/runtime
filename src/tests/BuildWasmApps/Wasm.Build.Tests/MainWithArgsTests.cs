@@ -25,8 +25,8 @@ namespace Wasm.Build.Tests
             ).WithRunHosts(host).UnwrapItemsAsArrays();
 
         [Theory]
-        // [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.V8 })]
+        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         public void AsyncMainWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
             => TestMainWithArgs("async_main_with_args", @"
                 public class TestClass {

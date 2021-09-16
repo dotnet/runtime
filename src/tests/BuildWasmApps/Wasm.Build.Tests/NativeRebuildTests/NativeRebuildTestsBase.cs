@@ -28,8 +28,8 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
             List<object?[]> data = new();
             // relinking
-            // data.AddRange(GetData(aot: false, nativeRelinking: true, invariant: false));
-            // data.AddRange(GetData(aot: false, nativeRelinking: true, invariant: true));
+            data.AddRange(GetData(aot: false, nativeRelinking: true, invariant: false));
+            data.AddRange(GetData(aot: false, nativeRelinking: true, invariant: true));
 
             // aot
             data.AddRange(GetData(aot: true, nativeRelinking: false, invariant: false));
@@ -76,7 +76,6 @@ namespace Wasm.Build.NativeRebuild.Tests
                 File.WriteAllText(Path.Combine(_projectDir!, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
             buildArgs = newBuildArgs;
 
-            Console.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
                                             id: id,
