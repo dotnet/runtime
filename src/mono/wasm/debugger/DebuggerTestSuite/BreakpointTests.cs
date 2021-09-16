@@ -448,5 +448,134 @@ namespace DebuggerTests
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
         }
+
+        [Fact]
+        public async Task ConditionalBreakpointInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == 3");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 3);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak");
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointInALoopStopMoreThanOnce()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i % 3 == 0");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 0);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 3);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 6);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 9);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak");
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointNoStopInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i == \"10\"");
+            var bp_check = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 5);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak"
+            );
+        }
+
+        [Fact]
+        public async Task ConditionalBreakpointNotBooleanInALoop()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "LoopClass", "LoopToBreak", 4, condition:"i + 4");
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] LoopClass:LoopToBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 0);
+                }
+            );
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 1);
+                });
+
+            await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "LoopToBreak",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "i", 2);
+                });
+        }
     }
 }

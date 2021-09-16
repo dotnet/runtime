@@ -201,17 +201,58 @@ namespace AppHost.Bundle.Tests
             extractDir.Should().HaveFiles(extractedFiles);
         }
 
+        [Fact]
+        private void Bundle_extraction_to_nonexisting_default()
+        {
+            string nonExistentPath = Path.Combine(
+                sharedTestState.DefaultBundledAppFixture.TestProject.OutputDirectory,
+                "nonexistent");
+
+            string defaultExpansionEnvVariable = OperatingSystem.IsWindows() ? "TMP" : "HOME";
+            string expectedErrorMessagePart = OperatingSystem.IsWindows() ?
+                $"Failed to determine default extraction location. Check if 'TMP'" :
+                $"Default extraction directory [{nonExistentPath}] either doesn't exist or is not accessible for read/write.";
+
+            Command.Create(sharedTestState.DefaultBundledAppExecutablePath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable(defaultExpansionEnvVariable, nonExistentPath)
+                .Execute().Should().Fail()
+                .And.HaveStdErrContaining(expectedErrorMessagePart);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "On Windows the default extraction path is determined by calling GetTempPath which looks at multiple places and can't really be undefined.")]
+        private void Bundle_extraction_default_undefined()
+        {
+            Command.Create(sharedTestState.DefaultBundledAppExecutablePath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable("HOME", null)
+                .Execute().Should().Fail()
+                .And.HaveStdErrContaining("Failed to determine default extraction location. Environment variable '$HOME' is not defined.");
+        }
+
         public class SharedTestState : SharedTestStateBase, IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
+            public TestProjectFixture TestFixture { get; }
+
+            public TestProjectFixture DefaultBundledAppFixture { get; }
+            public string DefaultBundledAppExecutablePath { get; }
+            public Bundler DefaultBundledAppBundler { get; }
 
             public SharedTestState()
             {
                 TestFixture = PreparePublishedSelfContainedTestProject("StandaloneApp");
+
+                DefaultBundledAppFixture = TestFixture.Copy();
+                DefaultBundledAppBundler = BundleSelfContainedApp(DefaultBundledAppFixture, out var singleFile, BundleOptions.BundleNativeBinaries);
+                DefaultBundledAppExecutablePath = singleFile;
             }
 
             public void Dispose()
             {
+                DefaultBundledAppFixture.Dispose();
                 TestFixture.Dispose();
             }
         }

@@ -33,6 +33,7 @@
       <_PublishFramework Include="$(TargetFrameworks)" />
 
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
     </ItemGroup>
   </Target>
 

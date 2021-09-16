@@ -486,13 +486,14 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 
     assert(varDsc->lvIsInReg());
 
-    if (varTypeUsesFloatReg(varDsc->TypeGet()))
+    regNumber reg = varDsc->GetRegNum();
+    if (genIsValidFloatReg(reg))
     {
-        regMask = genRegMaskFloat(varDsc->GetRegNum(), varDsc->TypeGet());
+        regMask = genRegMaskFloat(reg, varDsc->GetRegisterType());
     }
     else
     {
-        regMask = genRegMask(varDsc->GetRegNum());
+        regMask = genRegMask(reg);
     }
     return regMask;
 }
@@ -3679,8 +3680,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     // refcnt.  This is in contrast with the non-LSRA case in which all
                     // non-tracked args are assumed live on entry.
                     noway_assert((varDsc->lvRefCnt() == 0) || (varDsc->lvType == TYP_STRUCT) ||
-                                 (varDsc->lvAddrExposed && compiler->info.compIsVarArgs) ||
-                                 (varDsc->lvAddrExposed && compiler->opts.compUseSoftFP));
+                                 (varDsc->IsAddressExposed() && compiler->info.compIsVarArgs) ||
+                                 (varDsc->IsAddressExposed() && compiler->opts.compUseSoftFP));
 #endif // !TARGET_X86
                 }
                 // Mark it as processed and be done with it
@@ -7148,8 +7149,9 @@ void CodeGen::genFnProlog()
 
         if (isInReg)
         {
-            regMaskTP regMask = genRegMask(varDsc->GetRegNum());
-            if (!varDsc->IsFloatRegType())
+            regNumber regForVar = varDsc->GetRegNum();
+            regMaskTP regMask   = genRegMask(regForVar);
+            if (!genIsValidFloatReg(regForVar))
             {
                 initRegs |= regMask;
 
@@ -10169,42 +10171,77 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
-        if (compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
+        if (compiler->compMap2ILvarNum(varNum) == (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
         {
-            VariableLiveKeeper::LiveRangeList* liveRanges = nullptr;
+            continue;
+        }
 
-            for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
+        auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start,
+                                                                   UNATIVE_OFFSET end) {
+            if (varDsc->lvIsParam && (start == end))
             {
-                if (rangeIndex == 0)
-                {
-                    liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
-                }
-                else
-                {
-                    liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
-                }
-                for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
-                {
-                    UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(GetEmitter());
-                    UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(GetEmitter());
+                // If the length is zero, it means that the prolog is empty. In that case,
+                // CodeGen::genSetScopeInfo will report the liveness of all arguments
+                // as spanning the first instruction in the method, so that they can
+                // at least be inspected on entry to the method.
+                end++;
+            }
 
-                    if (varDsc->lvIsParam && (startOffs == endOffs))
-                    {
-                        // If the length is zero, it means that the prolog is empty. In that case,
-                        // CodeGen::genSetScopeInfo will report the liveness of all arguments
-                        // as spanning the first instruction in the method, so that they can
-                        // at least be inspected on entry to the method.
-                        endOffs++;
-                    }
+            genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
+            liveRangeIndex++;
+        };
 
-                    genSetScopeInfo(liveRangeIndex, startOffs, endOffs - startOffs, varNum,
-                                    varNum /* I dont know what is the which in eeGetLvInfo */, true,
-                                    &liveRange.m_VarLocation);
-                    liveRangeIndex++;
+        siVarLoc*      curLoc   = nullptr;
+        UNATIVE_OFFSET curStart = 0;
+        UNATIVE_OFFSET curEnd   = 0;
+
+        for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
+        {
+            VariableLiveKeeper::LiveRangeList* liveRanges;
+            if (rangeIndex == 0)
+            {
+                liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
+            }
+            else
+            {
+                liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
+            }
+
+            for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
+            {
+                UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(GetEmitter());
+                UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(GetEmitter());
+
+                assert(startOffs <= endOffs);
+                assert(startOffs >= curEnd);
+                if ((curLoc != nullptr) && (startOffs == curEnd) && siVarLoc::Equals(curLoc, &liveRange.m_VarLocation))
+                {
+                    // Extend current range.
+                    curEnd = endOffs;
+                    continue;
                 }
+
+                // Report old range if any.
+                if (curLoc != nullptr)
+                {
+                    reportRange(curLoc, curStart, curEnd);
+                }
+
+                // Start a new range.
+                curLoc   = &liveRange.m_VarLocation;
+                curStart = startOffs;
+                curEnd   = endOffs;
             }
         }
+
+        // Report last range
+        if (curLoc != nullptr)
+        {
+            reportRange(curLoc, curStart, curEnd);
+        }
     }
+
+    compiler->eeVarsCount = liveRangeIndex;
 }
 #endif // USING_VARIABLE_LIVE_RANGE
 
@@ -12549,7 +12586,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
     for (unsigned varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->lvAddrExposed)
+        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->IsAddressExposed())
         {
             continue;
         }

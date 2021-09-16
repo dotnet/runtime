@@ -307,7 +307,7 @@ void Compiler::raMarkStkVars()
 
             if (!stkFixedArgInVarArgs)
             {
-                needSlot |= varDsc->lvAddrExposed;
+                needSlot |= varDsc->IsAddressExposed();
             }
 
 #if FEATURE_FIXED_OUT_ARGS

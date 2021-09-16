@@ -179,8 +179,6 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DateTimeConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DateTimeOffsetConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DecimalConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\DisallowedTypeConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\DisallowedTypeConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DoubleConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\EnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\EnumConverterFactory.cs" />
@@ -201,6 +199,8 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt16Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\UnsupportedTypeConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\UnsupportedTypeConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UriConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\VersionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceHandler.cs" />
@@ -348,6 +348,7 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
   </ItemGroup>
 </Project>

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Internal
 {
-    internal static class StreamExtensions
+    internal static partial class StreamExtensions
     {
         // From System.IO.Stream.CopyTo:
         // We pick a value that is the largest multiple of 4096 that is still smaller than the large object heap threshold (85K).
