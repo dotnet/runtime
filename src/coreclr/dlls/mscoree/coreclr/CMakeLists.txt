@@ -98,13 +98,11 @@ set(CORECLR_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    mdhotdata_full
     bcltype
     ceefgen
     comfloat_wks
     corguids
     gcinfo
-    ildbsymlib
     utilcode
     v3binder
     System.Globalization.Native-Static
@@ -179,7 +177,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     get_include_directories(INC_DIR)
     get_compile_definitions(PREPROCESS_DEFINITIONS)
     list(APPEND INC_DIR -I${CLR_DIR}/vm -I${CLR_DIR}/vm/${ARCH_SOURCES_DIR} -I${CLR_DIR}/debug/ee -I${CLR_DIR}/gc)
-    list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE -DTARGET_64BIT)
+    list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE)
 
     if (CLR_CMAKE_HOST_ARCH_AMD64)
         list(APPEND PREPROCESS_DEFINITIONS -DTARGET_AMD64)

@@ -2,13 +2,14 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <IsPackable>true</IsPackable>
     <!-- IncludeBuildOutput needs to be set to true to make NuGet include the passed in debug symbol files. -->
     <IncludeBuildOutput>true</IncludeBuildOutput>
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
+    <IsPackable>true</IsPackable>
     <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(SymbolsSuffix)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
-    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <!-- When KeepNativeSymbols is set, debug symbols are kept in the .so files.  Separate symbol files do not exist that need to be packed. -->
+    <TargetsForTfmSpecificDebugSymbolsInPackage Condition="'$(KeepNativeSymbols)' != 'true'">$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificNativeSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
     <!-- This is a native package and doesn't contain any ref/lib assets. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
@@ -25,14 +26,6 @@
       <TfmSpecificDebugSymbolsFile Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)"
                                    TargetPath="/runtimes/$(OutputRid)/native"
                                    TargetFramework="$(TargetFramework)" />
-    </ItemGroup>
-  </Target>
-
-  <!-- This is necessary as NuGet reads from this item when IncludeBuildOutput is set to true.
-       Remove when https://github.com/microsoft/MSBuildSdks/pull/276 is merged and a new version is consumed. -->
-  <Target Name="ClearBuiltProjectOutputGroupKeyOutput" BeforeTargets="_WalkEachTargetPerFramework;BuiltProjectOutputGroup">
-    <ItemGroup>
-      <BuiltProjectOutputGroupKeyOutput Remove="@(BuiltProjectOutputGroupKeyOutput)" />
     </ItemGroup>
   </Target>
 </Project>

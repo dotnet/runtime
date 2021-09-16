@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -46,18 +47,40 @@ namespace test45929
                 long progress = 0;
                 var test = new Test();
                 const int MaxCount = 1000000;
-                Parallel.For(
-                    0,
-                    MaxCount,
-                    new ParallelOptions() { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                    i =>
+                int increment = 100;
+                bool done = false;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                Console.WriteLine($"{DateTime.Now} : {progress * 100D / MaxCount:000.0}% : {stopwatch.ElapsedMilliseconds}");
+
+                Action<int> makeProgress = i =>
                     {
-                        if (Interlocked.Increment(ref progress) % 10000 == 0)
+                        if (done) return;
+                        long newProgress = Interlocked.Increment(ref progress);
+                        if (newProgress % increment == 0)
                         {
-                            Console.WriteLine($"{DateTime.Now} : {progress * 100D / MaxCount:000.0}%");
+                            int newIncrement = (increment * 3) / 2;
+                            if (newIncrement > 10000)
+                                newIncrement = 10000;
+                            increment = newIncrement;
+
+                            Console.WriteLine($"{DateTime.Now} : {newProgress * 100D / MaxCount:000.0}% : {stopwatch.ElapsedMilliseconds}");
+                            if (stopwatch.ElapsedMilliseconds > 150000)
+                            {
+                                Console.WriteLine($"Attempting to finish early");
+                                done = true;
+                            }
                         }
                         test.Invoke();
-                    });
+                    };
+                
+                makeProgress(0);
+
+                Parallel.For(
+                    1,
+                    MaxCount,
+                    new ParallelOptions() { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                    makeProgress);
             }
 
             public void Invoke()

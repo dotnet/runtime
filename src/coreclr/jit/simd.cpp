@@ -107,6 +107,34 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
 #endif
 }
 
+//------------------------------------------------------------------------
+// Get, and allocate if necessary, the SIMD temp used for various operations.
+// The temp is allocated as the maximum sized type of all operations required.
+//
+// Arguments:
+//    simdType - Required SIMD type
+//
+// Returns:
+//    The temp number
+//
+unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
+{
+    if (lvaSIMDInitTempVarNum == BAD_VAR_NUM)
+    {
+        JITDUMP("Allocating SIMDInitTempVar as %s\n", varTypeName(simdType));
+        lvaSIMDInitTempVarNum                  = lvaGrabTempWithImplicitUse(false DEBUGARG("SIMDInitTempVar"));
+        lvaTable[lvaSIMDInitTempVarNum].lvType = simdType;
+    }
+    else if (genTypeSize(lvaTable[lvaSIMDInitTempVarNum].lvType) < genTypeSize(simdType))
+    {
+        // We want the largest required type size for the temp.
+        JITDUMP("Increasing SIMDInitTempVar type size from %s to %s\n",
+                varTypeName(lvaTable[lvaSIMDInitTempVarNum].lvType), varTypeName(simdType));
+        lvaTable[lvaSIMDInitTempVarNum].lvType = simdType;
+    }
+    return lvaSIMDInitTempVarNum;
+}
+
 //----------------------------------------------------------------------------------
 // Return the base type and size of SIMD vector type given its type handle.
 //

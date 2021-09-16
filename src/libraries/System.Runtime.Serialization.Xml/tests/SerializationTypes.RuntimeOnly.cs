@@ -4347,6 +4347,29 @@ public class NativeJsonTestData
     public Func<object> Instantiate { get; set; }
 }
 
+[DataContract]
+public class ContractGeneric : IExtensibleDataObject
+{
+    public ExtensionDataObject ExtensionData { get; set; }
+}
+
+[DataContract(Name = "ContractGeneric")]
+public class ContractExtended
+{
+    [DataMember(Name = "item", Order = 1)]
+    public Item Item;
+}
+
+[DataContract]
+public class Item
+{
+    [DataMember(Name = "id", Order = 1, EmitDefaultValue = false)]
+    public long? Id;
+
+    [DataMember(Name = "code", Order = 2, EmitDefaultValue = false)]
+    public long? Code;
+}
+
 public class TypeWithCollectionAndDateTimeOffset
 {
     public TypeWithCollectionAndDateTimeOffset()

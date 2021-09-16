@@ -148,12 +148,23 @@ CrashReportWriter::WriteCrashReport()
         WriteValue64("BP", thread->GetFramePointer());
         CloseObject();          // ctx
 
-        OpenArray("unmanaged_frames");
-        for (const StackFrame& frame : thread->StackFrames())
+        OpenArray("stack_frames");
+        for (auto iterator = thread->StackFrames().cbegin(); iterator != thread->StackFrames().cend(); ++iterator)
         {
-            WriteStackFrame(frame);
+            if (thread->IsBeginRepeat(iterator))
+            { 
+                OpenObject();
+                WriteValue32("repeated", thread->NumRepeatedFrames());
+                OpenArray("repeated_frames");
+            }
+            if (thread->IsEndRepeat(iterator))
+            { 
+                CloseArray();   // repeated_frames
+                CloseObject();
+            }
+            WriteStackFrame(*iterator);
         }
-        CloseArray();           // unmanaged_frames
+        CloseArray();           // stack_frames
         CloseObject();
     }
     CloseArray();               // threads
@@ -199,7 +210,7 @@ CrashReportWriter::WriteSysctl(const char* sysctlname, const char* valueName)
 
 void
 CrashReportWriter::WriteStackFrame(const StackFrame& frame)
-{ 
+{
     OpenObject();
     WriteValueBool("is_managed", frame.IsManaged());
     WriteValue64("module_address", frame.ModuleAddress());
@@ -252,7 +263,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
 bool
 CrashReportWriter::OpenWriter(const char* fileName)
 {
-    m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
+    m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
     if (m_fd == -1)
     {
         fprintf(stderr, "Could not create json file %s: %d %s\n", fileName, errno, strerror(errno));

@@ -52,12 +52,6 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#include "corcompile.h"
-#endif // FEATURE_PREJIT
-
-
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
@@ -86,12 +80,6 @@
 #define EE_TO_JIT_TRANSITION_LEAF()
 
 
-#if defined(CROSSGEN_COMPILE)
-static const char *const hlpNameTable[CORINFO_HELP_COUNT] = {
-#define JITHELPER(code, pfnHelper, sig) #code,
-#include "jithelpers.h"
-};
-#endif
 
 #ifdef DACCESS_COMPILE
 
@@ -121,7 +109,6 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-#ifndef CROSSGEN_COMPILE
 FCIMPL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
@@ -145,7 +132,6 @@ FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
     return currentThread ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
 }
 FCIMPLEND
-#endif
 
 /*********************************************************************/
 
@@ -409,23 +395,6 @@ inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *cl
     return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
 }
 
-void CheckForEquivalenceAndLoadTypeBeforeCodeIsRun(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (IsTypeDefEquivalent(defToken, pDefModule))
-    {
-        SigPointer sigPtr(*ptr);
-        TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext);
-        ((ICorDynamicInfo *)pData)->classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(th.AsPtr()));
-    }
-}
-
 inline static void TypeEquivalenceFixupSpecificationHelper(ICorDynamicInfo * pCorInfo, MethodDesc *pMD)
 {
     STANDARD_VM_CONTRACT;
@@ -436,15 +405,7 @@ inline static void TypeEquivalenceFixupSpecificationHelper(ICorDynamicInfo * pCo
     // match that those in the actual function. (They must be equivalent, but not necessarily the same.)
     // In non-ngen scenarios this code here will force the types to be loaded directly by the call to
     // HasTypeEquivalentStructParameters.
-    if (!pMD->IsVirtual())
-    {
-        if (pMD->HasTypeEquivalentStructParameters())
-        {
-            if (IsCompilationProcess())
-                pMD->WalkValueTypeParameters(pMD->GetMethodTable(), CheckForEquivalenceAndLoadTypeBeforeCodeIsRun, pCorInfo);
-        }
-    }
-    else
+    if (pMD->IsVirtual())
     {
         if (pMD->GetMethodTable()->DependsOnEquivalentOrForwardedStructs())
         {
@@ -660,80 +621,6 @@ size_t CEEInfo::findNameOfToken (
     EE_TO_JIT_TRANSITION();
 
     return NameLen;
-}
-
-#ifdef FEATURE_READYTORUN_COMPILER
-
-// Returns true if assemblies are in the same version bubble
-// Right now each assembly is in its own version bubble.
-// If the need arises (i.e. performance issues) we will define sets of assemblies (e.g. all app assemblies)
-// The main point is that all this logic is concentrated in one place.
-
-// NOTICE: If you change this logic to allow multi-assembly version bubbles you
-// need to consider the impact on diagnostic tools. Currently there is an inlining
-// table which tracks inliner/inlinee relationships in R2R images but it is not
-// yet capable of encoding cross-assembly inlines. The scenario where this
-// may show are instrumenting profilers that want to instrument a given method A
-// using the ReJit APIs. If method A happens to inlined within method B in another
-// assembly then the profiler needs to know that so it can rejit B too.
-// The recommended approach is to upgrade the inlining table (vm\inlinetracking.h\.cpp)
-// now that presumably R2R images have some way to refer to methods in other
-// assemblies in their version bubble. Chat with the diagnostics team if you need more
-// details.
-//
-// There already is a case where cross-assembly inlining occurs in an
-// unreported fashion for methods marked NonVersionable. There is a specific
-// exemption called out for this on ICorProfilerInfo6::EnumNgenModuleMethodsInliningThisMethod
-// and the impact of the cut was vetted with partners. It would not be appropriate
-// to increase that unreported set without additional review.
-
-
-bool IsInSameVersionBubble(Assembly * current, Assembly * target)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // trivial case: current and target are identical
-    // DO NOT change this without reading the notice above
-    if (current == target)
-        return true;
-
-    return IsLargeVersionBubbleEnabled();
-}
-
-// Returns true if the assemblies defining current and target are in the same version bubble
-static bool IsInSameVersionBubble(MethodDesc* pCurMD, MethodDesc *pTargetMD)
-{
-    LIMITED_METHOD_CONTRACT;
-    // DO NOT change this without reading the notice above
-    if (IsInSameVersionBubble(pCurMD->GetModule()->GetAssembly(),
-                              pTargetMD->GetModule()->GetAssembly()))
-    {
-        return true;
-    }
-    if (IsReadyToRunCompilation())
-    {
-        if (pTargetMD->GetModule()->GetMDImport()->GetCustomAttributeByName(pTargetMD->GetMemberDef(),
-                NONVERSIONABLE_TYPE, NULL, NULL) == S_OK)
-        {
-            return true;
-        }
-    }
-    return false;
-
-}
-
-#endif // FEATURE_READYTORUN_COMPILER
-
-static bool CallerAndCalleeInSystemVersionBubble(MethodDesc* pCaller, MethodDesc* pCallee)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-        return pCallee->GetModule()->IsSystem() && IsInSameVersionBubble(pCaller, pCallee);
-#endif
-
-    return false;
 }
 
 /*********************************************************************/
@@ -1604,7 +1491,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = intrinsicAccessor;
             }
             else
-            if (m_pMethodBeingCompiled->IsZapped() || IsCompilingForNGen() ||
+            if (IsCompilingForNGen() ||
                 // Static fields are not pinned in collectible types. We will always access
                 // them using a helper since the address cannot be embeded into the code.
                 pFieldMT->Collectible() ||
@@ -1982,9 +1869,6 @@ CEEInfo::getHeapClassSize(
     _ASSERTE(pMT);
     _ASSERTE(!pMT->IsValueType());
     _ASSERTE(!pMT->HasComponentSize());
-#ifdef FEATURE_READYTORUN_COMPILER
-    _ASSERTE(!IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
-#endif
 
     // Add OBJECT_SIZE to account for method table pointer.
     result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
@@ -2014,13 +1898,6 @@ bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
     _ASSERTE(!pMT->IsValueType());
 
     result = !pMT->HasFinalizer();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation() && !pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble())
-    {
-        result = false;
-    }
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
@@ -2288,11 +2165,6 @@ unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
         _ASSERTE(sizeof(BYTE) == 1);
 
         BOOL isValueClass = pMT->IsValueType();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-        _ASSERTE(isValueClass || !IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
-#endif
-
         unsigned int size = isValueClass ? VMClsHnd.GetSize() : pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
 
         // assume no GC pointers at first
@@ -3086,17 +2958,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 
     BOOL fInstrument = FALSE;
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // This will make sure that when IBC logging is turned on we will go through a version
-    // of JIT_GenericHandle which logs the access. Note that we still want the dictionaries
-    // to be populated to prepopulate the types at NGen time.
-    if (IsCompilingForNGen() &&
-        GetAppDomain()->ToCompilationDomain()->m_fForceInstrument)
-    {
-        fInstrument = TRUE;
-    }
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
     if (pContextMD->RequiresInstMethodDescArg())
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
@@ -3109,57 +2970,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-    {
-        pResultLookup->lookupKind.runtimeLookupArgs = NULL;
-
-        switch (entryKind)
-        {
-        case DeclaringTypeHandleSlot:
-            _ASSERTE(pTemplateMD != NULL);
-            pResultLookup->lookupKind.runtimeLookupArgs = pTemplateMD->GetMethodTable();
-            pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_DeclaringTypeHandle;
-            break;
-
-        case TypeHandleSlot:
-            pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_TypeHandle;
-            break;
-
-        case MethodDescSlot:
-        case MethodEntrySlot:
-        case ConstrainedMethodEntrySlot:
-        case DispatchStubAddrSlot:
-        {
-            if (pTemplateMD != (MethodDesc*)pResolvedToken->hMethod)
-                ThrowHR(E_NOTIMPL);
-
-            if (entryKind == MethodDescSlot)
-                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_MethodHandle;
-            else if (entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot)
-                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_MethodEntry;
-            else
-                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_VirtualEntry;
-
-            pResultLookup->lookupKind.runtimeLookupArgs = pConstrainedResolvedToken;
-
-            break;
-        }
-
-        case FieldDescSlot:
-            pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_FieldHandle;
-            break;
-
-        default:
-            _ASSERTE(!"Unknown dictionary entry kind!");
-            IfFailThrow(E_FAIL);
-        }
-
-        // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a
-        // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
-        return;
-    }
-#endif
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
     if (pContextMD->RequiresInstMethodDescArg())
     {
@@ -3180,17 +2990,8 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             {
                 pResult->indirections = 2;
                 pResult->testForNull = 0;
-#ifdef FEATURE_PREJIT
-                pResult->testForFixup = 1;
-#else
                 pResult->testForFixup = 0;
-#endif
                 pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
-
-                if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-                {
-                    pResult->indirectFirstOffset = 1;
-                }
 
                 uint32_t data;
                 IfFailThrow(sigptr.GetData(&data));
@@ -3266,22 +3067,12 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             {
                 pResult->indirections = 3;
                 pResult->testForNull = 0;
-#ifdef FEATURE_PREJIT
-                pResult->testForFixup = 1;
-#else
                 pResult->testForFixup = 0;
-#endif
                 pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
                 pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
                 uint32_t data;
                 IfFailThrow(sigptr.GetData(&data));
                 pResult->offsets[2] = sizeof(TypeHandle) * data;
-
-                if (MethodTable::IsPerInstInfoRelative())
-                {
-                    pResult->indirectFirstOffset = 1;
-                    pResult->indirectSecondOffset = 1;
-                }
 
                 return;
             }
@@ -3489,7 +3280,7 @@ NoSpecialCase:
         _ASSERTE(false);
     }
 
-    DictionaryEntrySignatureSource signatureSource = (IsCompilationProcess() ? FromZapImage : FromJIT);
+    DictionaryEntrySignatureSource signatureSource = FromJIT;
 
     WORD slot;
 
@@ -3512,11 +3303,6 @@ NoSpecialCase:
 
             // Indirect through dictionary table pointer in InstantiatedMethodDesc
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
-
-            if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
-            {
-                pResult->indirectFirstOffset = 1;
-            }
         }
     }
 
@@ -3539,12 +3325,6 @@ NoSpecialCase:
 
             // Next indirect through the dictionary appropriate to this instantiated type
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
-
-            if (MethodTable::IsPerInstInfoRelative())
-            {
-                pResult->indirectFirstOffset = 1;
-                pResult->indirectSecondOffset = 1;
-            }
         }
     }
 }
@@ -3602,14 +3382,10 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifdef CROSSGEN_COMPILE
-    result = hlpNameTable[ftnNum];
-#else
 #ifdef _DEBUG
     result = hlpFuncTable[ftnNum].name;
 #else
     result = "AnyJITHelper";
-#endif
 #endif
 
     EE_TO_JIT_TRANSITION_LEAF();
@@ -3941,14 +3717,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
 
         if (pClass->IsBeforeFieldInit())
         {
-            if (IsReadyToRunCompilation() && !pMT->GetModule()->IsInCurrentVersionBubble())
-            {
-                // For version resiliency do not allow hoisting static constructors out of loops
-            }
-            else
-            {
-                ret |= CORINFO_FLG_BEFOREFIELDINIT;
-            }
+            ret |= CORINFO_FLG_BEFOREFIELDINIT;
         }
 
         if (pClass->IsAbstract())
@@ -4000,7 +3769,7 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     MethodDesc *methodBeingCompiled = m_pMethodBeingCompiled;
 
-    BOOL fMethodZappedOrNGen = methodBeingCompiled->IsZapped() || IsCompilingForNGen();
+    BOOL fMethodZappedOrNGen = IsCompilingForNGen();
 
     MethodTable *pTypeToInitMT = typeToInitTH.AsMethodTable();
 
@@ -4015,16 +3784,12 @@ CorInfoInitClassResult CEEInfo::initClass(
     }
     else
     {
-#ifdef CROSSGEN_COMPILE
-        _ASSERTE(FALSE);
-#else // CROSSGEN_COMPILE
         if (pTypeToInitMT->IsClassInited())
         {
             // If the type is initialized there really is nothing to do.
             result = CORINFO_INITCLASS_INITIALIZED;
             goto exit;
         }
-#endif // CROSSGEN_COMPILE
     }
 
     if (pTypeToInitMT->IsGlobalClass())
@@ -4135,7 +3900,6 @@ CorInfoInitClassResult CEEInfo::initClass(
         goto exit;
     }
 
-#ifndef CROSSGEN_COMPILE
     //
     // Optimizations for domain specific code
     //
@@ -4150,7 +3914,6 @@ CorInfoInitClassResult CEEInfo::initClass(
         result = CORINFO_INITCLASS_INITIALIZED;
         goto exit;
     }
-#endif // CROSSGEN_COMPILE
 
     result = CORINFO_INITCLASS_USE_HELPER;
     }
@@ -4194,7 +3957,7 @@ void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
     MethodDesc *pMD = (MethodDesc*) methHnd;
 
     // MethodDescs returned to JIT at runtime are always fully loaded. Verify that it is the case.
-    _ASSERTE(pMD->IsRestored() && pMD->GetMethodTable()->IsFullyLoaded());
+    _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -4584,19 +4347,6 @@ TypeCompareState CEEInfo::compareTypesForCast(
             }
         }
     }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    // In R2R it is a breaking change for a previously positive
-    // cast to become negative, but not for a previously negative
-    // cast to become positive. So in R2R a negative result is
-    // always reported back as May, except for CoreLib version bubble.
-    if (IsReadyToRunCompilation() && (result == TypeCompareState::MustNot)
-        && !GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem()
-        && !IsLargeVersionBubbleEnabled())
-    {
-        result = TypeCompareState::May;
-    }
-#endif // FEATURE_READYTORUN_COMPILER
 
     EE_TO_JIT_TRANSITION();
 
@@ -4988,15 +4738,7 @@ void * CEEInfo::getArrayInitializationData(
 
     if (!pField                    ||
         !pField->IsRVA()           ||
-        (pField->LoadSize() < size)
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-        // This will make sure that when IBC logging is on, the array initialization happens thru
-        // COMArrayInfo::InitializeArray. This gives a place to put the IBC probe that can help
-        // separate hold and cold RVA blobs.
-        || (IsCompilingForNGen() &&
-            GetAppDomain()->ToCompilationDomain()->m_fForceInstrument)
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-        )
+        (pField->LoadSize() < size))
     {
         result = NULL;
     }
@@ -5261,21 +5003,8 @@ void CEEInfo::getCallInfo(
             // Because of .NET's notion of base calls, exactType may point to a sub-class
             // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is
             // important that they 'match', so we fix exactType here.
-#ifdef FEATURE_READYTORUN_COMPILER
-            if (IsReadyToRunCompilation() &&
-                !isVerifyOnly() &&
-                !IsInSameVersionBubble((MethodDesc*)callerHandle, pTargetMD))
-            {
-                // For version resilient code we can only inline within the same version bubble;
-                // we "repair" the precise types only for those callees.
-                // The above condition needs to stay in sync with CEEInfo::canInline
-            }
-            else
-#endif
-            {
-                exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
-                _ASSERTE(!exactType.IsNull());
-            }
+            exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
+            _ASSERTE(!exactType.IsNull());
         }
 
         pResult->contextHandle = MAKE_CLASSCONTEXT(exactType.AsPtr());
@@ -5324,36 +5053,6 @@ void CEEInfo::getCallInfo(
     else
     {
         bool devirt;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-
-        // if we are generating version resilient code
-        // AND
-        //    caller/callee are in different version bubbles
-        // we have to apply more restrictive rules
-        // These rules are related to the "inlining rules" as far as the
-        // boundaries of a version bubble are concerned.
-
-        if (IsReadyToRunCompilation() &&
-            !isVerifyOnly() &&
-            !IsInSameVersionBubble((MethodDesc*)callerHandle, pTargetMD)
-           )
-        {
-            // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a
-            // servicing event it is legal to unseal a method or type.
-            //
-            // Note that it is safe to devirtualize in the following cases, since a servicing event cannot later modify it
-            //  1) Callvirt on a virtual final method of a value type - since value types are sealed types as per ECMA spec
-            //  2) Delegate.Invoke() - since a Delegate is a sealed class as per ECMA spec
-            //  3) JIT intrinsics - since they have pre-defined behavior
-            devirt = pTargetMD->GetMethodTable()->IsValueType() ||
-                     (pTargetMD->GetMethodTable()->IsDelegate() && ((DelegateEEClass*)(pTargetMD->GetMethodTable()->GetClass()))->GetInvokeMethod() == pMD) ||
-                     (pTargetMD->IsFCall() && ECall::GetIntrinsicID(pTargetMD) != CORINFO_INTRINSIC_Illegal);
-
-            callVirtCrossingVersionBubble = true;
-        }
-        else
-#endif
         if (pTargetMD->GetMethodTable()->IsInterface())
         {
             // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
@@ -5439,36 +5138,27 @@ void CEEInfo::getCallInfo(
         {
             _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
 
-            if (IsReadyToRunCompilation() && unresolvedLdVirtFtn)
+            pResult->kind = CORINFO_CALL_CODE_POINTER;
+
+            DictionaryEntryKind entryKind;
+            if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
             {
-                // Compensate for always treating delegates as direct calls above.
-                // Dictionary lookup is computed in embedGenericHandle as part of the LDVIRTFTN code sequence
-                pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
+                // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
+                // constraint, it doesn't effect it either
+                entryKind = MethodEntrySlot;
             }
             else
             {
-                pResult->kind = CORINFO_CALL_CODE_POINTER;
-
-                DictionaryEntryKind entryKind;
-                if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
-                {
-                    // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
-                    // constraint, it doesn't effect it either
-                    entryKind = MethodEntrySlot;
-                }
-                else
-                {
-                    // constrained. callvirt case where the constraint type is a valuetype
-                    // OR
-                    // constrained. call or constrained. ldftn case
-                    entryKind = ConstrainedMethodEntrySlot;
-                }
-                ComputeRuntimeLookupForSharedGenericToken(entryKind,
-                                                            pResolvedToken,
-                                                            pConstrainedResolvedToken,
-                                                            pMD,
-                                                            &pResult->codePointerLookup);
+                // constrained. callvirt case where the constraint type is a valuetype
+                // OR
+                // constrained. call or constrained. ldftn case
+                entryKind = ConstrainedMethodEntrySlot;
             }
+            ComputeRuntimeLookupForSharedGenericToken(entryKind,
+                                                        pResolvedToken,
+                                                        pConstrainedResolvedToken,
+                                                        pMD,
+                                                        &pResult->codePointerLookup);
         }
         else
         {
@@ -5478,12 +5168,6 @@ void CEEInfo::getCallInfo(
             }
 
             pResult->kind = CORINFO_CALL;
-
-            if (IsReadyToRunCompilation() && unresolvedLdVirtFtn)
-            {
-                // Compensate for always treating delegates as direct calls above
-                pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
-            }
         }
         pResult->nullInstanceCheck = resolvedCallVirt;
     }
@@ -5500,28 +5184,11 @@ void CEEInfo::getCallInfo(
     {
         pResult->kind = CORINFO_VIRTUALCALL_VTABLE;
         pResult->nullInstanceCheck = TRUE;
-
-        // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode, and generate fragile-NI-like callsites for improved performance. We
-        // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
-        // performance optimization.
-        if (IsReadyToRunCompilation() && !CallerAndCalleeInSystemVersionBubble((MethodDesc*)callerHandle, pTargetMD))
-        {
-            pResult->kind = CORINFO_VIRTUALCALL_STUB;
-        }
     }
     else
     {
-        if (IsReadyToRunCompilation())
-        {
-            // Insert explicit null checks for cross-version bubble non-interface calls.
-            // It is required to handle null checks properly for non-virtual <-> virtual change between versions
-            pResult->nullInstanceCheck = !!(callVirtCrossingVersionBubble && !pTargetMD->IsInterface());
-        }
-        else
-        {
-            // No need to null check - the dispatch code will deal with null this.
-            pResult->nullInstanceCheck = FALSE;
-        }
+        // No need to null check - the dispatch code will deal with null this.
+        pResult->nullInstanceCheck = FALSE;
 #ifdef STUB_DISPATCH_PORTABLE
         pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
 #else // STUB_DISPATCH_PORTABLE
@@ -5546,7 +5213,6 @@ void CEEInfo::getCallInfo(
 
             if (!(flags & CORINFO_CALLINFO_KINDONLY) && !isVerifyOnly())
             {
-#ifndef CROSSGEN_COMPILE
                 // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
                 // VirtualCallStubManager from where the stub will be used.
                 // For normal methods there is no difference.
@@ -5572,10 +5238,6 @@ void CEEInfo::getCallInfo(
                     // used by one method.
                     indcell = pMgr->GenerateStubIndirection(addr, FALSE);
                 }
-#else // CROSSGEN_COMPILE
-                // This path should be unreachable during crossgen
-                _ASSERTE(false);
-#endif // CROSSGEN_COMPILE
             }
 
             // We use an indirect call
@@ -6043,13 +5705,6 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
         *pHasSideEffects = true;
     }
     else
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
-    {
-        *pHasSideEffects = hasFinalizer || !pMT->IsInheritanceChainFixedInCurrentVersionBubble();
-    }
-    else
-#endif
     {
         *pHasSideEffects = !!hasFinalizer;
     }
@@ -6303,16 +5958,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
         // Otherwise, use the slow helper
         _ASSERTE(helper == CORINFO_HELP_ISINSTANCEOFANY);
     }
-
-#ifdef FEATURE_PREJIT
-    BOOL t1, t2, forceInstr;
-    SystemDomain::GetCompilationOverrides(&t1, &t2, &forceInstr);
-    if (forceInstr)
-    {
-        // If we're compiling for instrumentation, use the slowest but instrumented cast helper
-        helper = CORINFO_HELP_ISINSTANCEOFANY;
-    }
-#endif
 
     if (fThrowing)
     {
@@ -6845,12 +6490,10 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_DELEGATE_INVOKE;
     }
 
-#ifndef CROSSGEN_COMPILE
     if (!g_pConfig->TieredCompilation_QuickJitForLoops())
     {
         result |= CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS;
     }
-#endif
 
     return result;
 }
@@ -6872,39 +6515,9 @@ void CEEInfo::setMethodAttribs (
 
     if (attribs & CORINFO_FLG_BAD_INLINEE)
     {
-        BOOL fCacheInliningHint = TRUE;
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-        if (IsCompilationProcess())
-        {
-            // Since we are running managed code during NGen the inlining hint may be
-            // changing underneeth us as the code is JITed. We need to prevent the inlining
-            // hints from changing once we start to use them to place IL in the image.
-            if (!g_pCEECompileInfo->IsCachingOfInliningHintsEnabled())
-            {
-                fCacheInliningHint = FALSE;
-            }
-            else
-            {
-                // Don't cache inlining hints inside CoreLib during NGen of other assemblies,
-                // since CoreLib is loaded domain neutral and will survive worker process recycling,
-                // causing determinism problems.
-                Module * pModule = ftn->GetModule();
-                if (pModule->IsSystem() && pModule->HasNativeImage())
-                {
-                    fCacheInliningHint = FALSE;
-                }
-            }
-        }
-#endif
-
-        if (fCacheInliningHint)
-        {
-            ftn->SetNotInline(true);
-        }
+        ftn->SetNotInline(true);
     }
 
-#ifndef CROSSGEN_COMPILE
     if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
     {
         PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
@@ -6924,7 +6537,6 @@ void CEEInfo::setMethodAttribs (
 #endif
         }
     }
-#endif // !CROSSGEN_COMPILE
 
     EE_TO_JIT_TRANSITION();
 }
@@ -8055,54 +7667,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     {
         Module *    pCalleeModule   = pCallee->GetModule();
 
-#ifdef FEATURE_PREJIT
-        Assembly *  pCalleeAssembly = pCalleeModule->GetAssembly();
-
-#ifdef _DEBUG
-        //
-        // Make sure that all methods with StackCrawlMark are marked as IsMdRequireSecObject
-        //
-        if (pCalleeAssembly->IsSystem())
-        {
-            _ASSERTE(!containsStackCrawlMarkLocal(pCallee));
-        }
-#endif
-
-        // To allow for servicing of Ngen images we want to disable most
-        // Cross-Assembly inlining except for the cases that we explicitly allow.
-        //
-        if (IsCompilingForNGen())
-        {
-            // This is an canInline call at Ngen time
-            //
-            //
-            Assembly *  pOrigCallerAssembly = pOrigCallerModule->GetAssembly();
-
-            if (pCalleeAssembly == pOrigCallerAssembly)
-            {
-                // Within the same assembly
-                // we can freely inline with no restrictions
-            }
-            else
-            {
-#ifdef FEATURE_READYTORUN_COMPILER
-                // No inlinining for version resilient code except if in the same version bubble
-                // If this condition changes, please make the corresponding change
-                // in getCallInfo, too.
-                if (IsReadyToRunCompilation() &&
-                    !isVerifyOnly() &&
-                    !IsInSameVersionBubble(pCaller, pCallee)
-                   )
-                {
-                    result = INLINE_NEVER;
-                    szFailReason = "Cross-module inlining in version resilient code";
-                    goto exit;
-                }
-#endif
-            }
-        }
-#endif  // FEATURE_PREJIT
-
         // TODO: We can probably be smarter here if the caller is jitted, as we will
         // know for sure if the inlinee has really no string interning active (currently
         // it's only on in the ngen case (besides requiring the attribute)), but this is getting
@@ -8138,7 +7702,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             goto exit;
         }
 
-#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
         if (CORProfilerEnableRejit())
         {
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
@@ -8151,7 +7715,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                 goto exit;
             }
         }
-#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 
         // If the profiler wishes to be notified of JIT events and the result from
         // the above tests will cause a function to be inlined, we need to tell the
@@ -8339,7 +7903,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     }
 
 
-#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
     if(inlineResult == INLINE_PASS)
     {
         // We don't want to track the chain of methods, so intentionally use m_pMethodBeingCompiled
@@ -8365,7 +7929,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             }
         }
     }
-#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
     EE_TO_JIT_TRANSITION();
 }
@@ -8887,7 +8451,7 @@ bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetOfIndirection,
                                      unsigned * pOffsetAfterIndirection,
-                                     bool * isRelative)
+                                     bool * isRelative) 
 {
     CONTRACTL {
         NOTHROW;
@@ -8909,8 +8473,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 
     *pOffsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir_t) */;
     *pOffsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir2_t) */;
-    *isRelative = MethodTable::VTableIndir_t::isRelative ? 1 : 0;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == MethodTable::VTableIndir2_t::isRelative);
+    *isRelative = false;
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -8935,7 +8498,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
 
     // Method better be from a fully loaded class
-    _ASSERTE(pBaseMD->IsRestored() && pBaseMT->IsFullyLoaded());
+    _ASSERTE(pBaseMT->IsFullyLoaded());
 
     //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
     _ASSERTE(!pBaseMD->HasMethodInstantiation());
@@ -8967,6 +8530,11 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             return false;
         }
 #endif // FEATURE_COMINTEROP
+
+        if (info->context != nullptr)
+        {
+            pBaseMT = GetTypeFromContext(info->context).GetMethodTable();
+        }
 
         // Interface call devirtualization.
         //
@@ -9080,8 +8648,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         }
     }
 
-    _ASSERTE(pDevirtMD->IsRestored());
-
     // Determine the exact class.
     //
     // We may fail to get an exact context if the method is a default
@@ -9101,25 +8667,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    // Check if devirtualization is dependent upon cross-version
-    // bubble information and if so, disallow it.
-    if (IsReadyToRunCompilation())
-    {
-        MethodDesc* callerMethod = m_pMethodBeingCompiled;
-        Assembly* pCallerAssembly = callerMethod->GetModule()->GetAssembly();
-        bool allowDevirt =
-            IsInSameVersionBubble(pCallerAssembly , pDevirtMD->GetModule()->GetAssembly())
-            && IsInSameVersionBubble(pCallerAssembly, pObjMT->GetAssembly());
-
-        if (!allowDevirt)
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE;
-            return false;
-        }
-    }
-#endif
 
     // Success! Pass back the results.
     //
@@ -9424,15 +8971,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
         ret = (void *)ftn->GetAddrOfSlot();
 
-        if (MethodTable::VTableIndir2_t::isRelative
-            && ftn->IsVtableSlot())
-        {
-            accessType = IAT_RELPVALUE;
-        }
-        else
-        {
-            accessType = IAT_PVALUE;
-        }
+        accessType = IAT_PVALUE;
     }
 
 
@@ -9730,7 +9269,7 @@ void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
     JIT_TO_EE_TRANSITION();
 
 #ifdef DEBUGGING_SUPPORTED
-    if (g_pDebugInterface && !IsCompilationProcess())
+    if (g_pDebugInterface)
     {
         g_pDebugInterface->getBoundaries(GetMethod(ftn), cILOffsets, (DWORD**)pILOffsets,
                                      implicitBoundaries);
@@ -9758,7 +9297,7 @@ void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::
     JIT_TO_EE_TRANSITION();
 
 #ifdef DEBUGGING_SUPPORTED
-    if (g_pDebugInterface && !IsCompilationProcess())
+    if (g_pDebugInterface)
     {
         g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers);
     }
@@ -10036,22 +9575,12 @@ namespace
             _ASSERTE(pMD->IsNDirect() || pMD->HasUnmanagedCallersOnlyAttribute());
             if (pMD->IsNDirect())
             {
-#ifdef CROSSGEN_COMPILE
-                // Return CorInfoCallConvExtension::Managed to indicate that crossgen does not support handling UnmanagedCallConv
-                if (pMD->HasUnmanagedCallConvAttribute())
-                    return CorInfoCallConvExtension::Managed;
-#endif // CROSSGEN_COMPILE
-
                 CorInfoCallConvExtension unmanagedCallConv;
                 NDirect::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, pSuppressGCTransition);
                 return unmanagedCallConv;
             }
             else
             {
-#ifdef CROSSGEN_COMPILE
-                _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
-                return CorInfoCallConvExtension::Managed;
-#else
                 CorInfoCallConvExtension unmanagedCallConv;
                 if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
@@ -10062,7 +9591,6 @@ namespace
                     return unmanagedCallConv;
                 }
                 return CallConv::GetDefaultUnmanagedCallingConvention();
-#endif // CROSSGEN_COMPILE
             }
         }
         else
@@ -10397,38 +9925,11 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
 
     JIT_TO_EE_TRANSITION();
 
-    if (!IsReadyToRunCompilation())
-    {
-        InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
+    InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
 
-        // Offsets into the Thread structure
-        pEEInfoOut->offsetOfThreadFrame = Thread::GetOffsetOfCurrentFrame();
-        pEEInfoOut->offsetOfGCState     = Thread::GetOffsetOfGCFlag();
-    }
-    else
-    {
-        // We'll declare a fixed size to use for the inlined call frame for R2R here. The size we declare
-        // is currently slightly larger that the actual size of the struct, just in case we decide to add
-        // more fields to the struct in the future, in an effort to not completely invalidate existing R2R images.
-        // The assert below ensures that this fixed size is at least large enough to hold the data structures
-        // used at runtime.
-        // ** IMPORTANT ** If you ever need to change the value of this fixed size, make sure to change the R2R
-        // version number, otherwise older R2R images will probably crash when used.
-
-        const int r2rInlinedCallFrameSize = TARGET_POINTER_SIZE * READYTORUN_PInvokeTransitionFrameSizeInPointerUnits;
-
-#if defined(_DEBUG) && !defined(CROSSBITNESS_COMPILE)
-        InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
-        _ASSERTE(pEEInfoOut->inlinedCallFrameInfo.size <= r2rInlinedCallFrameSize);
-#endif
-
-        // inlinedCallFrameInfo is mostly not used for R2R compilation (only the size field is used)
-        ZeroMemory(&pEEInfoOut->inlinedCallFrameInfo, sizeof(pEEInfoOut->inlinedCallFrameInfo));
-
-        pEEInfoOut->offsetOfThreadFrame         = (DWORD)-1;
-        pEEInfoOut->offsetOfGCState             = (DWORD)-1;
-        pEEInfoOut->inlinedCallFrameInfo.size   = r2rInlinedCallFrameSize;
-    }
+    // Offsets into the Thread structure
+    pEEInfoOut->offsetOfThreadFrame = Thread::GetOffsetOfCurrentFrame();
+    pEEInfoOut->offsetOfGCState     = Thread::GetOffsetOfGCFlag();
 
 #ifndef CROSSBITNESS_COMPILE
     // The assertions must hold in every non-crossbitness scenario
@@ -10452,16 +9953,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
 #endif
 
-    if (!IsReadyToRunCompilation())
-    {
-        pEEInfoOut->osPageSize = GetOsPageSize();
-    }
-    else
-    {
-        // In AOT scenarios the VM reports to the JIT the minimal supported page size.
-        pEEInfoOut->osPageSize = 0x1000;
-    }
-
+    pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
 
@@ -10525,11 +10017,7 @@ const void * CEEInfo::getInlinedCallFrameVptr(void **ppIndirection)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifndef CROSSGEN_COMPILE
     result = (void*)InlinedCallFrame::GetMethodFrameVPtr();
-#else
-    result = (void*)0x43210;
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -10600,7 +10088,6 @@ uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer,
 
     uint32_t result = 0;
 
-#ifndef CROSSGEN_COMPILE
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
@@ -10620,7 +10107,6 @@ uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer,
     }
 
     EE_TO_JIT_TRANSITION();
-#endif
 
     return result;
 }
@@ -10668,12 +10154,6 @@ LONG EEFilterException(struct _EXCEPTION_POINTERS *pExceptionPointers, void *unu
     {
         result = EXCEPTION_CONTINUE_SEARCH;
     }
-#ifdef CROSSGEN_COMPILE
-    else
-    {
-        result = EXCEPTION_EXECUTE_HANDLER;
-    }
-#else
     else if (!IsComPlusException(pExceptionPointers->ExceptionRecord))
     {
         result = EXCEPTION_EXECUTE_HANDLER;
@@ -10708,7 +10188,6 @@ LONG EEFilterException(struct _EXCEPTION_POINTERS *pExceptionPointers, void *unu
             GCPROTECT_END();
         }
     }
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -10731,7 +10210,6 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-#ifndef CROSSGEN_COMPILE
     if (IsComPlusException(pExceptionPointers->ExceptionRecord))
     {
         GCX_COOP();
@@ -10795,7 +10273,6 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
             GCPROTECT_END();
         }
     }
-#endif
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -11031,9 +10508,6 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
 
     JIT_TO_EE_TRANSITION();
 
-#ifdef CROSSGEN_COMPILE
-    ThrowHR(COR_E_INVALIDPROGRAM);
-#else
 
 #ifdef _DEBUG
     BEGIN_DEBUG_ONLY_CODE;
@@ -11043,7 +10517,6 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
     result = 1;   // break into debugger
 #endif // !_DEBUG
 
-#endif
 
     EE_TO_JIT_TRANSITION();
 
@@ -11088,7 +10561,6 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
     return result;
 }
 
-#ifndef CROSSGEN_COMPILE
 
 /*********************************************************************/
 
@@ -11589,7 +11061,7 @@ void CEEJitInfo::allocUnwindInfo (
     }
 
     PT_RUNTIME_FUNCTION pRuntimeFunction = m_CodeHeaderRW->GetUnwindInfo(m_usedUnwindInfos);
-    
+
     m_usedUnwindInfos++;
 
     // Make sure that the RUNTIME_FUNCTION is aligned on a DWORD sized boundary
@@ -11946,6 +11418,50 @@ uint32_t CEEJitInfo::getExpectedTargetArchitecture()
     return IMAGE_FILE_MACHINE_NATIVE;
 }
 
+bool CEEJitInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*) fldHnd;
+    TypeHandle th(cls);
+
+    _ASSERTE(!field->IsStatic());
+
+    // doesFieldBelongToClass implements the predicate of...
+    // if field is not associated with the class in any way, return false.
+    // if field is the only FieldDesc that the JIT might see for a given class handle
+    // and logical field pair then return true. This is needed as the field handle here
+    // is used as a key into a hashtable mapping writes to fields to value numbers.
+    //
+    // In the CoreCLR VM implementation, verifying that the canonical MethodTable of
+    // the field matches the type found via GetExactDeclaringType, as all instance fields
+    // are only held on the canonical MethodTable.
+    // This yields a truth table such as
+
+    // BaseType._field, BaseType -> true
+    // BaseType._field, DerivedType -> true
+    // BaseType<__Canon>._field, BaseType<__Canon> -> true
+    // BaseType<__Canon>._field, BaseType<string> -> true
+    // BaseType<__Canon>._field, BaseType<object> -> true
+    // BaseType<sbyte>._field, BaseType<sbyte> -> true
+    // BaseType<sbyte>._field, BaseType<byte> -> false
+
+    MethodTable* pMT = field->GetExactDeclaringType(th.GetMethodTable());
+    result = (pMT != nullptr) && (pMT->GetCanonicalMethodTable() == field->GetApproxEnclosingMethodTable()->GetCanonicalMethodTable());
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 void CEEInfo::JitProcessShutdownWork()
 {
     LIMITED_METHOD_CONTRACT;
@@ -12008,12 +11524,6 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     } CONTRACTL_END;
 
     InfoAccessType result = IAT_PVALUE;
-
-    if(NingenEnabled())
-    {
-        *ppValue = NULL;
-        return result;
-    }
 
     JIT_TO_EE_TRANSITION();
     *ppValue = StringObject::GetEmptyStringRefPtr();
@@ -12094,7 +11604,7 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
     }
 
     // Only examine the field's value if we are producing jitted code.
-    if (isVerifyOnly() || IsCompilingForNGen() || IsReadyToRunCompilation())
+    if (isVerifyOnly())
     {
         return result;
     }
@@ -12232,17 +11742,12 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
         codeSize = m_ILHeader->GetCodeSize();
     }
 
-#ifdef FEATURE_PREJIT
-    *pBlockCounts = m_pMethodBeingCompiled->GetLoaderModule()->AllocateMethodBlockCounts(m_pMethodBeingCompiled->GetMemberDef(), count, codeSize);
-    hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
-#else // FEATURE_PREJIT
 #ifdef FEATURE_PGO
     hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
 #endif // !FEATURE_PGO
-#endif // !FEATURE_PREJIT
 
     EE_TO_JIT_TRANSITION();
 
@@ -12294,7 +11799,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema, 
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema,
             &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
         pDataCur = m_foundPgoData;
     }
@@ -12590,11 +12095,7 @@ void CEEJitInfo::getEHinfo(
 }
 
 
-#endif // CROSSGEN_COMPILE
 
-#if defined(CROSSGEN_COMPILE)
-EXTERN_C ICorJitCompiler* getJit();
-#endif // defined(CROSSGEN_COMPILE)
 
 #ifdef FEATURE_INTERPRETER
 static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
@@ -12642,7 +12143,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
 #endif
 
-#if defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+#if defined(ALLOW_SXS_JIT)
     if (FAILED(ret) && jitMgr->m_alternateJit
 #ifdef FEATURE_STACK_SAMPLING
         && (!samplingEnabled || (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)))
@@ -12674,7 +12175,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
             ret = CORJIT_SKIPPED;
         }
     }
-#endif // defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+#endif // defined(ALLOW_SXS_JIT)
     comp->setJitFlags(jitFlags);
 
 #ifdef FEATURE_INTERPRETER
@@ -12735,7 +12236,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     }
 #endif // FEATURE_INTERPRETER
 
-#if !defined(CROSSGEN_COMPILE)
     // Cleanup any internal data structures allocated
     // such as IL code after a successfull JIT compile
     // If the JIT fails we keep the IL around and will
@@ -12752,7 +12252,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         comp->MethodCompileComplete(info->ftn);
 #endif // FEATURE_INTERPRETER
     }
-#endif // !defined(CROSSGEN_COMPILE)
 
 
 #if defined(FEATURE_GDBJIT)
@@ -13060,7 +12559,6 @@ BOOL g_fAllowRel32 = TRUE;
 #endif
 
 
-#ifndef CROSSGEN_COMPILE
 // ********************************************************************
 //                  README!!
 // ********************************************************************
@@ -13091,31 +12589,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     COOPERATIVE_TRANSITION_BEGIN();
 
     timer.Start();
-
-#ifdef FEATURE_PREJIT
-
-    if (g_pConfig->RequireZaps() == EEConfig::REQUIRE_ZAPS_ALL &&
-        ftn->GetModule()->GetDomainFile()->IsZapRequired() &&
-        PartialNGenStressPercentage() == 0 &&
-#ifdef FEATURE_STACK_SAMPLING
-        !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND) &&
-#endif
-        !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-    {
-        StackSString ss(SString::Ascii, "ZapRequire: JIT compiler invoked for ");
-        TypeString::AppendMethodInternal(ss, ftn);
-
-#ifdef _DEBUG
-        // Assert as some test may not check their error codes well. So throwing an
-        // exception may not cause a test failure (as it should).
-        StackScratchBuffer scratch;
-        DbgAssertDialog(__FILE__, __LINE__, (char*)ss.GetUTF8(scratch));
-#endif // _DEBUG
-
-        COMPlusThrowNonLocalized(kFileNotFoundException, ss.GetUnicode());
-    }
-
-#endif // FEATURE_PREJIT
 
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
     if (!jitMgr->LoadJIT())
@@ -13468,100 +12941,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     COOPERATIVE_TRANSITION_END();
     return ret;
 }
-#endif // CROSSGEN_COMPILE
-
-extern "C" unsigned __stdcall PartialNGenStressPercentage()
-{
-    LIMITED_METHOD_CONTRACT;
-#ifndef _DEBUG
-    return 0;
-#else // _DEBUG
-    static ConfigDWORD partialNGenStress;
-    DWORD partialNGenStressVal = partialNGenStress.val(CLRConfig::INTERNAL_partialNGenStress);
-    _ASSERTE(partialNGenStressVal <= 100);
-    return partialNGenStressVal;
-#endif // _DEBUG
-}
-
-#ifdef FEATURE_PREJIT
-/*********************************************************************/
-
-//
-// Table loading functions
-//
-void Module::LoadHelperTable()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifndef CROSSGEN_COMPILE
-    COUNT_T tableSize;
-    BYTE * table = (BYTE *) GetNativeImage()->GetNativeHelperTable(&tableSize);
-
-    if (tableSize == 0)
-        return;
-
-    BYTE * curEntry   = table;
-    BYTE * tableEnd   = table + tableSize;
-
-#ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, GetSimpleName(), (PCODE)table, tableSize);
-#endif
-
-#ifdef LOGGING
-    int iEntryNumber = 0;
-#endif // LOGGING
-
-    //
-    // Fill in helpers
-    //
-
-    while (curEntry < tableEnd)
-    {
-        DWORD dwHelper = *(DWORD *)curEntry;
-
-        int iHelper = (USHORT)dwHelper;
-        _ASSERTE(iHelper < CORINFO_HELP_COUNT);
-
-        LOG((LF_JIT, LL_INFO1000000, "JIT helper %3d (%-40s: table @ %p, size 0x%x, entry %3d @ %p, pfnHelper %p)\n",
-            iHelper, hlpFuncTable[iHelper].name, table, tableSize, iEntryNumber, curEntry, hlpFuncTable[iHelper].pfnHelper));
-
-        PCODE pfnHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)iHelper);
-
-        if (dwHelper & CORCOMPILE_HELPER_PTR)
-        {
-            //
-            // Indirection cell
-            //
-            *(TADDR *)curEntry = pfnHelper;
-            curEntry = curEntry + sizeof(TADDR);
-        }
-        else
-        {
-            //
-            // Jump thunk
-            //
-
-#if defined(TARGET_AMD64)
-            *curEntry = X86_INSTR_JMP_REL32;
-            *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
-#else // all other platforms
-            emitJump(curEntry, curEntry, (LPVOID)pfnHelper);
-            _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
-#endif
-
-            curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
-        }
-
-#ifdef LOGGING
-        // Note that some table entries are sizeof(TADDR) in length, and some are HELPER_TABLE_ENTRY_LEN in length
-        ++iEntryNumber;
-#endif // LOGGING
-    }
-
-    ClrFlushInstructionCache(table, tableSize);
-#endif // CROSSGEN_COMPILE
-}
-#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_READYTORUN
 CorInfoHelpFunc MapReadyToRunHelper(ReadyToRunHelper helperNum)
@@ -13810,10 +13189,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     MethodDesc * pMD = NULL;
 
-#ifndef CROSSGEN_COMPILE
     PCCOR_SIGNATURE pSig;
     DWORD cSig;
-#endif // CROSSGEN_COMPILE
 
     size_t result = 0;
 
@@ -13860,7 +13237,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         result = (size_t) ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
         break;
 
-#ifndef CROSSGEN_COMPILE
     case ENCODE_STRING_HANDLE:
         {
             // We need to update strings atomically (due to NoStringInterning attribute). Note
@@ -14360,7 +13736,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             TypeHandle thImpl = ZapSig::DecodeType(currentModule, pInfoModule, updatedSignature, CLASS_LOADED, &updatedSignature);
 
             MethodDesc *pImplMethodCompiler = NULL;
-            
+
             if ((flags & READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden) != 0)
             {
                 pImplMethodCompiler = ZapSig::DecodeMethod(currentModule, pInfoModule, updatedSignature);
@@ -14493,7 +13869,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 #endif // FEATURE_READYTORUN
 
-#endif // CROSSGEN_COMPILE
 
     default:
         STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown FIXUP_BLOB_KIND %d\n", kind);
@@ -14768,6 +14143,12 @@ uint32_t CEEInfo::getExpectedTargetArchitecture()
     LIMITED_METHOD_CONTRACT;
 
     return IMAGE_FILE_MACHINE_NATIVE;
+}
+
+bool CEEInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_RET();      // only called on derived class.
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
@@ -15203,21 +14584,6 @@ LPVOID                EECodeInfo::findNextFunclet (LPVOID pvFuncletStart, SIZE_T
 
         if (pFunctionEntry != NULL)
         {
-#ifdef FEATURE_PREJIT
-            // workaround: Check for indirect entry that is generated for cold part of main method body.
-            if ((TADDR)pvFuncletStart < (TADDR)uImageBase + pFunctionEntry->BeginAddress ||
-                (TADDR)uImageBase + pFunctionEntry->EndAddress <= (TADDR)pvFuncletStart)
-            {
-                Module * pZapModule = ExecutionManager::FindZapModule((TADDR)pvFuncletStart);
-                NGenLayoutInfo * pLayoutInfo = pZapModule->GetNGenLayoutInfo();
-
-                int ColdFunctionIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod((DWORD)((TADDR)pvFuncletStart - uImageBase),
-                                                                               pLayoutInfo->m_pRuntimeFunctions[2],
-                                                                               0, pLayoutInfo->m_nRuntimeFunctions[2] - 1);
-
-                pFunctionEntry = pLayoutInfo->m_pRuntimeFunctions[2] + ColdFunctionIndex;
-            }
-#endif
 
             _ASSERTE((TADDR)pvFuncletStart == (TADDR)uImageBase + pFunctionEntry->BeginAddress);
             _ASSERTE((TADDR)uImageBase + pFunctionEntry->EndAddress <= (TADDR)pvFuncletStart + cbCode);

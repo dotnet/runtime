@@ -1427,6 +1427,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "befs") == 0) result = 0x42465331;
     else if (strcmp(statfsArgs.f_basetype, "bdevfs") == 0) result = 0x62646576;
     else if (strcmp(statfsArgs.f_basetype, "bfs") == 0) result = 0x1BADFACE;
+    else if (strcmp(statfsArgs.f_basetype, "bpf_fs") == 0) result = 0xCAFE4A11;
     else if (strcmp(statfsArgs.f_basetype, "binfmt_misc") == 0) result = 0x42494E4D;
     else if (strcmp(statfsArgs.f_basetype, "bootfs") == 0) result = 0xA56D3FF9;
     else if (strcmp(statfsArgs.f_basetype, "btrfs") == 0) result = 0x9123683E;
@@ -1452,6 +1453,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "ext2") == 0) result = 0xEF53;
     else if (strcmp(statfsArgs.f_basetype, "ext3") == 0) result = 0xEF53;
     else if (strcmp(statfsArgs.f_basetype, "ext4") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "f2fs") == 0) result = 0xF2F52010;
     else if (strcmp(statfsArgs.f_basetype, "fat") == 0) result = 0x4006;
     else if (strcmp(statfsArgs.f_basetype, "fd") == 0) result = 0xF00D1E;
     else if (strcmp(statfsArgs.f_basetype, "fhgfs") == 0) result = 0x19830326;
@@ -1519,6 +1521,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "sysv2") == 0) result = 0x012FF7B6;
     else if (strcmp(statfsArgs.f_basetype, "sysv4") == 0) result = 0x012FF7B5;
     else if (strcmp(statfsArgs.f_basetype, "tmpfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "tracefs") == 0) result = 0x74726163;
     else if (strcmp(statfsArgs.f_basetype, "ubifs") == 0) result = 0x24051905;
     else if (strcmp(statfsArgs.f_basetype, "udf") == 0) result = 0x15013346;
     else if (strcmp(statfsArgs.f_basetype, "ufs") == 0) result = 0x00011954;
@@ -1560,13 +1563,21 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
+#if defined(TARGET_ANDROID) && defined(HAVE_FLOCK64)
+    // On Android, fcntl is always implemented by fcntl64 but before https://github.com/aosp-mirror/platform_bionic/commit/09e77f35ab8d291bf88302bb9673aaa518c6bcb0
+    // there was no remapping of F_SETLK to F_SETLK64 when _FILE_OFFSET_BITS=64 (which we set in eng/native/configurecompiler.cmake) so we need to always pass F_SETLK64
+    int command = F_SETLK64;
+#else
+    int command = F_SETLK;
+#endif
+
     lockArgs.l_type = unixLockType;
     lockArgs.l_whence = SEEK_SET;
     lockArgs.l_start = (off_t)offset;
     lockArgs.l_len = (off_t)length;
 
     int32_t ret;
-    while ((ret = fcntl (ToFileDescriptor(fd), F_SETLK, &lockArgs)) < 0 && errno == EINTR);
+    while ((ret = fcntl (ToFileDescriptor(fd), command, &lockArgs)) < 0 && errno == EINTR);
     return ret;
 }
 

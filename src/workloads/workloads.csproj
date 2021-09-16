@@ -107,7 +107,8 @@
         OutputPath="$(OutputPath)"
         MsiVersion="$(MsiVersion)"
         WixToolsetPath="$(WixToolsetPath)"
-        WorkloadManifestPackage="%(ManifestPackages.Identity)" >
+        WorkloadManifestPackage="%(ManifestPackages.Identity)"
+        ShortNames="@(ShortNames)" >
       <Output TaskParameter="Msis" ItemName="ManifestMsis" />
     </GenerateManifestMsi>
 

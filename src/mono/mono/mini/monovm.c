@@ -16,7 +16,6 @@
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 static MonoCoreLookupPaths *native_lib_paths;
 static MonoCoreLookupPaths *app_paths;
-static MonoCoreLookupPaths *app_ni_paths;
 static MonoCoreLookupPaths *platform_resource_roots;
 
 static void
@@ -116,7 +115,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	for (int i = 0; i < a->assembly_count; ++i) {
 		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
-			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, default_alc);
+			mono_assembly_request_prepare_open (&req, default_alc);
 			req.request.predicate = predicate;
 			req.request.predicate_ud = predicate_ud;
 
@@ -163,8 +162,6 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 			parse_trusted_platform_assemblies (propertyValues[i]);
 		} else if (prop_len == 9 && !strncmp (propertyKeys [i], "APP_PATHS", 9)) {
 			app_paths = parse_lookup_paths (propertyValues [i]);
-		} else if (prop_len == 12 && !strncmp (propertyKeys [i], "APP_NI_PATHS", 12)) {
-			app_ni_paths = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 23 && !strncmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS", 23)) {
 			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {

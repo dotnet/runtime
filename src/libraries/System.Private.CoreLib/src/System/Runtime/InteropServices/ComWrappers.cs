@@ -72,7 +72,6 @@ namespace System.Runtime.InteropServices
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
-    [UnsupportedOSPlatform("maccatalyst")]
     [UnsupportedOSPlatform("tvos")]
     [CLSCompliant(false)]
     public abstract partial class ComWrappers

@@ -2553,6 +2553,23 @@ namespace System
         static double IFloatingPoint<double>.Truncate(double x) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsFinite(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsNaN(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsNegative(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsNegativeInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsNormal(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsPositiveInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsSubnormal(double d) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IIncrementOperators<double>.operator ++(double value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -3268,6 +3285,23 @@ namespace System
         static System.Half IFloatingPoint<System.Half>.Tanh(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IFloatingPoint<System.Half>.Truncate(System.Half x) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsFinite(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsNaN(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsNegative(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsNegativeInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsNormal(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsPositiveInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsSubnormal(System.Half x) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IIncrementOperators<System.Half>.operator ++(System.Half value) { throw null; }
@@ -5595,6 +5629,23 @@ namespace System
         static float IFloatingPoint<float>.Truncate(float x) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsFinite(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsNaN(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsNegative(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsNegativeInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsNormal(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsPositiveInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsSubnormal(float x) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IIncrementOperators<float>.operator ++(float value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -6062,6 +6113,11 @@ namespace System
 
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static System.TimeSpan ISubtractionOperators<System.TimeOnly, System.TimeOnly, System.TimeSpan>.operator -(System.TimeOnly left, System.TimeOnly right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MinValue { get { throw null; } }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MaxValue { get { throw null; } }
 #endif // FEATURE_GENERIC_MATH
     }
     public partial class TimeoutException : System.SystemException
@@ -6802,7 +6858,7 @@ namespace System
         public static System.Type? GetTypeFromCLSID(System.Guid clsid, string? server) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Type? GetTypeFromCLSID(System.Guid clsid, string? server, bool throwOnError) { throw null; }
-        public static System.Type GetTypeFromHandle(System.RuntimeTypeHandle handle) { throw null; }
+        public static System.Type? GetTypeFromHandle(System.RuntimeTypeHandle handle) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Type? GetTypeFromProgID(string progID) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -6838,6 +6894,7 @@ namespace System
         public virtual System.Type MakeByRefType() { throw null; }
         public static System.Type MakeGenericMethodParameter(int position) { throw null; }
         public static System.Type MakeGenericSignatureType(System.Type genericTypeDefinition, params System.Type[] typeArguments) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public virtual System.Type MakePointerType() { throw null; }
         public static bool operator ==(System.Type? left, System.Type? right) { throw null; }
@@ -8673,11 +8730,11 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message) { }
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] System.Diagnostics.Debug.AssertInterpolatedStringHandler message) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string? detailMessage) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] System.Diagnostics.Debug.AssertInterpolatedStringHandler message, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] System.Diagnostics.Debug.AssertInterpolatedStringHandler detailMessage) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler message, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler detailMessage) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -8713,11 +8770,11 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteIf(bool condition, string? message) { }
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message) { }
+        public static void WriteIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteIf(bool condition, string? message, string? category) { }
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message, string? category) { }
+        public static void WriteIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message, string? category) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLine(object? value) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -8735,11 +8792,11 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLineIf(bool condition, string? message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void WriteLineIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message) { }
+        public static void WriteLineIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLineIf(bool condition, string? message, string? category) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void WriteLineIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message, string? category) { }
+        public static void WriteLineIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message, string? category) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public struct AssertInterpolatedStringHandler
@@ -8860,16 +8917,18 @@ namespace System.Diagnostics
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class DebuggerVisualizerAttribute : System.Attribute
     {
-        public DebuggerVisualizerAttribute(string visualizerTypeName) { }
-        public DebuggerVisualizerAttribute(string visualizerTypeName, string? visualizerObjectSourceTypeName) { }
-        public DebuggerVisualizerAttribute(string visualizerTypeName, System.Type visualizerObjectSource) { }
-        public DebuggerVisualizerAttribute(System.Type visualizer) { }
-        public DebuggerVisualizerAttribute(System.Type visualizer, string? visualizerObjectSourceTypeName) { }
-        public DebuggerVisualizerAttribute(System.Type visualizer, System.Type visualizerObjectSource) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string visualizerTypeName) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string visualizerTypeName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string? visualizerObjectSourceTypeName) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string visualizerTypeName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizerObjectSource) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizer) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizer, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string? visualizerObjectSourceTypeName) { }
+        public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizer, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type visualizerObjectSource) { }
         public string? Description { get { throw null; } set { } }
         public System.Type? Target { get { throw null; } set { } }
         public string? TargetTypeName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public string? VisualizerObjectSourceTypeName { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public string VisualizerTypeName { get { throw null; } }
     }
     [System.AttributeUsage(AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Struct, Inherited = false)]
@@ -10204,7 +10263,6 @@ namespace System.IO
         public virtual void Flush(bool flushToDisk) { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public virtual void Lock(long position, long length) { }
@@ -10216,7 +10274,6 @@ namespace System.IO
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public virtual void Unlock(long position, long length) { }
@@ -11852,6 +11909,7 @@ namespace System.Reflection
         public override System.Type[] GetGenericArguments() { throw null; }
         public virtual System.Reflection.MethodInfo GetGenericMethodDefinition() { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual System.Reflection.MethodInfo MakeGenericMethod(params System.Type[] typeArguments) { throw null; }
         public static bool operator ==(System.Reflection.MethodInfo? left, System.Reflection.MethodInfo? right) { throw null; }
         public static bool operator !=(System.Reflection.MethodInfo? left, System.Reflection.MethodInfo? right) { throw null; }
@@ -13047,6 +13105,7 @@ namespace System.Runtime.CompilerServices
         public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[]? instantiation) { }
         [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ProbeForSufficientStack() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
         public static void RunModuleConstructor(System.ModuleHandle module) { }
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
@@ -13612,6 +13671,9 @@ namespace System.Runtime.Versioning
     public sealed partial class RequiresPreviewFeaturesAttribute : System.Attribute
     {
         public RequiresPreviewFeaturesAttribute() { }
+        public RequiresPreviewFeaturesAttribute(string? message) { }
+        public string? Message { get { throw null; } }
+        public string? Url { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]

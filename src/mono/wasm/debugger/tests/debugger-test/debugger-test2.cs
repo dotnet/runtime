@@ -85,6 +85,8 @@ public class InspectTask
         {
             await getJsonTask.ContinueWith(t =>
                 {
+                    int a = 10;
+                    Console.WriteLine(a);
                     if (t.IsCompletedSuccessfully)
                         forecasts = t.Result;
 

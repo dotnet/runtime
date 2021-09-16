@@ -1630,7 +1630,7 @@ bool SsaBuilder::IncludeInSsa(unsigned lclNum)
 {
     LclVarDsc* varDsc = &m_pCompiler->lvaTable[lclNum];
 
-    if (varDsc->lvAddrExposed)
+    if (varDsc->IsAddressExposed())
     {
         return false; // We exclude address-exposed variables.
     }

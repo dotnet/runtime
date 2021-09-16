@@ -152,7 +152,7 @@ namespace {lc.Namespace}
 ");
                 GenVariableAssignments(lm, nestedIndentation);
                 _builder.Append($@"
-                {nestedIndentation}return $""{lm.Message}"";
+                {nestedIndentation}return $""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}"";
             {nestedIndentation}}}
 ");
                 _builder.Append($@"

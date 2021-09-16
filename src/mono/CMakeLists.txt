@@ -196,7 +196,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
   set(DISABLE_EXECUTABLES 1)
-  set(DISABLE_CRASH_REPORTING 1)
   set(ENABLE_MONOTOUCH 1)
   add_definitions("-DSMALL_CONFIG")
   add_definitions("-D_XOPEN_SOURCE")
@@ -235,7 +234,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
-  set(DISABLE_CRASH_REPORTING 1)
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
@@ -245,15 +243,22 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(/Oi) # enable intrinsics
-    add_compile_options(/GF) # enable string pooling
-    add_compile_options(/Zi) # enable debugging information
-    add_compile_options(/GL) # whole program optimization
-    add_link_options(/LTCG)  # link-time code generation
+    add_compile_options(/Oi)   # enable intrinsics
+    add_compile_options(/GF)   # enable string pooling
+    add_compile_options(/Zi)   # enable debugging information
+    add_compile_options(/GL)   # whole program optimization
+    add_link_options(/LTCG)    # link-time code generation
+    add_link_options(/DEBUG)   # enable debugging information
+    add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
+    add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
+    # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF 
+    # linker flags is needed to create .pdb output on release builds
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
   set(HOST_SOLARIS 1)
   add_definitions(-DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(HOST_FREEBSD 1)
 else()
   message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()
@@ -294,6 +299,8 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
   set(TARGET_WIN32 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "SunOS")
   set(TARGET_SOLARIS 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(TARGET_FREEBSD 1)
 else()
   message(FATAL_ERROR "Target '${TARGET_SYSTEM_NAME}' not supported.")
 endif()
@@ -322,7 +329,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "i686" OR CMAKE_SYSTEM_PROCESSOR STREQUAL
   set(CMAKE_SYSTEM_PROCESSOR "x86")
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
   set(CMAKE_SYSTEM_PROCESSOR "arm64")
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x64")
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "amd64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x64")
   set(CMAKE_SYSTEM_PROCESSOR "x86_64")
 endif()
 
@@ -596,6 +603,12 @@ elseif(HOST_WIN32)
 elseif(HOST_SOLARIS)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
+elseif(TARGET_FREEBSD)
+  set(ICU_FLAGS "-DTARGET_UNIX -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
+  set(ICU_LIBS icuuc icui18n)
+  set(ICU_INCLUDEDIR "${CROSS_ROOTFS}/usr/local/include")
+  set(ICU_LIBDIR "${CROSS_ROOTFS}/usr/local/lib")
 else()
   message(FATAL_ERROR "Unknown host")
 endif()

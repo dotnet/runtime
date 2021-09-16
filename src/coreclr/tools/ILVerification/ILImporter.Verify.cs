@@ -267,9 +267,9 @@ namespace Internal.IL
                         }
                     }
                     // Check if offset is within the range [FilterOffset, HandlerOffset[
-                    if (r.FilterOffset != -1 && r.FilterOffset <= offset && offset < r.HandlerOffset )
+                    if (r.FilterOffset != -1 && r.FilterOffset <= offset && offset < r.HandlerOffset)
                     {
-                        if(!basicBlock.FilterIndex.HasValue)
+                        if (!basicBlock.FilterIndex.HasValue)
                         {
                             basicBlock.FilterIndex = j;
                         }
@@ -301,7 +301,7 @@ namespace Internal.IL
                 ILOpcode opCode = (ILOpcode)ReadILByte();
 
                 previousWasPrefix = false;
-again:
+            again:
                 switch (opCode)
                 {
                     // Check this pointer modification
@@ -535,7 +535,8 @@ again:
             var args = new ErrorArgument[]
             {
                 new ErrorArgument("Offset", _currentInstructionOffset),
-                new ErrorArgument("Found", found.ToString())
+                new ErrorArgument("Found", found.ToString()),
+                new ErrorArgument("Expected", expected.ToString())
             };
             ReportVerificationError(args, error);
         }
@@ -1600,7 +1601,7 @@ again:
                 }
 
                 // To support direct calls on readonly byrefs, just pretend declaredThis is readonly too
-                if(declaredThis.Kind == StackValueKind.ByRef && (actualThis.Kind == StackValueKind.ByRef && actualThis.IsReadOnly))
+                if (declaredThis.Kind == StackValueKind.ByRef && (actualThis.Kind == StackValueKind.ByRef && actualThis.IsReadOnly))
                 {
                     declaredThis.SetIsReadOnly();
                 }
@@ -2106,8 +2107,9 @@ again:
                 isPermanentHome = actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
                 instance = actualThis.Type;
 
-                if (field.IsInitOnly)
-                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
+                // TODO: verification of readonly references https://github.com/dotnet/runtime/issues/57444
+                // if (field.IsInitOnly)
+                //    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
@@ -2121,10 +2123,9 @@ again:
             ClearPendingPrefix(Prefix.Volatile);
 
             var value = Pop();
-
             var field = ResolveFieldToken(token);
-
             TypeDesc instance;
+
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
@@ -2153,7 +2154,8 @@ again:
                 instance = actualThis.Type;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
+                    Check(field.OwningType == _method.OwningType && actualThis.IsThisPtr &&
+                        (_method.IsConstructor || HasIsExternalInit(_method.Signature)), VerifierError.InitOnly);
             }
 
             // Check any constraints on the fields' class --- accessing the field might cause a class constructor to run.
@@ -2644,6 +2646,21 @@ again:
             Check((mask & Prefix.Volatile) == 0, VerifierError.Volatile);
             Check((mask & Prefix.ReadOnly) == 0, VerifierError.ReadOnly);
             Check((mask & Prefix.Constrained) == 0, VerifierError.Constrained);
+        }
+
+        static bool HasIsExternalInit(MethodSignature signature)
+        {
+            if (signature.HasEmbeddedSignatureData)
+            {
+                foreach (var data in signature.GetEmbeddedSignatureData())
+                {
+                    if (data.type is MetadataType mdType && mdType.Namespace == "System.Runtime.CompilerServices" && mdType.Name == "IsExternalInit" &&
+                        data.index == MethodSignature.IndexOfCustomModifiersOnReturnType)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         bool HasPendingPrefix(Prefix prefix)

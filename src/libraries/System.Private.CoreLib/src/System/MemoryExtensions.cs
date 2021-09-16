@@ -1963,7 +1963,48 @@ namespace System
             /// <summary>Writes the specified string to the handler.</summary>
             /// <param name="value">The string to write.</param>
             /// <returns>true if the value could be formatted to the span; otherwise, false.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool AppendLiteral(string value)
+            {
+                // See comment on inlining and special-casing in DefaultInterpolatedStringHandler.AppendLiteral.
+
+                if (value.Length == 1)
+                {
+                    Span<char> destination = _destination;
+                    int pos = _pos;
+                    if ((uint)pos < (uint)destination.Length)
+                    {
+                        destination[pos] = value[0];
+                        _pos = pos + 1;
+                        return true;
+                    }
+
+                    return Fail();
+                }
+
+                if (value.Length == 2)
+                {
+                    Span<char> destination = _destination;
+                    int pos = _pos;
+                    if ((uint)pos < destination.Length - 1)
+                    {
+                        Unsafe.WriteUnaligned(
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), pos)),
+                            Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
+                        _pos = pos + 2;
+                        return true;
+                    }
+
+                    return Fail();
+                }
+
+                return AppendStringDirect(value);
+            }
+
+            /// <summary>Writes the specified string to the handler.</summary>
+            /// <param name="value">The string to write.</param>
+            /// <returns>true if the value could be appended to the span; otherwise, false.</returns>
+            private bool AppendStringDirect(string value)
             {
                 if (value.TryCopyTo(_destination.Slice(_pos)))
                 {
@@ -1981,6 +2022,7 @@ namespace System
             #region AppendFormatted T
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public bool AppendFormatted<T>(T value)
             {
                 // This method could delegate to AppendFormatted with a null format, but explicitly passing
@@ -2023,12 +2065,13 @@ namespace System
                     s = value?.ToString();
                 }
 
-                return s is null || AppendLiteral(s); // use AppendLiteral to avoid going back through this method recursively
+                return s is null || AppendStringDirect(s);
             }
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public bool AppendFormatted<T>(T value, string? format)
             {
                 // If there's a custom formatter, always use it.
@@ -2067,12 +2110,13 @@ namespace System
                     s = value?.ToString();
                 }
 
-                return s is null || AppendLiteral(s); // use AppendLiteral to avoid going back through this method recursively
+                return s is null || AppendStringDirect(s);
             }
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public bool AppendFormatted<T>(T value, int alignment)
             {
                 int startingPos = _pos;
@@ -2088,6 +2132,7 @@ namespace System
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public bool AppendFormatted<T>(T value, int alignment, string? format)
             {
                 int startingPos = _pos;
@@ -2213,6 +2258,7 @@ namespace System
             /// <summary>Formats the value using the custom formatter from the provider.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             [MethodImpl(MethodImplOptions.NoInlining)]
             private bool AppendCustomFormatter<T>(T value, string? format)
             {
@@ -2228,7 +2274,7 @@ namespace System
 
                 if (formatter is not null && formatter.Format(format, value, _provider) is string customFormatted)
                 {
-                    return AppendLiteral(customFormatted);
+                    return AppendStringDirect(customFormatted);
                 }
 
                 return true;

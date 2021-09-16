@@ -3,15 +3,16 @@
 
 #include <xplatform.h>
 #include <ComHelpers.h>
-#ifdef _WIN32
+#ifdef WINDOWS
 #include <inspectable.h>
-#else
+#endif //WINDOWS
+
 #include <atomic>
+#include <cassert>
 #include <exception>
-#endif //_WIN32
-#include <unordered_map>
 #include <list>
 #include <mutex>
+#include <unordered_map>
 
 namespace API
 {
@@ -217,6 +218,11 @@ namespace
                 }
             }
 
+            bool IsConnected()
+            {
+                return _connected;
+            }
+
             STDMETHOD(AddObjectRef)(_In_ IUnknown* c, _Out_ int* id)
             {
                 assert(c != nullptr && id != nullptr);
@@ -272,7 +278,7 @@ namespace
 
             STDMETHOD(QueryInterface)(
                 /* [in] */ REFIID riid,
-                /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+                /* [iid_is][out] */ void ** ppvObject)
             {
                 return _implOuter->QueryInterface(riid, ppvObject);
             }
@@ -288,7 +294,7 @@ namespace
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+            /* [iid_is][out] */ void ** ppvObject)
         {
             if (ppvObject == nullptr)
                 return E_POINTER;
@@ -425,7 +431,7 @@ namespace
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+            /* [iid_is][out] */ void ** ppvObject)
         {
             if (ppvObject == nullptr)
                 return E_POINTER;
@@ -545,6 +551,12 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE Trigger_NotifyEndOfReferenceTracking
     return TrackerRuntimeManager.NotifyEndOfReferenceTrackingOnThread();
 }
 
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE IsTrackerObjectConnected(IUnknown* inst)
+{
+    auto trackerObject = reinterpret_cast<TrackerObject::TrackerObjectImpl*>(inst);
+    return trackerObject->IsConnected();
+}
+
 extern "C" DLL_EXPORT void* STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceTrackerAndReturn(IUnknown *obj)
 {
     assert(obj != nullptr);
@@ -583,6 +595,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown 
     return S_OK;
 }
 
+#ifdef WINDOWS
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIDispatch(IDispatch *obj, int i, IDispatch **out)
 {
     if (obj == nullptr)
@@ -590,6 +603,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIDispatch(IDispatc
 
     return UpdateTestObjectAsIUnknown(obj, i, (IUnknown**)out);
 }
+#endif // WINDOWS
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsInterface(ITest *obj, int i, ITest **out)
 {

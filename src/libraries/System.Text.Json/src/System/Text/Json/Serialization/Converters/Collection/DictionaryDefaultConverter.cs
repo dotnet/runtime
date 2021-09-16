@@ -16,6 +16,8 @@ namespace System.Text.Json.Serialization.Converters
         where TDictionary : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : notnull
     {
+        internal override bool CanHaveIdMetadata => true;
+
         protected internal override bool OnWriteResume(
             Utf8JsonWriter writer,
             TDictionary value,
@@ -53,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     state.Current.PropertyState = StackFramePropertyState.Name;
                     TKey key = enumerator.Current.Key;
-                    _keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                    _keyConverter.WriteAsPropertyNameCore(writer, key, options, state.Current.IsWritingExtensionDataProperty);
                 }
 
                 TValue element = enumerator.Current.Value;

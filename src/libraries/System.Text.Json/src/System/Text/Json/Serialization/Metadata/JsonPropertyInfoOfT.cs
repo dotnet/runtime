@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -122,10 +123,11 @@ namespace System.Text.Json.Serialization.Metadata
             Type declaringType,
             JsonTypeInfo typeInfo,
             JsonConverter<T> converter,
-            Func<object, T>? getter,
-            Action<object, T>? setter,
+            Func<object, T?>? getter,
+            Action<object, T?>? setter,
             JsonIgnoreCondition? ignoreCondition,
             bool hasJsonInclude,
+            bool isExtensionData,
             JsonNumberHandling? numberHandling,
             string propertyName,
             string? jsonPropertyName)
@@ -156,6 +158,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             SrcGen_IsPublic = isPublic;
             SrcGen_HasJsonInclude = hasJsonInclude;
+            SrcGen_IsExtensionData = isExtensionData;
+            DeclaredPropertyType = typeof(T);
+            ConverterBase = converter;
 
             if (ignoreCondition == JsonIgnoreCondition.Always)
             {
@@ -165,13 +170,11 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                Get = getter;
+                Get = getter!;
                 Set = setter;
                 HasGetter = Get != null;
                 HasSetter = Set != null;
-                ConverterBase = converter;
                 RuntimeTypeInfo = typeInfo;
-                DeclaredPropertyType = typeof(T);
                 DeclaringType = declaringType;
                 IgnoreCondition = ignoreCondition;
                 MemberType = isProperty ? MemberTypes.Property : MemberTypes.Field;

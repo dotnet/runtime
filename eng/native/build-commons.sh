@@ -27,7 +27,7 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" ) ]]; then
+    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" || "$__HostArch" == "s390x" ) ]]; then
         __IsMSBuildOnNETCoreSupported=1
     elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
         __IsMSBuildOnNETCoreSupported=1
@@ -92,6 +92,32 @@ build_native()
 
     if [[ "$targetOS" == MacCatalyst ]]; then
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
+    fi
+
+    if [[ "$targetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+        if [[ -z "$ANDROID_NDK_ROOT" ]]; then
+            echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
+            exit 1
+        fi
+
+        # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=21 $cmakeArgs"
+
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
+        __Compiler="default"
+
+        if [[ "$platformArch" == x64 ]]; then
+            cmakeArgs="-DANDROID_ABI=x86_64 $cmakeArgs"
+        elif [[ "$platformArch" == x86 ]]; then
+            cmakeArgs="-DANDROID_ABI=x86 $cmakeArgs"
+        elif [[ "$platformArch" == arm64 ]]; then
+            cmakeArgs="-DANDROID_ABI=arm64-v8a $cmakeArgs"
+        elif [[ "$platformArch" == arm ]]; then
+            cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
+        else
+            echo "Error: Unknown Android architecture $platformArch."
+            exit 1
+        fi
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
@@ -230,7 +256,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armel, -arm64, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armel, -arm64, -s390x, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"

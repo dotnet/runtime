@@ -36,6 +36,9 @@
 #if HAVE_NET_IFMEDIA_H
 #include <net/if_media.h>
 #include <sys/ioctl.h>
+#elif HAVE_IOS_NET_IFMEDIA_H
+#include "ios/net/if_media.h"
+#include <sys/ioctl.h>
 #endif
 #include <sys/socketvar.h>
 #include <netinet/in.h>
@@ -44,6 +47,8 @@
 #include <netinet/ip_icmp.h>
 #if HAVE_NETINET_IP_VAR_H
 #include <netinet/ip_var.h>
+#elif HAVE_IOS_NETINET_IP_VAR_H
+#include "ios/netinet/ip_var.h"
 #endif
 #include <netinet/tcp.h>
 #if HAVE_TCP_FSM_H
@@ -53,10 +58,14 @@
 #include <netinet/udp.h>
 #if HAVE_NETINET_UDP_VAR_H
 #include <netinet/udp_var.h>
+#elif HAVE_IOS_NETINET_UDP_VAR_H
+#include "ios/netinet/udp_var.h"
 #endif
 #include <netinet/icmp6.h>
 #if HAVE_NETINET_ICMP_VAR_H
 #include <netinet/icmp_var.h>
+#elif HAVE_IOS_NETINET_ICMP_VAR_H
+#include "ios/netinet/icmp_var.h"
 #endif
 
 static _Atomic(int) icmp6statSize = sizeof(struct icmp6stat);
@@ -105,7 +114,7 @@ int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
 
 int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
 {
-#if HAVE_NETINET_IP_VAR_H
+#if HAVE_NETINET_IP_VAR_H || HAVE_IOS_NETINET_IP_VAR_H
     size_t oldlenp;
 
     assert(retStats != NULL);
@@ -154,7 +163,7 @@ int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
 
 int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
 {
-#if HAVE_NETINET_UDP_VAR_H
+#if HAVE_NETINET_UDP_VAR_H || HAVE_IOS_NETINET_UDP_VAR_H
     size_t oldlenp;
 
     assert(retStats != NULL);
@@ -194,7 +203,7 @@ int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
 
 int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
 {
-#if HAVE_NETINET_ICMP_VAR_H
+#if HAVE_NETINET_ICMP_VAR_H || HAVE_IOS_NETINET_ICMP_VAR_H
     size_t oldlenp;
 
     assert(retStats != NULL);
@@ -587,7 +596,7 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
             if (ifHdr->ifm_flags & IFF_UP)
             {
                 retStats->Flags |= InterfaceUp;
-#if HAVE_NET_IFMEDIA_H
+#if HAVE_NET_IFMEDIA_H || HAVE_IOS_NET_IFMEDIA_H
                 int fd =  socket(AF_INET, SOCK_DGRAM, 0);
                 if (fd < 0) {
                     retStats->Flags |= InterfaceError;

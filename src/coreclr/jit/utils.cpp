@@ -134,7 +134,7 @@ const char* varTypeName(var_types vt)
  *  Return the name of the given register.
  */
 
-const char* getRegName(regNumber reg, bool isFloat)
+const char* getRegName(regNumber reg)
 {
     // Special-case REG_NA; it's not in the regNames array, but we might want to print it.
     if (reg == REG_NA)
@@ -142,27 +142,21 @@ const char* getRegName(regNumber reg, bool isFloat)
         return "NA";
     }
 
+    static const char* const regNames[] = {
 #if defined(TARGET_ARM64)
-    static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
-#include "register.h"
-    };
-    assert(reg < ArrLen(regNames));
-    return regNames[reg];
 #else
-    static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) sname,
+#endif
 #include "register.h"
     };
     assert(reg < ArrLen(regNames));
     return regNames[reg];
-#endif
 }
 
-const char* getRegName(unsigned reg,
-                       bool     isFloat) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
+const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
 {
-    return getRegName((regNumber)reg, isFloat);
+    return getRegName((regNumber)reg);
 }
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
@@ -646,7 +640,7 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
+const char* refCntWtd2str(weight_t refCntWtd)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];
@@ -663,10 +657,10 @@ const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
     }
     else
     {
-        float scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
-        float intPart      = (float)floor(scaledWeight);
-        bool  isLarge      = intPart > 1e9;
-        bool  isSmall      = (intPart < 1e-2) && (intPart != 0);
+        weight_t scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
+        weight_t intPart      = (weight_t)floor(scaledWeight);
+        bool     isLarge      = intPart > 1e9;
+        bool     isSmall      = (intPart < 1e-2) && (intPart != 0);
 
         // Use g format for high dynamic range counts.
         //
@@ -1898,7 +1892,7 @@ unsigned CountDigits(unsigned num, unsigned base /* = 10 */)
     return count;
 }
 
-unsigned CountDigits(float num, unsigned base /* = 10 */)
+unsigned CountDigits(double num, unsigned base /* = 10 */)
 {
     assert(2 <= base && base <= 16); // sanity check
     unsigned count = 1;
@@ -2151,6 +2145,21 @@ bool FloatingPointUtils::isNormal(float x)
     int32_t bits = reinterpret_cast<int32_t&>(x);
     bits &= 0x7FFFFFFF;
     return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
+}
+
+//------------------------------------------------------------------------
+// infinite_double: return an infinite double value
+//
+// Returns:
+//    Infinite double value.
+//
+// Notes:
+//    This is the predefined constant HUGE_VAL on many platforms.
+//
+double FloatingPointUtils::infinite_double()
+{
+    int64_t bits = 0x7FF0000000000000;
+    return *reinterpret_cast<double*>(&bits);
 }
 
 //------------------------------------------------------------------------
@@ -2592,24 +2601,21 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 {
     switch (toType)
     {
-        case TYP_BYTE:
-            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_BOOL:
+        case TYP_BYTE:
         case TYP_UBYTE:
-            return (uint8_t)fromValue != fromValue;
         case TYP_SHORT:
-            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_USHORT:
-            return (uint16_t)fromValue != fromValue;
         case TYP_INT:
-            return fromUnsigned && (fromValue < 0);
         case TYP_UINT:
-        case TYP_ULONG:
-            return !fromUnsigned && (fromValue < 0);
         case TYP_LONG:
+        case TYP_ULONG:
+            return fromUnsigned ? !FitsIn(toType, static_cast<uint32_t>(fromValue)) : !FitsIn(toType, fromValue);
+
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return false;
+
         default:
             unreached();
     }
@@ -2619,26 +2625,21 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 {
     switch (toType)
     {
-        case TYP_BYTE:
-            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_BOOL:
+        case TYP_BYTE:
         case TYP_UBYTE:
-            return (uint8_t)fromValue != fromValue;
         case TYP_SHORT:
-            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_USHORT:
-            return (uint16_t)fromValue != fromValue;
         case TYP_INT:
-            return ((int32_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_UINT:
-            return (uint32_t)fromValue != fromValue;
         case TYP_LONG:
-            return fromUnsigned && (fromValue < 0);
         case TYP_ULONG:
-            return !fromUnsigned && (fromValue < 0);
+            return fromUnsigned ? !FitsIn(toType, static_cast<uint64_t>(fromValue)) : !FitsIn(toType, fromValue);
+
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return false;
+
         default:
             unreached();
     }

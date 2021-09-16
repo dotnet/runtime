@@ -53,11 +53,17 @@
 #include "pal_compiler.h"
 
 #if !defined(STATIC_ICU)
+// ucol_setVariableTop is a deprecated function on the newer ICU versions and ucol_setMaxVariable should be used instead.
+// As can run against ICU versions which not supported ucol_setMaxVariable, we'll dynamically try to get the pointer to ucol_setVariableTop
+// when we couldn't get a pointer to ucol_setMaxVariable.
+typedef uint32_t (*ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
+extern ucol_setVariableTop_func ucol_setVariableTop_ptr;
 
 #if !defined(TARGET_ANDROID)
 // (U_ICU_VERSION_MAJOR_NUM < 52)
 // The following APIs are not supported in the ICU versions less than 52. We need to define them manually.
 // We have to do runtime check before using the pointers to these APIs. That is why these are listed in the FOR_ALL_OPTIONAL_ICU_FUNCTIONS list.
+U_CAPI void U_EXPORT2 ucol_setMaxVariable(UCollator* coll, UColReorderCode group, UErrorCode* pErrorCode);
 U_CAPI int32_t U_EXPORT2 ucal_getTimeZoneIDForWindowsID(const UChar* winid, int32_t len, const char* region, UChar* id, int32_t idCapacity, UErrorCode* status);
 U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len, UChar* winid, int32_t winidCapacity, UErrorCode* status);
 #endif
@@ -72,7 +78,9 @@ U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,
     PER_FUNCTION_BLOCK(u_strncpy, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_tolower, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_toupper, libicuuc, true) \
-    PER_FUNCTION_BLOCK(u_uastrcpy, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_uastrncpy, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ubrk_close, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ubrk_openRules, libicuuc, true) \
     PER_FUNCTION_BLOCK(ucal_add, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_close, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_get, libicui18n, true) \
@@ -155,20 +163,12 @@ U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,
     PER_FUNCTION_BLOCK(ures_open, libicuuc, true) \
     PER_FUNCTION_BLOCK(usearch_close, libicui18n, true) \
     PER_FUNCTION_BLOCK(usearch_first, libicui18n, true) \
+    PER_FUNCTION_BLOCK(usearch_getBreakIterator, libicui18n, true) \
     PER_FUNCTION_BLOCK(usearch_getMatchedLength, libicui18n, true) \
     PER_FUNCTION_BLOCK(usearch_last, libicui18n, true) \
     PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n, true) \
     PER_FUNCTION_BLOCK(usearch_setPattern, libicui18n, true) \
     PER_FUNCTION_BLOCK(usearch_setText, libicui18n, true)
-
-#if HAVE_SET_MAX_VARIABLE
-#define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n, true)
-#else
-
-#define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucol_setVariableTop, libicui18n, true)
-#endif
 
 #if defined(TARGET_WINDOWS)
 #define FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS \
@@ -192,11 +192,11 @@ U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,
 // Otherwise, we'll just not provide the functionality to users which needed these APIs.
 #define FOR_ALL_OPTIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(ucal_getWindowsTimeZoneID, libicui18n, false) \
-    PER_FUNCTION_BLOCK(ucal_getTimeZoneIDForWindowsID, libicui18n, false)
+    PER_FUNCTION_BLOCK(ucal_getTimeZoneIDForWindowsID, libicui18n, false) \
+    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n, false)
 
 #define FOR_ALL_ICU_FUNCTIONS \
     FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
-    FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
     FOR_ALL_OPTIONAL_ICU_FUNCTIONS \
     FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS
 
@@ -215,7 +215,9 @@ FOR_ALL_ICU_FUNCTIONS
 #define u_strncpy(...) u_strncpy_ptr(__VA_ARGS__)
 #define u_tolower(...) u_tolower_ptr(__VA_ARGS__)
 #define u_toupper(...) u_toupper_ptr(__VA_ARGS__)
-#define u_uastrcpy(...) u_uastrcpy_ptr(__VA_ARGS__)
+#define u_uastrncpy(...) u_uastrncpy_ptr(__VA_ARGS__)
+#define ubrk_close(...) ubrk_close_ptr(__VA_ARGS__)
+#define ubrk_openRules(...) ubrk_openRules_ptr(__VA_ARGS__)
 #define ucal_add(...) ucal_add_ptr(__VA_ARGS__)
 #define ucal_close(...) ucal_close_ptr(__VA_ARGS__)
 #define ucal_get(...) ucal_get_ptr(__VA_ARGS__)
@@ -244,11 +246,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucol_openRules(...) ucol_openRules_ptr(__VA_ARGS__)
 #define ucol_safeClone(...) ucol_safeClone_ptr(__VA_ARGS__)
 #define ucol_setAttribute(...) ucol_setAttribute_ptr(__VA_ARGS__)
-#if HAVE_SET_MAX_VARIABLE
 #define ucol_setMaxVariable(...) ucol_setMaxVariable_ptr(__VA_ARGS__)
-#else
-#define ucol_setVariableTop(...) ucol_setVariableTop_ptr(__VA_ARGS__)
-#endif
 #define ucol_strcoll(...) ucol_strcoll_ptr(__VA_ARGS__)
 #define ucurr_forLocale(...) ucurr_forLocale_ptr(__VA_ARGS__)
 #define ucurr_getName(...) ucurr_getName_ptr(__VA_ARGS__)
@@ -310,6 +308,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ures_open(...) ures_open_ptr(__VA_ARGS__)
 #define usearch_close(...) usearch_close_ptr(__VA_ARGS__)
 #define usearch_first(...) usearch_first_ptr(__VA_ARGS__)
+#define usearch_getBreakIterator(...) usearch_getBreakIterator_ptr(__VA_ARGS__)
 #define usearch_getMatchedLength(...) usearch_getMatchedLength_ptr(__VA_ARGS__)
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)

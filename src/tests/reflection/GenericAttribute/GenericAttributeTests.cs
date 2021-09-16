@@ -8,6 +8,7 @@ class Program
 {
     static int Main(string[] args)
     {
+/* Re-enable once the fix to https://github.com/dotnet/msbuild/issues/6734 propagates to this repo.
         Assembly assembly = typeof(Class).GetTypeInfo().Assembly;
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(assembly) != null);
         Assert(((ICustomAttributeProvider)assembly).GetCustomAttributes(typeof(SingleAttribute<int>), true) != null);
@@ -17,6 +18,8 @@ class Program
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<int>), true));
         Assert(CustomAttributeExtensions.IsDefined(assembly, typeof(SingleAttribute<bool>)));
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<bool>), true));
+
+*/
 
         TypeInfo programTypeInfo = typeof(Class).GetTypeInfo();
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(programTypeInfo) != null);
@@ -153,6 +156,24 @@ class Program
         Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), true) == null);
         Assert(!((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
 
+        // Test coverage for CustomAttributeData api surface
+        var a1_data = CustomAttributeData.GetCustomAttributes(programTypeInfo);
+        AssertAny(a1_data, a => a.AttributeType == typeof(SingleAttribute<int>));
+        AssertAny(a1_data, a => a.AttributeType == typeof(SingleAttribute<bool>));
+
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<int>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 0);
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<int>) && a.ConstructorArguments.Count == 1 && a.NamedArguments.Count == 0 && a.ConstructorArguments[0].ArgumentType == typeof(int) &&  ((int)a.ConstructorArguments[0].Value) == 1);
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<int>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 1 && a.NamedArguments[0].TypedValue.ArgumentType == typeof(int) &&  ((int)a.NamedArguments[0].TypedValue.Value) == 2);
+
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<bool>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 0);
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<bool>) && a.ConstructorArguments.Count == 1 && a.NamedArguments.Count == 0 && a.ConstructorArguments[0].ArgumentType == typeof(bool) &&  ((bool)a.ConstructorArguments[0].Value) == true);
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<bool>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 1 && a.NamedArguments[0].TypedValue.ArgumentType == typeof(bool) &&  ((bool)a.NamedArguments[0].TypedValue.Value) == true);
+
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<bool?>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 0);
+
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<Type>) && a.ConstructorArguments.Count == 1 && a.NamedArguments.Count == 0 && a.ConstructorArguments[0].ArgumentType == typeof(Type) &&  ((Type)a.ConstructorArguments[0].Value) == typeof(Class));
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<Type>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 1 && a.NamedArguments[0].TypedValue.ArgumentType == typeof(Type) &&  ((Type)a.NamedArguments[0].TypedValue.Value) == typeof(Class.Derive));
+
         return 100;
     }
 
@@ -170,6 +191,19 @@ class Program
         while (enumerator.MoveNext())
         {
             if(condition(enumerator.Current as Attribute) && --count == 0)
+            {
+                return;
+            }
+        }
+        throw new Exception($"Error in line: {line}");
+    }
+
+    static void AssertAny(IEnumerable<CustomAttributeData> source, Func<CustomAttributeData, bool> condition, int count = 1, [CallerLineNumberAttribute]int line = 0)
+    {
+        var enumerator = source.GetEnumerator();
+        while (enumerator.MoveNext())
+        {
+            if(condition(enumerator.Current) && --count == 0)
             {
                 return;
             }

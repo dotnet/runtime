@@ -40,13 +40,18 @@ namespace System.Text.Json.Serialization.Metadata
             return info;
         }
 
-        // Create a property that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
-        // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(MemberInfo memberInfo, Type memberType, bool isVirtual, JsonSerializerOptions options)
+        // Create a property that is ignored at run-time.
+        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(
+            JsonConverter converter,
+            MemberInfo memberInfo,
+            Type memberType,
+            bool isVirtual,
+            JsonSerializerOptions options)
         {
-            JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfo<sbyte>();
+            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
 
             jsonPropertyInfo.Options = options;
+            jsonPropertyInfo.ConverterBase = converter;
             jsonPropertyInfo.MemberInfo = memberInfo;
             jsonPropertyInfo.IsIgnored = true;
             jsonPropertyInfo.DeclaredPropertyType = memberType;
@@ -266,34 +271,32 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
+            Type potentialNumberType;
             if (!ConverterBase.IsInternalConverter ||
                 ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & ConverterStrategy) == 0)
             {
-                return false;
+                potentialNumberType = DeclaredPropertyType;
             }
-
-            Type? elementType = ConverterBase.ElementType;
-            Debug.Assert(elementType != null);
-
-            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
-
-            if (elementType == typeof(byte) ||
-                elementType == typeof(decimal) ||
-                elementType == typeof(double) ||
-                elementType == typeof(short) ||
-                elementType == typeof(int) ||
-                elementType == typeof(long) ||
-                elementType == typeof(sbyte) ||
-                elementType == typeof(float) ||
-                elementType == typeof(ushort) ||
-                elementType == typeof(uint) ||
-                elementType == typeof(ulong) ||
-                elementType == JsonTypeInfo.ObjectType)
+            else
             {
-                return true;
+                Debug.Assert(ConverterBase.ElementType != null);
+                potentialNumberType = ConverterBase.ElementType;
             }
 
-            return false;
+            potentialNumberType = Nullable.GetUnderlyingType(potentialNumberType) ?? potentialNumberType;
+
+            return potentialNumberType == typeof(byte) ||
+                potentialNumberType == typeof(decimal) ||
+                potentialNumberType == typeof(double) ||
+                potentialNumberType == typeof(short) ||
+                potentialNumberType == typeof(int) ||
+                potentialNumberType == typeof(long) ||
+                potentialNumberType == typeof(sbyte) ||
+                potentialNumberType == typeof(float) ||
+                potentialNumberType == typeof(ushort) ||
+                potentialNumberType == typeof(uint) ||
+                potentialNumberType == typeof(ulong) ||
+                potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
         internal static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
@@ -499,6 +502,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// Relevant to source generated metadata: did the property have the <see cref="JsonIncludeAttribute"/>?
         /// </summary>
         internal bool SrcGen_HasJsonInclude { get; set; }
+
+        /// <summary>
+        /// Relevant to source generated metadata: did the property have the <see cref="JsonExtensionDataAttribute"/>?
+        /// </summary>
+        internal bool SrcGen_IsExtensionData { get; set; }
 
         /// <summary>
         /// Relevant to source generated metadata: is the property public?

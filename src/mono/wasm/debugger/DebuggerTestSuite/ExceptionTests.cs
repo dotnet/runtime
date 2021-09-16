@@ -232,10 +232,11 @@ namespace DebuggerTests
             CheckString(exception_members, "message", "not implemented uncaught");
         }
 
-        [Fact]
-        public async Task ExceptionTestAllWithReload()
+        [Theory]
+        [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76)]
+        [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28)]
+        public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number)
         {
-            string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
 
             await SetPauseOnException("all");
@@ -255,7 +256,7 @@ namespace DebuggerTests
                 i++;
             }
 
-            
+
             var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
                 $"'{entry_method_name}'" +
                 "); }, 1);";
@@ -270,29 +271,31 @@ namespace DebuggerTests
             {
                 type = "object",
                 subtype = "error",
-                className = "DebuggerTests.CustomException",
-                uncaught = false
+                className = class_name,
+                uncaught = false,
+                description = "not implemented caught"
             }), "exception0.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "not implemented caught");
+            CheckString(exception_members, "_message", "not implemented caught");
 
             pause_location = await WaitForManagedException(null);
             AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
 
             //stop in the uncaught exception
-            CheckLocation(debugger_test_loc, 28, 16, scripts, pause_location["callFrames"][0]["location"]);
+            CheckLocation(debugger_test_loc, line_number, 16, scripts, pause_location["callFrames"][0]["location"]);
 
             await CheckValue(pause_location["data"], JObject.FromObject(new
             {
                 type = "object",
                 subtype = "error",
-                className = "DebuggerTests.CustomException",
-                uncaught = true
+                className = class_name,
+                uncaught = true,
+                description = "not implemented uncaught"
             }), "exception1.data");
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "not implemented uncaught");
+            CheckString(exception_members, "_message", "not implemented uncaught");
         }
 
 

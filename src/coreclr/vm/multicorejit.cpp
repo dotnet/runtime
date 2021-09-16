@@ -268,11 +268,6 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
 
                 _ASSERTE((versionFlags & 0x80000000) == 0);
 
-                if (pFile->HasNativeImage())
-                {
-                    hasNativeImage = 1;
-                }
-
                 pAsm->GetVersion(& major, & minor, & build, & revision);
 
                 pAsm->GetMVID(& mvid);
@@ -1036,7 +1031,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         }
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(
-            m_pBinderContext,
+            m_pBinder,
             nSession));
 
         if (player == NULL)
@@ -1164,7 +1159,7 @@ void MulticoreJitManager::SetProfileRoot(const WCHAR * pProfilePath)
 
 // API Function: StartProfile
 // Threading: protected by m_playerLock
-void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBinderContext, const WCHAR * pProfile, int suffix)
+void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBinder, const WCHAR * pProfile, int suffix)
 {
     CONTRACTL
     {
@@ -1206,7 +1201,7 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
 
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
-            pBinderContext,
+            pBinder,
             gatherProfile);
 
         if (pRecorder != NULL)
@@ -1559,9 +1554,9 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //
 // Arguments:
 //    wszProfile  - profile name
-//    ptrNativeAssemblyLoadContext - the binding context
+//    ptrNativeAssemblyBinder - the binding context
 //
-void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyLoadContext)
+void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
 {
     QCALL_CONTRACT;
 
@@ -1569,11 +1564,11 @@ void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfil
 
     AppDomain * pDomain = GetAppDomain();
 
-    ICLRPrivBinder *pBinderContext = reinterpret_cast<ICLRPrivBinder *>(ptrNativeAssemblyLoadContext);
+    AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder *>(ptrNativeAssemblyBinder);
 
     pDomain->GetMulticoreJitManager().StartProfile(
         pDomain,
-        pBinderContext,
+        pBinder,
         wszProfile);
 
     END_QCALL;

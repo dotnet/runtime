@@ -25,6 +25,7 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-math.h>
 #include "mono/utils/mono-tls-inline.h"

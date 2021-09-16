@@ -803,8 +803,8 @@ protected:
         RETURN (LinkedWrapperTerminator == pWrap->m_pNext ? NULL : pWrap->m_pNext);
     }
 
-    // Helper to create a wrapper, pClassCCW must be specified if pTemplate->RepresentsVariantInterface()
-    static ComCallWrapper* CreateWrapper(OBJECTREF* pObj, ComCallWrapperTemplate *pTemplate, ComCallWrapper *pClassCCW);
+    // Helper to create a wrapper
+    static ComCallWrapper* CreateWrapper(OBJECTREF* pObj);
 
     // helper to get wrapper from sync block
     static PTR_ComCallWrapper GetStartWrapper(PTR_ComCallWrapper pWrap);
@@ -961,8 +961,7 @@ public:
     // fast access to wrapper for a com+ object,
     // inline check, and call out of line to create, out of line version might cause gc
     //to be enabled
-    static ComCallWrapper* __stdcall InlineGetWrapper(OBJECTREF* pObj, ComCallWrapperTemplate *pTemplate = NULL,
-                                                      ComCallWrapper *pClassCCW = NULL);
+    static ComCallWrapper* __stdcall InlineGetWrapper(OBJECTREF* pObj);
 
     // Get RefCount
     inline ULONG GetRefCount();
@@ -1176,7 +1175,7 @@ public:
     // Init pointer to the vtable of the interface
     // and the main ComCallWrapper if the interface needs it
     void InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapperCache, ComCallWrapper* pWrap,
-                 ComCallWrapper *pClassWrap, SyncBlock* pSyncBlock,
+                 SyncBlock* pSyncBlock,
                  ComCallWrapperTemplate* pTemplate);
 
     // used by reconnect wrapper to new object
@@ -1328,10 +1327,6 @@ public:
 
         int i = GetStdInterfaceKind(pUnk);
         PTR_SimpleComCallWrapper pSimpleWrapper = dac_cast<PTR_SimpleComCallWrapper>(dac_cast<TADDR>(pUnk) - sizeof(LPBYTE) * i - offsetof(SimpleComCallWrapper,m_rgpVtable));
-
-        // We should never getting back a built-in interface from a SimpleCCW that represents a variant interface
-        _ASSERTE(pSimpleWrapper->m_pClassWrap == NULL);
-
         RETURN pSimpleWrapper;
     }
 
@@ -1365,7 +1360,7 @@ public:
         return !!(READ_REF(m_llRefCount) & CLEANUP_SENTINEL);
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     // CCW refcount logging consists of two steps. BuildRefCountLogMessage is an instance method which
     // must be called at a point where the CCW is guaranteed to be alive. LogRefCount is static because
     // we generally don't know the new refcount (the one we want to log) until the CCW is at risk of
@@ -1402,12 +1397,6 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-
-        if (m_pClassWrap)
-        {
-            // Forward to the real wrapper if this CCW represents a variant interface
-            return m_pClassWrap->GetSimpleWrapper()->AddRef();
-        }
 
         LONGLONG newRefCount = ::InterlockedIncrement64(&m_llRefCount);
         if (g_pConfig->LogCCWRefCountChangeEnabled())
@@ -1462,12 +1451,6 @@ public:
         }
         CONTRACTL_END;
 
-        if (m_pClassWrap)
-        {
-            // Forward to the real wrapper if this CCW represents a variant interface
-            return m_pClassWrap->GetSimpleWrapper()->Release();
-        }
-
         LONGLONG *pRefCount = &m_llRefCount;
         ULONG ulComRef = GET_COM_REF(READ_REF(*pRefCount));
 
@@ -1512,7 +1495,7 @@ public:
         return GET_EXT_COM_REF(newRefCount);
     }
 
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
     MethodTable* GetMethodTable()
     {
@@ -1609,7 +1592,6 @@ private:
     SLOT const*                     m_rgpVtable[enum_LastStdVtable];
 
     PTR_ComCallWrapper              m_pWrap;      // the first ComCallWrapper associated with this SimpleComCallWrapper
-    PTR_ComCallWrapper              m_pClassWrap; // the first ComCallWrapper associated with the class (only if m_pMT is an interface)
     MethodTable*                    m_pMT;
     ComCallWrapperCache*            m_pWrapperCache;
     PTR_ComCallWrapperTemplate      m_pTemplate;
@@ -1625,14 +1607,13 @@ private:
  };
 
 //--------------------------------------------------------------------------------
-// ComCallWrapper* ComCallWrapper::InlineGetWrapper(OBJECTREF* ppObj, ComCallWrapperTemplate *pTemplate)
+// ComCallWrapper* ComCallWrapper::InlineGetWrapper(OBJECTREF* ppObj)
 // returns the wrapper for the object, if not yet created, creates one
 // returns null for out of memory scenarios.
 // Note: the wrapper is returned AddRef'd and should be Released when finished
 // with.
 //--------------------------------------------------------------------------------
-inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppObj, ComCallWrapperTemplate *pTemplate /*= NULL*/,
-                                                                  ComCallWrapper *pClassCCW /*= NULL*/)
+inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppObj)
 {
     CONTRACT (ComCallWrapper*)
     {
@@ -1645,24 +1626,12 @@ inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppO
     CONTRACT_END;
 
     // get the wrapper for this com+ object
-    ComCallWrapper* pWrap = GetWrapperForObject(*ppObj, pTemplate);
+    ComCallWrapper* pWrap = GetWrapperForObject(*ppObj);
 
     if (NULL == pWrap)
     {
-        pWrap = CreateWrapper(ppObj, pTemplate, pClassCCW);
+        pWrap = CreateWrapper(ppObj);
     }
-    _ASSERTE(pTemplate == NULL || pTemplate == pWrap->GetSimpleWrapper()->GetComCallWrapperTemplate());
-
-    // All threads will have the same resulting CCW at this point, and
-    // they should all check to see if the CCW they got back is
-    // appropriate for the current AD.  If not, then we must mark the
-    // CCW as agile.
-    // If we are creating a CCW that represents a variant interface, use the pClassCCW (which is the main CCW)
-    ComCallWrapper *pMainWrap;
-    if (pClassCCW)
-        pMainWrap = pClassCCW;
-    else
-        pMainWrap = pWrap;
 
     pWrap->AddRef();
 
@@ -1683,7 +1652,7 @@ inline ULONG ComCallWrapper::GetRefCount()
     return m_pSimpleWrapper->GetRefCount();
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 inline ULONG ComCallWrapper::AddRef()
 {
     CONTRACTL
@@ -1759,7 +1728,7 @@ inline void ComCallWrapper::ClearSimpleWrapper(ComCallWrapper* pWrap)
         pWrap = GetNext(pWrap);
     }
 }
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
 {
@@ -1780,16 +1749,6 @@ inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
     // result as a target address to instantiate a ComCallWrapper.  The line below is equivalent to:
     // ComCallWrapper* pWrap = (ComCallWrapper*)((size_t)pUnk & enum_ThisMask);
     PTR_ComCallWrapper pWrap = dac_cast<PTR_ComCallWrapper>(dac_cast<TADDR>(pUnk) & enum_ThisMask);
-
-    // Use class wrapper if this CCW represents a variant interface
-    PTR_ComCallWrapper pClassWrapper = pWrap->GetSimpleWrapper()->m_pClassWrap;
-    if (pClassWrapper)
-    {
-        _ASSERTE(pClassWrapper->GetSimpleWrapper()->m_pClassWrap == NULL);
-
-        RETURN pClassWrapper;
-    }
-
     RETURN pWrap;
 }
 

@@ -181,6 +181,18 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException_TimeSpanTooLong()
+        {
+            throw new OverflowException(SR.Overflow_TimeSpanTooLong);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_Arg_CannotBeNaN()
+        {
+            throw new ArgumentException(SR.Arg_CannotBeNaN);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw

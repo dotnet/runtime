@@ -288,6 +288,15 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("Yellow")]
+        [InlineData("Yellow,Orange")]
+        public static void Parse_NonExistentValue_IncludedInErrorMessage(string value)
+        {
+            ArgumentException e = Assert.Throws<ArgumentException>(() => Enum.Parse(typeof(SimpleEnum), value));
+            Assert.Contains(value, e.Message);
+        }
+
+        [Theory]
         [InlineData(SByteEnum.Min, "Min")]
         [InlineData(SByteEnum.One, "One")]
         [InlineData(SByteEnum.Two, "Two")]

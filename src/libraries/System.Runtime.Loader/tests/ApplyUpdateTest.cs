@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -63,6 +64,54 @@ namespace System.Reflection.Metadata
                 r = o.MethodWithLambda();
 
                 Assert.Equal("NEWEST STRING!", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        void LambdaCapturesThis()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.LambdaCapturesThis).Assembly;
+
+                var o = new ApplyUpdate.Test.LambdaCapturesThis ();
+                var r = o.MethodWithLambda();
+
+                Assert.Equal("OLD STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEW STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEWEST STRING!", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        void FirstCallAfterUpdate()
+        {
+            /* Tests that updating a method that has not been called before works correctly and that
+             * the JIT/interpreter doesn't have to rely on cached baseline data. */
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.FirstCallAfterUpdate).Assembly;
+
+                var o = new ApplyUpdate.Test.FirstCallAfterUpdate ();
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                string r = o.Method1("NEW");
+
+                Assert.Equal("NEWEST STRING", r);
             });
         }
 
@@ -179,6 +228,41 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void AsyncMethodChanges()
+        {
+            // Test that changing an async method doesn't cause any type load exceptions
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                Assembly assembly = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assembly);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                Type ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange);
+                Assert.NotNull(ty);
+
+                MethodInfo mi = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.TestTaskMethod), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi);
+
+                string result = ApplyUpdate.Test.AsyncMethodChange.TestTaskMethod().GetAwaiter().GetResult();
+                Assert.Equal("TestTaskMethod v1", result);
+
+                object[] attributes = mi.GetCustomAttributes(true);
+                Assert.NotNull(attributes);
+                Assert.True(attributes.Length > 0);
+
+                foreach (var attribute in attributes)
+                {
+                    if (attribute is AsyncStateMachineAttribute asm)
+                    {
+                        Assert.Contains("<TestTaskMethod>", asm.StateMachineType.Name);
+                    }
+                }
+            });
+        }
+
         class NonRuntimeAssembly : Assembly
         {
         }
@@ -222,13 +306,6 @@ namespace System.Reflection.Metadata
         {
             bool result = MetadataUpdater.IsSupported;
             Assert.False(result);
-        }
-
-        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.TestUsingLaunchEnvironment))]
-        public static void IsSupported2()
-        {
-            bool result = MetadataUpdater.IsSupported;
-            Assert.True(result);
         }
     }
 }

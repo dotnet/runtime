@@ -46,6 +46,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // These exists to prevent GC of the MsQuicConnection in the middle of an async op (Connect or Shutdown).
             public MsQuicConnection? Connection;
+            public MsQuicListener.State? ListenerState;
 
             public TaskCompletionSource<uint>? ConnectTcs;
             // TODO: only allocate these when there is an outstanding shutdown.
@@ -135,11 +136,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal string TraceId() => _state.TraceId;
 
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null, ServerCertificateSelectionCallback? serverCertificateSelectionCallback = null)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, MsQuicListener.State listenerState, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null, ServerCertificateSelectionCallback? serverCertificateSelectionCallback = null)
         {
             _state.Handle = handle;
             _state.StateGCHandle = GCHandle.Alloc(_state);
-            _state.Connected = true;
             _state.RemoteCertificateRequired = remoteCertificateRequired;
             _state.RevocationMode = revocationMode;
             _state.RemoteCertificateValidationCallback = remoteCertificateValidationCallback;
@@ -161,6 +161,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            _state.ListenerState = listenerState;
             _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
@@ -171,7 +172,12 @@ namespace System.Net.Quic.Implementations.MsQuic
         // constructor for outbound connections
         public MsQuicConnection(QuicClientConnectionOptions options)
         {
-            _remoteEndPoint = options.RemoteEndPoint!;
+            if (options.RemoteEndPoint == null)
+            {
+                throw new ArgumentNullException(nameof(options.RemoteEndPoint));
+            }
+
+            _remoteEndPoint = options.RemoteEndPoint;
             _configuration = SafeMsQuicConfigurationHandle.Create(options);
             _state.RemoteCertificateRequired = true;
             if (options.ClientAuthenticationOptions != null)
@@ -218,7 +224,34 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventConnected(State state, ref ConnectionEvent connectionEvent)
         {
-            if (!state.Connected)
+            if (state.Connected)
+            {
+                return MsQuicStatusCodes.Success;
+            }
+
+            if (state.IsServer)
+            {
+                state.Connected = true;
+                MsQuicListener.State? listenerState = state.ListenerState;
+                state.ListenerState = null;
+
+                if (listenerState != null)
+                {
+                    if (listenerState.PendingConnections.TryRemove(state.Handle.DangerousGetHandle(), out MsQuicConnection? connection))
+                    {
+                        // Move connection from pending to Accept queue and hand it out.
+                        if (listenerState.AcceptConnectionQueue.Writer.TryWrite(connection))
+                        {
+                            return MsQuicStatusCodes.Success;
+                        }
+                        // Listener is closed
+                        connection.Dispose();
+                    }
+                }
+
+                return MsQuicStatusCodes.UserCanceled;
+            }
+            else
             {
                 // Connected will already be true for connections accepted from a listener.
                 Debug.Assert(!Monitor.IsEntered(state));
@@ -266,6 +299,18 @@ namespace System.Net.Quic.Implementations.MsQuic
             // This is the final event on the connection, so free the GCHandle used by the event callback.
             state.StateGCHandle.Free();
 
+            if (state.ListenerState != null)
+            {
+                // This is inbound connection that never got connected - becasue of TLS validation or some other reason.
+                // Remove connection from pending queue and dispose it.
+                if (state.ListenerState.PendingConnections.TryRemove(state.Handle.DangerousGetHandle(), out MsQuicConnection? connection))
+                {
+                    connection.Dispose();
+                }
+
+                state.ListenerState = null;
+            }
+
             state.Connection = null;
 
             state.ShutdownTcs.SetResult(MsQuicStatusCodes.Success);
@@ -292,6 +337,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 bidirectionalTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
             }
+
             return MsQuicStatusCodes.Success;
         }
 
@@ -413,6 +459,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     if (!success)
                     {
+                        if (state.IsServer)
+                        {
+                            return MsQuicStatusCodes.UserCanceled;
+                        }
+
                         throw new AuthenticationException(SR.net_quic_cert_custom_validation);
                     }
 
@@ -425,6 +476,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (sslPolicyErrors != SslPolicyErrors.None)
                 {
+                    if (state.IsServer)
+                    {
+                        return MsQuicStatusCodes.HandshakeFailure;
+                    }
+
                     throw new AuthenticationException(SR.Format(SR.net_quic_cert_chain_validation, sslPolicyErrors));
                 }
 
@@ -523,6 +579,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
+            if (!Connected)
+            {
+                throw new InvalidOperationException(SR.net_quic_not_connected);
+            }
 
             return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
         }
@@ -530,6 +590,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
+            if (!Connected)
+            {
+                throw new InvalidOperationException(SR.net_quic_not_connected);
+            }
 
             return new MsQuicStream(_state, QUIC_STREAM_OPEN_FLAGS.NONE);
         }
@@ -552,7 +616,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_configuration is null)
             {
-                throw new Exception($"{nameof(ConnectAsync)} must not be called on a connection obtained from a listener.");
+                throw new InvalidOperationException($"{nameof(ConnectAsync)} must not be called on a connection obtained from a listener.");
             }
 
             QUIC_ADDRESS_FAMILY af = _remoteEndPoint.AddressFamily switch
@@ -560,7 +624,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 AddressFamily.Unspecified => QUIC_ADDRESS_FAMILY.UNSPEC,
                 AddressFamily.InterNetwork => QUIC_ADDRESS_FAMILY.INET,
                 AddressFamily.InterNetworkV6 => QUIC_ADDRESS_FAMILY.INET6,
-                _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
+                _ => throw new ArgumentException(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
             Debug.Assert(_state.StateGCHandle.IsAllocated);
@@ -586,13 +650,32 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             else if (_remoteEndPoint is DnsEndPoint)
             {
-                // We don't have way how to set separate SNI and name for connection at this moment.
-                targetHost = ((DnsEndPoint)_remoteEndPoint).Host;
                 port = ((DnsEndPoint)_remoteEndPoint).Port;
+                string dnsHost = ((DnsEndPoint)_remoteEndPoint).Host!;
+
+                // We don't have way how to set separate SNI and name for connection at this moment.
+                // If the name is actually IP address we can use it to make at least some cases work for people
+                // who want to bypass DNS but connect to specific virtual host.
+                if (!string.IsNullOrEmpty(_state.TargetHost) && !dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && IPAddress.TryParse(dnsHost, out IPAddress? address))
+                {
+                    // This is form of IPAddress and _state.TargetHost is set to different string
+                    SOCKADDR_INET quicAddress = MsQuicAddressHelpers.IPEndPointToINet(new IPEndPoint(address, port));
+                    unsafe
+                    {
+                        Debug.Assert(!Monitor.IsEntered(_state));
+                        status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&quicAddress);
+                        QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
+                    }
+                    targetHost = _state.TargetHost!;
+                }
+                else
+                {
+                    targetHost = dnsHost;
+                }
             }
             else
             {
-                throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.");
+                throw new ArgumentException($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.");
             }
 
             // We store TCS to local variable to avoid NRE if callbacks finish fast and set _state.ConnectTcs to null.
@@ -759,7 +842,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Connection disposing {disposing}");
 
             // If we haven't already shutdown gracefully (via a successful CloseAsync call), then force an abortive shutdown.
-            if (_state.Handle != null)
+            if (_state.Handle != null && !_state.Handle.IsInvalid && !_state.Handle.IsClosed)
             {
                 // Handle can be null if outbound constructor failed and we are called from finalizer.
                 Debug.Assert(!Monitor.IsEntered(_state));

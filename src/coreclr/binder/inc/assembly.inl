@@ -14,6 +14,23 @@
 #ifndef __BINDER__ASSEMBLY_INL__
 #define __BINDER__ASSEMBLY_INL__
 
+inline ULONG Assembly::AddRef()
+{
+    return InterlockedIncrement(&m_cRef);
+}
+
+inline ULONG Assembly::Release()
+{
+    ULONG ulRef = InterlockedDecrement(&m_cRef);
+
+    if (ulRef == 0)
+    {
+        delete this;
+    }
+
+    return ulRef;
+}
+
 PEImage *Assembly::GetPEImage(BOOL fAddRef /* = FALSE */)
 {
     PEImage *pPEImage = m_pPEImage;
@@ -26,36 +43,10 @@ PEImage *Assembly::GetPEImage(BOOL fAddRef /* = FALSE */)
     return pPEImage;
 }
 
-PEImage *Assembly::GetNativePEImage(BOOL fAddRef /* = FALSE */)
-{
-    PEImage *pNativePEImage = m_pNativePEImage;
-
-    if (fAddRef)
-    {
-        BinderAddRefPEImage(pNativePEImage);
-    }
-
-    return pNativePEImage;
-}
-
-PEImage *Assembly::GetNativeOrILPEImage(BOOL fAddRef /* = FALSE */)
-{
-    PEImage* pPEImage = GetNativePEImage(fAddRef);
-    if (pPEImage == NULL)
-        pPEImage = GetPEImage(fAddRef);
-    return pPEImage;
-}
-
 void Assembly::SetPEImage(PEImage *pPEImage)
 {
     BinderAddRefPEImage(pPEImage);
     m_pPEImage = pPEImage;
-}
-
-void Assembly::SetNativePEImage(PEImage *pNativePEImage)
-{
-    BinderAddRefPEImage(pNativePEImage);
-    m_pNativePEImage = pNativePEImage;
 }
 
 AssemblyName *Assembly::GetAssemblyName(BOOL fAddRef /* = FALSE */)
@@ -82,20 +73,20 @@ void Assembly::SetAssemblyName(AssemblyName *pAssemblyName,
     }
 }
 
-BOOL Assembly::GetIsInGAC()
+BOOL Assembly::GetIsInTPA()
 {
-    return ((m_dwAssemblyFlags & FLAG_IS_IN_GAC) != 0);
+    return ((m_dwAssemblyFlags & FLAG_IS_IN_TPA) != 0);
 }
 
-void Assembly::SetIsInGAC(BOOL fIsInGAC)
+void Assembly::SetIsInTPA(BOOL fIsInTPA)
 {
-    if (fIsInGAC)
+    if (fIsInTPA)
     {
-        m_dwAssemblyFlags |= FLAG_IS_IN_GAC;
+        m_dwAssemblyFlags |= FLAG_IS_IN_TPA;
     }
     else
     {
-        m_dwAssemblyFlags &= ~FLAG_IS_IN_GAC;
+        m_dwAssemblyFlags &= ~FLAG_IS_IN_TPA;
     }
 }
 
@@ -115,20 +106,6 @@ void Assembly::SetMDImport(IMDInternalImport *pMDImport)
 
     m_pMDImport = pMDImport;
     m_pMDImport->AddRef();
-}
-
-BINDER_SPACE::Assembly* GetAssemblyFromPrivAssemblyFast(ICLRPrivAssembly *pPrivAssembly)
-{
-#ifdef _DEBUG
-    if(pPrivAssembly != nullptr)
-    {
-        // Ensure the pPrivAssembly we are about to cast is indeed a valid Assembly
-        DWORD dwImageType = 0;
-        pPrivAssembly->GetAvailableImageTypes(&dwImageType);
-        _ASSERTE((dwImageType & ASSEMBLY_IMAGE_TYPE_ASSEMBLY) == ASSEMBLY_IMAGE_TYPE_ASSEMBLY);
-    }
-#endif
-    return (BINDER_SPACE::Assembly *)pPrivAssembly;
 }
 
 #endif
