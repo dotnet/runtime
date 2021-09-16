@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
         private JsonConverter<T>? _converter;
 
         // A backing converter for when fast-path logic cannot be used.
-        private JsonConverter<T> Converter
+        internal JsonConverter<T> Converter
         {
             get
             {

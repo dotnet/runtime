@@ -127,6 +127,7 @@ namespace System.Text.Json.Serialization.Metadata
             Action<object, T?>? setter,
             JsonIgnoreCondition? ignoreCondition,
             bool hasJsonInclude,
+            bool isExtensionData,
             JsonNumberHandling? numberHandling,
             string propertyName,
             string? jsonPropertyName)
@@ -157,6 +158,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             SrcGen_IsPublic = isPublic;
             SrcGen_HasJsonInclude = hasJsonInclude;
+            SrcGen_IsExtensionData = isExtensionData;
             DeclaredPropertyType = typeof(T);
             ConverterBase = converter;
 

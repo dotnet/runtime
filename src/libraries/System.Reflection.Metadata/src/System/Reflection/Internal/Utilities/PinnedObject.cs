@@ -35,11 +35,10 @@ namespace System.Reflection.Internal
 #if FEATURE_CER
             // Make sure the current thread isn't aborted in between zeroing the handle and freeing it.
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
-            {
-            }
+            { /* intentionally left blank */ }
             finally
+#endif
             {
                 if (Interlocked.Exchange(ref _isValid, 0) != 0)
                 {

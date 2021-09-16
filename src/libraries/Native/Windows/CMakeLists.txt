@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0091 NEW)
 
 # C Compiler flags
-SET (CMAKE_C_FLAGS_INIT                     "/FC")
+SET (CMAKE_C_FLAGS_INIT                     "/W3 /FC")
 SET (CMAKE_C_FLAGS_DEBUG_INIT               "/Od /Zi")
 SET (CMAKE_C_FLAGS_RELEASE_INIT             "/Ox")
 SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT      "/O2 /Zi")

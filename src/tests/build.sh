@@ -43,12 +43,16 @@ build_test_wrappers()
 build_mono_aot()
 {
     __RuntimeFlavor="mono"
-    __Exclude="$__RepoRootDir/src/tests/issues.targets"
     __TestBinDir="$__TestWorkingDir"
+    __Exclude="$__RepoRootDir/src/tests/issues.targets"
     CORE_ROOT="$__TestBinDir"/Tests/Core_Root
+    __MonoFullAotPropVal="false"
+    if [[ "$__MonoFullAot" -eq 1 ]]; then
+        __MonoFullAotPropVal="true"
+    fi
     export __Exclude
     export CORE_ROOT
-    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir"
+    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir" "/p:MonoFullAot=$__MonoFullAotPropVal"
 }
 
 build_ios_apps()
@@ -530,6 +534,11 @@ handle_arguments_local() {
             __MonoAot=1
             ;;
 
+        mono_fullaot|-mono_fullaot)
+            __Mono=1
+            __MonoFullAot=1
+            ;;
+
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -586,6 +595,7 @@ __CMakeArgs=""
 __priority1=
 __Mono=0
 __MonoAot=0
+__MonoFullAot=0
 CORE_ROOT=
 
 source $__RepoRootDir/src/coreclr/_build-commons.sh
@@ -638,11 +648,11 @@ if [[ "$__RebuildTests" -ne 0 ]]; then
     fi
 fi
 
-if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") && ("$__MonoAot" -eq 0) ]]; then
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__BuildTestWrappersOnly") && ("$__MonoAot" -eq 0) && ("$__MonoFullAot" -eq 0) ]]; then
     build_Tests
 elif [[ ! -z "$__BuildTestWrappersOnly" ]]; then
     build_test_wrappers
-elif [[ "$__MonoAot" -eq 1 ]]; then
+elif [[ ("$__MonoAot" -eq 1) || ("$__MonoFullAot" -eq 1) ]]; then
     build_mono_aot
 else
     generate_layout
