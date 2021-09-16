@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				RequiresUnreferencedCodeMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static IEnumerable<int> TestReflectionAccess ()
 			{
 				yield return 0;
@@ -76,7 +76,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var action = new Action (RequiresUnreferencedCodeMethod);
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static IEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
@@ -181,7 +181,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				RequiresUnreferencedCodeMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async void TestReflectionAccess ()
 			{
 				await MethodAsync ();
@@ -198,7 +198,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var action = new Action (RequiresUnreferencedCodeMethod);
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async void TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
@@ -302,7 +302,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				await MethodAsync ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async IAsyncEnumerable<int> TestReflectionAccess ()
 			{
 				yield return 0;
@@ -322,7 +322,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var action = new Action (RequiresUnreferencedCodeMethod);
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async IAsyncEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
@@ -439,7 +439,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static void TestReflectionAccess ()
 			{
 				LocalFunction ();
@@ -460,7 +460,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static void TestDynamicallyAccessedMethod ()
 			{
 				LocalFunction ();
@@ -697,7 +697,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				};
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static void TestReflectionAccess ()
 			{
 				Action _ = () => {
@@ -715,7 +715,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				};
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static void TestDynamicallyAccessedMethod ()
 			{
 				Action _ = () => {
@@ -749,7 +749,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
-			[ExpectedWarning ("IL2067", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2067", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestCallWithReflectionAnalysisWarning ()
 			{
@@ -768,7 +768,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// Analyzer doesn't recognize reflection access - so doesn't warn in this case
-			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestReflectionAccess ()
 			{
@@ -789,7 +789,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// Analyzer doesn't apply DAM - so won't see this warnings
-			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestDynamicallyAccessedMethod ()
 			{
@@ -799,7 +799,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
-			[ExpectedWarning ("IL2077", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2077", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static async void TestMethodParameterWithRequirements (Type unknownType = null)
 			{
@@ -807,7 +807,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
-			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestGenericMethodParameterRequirement<TUnknown> ()
 			{
@@ -817,7 +817,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
-			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestGenericTypeParameterRequirement<TUnknown> ()
 			{
@@ -858,7 +858,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static IEnumerable<int> TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ()
 			{
 				yield return 1;
@@ -952,7 +952,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				RequiresUnreferencedCodeMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RUC to suppress", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RUC to suppress", ProducedBy = ProducedBy.Trimmer)]
 			public static void Test ()
 			{
 				// This is not a 100% reliable test, since in theory it can be marked in any order and so it could happen that the
