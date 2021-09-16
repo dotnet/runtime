@@ -4230,13 +4230,19 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 		if (mt == MINT_TYPE_VT || wide_data)
 			size = mono_class_value_size (field_class, NULL);
 		if (is_load) {
-			g_assert (!wide_data);
 			MonoType *ftype = mono_field_get_type_internal (field);
 			if (ftype->attrs & FIELD_ATTRIBUTE_INIT_ONLY && vtable->initialized) {
 				if (interp_emit_load_const (td, field_addr, mt))
 					return;
 			}
-			if (mt == MINT_TYPE_VT) {
+			if (G_UNLIKELY (wide_data)) {
+				interp_add_ins (td, MINT_LDSFLD_VT_W);
+				if (mt == MINT_TYPE_VT) {
+					push_type_vt (td, field_class, size);
+				} else {
+					push_type (td, stack_type [mt], field_class);
+				}
+			} else if (mt == MINT_TYPE_VT) {
 				interp_add_ins (td, MINT_LDSFLD_VT);
 				push_type_vt (td, field_class, size);
 			} else {

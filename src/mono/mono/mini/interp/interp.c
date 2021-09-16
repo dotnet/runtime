@@ -5418,6 +5418,18 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_LDSFLD_VT_W) {
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [READ32 (ip + 2)];
+			INIT_VTABLE (vtable);
+
+			gpointer addr = frame->imethod->data_items [READ32 (ip + 4)];
+			guint16 size = ip [6];
+
+			memcpy (locals + ip [1], addr, size);
+			ip += 7;
+			MINT_IN_BREAK;
+		}
+
 #define STSFLD(datatype, fieldtype) { \
 	MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [2]]; \
 	INIT_VTABLE (vtable); \
