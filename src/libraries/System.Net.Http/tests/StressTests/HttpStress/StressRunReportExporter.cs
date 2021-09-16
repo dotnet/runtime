@@ -22,7 +22,11 @@ namespace HttpStress
             using BinaryWriter bw = new BinaryWriter(new MemoryStream());
             foreach ((Type ex, string message, string callSite) in key)
             {
-                bw.Write(ex.GetHashCode());
+                if (ex.FullName != null)
+                {
+                    bw.Write(ex.FullName);
+                }
+
                 bw.Write(message);
                 bw.Write(callSite);
             }
