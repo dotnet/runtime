@@ -22,6 +22,7 @@ namespace System.Xml.Tests
             Assert.Equal(3, values[2]);
             Assert.Equal(4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader10()
         {
@@ -34,6 +35,7 @@ namespace System.Xml.Tests
             Assert.True(values[0]);
             Assert.False(values[1]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader11()
         {
@@ -73,6 +75,7 @@ namespace System.Xml.Tests
                 values[2]
             );
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader12()
         {
@@ -112,6 +115,7 @@ namespace System.Xml.Tests
                 values[2]
             );
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader13()
         {
@@ -130,6 +134,7 @@ namespace System.Xml.Tests
             Assert.Equal(13.75559M, values[2]);
             Assert.Equal(-5.743M, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader14()
         {
@@ -148,6 +153,7 @@ namespace System.Xml.Tests
             Assert.Equal(13.75559M, values[2]);
             Assert.Equal(-5.743M, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader15()
         {
@@ -166,6 +172,7 @@ namespace System.Xml.Tests
             Assert.Equal(13.75559, values[2]);
             Assert.Equal(-5.743, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader16()
         {
@@ -184,6 +191,7 @@ namespace System.Xml.Tests
             Assert.Equal(13.75559, values[2]);
             Assert.Equal(-5.743, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader17()
         {
@@ -202,6 +210,7 @@ namespace System.Xml.Tests
             Assert.Equal(19, values[2]);
             Assert.Equal(-5743, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader18()
         {
@@ -220,6 +229,7 @@ namespace System.Xml.Tests
             Assert.Equal(19, values[2]);
             Assert.Equal(-5743, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader19()
         {
@@ -238,6 +248,7 @@ namespace System.Xml.Tests
             Assert.Equal(-39L, values[2]);
             Assert.Equal(9223372036854775807L, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader2()
         {
@@ -251,6 +262,7 @@ namespace System.Xml.Tests
             Assert.Equal(3, values[2]);
             Assert.Equal(4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader20()
         {
@@ -269,6 +281,7 @@ namespace System.Xml.Tests
             Assert.Equal(-39L, values[2]);
             Assert.Equal(9223372036854775807L, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader21()
         {
@@ -282,6 +295,7 @@ namespace System.Xml.Tests
             Assert.Equal(3, values[2]);
             Assert.Equal(4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader22()
         {
@@ -295,6 +309,7 @@ namespace System.Xml.Tests
             Assert.Equal(3, values[2]);
             Assert.Equal(4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader23()
         {
@@ -313,6 +328,7 @@ namespace System.Xml.Tests
             Assert.Equal(13.75559F, values[2]);
             Assert.Equal(-5.743F, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader24()
         {
@@ -331,6 +347,7 @@ namespace System.Xml.Tests
             Assert.Equal(13.75559F, values[2]);
             Assert.Equal(-5.743F, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader25()
         {
@@ -347,6 +364,7 @@ namespace System.Xml.Tests
                 values[1]
             );
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader26()
         {
@@ -363,6 +381,7 @@ namespace System.Xml.Tests
                 values[1]
             );
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader27()
         {
@@ -376,6 +395,7 @@ namespace System.Xml.Tests
             Assert.Equal(3, values[2]);
             Assert.Equal(4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader28()
         {
@@ -389,6 +409,7 @@ namespace System.Xml.Tests
             Assert.Equal(3, values[2]);
             Assert.Equal(4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader29()
         {
@@ -402,6 +423,7 @@ namespace System.Xml.Tests
             Assert.Equal((uint)3, values[2]);
             Assert.Equal((uint)4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader3()
         {
@@ -415,6 +437,7 @@ namespace System.Xml.Tests
             Assert.Equal("3", values[2]);
             Assert.Equal("4", values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader30()
         {
@@ -428,6 +451,7 @@ namespace System.Xml.Tests
             Assert.Equal((uint)3, values[2]);
             Assert.Equal((uint)4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader31()
         {
@@ -441,6 +465,7 @@ namespace System.Xml.Tests
             Assert.Equal((ulong)3, values[2]);
             Assert.Equal((ulong)4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader32()
         {
@@ -454,6 +479,7 @@ namespace System.Xml.Tests
             Assert.Equal((ulong)3, values[2]);
             Assert.Equal((ulong)4, values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader33()
         {
@@ -469,6 +495,7 @@ namespace System.Xml.Tests
             Assert.Equal(new Uri("https://github.com/dotnet/wpf"), values[0]);
             Assert.Equal(new Uri("https://sharplab.io/"), values[1]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader34()
         {
@@ -484,6 +511,7 @@ namespace System.Xml.Tests
             Assert.Equal(new Uri("https://github.com/dotnet/wpf"), values[0]);
             Assert.Equal(new Uri("https://sharplab.io/"), values[1]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader35()
         {
@@ -495,6 +523,7 @@ namespace System.Xml.Tests
             Assert.Equal(new XmlQualifiedName("os", "http://www.w3.org/2000/xmlns/"), values[0]);
             Assert.Equal(new XmlQualifiedName("a", "http://www.w3.org/2000/xmlns/"), values[1]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader36()
         {
@@ -506,6 +535,7 @@ namespace System.Xml.Tests
             Assert.Equal(new XmlQualifiedName("os", "http://www.w3.org/2000/xmlns/"), values[0]);
             Assert.Equal(new XmlQualifiedName("a", "http://www.w3.org/2000/xmlns/"), values[1]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader37()
         {
@@ -526,6 +556,7 @@ namespace System.Xml.Tests
                 values[5].ValueAsDateTime
             );
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader38()
         {
@@ -546,6 +577,7 @@ namespace System.Xml.Tests
                 values[5].ValueAsDateTime
             );
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader4()
         {
@@ -559,6 +591,7 @@ namespace System.Xml.Tests
             Assert.Equal("3", values[2]);
             Assert.Equal("4", values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader5()
         {
@@ -572,6 +605,7 @@ namespace System.Xml.Tests
             Assert.Equal("3", values[2]);
             Assert.Equal("4", values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader6()
         {
@@ -585,6 +619,7 @@ namespace System.Xml.Tests
             Assert.Equal("3", values[2]);
             Assert.Equal("4", values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader7()
         {
@@ -598,6 +633,7 @@ namespace System.Xml.Tests
             Assert.Equal("3", values[2]);
             Assert.Equal("4", values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader8()
         {
@@ -611,6 +647,7 @@ namespace System.Xml.Tests
             Assert.Equal("3", values[2]);
             Assert.Equal("4", values[3]);
         }
+
         [Fact]
         public static void DeserializationOfTypedArraysByXmlReader9()
         {
