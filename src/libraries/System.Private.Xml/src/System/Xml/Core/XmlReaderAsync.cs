@@ -115,14 +115,7 @@ namespace System.Xml
         }
 
         // Skips to the end tag of the current element.
-        public virtual Task SkipAsync()
-        {
-            if (ReadState != ReadState.Interactive)
-            {
-                return Task.CompletedTask;
-            }
-            return SkipSubtreeAsync();
-        }
+        public virtual Task SkipAsync() => ReadState != ReadState.Interactive ? Task.CompletedTask : SkipSubtreeAsync();
 
         // Returns decoded bytes of the current base64 text content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count)
@@ -136,13 +129,13 @@ namespace System.Xml
             throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBase64"));
         }
 
-        // Returns decoded bytes of the current binhex text content. Call this methods until it returns 0 to get all the data.
+        // Returns decoded bytes of the current bin hex text content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBinHex"));
         }
 
-        // Returns decoded bytes of the current binhex element content. Call this methods until it returns 0 to get all the data.
+        // Returns decoded bytes of the current bin hex element content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
@@ -193,31 +186,25 @@ namespace System.Xml
             }
 
             StringWriter sw = new(CultureInfo.InvariantCulture);
-            XmlWriter xtw = CreateWriterForInnerOuterXml(sw);
+            using XmlTextWriter xtw = CreateWriterForInnerOuterXml(sw);
 
-            try
+            if (NodeType == XmlNodeType.Attribute)
             {
-                if (NodeType == XmlNodeType.Attribute)
-                {
-                    ((XmlTextWriter)xtw).QuoteChar = QuoteChar;
-                    WriteAttributeValue(xtw);
-                }
-                if (NodeType == XmlNodeType.Element)
-                {
-                    await WriteNodeAsync(xtw, false).ConfigureAwait(false);
-                }
+                xtw.QuoteChar = QuoteChar;
+                WriteAttributeValue(xtw);
             }
-            finally
+
+            if (NodeType == XmlNodeType.Element)
             {
-                xtw.Close();
+                await WriteNodeAsync(xtw, false).ConfigureAwait(false);
             }
+
             return sw.ToString();
         }
 
-        // Writes the content (inner XML) of the current node into the provided XmlWriter.
-        private async Task WriteNodeAsync(XmlWriter xtw, bool defattr)
+        // Writes the content (inner XML) of the current node into the provided XmlTextWriter.
+        private async Task WriteNodeAsync(XmlTextWriter xtw, bool defattr)
         {
-            Debug.Assert(xtw is XmlTextWriter);
             int d = NodeType == XmlNodeType.None ? -1 : Depth;
             while (await ReadAsync().ConfigureAwait(false) && d < Depth)
             {
@@ -225,7 +212,7 @@ namespace System.Xml
                 {
                     case XmlNodeType.Element:
                         xtw.WriteStartElement(Prefix, LocalName, NamespaceURI);
-                        ((XmlTextWriter)xtw).QuoteChar = QuoteChar;
+                        xtw.QuoteChar = QuoteChar;
                         xtw.WriteAttributes(this, defattr);
                         if (IsEmptyElement)
                         {
@@ -280,25 +267,19 @@ namespace System.Xml
             }
 
             StringWriter sw = new(CultureInfo.InvariantCulture);
-            XmlWriter xtw = CreateWriterForInnerOuterXml(sw);
+            using XmlTextWriter xtw = CreateWriterForInnerOuterXml(sw);
 
-            try
+            if (NodeType == XmlNodeType.Attribute)
             {
-                if (NodeType == XmlNodeType.Attribute)
-                {
-                    xtw.WriteStartAttribute(Prefix, LocalName, NamespaceURI);
-                    WriteAttributeValue(xtw);
-                    xtw.WriteEndAttribute();
-                }
-                else
-                {
-                   xtw.WriteNode(this, false);
-                }
+                xtw.WriteStartAttribute(Prefix, LocalName, NamespaceURI);
+                WriteAttributeValue(xtw);
+                xtw.WriteEndAttribute();
             }
-            finally
+            else
             {
-                xtw.Close();
+                xtw.WriteNode(this, false);
             }
+
             return sw.ToString();
         }
 
