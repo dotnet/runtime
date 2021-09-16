@@ -27,7 +27,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             refs.Add(MetadataReference.CreateFromFile(typeof(ILogger).Assembly.Location));
             refs.Add(MetadataReference.CreateFromFile(typeof(LoggerMessageAttribute).Assembly.Location));
 
-            // Add additional references as needed.
             if (additionalReferences != null)
             {
                 foreach (MetadataReference reference in additionalReferences)
@@ -36,9 +35,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             }
 
-            CSharpParseOptions options = new CSharpParseOptions(
-                kind: SourceCodeKind.Regular,
-                documentationMode: DocumentationMode.Parse);
+            CSharpParseOptions options = CSharpParseOptions.Default;
 
 #if ROSLYN4_0_OR_GREATER
             // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.

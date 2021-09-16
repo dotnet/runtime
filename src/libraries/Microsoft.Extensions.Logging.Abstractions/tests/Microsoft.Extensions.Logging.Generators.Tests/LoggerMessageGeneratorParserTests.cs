@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -682,7 +681,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public void TestMultipleDefinitions()
+        public void MultipleTypeDefinitions()
         {
             // Adding a dependency to an assembly that has internal definitions of public types
             // should not result in a collision and break generation.
@@ -729,7 +728,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 RoslynTestUtils.RunGenerator(compilation, generator);
 
             // Make sure compilation was successful.
-            Assert.Empty(diagnostics.Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+            Assert.Empty(diagnostics);
             Assert.Equal(1, generatedSources.Length);
             Assert.Equal(21, generatedSources[0].SourceText.Lines.Count);
         }

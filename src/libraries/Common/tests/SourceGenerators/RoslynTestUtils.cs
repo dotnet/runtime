@@ -48,10 +48,10 @@ namespace SourceGenerators.Tests
             }
 
             return new AdhocWorkspace()
-                        .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
-                        .AddProject("Test", "test.dll", "C#")
-                            .WithMetadataReferences(refs)
-                            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
+                .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
+                .AddProject("Test", "test.dll", "C#")
+                .WithMetadataReferences(refs)
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
         }
 
         public static Task CommitChanges(this Project proj, params string[] ignorables)
@@ -152,25 +152,10 @@ namespace SourceGenerators.Tests
             CancellationToken cancellationToken = default)
         {
             Project proj = CreateTestProject(references, includeBaseReferences);
-
             proj = proj.WithDocuments(sources);
-
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
-
             Compilation? comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
-
-#if ROSLYN4_0_OR_GREATER
-            // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
-            CSharpParseOptions options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
-            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator.AsSourceGenerator() }, parseOptions: options);
-#else
-            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator });
-#endif
-
-            GeneratorDriver gd = cgd.RunGenerators(comp!, cancellationToken);
-
-            GeneratorDriverRunResult r = gd.GetRunResult();
-            return (r.Results[0].Diagnostics, r.Results[0].GeneratedSources);
+            return RunGenerator(comp!, generator, cancellationToken);
         }
 
         /// <summary>
@@ -179,10 +164,11 @@ namespace SourceGenerators.Tests
         public static (ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>) RunGenerator(
             Compilation compilation,
 #if ROSLYN4_0_OR_GREATER
-            IIncrementalGenerator generator)
+            IIncrementalGenerator generator,
 #else
-            ISourceGenerator generator)
+            ISourceGenerator generator,
 #endif
+            CancellationToken cancellationToken = default)
         {
 #if ROSLYN4_0_OR_GREATER
             // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
@@ -192,7 +178,7 @@ namespace SourceGenerators.Tests
             CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator });
 #endif
 
-            GeneratorDriver gd = cgd.RunGenerators(compilation);
+            GeneratorDriver gd = cgd.RunGenerators(compilation, cancellationToken);
 
             GeneratorDriverRunResult r = gd.GetRunResult();
             return (r.Results[0].Diagnostics, r.Results[0].GeneratedSources);
