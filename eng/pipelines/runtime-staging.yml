@@ -154,8 +154,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    # don't run tests on arm64 PRs until we can get significantly more devices
-    - ${{ if eq(variables['isFullMatrix'], true) }}:
       - iOS_arm64
       - tvOS_arm64
     variables:
@@ -167,7 +165,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:EnableAggressiveTrimming=true /p:BuildDarwinFrameworks=true
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:EnableSoftTrimming=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       condition: >-
         or(
