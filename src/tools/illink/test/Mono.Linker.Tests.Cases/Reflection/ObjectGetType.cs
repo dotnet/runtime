@@ -279,14 +279,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			struct BasicAnnotatedStruct
 			{
 				// Handle boxing and unboxing operations
-				// https://github.com/mono/linker/issues/1951
+				// https://github.com/dotnet/linker/issues/1951
 				// [Kept]
 				public void UsedMethod () { }
 				public void UnusedMethod () { }
 			}
 
 			[Kept]
-			// https://github.com/mono/linker/issues/1951
+			// https://github.com/dotnet/linker/issues/1951
 			// This should not warn
 			[ExpectedWarning ("IL2075", "GetMethod")]
 			static void TestStruct (BasicAnnotatedStruct instance)
@@ -667,7 +667,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public class Derived : Base
 			{
 				// new() doesn't propagate static type
-				// https://github.com/mono/linker/issues/1952
+				// https://github.com/dotnet/linker/issues/1952
 				// [Kept]
 				public void Method () { }
 			}
@@ -1390,7 +1390,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptMember (".ctor()")]
 			class Derived : AnnotatedBase
 			{
-				// https://github.com/mono/linker/issues/2027
+				// https://github.com/dotnet/linker/issues/2027
 				// [Kept]
 				public void Method () { }
 			}
@@ -1399,7 +1399,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
 
 			[Kept]
-			// https://github.com/mono/linker/issues/2027
+			// https://github.com/dotnet/linker/issues/2027
 			[ExpectedWarning ("IL2075", nameof (Type.GetType))]
 			public static void Test ()
 			{

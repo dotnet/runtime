@@ -49,7 +49,7 @@ the error code. For example:
 
 - There was an error writing the linked assembly 'output'. An exception with more details is printed.
 
-#### `IL1012`: IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues
+#### `IL1012`: IL Linker has encountered an unexpected error. Please report the issue at https://github.com/dotnet/linker/issues
 
 - There was an unexpected error while trimming. An exception with more details is printed to the MSBuild log. Please share this stack trace with the IL Linker team to further investigate the cause and possible solution.
 

@@ -321,7 +321,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
-				// https://github.com/mono/linker/issues/2196
+				// https://github.com/dotnet/linker/issues/2196
 				// TestPropertyWithAttributeMarkingSelfType.TestProperty = true;
 			}
 		}

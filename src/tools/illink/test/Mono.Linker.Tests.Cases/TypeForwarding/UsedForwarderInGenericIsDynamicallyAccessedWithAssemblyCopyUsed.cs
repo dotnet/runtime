@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
 	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
-	// https://github.com/mono/linker/issues/1536
+	// https://github.com/dotnet/linker/issues/1536
 	//[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
 	[KeptTypeInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
 	class UsedForwarderInGenericIsDynamicallyAccessedWithAssemblyCopyUsed

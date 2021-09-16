@@ -558,7 +558,7 @@ namespace Mono.Linker.Steps
 
 		void DiscoverDynamicCastableImplementationInterfaces ()
 		{
-			// We could potentially avoid loading all references here: https://github.com/mono/linker/issues/1788
+			// We could potentially avoid loading all references here: https://github.com/dotnet/linker/issues/1788
 			foreach (var assembly in _context.GetReferencedAssemblies ().ToArray ()) {
 				switch (Annotations.GetAction (assembly)) {
 				// We only need to search assemblies where we don't mark everything
@@ -1713,7 +1713,7 @@ namespace Mono.Linker.Steps
 			// Marking the property itself actually doesn't keep it (it only marks its attributes and records the dependency), we have to mark the methods on it
 			MarkProperty (property, reason);
 			// We don't track PropertyInfo, so we can't tell if any accessor is needed by the app, so include them both.
-			// With better tracking it might be possible to be more precise here: mono/linker/issues/1948
+			// With better tracking it might be possible to be more precise here: dotnet/linker/issues/1948
 			MarkMethodIfNotNull (property.GetMethod, reason);
 			MarkMethodIfNotNull (property.SetMethod, reason);
 			MarkMethodsIf (property.OtherMethods, m => true, reason);
@@ -2114,7 +2114,7 @@ namespace Mono.Linker.Steps
 
 					while (type != null) {
 						// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
-						// This can be improved: mono/linker/issues/1873
+						// This can be improved: dotnet/linker/issues/1873
 						MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute));
 						MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
 						type = _context.TryResolve (type.BaseType);
@@ -2818,7 +2818,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.Unspecified:
 
 			// Don't warn for methods kept due to non-understood DebuggerDisplayAttribute
-			// until https://github.com/mono/linker/issues/1873 is fixed.
+			// until https://github.com/dotnet/linker/issues/1873 is fixed.
 			case DependencyKind.KeptForSpecialAttribute:
 				return;
 

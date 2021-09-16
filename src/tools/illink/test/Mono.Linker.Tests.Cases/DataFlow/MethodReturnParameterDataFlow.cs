@@ -181,7 +181,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return null;
 		}
 
-		// https://github.com/mono/linker/issues/2025
+		// https://github.com/dotnet/linker/issues/2025
 		// Ideally this should not warn
 		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnWithRequirementsAlwaysThrows), new Type[] { }, returnType: typeof (Type),
 			messageCode: "IL2063")]

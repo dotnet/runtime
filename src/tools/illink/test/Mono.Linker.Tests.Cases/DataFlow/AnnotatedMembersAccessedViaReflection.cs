@@ -516,7 +516,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedGenerics).RequiresPublicMethods ();
 			}
 
-			// This should produce IL2071 https://github.com/mono/linker/issues/2144
+			// This should produce IL2071 https://github.com/dotnet/linker/issues/2144
 			[ExpectedWarning ("IL2070", "MakeGenericMethod")]
 			static void InstantiateGeneric (Type type = null)
 			{

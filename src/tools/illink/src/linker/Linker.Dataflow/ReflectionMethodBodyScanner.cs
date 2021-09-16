@@ -1672,7 +1672,7 @@ namespace Mono.Linker.Dataflow
 				// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
 				//
 				case IntrinsicId.Assembly_CreateInstance:
-					// For now always fail since we don't track assemblies (mono/linker/issues/1947)
+					// For now always fail since we don't track assemblies (dotnet/linker/issues/1947)
 					reflectionContext.AnalyzingPattern ();
 					reflectionContext.RecordUnrecognizedPattern (2058, $"Parameters passed to method '{calledMethodDefinition.GetDisplayName ()}' cannot be analyzed. Consider using methods 'System.Type.GetType' and `System.Activator.CreateInstance` instead.");
 					break;

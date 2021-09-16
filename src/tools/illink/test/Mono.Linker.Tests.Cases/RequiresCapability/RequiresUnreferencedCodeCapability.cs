@@ -33,8 +33,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[LogDoesNotContain ("--UnusedVirtualMethod2--")]
 	[LogDoesNotContain ("--IUnusedInterface.UnusedMethod--")]
 	[LogDoesNotContain ("--UnusedImplementationClass.UnusedMethod--")]
-	// [LogDoesNotContain ("UnusedVirtualMethod2")] // https://github.com/mono/linker/issues/2106
-	// [LogContains ("--RequiresUnreferencedCodeOnlyViaDescriptor--")]  // https://github.com/mono/linker/issues/2103
+	// [LogDoesNotContain ("UnusedVirtualMethod2")] // https://github.com/dotnet/linker/issues/2106
+	// [LogContains ("--RequiresUnreferencedCodeOnlyViaDescriptor--")]  // https://github.com/dotnet/linker/issues/2103
 	[ExpectedNoWarnings]
 	public class RequiresUnreferencedCodeCapability
 	{
@@ -493,7 +493,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			tmp.GetRequiresUnreferencedCode ();
 		}
 
-		// https://github.com/mono/linker/issues/2107
+		// https://github.com/dotnet/linker/issues/2107
 		// Doesn't work in the analyzer because the test infra for analyzer will not build the second assembly
 		// and provide it as a ref assembly to the compilation - so the analyzer actually sees the below
 		// as errors (missing assembly).
@@ -597,7 +597,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void TestMethod () { }
 			}
 
-			// https://github.com/mono/linker/issues/2094 - should be supported by the analyzer
+			// https://github.com/dotnet/linker/issues/2094 - should be supported by the analyzer
 			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
 			static void GenericMethodWithAttributedParameter<[AttributeWhichRequiresUnreferencedCode] T> () { }
 
@@ -607,7 +607,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				GenericMethodWithAttributedParameter<int> ();
 			}
 
-			// https://github.com/mono/linker/issues/2094 - should be supported by the analyzer
+			// https://github.com/dotnet/linker/issues/2094 - should be supported by the analyzer
 			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
 			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
 			[AttributeWhichRequiresUnreferencedCode]
@@ -616,7 +616,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			// https://github.com/mono/linker/issues/2094 - should be supported by the analyzer
+			// https://github.com/dotnet/linker/issues/2094 - should be supported by the analyzer
 			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
 			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
 			[AttributeWhichRequiresUnreferencedCode]
@@ -709,7 +709,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class AccessThroughSpecialAttribute
 		{
-			// https://github.com/mono/linker/issues/1873
+			// https://github.com/dotnet/linker/issues/1873
 			// [ExpectedWarning ("IL2026", "--DebuggerProxyType.Method--")]
 			[DebuggerDisplay ("Some{*}value")]
 			class TypeWithDebuggerDisplay
@@ -734,7 +734,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public PInvokeReturnType () { }
 			}
 
-			// https://github.com/mono/linker/issues/2116
+			// https://github.com/dotnet/linker/issues/2116
 			[ExpectedWarning ("IL2026", "--PInvokeReturnType.ctor--", GlobalAnalysisOnly = true)]
 			[DllImport ("nonexistent")]
 			static extern PInvokeReturnType PInvokeReturnsType ();
@@ -1196,7 +1196,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field;
 				public static int Property { get; set; }
 
-				// These should not be reported https://github.com/mono/linker/issues/2218
+				// These should not be reported https://github.com/dotnet/linker/issues/2218
 				[ExpectedWarning ("IL2026", "add_Event", GlobalAnalysisOnly = true)]
 				[ExpectedWarning ("IL2026", "remove_Event", GlobalAnalysisOnly = true)]
 				public static event EventHandler Event;
@@ -1429,14 +1429,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			class ReflectionAccessOnEvents
 			{
-				// Most of the tests in this run into https://github.com/mono/linker/issues/2218
+				// Most of the tests in this run into https://github.com/dotnet/linker/issues/2218
 				// So for now keeping just a very simple test
 
 				[RequiresUnreferencedCode ("--WithRUC--")]
 				class WithRUC
 				{
 					// These should be reported only in TestDirectReflectionAccess
-					// https://github.com/mono/linker/issues/2218
+					// https://github.com/dotnet/linker/issues/2218
 					[ExpectedWarning ("IL2026", "add_StaticEvent", GlobalAnalysisOnly = true)]
 					[ExpectedWarning ("IL2026", "remove_StaticEvent", GlobalAnalysisOnly = true)]
 					public static event EventHandler StaticEvent;
