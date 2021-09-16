@@ -57,8 +57,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 					case "ExpectedWarning":
 					case "LogContains":
 					case "LogDoesNotContain":
-						return attr.Ancestors ().OfType<MemberDeclarationSyntax> ().First ().IsKind (SyntaxKind.MethodDeclaration);
-
 					case "UnrecognizedReflectionAccessPattern":
 						return true;
 					}
@@ -71,8 +69,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static void RunTest<TAnalyzer> (MemberDeclarationSyntax m, List<AttributeSyntax> attrs, params (string, string)[] MSBuildProperties)
 			where TAnalyzer : DiagnosticAnalyzer, new()
 		{
+			var testSyntaxTree = m.SyntaxTree.GetRoot ().SyntaxTree;
+			var testDependenciesSource = GetTestDependencies (testSyntaxTree)
+				.Select (testDependency => CSharpSyntaxTree.ParseText (File.ReadAllText (testDependency)));
+
 			var test = new TestChecker (m, CSharpAnalyzerVerifier<TAnalyzer>
-				.CreateCompilation (m.SyntaxTree.GetRoot ().SyntaxTree, MSBuildProperties).Result);
+				.CreateCompilation (testSyntaxTree, MSBuildProperties, additionalSources: testDependenciesSource).Result);
+
 			test.ValidateAttributes (attrs);
 		}
 
@@ -171,7 +174,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static IEnumerable<string> GetTestFiles ()
 		{
 			GetDirectoryPaths (out var rootSourceDir, out _);
-
 			foreach (var subDir in Directory.EnumerateDirectories (rootSourceDir, "*", SearchOption.AllDirectories)) {
 				var subDirName = Path.GetFileName (subDir);
 				switch (subDirName) {
@@ -199,6 +201,22 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return Directory.GetParent (ThisFile ())!.Parent!.Parent!.FullName;
 
 			string ThisFile ([CallerFilePath] string path = "") => path;
+		}
+
+		public static IEnumerable<string> GetTestDependencies (SyntaxTree testSyntaxTree)
+		{
+			GetDirectoryPaths (out var rootSourceDir, out _);
+			foreach (var attribute in testSyntaxTree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
+				if (attribute.Name.ToString () != "SetupCompileBefore")
+					continue;
+
+				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().Single ().Name.ToString ();
+				var testSuiteName = testNamespace.Substring (testNamespace.LastIndexOf ('.') + 1);
+				var args = GetAttributeArguments (attribute);
+				string outputName = GetStringFromExpression (args["#0"]);
+				foreach (var sourceFile in ((ImplicitArrayCreationExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
+					yield return Path.Combine (rootSourceDir, testSuiteName, GetStringFromExpression (sourceFile));
+			}
 		}
 	}
 }

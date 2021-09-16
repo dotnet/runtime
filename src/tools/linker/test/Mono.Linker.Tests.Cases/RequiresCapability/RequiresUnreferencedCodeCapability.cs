@@ -38,10 +38,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	public class RequiresUnreferencedCodeCapability
 	{
-		[ExpectedWarning ("IL2026", "--IDerivedInterface.MethodInDerivedInterface--", GlobalAnalysisOnly = true)]
-		[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequiresUnreferencedCode.RequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
-		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
-		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--", GlobalAnalysisOnly = true)]
+		[ExpectedWarning ("IL2026", "--IDerivedInterface.MethodInDerivedInterface--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequiresUnreferencedCode.RequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--", ProducedBy = ProducedBy.Trimmer)]
 		public static void Main ()
 		{
 			TestRequiresWithMessageOnlyOnMethod ();
@@ -256,7 +256,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		// The second attribute is added through link attribute XML
 		[RequiresUnreferencedCode ("Message for --MethodWithDuplicateRequiresAttribute--")]
-		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute), GlobalAnalysisOnly = true)]
+		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute), ProducedBy = ProducedBy.Trimmer)]
 		static void MethodWithDuplicateRequiresAttribute ()
 		{
 		}
@@ -266,7 +266,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeOnlyThroughReflection--", GlobalAnalysisOnly = true)]
+		[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeOnlyThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
 		static void TestRequiresUnreferencedCodeOnlyThroughReflection ()
 		{
 			typeof (RequiresUnreferencedCodeCapability)
@@ -281,7 +281,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			[ExpectedWarning ("IL2026", "--GenericType.RequiresUnreferencedCodeOnlyThroughReflection--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--GenericType.RequiresUnreferencedCodeOnlyThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
 			public static void Test ()
 			{
 				typeof (AccessedThroughReflectionOnGenericType<T>)
@@ -352,7 +352,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class StaticCtor
 		{
-			[ExpectedWarning ("IL2116", "StaticCtor..cctor()")]
+			[ExpectedWarning ("IL2116", "StaticCtor..cctor()", ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Message for --TestStaticCtor--")]
 			static StaticCtor ()
 			{
@@ -366,7 +366,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class StaticCtorTriggeredByFieldAccess
 		{
-			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByFieldAccess..cctor()")]
+			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByFieldAccess..cctor()", ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Message for --StaticCtorTriggeredByFieldAccess.Cctor--")]
 			static StaticCtorTriggeredByFieldAccess ()
 			{
@@ -383,7 +383,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		struct StaticCCtorForFieldAccess
 		{
-			[ExpectedWarning ("IL2116", "StaticCCtorForFieldAccess..cctor()")]
+			[ExpectedWarning ("IL2116", "StaticCCtorForFieldAccess..cctor()", ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Message for --StaticCCtorForFieldAccess.cctor--")]
 			static StaticCCtorForFieldAccess () { }
 
@@ -414,7 +414,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class StaticCtorTriggeredByMethodCall
 		{
-			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByMethodCall..cctor()")]
+			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
 			static StaticCtorTriggeredByMethodCall ()
 			{
@@ -497,14 +497,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		// Doesn't work in the analyzer because the test infra for analyzer will not build the second assembly
 		// and provide it as a ref assembly to the compilation - so the analyzer actually sees the below
 		// as errors (missing assembly).
-		[ExpectedWarning ("IL2026", "--Method--", GlobalAnalysisOnly = true)]
+		[ExpectedWarning ("IL2026", "--Method--", ProducedBy = ProducedBy.Trimmer)]
 		static void TestRequiresInMethodFromCopiedAssembly ()
 		{
 			var tmp = new RequiresUnreferencedCodeInCopyAssembly ();
 			tmp.Method ();
 		}
 
-		[ExpectedWarning ("IL2026", "--MethodCalledThroughReflection--", GlobalAnalysisOnly = true)]
+		[ExpectedWarning ("IL2026", "--MethodCalledThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
 		static void TestRequiresThroughReflectionInMethodFromCopiedAssembly ()
 		{
 			typeof (RequiresUnreferencedCodeInCopyAssembly)
@@ -555,7 +555,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			class ClassWithRequiresUnreferencedCodeOnStaticConstructor
 			{
-				[ExpectedWarning ("IL2116")]
+				[ExpectedWarning ("IL2116", ProducedBy = ProducedBy.Trimmer)]
 				[RequiresUnreferencedCode ("This attribute shouldn't be allowed")]
 				static ClassWithRequiresUnreferencedCodeOnStaticConstructor () { }
 			}
@@ -597,8 +597,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void TestMethod () { }
 			}
 
-			// https://github.com/dotnet/linker/issues/2094 - should be supported by the analyzer
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
 			static void GenericMethodWithAttributedParameter<[AttributeWhichRequiresUnreferencedCode] T> () { }
 
 			static void TestRequiresOnAttributeOnGenericParameter ()
@@ -607,8 +606,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				GenericMethodWithAttributedParameter<int> ();
 			}
 
-			// https://github.com/dotnet/linker/issues/2094 - should be supported by the analyzer
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
 			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
 			[AttributeWhichRequiresUnreferencedCode]
 			[AttributeWhichRequiresUnreferencedCodeOnProperty (PropertyWhichRequires = true)]
@@ -616,8 +614,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			// https://github.com/dotnet/linker/issues/2094 - should be supported by the analyzer
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
 			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
 			[AttributeWhichRequiresUnreferencedCode]
 			[AttributeWhichRequiresUnreferencedCodeOnProperty (PropertyWhichRequires = true)]
@@ -734,13 +731,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public PInvokeReturnType () { }
 			}
 
-			// https://github.com/dotnet/linker/issues/2116
-			[ExpectedWarning ("IL2026", "--PInvokeReturnType.ctor--", GlobalAnalysisOnly = true)]
+			// https://github.com/mono/linker/issues/2116
+			[ExpectedWarning ("IL2026", "--PInvokeReturnType.ctor--", ProducedBy = ProducedBy.Trimmer)]
 			[DllImport ("nonexistent")]
 			static extern PInvokeReturnType PInvokeReturnsType ();
 
 			// Analyzer doesn't support IL2050 yet
-			[ExpectedWarning ("IL2050", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2050", ProducedBy = ProducedBy.Trimmer)]
 			public static void Test ()
 			{
 				PInvokeReturnsType ();
@@ -877,7 +874,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void MethodWithRUC () { }
 			}
 
-			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires", "RequiresOnClass.ClassWithRequiresUnreferencedCode", "--ClassWithRequiresUnreferencedCode--")]
+			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires", "RequiresOnClass.ClassWithRequiresUnreferencedCode", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
 			private class DerivedWithoutRequires : ClassWithRequiresUnreferencedCode
 			{
 				public static void StaticMethodInInheritedClass () { }
@@ -929,7 +926,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestStaticCctorRequiresUnreferencedCode ()
 			{
 				_ = new StaticCtor ();
@@ -946,13 +943,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestStaticCtorMarkingIsTriggeredByFieldAccessWrite ()
 			{
 				StaticCtorTriggeredByFieldAccess.field = 1;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestStaticCtorMarkingTriggeredOnSecondAccessWrite ()
 			{
 				StaticCtorTriggeredByFieldAccess.field = 2;
@@ -976,7 +973,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field = 42;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestStaticCtorMarkingIsTriggeredByFieldAccessRead ()
 			{
 				var _ = StaticCCtorTriggeredByFieldAccessRead.field;
@@ -994,7 +991,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()", ProducedBy = ProducedBy.Trimmer)]
 			static void TestStaticCtorTriggeredByCtorCall ()
 			{
 				new StaticCtorTriggeredByCtorCalls ();
@@ -1006,7 +1003,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public int field = 42;
 			}
 
-			[ExpectedWarning ("IL2026", "ClassWithInstanceField.ClassWithInstanceField()", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "ClassWithInstanceField.ClassWithInstanceField()", ProducedBy = ProducedBy.Trimmer)]
 			static void TestInstanceFieldCallDontWarn ()
 			{
 				ClassWithInstanceField instance = new ClassWithInstanceField ();
@@ -1049,7 +1046,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				// A nested class is not considered a static method nor constructor therefore RequiresUnreferencedCode doesnt apply
 				// and this warning is not suppressed
-				[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithRequires2/DerivedNestedClass", "--ClassWithRequiresUnreferencedCode--")]
+				[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithRequires2/DerivedNestedClass", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
 				public class DerivedNestedClass : ClassWithRequiresUnreferencedCode
 				{
 					public static void NestedStaticMethod () { }
@@ -1106,13 +1103,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestRequiresInClassAccessedByStaticMethod ()
 			{
 				ClassWithRequiresUnreferencedCode.StaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestRequiresInClassAccessedByCctor ()
 			{
 				var classObject = new ClassWithRequiresUnreferencedCode ();
@@ -1123,10 +1120,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				ClassWithRequiresUnreferencedCode.NestedClass.NestedStaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
 			// Although we suppress the warning from RequiresOnMethod.MethodWithRUC () we still get a warning because we call CallRUCMethod() which is an static method on a type with RUC
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.CallRUCMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "ClassWithRequiresUnreferencedCode.Instance", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.CallRUCMethod()", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "ClassWithRequiresUnreferencedCode.Instance", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestRequiresOnBaseButNotOnDerived ()
 			{
 				DerivedWithoutRequires.StaticMethodInInheritedClass ();
@@ -1140,7 +1137,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				DerivedWithoutRequires2.StaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestRequiresOnDerivedButNotOnBase ()
 			{
 				DerivedWithRequires.StaticMethodInInheritedClass ();
@@ -1149,8 +1146,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				DerivedWithRequires.NestedClass.NestedStaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
 			static void TestRequiresOnBaseAndDerived ()
 			{
 				DerivedWithRequires2.StaticMethodInInheritedClass ();
@@ -1159,7 +1156,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				DerivedWithRequires2.NestedClass.NestedStaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.TestSuppressions(Type[])", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.TestSuppressions(Type[])", ProducedBy = ProducedBy.Trimmer)]
 			static void TestSuppressionsOnClass ()
 			{
 				ClassWithRequiresUnreferencedCode.TestSuppressions (new[] { typeof (ClassWithRequiresUnreferencedCode) });
@@ -1196,15 +1193,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field;
 				public static int Property { get; set; }
 
-				// These should not be reported https://github.com/dotnet/linker/issues/2218
-				[ExpectedWarning ("IL2026", "add_Event", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "remove_Event", GlobalAnalysisOnly = true)]
+				// These should not be reported https://github.com/mono/linker/issues/2218
+				[ExpectedWarning ("IL2026", "add_Event", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "remove_Event", ProducedBy = ProducedBy.Trimmer)]
 				public static event EventHandler Event;
 			}
 
-			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.field", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.Property.set", GlobalAnalysisOnly = true)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.remove_Event", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.field", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.Property.set", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.remove_Event", ProducedBy = ProducedBy.Trimmer)]
 			static void TestOtherMemberTypesWithRUC ()
 			{
 				MemberTypesWithRUC.field = 1;
@@ -1215,10 +1212,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			class ReflectionAccessOnMethod
 			{
 				// Analyzer still dont understand RUC on type
-				[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
 				{
 					// Warns because BaseWithoutRequiresOnType.Method as RUC on the method
@@ -1240,10 +1237,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					typeof (DerivedWithoutRequiresOnType).RequiresPublicMethods ();
 				}
 
-				[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
 					// RUC on the method itself
@@ -1274,10 +1271,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					public BaseWithRUC () { }
 				}
 
-				[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor/DerivedWithoutRUC", "ReflectionAccessOnCtor.BaseWithRUC", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor/DerivedWithoutRUC", "ReflectionAccessOnCtor.BaseWithRUC", ProducedBy = ProducedBy.Trimmer)]
 				class DerivedWithoutRUC : BaseWithRUC
 				{
-					[ExpectedWarning ("IL2026", "--BaseWithRUC--")] // The body has direct call to the base.ctor()
+					[ExpectedWarning ("IL2026", "--BaseWithRUC--", ProducedBy = ProducedBy.Trimmer)] // The body has direct call to the base.ctor()
 					public DerivedWithoutRUC () { }
 				}
 
@@ -1296,9 +1293,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					public DerivedWithRUCOnBaseWithoutRuc () { }
 				}
 
-				[ExpectedWarning ("IL2026", "BaseWithRUC.BaseWithRUC()", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithRUC.DerivedWithRUCOnBaseWithRUC()", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithoutRuc.DerivedWithRUCOnBaseWithoutRuc()", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "BaseWithRUC.BaseWithRUC()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithRUC.DerivedWithRUCOnBaseWithRUC()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithoutRuc.DerivedWithRUCOnBaseWithoutRuc()", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
 				{
 					// Warns because the type has RUC
@@ -1314,9 +1311,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					typeof (DerivedWithRUCOnBaseWithoutRuc).RequiresPublicConstructors ();
 				}
 
-				[ExpectedWarning ("IL2026", "BaseWithRUC.BaseWithRUC()", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithRUC.DerivedWithRUCOnBaseWithRUC()", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithoutRuc.DerivedWithRUCOnBaseWithoutRuc()", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "BaseWithRUC.BaseWithRUC()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithRUC.DerivedWithRUCOnBaseWithRUC()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithoutRuc.DerivedWithRUCOnBaseWithoutRuc()", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
 					typeof (BaseWithRUC).GetConstructor (Type.EmptyTypes);
@@ -1348,7 +1345,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					public int InstnaceField;
 				}
 
-				[ExpectedWarning ("IL2109", "ReflectionAccessOnField/DerivedWithoutRUC", "ReflectionAccessOnField.WithRUC", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnField/DerivedWithoutRUC", "ReflectionAccessOnField.WithRUC", ProducedBy = ProducedBy.Trimmer)]
 				class DerivedWithoutRUC : WithRUC
 				{
 					public static int DerivedStaticField;
@@ -1360,9 +1357,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					public static int DerivedStaticField;
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticField", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticField", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
 				{
 					typeof (WithRUC).RequiresPublicFields ();
@@ -1372,9 +1369,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					typeof (DerivedWithRUC).RequiresPublicFields ();
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticField", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticField", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
 					typeof (WithRUC).GetField (nameof (WithRUC.StaticField));
@@ -1385,11 +1382,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					typeof (DerivedWithRUC).GetField (nameof (DerivedWithRUC.DerivedStaticField));
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticField", ProducedBy = ProducedBy.Trimmer)]
 				[DynamicDependency (nameof (WithRUC.StaticField), typeof (WithRUC))]
 				[DynamicDependency (nameof (WithRUC.InstanceField), typeof (WithRUC))] // Doesn't warn
 				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithoutRUC))] // Doesn't warn
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
 				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithRUC))]
 				static void TestDynamicDependencyAccess ()
 				{
@@ -1403,13 +1400,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 				[RequiresUnreferencedCode ("This class is dangerous")]
-				[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField", ProducedBy = ProducedBy.Trimmer)]
 				class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 				{
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField", GlobalAnalysisOnly = true)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField", ProducedBy = ProducedBy.Trimmer)]
 					public static int publicField;
 
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield", GlobalAnalysisOnly = true)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield", ProducedBy = ProducedBy.Trimmer)]
 					static int privatefield;
 				}
 
@@ -1436,13 +1433,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				class WithRUC
 				{
 					// These should be reported only in TestDirectReflectionAccess
-					// https://github.com/dotnet/linker/issues/2218
-					[ExpectedWarning ("IL2026", "add_StaticEvent", GlobalAnalysisOnly = true)]
-					[ExpectedWarning ("IL2026", "remove_StaticEvent", GlobalAnalysisOnly = true)]
+					// https://github.com/mono/linker/issues/2218
+					[ExpectedWarning ("IL2026", "add_StaticEvent", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2026", "remove_StaticEvent", ProducedBy = ProducedBy.Trimmer)]
 					public static event EventHandler StaticEvent;
 				}
 
-				[ExpectedWarning ("IL2026", "add_StaticEvent", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "add_StaticEvent", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
 					typeof (WithRUC).GetEvent (nameof (WithRUC.StaticEvent));
@@ -1470,7 +1467,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					public int InstnaceProperty { get; set; }
 				}
 
-				[ExpectedWarning ("IL2109", "ReflectionAccessOnProperties/DerivedWithoutRUC", "ReflectionAccessOnProperties.WithRUC", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnProperties/DerivedWithoutRUC", "ReflectionAccessOnProperties.WithRUC", ProducedBy = ProducedBy.Trimmer)]
 				class DerivedWithoutRUC : WithRUC
 				{
 					public static int DerivedStaticProperty { get; set; }
@@ -1482,12 +1479,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					public static int DerivedStaticProperty { get; set; }
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.set", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
 				{
 					typeof (WithRUC).RequiresPublicProperties ();
@@ -1497,12 +1494,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					typeof (DerivedWithRUC).RequiresPublicProperties ();
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.set", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
 					typeof (WithRUC).GetProperty (nameof (WithRUC.StaticProperty));
@@ -1513,13 +1510,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					typeof (DerivedWithRUC).GetProperty (nameof (DerivedWithRUC.DerivedStaticProperty));
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				[DynamicDependency (nameof (WithRUC.StaticProperty), typeof (WithRUC))]
 				[DynamicDependency (nameof (WithRUC.InstanceProperty), typeof (WithRUC))] // Doesn't warn
 				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithoutRUC))] // Doesn't warn
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithRUC))]
 				static void TestDynamicDependencyAccess ()
 				{
@@ -1533,21 +1530,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 				[RequiresUnreferencedCode ("This class is dangerous")]
-				[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get", GlobalAnalysisOnly = true)]
-				[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set", GlobalAnalysisOnly = true)]
+				[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 				{
 					public static int publicProperty {
-						[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.get", GlobalAnalysisOnly = true)]
+						[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.get", ProducedBy = ProducedBy.Trimmer)]
 						get;
-						[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.set", GlobalAnalysisOnly = true)]
+						[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.set", ProducedBy = ProducedBy.Trimmer)]
 						set;
 					}
 
 					static int privateProperty {
-						[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.get", GlobalAnalysisOnly = true)]
+						[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.get", ProducedBy = ProducedBy.Trimmer)]
 						get;
-						[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.set", GlobalAnalysisOnly = true)]
+						[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.set", ProducedBy = ProducedBy.Trimmer)]
 						set;
 					}
 				}
@@ -1581,7 +1578,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[AttributeWithRUC (PropertyOnAttribute = 42)]
-			[ExpectedWarning ("IL2026", "AttributeWithRUC.AttributeWithRUC()", GlobalAnalysisOnly = true)]
+			[ExpectedWarning ("IL2026", "AttributeWithRUC.AttributeWithRUC()", ProducedBy = ProducedBy.Trimmer)]
 			static void KeepFieldOnAttribute () { }
 
 			public static void Test ()
