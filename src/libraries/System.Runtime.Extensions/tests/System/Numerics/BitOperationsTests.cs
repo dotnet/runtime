@@ -883,7 +883,7 @@ namespace System.Numerics.Tests
         [InlineData(0x8000_0000_0000_0000ul, 0x8000_0000_0000_0000ul)]
         [InlineData(0x8000_0000_0000_0001ul, 0ul)]
         [InlineData(0xFFFF_FFFF_FFFF_FFFFul, 0ul)]
-        public static void BitOps_RoundUpToPow2_nuint_64(ulong value, uint expected)
+        public static void BitOps_RoundUpToPow2_nuint_64(ulong value, ulong expected)
         {
             Assert.Equal(expected, BitOperations.RoundUpToPowerOf2((nuint) value));
         }
