@@ -329,8 +329,12 @@ CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
 CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
 #endif // defined(TARGET_ARM64)
 
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 CONFIG_INTEGER(EnableFltToIntX86Compat, W("EnableFltToIntX86Compat"), 1) // I'm using 1 here to test it on CI
-
+#else
+CONFIG_INTEGER(EnableFltToIntX86Compat, W("EnableFltToIntX86Compat"), 0)
+#endif
+    
 #if defined(CONFIGURABLE_ARM_ABI)
 CONFIG_INTEGER(JitSoftFP, W("JitSoftFP"), 0)
 #endif // defined(CONFIGURABLE_ARM_ABI)
