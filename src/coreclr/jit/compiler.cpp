@@ -62,13 +62,6 @@ bool GlobalJitOptions::compFeatureHfa          = false;
 LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
 #endif // CONFIGURABLE_ARM_ABI
 
-#ifdef TARGET_OS_RUNTIMEDETERMINED
-bool TargetOS::OSSettingConfigured = false;
-bool TargetOS::IsWindows           = false;
-bool TargetOS::IsUnix              = false;
-bool TargetOS::IsMacOS             = false;
-#endif
-
 /*****************************************************************************
  *
  *  Little helpers to grab the current cycle counter value; this is done
@@ -5523,14 +5516,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
 
 #ifdef TARGET_OS_RUNTIMEDETERMINED
-    if (!TargetOS::OSSettingConfigured)
-    {
-        CORINFO_EE_INFO* eeInfo       = eeGetEEInfo();
-        TargetOS::IsMacOS             = eeInfo->osType == CORINFO_MACOS;
-        TargetOS::IsUnix              = (eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS);
-        TargetOS::IsWindows           = eeInfo->osType == CORINFO_WINNT;
-        TargetOS::OSSettingConfigured = true;
-    }
+    noway_assert(TargetOS::OSSettingConfigured);
 #endif
 
     if (TargetOS::IsMacOS)

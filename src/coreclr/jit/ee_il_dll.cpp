@@ -300,6 +300,23 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
     memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
 }
 
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+bool TargetOS::OSSettingConfigured = false;
+bool TargetOS::IsWindows           = false;
+bool TargetOS::IsUnix              = false;
+bool TargetOS::IsMacOS             = false;
+#endif
+
+void CILJit::setJitOs(CORINFO_OS os)
+{
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+    TargetOS::IsMacOS             = os == CORINFO_MACOS;
+    TargetOS::IsUnix              = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsWindows           = os == CORINFO_WINNT;
+    TargetOS::OSSettingConfigured = true;
+#endif
+}
+
 /*****************************************************************************
  * Determine the maximum length of SIMD vector supported by this JIT.
  */

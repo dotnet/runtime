@@ -47,4 +47,6 @@ void getVersionIdentifier(GUID* versionIdentifier /* OUT */
 // intrinsics, so the EE should use the default size (i.e. the size of the IL implementation).
 unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags); /* { return 0; } */
 
+// Used to specify which OS a JIT should be compiled for. Currently expected to only be called once pre process
+void setJitOs(CORINFO_OS os);
 #endif

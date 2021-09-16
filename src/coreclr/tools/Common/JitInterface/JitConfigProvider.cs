@@ -62,7 +62,7 @@ namespace Internal.JitInterface
                 return libHandle;
             });
 
-            CorInfoImpl.Startup();
+            CorInfoImpl.Startup(CorInfoImpl.TargetToOs(target));
         }
 
         public IntPtr UnmanagedInstance

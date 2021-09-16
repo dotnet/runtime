@@ -18,6 +18,8 @@ class CILJit : public ICorJitCompiler
                               );
 
     unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags);
+
+    void setJitOs(CORINFO_OS os);
 };
 
 /*****************************************************************************

@@ -60,7 +60,8 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             // Obtain the IL code size for this method
             CORINFO_METHOD_INFO info;
             unsigned            flags = 0;
-            mc->repCompileMethod(&info, &flags);
+            CORINFO_OS          os    = CORINFO_WINNT;
+            mc->repCompileMethod(&info, &flags, &os);
 
             charCount += sprintf_s(rowData + charCount, _countof(rowData) - charCount, "%d,", info.ILCodeSize);
         }
