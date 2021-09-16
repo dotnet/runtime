@@ -6,18 +6,16 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Internal
 {
-    internal static class FileStreamReadLightUp
+    internal static partial class StreamExtensions
     {
-        private static bool IsReadFileAvailable => Path.DirectorySeparatorChar == '\\';
+        private static bool IsWindows => Path.DirectorySeparatorChar == '\\';
 
-        internal static bool IsFileStream(Stream stream) => stream is FileStream;
-
-        private static SafeHandle? GetSafeFileHandle(Stream stream)
+        private static SafeHandle? GetSafeFileHandle(FileStream stream)
         {
             SafeHandle handle;
             try
             {
-                handle = ((FileStream)stream).SafeFileHandle;
+                handle = stream.SafeFileHandle;
             }
             catch
             {
@@ -36,14 +34,14 @@ namespace System.Reflection.Internal
             return handle;
         }
 
-        internal static unsafe int ReadFile(Stream stream, byte* buffer, int size)
+        internal static unsafe int Read(this Stream stream, byte* buffer, int size)
         {
-            if (!IsReadFileAvailable)
+            if (!IsWindows || stream is not FileStream fs)
             {
                 return 0;
             }
 
-            SafeHandle? handle = GetSafeFileHandle(stream);
+            SafeHandle? handle = GetSafeFileHandle(fs);
             if (handle == null)
             {
                 return 0;

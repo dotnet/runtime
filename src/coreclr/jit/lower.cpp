@@ -3323,9 +3323,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 // Do not expect `initblock` for SIMD* types,
                 // only 'initobj'.
                 assert(retVal->AsIntCon()->IconValue() == 0);
-                retVal->ChangeOperConst(GT_CNS_DBL);
-                retVal->ChangeType(TYP_FLOAT);
-                retVal->AsDblCon()->gtDconVal = 0;
+                retVal->BashToConst(0.0, TYP_FLOAT);
             }
             break;
 
@@ -3556,7 +3554,9 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
 #ifdef FEATURE_SIMD
             case GT_STORE_LCL_FLD:
-                assert(varTypeIsSIMD(user) && (returnType == user->TypeGet()));
+                // If the call type was ever updated (in importer) to TYP_SIMD*, it should match the user type.
+                // If not, the user type should match the struct's returnType.
+                assert((varTypeIsSIMD(user) && user->TypeIs(origType)) || (returnType == user->TypeGet()));
                 break;
 #endif // FEATURE_SIMD
 

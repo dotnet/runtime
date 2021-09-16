@@ -671,13 +671,13 @@ GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
     assert(use.Def()->OperGet() == GT_CNS_LNG);
 
     GenTree* tree  = use.Def();
+    INT32    loVal = tree->AsLngCon()->LoVal();
     INT32    hiVal = tree->AsLngCon()->HiVal();
 
     GenTree* loResult = tree;
-    loResult->ChangeOperConst(GT_CNS_INT);
-    loResult->gtType = TYP_INT;
+    loResult->BashToConst(loVal);
 
-    GenTree* hiResult = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_INT, hiVal);
+    GenTree* hiResult = m_compiler->gtNewIconNode(hiVal);
     Range().InsertAfter(loResult, hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);

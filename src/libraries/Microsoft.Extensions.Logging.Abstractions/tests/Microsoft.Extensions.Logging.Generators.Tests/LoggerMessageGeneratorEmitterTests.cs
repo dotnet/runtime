@@ -147,6 +147,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             await VerifyAgainstBaselineUsingFile("TestWithNestedClass.generated.txt", testSourceCode);
         }
 
+#if ROSLYN4_0_OR_GREATER
         [Fact]
         public async Task TestBaseline_TestWithFileScopedNamespace_Success()
         {
@@ -160,6 +161,7 @@ internal static partial class TestWithDefaultValues
 }";
             await VerifyAgainstBaselineUsingFile("TestWithDefaultValues.generated.txt", testSourceCode);
         }
+#endif
 
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {

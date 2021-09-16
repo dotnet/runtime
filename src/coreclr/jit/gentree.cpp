@@ -14688,9 +14688,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         DISPTREE(tree);
 
                         // Fold into GT_IND of null byref.
-                        tree->ChangeOperConst(GT_CNS_INT);
-                        tree->ChangeType(TYP_BYREF);
-                        tree->AsIntCon()->SetIconValue(0);
+                        tree->BashToConst(0, TYP_BYREF);
                         if (vnStore != nullptr)
                         {
                             fgValueNumberTreeConst(tree);
@@ -14912,12 +14910,10 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             // Also all conditional folding jumps here since the node hanging from
             // GT_JTRUE has to be a GT_CNS_INT - value 0 or 1.
 
-            tree->ChangeOperConst(GT_CNS_INT);
-            tree->ChangeType(TYP_INT);
             // Some operations are performed as 64 bit instead of 32 bit so the upper 32 bits
             // need to be discarded. Since constant values are stored as ssize_t and the node
             // has TYP_INT the result needs to be sign extended rather than zero extended.
-            tree->AsIntCon()->SetIconValue(static_cast<int>(i1));
+            tree->BashToConst(static_cast<int>(i1));
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
             if (vnStore != nullptr)
             {
@@ -15133,8 +15129,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             assert((GenTree::s_gtNodeSizes[GT_CNS_NATIVELONG] == TREE_NODE_SZ_SMALL) ||
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
-            tree->ChangeOperConst(GT_CNS_NATIVELONG);
-            tree->AsIntConCommon()->SetLngValue(lval1);
+            tree->BashToConst(lval1);
             if (vnStore != nullptr)
             {
                 fgValueNumberTreeConst(tree);
@@ -15292,8 +15287,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             assert((GenTree::s_gtNodeSizes[GT_CNS_DBL] == TREE_NODE_SZ_SMALL) ||
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
-            tree->ChangeOperConst(GT_CNS_DBL);
-            tree->AsDblCon()->gtDconVal = d1;
+            tree->BashToConst(d1, tree->TypeGet());
             if (vnStore != nullptr)
             {
                 fgValueNumberTreeConst(tree);

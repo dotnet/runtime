@@ -43,6 +43,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public System.TimeSpan ExpirationScanFrequency { get { throw null; } set { } }
         Microsoft.Extensions.Caching.Memory.MemoryCacheOptions Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>.Value { get { throw null; } }
         public long? SizeLimit { get { throw null; } set { } }
+        public bool TrackLinkedCacheEntries { get { throw null; } set { } }
     }
     public partial class MemoryDistributedCacheOptions : Microsoft.Extensions.Caching.Memory.MemoryCacheOptions
     {
