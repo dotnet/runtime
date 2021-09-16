@@ -22292,7 +22292,8 @@ inline bool is_in_heap_range (uint8_t* o)
 #ifdef FEATURE_BASICFREEZE
     // we may have frozen objects in read only segments
     // outside of the reserved address range of the gc heap
-    assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) || (ro_segment_lookup (o) != nullptr));
+    assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
+        (o == nullptr) || (ro_segment_lookup (o) != nullptr));
     return ((g_gc_lowest_address <= o) && (o < g_gc_highest_address));
 #else //FEATURE_BASICFREEZE
     // without frozen objects, every non-null pointer must be
