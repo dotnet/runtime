@@ -350,6 +350,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+#if ROSLYN4_0_OR_GREATER
         [Fact]
         public async Task FileScopedNamespaceOK()
         {
@@ -367,6 +368,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Empty(diagnostics);
         }
+#endif
 
         [Theory]
         [InlineData("false")]
