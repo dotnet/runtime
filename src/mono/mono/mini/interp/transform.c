@@ -9632,7 +9632,6 @@ retry:
 		dump_interp_code (td->new_code, td->new_code_end);
 	}
 
-
 	/* Check if we use excessive stack space */
 	if (td->max_stack_height > header->max_stack * 3 && header->max_stack > 16)
 		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);
@@ -9698,7 +9697,7 @@ retry:
 	/* debugging aid, it makes `mono_pmip` work. */
 	mono_jit_info_table_add (jinfo);
 #endif
-	
+
 exit:
 	g_free (td->in_offsets);
 	g_free (td->clause_indexes);
