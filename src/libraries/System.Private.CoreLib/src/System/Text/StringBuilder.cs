@@ -2684,6 +2684,7 @@ namespace System.Text
             #region AppendFormatted T
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value)
             {
                 // This method could delegate to AppendFormatted with a null format, but explicitly passing
@@ -2740,6 +2741,7 @@ namespace System.Text
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, string? format)
             {
                 if (_hasCustomFormatter)
@@ -2792,6 +2794,7 @@ namespace System.Text
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, int alignment) =>
                 AppendFormatted(value, alignment, format: null);
 
@@ -2799,6 +2802,7 @@ namespace System.Text
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, int alignment, string? format)
             {
                 if (alignment == 0)
@@ -2924,6 +2928,7 @@ namespace System.Text
             /// <summary>Formats the value using the custom formatter from the provider.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             [MethodImpl(MethodImplOptions.NoInlining)]
             private void AppendCustomFormatter<T>(T value, string? format)
             {

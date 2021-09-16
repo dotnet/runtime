@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <!-- A meta package doesn't have any artifacts per TargetFramework. -->
@@ -24,5 +24,12 @@ System.Composition.CompositionContextExtensions</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Hosting\src\System.Composition.Hosting.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.TypedParts\src\System.Composition.TypedParts.csproj" />
+  </ItemGroup>
+
+  <!-- Create placeholder files in the meta package to make sure that NuGet picks the right asset. -->
+  <ItemGroup>
+    <None Include="$(PlaceholderFile)" PackagePath="lib/netstandard2.0" Pack="true" />
+    <None Include="$(PlaceholderFile)" PackagePath="lib/net461" Pack="true" />
+    <None Include="$(PlaceholderFile)" PackagePath="lib/netcoreapp2.0" Pack="true" />
   </ItemGroup>
 </Project>

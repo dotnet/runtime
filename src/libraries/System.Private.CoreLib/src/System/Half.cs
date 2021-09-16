@@ -19,10 +19,10 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half : IComparable, ISpanFormattable, IComparable<Half>, IEquatable<Half>
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IBinaryFloatingPoint<Half>,
           IMinMaxValue<Half>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
@@ -1058,6 +1058,31 @@ namespace System
         [RequiresPreviewFeatures]
         static Half IFloatingPoint<Half>.Truncate(Half x)
             => (Half)MathF.Truncate((float)x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsFinite(Half x) => IsFinite(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsInfinity(Half x) => IsInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNaN(Half x) => IsNaN(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNegative(Half x) => IsNegative(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNegativeInfinity(Half x) => IsNegativeInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNormal(Half x) => IsNormal(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsPositiveInfinity(Half x) => IsPositiveInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsSubnormal(Half x) => IsSubnormal(x);
+
 
         // static Half IFloatingPoint<Half>.AcosPi(Half x)
         //     => (Half)MathF.AcosPi((float)x);

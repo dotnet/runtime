@@ -238,16 +238,16 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     InitializeSpec(a, pImport, NULL);
 
     // Set the binding context for the AssemblySpec
-    AssemblyBinder* pCurrentBinder = GetBindingContext();
-    AssemblyBinder* pExpectedBinder = pFile->GetBindingContext();
+    AssemblyBinder* pCurrentBinder = GetBinder();
+    AssemblyBinder* pExpectedBinder = pFile->GetBinder();
     if (pCurrentBinder == NULL)
     {
-        // We should aways having the binding context in the PEAssembly. The only exception to this are the following:
+        // We should aways have the binding context in the PEAssembly. The only exception to this are the following:
         //
         // 1) when we are here during EEStartup and loading CoreLib.
         // 2) We are dealing with dynamic assemblies
         _ASSERTE((pExpectedBinder != NULL) || pFile->IsSystem() || pFile->IsDynamic());
-        SetBindingContext(pExpectedBinder);
+        SetBinder(pExpectedBinder);
     }
 }
 
@@ -676,7 +676,7 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFil
     return pDomainAssembly->GetAssembly();
 }
 
-AssemblyBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDomain)
+AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 {
     CONTRACTL
     {
@@ -694,14 +694,14 @@ AssemblyBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
     {
         // Get the PEAssembly associated with the parent's domain assembly
         PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetFile();
-        pParentAssemblyBinder = pParentPEAssembly->GetBindingContext();
+        pParentAssemblyBinder = pParentPEAssembly->GetBinder();
     }
 
-    if (GetPreferFallbackLoadContextBinder())
+    if (GetPreferFallbackBinder())
     {
         // If we have been asked to use the fallback load context binder (currently only supported for AssemblyLoadContext.LoadFromAssemblyName),
         // then pretend we do not have any binder yet available.
-        _ASSERTE(GetFallbackLoadContextBinderForRequestingAssembly() != NULL);
+        _ASSERTE(GetFallbackBinderForRequestingAssembly() != NULL);
         pParentAssemblyBinder = NULL;
     }
 
@@ -719,22 +719,7 @@ AssemblyBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         //
         // For (3), fetch the fallback load context binder reference.
 
-        pParentAssemblyBinder = GetFallbackLoadContextBinderForRequestingAssembly();
-    }
-
-    if (pParentAssemblyBinder != NULL)
-    {
-        DefaultAssemblyBinder *pTPABinder = pDomain->GetTPABinderContext();
-        if (pTPABinder == pParentAssemblyBinder)
-        {
-            // If the parent assembly is a platform (TPA) assembly, then its binding context will always be the TPABinder context. In
-            // such case, we will return the default context for binding to allow the bind to go
-            // via the custom binder context, if it was overridden. If it was not overridden, then we will get the expected
-            // TPABinder context anyways.
-            //
-            // Get the reference to the default binding context (this could be the TPABinder context or custom AssemblyLoadContext)
-            pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetTPABinderContext());
-        }
+        pParentAssemblyBinder = GetFallbackBinderForRequestingAssembly();
     }
 
     if (!pParentAssemblyBinder)
@@ -744,7 +729,7 @@ AssemblyBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetTPABinderContext());
+        pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetDefaultBinder());
     }
 
     return pParentAssemblyBinder;
@@ -1006,22 +991,20 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    // On CoreCLR, we will use the BinderID as the key
-    AssemblyBinder *pBinderContextForLookup = NULL;
-    AppDomain *pSpecDomain = pSpec->GetAppDomain();
+    AssemblyBinder *pBinderForLookup = NULL;
     bool fGetBindingContextFromParent = true;
 
     // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
     // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
     if(!pSpec->IsAssemblySpecForCoreLib())
-        pBinderContextForLookup = pSpec->GetBindingContext();
+        pBinderForLookup = pSpec->GetBinder();
     else
     {
         // For System.Private.Corelib Binding context is either not set or if set then it should be TPA
-        _ASSERTE(pSpec->GetBindingContext() == NULL || pSpec->GetBindingContext() == pSpecDomain->GetTPABinderContext());
+        _ASSERTE(pSpec->GetBinder() == NULL || pSpec->GetBinder()->IsDefault());
     }
 
-    if (pBinderContextForLookup != NULL)
+    if (pBinderForLookup != NULL)
     {
         // We are working with the actual binding context in which the assembly was expected to be loaded.
         // Thus, we don't need to get it from the parent assembly.
@@ -1034,14 +1017,14 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
         // using its AssemblySpec hash.
         if (!pSpec->IsAssemblySpecForCoreLib())
         {
-            pBinderContextForLookup = pSpec->GetBindingContextFromParentAssembly(pSpecDomain);
-            pSpec->SetBindingContext(pBinderContextForLookup);
+            pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+            pSpec->SetBinder(pBinderForLookup);
         }
     }
 
-    if (pBinderContextForLookup)
+    if (pBinderForLookup)
     {
-        key = key ^ (UPTR)pBinderContextForLookup;
+        key = key ^ (UPTR)pBinderForLookup;
     }
 
     AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
@@ -1052,7 +1035,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     {
         if (pEntry == (AssemblyBinding *) INVALIDENTRY)
         {
-            pSpec->SetBindingContext(NULL);
+            pSpec->SetBinder(NULL);
         }
     }
 
@@ -1250,17 +1233,16 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    // On CoreCLR, we will use the BinderID as the key
-    AssemblyBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBindingContext();
+    AssemblyBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBinder();
 
     _ASSERTE(pBinderContextForLookup || pAssembly->GetFile()->IsSystem());
     if (pBinderContextForLookup)
     {
         key = key ^ (UPTR)pBinderContextForLookup;
 
-        if (!pSpec->GetBindingContext())
+        if (!pSpec->GetBinder())
         {
-            pSpec->SetBindingContext(pBinderContextForLookup);
+            pSpec->SetBinder(pBinderContextForLookup);
         }
     }
 
@@ -1332,17 +1314,16 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    // On CoreCLR, we will use the BinderID as the key
-    AssemblyBinder* pBinderContextForLookup = pFile->GetBindingContext();
+    AssemblyBinder* pBinderContextForLookup = pFile->GetBinder();
 
     _ASSERTE(pBinderContextForLookup || pFile->IsSystem());
     if (pBinderContextForLookup)
     {
         key = key ^ (UPTR)pBinderContextForLookup;
 
-        if (!pSpec->GetBindingContext())
+        if (!pSpec->GetBinder())
         {
-            pSpec->SetBindingContext(pBinderContextForLookup);
+            pSpec->SetBinder(pBinderContextForLookup);
         }
     }
 
@@ -1420,14 +1401,14 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         // TODO: Merge this with the failure lookup in the binder
         //
         // Since no entry was found for this assembly in any binding context, save the failure
-        // in the TPABinder context
+        // in the DefaultBinder context
         AssemblyBinder* pBinderToSaveException = NULL;
-        pBinderToSaveException = pSpec->GetBindingContext();
+        pBinderToSaveException = pSpec->GetBinder();
         if (pBinderToSaveException == NULL)
         {
             if (!pSpec->IsAssemblySpecForCoreLib())
             {
-                pBinderToSaveException = pSpec->GetBindingContextFromParentAssembly(pSpec->GetAppDomain());
+                pBinderToSaveException = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
                 key = key ^ (UPTR)pBinderToSaveException;
             }
         }
