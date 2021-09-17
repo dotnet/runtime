@@ -1320,7 +1320,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree*  addr = tree->Addr();
     var_types type = tree->TypeGet();
 
-    assert(!varTypeIsFloating(type));
+    assert(!varTypeIsFloating(type) || (type == data->TypeGet()));
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
