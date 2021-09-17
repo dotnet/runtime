@@ -4223,7 +4223,7 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 		guint32 klass_index = !wide_data ? 0 : get_data_item_wide_index (td, field_class);
 		if (is_load) {
 			if (G_UNLIKELY (wide_data)) {
-				interp_add_ins (td, MINT_LDSFLD_VT_W);
+				interp_add_ins (td, MINT_LDSFLD_W);
 				if (mt == MINT_TYPE_VT) {
 					push_type_vt (td, field_class, size);
 				} else {
@@ -4241,7 +4241,7 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			if (G_LIKELY (!wide_data))
 				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
 			else
-				interp_add_ins (td, MINT_STSFLD_VT_W);
+				interp_add_ins (td, MINT_STSFLD_W);
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 		}

@@ -5418,7 +5418,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LDSFLD_VT_W) {
+		MINT_IN_CASE(MINT_LDSFLD_W) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [READ32 (ip + 2)];
 			INIT_VTABLE (vtable);
 			gpointer addr = frame->imethod->data_items [READ32 (ip + 4)];
@@ -5454,7 +5454,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_STSFLD_VT_W) {
+		MINT_IN_CASE(MINT_STSFLD_W) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [READ32 (ip + 2)];
 			INIT_VTABLE (vtable);
 			gpointer addr = frame->imethod->data_items [READ32 (ip + 4)];
