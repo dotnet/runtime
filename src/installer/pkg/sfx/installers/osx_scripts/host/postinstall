@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
@@ -12,7 +12,7 @@ chmod 755 $INSTALL_DESTINATION/dotnet
 
 if [ -e /etc/dotnet/install_location ]; then
     # clear out any entries for this architecture if they exist
-    sed -i '/^${InstallerTargetArchitecture}=/d' /etc/dotnet/install_location
+    sed -i old '/^${InstallerTargetArchitecture}=/d' /etc/dotnet/install_location
 else
     mkdir -p /etc/dotnet    
 fi
@@ -20,7 +20,7 @@ fi
 echo ${InstallerTargetArchitecture}=$INSTALL_DESTINATION | tee -a /etc/dotnet/install_location
 
 # if we're running on the native architecture
-if [["$(uname -m)" =~ "${UnameMachineRegex}"]]; then
+if [[ "$(uname -m)" =~ "${UnameMachineRegex}" ]]; then
     # Add the installation directory to the system-wide paths
     # But first create the directory if it doesn't exist
     mkdir -p /etc/paths.d
