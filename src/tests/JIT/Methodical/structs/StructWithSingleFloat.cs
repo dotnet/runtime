@@ -20,6 +20,7 @@ public class TestClass
         unchecked
         {
             S2 s2_17 = new S2();
+            s2_17.float_2 = 1.5f;
             p_decimal_0 = s_decimal_3 + 15 + 4;
             return s2_17;
         }
@@ -37,6 +38,6 @@ public class TestClass
     public static int Main(string[] args)
     {
         new TestClass().Method0();
-        return 100;
+        return s_s2_16.float_2 == 1.5f ? 100 : 0;
     }
 }
