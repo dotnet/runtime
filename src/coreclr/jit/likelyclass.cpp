@@ -110,11 +110,11 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 //
 // Arguments:
 //    pLikelyClasses - [OUT] array of likely classes sorted by likelihood (descending)
+//    maxLikelyClasses - limit for likely classes to output
 //    schema - profile schema
 //    countSchemaItems - number of items in the schema
 //    pInstrumentationData - associated data
 //    ilOffset - il offset of the callvirt
-//    pLikelihood - [OUT] likelihood of observing that entry [0...100]
 //
 // Returns:
 //    Estimated number of classes seen at runtime
@@ -128,13 +128,14 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 //   This code can runs without a jit instance present, so JITDUMP and related
 //   cannot be used.
 //
-extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
-                                          ICorJitInfo::PgoInstrumentationSchema* schema,
-                                          UINT32                                 countSchemaItems,
-                                          BYTE*                                  pInstrumentationData,
-                                          int32_t                                ilOffset)
+extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
+                                                    UINT32                                 maxLikelyClasses,
+                                                    ICorJitInfo::PgoInstrumentationSchema* schema,
+                                                    UINT32                                 countSchemaItems,
+                                                    BYTE*                                  pInstrumentationData,
+                                                    int32_t                                ilOffset)
 {
-    ZeroMemory(pLikelyClasses, MAX_LIKELY_CLASSES * sizeof(*pLikelyClasses));
+    ZeroMemory(pLikelyClasses, maxLikelyClasses * sizeof(*pLikelyClasses));
 
     if (schema == nullptr)
     {
@@ -227,16 +228,17 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
 
                 default:
                 {
-                    const int MAX_ALLOCA_SIZE = 16;
+                    const int                  MAX_ALLOCA_SIZE = 16;
                     LikelyClassHistogramEntry* sortedEntries;
                     if (h.countHistogramElements > MAX_ALLOCA_SIZE)
                     {
                         sortedEntries = (LikelyClassHistogramEntry*)malloc(sizeof(LikelyClassHistogramEntry) *
-                            h.countHistogramElements);
+                                                                           h.countHistogramElements);
                     }
                     else
                     {
-                        sortedEntries = (LikelyClassHistogramEntry*)alloca(sizeof(LikelyClassHistogramEntry) * MAX_ALLOCA_SIZE);
+                        sortedEntries =
+                            (LikelyClassHistogramEntry*)alloca(sizeof(LikelyClassHistogramEntry) * MAX_ALLOCA_SIZE);
                     }
 
                     // Since this method can be invoked without a jit instance we can't use any existing allocators
@@ -255,7 +257,7 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
                                      return h1.m_count > h2.m_count;
                                  });
 
-                    const UINT32 numberOfClasses = min(knownHandles, MAX_LIKELY_CLASSES);
+                    const UINT32 numberOfClasses = min(knownHandles, maxLikelyClasses);
 
                     for (size_t hIdx = 0; hIdx < numberOfClasses; hIdx++)
                     {

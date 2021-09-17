@@ -837,7 +837,7 @@ T dspOffset(T o)
 #endif // !defined(DEBUG)
 
 // Keep in sync with CorInfoImpl.cs
-#define MAX_LIKELY_CLASSES 64
+#define MAX_LIKELY_CLASSES 32
 
 struct LikelyClassRecord
 {

@@ -21360,8 +21360,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
 
-        UINT32 numberOfClasses = getLikelyClasses(likelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
-        UINT32 likelihood      = likelyClasses[0].likelihood;
+        UINT32 numberOfClasses =
+            getLikelyClasses(likelyClasses, MAX_LIKELY_CLASSES, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        UINT32 likelihood = likelyClasses[0].likelihood;
 
         CORINFO_CLASS_HANDLE likelyClass = likelyClasses[0].clsHandle;
 
@@ -21950,7 +21951,8 @@ void Compiler::considerGuardedDevirtualization(
     else
 #endif
     {
-        numberOfClasses = getLikelyClasses(likelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        numberOfClasses =
+            getLikelyClasses(likelyClasses, MAX_LIKELY_CLASSES, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
     }
 
     // For now we only use the most popular type
