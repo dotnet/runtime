@@ -1115,14 +1115,14 @@ static guint16
 get_data_item_index (TransformData *td, void *ptr)
 {
 	guint32 index = get_data_item_wide_index (td, ptr);
-	g_assertf (index < (UINT16_MAX - 1), "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
+	g_assertf (index <= G_MAXUINT16, "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
 	return (guint16)index;
 }
 
 static gboolean
 is_data_item_wide_index (guint32 data_item_index)
 {
-	return data_item_index >= (gint32)(UINT16_MAX - 1);
+	return data_item_index > G_MAXUINT16;
 }
 
 static guint16
