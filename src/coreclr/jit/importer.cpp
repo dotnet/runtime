@@ -509,7 +509,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             for (unsigned level = 0; level < chkLevel; level++)
             {
                 assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum, false));
-                assert(!lvaTable[lclNum].lvAddrExposed ||
+                assert(!lvaTable[lclNum].IsAddressExposed() ||
                        (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT) == 0);
             }
         }
@@ -4150,7 +4150,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* ptrToSpan      = impPopStack().val;
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
-                assert(varTypeIsIntegral(index));
+                assert(genActualType(index) == TYP_INT);
                 assert(ptrToSpan->TypeGet() == TYP_BYREF);
 
 #if defined(DEBUG)
@@ -4177,13 +4177,29 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
 
                 // Element access
-                GenTree*             indexIntPtr = impImplicitIorI4Cast(indexClone, TYP_I_IMPL);
-                GenTree*             sizeofNode  = gtNewIconNode(elemSize);
-                GenTree*             mulNode     = gtNewOperNode(GT_MUL, TYP_I_IMPL, indexIntPtr, sizeofNode);
-                CORINFO_FIELD_HANDLE ptrHnd      = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                const unsigned       ptrOffset   = info.compCompHnd->getFieldOffset(ptrHnd);
-                GenTree*             data        = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree*             result      = gtNewOperNode(GT_ADD, TYP_BYREF, data, mulNode);
+                index = indexClone;
+
+#ifdef TARGET_64BIT
+                if (index->OperGet() == GT_CNS_INT)
+                {
+                    index->gtType = TYP_I_IMPL;
+                }
+                else
+                {
+                    index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+                }
+#endif
+
+                if (elemSize != 1)
+                {
+                    GenTree* sizeofNode = gtNewIconNode(elemSize);
+                    index               = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, sizeofNode);
+                }
+
+                CORINFO_FIELD_HANDLE ptrHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
+                GenTree*             data      = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree*             result    = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
@@ -9745,7 +9761,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     {
         assert(varTypeIsSIMD(simdReturnType));
         JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
-                varTypeName(returnType));
+                varTypeName(simdReturnType));
         call->ChangeType(simdReturnType);
     }
 
@@ -12010,7 +12026,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* If the local is aliased or pinned, we need to spill calls and
                    indirections from the stack. */
 
-                if ((lvaTable[lclNum].lvAddrExposed || lvaTable[lclNum].lvHasLdAddrOp || lvaTable[lclNum].lvPinned) &&
+                if ((lvaTable[lclNum].IsAddressExposed() || lvaTable[lclNum].lvHasLdAddrOp ||
+                     lvaTable[lclNum].lvPinned) &&
                     (verCurrentState.esStackDepth > 0))
                 {
                     impSpillSideEffects(false,
@@ -12176,7 +12193,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* The ARGLIST cookie is a hidden 'last' parameter, we have already
                    adjusted the arg count cos this is like fetching the last param */
                 assertImp(0 < numArgs);
-                assert(lvaTable[lvaVarargsHandleArg].lvAddrExposed);
+                assert(lvaTable[lvaVarargsHandleArg].IsAddressExposed());
                 lclNum = lvaVarargsHandleArg;
                 op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
                 op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
@@ -20336,7 +20353,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                 }
             }
 
-            assert(lvaTable[tmpNum].lvAddrExposed == 0);
+            assert(!lvaTable[tmpNum].IsAddressExposed());
             if (argInfo.argHasLdargaOp)
             {
                 lvaTable[tmpNum].lvHasLdAddrOp = 1;
@@ -22195,7 +22212,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         {
             unsigned valueLcl = valueIndex->AsLclVar()->GetLclNum();
             unsigned arrayLcl = array->AsLclVar()->GetLclNum();
-            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->lvAddrExposed)
+            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->IsAddressExposed())
             {
                 JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
                 return true;

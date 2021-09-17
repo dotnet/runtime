@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -81,10 +82,34 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<long>? s_int64Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonArray"/> values.
+        /// </summary>
+        public static JsonConverter<JsonArray> JsonArrayConverter => s_jsonArrayConverter ??= new JsonArrayConverter();
+        private static JsonConverter<JsonArray>? s_jsonArrayConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonElement"/> values.
         /// </summary>
         public static JsonConverter<JsonElement> JsonElementConverter => s_jsonElementConverter ??= new JsonElementConverter();
         private static JsonConverter<JsonElement>? s_jsonElementConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonNode"/> values.
+        /// </summary>
+        public static JsonConverter<JsonNode> JsonNodeConverter => s_jsonNodeConverter ??= new JsonNodeConverter();
+        private static JsonConverter<JsonNode>? s_jsonNodeConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonObject"/> values.
+        /// </summary>
+        public static JsonConverter<JsonObject> JsonObjectConverter => s_jsonObjectConverter ??= new JsonObjectConverter();
+        private static JsonConverter<JsonObject>? s_jsonObjectConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonArray"/> values.
+        /// </summary>
+        public static JsonConverter<JsonValue> JsonValueConverter => s_jsonValueConverter ??= new JsonValueConverter();
+        private static JsonConverter<JsonValue>? s_jsonValueConverter;
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="object"/> values.
@@ -154,7 +179,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.
         /// </summary>
         /// <typeparam name="T">The generic definition for the type.</typeparam>
-        /// <returns></returns>
+        /// <returns>A <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/></returns>
         public static JsonConverter<T> GetUnsupportedTypeConverter<T>()
             => new UnsupportedTypeConverter<T>();
 
@@ -163,7 +188,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <typeparam name="T">The generic definition for the enum type.</typeparam>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use for serialization and deserialization.</param>
-        /// <returns></returns>
+        /// <returns>A <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T"/> values.</returns>
         public static JsonConverter<T> GetEnumConverter<T>(JsonSerializerOptions options) where T : struct, Enum
             => new EnumConverter<T>(EnumConverterOptions.AllowNumbers, options ?? throw new ArgumentNullException(nameof(options)));
 
@@ -172,7 +197,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <typeparam name="T">The generic definition for the underlying nullable type.</typeparam>
         /// <param name="underlyingTypeInfo">Serialization metadata for the underlying nullable type.</param>
-        /// <returns></returns>
+        /// <returns>A <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T?"/> values</returns>
         public static JsonConverter<T?> GetNullableConverter<T>(JsonTypeInfo<T> underlyingTypeInfo) where T : struct
         {
             if (underlyingTypeInfo == null)

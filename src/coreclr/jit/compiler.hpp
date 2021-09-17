@@ -1386,23 +1386,9 @@ inline void GenTree::SetOperResetFlags(genTreeOps oper)
     gtFlags &= GTF_NODE_MASK;
 }
 
-inline void GenTree::ChangeOperConst(genTreeOps oper)
-{
-#ifdef TARGET_64BIT
-    assert(oper != GT_CNS_LNG); // We should never see a GT_CNS_LNG for a 64-bit target!
-#endif
-    assert(OperIsConst(oper)); // use ChangeOper() instead
-    SetOperResetFlags(oper);
-    // Some constant subtypes have additional fields that must be initialized.
-    if (oper == GT_CNS_INT)
-    {
-        AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
-    }
-}
-
 inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
-    assert(!OperIsConst(oper)); // use ChangeOperConst() instead
+    assert(!OperIsConst(oper)); // use BashToConst() instead
 
     GenTreeFlags mask = GTF_COMMON_MASK;
     if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
@@ -1448,6 +1434,94 @@ inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
     }
     SetOperRaw(oper); // Trust the caller and don't use SetOper()
     gtFlags &= mask;
+}
+
+//------------------------------------------------------------------------
+// BashToConst: Bash the node to a constant one.
+//
+// The function will infer the node's new oper from the type: GT_CNS_INT
+// or GT_CNS_LNG for integers and GC types, GT_CNS_DBL for floats/doubles.
+//
+// The type is inferred from "value"'s type ("T") unless an explicit
+// one is provided via the second argument, in which case it is checked
+// for compatibility with "value". So, e. g., "BashToConst(0)" will bash
+// to GT_CNS_INT, type TYP_INT, "BashToConst(0, TYP_REF)" will bash to the
+// canonical "null" node, but "BashToConst(0.0, TYP_INT)" will assert.
+//
+// Arguments:
+//    value - Value which the bashed constant will have
+//    type  - Type the bashed node will have
+//
+template <typename T>
+void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
+{
+    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                          std::is_same<T, long long>::value || std::is_same<T, float>::value ||
+                          std::is_same<T, double>::value));
+    static_assert_no_msg(sizeof(int64_t) == sizeof(long long));
+
+    var_types typeOfValue = TYP_UNDEF;
+    if (std::is_floating_point<T>::value)
+    {
+        assert((type == TYP_UNDEF) || varTypeIsFloating(type));
+        typeOfValue = std::is_same<T, float>::value ? TYP_FLOAT : TYP_DOUBLE;
+    }
+    else
+    {
+        assert((type == TYP_UNDEF) || varTypeIsIntegral(type) || varTypeIsGC(type));
+        typeOfValue = std::is_same<T, int32_t>::value ? TYP_INT : TYP_LONG;
+    }
+
+    if (type == TYP_UNDEF)
+    {
+        type = typeOfValue;
+    }
+
+    genTreeOps oper = GT_NONE;
+    if (varTypeIsFloating(type))
+    {
+        oper = GT_CNS_DBL;
+    }
+    else
+    {
+        oper = (type == TYP_LONG) ? GT_CNS_NATIVELONG : GT_CNS_INT;
+    }
+
+    SetOperResetFlags(oper);
+
+    gtType = type;
+
+    switch (oper)
+    {
+        case GT_CNS_INT:
+#if !defined(TARGET_64BIT)
+            assert(type != TYP_LONG);
+#endif
+            assert(varTypeIsIntegral(type) || varTypeIsGC(type));
+            if (genTypeSize(type) <= genTypeSize(TYP_INT))
+            {
+                assert(FitsIn<int32_t>(value));
+            }
+
+            AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
+            AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            break;
+
+#if !defined(TARGET_64BIT)
+        case GT_CNS_LNG:
+            assert(type == TYP_LONG);
+            AsLngCon()->SetLngValue(static_cast<int64_t>(value));
+            break;
+#endif
+
+        case GT_CNS_DBL:
+            assert(varTypeIsFloating(type));
+            AsDblCon()->gtDconVal = static_cast<double>(value);
+            break;
+
+        default:
+            unreached();
+    }
 }
 
 /*****************************************************************************
@@ -1687,7 +1761,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
     // This will prevent it from being optimized away
     // TODO-CQ: We shouldn't have to go as far as to declare these
     // address-exposed -- DoNotEnregister should suffice?
-    lvaSetVarAddrExposed(lclNum);
+    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 
     // Note the implicit use
     varDsc->lvImplicitlyReferenced = 1;
@@ -2182,10 +2256,10 @@ inline bool Compiler::lvaIsOriginalThisArg(unsigned varNum)
         // copy to a new local, and mark the original as DoNotEnregister, to
         // ensure that it is stack-allocated.  It should not be the case that the original one can be modified -- it
         // should not be written to, or address-exposed.
-        assert(!varDsc->lvHasILStoreOp &&
-               (!varDsc->lvAddrExposed || ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
+        assert(!varDsc->lvHasILStoreOp && (!varDsc->IsAddressExposed() ||
+                                           ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
 #else
-        assert(!varDsc->lvHasILStoreOp && !varDsc->lvAddrExposed);
+        assert(!varDsc->lvHasILStoreOp && !varDsc->IsAddressExposed());
 #endif
     }
 #endif

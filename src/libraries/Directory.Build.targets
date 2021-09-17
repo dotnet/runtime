@@ -260,6 +260,7 @@
           Returns="@(_AnalyzerPackFile)">
     <PropertyGroup>
       <_analyzerPath>analyzers/dotnet</_analyzerPath>
+      <_analyzerPath Condition="'$(AnalyzerRoslynVersion)' != ''">$(_analyzerPath)/roslyn$(AnalyzerRoslynVersion)</_analyzerPath>
       <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
     </PropertyGroup>
     <ItemGroup>

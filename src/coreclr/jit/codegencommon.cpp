@@ -3680,8 +3680,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     // refcnt.  This is in contrast with the non-LSRA case in which all
                     // non-tracked args are assumed live on entry.
                     noway_assert((varDsc->lvRefCnt() == 0) || (varDsc->lvType == TYP_STRUCT) ||
-                                 (varDsc->lvAddrExposed && compiler->info.compIsVarArgs) ||
-                                 (varDsc->lvAddrExposed && compiler->opts.compUseSoftFP));
+                                 (varDsc->IsAddressExposed() && compiler->info.compIsVarArgs) ||
+                                 (varDsc->IsAddressExposed() && compiler->opts.compUseSoftFP));
 #endif // !TARGET_X86
                 }
                 // Mark it as processed and be done with it
@@ -12586,7 +12586,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
     for (unsigned varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->lvAddrExposed)
+        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->IsAddressExposed())
         {
             continue;
         }

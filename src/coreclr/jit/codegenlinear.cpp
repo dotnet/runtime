@@ -51,7 +51,7 @@ void CodeGen::genInitializeRegisterState()
             continue;
         }
 
-        if (varDsc->lvAddrExposed)
+        if (varDsc->IsAddressExposed())
         {
             continue;
         }

@@ -40,7 +40,8 @@
     <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
   </ItemGroup>
   <PropertyGroup>
-    <!-- For source generator support we are targeting the latest version of Roslyn for now, until we can support multi-targeting -->
+    <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>3.11.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.0.0-3.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
     <MicrosoftCodeAnalysisVersion>4.0.0-3.final</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>
@@ -48,24 +49,24 @@
     <!-- Code analysis dependencies -->
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>3.10.0</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.21452.7</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.21464.20</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- SDK dependencies -->
-    <MicrosoftDotNetCompatibilityVersion>1.0.0-rc.1.21455.4</MicrosoftDotNetCompatibilityVersion>
+    <MicrosoftDotNetCompatibilityVersion>1.0.0-rc.1.21459.41</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatVersion>7.0.0-beta.21457.3</MicrosoftDotNetApiCompatVersion>
-    <MicrosoftDotNetBuildTasksFeedVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>7.0.0-beta.21457.3</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>7.0.0-beta.21457.3</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>7.0.0-beta.21457.3</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>7.0.0-beta.21457.3</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21457.3</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>7.0.0-beta.21457.3</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>7.0.0-beta.21457.3</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>7.0.0-beta.21457.3</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageTestingVersion>7.0.0-beta.21457.3</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetApiCompatVersion>7.0.0-beta.21463.4</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>7.0.0-beta.21463.4</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>7.0.0-beta.21463.4</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>7.0.0-beta.21463.4</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>7.0.0-beta.21463.4</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>7.0.0-beta.21463.4</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21463.4</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>7.0.0-beta.21463.4</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>7.0.0-beta.21463.4</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>7.0.0-beta.21463.4</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>7.0.0-beta.21463.4</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>7.0.0-beta.21463.4</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>7.0.0-beta.21463.4</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetPackageTestingVersion>7.0.0-beta.21463.4</MicrosoftDotNetPackageTestingVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
@@ -108,28 +109,28 @@
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <ServiceModelVersion>4.8.1</ServiceModelVersion>
-    <SystemTextJsonVersion>7.0.0-alpha.1.21456.1</SystemTextJsonVersion>
-    <SystemRuntimeCompilerServicesUnsafeVersion>7.0.0-alpha.1.21456.1</SystemRuntimeCompilerServicesUnsafeVersion>
+    <SystemTextJsonVersion>7.0.0-alpha.1.21463.1</SystemTextJsonVersion>
+    <SystemRuntimeCompilerServicesUnsafeVersion>7.0.0-alpha.1.21463.1</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>7.0.0-alpha.1.21456.1</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.21430.2</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.21430.2</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>7.0.0-beta.21430.2</SystemDrawingCommonTestDataVersion>
-    <SystemIOCompressionTestDataVersion>7.0.0-beta.21430.2</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>7.0.0-beta.21430.2</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>7.0.0-beta.21430.2</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>7.0.0-beta.21430.2</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>7.0.0-beta.21430.2</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>7.0.0-beta.21430.2</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>7.0.0-beta.21430.2</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>7.0.0-beta.21460.3</MicrosoftDotNetCilStripSourcesVersion>
+    <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.21464.1</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.21464.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>7.0.0-beta.21464.1</SystemDrawingCommonTestDataVersion>
+    <SystemIOCompressionTestDataVersion>7.0.0-beta.21464.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>7.0.0-beta.21464.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>7.0.0-beta.21464.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>7.0.0-beta.21464.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>7.0.0-beta.21464.1</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>7.0.0-beta.21464.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>7.0.0-beta.21464.1</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>7.0.0-beta.21464.1</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.21455.2</optimizationwindows_ntx64MIBCRuntimeVersion>
-    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.21455.2</optimizationwindows_ntx86MIBCRuntimeVersion>
-    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.21455.2</optimizationlinuxx64MIBCRuntimeVersion>
-    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.21455.2</optimizationPGOCoreCLRVersion>
+    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.21465.4</optimizationwindows_ntx64MIBCRuntimeVersion>
+    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.21465.4</optimizationwindows_ntx86MIBCRuntimeVersion>
+    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.21465.4</optimizationlinuxx64MIBCRuntimeVersion>
+    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.21465.4</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>16.9.0-beta1.21055.5</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
@@ -153,9 +154,9 @@
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>16.9.0-preview-20201201-01</MicrosoftNETTestSdkVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.21458.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21458.1</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.0.2-alpha.0.21454.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.21465.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21465.1</MicrosoftDotNetXHarnessCLIVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.0.2-alpha.0.21463.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
     <XUnitRunnerVisualStudioVersion>2.4.2</XUnitRunnerVisualStudioVersion>
     <CoverletCollectorVersion>1.3.0</CoverletCollectorVersion>
@@ -163,25 +164,25 @@
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
-    <SdkVersionForWorkloadTesting>6.0.100-rc.2.21425.12</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting>6.0.100-rc.2.21463.12</SdkVersionForWorkloadTesting>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
+    <MicrosoftPrivateIntellisenseVersion>6.0.0-preview-20210916.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>7.0.100-alpha.1.21426.2</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>7.0.100-1.21460.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-alpha.1.21430.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-alpha.1.21463.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
-    <SystemNetMsQuicTransportVersion>6.0.0-preview.7.21426.1</SystemNetMsQuicTransportVersion>
+    <SystemNetMsQuicTransportVersion>6.0.0-preview.7.21458.1</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21430.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21430.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21430.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21430.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21430.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21430.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21430.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21430.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21463.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21463.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21463.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21463.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21463.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21463.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21463.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21463.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
     <MicrosoftNETWorkloadEmscriptenManifest60100Version>6.0.0-rc.1.21416.1</MicrosoftNETWorkloadEmscriptenManifest60100Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest60100Version)</MicrosoftNETRuntimeEmscriptenVersion>
