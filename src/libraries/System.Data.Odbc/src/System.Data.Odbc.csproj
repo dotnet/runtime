@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1-FreeBSD;netcoreapp3.1-Linux;netcoreapp3.1-OSX;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-FreeBSD;$(NetCoreAppMinimum)-Linux;$(NetCoreAppMinimum)-OSX;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA2249;CA1838</NoWarn>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
@@ -20,10 +20,9 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <!-- https://github.com/dotnet/arcade/issues/5717 -->
-    <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(NoWarn);SA1121</NoWarn>
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(NoWarn);SA1121</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- TODO: Follow-up on nullability errors on netcoreapp3.1-* -->
-    <NoWarn Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))">$(NoWarn);CS8600;CS8601;CS8602;CS8604</NoWarn>  </PropertyGroup>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" >
     <Compile Include="System\Data\Odbc\ODBC32.Common.cs"/>
   </ItemGroup>

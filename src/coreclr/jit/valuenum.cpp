@@ -479,6 +479,29 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     {
         m_mapSelectBudget = DEFAULT_MAP_SELECT_BUDGET;
     }
+
+#ifdef DEBUG
+    if (comp->compStressCompile(Compiler::STRESS_VN_BUDGET, 50))
+    {
+        // Bias toward smaller budgets as we want to stress returning
+        // unexpectedly opaque results.
+        //
+        CLRRandom* random = comp->m_inlineStrategy->GetRandom(comp->info.compMethodHash());
+        double     p      = random->NextDouble();
+
+        if (p <= 0.5)
+        {
+            m_mapSelectBudget = random->Next(0, 5);
+        }
+        else
+        {
+            int limit         = random->Next(1, DEFAULT_MAP_SELECT_BUDGET + 1);
+            m_mapSelectBudget = random->Next(0, limit);
+        }
+
+        JITDUMP("VN Stress: setting select budget to %u\n", m_mapSelectBudget);
+    }
+#endif
 }
 
 //
@@ -9825,25 +9848,25 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_Dbl2Int;
             break;
         case CORINFO_HELP_DBL2INT_OVF:
-            vnf = VNF_Dbl2Int;
+            vnf = VNF_Dbl2IntOvf;
             break;
         case CORINFO_HELP_DBL2LNG:
             vnf = VNF_Dbl2Lng;
             break;
         case CORINFO_HELP_DBL2LNG_OVF:
-            vnf = VNF_Dbl2Lng;
+            vnf = VNF_Dbl2LngOvf;
             break;
         case CORINFO_HELP_DBL2UINT:
             vnf = VNF_Dbl2UInt;
             break;
         case CORINFO_HELP_DBL2UINT_OVF:
-            vnf = VNF_Dbl2UInt;
+            vnf = VNF_Dbl2UIntOvf;
             break;
         case CORINFO_HELP_DBL2ULNG:
             vnf = VNF_Dbl2ULng;
             break;
         case CORINFO_HELP_DBL2ULNG_OVF:
-            vnf = VNF_Dbl2ULng;
+            vnf = VNF_Dbl2ULngOvf;
             break;
         case CORINFO_HELP_FLTREM:
             vnf = VNFunc(GT_MOD);

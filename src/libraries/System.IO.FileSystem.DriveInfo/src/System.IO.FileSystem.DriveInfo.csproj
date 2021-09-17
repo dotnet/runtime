@@ -47,7 +47,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs"
              Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\IO\DriveInfo.UnixOrBrowser.cs" />
     <Compile Include="System\IO\DriveInfo.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -65,7 +65,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
              Link="Common\Interop\Unix\Interop.MountPoints.FormatInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' And ($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))) ">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.UnixOrBrowser.cs" />
     <Compile Include="System\IO\DriveInfo.Browser.cs" />
   </ItemGroup>

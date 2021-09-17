@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes related to service model syndication.</PackageDescription>
@@ -56,18 +56,15 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Resources.ResourceManager" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
     <Reference Include="System.Runtime.Serialization.Xml" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
 </Project>

@@ -156,10 +156,7 @@ def generateClrEventPipeWriteEventsImpl(
         if template:
             body = generateWriteEventBody(template, providerName, eventName, runtimeFlavor)
             WriteEventImpl.append(body)
-            if runtimeFlavor.coreclr:
-                WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
-            elif runtimeFlavor.mono:
-                WriteEventImpl.append("}\n\n")
+            WriteEventImpl.append("}\n\n")
         else:
             if runtimeFlavor.coreclr:
                 WriteEventImpl.append(
@@ -242,16 +239,6 @@ def generateClrEventPipeWriteEventsImpl(
 
 
 def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
-    header = """
-    %s stackBuffer[%s];
-    %s *buffer = stackBuffer;
-    size_t offset = 0;
-    size_t size = %s;
-    bool fixedBuffer = true;
-    bool success = true;
-
-""" % (getEventPipeDataTypeMapping(runtimeFlavor)["BYTE"], template.estimated_size,  getEventPipeDataTypeMapping(runtimeFlavor)["BYTE"], template.estimated_size)
-
     fnSig = template.signature
     pack_list = []
 
@@ -270,6 +257,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                     "    if (!%s) { %s = (const ep_char8_t *)\"NULL\"; }" %
                     (parameter.name, parameter.name))
 
+    emittedWriteToBuffer = False
     for paramName in fnSig.paramlist:
         parameter = fnSig.getParam(paramName)
 
@@ -282,10 +270,12 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
+                emittedWriteToBuffer = True
             elif runtimeFlavor.coreclr:
                 pack_list.append(
                     "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
                     (paramName, size))
+                emittedWriteToBuffer = True
         elif paramName in template.arrays:
             size = "sizeof(%s) * (int)%s" % (
                 lttngDataTypeMapping[parameter.winType],
@@ -296,83 +286,111 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
+                emittedWriteToBuffer = True
             elif runtimeFlavor.coreclr:
                 pack_list.append(
                     "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
                     (paramName, size))
+                emittedWriteToBuffer = True
         elif parameter.winType == "win:GUID" and runtimeFlavor.mono:
             pack_list.append(
                 "    success &= write_buffer_guid_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                 (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:GUID":
             pack_list.append(
                 "    success &= WriteToBuffer(*%s, buffer, offset, size, fixedBuffer);" %
                 (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:AnsiString" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_string_utf8_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:UnicodeString" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_string_utf8_to_utf16_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:UInt8" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uint8_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:UInt16" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uint16_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:Int32" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_int32_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:UInt32" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uint32_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:Int64" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_int64_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:UInt64" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uint64_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:Boolean" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_bool_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:Double" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_double_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif parameter.winType == "win:Pointer" and runtimeFlavor.mono:
             pack_list.append(
                     "    success &= write_buffer_uintptr_t((uintptr_t)%s, &buffer, &offset, &size, &fixedBuffer);" %
                     (parameter.name,))
+            emittedWriteToBuffer = True
         elif runtimeFlavor.mono:
             pack_list.append(
                 "    success &= write_buffer((const uint8_t *)%s, sizeof(%s), &buffer, &offset, &size, &fixedBuffer);" %
                 (parameter.name,parameter.name,))
+            emittedWriteToBuffer = True
         elif runtimeFlavor.coreclr:
             pack_list.append(
                 "    success &= WriteToBuffer(%s, buffer, offset, size, fixedBuffer);" %
                 (parameter.name,))
+            emittedWriteToBuffer = True
 
     code = "\n".join(pack_list) + "\n\n"
 
+    header = """
+    size_t size = {0:d};
+    {1:s} stackBuffer[{0:d}];
+    {1:s} *buffer = stackBuffer;
+    size_t offset = 0;
+""".format(template.estimated_size, getEventPipeDataTypeMapping(runtimeFlavor)["BYTE"])
+
     checking = ""
-    if runtimeFlavor.coreclr:
-        checking = """    if (!success)
+    if emittedWriteToBuffer:
+        header += """    bool fixedBuffer = true;
+    bool success = true;
+"""
+        if runtimeFlavor.coreclr:
+            checking = """    if (!success)
     {
         if (!fixedBuffer)
             delete[] buffer;
         return ERROR_WRITE_FAULT;
     }\n\n"""
-    elif runtimeFlavor.mono:
-        checking = """    ep_raise_error_if_nok (success);\n\n"""
+        elif runtimeFlavor.mono:
+            checking = """    ep_raise_error_if_nok (success);\n\n"""
 
     body = ""
     if runtimeFlavor.coreclr:
@@ -382,14 +400,22 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
         body = "    ep_write_event (EventPipeEvent" + \
             eventName + ", (uint8_t *)buffer, (uint32_t)offset, ActivityId, RelatedActivityId);\n"
 
+    header += "\n"
     footer = ""
-    if runtimeFlavor.coreclr:
-        footer = """
+    if emittedWriteToBuffer:
+        if runtimeFlavor.coreclr:
+            footer = """
     if (!fixedBuffer)
         delete[] buffer;
+
+"""
+
+    if runtimeFlavor.coreclr:
+        footer += """
+    return ERROR_SUCCESS;
 """
     elif runtimeFlavor.mono:
-        footer = """
+        footer += """
 ep_on_exit:
     if (!fixedBuffer)
         ep_rt_byte_array_free (buffer);
@@ -399,6 +425,7 @@ ep_on_error:
     EP_ASSERT (!success);
     ep_exit_error_handler ();
 """
+
     return header + code + checking + body + footer
 
 

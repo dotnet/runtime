@@ -1478,7 +1478,7 @@ protected:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
-            AssemblyBinder      *pBindingContextForLoadedAssembly = NULL
+            AssemblyBinder      *pBinderForLoadedAssembly = NULL
             );
 
 public:

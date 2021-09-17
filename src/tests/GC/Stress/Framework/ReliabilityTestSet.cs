@@ -259,18 +259,7 @@ public class ReliabilityTestSet
     {
         get
         {
-#if PROJECTK_BUILD
             return false;
-#else
-            if (enablePerfCounters)
-            {
-                if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-                {
-                    enablePerfCounters = false;
-                }
-            }
-            return (enablePerfCounters);
-#endif
         }
         set
         {

@@ -1,7 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>{TargetFramework}</TargetFramework>
     <OutputType>Exe</OutputType>
+    <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
+    <UseMonoRuntime>{UseMonoRuntime}</UseMonoRuntime>
+    <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
+
+    <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
@@ -9,14 +15,16 @@
     <JsonToItemsTaskFactoryTasksAssemblyPath>{JsonToItemsTaskFactoryTasksAssemblyPath}</JsonToItemsTaskFactoryTasksAssemblyPath>
     <RuntimeConfigParserTasksAssemblyPath>{RuntimeConfigParserTasksAssemblyPath}</RuntimeConfigParserTasksAssemblyPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
-    <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
-    <TargetFramework>{TestTargetFramework}</TargetFramework>
-    <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
-    <UseMonoRuntime>{UseMonoRuntime}</UseMonoRuntime>
-    <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
-    <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
-    <MicrosoftNETCoreAppVersion>{MicrosoftNETCoreAppVersion}</MicrosoftNETCoreAppVersion>
 
+    <!-- Needed for targetingpacks.targets -->
+    <ProductVersion>{ProductVersion}</ProductVersion>
+    <NetCoreAppCurrent>{NetCoreAppCurrent}</NetCoreAppCurrent>
+    <NetCoreAppCurrentVersion>{NetCoreAppCurrentVersion}</NetCoreAppCurrentVersion>
+    <MicrosoftNetCoreAppFrameworkName>{MicrosoftNetCoreAppFrameworkName}</MicrosoftNetCoreAppFrameworkName>
+    <MicrosoftNetCoreAppRefPackDir>{MicrosoftNetCoreAppRefPackDir}</MicrosoftNetCoreAppRefPackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>{MicrosoftNetCoreAppRuntimePackDir}</MicrosoftNetCoreAppRuntimePackDir>
+
+    <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
   </PropertyGroup>
 

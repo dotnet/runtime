@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Serialization.Tests;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -197,7 +198,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             };
 
             // Types with properties in custom converters do not support fast path serialization.
-            Assert.True(DefaultContext.ClassWithCustomConverterProperty.Serialize is null);
+            Assert.True(DefaultContext.ClassWithCustomConverterProperty.SerializeHandler is null);
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
@@ -224,7 +225,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             };
 
             // Types with properties in custom converters do not support fast path serialization.
-            Assert.True(DefaultContext.StructWithCustomConverterProperty.Serialize is null);
+            Assert.True(DefaultContext.StructWithCustomConverterProperty.SerializeHandler is null);
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
@@ -243,11 +244,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public virtual void RoundTripWithCustomPropertyConverterFactory_Class()
         {
-            const string Json = "{\"MyEnum\":\"A\"}";
+            const string Json = "{\"MyEnum\":\"One\"}";
 
             ClassWithCustomConverterPropertyFactory obj = new()
             {
-                MyEnum = SampleEnum.A
+                MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
@@ -267,18 +268,18 @@ namespace System.Text.Json.SourceGeneration.Tests
             else
             {
                 obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterPropertyFactory);
-                Assert.Equal(SampleEnum.A, obj.MyEnum);
+                Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
 
         [Fact]
         public virtual void RoundTripWithCustomPropertyConverterFactory_Struct()
         {
-            const string Json = "{\"MyEnum\":\"A\"}";
+            const string Json = "{\"MyEnum\":\"One\"}";
 
             StructWithCustomConverterPropertyFactory obj = new()
             {
-                MyEnum = SampleEnum.A
+                MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
@@ -298,7 +299,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             else
             {
                 obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterPropertyFactory);
-                Assert.Equal(SampleEnum.A, obj.MyEnum);
+                Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
 
@@ -756,13 +757,15 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         internal class CustomContext : JsonSerializerContext
         {
-            public CustomContext(JsonSerializerOptions options) : base(options, null) { }
+            public CustomContext(JsonSerializerOptions options) : base(options) { }
 
             private JsonTypeInfo<object> _object;
             public JsonTypeInfo<object> Object => _object ??= JsonMetadataServices.CreateValueInfo<object>(Options, JsonMetadataServices.ObjectConverter);
 
             private JsonTypeInfo<object[]> _objectArray;
-            public JsonTypeInfo<object[]> ObjectArray => _objectArray ??= JsonMetadataServices.CreateArrayInfo<object>(Options, Object, default, serializeFunc: null);
+            public JsonTypeInfo<object[]> ObjectArray => _objectArray ??= JsonMetadataServices.CreateArrayInfo<object>(Options, new JsonCollectionInfoValues<object[]> { ElementInfo = Object });
+
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
 
             public override JsonTypeInfo GetTypeInfo(Type type)
             {
@@ -779,7 +782,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             using MemoryStream ms = new();
             using Utf8JsonWriter writer = new(ms);
-            typeInfo.Serialize!(writer, value);
+            typeInfo.SerializeHandler!(writer, value);
             writer.Flush();
 
             JsonTestHelper.AssertJsonEqual(expectedJson, Encoding.UTF8.GetString(ms.ToArray()));

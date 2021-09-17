@@ -2553,6 +2553,23 @@ namespace System
         static double IFloatingPoint<double>.Truncate(double x) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsFinite(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsNaN(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsNegative(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsNegativeInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsNormal(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsPositiveInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<double>.IsSubnormal(double d) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IIncrementOperators<double>.operator ++(double value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -3268,6 +3285,23 @@ namespace System
         static System.Half IFloatingPoint<System.Half>.Tanh(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IFloatingPoint<System.Half>.Truncate(System.Half x) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsFinite(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsNaN(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsNegative(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsNegativeInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsNormal(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsPositiveInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<System.Half>.IsSubnormal(System.Half x) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IIncrementOperators<System.Half>.operator ++(System.Half value) { throw null; }
@@ -5595,6 +5629,23 @@ namespace System
         static float IFloatingPoint<float>.Truncate(float x) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsFinite(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsNaN(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsNegative(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsNegativeInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsNormal(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsPositiveInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static bool IFloatingPoint<float>.IsSubnormal(float x) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IIncrementOperators<float>.operator ++(float value) { throw null; }
 
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -6062,6 +6113,11 @@ namespace System
 
         [System.Runtime.Versioning.RequiresPreviewFeatures]
         static System.TimeSpan ISubtractionOperators<System.TimeOnly, System.TimeOnly, System.TimeSpan>.operator -(System.TimeOnly left, System.TimeOnly right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MinValue { get { throw null; } }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MaxValue { get { throw null; } }
 #endif // FEATURE_GENERIC_MATH
     }
     public partial class TimeoutException : System.SystemException
@@ -6802,7 +6858,7 @@ namespace System
         public static System.Type? GetTypeFromCLSID(System.Guid clsid, string? server) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Type? GetTypeFromCLSID(System.Guid clsid, string? server, bool throwOnError) { throw null; }
-        public static System.Type GetTypeFromHandle(System.RuntimeTypeHandle handle) { throw null; }
+        public static System.Type? GetTypeFromHandle(System.RuntimeTypeHandle handle) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Type? GetTypeFromProgID(string progID) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -7660,6 +7716,7 @@ namespace System
         public Uri(string uriString) { }
         [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
         public Uri(string uriString, bool dontEscape) { }
+        public Uri(string uriString, in System.UriCreationOptions creationOptions) { }
         public Uri(string uriString, System.UriKind uriKind) { }
         public Uri(System.Uri baseUri, string? relativeUri) { }
         [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
@@ -7729,6 +7786,7 @@ namespace System
         protected virtual void Parse() { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }
+        public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? uriString, in System.UriCreationOptions creationOptions, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? uriString, System.UriKind uriKind, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate(System.Uri? baseUri, string? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate(System.Uri? baseUri, System.Uri? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
@@ -7764,6 +7822,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? rparam) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
+    }
+    public partial struct UriCreationOptions
+    {
+        public bool DangerousDisablePathAndQueryCanonicalization { readonly get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum UriComponents
