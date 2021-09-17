@@ -4012,11 +4012,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
     }
 
     // Skip over a GT_COMMA node(s), if necessary to get to the lcl.
-    GenTree* lcl = op1;
-    while (lcl->OperIs(GT_COMMA))
-    {
-        lcl = lcl->AsOp()->gtGetOp2();
-    }
+    GenTree* lcl = op1->gtEffectiveVal();
 
     // If we don't have a cast of a LCL_VAR then bail.
     if (!lcl->OperIs(GT_LCL_VAR))
@@ -4060,14 +4056,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
                 return nullptr;
             }
 
-            GenTree* tmp = op1;
-            while (tmp->OperIs(GT_COMMA))
-            {
-                tmp->gtType = varDsc->TypeGet();
-                tmp         = tmp->AsOp()->gtGetOp2();
-            }
-            noway_assert(tmp == lcl);
-            tmp->gtType = varDsc->TypeGet();
+            op1->ChangeType(varDsc->TypeGet());
         }
 
 #ifdef DEBUG
