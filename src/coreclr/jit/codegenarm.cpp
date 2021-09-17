@@ -1320,7 +1320,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree*  addr = tree->Addr();
     var_types type = tree->TypeGet();
 
-    assert(!varTypeIsFloating(type) || (type == data->TypeGet()));
+    assert(!varTypeIsFloating(type));
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
@@ -1360,7 +1360,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             instGen_MemoryBarrier();
         }
 
-        GetEmitter()->emitInsLoadStoreOp(ins_Store(data->TypeGet()), emitActualTypeSize(type), data->GetRegNum(), tree);
+        var_types strType = varTypeIsFloating(data->TypeGet()) ? data->TypeGet() : type;
+        GetEmitter()->emitInsLoadStoreOp(ins_Store(strType), emitActualTypeSize(strType), data->GetRegNum(),
+                                         tree);
 
         // If store was to a variable, update variable liveness after instruction was emitted.
         genUpdateLife(tree);
