@@ -110,12 +110,18 @@
              Link="Internal\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyImportHelpers.cs"
              Link="Common\Internal\Cryptography\PemKeyImportHelpers.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\ILiteSymmetricCipher.cs"
+             Link="Internal\Cryptography\ILiteSymmetricCipher.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricPadding.cs"
+             Link="Internal\Cryptography\SymmetricPadding.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoTransform.cs"
              Link="Internal\Cryptography\UniversalCryptoTransform.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoEncryptor.cs"
              Link="Internal\Cryptography\UniversalCryptoEncryptor.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoDecryptor.cs"
              Link="Internal\Cryptography\UniversalCryptoDecryptor.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoOneShot.cs"
+             Link="Internal\Cryptography\UniversalCryptoOneShot.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
@@ -311,6 +317,8 @@
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipherBCrypt.cs"
              Link="Internal\Cryptography\BasicSymmetricCipherBCrypt.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipherLiteBCrypt.cs"
+             Link="Internal\Cryptography\BasicSymmetricCipherLiteBCrypt.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\AesBCryptModes.cs"
@@ -478,6 +486,7 @@
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
+    <Compile Include="Internal\Cryptography\OpenSslCipherLite.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
   </ItemGroup>
@@ -538,6 +547,7 @@
              Link="Common\System\Security\Cryptography\SecKeyPair.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\AppleCCCryptor.cs" />
+    <Compile Include="Internal\Cryptography\AppleCCCryptorLite.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.OSX.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.OSX.cs" />

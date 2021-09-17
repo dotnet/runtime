@@ -90,7 +90,7 @@ namespace Internal.Cryptography
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
-            UniversalCryptoTransform transform = CreateTransformCore(
+            ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
                 paddingMode,
                 Key,
@@ -101,9 +101,9 @@ namespace Internal.Cryptography
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: false);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
             }
         }
 
@@ -117,20 +117,20 @@ namespace Internal.Cryptography
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
-            UniversalCryptoTransform transform = CreateTransformCore(
+            ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
                 paddingMode,
                 Key,
                 effectiveKeyLength: effectiveKeySize,
-                iv: null,
+                iv: default,
                 blockSize: BlockSize / BitsPerByte,
                 0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: true);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
             }
         }
 
@@ -145,20 +145,20 @@ namespace Internal.Cryptography
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
-            UniversalCryptoTransform transform = CreateTransformCore(
+            ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
                 paddingMode,
                 Key,
                 effectiveKeyLength: effectiveKeySize,
-                iv: iv.ToArray(),
+                iv,
                 blockSize: BlockSize / BitsPerByte,
                 0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: true);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
             }
         }
 
@@ -173,20 +173,20 @@ namespace Internal.Cryptography
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
-            UniversalCryptoTransform transform = CreateTransformCore(
+            ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
                 paddingMode,
                 Key,
                 effectiveKeyLength: effectiveKeySize,
-                iv: iv.ToArray(),
+                iv,
                 blockSize: BlockSize / BitsPerByte,
                 0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: false);
 
-            using (transform)
+            using (cipher)
             {
-                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
             }
         }
 
