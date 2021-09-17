@@ -76,9 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
         }
 
-#nullable enable
-
-        private readonly static object? s_buildFilesLock = new object();
+        private readonly static object s_buildFilesLock = new object();
 
         private TestProject CopyTestProject(TestProject sourceTestProject)
         {
@@ -102,8 +100,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
                 static void EnsureTestProjectsFileContent(string testAssetsFolder, string dir, string type)
                 {
+                    var fileName = Path.Combine(dir, $"Directory.Build.{type}");
+                    if (File.Exists(fileName))
+                    {
+                        return;
+                    }
                     File.WriteAllText(
-                        Path.Combine(dir, $"Directory.Build.{type}"),
+                        fileName,
                         string.Join(
                             Environment.NewLine,
                             "<Project>",
@@ -112,8 +115,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 }
             }
         }
-
-#nullable restore
 
         private void ValidateRequiredDirectories(RepoDirectoriesProvider repoDirectoriesProvider)
         {
