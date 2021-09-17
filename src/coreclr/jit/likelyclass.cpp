@@ -134,7 +134,7 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
                                           BYTE*                                  pInstrumentationData,
                                           int32_t                                ilOffset)
 {
-    ZeroMemory(pLikelyClasses, MAX_LIKELY_CLASSES);
+    ZeroMemory(pLikelyClasses, MAX_LIKELY_CLASSES * sizeof(*pLikelyClasses));
 
     if (schema == nullptr)
     {
