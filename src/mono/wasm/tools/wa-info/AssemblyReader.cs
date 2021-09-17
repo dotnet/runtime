@@ -28,6 +28,9 @@ namespace WebAssemblyInfo
             {
                 var td = reader.GetTypeDefinition(type);
                 var typeName = GetTypeFullname(reader, td);
+                if (Program.TypeFilter != null && !Program.TypeFilter.Match(typeName).Success)
+                    continue;
+
                 //Console.WriteLine($" type {typeName}");
 
                 foreach (var mh in td.GetMethods())

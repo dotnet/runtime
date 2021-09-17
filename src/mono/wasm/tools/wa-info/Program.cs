@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 using System.IO;
 using System.Collections.Generic;
 
@@ -13,6 +14,10 @@ namespace WebAssemblyInfo
         static public bool Verbose { get { return VerboseLevel > 0; } }
         static public bool Verbose2 { get { return VerboseLevel > 1; } }
 
+        static internal Regex? AssemblyFilter;
+        static internal Regex? TypeFilter;
+        static bool AotStats;
+
         readonly static Dictionary<string, AssemblyReader> assemblies = new();
 
         static int Main(string[] args)
@@ -24,14 +29,21 @@ namespace WebAssemblyInfo
                 var reader = new WasmReader(file);
                 reader.Parse();
 
+                if (!AotStats)
+                    continue;
+
                 var dir = Path.GetDirectoryName(file);
                 if (dir == null)
                     continue;
 
                 foreach (var path in Directory.GetFiles(Path.Combine(dir, "managed"), "*.dll"))
                 {
-                    Console.WriteLine($"path {path}");
+                    if (AssemblyFilter != null && !AssemblyFilter.Match(Path.GetFileName(path)).Success)
+                        continue;
+
+                    //Console.WriteLine($"path {path}");
                     var ar = GetAssemblyReader(path);
+                    ar.GetAllMethods();
                 }
             }
 
@@ -60,9 +72,18 @@ namespace WebAssemblyInfo
                 "Copyright 2021 Microsoft Corporation",
                 "",
                 "Options:",
+                { "aot-stats",
+                    "Show stats about methods",
+                    v => AotStats = true },
+                { "assembly-filter=",
+                    "Filter assemblies and process only those matching {REGEX}",
+                    v => AssemblyFilter = new Regex (v) },
                 { "h|help|?",
                     "Show this message and exit",
                     v => help = v != null },
+                { "type-filter=",
+                    "Filter types and process only those matching {REGEX}",
+                    v => TypeFilter = new Regex (v) },
                 { "v|verbose",
                     "Output information about progress during the run of the tool",
                     v => VerboseLevel++ },
