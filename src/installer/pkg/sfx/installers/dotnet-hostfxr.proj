@@ -14,8 +14,6 @@
     <OutputFilesCandleVariable>HostFxrSrc</OutputFilesCandleVariable>
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
     <MacOSComponentNamePackType>hostfxr</MacOSComponentNamePackType>
-    <MacOSScriptsDirectory>osx_scripts/host</MacOSScriptsDirectory>
-    <MacOSScriptsDirectory Condition="'$(TargetArchitecture)' == 'x64">osx_scripts/host-x64</MacOSScriptsDirectory>
     <MacOSPackageDescription>The .NET HostFxr</MacOSPackageDescription>
   </PropertyGroup>
 
