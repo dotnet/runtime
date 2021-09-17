@@ -11032,13 +11032,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
 
     cns1->SetIconValue(foldedCns->IconValue());
     cns1->SetVNsFromNode(foldedCns);
-
-    if (oper == GT_ADD)
-    {
-        // Note that gtFoldExprConst doesn't maintain fieldSeq when folding constant
-        // trees of TYP_LONG.
-        cns1->gtFieldSeq = GetFieldSeqStore()->Append(cns1->gtFieldSeq, cns2->gtFieldSeq);
-    }
+    cns1->gtFieldSeq = foldedCns->gtFieldSeq;
 
     op1 = tree->gtGetOp1();
     op1->SetVNsFromNode(tree);
