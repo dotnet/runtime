@@ -5,6 +5,7 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -75,42 +76,45 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
         }
 
+#nullable enable
+
+        private static object? s_buildFilesLock = null;
+
         private TestProject CopyTestProject(TestProject sourceTestProject)
         {
-            EnsureDirectoryBuildFiles(TestArtifact.TestArtifactsPath);
-            return sourceTestProject.Copy();
-        }
-
-        private void EnsureDirectoryBuildFiles(string testArtifactDirectory)
-        {
-            Directory.CreateDirectory(testArtifactDirectory);
-
-            // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
-            // the repo's root Directory.Build.*.
-            EnsureTestProjectsFileContent(testArtifactDirectory, "props");
-            EnsureTestProjectsFileContent(testArtifactDirectory, "targets");
-        }
-
-        private void EnsureTestProjectsFileContent(string dir, string type) => EnsureFileWithContent(
-            Path.Combine(dir, $"Directory.Build.{type}"),
-            string.Join(
-                Environment.NewLine,
-                "<Project>",
-                $"  <Import Project=\"{RepoDirProvider.TestAssetsFolder}/TestUtils/TestProjects.{type}\" />",
-                "</Project>"));
-
-        private void EnsureFileWithContent(string path, string content)
-        {
-            for(int i = 0; i < 3 && !File.Exists(path); i++)
+            if (s_buildFilesLock is null &&
+                Interlocked.CompareExchange(ref s_buildFilesLock, new object(), null) is not null)
             {
-                try
+                // Prevent in-process race condition since the TestArtifactsPath is shared by the current
+                // assembly
+                EnsureDirectoryBuildFiles(RepoDirProvider.TestAssetsFolder, TestArtifact.TestArtifactsPath);
+            }
+
+            return sourceTestProject.Copy();
+
+            static void EnsureDirectoryBuildFiles(string testAssetsFolder, string testArtifactDirectory)
+            {
+                Directory.CreateDirectory(testArtifactDirectory);
+
+                // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
+                // the repo's root Directory.Build.*.
+                EnsureTestProjectsFileContent(testAssetsFolder, testArtifactDirectory, "props");
+                EnsureTestProjectsFileContent(testAssetsFolder, testArtifactDirectory, "targets");
+
+                static void EnsureTestProjectsFileContent(string testAssetsFolder, string dir, string type)
                 {
-                    File.WriteAllText(path, content);
+                    File.WriteAllText(
+                        Path.Combine(dir, $"Directory.Build.{type}"),
+                        string.Join(
+                            Environment.NewLine,
+                            "<Project>",
+                            $"  <Import Project=\"{testAssetsFolder}/TestUtils/TestProjects.{type}\" />",
+                            "</Project>"));
                 }
-                catch (IOException)
-                {}
             }
         }
+
+#nullable restore
 
         private void ValidateRequiredDirectories(RepoDirectoriesProvider repoDirectoriesProvider)
         {
