@@ -20,9 +20,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string InstructionName => "Call";
 
-#if FEATURE_DLG_INVOKE
         private static readonly CacheDict<MethodInfo, CallInstruction> s_cache = new CacheDict<MethodInfo, CallInstruction>(256);
-#endif
 
         public static CallInstruction Create(MethodInfo info)
         {
@@ -47,9 +45,6 @@ namespace System.Linq.Expressions.Interpreter
                 return GetArrayAccessor(info, argumentCount);
             }
 
-#if !FEATURE_DLG_INVOKE
-            return new MethodInfoCallInstruction(info, argumentCount);
-#else
             if (!info.IsStatic && info.DeclaringType!.IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
@@ -83,13 +78,11 @@ namespace System.Linq.Expressions.Interpreter
             // create it
             try
             {
-#if FEATURE_FAST_CREATE
                 if (argumentCount < MaxArgs)
                 {
                     res = FastCreate(info, parameters);
                 }
                 else
-#endif
                 {
                     res = SlowCreate(info, parameters);
                 }
@@ -119,7 +112,6 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             return res;
-#endif
         }
 
         private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount)
@@ -171,14 +163,11 @@ namespace System.Linq.Expressions.Interpreter
         {
             array.SetValue(value, index0, index1, index2);
         }
-#if FEATURE_DLG_INVOKE
         private static bool ShouldCache(MethodInfo info)
         {
             return true;
         }
-#endif
 
-#if FEATURE_FAST_CREATE
         /// <summary>
         /// Gets the next type or null if no more types are available.
         /// </summary>
@@ -213,9 +202,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             return pi.Length != index || (pi.Length == index && !target.IsStatic);
         }
-#endif
 
-#if FEATURE_DLG_INVOKE
         /// <summary>
         /// Uses reflection to create new instance of the appropriate ReflectedCaller
         /// </summary>
@@ -243,7 +230,6 @@ namespace System.Linq.Expressions.Interpreter
                 throw ContractUtils.Unreachable;
             }
         }
-#endif
 
         #endregion
 
