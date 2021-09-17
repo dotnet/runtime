@@ -95,7 +95,8 @@
 
     <PropertyGroup>
       <_UnameMachineRegex>$(InstallerTargetArchitecture)</_UnameMachineRegex>
-      <_UnameMachineRegex Condition="'$(InstallerTargetArchitecture)' == 'x64'">x64|x86_64</_UnameMachineRegex>
+      <_UnameMachineRegex Condition="'$(InstallerTargetArchitecture)' == 'arm64'">arm64|aarch64</_UnameMachineRegex>
+      <_UnameMachineRegex Condition="'$(InstallerTargetArchitecture)' == 'x64'">amd64|x86_64</_UnameMachineRegex>
       <_MacOSScriptsTemplateProperties>InstallerTargetArchitecture=$(InstallerTargetArchitecture);UnameMachineRegex=$(_UnameMachineRegex)</_MacOSScriptsTemplateProperties>
     </PropertyGroup>
     
