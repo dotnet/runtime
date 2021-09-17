@@ -630,7 +630,7 @@ namespace System.IO
         {
             FileStream stream = new FileStream(
                 path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize,
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
+                FileOptions.Asynchronous);
 
             return new StreamWriter(stream, encoding);
         }
@@ -839,10 +839,10 @@ namespace System.IO
             static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
             {
 #if MS_IO_REDIST
-                using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 1, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 1, FileOptions.Asynchronous);
                 await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
 #else
-                using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
                 await RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
 #endif
             }
