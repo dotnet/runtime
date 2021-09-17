@@ -1093,35 +1093,11 @@ store_local (TransformData *td, int local)
 		td->last_ins->data [0] = td->locals [local].size;
 }
 
-static guint16
-get_data_item_index (TransformData *td, void *ptr)
-{
-	gpointer p = g_hash_table_lookup (td->data_hash, ptr);
-	guint index;
-	if (p != NULL) {
-		index = GPOINTER_TO_UINT (p) - 1;
-		if (index > UINT16_MAX)
-			g_warning ("Interpreter data item index 0x%x for method '%s'  is out of range", index, td->method->name);
-		return index;
-	}
-	if (td->max_data_items == td->n_data_items) {
-		td->max_data_items = td->n_data_items == 0 ? 16 : 2 * td->max_data_items;
-		td->data_items = (gpointer*)g_realloc (td->data_items, td->max_data_items * sizeof(td->data_items [0]));
-	}
-	index = td->n_data_items;
-	td->data_items [index] = ptr;
-	++td->n_data_items;
-	g_assertf (index < (UINT16_MAX - 1), "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
-
-	g_hash_table_insert (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
-	return index;
-}
-
-static uint32_t
+static guint32
 get_data_item_wide_index (TransformData *td, void *ptr)
 {
 	gpointer p = g_hash_table_lookup (td->data_hash, ptr);
-	uint32_t index;
+	guint32 index;
 	if (p != NULL)
 		return GPOINTER_TO_UINT (p) - 1;
 	if (td->max_data_items == td->n_data_items) {
@@ -1131,16 +1107,22 @@ get_data_item_wide_index (TransformData *td, void *ptr)
 	index = td->n_data_items;
 	td->data_items [index] = ptr;
 	++td->n_data_items;
-	g_assertf (index < (UINT32_MAX - 1), "Interpreter data item 32-bit wide index 0x%x for method '%s' overflows", index, td->method->name);
-
 	g_hash_table_insert (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
 	return index;
 }
 
-static gboolean
-is_data_item_wide_index (TransformData *td)
+static guint16
+get_data_item_index (TransformData *td, void *ptr)
 {
-	return td->n_data_items >= (int)(UINT16_MAX - 1);
+	guint32 index = get_data_item_wide_index (td, ptr);
+	g_assertf (index < (UINT16_MAX - 1), "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
+	return (guint16)index;
+}
+
+static gboolean
+is_data_item_wide_index (guint32 data_item_index)
+{
+	return data_item_index >= (gint32)(UINT16_MAX - 1);
 }
 
 static guint16
@@ -4224,10 +4206,9 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				td->last_ins->data [0] = get_data_item_index (td, field_class);
 		}
 	} else {
-		gboolean wide_data = is_data_item_wide_index (td);
 		gpointer field_addr = mono_static_field_get_addr (vtable, field);
 		int size = 0;
-		if (mt == MINT_TYPE_VT || wide_data)
+		if (mt == MINT_TYPE_VT)
 			size = mono_class_value_size (field_class, NULL);
 		if (is_load) {
 			MonoType *ftype = mono_field_get_type_internal (field);
@@ -4235,6 +4216,12 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				if (interp_emit_load_const (td, field_addr, mt))
 					return;
 			}
+		}
+		guint32 vtable_index = get_data_item_wide_index (td, vtable);
+		guint32 addr_index = get_data_item_wide_index (td, (char*)field_addr);
+		gboolean wide_data = is_data_item_wide_index (vtable_index) || is_data_item_wide_index (addr_index);
+		guint32 klass_index = !wide_data ? 0 : get_data_item_wide_index (td, field_class);
+		if (is_load) {
 			if (G_UNLIKELY (wide_data)) {
 				interp_add_ins (td, MINT_LDSFLD_VT_W);
 				if (mt == MINT_TYPE_VT) {
@@ -4260,16 +4247,14 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 		}
 
 		if (G_LIKELY (!wide_data)) {
-			td->last_ins->data [0] = get_data_item_index (td, vtable);
-			td->last_ins->data [1] = get_data_item_index (td, (char*)field_addr);
+			td->last_ins->data [0] = (guint16) vtable_index;
+			td->last_ins->data [1] = (guint16) addr_index;
 			if (mt == MINT_TYPE_VT)
 				td->last_ins->data [2] = size;
 		} else {
-			uint32_t vtable_idx = get_data_item_wide_index (td, vtable);
-			uint32_t field_addr_idx = get_data_item_wide_index (td, (char*)field_addr);
-			WRITE32_INS (td->last_ins, 0, &vtable_idx);
-			WRITE32_INS (td->last_ins, 2, &field_addr_idx);
-			td->last_ins->data [4] = size;
+			WRITE32_INS (td->last_ins, 0, &vtable_index);
+			WRITE32_INS (td->last_ins, 2, &addr_index);
+			WRITE32_INS (td->last_ins, 4, &klass_index);
 		}
 
 	}
