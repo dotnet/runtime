@@ -12191,75 +12191,14 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
 
-            if (op2->gtOper == GT_CNS_INT)
+            // op2's value may be changed, so it cannot be a CSE candidate.
+            if (op2->IsIntegralConst() && !gtIsActiveCSE_Candidate(op2))
             {
-                cns2 = op2;
-                /* Check for "expr relop 1" */
-                if (cns2->IsIntegralConst(1))
-                {
-                    /* Check for "expr >= 1" */
-                    if (oper == GT_GE)
-                    {
-                        /* Change to "expr != 0" for unsigned and "expr > 0" for signed */
-                        oper = (tree->IsUnsigned()) ? GT_NE : GT_GT;
-                        goto SET_OPER;
-                    }
-                    /* Check for "expr < 1" */
-                    else if (oper == GT_LT)
-                    {
-                        /* Change to "expr == 0" for unsigned and "expr <= 0" for signed */
-                        oper = (tree->IsUnsigned()) ? GT_EQ : GT_LE;
-                        goto SET_OPER;
-                    }
-                }
-                /* Check for "expr relop -1" */
-                else if (!tree->IsUnsigned() && cns2->IsIntegralConst(-1))
-                {
-                    /* Check for "expr <= -1" */
-                    if (oper == GT_LE)
-                    {
-                        /* Change to "expr < 0" */
-                        oper = GT_LT;
-                        goto SET_OPER;
-                    }
-                    /* Check for "expr > -1" */
-                    else if (oper == GT_GT)
-                    {
-                        /* Change to "expr >= 0" */
-                        oper = GT_GE;
+                tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
+                oper = tree->OperGet();
 
-                    SET_OPER:
-                        // IF we get here we should be changing 'oper'
-                        assert(tree->OperGet() != oper);
-
-                        // Keep the old ValueNumber for 'tree' as the new expr
-                        // will still compute the same value as before
-                        tree->SetOper(oper, GenTree::PRESERVE_VN);
-                        cns2->AsIntCon()->gtIconVal = 0;
-
-                        // vnStore is null before the ValueNumber phase has run
-                        if (vnStore != nullptr)
-                        {
-                            // Update the ValueNumber for 'cns2', as we just changed it to 0
-                            fgValueNumberTreeConst(cns2);
-                        }
-                        op2 = tree->AsOp()->gtOp2 = gtFoldExpr(op2);
-                    }
-                }
-                else if (tree->IsUnsigned() && op2->IsIntegralConst(0))
-                {
-                    if ((oper == GT_GT) || (oper == GT_LE))
-                    {
-                        // IL doesn't have a cne instruction so compilers use cgt.un instead. The JIT
-                        // recognizes certain patterns that involve GT_NE (e.g (x & 4) != 0) and fails
-                        // if GT_GT is used instead. Transform (x GT_GT.unsigned 0) into (x GT_NE 0)
-                        // and (x GT_LE.unsigned 0) into (x GT_EQ 0). The later case is rare, it sometimes
-                        // occurs as a result of branch inversion.
-                        oper = (oper == GT_LE) ? GT_EQ : GT_NE;
-                        tree->SetOper(oper, GenTree::PRESERVE_VN);
-                        tree->gtFlags &= ~GTF_UNSIGNED;
-                    }
-                }
+                assert(op1 == tree->AsOp()->gtGetOp1());
+                assert(op2 == tree->AsOp()->gtGetOp2());
             }
 
         COMPARE:
@@ -13839,6 +13778,104 @@ SKIP:
 
         // Finally we replace the comparand.
         op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
+    }
+
+    return cmp;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeRelationalComparisonWithConst: optimizes a comparison operation.
+//
+// Recognizes comparisons against various constant operands and morphs
+// them, if possible, into comparisons against zero.
+//
+// Arguments:
+//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//
+// Return Value:
+//   The "cmp" tree, possibly with a modified oper.
+//   The second operand's constant value may be modified as well.
+//
+// Assumptions:
+//   The operands have been swapped so that any constants are on the right.
+//   The second operand is an integral constant.
+//
+GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
+{
+    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(cmp->gtGetOp2()->IsIntegralConst());
+    assert(!gtIsActiveCSE_Candidate(cmp->gtGetOp2()));
+
+    GenTree*             op1 = cmp->gtGetOp1();
+    GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
+
+    assert(genActualType(op1) == genActualType(op2));
+
+    genTreeOps oper     = cmp->OperGet();
+    int64_t    op2Value = op2->IntegralValue();
+
+    if (op2Value == 1)
+    {
+        // Check for "expr >= 1".
+        if (oper == GT_GE)
+        {
+            // Change to "expr != 0" for unsigned and "expr > 0" for signed.
+            oper = cmp->IsUnsigned() ? GT_NE : GT_GT;
+        }
+        // Check for "expr < 1".
+        else if (oper == GT_LT)
+        {
+            // Change to "expr == 0" for unsigned and "expr <= 0".
+            oper = cmp->IsUnsigned() ? GT_EQ : GT_LE;
+        }
+    }
+    // Check for "expr relop -1".
+    else if (!cmp->IsUnsigned() && (op2Value == -1))
+    {
+        // Check for "expr <= -1".
+        if (oper == GT_LE)
+        {
+            // Change to "expr < 0".
+            oper = GT_LT;
+        }
+        // Check for "expr > -1".
+        else if (oper == GT_GT)
+        {
+            // Change to "expr >= 0".
+            oper = GT_GE;
+        }
+    }
+    else if (cmp->IsUnsigned())
+    {
+        if ((oper == GT_LE) || (oper == GT_GT))
+        {
+            if (op2Value == 0)
+            {
+                // IL doesn't have a cne instruction so compilers use cgt.un instead. The JIT
+                // recognizes certain patterns that involve GT_NE (e.g (x & 4) != 0) and fails
+                // if GT_GT is used instead. Transform (x GT_GT.unsigned 0) into (x GT_NE 0)
+                // and (x GT_LE.unsigned 0) into (x GT_EQ 0). The later case is rare, it sometimes
+                // occurs as a result of branch inversion.
+                oper = (oper == GT_LE) ? GT_EQ : GT_NE;
+                cmp->gtFlags &= ~GTF_UNSIGNED;
+            }
+            // LE_UN/GT_UN(expr, int/long.MaxValue) => GE/LT(expr, 0).
+            else if (((op1->TypeIs(TYP_LONG) && (op2Value == INT64_MAX))) ||
+                     ((genActualType(op1) == TYP_INT) && (op2Value == INT32_MAX)))
+            {
+                oper = (oper == GT_LE) ? GT_GE : GT_LT;
+                cmp->gtFlags &= ~GTF_UNSIGNED;
+            }
+        }
+    }
+
+    if (!cmp->OperIs(oper))
+    {
+        // Keep the old ValueNumber for 'tree' as the new expr
+        // will still compute the same value as before.
+        cmp->SetOper(oper, GenTree::PRESERVE_VN);
+        op2->SetIntegralValue(0);
+        fgUpdateConstTreeValueNumber(op2);
     }
 
     return cmp;

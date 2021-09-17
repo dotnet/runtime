@@ -13,7 +13,7 @@ namespace System
         //
         // All public ctors go through here
         //
-        private void CreateThis(string? uri, bool dontEscape, UriKind uriKind)
+        private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             DebugAssertInCtor();
 
@@ -30,6 +30,9 @@ namespace System
 
             if (dontEscape)
                 _flags |= Flags.UserEscaped;
+
+            if (creationOptions.DangerousDisablePathAndQueryCanonicalization)
+                _flags |= Flags.DisablePathAndQueryCanonicalization;
 
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
 
@@ -259,6 +262,26 @@ namespace System
             return e is null && result != null;
         }
 
+        /// <summary>
+        /// Creates a new <see cref="Uri"/> using the specified <see cref="string"/> instance and <see cref="UriCreationOptions"/>.
+        /// </summary>
+        /// <param name="uriString">The string representation of the <see cref="Uri"/>.</param>
+        /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
+        /// <param name="result">The constructed <see cref="Uri"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="Uri"/> was successfully created; otherwise, <see langword="false"/>.</returns>
+        public static bool TryCreate([NotNullWhen(true)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
+        {
+            if (uriString is null)
+            {
+                result = null;
+                return false;
+            }
+            UriFormatException? e = null;
+            result = CreateHelper(uriString, false, UriKind.Absolute, ref e, in creationOptions);
+            result?.DebugSetLeftCtor();
+            return e is null && result != null;
+        }
+
         public static bool TryCreate(Uri? baseUri, string? relativeUri, [NotNullWhen(true)] out Uri? result)
         {
             if (TryCreate(relativeUri, UriKind.RelativeOrAbsolute, out Uri? relativeLink))
@@ -309,6 +332,16 @@ namespace System
         }
 
         public string GetComponents(UriComponents components, UriFormat format)
+        {
+            if (DisablePathAndQueryCanonicalization && (components & (UriComponents.Path | UriComponents.Query)) != 0)
+            {
+                throw new InvalidOperationException(SR.net_uri_GetComponentsCalledWhenCanonicalizationDisabled);
+            }
+
+            return InternalGetComponents(components, format);
+        }
+
+        private string InternalGetComponents(UriComponents components, UriFormat format)
         {
             if (((components & UriComponents.SerializationInfoString) != 0) && components != UriComponents.SerializationInfoString)
                 throw new ArgumentOutOfRangeException(nameof(components), components, SR.net_uri_NotJustSerialization);
@@ -590,7 +623,7 @@ namespace System
         //
         // a Uri.TryCreate() method goes through here.
         //
-        internal static Uri? CreateHelper(string uriString, bool dontEscape, UriKind uriKind, ref UriFormatException? e)
+        internal static Uri? CreateHelper(string uriString, bool dontEscape, UriKind uriKind, ref UriFormatException? e, in UriCreationOptions creationOptions = default)
         {
             // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow
             // to be used here.
@@ -605,6 +638,9 @@ namespace System
 
             if (dontEscape)
                 flags |= Flags.UserEscaped;
+
+            if (creationOptions.DangerousDisablePathAndQueryCanonicalization)
+                flags |= Flags.DisablePathAndQueryCanonicalization;
 
             // We won't use User factory for these errors
             if (err != ParsingError.None)
