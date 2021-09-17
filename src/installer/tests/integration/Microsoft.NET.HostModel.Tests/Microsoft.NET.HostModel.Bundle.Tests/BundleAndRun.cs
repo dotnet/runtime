@@ -131,7 +131,7 @@ namespace Microsoft.NET.HostModel.Tests
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 TestFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFixture);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFixture.TestProject.ProjectDirectory);
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid)
                     .PublishProject(runtime: TestFixture.CurrentRid,

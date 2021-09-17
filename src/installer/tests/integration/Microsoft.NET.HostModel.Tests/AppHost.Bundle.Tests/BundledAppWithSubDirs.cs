@@ -201,7 +201,7 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 TestFrameworkDependentFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFrameworkDependentFixture);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFrameworkDependentFixture.TestProject.ProjectDirectory);
                 TestFrameworkDependentFixture
                     .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid)
                     .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
@@ -209,14 +209,14 @@ namespace AppHost.Bundle.Tests
                                     outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
 
                 TestSelfContainedFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixture);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixture.TestProject.ProjectDirectory);
                 TestSelfContainedFixture
                     .EnsureRestoredForRid(TestSelfContainedFixture.CurrentRid)
                     .PublishProject(runtime: TestSelfContainedFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixture));
 
                 TestAppWithEmptyFileFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestAppWithEmptyFileFixture);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestAppWithEmptyFileFixture.TestProject.ProjectDirectory);
                 BundleHelper.AddEmptyContentToApp(TestAppWithEmptyFileFixture);
                 TestAppWithEmptyFileFixture
                     .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid)
@@ -224,7 +224,7 @@ namespace AppHost.Bundle.Tests
                                     outputDirectory: BundleHelper.GetPublishPath(TestAppWithEmptyFileFixture));
 
                 TestSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixtureComposite);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixtureComposite.TestProject.ProjectDirectory);
                 TestSelfContainedFixtureComposite
                     .EnsureRestoredForRid(TestSelfContainedFixtureComposite.CurrentRid)
                     .PublishProject(runtime: TestSelfContainedFixtureComposite.CurrentRid,

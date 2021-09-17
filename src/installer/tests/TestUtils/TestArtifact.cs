@@ -106,7 +106,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             throw lastException;
         }
 
-        protected static void CopyRecursive(string sourceDirectory, string destinationDirectory, bool overwrite = false)
+        public static void CopyRecursive(string sourceDirectory, string destinationDirectory, bool overwrite = false)
         {
             FileUtils.EnsureDirectoryExists(destinationDirectory);
 
