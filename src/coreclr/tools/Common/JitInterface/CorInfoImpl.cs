@@ -116,7 +116,7 @@ namespace Internal.JitInterface
         }
 
         [DllImport(JitLibrary)]
-        private extern static uint getLikelyClasses(LikelyClassRecord* pLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+        private extern static uint getLikelyClasses(LikelyClassRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
