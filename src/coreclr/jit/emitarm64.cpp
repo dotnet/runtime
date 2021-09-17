@@ -13399,7 +13399,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 #endif // DEBUG
 
 // Generate code for a load or store operation with a potentially complex addressing mode
-// This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*sccale + offset]
+// This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*scale + offset]
 // Since Arm64 does not directly support this complex of an addressing mode
 // we may generates up to three instructions for this for Arm64
 //
