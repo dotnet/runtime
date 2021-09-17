@@ -75,37 +75,12 @@ void Assembly::SetAssemblyName(AssemblyName *pAssemblyName,
 
 BOOL Assembly::GetIsInTPA()
 {
-    return ((m_dwAssemblyFlags & FLAG_IS_IN_TPA) != 0);
+    return m_isInTPA;
 }
 
 void Assembly::SetIsInTPA(BOOL fIsInTPA)
 {
-    if (fIsInTPA)
-    {
-        m_dwAssemblyFlags |= FLAG_IS_IN_TPA;
-    }
-    else
-    {
-        m_dwAssemblyFlags &= ~FLAG_IS_IN_TPA;
-    }
-}
-
-SString &Assembly::GetPath()
-{
-    return m_assemblyPath;
-}
-
-IMDInternalImport *Assembly::GetMDImport()
-{
-    return m_pMDImport;
-}
-
-void Assembly::SetMDImport(IMDInternalImport *pMDImport)
-{
-    SAFE_RELEASE(m_pMDImport);
-
-    m_pMDImport = pMDImport;
-    m_pMDImport->AddRef();
+    m_isInTPA = fIsInTPA;
 }
 
 #endif

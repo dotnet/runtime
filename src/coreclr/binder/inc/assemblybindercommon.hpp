@@ -50,7 +50,6 @@ namespace BINDER_SPACE
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
                                    /* in */  BOOL         fIsInTPA,
                                    /* out */ Assembly   **ppAssembly,
-                                   /* in */  LPCTSTR      szMDAssemblyPath = NULL,
                                    /* in */  BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
 #if !defined(DACCESS_COMPILE)
@@ -62,8 +61,6 @@ namespace BINDER_SPACE
         static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,
                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                         /* in */  PEImage            *pPEImage,
-                                        /* in */  PEKIND              peKind,
-                                        /* in */  IMDInternalImport  *pIMetaDataAssemblyImport,
                                         /* [retval] [out] */  Assembly **ppAssembly);
 #endif // !defined(DACCESS_COMPILE)
 

@@ -121,20 +121,10 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
         ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;
-        ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
-
-        PEKIND PeKind = peNone;
-
-        // Get the Metadata interface
-        DWORD dwPAFlags[2];
-        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags));
-        IF_FAIL_GO(AssemblyBinderCommon::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
-
-        _ASSERTE(pIMetaDataAssemblyImport != NULL);
 
         // Using the information we just got, initialize the assemblyname
         SAFE_NEW(pAssemblyName, AssemblyName);
-        IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
+        IF_FAIL_GO(pAssemblyName->Init(pPEImage));
 
         // Validate architecture
         if (!BINDER_SPACE::Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
@@ -169,7 +159,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);

@@ -41,76 +41,49 @@ STDAPI BinderAddRefPEImage(PEImage *pPEImage);
 
 namespace BINDER_SPACE
 {
-
-    // An assembly represents a particular set of bits.  However we extend this to
-    // also include whether those bits have precompiled information (NGEN).   Thus
-    // and assembly knows whether it has an NGEN image or not.
+    // BINDER_SPACE::Assembly represents a result of binding to an actual assembly (PE image)
+    // It is basically a tuple of 1) physical assembly and 2) binder which created/owns this binding
+    // We also store whether it was bound using TPA list
     //
-    // This allows us to preferentially use the NGEN image if it is available.
+    // UNDONE: perhaps rename to "BoundAssembly"?
+    //         check the ownership, if it is owned by the binder, do we need ref counting?
+    //         elaborate why IsInTPA needed
+    //
     class Assembly
     {
     public:
         ULONG AddRef();
         ULONG Release();
 
-        LPCWSTR GetSimpleName();
-        AssemblyLoaderAllocator* GetLoaderAllocator();
-
-        // --------------------------------------------------------------------
-        // Assembly methods
-        // --------------------------------------------------------------------
         Assembly();
         virtual ~Assembly();
 
-        HRESULT Init(/* in */ IMDInternalImport       *pIMetaDataAssemblyImport,
-                     /* in */ PEKIND                   PeKind,
-                     /* in */ PEImage                 *pPEImage,
-                     /* in */ SString                 &assemblyPath,
-                     /* in */ BOOL                     fIsInTPA);
+        HRESULT Init(PEImage *pPEImage, BOOL fIsInTPA);
 
+        LPCWSTR GetSimpleName();
         inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
+        inline PEImage* GetPEImage(BOOL fAddRef = FALSE);
         inline BOOL GetIsInTPA();
-
-        inline SString &GetPath();
-
-        inline PEImage *GetPEImage(BOOL fAddRef = FALSE);
-
-        HRESULT GetMVID(GUID *pMVID);
 
         static PEKIND GetSystemArchitecture();
         static BOOL IsValidArchitecture(PEKIND kArchitecture);
 
+        AssemblyLoaderAllocator* GetLoaderAllocator();
         inline AssemblyBinder* GetBinder()
         {
             return m_pBinder;
         }
 
     private:
-        // Assembly Flags
-        enum
-        {
-            FLAG_NONE = 0x00,
-            FLAG_IS_IN_TPA = 0x02,
-            //FLAG_IS_DYNAMIC_BIND = 0x04,
-            FLAG_IS_BYTE_ARRAY = 0x08,
-        };
-
         inline void SetPEImage(PEImage *pPEImage);
-
-        inline void SetAssemblyName(AssemblyName *pAssemblyName,
-                                    BOOL          fAddRef = TRUE);
+        inline void SetAssemblyName(AssemblyName *pAssemblyName, BOOL fAddRef = TRUE);
         inline void SetIsInTPA(BOOL fIsInTPA);
-
-        inline IMDInternalImport *GetMDImport();
-        inline void SetMDImport(IMDInternalImport *pMDImport);
 
         LONG                     m_cRef;
         PEImage                 *m_pPEImage;
-        IMDInternalImport       *m_pMDImport;
         AssemblyName            *m_pAssemblyName;
-        SString                  m_assemblyPath;
-        DWORD                    m_dwAssemblyFlags;
         AssemblyBinder          *m_pBinder;
+        bool                     m_isInTPA;
 
         inline void SetBinder(AssemblyBinder *pBinder)
         {

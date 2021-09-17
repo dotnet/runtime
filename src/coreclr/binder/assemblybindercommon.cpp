@@ -154,21 +154,14 @@ namespace BINDER_SPACE
             return hr;
         }
 
-        HRESULT CreateImageAssembly(IMDInternalImport       *pIMetaDataAssemblyImport,
-                                    PEKIND                   PeKind,
-                                    PEImage                 *pPEImage,
+        HRESULT CreateImageAssembly(PEImage                 *pPEImage,
                                     BindResult              *pBindResult)
         {
             HRESULT hr = S_OK;
             ReleaseHolder<Assembly> pAssembly;
-            PathString asesmblyPath;
 
             SAFE_NEW(pAssembly, Assembly);
-            IF_FAIL_GO(pAssembly->Init(pIMetaDataAssemblyImport,
-                                       PeKind,
-                                       pPEImage,
-                                       asesmblyPath,
-                                       FALSE /* fIsInTPA */));
+            IF_FAIL_GO(pAssembly->Init(pPEImage, /* fIsInTPA */ FALSE ));
 
             pBindResult->SetResult(pAssembly);
             pBindResult->SetIsFirstRequest(TRUE);
@@ -354,7 +347,6 @@ namespace BINDER_SPACE
 
         ReleaseHolder<Assembly> pSystemAssembly;
 
-        // At run-time, System.Private.CoreLib.dll is expected to be the NI image.
         // System.Private.CoreLib.dll is expected to be found at one of the following locations:
         //   * Non-single-file app: In systemDirectory, beside coreclr.dll
         //   * Framework-dependent single-file app: In systemDirectory, beside coreclr.dll
@@ -378,8 +370,8 @@ namespace BINDER_SPACE
         hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
                                          TRUE /* fIsInTPA */,
                                          &pSystemAssembly,
-                                         NULL /* szMDAssemblyPath */,
                                          bundleFileLocation);
+
         BinderTracing::PathProbed(sCoreLib, pathSource, hr);
 
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -418,7 +410,6 @@ namespace BINDER_SPACE
             hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
                 TRUE /* fIsInTPA */,
                 &pSystemAssembly,
-                NULL /* szMDAssemblyPath */,
                 bundleFileLocation);
 
             BinderTracing::PathProbed(sCoreLib, BinderTracing::PathSource::ApplicationAssemblies, hr);
@@ -476,7 +467,6 @@ namespace BINDER_SPACE
         IF_FAIL_GO(AssemblyBinderCommon::GetAssembly(sCoreLibSatellite,
                                                TRUE /* fIsInTPA */,
                                                &pSystemAssembly,
-                                               NULL /* szMDAssemblyPath */,
                                                bundleFileLocation));
         BinderTracing::PathProbed(sCoreLibSatellite, pathSource, hr);
 
@@ -585,7 +575,6 @@ namespace BINDER_SPACE
         IF_FAIL_GO(GetAssembly(assemblyPath,
                                FALSE /* fIsInTPA */,
                                &pAssembly,
-                               NULL /* szMDAssemblyPath */,
                                Bundle::ProbeAppBundle(assemblyPath)));
 
         AssemblyName *pAssemblyName;
@@ -761,7 +750,6 @@ namespace BINDER_SPACE
             hr = AssemblyBinderCommon::GetAssembly(relativePath,
                                                    FALSE /* fIsInTPA */,
                                                    &pAssembly,
-                                                   NULL,  // szMDAssemblyPath
                                                    bundleFileLocation);
 
             BinderTracing::PathProbed(relativePath, BinderTracing::PathSource::Bundle, hr);
@@ -1022,7 +1010,6 @@ namespace BINDER_SPACE
                         hr = GetAssembly(assemblyFilePath,
                                          TRUE,  // fIsInTPA
                                          &pTPAAssembly,
-                                         NULL,  // szMDAssemblyPath
                                          bundleFileLocation);
 
                         BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
@@ -1152,9 +1139,6 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::GetAssembly(SString            &assemblyPath,
                                               BOOL               fIsInTPA,
                                               Assembly           **ppAssembly,
-                                              // If assemblyPath refers to a native image without metadata,
-                                              // szMDAssemblyPath gives the alternative file to get metadata.
-                                              LPCTSTR            szMDAssemblyPath,
                                               BundleFileLocation bundleFileLocation)
     {
         HRESULT hr = S_OK;
@@ -1162,9 +1146,6 @@ namespace BINDER_SPACE
         _ASSERTE(ppAssembly != NULL);
 
         ReleaseHolder<Assembly> pAssembly;
-        ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
-        DWORD dwPAFlags[2];
-        PEKIND PeKind = peNone;
         PEImage *pPEImage = NULL;
 
         // Allocate assembly object
@@ -1176,19 +1157,10 @@ namespace BINDER_SPACE
 
             hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, bundleFileLocation);
             IF_FAIL_GO(hr);
-
-            hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags);
-            IF_FAIL_GO(hr);
-
-            IF_FAIL_GO(TranslatePEToArchitectureType(dwPAFlags, &PeKind));
         }
 
         // Initialize assembly object
-        IF_FAIL_GO(pAssembly->Init(pIMetaDataAssemblyImport,
-                                   PeKind,
-                                   pPEImage,
-                                   assemblyPath,
-                                   fIsInTPA));
+        IF_FAIL_GO(pAssembly->Init(pPEImage, fIsInTPA));
 
         // We're done
         *ppAssembly = pAssembly.Extract();
@@ -1349,8 +1321,6 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
 HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder,
                                                /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                /* in */  PEImage            *pPEImage,
-                                               /* in */  PEKIND              peKind,
-                                               /* in */  IMDInternalImport  *pIMetaDataAssemblyImport,
                                                /* [retval] [out] */  Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1384,10 +1354,7 @@ Retry:
 
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
         {
-            IF_FAIL_GO(CreateImageAssembly(pIMetaDataAssemblyImport,
-                                           peKind,
-                                           pPEImage,
-                                           &bindResult));
+            IF_FAIL_GO(CreateImageAssembly(pPEImage, &bindResult));
         }
         else if (hr == S_OK)
         {
@@ -1396,20 +1363,23 @@ Retry:
                 // Attempt was made to load an assembly that has the same name as a previously loaded one. Since same name
                 // does not imply the same assembly, we will need to check the MVID to confirm it is the same assembly as being
                 // requested.
-                //
+
                 GUID incomingMVID;
-                ZeroMemory(&incomingMVID, sizeof(GUID));
-
-                // If we cannot get MVID, then err on side of caution and fail the
-                // load.
-                IF_FAIL_GO(pIMetaDataAssemblyImport->GetScopeProps(NULL, &incomingMVID));
-
                 GUID boundMVID;
-                ZeroMemory(&boundMVID, sizeof(GUID));
 
-                // If we cannot get MVID, then err on side of caution and fail the
-                // load.
-                IF_FAIL_GO(bindResult.GetAssembly()->GetMVID(&boundMVID));
+                // GetMVID can throw exception
+                EX_TRY
+                {
+                    pPEImage->GetMVID(&incomingMVID);
+                    bindResult.GetAssembly()->GetPEImage()->GetMVID(&boundMVID);
+                }
+                EX_CATCH
+                {
+                    hr = E_FAIL;
+                    goto Exit;
+                }
+                EX_END_CATCH(SwallowAllExceptions);
+
 
                 mvidMismatch = incomingMVID != boundMVID;
                 if (mvidMismatch)
