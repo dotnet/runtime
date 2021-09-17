@@ -24,7 +24,10 @@
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
-  <Target Name="BuildApp">
+  <Import Project="$(RuntimeSrcDir)/src/mono/wasm/build/WasmApp.LocalBuild.props" />
+  <Import Project="$(RuntimeSrcDir)/src/mono/wasm/build/WasmApp.LocalBuild.targets" />
+
+  <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
       <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
