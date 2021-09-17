@@ -248,7 +248,7 @@ namespace Internal.JitInterface
 
         private static PgoSchemaElem? ComputeLikelyClass(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
         {
-            // getLikelyClasses will use two entries from the native schema table. There must be at least two present to avoid ovberruning the buffer
+            // getLikelyClasses will use two entries from the native schema table. There must be at least two present to avoid overruning the buffer
             if (index > (nativeSchema.Length - 2))
                 return null;
 
