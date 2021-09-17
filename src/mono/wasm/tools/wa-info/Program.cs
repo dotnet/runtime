@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 
 using Mono.Options;
@@ -8,9 +9,11 @@ namespace WebAssemblyInfo
     public class Program
     {
 
-        static public int VerboseLevel = 0;
+        public static int VerboseLevel;
         static public bool Verbose { get { return VerboseLevel > 0; } }
         static public bool Verbose2 { get { return VerboseLevel > 1; } }
+
+        readonly static Dictionary<string, AssemblyReader> assemblies = new();
 
         static int Main(string[] args)
         {
@@ -20,11 +23,31 @@ namespace WebAssemblyInfo
             {
                 var reader = new WasmReader(file);
                 reader.Parse();
+
+                var dir = Path.GetDirectoryName(file);
+                if (dir == null)
+                    continue;
+
+                foreach (var path in Directory.GetFiles(Path.Combine(dir, "managed"), "*.dll"))
+                {
+                    Console.WriteLine($"path {path}");
+                    var ar = GetAssemblyReader(path);
+                }
             }
 
             return 0;
         }
 
+        static AssemblyReader GetAssemblyReader(string path)
+        {
+            if (assemblies.TryGetValue(path, out AssemblyReader? reader))
+                return reader;
+
+            reader = new AssemblyReader(path);
+            assemblies[path] = reader;
+
+            return reader;
+        }
 
         static List<string> ProcessArguments(string[] args)
         {
