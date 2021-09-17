@@ -846,6 +846,7 @@ struct LikelyClassRecord
 };
 
 extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
+                                          UINT32                                 maxLikelyClasses,
                                           ICorJitInfo::PgoInstrumentationSchema* schema,
                                           UINT32                                 countSchemaItems,
                                           BYTE*                                  pInstrumentationData,
