@@ -258,7 +258,7 @@ namespace Internal.JitInterface
                     LikelyClassRecord* likelyClasses = stackalloc LikelyClassRecord[1];
                     uint numberOfClasses = getLikelyClasses(likelyClasses, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
 
-                    if ((numberOfClasses > 0) && (likelyClasses->clsHandle != IntPtr.Zero))
+                    if (numberOfClasses > 0)
                     {
                         TypeDesc type = (TypeDesc)handleToObject[likelyClasses->clsHandle];
 #if READYTORUN

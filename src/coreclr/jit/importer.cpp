@@ -21368,7 +21368,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         CORINFO_CLASS_HANDLE likelyClass = likelyClasses[0].clsHandle;
 
-        if ((numberOfClasses > 0) && (likelyClass != NO_CLASS_HANDLE))
+        if (numberOfClasses > 0)
         {
             // PGO had better agree the class we devirtualized to is plausible.
             //
