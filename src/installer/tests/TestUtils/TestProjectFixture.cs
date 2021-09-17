@@ -91,6 +91,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             static void EnsureDirectoryBuildFiles(string testAssetsFolder, string testArtifactDirectory)
             {
+                if (Directory.Exists(testArtifactDirectory))
+                {
+                    return;
+                }
                 Directory.CreateDirectory(testArtifactDirectory);
 
                 // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
@@ -100,13 +104,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
                 static void EnsureTestProjectsFileContent(string testAssetsFolder, string dir, string type)
                 {
-                    var fileName = Path.Combine(dir, $"Directory.Build.{type}");
-                    if (File.Exists(fileName))
-                    {
-                        return;
-                    }
                     File.WriteAllText(
-                        fileName,
+                        Path.Combine(dir, $"Directory.Build.{type}"),
                         string.Join(
                             Environment.NewLine,
                             "<Project>",
