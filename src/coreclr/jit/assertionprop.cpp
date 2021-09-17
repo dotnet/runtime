@@ -123,11 +123,7 @@ bool IntegralRange::Contains(int64_t value) const
 //
 // This routine computes the input range for a cast from
 // an integer to an integer for which it will not overflow.
-//
-// Note that the ranges computed by this method are **always** in the
-// "signed" domain. For example, a cast such as CAST_OVF(ulong <- uint)
-// will return [INT32_MIN..INT32_MAX], i. e. the operation does not
-// overflow for any possible input and the GTF_OVERFLOW flag is a no-op.
+// See also the specification comment for IntegralRange.
 //
 // Arguments:
 //    cast - the cast node for which the range will be computed

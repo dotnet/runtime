@@ -1174,6 +1174,25 @@ inline constexpr bool operator<=(SymbolicIntegerValue left, SymbolicIntegerValue
 // Represents an integral range useful for reasoning about integral casts.
 // It uses a symbolic representation for lower and upper bounds so
 // that it can efficiently handle integers of all sizes on all hosts.
+//
+// Note that the ranges represented by this class are **always** in the
+// "signed" domain. This is so that if we know the range a node produces, it
+// can be trivially used to determine if a cast above the node does or does not
+// overflow, which requires that the interpretation of integers be the same both
+// for the "input" and "output". We choose signed interpretation here because it
+// produces nice continuous ranges and because IR uses sign-extension for constants.
+//
+// Some examples of how ranges are computed for casts:
+// 1. CAST_OVF(ubyte <- uint): does not overflow for [0..UBYTE_MAX], produces the
+//    same range - all casts that do not change the representation, i. e.have the
+//    same "actual" input and output type, have the same "input" and "output" range.
+// 2. CAST_OVF(ulong <- uint): never oveflows => the "input" range is [INT_MIN..INT_MAX]
+//    (aka all possible 32 bit integers). Produces [0..UINT_MAX] (aka all possible 32
+//    bit integers zero-extended to 64 bits).
+// 3. CAST_OVF(int <- uint): overflows for inputs larger than INT_MAX <=> less than 0
+//    when interpreting as signed => the "input" range is [0..INT_MAX], the same range
+//    being the produced one as the node does not change the width of the integer.
+//
 class IntegralRange
 {
 private:
