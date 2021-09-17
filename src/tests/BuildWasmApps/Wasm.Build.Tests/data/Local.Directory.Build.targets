@@ -16,12 +16,6 @@
       Text="%24(WasmMainJS) is set when %24(WasmGenerateAppBundle) is not true: it won't be used because an app bundle is not being generated. Possible build authoring error" />
   </Target>
 
-  <Target Name="PrepareForWasmBuild">
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\**\*.dll" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
   </Target>

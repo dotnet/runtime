@@ -4,6 +4,7 @@
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
+    <IsWasmProject>true</IsWasmProject>
     <Configuration>Debug</Configuration>
     <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
 
