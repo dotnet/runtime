@@ -360,7 +360,7 @@ public class ApkBuilder
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
 
         Regex checkNumerics = new Regex(@"\.(\d)");
-        if (checkNumerics.isMatch(ProjectName))
+        if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
         string packageId = $"net.dot.{ProjectName}";
