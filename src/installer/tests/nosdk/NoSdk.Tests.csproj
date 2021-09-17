@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Host and Bundle Tests Without SDK</Description>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <AssemblyName>NoSdk.Tests</AssemblyName>
+    <PackageId>NoSdk.Tests</PackageId>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
+    <TestsOutputName>nosdk</TestsOutputName>
+    <UsesTestAssets>true</UsesTestAssets>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\BundleHelper\BundleHelper.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+  </ItemGroup>
+
+</Project>

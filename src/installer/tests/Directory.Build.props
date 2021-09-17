@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <TestDir>$(InstallerProjectRoot)tests\</TestDir>
-    <TestAssetsDir>$(TestDir)Assets\</TestAssetsDir>
+    <TestAssetsDir>$(TestDir)integration\Assets\</TestAssetsDir>
     <TestStabilizedLegacyPackagesDir>$(ArtifactsObjDir)TestStabilizedPackages\</TestStabilizedLegacyPackagesDir>
     <TestRestorePackagesPath>$(ArtifactsObjDir)TestPackageCache\</TestRestorePackagesPath>
     <TestRestoreNuGetConfigFile>$(ArtifactsObjDir)TestNuGetConfig\NuGet.config</TestRestoreNuGetConfigFile>
@@ -16,6 +16,10 @@
     <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --blame-hang-timeout 5m --blame-hang-dump-type full</TestRunnerAdditionalArguments>
     <UseVSTestRunner>true</UseVSTestRunner>
     <RunAnalyzers>false</RunAnalyzers>
+    <TestRuntimeVersion>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</TestRuntimeVersion>
+    <TestHostPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(TestRuntimeVersion)'))</TestHostPath>
+    <RuntimePackPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(TestRuntimeVersion)'))</RuntimePackPath>
+    <CoreClrPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOs).$(TargetArchitecture).$(Configuration)'))</CoreClrPath>
   </PropertyGroup>
 
 </Project>
