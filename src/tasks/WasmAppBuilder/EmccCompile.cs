@@ -123,9 +123,18 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 _tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 Directory.CreateDirectory(_tempPath);
 
-                int allowedParallelism = Math.Min(SourceFiles.Length, Environment.ProcessorCount);
+                Log.LogMessage(MessageImportance.High, $"ProcessorCount: {Environment.ProcessorCount}");
+                int cpuCount = Environment.ProcessorCount < 3 ? 1 : Environment.ProcessorCount;
+                int allowedParallelism = Math.Min(SourceFiles.Length, cpuCount);
                 if (BuildEngine is IBuildEngine9 be9)
+                {
                     allowedParallelism = be9.RequestCores(allowedParallelism);
+                    Log.LogMessage(MessageImportance.High, $"acquired: {allowedParallelism}");
+                    allowedParallelism -= 1;
+                    if (allowedParallelism < 1)
+                        allowedParallelism = 1;
+                    Log.LogMessage(MessageImportance.High, $"allowedParallelism: {allowedParallelism}");
+                }
 
                 if (DisableParallelCompile || allowedParallelism == 1)
                 {
