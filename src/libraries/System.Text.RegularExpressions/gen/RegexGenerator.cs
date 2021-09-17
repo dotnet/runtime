@@ -25,45 +25,68 @@ namespace System.Text.RegularExpressions.Generator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<TypeDeclarationSyntax> classDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    static (s, _) => IsSyntaxTargetForGeneration(s),
-                    static (ctx, _) => GetSemanticTargetForGeneration(ctx))
-                .Where(static m => m is not null);
+            IncrementalValueProvider<ImmutableArray<object?>> typesAndCompilation =
+                context.SyntaxProvider
 
-            IncrementalValueProvider<(Compilation, ImmutableArray<TypeDeclarationSyntax>)> compilationAndClasses =
-                context.CompilationProvider.Combine(classDeclarations.Collect());
+                // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator
+                .CreateSyntaxProvider(static (s, _) => IsSyntaxTargetForGeneration(s), static (ctx, _) => GetSemanticTargetForGeneration(ctx))
+                .Where(static m => m is not null)
 
-            context.RegisterImplementationSourceOutput(compilationAndClasses, static (context, source) =>
+                // Pair each with the compilation
+                .Combine(context.CompilationProvider)
+
+                // Use a custom comparer that ignores the compilation so that it doesn't interface with the generators caching of results based on MethodDeclarationSyntax
+                .WithComparer(new LambdaComparer<(MethodDeclarationSyntax, Compilation)>(static (left, right) => left.Item1.Equals(left.Item2), static o => o.Item1.GetHashCode()))
+
+                // Get the resulting code string or error Diagnostic for each MethodDeclarationSyntax/Compilation pair
+                .Select((state, cancellationToken) =>
+                {
+                    object? result = GetRegexTypeToEmit(state.Item2, state.Item1, cancellationToken);
+                    return result is RegexType regexType ? EmitRegexType(regexType) : result;
+                })
+                .Collect();
+
+            // When there something to output, take all the generated strings and concatenate them to output,
+            // and raise all of the created diagnostics.
+            context.RegisterSourceOutput(typesAndCompilation, static (context, results) =>
             {
-                ImmutableArray<TypeDeclarationSyntax> types = source.Item2;
-                if (types.IsDefaultOrEmpty)
-                {
-                    return;
-                }
+                var code = new List<string>(s_headersAndUsings.Length + results.Length);
 
-                string result = "";
-                try
+                // Add file header and required usings
+                code.AddRange(s_headersAndUsings);
+
+                foreach (object? result in results)
                 {
-                    Compilation compilation = source.Item1;
-                    IReadOnlyList<RegexType> regexTypes = GetRegexTypesToEmit(compilation, context.ReportDiagnostic, types.Distinct(), context.CancellationToken);
-                    if (regexTypes.Count != 0)
+                    switch (result)
                     {
-                        result = Emit(regexTypes, context.CancellationToken);
+                        case Diagnostic d:
+                            context.ReportDiagnostic(d);
+                            break;
+
+                        case string s:
+                            code.Add(s);
+                            break;
                     }
                 }
-                catch (Exception e) when (!(e is OperationCanceledException))
-                {
-                    result =
-                        "// ERROR:" + Environment.NewLine +
-                        string.Join(Environment.NewLine, e.ToString().Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).Select(s => $"// {SymbolDisplay.FormatLiteral(s, quote: false)}"));
-                }
 
-                if (result.Length > 0)
-                {
-                    context.AddSource("RegexGenerator.g.cs", result);
-                }
+                context.AddSource("RegexGenerator.g.cs", string.Join(Environment.NewLine, code));
             });
+        }
+
+        private sealed class LambdaComparer<T> : IEqualityComparer<T>
+        {
+            private readonly Func<T, T, bool> _equal;
+            private readonly Func<T, int> _getHashCode;
+
+            public LambdaComparer(Func<T, T, bool> equal, Func<T, int> getHashCode)
+            {
+                _equal = equal;
+                _getHashCode = getHashCode;
+            }
+
+            public bool Equals(T x, T y) => _equal(x, y);
+
+            public int GetHashCode(T obj) => _getHashCode(obj);
         }
     }
 }
