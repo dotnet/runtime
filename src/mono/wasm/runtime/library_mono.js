@@ -55,7 +55,8 @@ var MonoSupportLib = {
 		active_frames: [],
 		pump_count: 0,
 		timeout_queue: [],
-		spread_timers_maximum:0,
+		spread_timers_maximum: 0,
+		isChromium: false,
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
@@ -102,6 +103,16 @@ var MonoSupportLib = {
 			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots.bind(MONO);
 			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots.bind(MONO);
 			module ["mono_wasm_load_config"] = MONO.mono_wasm_load_config.bind(MONO);
+			
+			if (globalThis.navigator) {
+				const nav = globalThis.navigator;
+				if (nav.userAgentData && nav.userAgentData.brands) {
+					MONO.isChromium = nav.userAgentData.brands.some((i) => i.brand == 'Chromium');
+				}
+				else if (nav.userAgent) {
+					MONO.isChromium = nav.userAgent.includes("Chrome");
+				}
+			}
 		},
 
 		_base64Converter: {
@@ -548,14 +559,15 @@ var MonoSupportLib = {
 				return result;
 			},
 			decode: function (start, end, save) {
-				if (!MONO.mono_text_decoder) {
-					MONO.mono_text_decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-16le') : undefined;
+				if (MONO.mono_text_decoder === undefined) {
+					MONO.mono_text_decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-16le') : null;
 				}
 
 				var str = "";
 				if (MONO.mono_text_decoder) {
 					// When threading is enabled, TextDecoder does not accept a view of a
 					// SharedArrayBuffer, we must make a copy of the array first.
+					// See https://github.com/whatwg/encoding/issues/172
 					var subArray = typeof SharedArrayBuffer !== 'undefined' && Module.HEAPU8.buffer instanceof SharedArrayBuffer
 						? Module.HEAPU8.slice(start, end)
 						: Module.HEAPU8.subarray(start, end);
@@ -1471,6 +1483,10 @@ var MonoSupportLib = {
 			this.mono_set_timeout_exec (id);
 		},
 		prevent_timer_throttling: function () {
+			if (!MONO.isChromium) {
+				return;
+			}
+
 			// this will schedule timers every second for next 6 minutes, it should be called from WebSocket event, to make it work
 			// on next call, it would only extend the timers to cover yet uncovered future
 			let now = new Date().valueOf();
