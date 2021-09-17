@@ -32,7 +32,7 @@
 
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
 
-    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(_TargetFrameworkForNETCoreTasks)', 'publish'))</WasmAppBuilderDir>
+    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(_TargetFrameworkForNETCoreTasks)'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(_TargetFrameworkForNETCoreTasks)', 'publish'))</WasmBuildTasksDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(_TargetFrameworkForNETCoreTasks)'))</MonoAOTCompilerDir>
     <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'RuntimeConfigParser', 'Debug', '$(_TargetFrameworkForNETCoreTasks)'))</RuntimeConfigParserDir>

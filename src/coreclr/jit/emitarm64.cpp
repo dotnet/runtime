@@ -12179,7 +12179,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
         }
         else
         {
-            assert(sz == 0);
+            assert(id->idCodeSize() == sz);
             printf("              ");
         }
     }
@@ -13786,6 +13786,9 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
                 {
                     isLocalAccess = true;
                 }
+                break;
+            case IF_LARGELDC:
+                isLocalAccess = false;
                 break;
 
             default:

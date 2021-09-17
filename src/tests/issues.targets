@@ -2317,9 +2317,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.1-M1-Beta1/b143840/b143840/*">
             <Issue>https://github.com/dotnet/runtime/issues/48914</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Roslyn/CscBench/**">
-            <Issue>https://github.com/dotnet/runtime/issues/58062</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
             <Issue> needs triage </Issue>
         </ExcludeList>

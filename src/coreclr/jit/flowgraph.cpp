@@ -93,6 +93,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
     // Walk through the blocks and hunt for a block that needs a GC Poll
     for (block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
+        compCurBB = block;
+
         // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
         // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
         if (opts.OptimizationDisabled() ? ((block->bbFlags & BBF_HAS_SUPPRESSGC_CALL) == 0) : !blockNeedsGCPoll(block))
