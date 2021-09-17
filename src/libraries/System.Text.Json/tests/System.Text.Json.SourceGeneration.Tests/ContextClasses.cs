@@ -57,13 +57,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         private static JsonContext s_defaultContext;
         public static JsonContext Default => s_defaultContext ??= new JsonContext(new JsonSerializerOptions(s_defaultOptions));
 
-        public JsonContext() : base(null, s_defaultOptions)
+        public JsonContext() : base(null)
         {
         }
 
-        public JsonContext(JsonSerializerOptions options) : base(options, s_defaultOptions)
+        public JsonContext(JsonSerializerOptions options) : base(options)
         {
         }
+
+        protected override JsonSerializerOptions? GeneratedSerializerOptions => s_defaultOptions;
 
         public override JsonTypeInfo GetTypeInfo(global::System.Type type)
         {
