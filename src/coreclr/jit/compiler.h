@@ -1184,8 +1184,8 @@ inline constexpr bool operator<=(SymbolicIntegerValue left, SymbolicIntegerValue
 //
 // Some examples of how ranges are computed for casts:
 // 1. CAST_OVF(ubyte <- uint): does not overflow for [0..UBYTE_MAX], produces the
-//    same range - all casts that do not change the representation, i. e.have the
-//    same "actual" input and output type, have the same "input" and "output" range.
+//    same range - all casts that do not change the representation, i. e. have the same
+//    "actual" input and output type, have the same "input" and "output" range.
 // 2. CAST_OVF(ulong <- uint): never oveflows => the "input" range is [INT_MIN..INT_MAX]
 //    (aka all possible 32 bit integers). Produces [0..UINT_MAX] (aka all possible 32
 //    bit integers zero-extended to 64 bits).
