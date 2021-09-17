@@ -312,12 +312,14 @@ namespace
                 GC_TRIGGERS;
                 MODE_COOPERATIVE;
                 PRECONDITION(!IsLockHeld());
+                PRECONDITION(!(withFlags & ExternalObjectContext::Flags_Collected));
                 POSTCONDITION(RETVAL != NULL);
             }
             CONTRACT_END;
 
             struct
             {
+                PTRARRAYREF arrRefTmp;
                 PTRARRAYREF arrRef;
             } gc;
             ::ZeroMemory(&gc, sizeof(gc));
@@ -350,14 +352,40 @@ namespace
             // Insert objects into enumerable.
             // The ExternalObjectContexts in the hashmap are only
             // removed and associated objects collected during a GC. Since
-            // this code is running in Cooperative mode they will never
-            // be null.
+            // this code is running in Cooperative mode they will not be null
+            // during detection above, but could be marked for collection
+            // after allocating the above array.
+            SIZE_T objCount = 0;
             for (SIZE_T i = 0; i < localList.Size(); i++)
             {
                 ExternalObjectContext* inst = localList[i];
-                gc.arrRef->SetAt(i, inst->GetObjectRef());
+                if (inst->IsActive())
+                {
+                    gc.arrRef->SetAt(objCount, inst->GetObjectRef());
+                    objCount++;
+                }
             }
 
+            // During the allocation of the returned enumerable, a GC
+            // could have occurred and objects marked "collected". In order to
+            // avoid having null array elements we will allocate a new array.
+            // This subsequent allocation is okay because the array we are
+            // replacing extends all object lifetimes.
+            if (objCount < localList.Size())
+            {
+                gc.arrRefTmp = (PTRARRAYREF)AllocateObjectArray((DWORD)objCount, g_pObjectClass);
+                SIZE_T elementSize = gc.arrRef->GetComponentSize();
+
+                void* src = gc.arrRef->GetDataPtr();
+                void* dest = gc.arrRefTmp->GetDataPtr();
+
+                memmoveGCRefs(dest, src, objCount * elementSize);
+                gc.arrRef = gc.arrRefTmp;
+            }
+
+            // All objects in the array are now referenced so won't be collected
+            // at this point. This means we can safely iterate over the active
+            // ExternalObjectContext instances.
             {
                 // Separate the wrapper from the tracker runtime prior to
                 // passing them onto the caller. This call is okay to make
@@ -369,7 +397,8 @@ namespace
                 for (SIZE_T i = 0; i < localList.Size(); i++)
                 {
                     ExternalObjectContext* inst = localList[i];
-                    InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
+                    if (inst->IsActive())
+                        InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
                 }
             }
 
