@@ -96,22 +96,21 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.asset = asset;
                 entry.asset.name = asset_name;
 
-                m_deps_entries[i].push_back(std::move(entry));
-
                 if (trace::is_enabled())
                 {
-                    const deps_entry_t& parsed = m_deps_entries[i].back();
                     trace::info(_X("Parsed %s deps entry %d for asset name: %s from %s: %s, library version: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
                         deps_entry_t::s_known_asset_types[i],
                         m_deps_entries[i].size() - 1,
-                        parsed.asset.name.c_str(),
-                        parsed.library_type.c_str(),
-                        parsed.library_name.c_str(),
-                        parsed.library_version.c_str(),
-                        parsed.asset.relative_path.c_str(),
-                        parsed.asset.assembly_version.as_str().c_str(),
-                        parsed.asset.file_version.as_str().c_str());
+                        entry.asset.name.c_str(),
+                        entry.library_type.c_str(),
+                        entry.library_name.c_str(),
+                        entry.library_version.c_str(),
+                        entry.asset.relative_path.c_str(),
+                        entry.asset.assembly_version.as_str().c_str(),
+                        entry.asset.file_version.as_str().c_str());
                 }
+
+                m_deps_entries[i].push_back(std::move(entry));
             }
         }
     }
