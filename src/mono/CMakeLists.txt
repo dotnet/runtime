@@ -753,7 +753,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})
 else()
   file(STRINGS "${VERSION_FILE_PATH}" product_version_string_line REGEX "sccsid")
-  string(REGEX REPLACE ".*Version *(.*)\";" "\"\\1\"" product_version_string "${product_version_string_line}")
+  string(REGEX REPLACE ".*Version *(.*)\";" "\"\\1\"" product_version_string ${product_version_string_line})
 endif()
 
 file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_major_line REGEX "RuntimeProductMajorVersion ")
