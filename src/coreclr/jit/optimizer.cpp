@@ -5691,7 +5691,7 @@ void Compiler::optHoistLoopCode()
     {
         if (optLoopTable[lnum].lpFlags & LPFLG_REMOVED)
         {
-            JITDUMP("\nLoop L%02u was removed\n", lnum);
+            JITDUMP("\nLoop " FMT_LP " was removed\n", lnum);
             continue;
         }
 
@@ -5750,7 +5750,8 @@ void Compiler::optHoistLoopCode()
 void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     // Do this loop, then recursively do all nested loops.
-    JITDUMP("\n%s L%02u\n", optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP ? "Loop Nest" : "Nested Loop", lnum);
+    JITDUMP("\n%s " FMT_LP "\n", optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP ? "Loop Nest" : "Nested Loop",
+            lnum);
 
 #if LOOP_HOIST_STATS
     // Record stats
@@ -5959,7 +5960,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     if (pLoopDsc->lpFlags & LPFLG_ONE_EXIT)
     {
         assert(pLoopDsc->lpExit != nullptr);
-        JITDUMP("  Only considering hosting in blocks that dominate exit block " FMT_BB "\n", pLoopDsc->lpExit->bbNum);
+        JITDUMP("  Only considering hoisting in blocks that dominate exit block " FMT_BB "\n", pLoopDsc->lpExit->bbNum);
         BasicBlock* cur = pLoopDsc->lpExit;
         // Push dominators, until we reach "entry" or exit the loop.
         while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
@@ -5970,7 +5971,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         // If we didn't reach the entry block, give up and *just* push the entry block.
         if (cur != pLoopDsc->lpEntry)
         {
-            JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hosting in entry "
+            JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hoisting in entry "
                     "block " FMT_BB "\n",
                     pLoopDsc->lpEntry->bbNum);
             defExec.Reset();
@@ -5979,7 +5980,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     }
     else // More than one exit
     {
-        JITDUMP("  only considering hosting in entry block " FMT_BB "\n", pLoopDsc->lpEntry->bbNum);
+        JITDUMP("  only considering hoisting in entry block " FMT_BB "\n", pLoopDsc->lpEntry->bbNum);
         // We'll assume that only the entry block is definitely executed.
         // We could in the future do better.
         defExec.Push(pLoopDsc->lpEntry);
@@ -6059,8 +6060,8 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that are not heavy: tree->GetCostEx() < (2*IND_COST_EX)
         if (tree->GetCostEx() < (2 * IND_COST_EX))
         {
-            JITDUMP("    tree cost too low: %d < %d (lvc %u >= arc %u)\n", tree->GetCostEx(), 2 * IND_COST_EX,
-                    loopVarCount, availRegCount);
+            JITDUMP("    tree cost too low: %d < %d (loopVarCount %u >= availableRegCount %u)\n", tree->GetCostEx(),
+                    2 * IND_COST_EX, loopVarCount, availRegCount);
             return false;
         }
     }
@@ -6078,8 +6079,8 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that barely meet CSE cost requirements: tree->GetCostEx() == MIN_CSE_COST
         if (tree->GetCostEx() <= MIN_CSE_COST + 1)
         {
-            JITDUMP("    tree not good CSE: %d <= %d (vioc %u > arc %u)\n", tree->GetCostEx(), 2 * MIN_CSE_COST + 1,
-                    varInOutCount, availRegCount)
+            JITDUMP("    tree not good CSE: %d <= %d (varInOutCount %u > availableRegCount %u)\n", tree->GetCostEx(),
+                    2 * MIN_CSE_COST + 1, varInOutCount, availRegCount)
             return false;
         }
     }
@@ -6475,7 +6476,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 if (!child.m_invariant)
                 {
                     treeIsInvariant = false;
-                    INDEBUG(failReason = "variant child";);
+                    INDEBUG(failReason = "variant child";)
                 }
 
                 if (child.m_cctorDependent)
@@ -6526,7 +6527,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                     treeIsHoistable = IsNodeHoistable(tree);
                     if (!treeIsHoistable)
                     {
-                        INDEBUG(failReason = "not handled by cse";);
+                        INDEBUG(failReason = "not handled by cse";)
                     }
                 }
 
@@ -6538,7 +6539,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                     GenTreeCall* call = tree->AsCall();
                     if (call->gtCallType != CT_HELPER)
                     {
-                        INDEBUG(failReason = "non-helper call";);
+                        INDEBUG(failReason = "non-helper call";)
                         treeIsHoistable = false;
                     }
                     else
@@ -6546,13 +6547,13 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
                         if (!s_helperCallProperties.IsPure(helpFunc))
                         {
-                            INDEBUG(failReason = "impure helper call";);
+                            INDEBUG(failReason = "impure helper call";)
                             treeIsHoistable = false;
                         }
                         else if (s_helperCallProperties.MayRunCctor(helpFunc) &&
                                  ((call->gtFlags & GTF_CALL_HOISTABLE) == 0))
                         {
-                            INDEBUG(failReason = "non-hoistable helper call";);
+                            INDEBUG(failReason = "non-hoistable helper call";)
                             treeIsHoistable = false;
                         }
                     }
@@ -6569,7 +6570,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         //
                         if ((tree->gtFlags & GTF_EXCEPT) != 0)
                         {
-                            INDEBUG(failReason = "side effect ordering constraint";);
+                            INDEBUG(failReason = "side effect ordering constraint";)
                             treeIsHoistable = false;
                         }
                     }
@@ -6582,7 +6583,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 if (!treeIsInvariant)
                 {
                     // Here we have a tree that is not loop invariant and we thus cannot hoist
-                    INDEBUG(failReason = "tree VN is loop variant";);
+                    INDEBUG(failReason = "tree VN is loop variant";)
                     treeIsHoistable = false;
                 }
             }
@@ -6662,7 +6663,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 {
                     // If this node is a MEMORYBARRIER or an Atomic operation
                     // then don't hoist and stop any further hoisting after this node
-                    INDEBUG(failReason = "atomic op or memory barrier";);
+                    INDEBUG(failReason = "atomic op or memory barrier";)
                     treeIsHoistable    = false;
                     m_beforeSideEffect = false;
                 }
@@ -9160,7 +9161,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 // the prolog and this explicit intialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
-                                JITDUMP("Marking L%02u as having an explicit init\n", lclNum);
+                                JITDUMP("Marking " FMT_LP " as having an explicit init\n", lclNum);
                             }
                         }
                         break;
