@@ -3,8 +3,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories("./jitstd")
 include_directories("../inc")
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  add_compile_options(-Wno-error) # tracked by https://github.com/dotnet/runtime/issues/33541
+# gcc 10 and lower versions are too sensitive to bit fields width and warn from core compiler.
+# Since there is no better / specific suppression available for these core warnings, we disable
+# warn-as-error (-Werror) for JIT in this case. This issue has been fixed in gcc 11.
+# See https://github.com/dotnet/runtime/issues/33541
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11.0)
+  add_compile_options(-Wno-error)
 endif()
 
 function(create_standalone_jit)

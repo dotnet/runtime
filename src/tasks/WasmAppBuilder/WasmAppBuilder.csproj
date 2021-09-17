@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="..\Common\LogAsErrorException.cs" />
 
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />

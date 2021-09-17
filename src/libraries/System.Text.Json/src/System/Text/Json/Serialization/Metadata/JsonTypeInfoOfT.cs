@@ -15,8 +15,8 @@ namespace System.Text.Json.Serialization.Metadata
     {
         private Action<Utf8JsonWriter, T>? _serialize;
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, ConverterStrategy converterStrategy) :
-            base(type, options, converterStrategy)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options) :
+            base(type, options, dummy: false)
         { }
 
         internal JsonTypeInfo()
@@ -25,10 +25,11 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// A method that serializes an instance of <typeparamref name="T"/> using
+        /// Serializes an instance of <typeparamref name="T"/> using
         /// <see cref="JsonSourceGenerationOptionsAttribute"/> values specified at design time.
         /// </summary>
-        public Action<Utf8JsonWriter, T>? Serialize
+        /// <remarks>The writer is not flushed after writing.</remarks>
+        public Action<Utf8JsonWriter, T>? SerializeHandler
         {
             get
             {
