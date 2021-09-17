@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AppxUriValue.cs" />
+    <Compile Include="Uri\ConstructorTests.cs" />
     <Compile Include="EscapeUnescapeIriTests.cs" />
     <Compile Include="IdnCheckHostNameTest.cs" />
     <Compile Include="IdnDnsSafeHostTest.cs" />
