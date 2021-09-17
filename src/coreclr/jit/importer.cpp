@@ -21358,10 +21358,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         (isExact || objClassIsFinal) && (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
     if (JitConfig.JitCrossCheckDevirtualizationAndPGO() && canSensiblyCheck)
     {
-        LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
+        // We only can handle a single likely class for now
+        const int maxLikelyClasses = 1;
+        LikelyClassRecord likelyClasses[maxLikelyClasses];
 
         UINT32 numberOfClasses =
-            getLikelyClasses(likelyClasses, MAX_LIKELY_CLASSES, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
         UINT32 likelihood = likelyClasses[0].likelihood;
 
         CORINFO_CLASS_HANDLE likelyClass = likelyClasses[0].clsHandle;
@@ -21927,7 +21929,8 @@ void Compiler::considerGuardedDevirtualization(
 
     bool doRandomDevirt = false;
 
-    LikelyClassRecord likelyClasses[MAX_LIKELY_CLASSES];
+    const int maxLikelyClasses = 32;
+    LikelyClassRecord likelyClasses[maxLikelyClasses];
 
 #ifdef DEBUG
     // Optional stress mode to pick a random known class, rather than
@@ -21952,7 +21955,7 @@ void Compiler::considerGuardedDevirtualization(
 #endif
     {
         numberOfClasses =
-            getLikelyClasses(likelyClasses, MAX_LIKELY_CLASSES, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
     }
 
     // For now we only use the most popular type

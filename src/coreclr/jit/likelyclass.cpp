@@ -109,8 +109,13 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 // getLikelyClasses: find class profile data for an IL offset, and return the most likely classes
 //
 // Arguments:
-//    pLikelyClasses - [OUT] array of likely classes sorted by likelihood (descending), must be at
-//                     least of maxLikelyClasses long (next argument)
+//    pLikelyClasses - [OUT] array of likely classes sorted by likelihood (descending). It must be
+//                     at least of 'maxLikelyClasses' (next argument) length.
+//                     The array consists of pairs "clsHandle - likelihood" ordered by likelihood 
+//                     (descending) where likelihood can be any value in [0..100] range. clsHandle
+//                     is never null for [0..<return value of this function>) range, Items in
+//                     [<return value of this function>..maxLikelyClasses) are zeroed if the number
+//                     of classes seen is less than maxLikelyClasses provided.
 //    maxLikelyClasses - limit for likely classes to output
 //    schema - profile schema
 //    countSchemaItems - number of items in the schema

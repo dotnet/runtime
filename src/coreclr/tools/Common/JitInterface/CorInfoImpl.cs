@@ -101,8 +101,6 @@ namespace Internal.JitInterface
             private static readonly IntPtr s_jit;
         }
 
-        private const int MAX_LIKELY_CLASSES = 32;
-
         private struct LikelyClassRecord
         {
             public IntPtr clsHandle;
@@ -256,10 +254,10 @@ namespace Internal.JitInterface
             {
                 fixed(byte* pInstrumentationData = &instrumentationData[0])
                 {
-                    LikelyClassRecord* likelyClasses = stackalloc LikelyClassRecord[MAX_LIKELY_CLASSES];
-                    uint numberOfClasses = getLikelyClasses(likelyClasses, MAX_LIKELY_CLASSES, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
-
                     // We're going to store only the most popular type to reduce size of the profile
+                    LikelyClassRecord* likelyClasses = stackalloc LikelyClassRecord[1];
+                    uint numberOfClasses = getLikelyClasses(likelyClasses, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
+
                     if ((numberOfClasses > 0) && (likelyClasses->clsHandle != IntPtr.Zero))
                     {
                         TypeDesc type = (TypeDesc)handleToObject[likelyClasses->clsHandle];
