@@ -78,12 +78,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
 #nullable enable
 
-        private static object? s_buildFilesLock = null;
+        private readonly static object? s_buildFilesLock = new object();
 
         private TestProject CopyTestProject(TestProject sourceTestProject)
         {
-            if (s_buildFilesLock is null &&
-                Interlocked.CompareExchange(ref s_buildFilesLock, new object(), null) is not null)
+            lock (s_buildFilesLock)
             {
                 // Prevent in-process race condition since the TestArtifactsPath is shared by the current
                 // assembly
