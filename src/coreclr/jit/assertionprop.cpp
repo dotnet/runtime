@@ -2150,7 +2150,7 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
     LclVarDsc*     varDsc = lvaGetDesc(lclVar);
 
     // It is not useful to make assertions about address-exposed variables, they will never be proven.
-    if (varDsc->lvAddrExposed)
+    if (varDsc->IsAddressExposed())
     {
         return NO_ASSERTION_INDEX;
     }
