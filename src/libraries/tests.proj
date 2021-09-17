@@ -148,6 +148,10 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlFormatWriterGeneratorAOT/iOS.Simulator.XmlFormatWriterGeneratorAot.Test.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">
     <!-- PNSE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />
