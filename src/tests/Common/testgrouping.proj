@@ -89,6 +89,11 @@
       <XUnitWrapperDll>$(TestBinDir)JIT\Regression\JIT.Regression.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
+    <TestGrouping Include="$(TestBinDir)JIT\Regression\JitBlue\GitHub_*\**">
+      <TestGroup>JIT.Regression.JitBlue</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\Regression\JIT.Regression.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
     <TestGrouping Include="$(TestBinDir)Loader\classloader\generics\**">
       <TestGroup>Loader.classloader.generics</TestGroup>
       <XUnitWrapperDll>$(TestBinDir)Loader\classloader\Loader.classloader.XUnitWrapper.dll</XUnitWrapperDll>
