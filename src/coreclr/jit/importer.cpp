@@ -21359,7 +21359,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (JitConfig.JitCrossCheckDevirtualizationAndPGO() && canSensiblyCheck)
     {
         // We only can handle a single likely class for now
-        const int maxLikelyClasses = 1;
+        const int         maxLikelyClasses = 1;
         LikelyClassRecord likelyClasses[maxLikelyClasses];
 
         UINT32 numberOfClasses =
@@ -21929,7 +21929,7 @@ void Compiler::considerGuardedDevirtualization(
 
     bool doRandomDevirt = false;
 
-    const int maxLikelyClasses = 32;
+    const int         maxLikelyClasses = 32;
     LikelyClassRecord likelyClasses[maxLikelyClasses];
 
 #ifdef DEBUG
