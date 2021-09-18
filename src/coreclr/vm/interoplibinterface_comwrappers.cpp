@@ -336,8 +336,9 @@ namespace
                     ExternalObjectContext* inst = *curr;
 
                     // Only add objects that are in the correct thread
-                    // context and have the appropriate flags set.
+                    // context, active, and have the appropriate flags set.
                     if (inst->ThreadContext == threadContext
+                        && inst->IsActive()
                         && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
                     {
                         localList.Push(inst);
