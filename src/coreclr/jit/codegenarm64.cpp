@@ -4266,17 +4266,17 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicNarrow);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicNarrow);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
-    GenTree*  op2       = simdNode->gtGetOp2();
+    GenTree*  op1       = simdNode->Op(1);
+    GenTree*  op2       = simdNode->Op(2);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types simdType = simdNode->TypeGet();
     emitAttr  emitSize = emitTypeSize(simdType);
 
-    genConsumeOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber op1Reg = op1->GetRegNum();
     regNumber op2Reg = op2->GetRegNum();
 
@@ -4286,7 +4286,7 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
     assert(op2Reg != targetReg);
     assert(simdNode->GetSimdSize() == 16);
 
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    instruction ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
     assert((ins == INS_fcvtn) || (ins == INS_xtn));
 
     instruction ins2 = (ins == INS_fcvtn) ? INS_fcvtn2 : INS_xtn2;
