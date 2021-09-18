@@ -730,18 +730,19 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //     This check may end up modifying node->gtOp1 if it is a cast node that can be removed
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
-    assert((node->gtHWIntrinsicId == NI_Vector64_Create) || (node->gtHWIntrinsicId == NI_Vector128_Create) ||
-           (node->gtHWIntrinsicId == NI_Vector64_CreateScalarUnsafe) ||
-           (node->gtHWIntrinsicId == NI_Vector128_CreateScalarUnsafe) ||
-           (node->gtHWIntrinsicId == NI_AdvSimd_DuplicateToVector64) ||
-           (node->gtHWIntrinsicId == NI_AdvSimd_DuplicateToVector128) ||
-           (node->gtHWIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector64) ||
-           (node->gtHWIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector128));
-    assert(HWIntrinsicInfo::lookupNumArgs(node) == 1);
+    assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
+           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe) ||
+           (node->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe) ||
+           (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector64) ||
+           (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector128) ||
+           (node->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector64) ||
+           (node->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector128));
+    assert(node->GetOperandCount() == 1);
 
-    GenTree* op1    = node->gtOp1;
+    GenTree* op1    = node->Op(1);
     GenTree* castOp = nullptr;
 
+    // TODO-Casts: why don't we fold the casts? MinOpts?
     if (varTypeIsIntegral(node->GetSimdBaseType()) && op1->OperIs(GT_CAST))
     {
         // We will sometimes get a cast around a constant value (such as for
@@ -764,8 +765,8 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
                 // We found a containable immediate under
                 // a cast, so remove the cast from the LIR.
 
-                BlockRange().Remove(node->gtOp1);
-                node->gtOp1 = op1;
+                BlockRange().Remove(node->Op(1));
+                node->Op(1) = op1;
             }
             return true;
         }
