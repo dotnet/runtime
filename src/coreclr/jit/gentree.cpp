@@ -19793,31 +19793,42 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// GetOverwrittenOpNumForFMA: check if the result is written into one of the operands
+// GetOverwrittenOpNumForFMA: check if the result is written into one of the operands.
+// In the case that none of the operand is overwritten, check if any of them is lastUse.
 //
 // Return Value:
-//     The operand number or 0 if not overwritten.
+//     The operand number overwritten or lastUse. 2 is the default value, where no overwritten and no lastUse.
 //
 unsigned GenTreeHWIntrinsic::GetOverwrittenOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
     // only FMA intrinsic node should call into this function
     assert(HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) == InstructionSet_FMA);
+    unsigned overwrittenOpNum = 2; // 1->op1, 2->op2, 3->op3
     if (!use->OperIs(GT_STORE_LCL_VAR))
-        return 0;
-    GenTreeLclVarCommon* overwritten = use->AsLclVarCommon();
-    unsigned overwrittenLclNum = overwritten->GetLclNum();
-    unsigned overwrittenOpNum = 0; // 1->op1, 2->op2, 3->op3
-    if (op1->IsLocal() && op1->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
     {
-        overwrittenOpNum = 1;
+        if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0)) 
+            overwrittenOpNum = 1;
+        else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
+            overwrittenOpNum = 3;
+        else
+            overwrittenOpNum = 2;
     }
-    else if (op2->IsLocal() && op2->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
+    else
     {
-        overwrittenOpNum = 2;
-    }
-    else if (op3->IsLocal() && op3->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
-    {
-        overwrittenOpNum = 3;
+        GenTreeLclVarCommon* overwritten = use->AsLclVarCommon();
+        unsigned overwrittenLclNum = overwritten->GetLclNum();
+        if (op1->IsLocal() && op1->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
+        {
+            overwrittenOpNum = 1;
+        }
+        else if (op2->IsLocal() && op2->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
+        {
+            overwrittenOpNum = 2;
+        }
+        else if (op3->IsLocal() && op3->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
+        {
+            overwrittenOpNum = 3;
+        }
     }
 
     return overwrittenOpNum;
