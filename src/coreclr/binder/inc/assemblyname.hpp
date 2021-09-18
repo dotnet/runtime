@@ -42,7 +42,7 @@ namespace BINDER_SPACE
 
         AssemblyName();
 
-        HRESULT AssemblyName::Init(PEImage* pPEImage);
+        HRESULT Init(PEImage* pPEImage);
         HRESULT Init(const AssemblyNameData &data);
 
         ULONG AddRef();
