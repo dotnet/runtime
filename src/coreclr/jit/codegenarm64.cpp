@@ -4067,15 +4067,15 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
 //
 void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInit);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber op1Reg = op1->IsIntegralConst(0) ? REG_ZR : op1->GetRegNum();
 
     // TODO-ARM64-CQ Add LD1R to allow SIMDIntrinsicInit from contained memory
