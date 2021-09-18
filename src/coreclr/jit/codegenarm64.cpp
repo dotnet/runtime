@@ -4187,25 +4187,25 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToSingle ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt32 ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToDouble ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt64);
+    assert((simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicCast) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToSingle) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToInt32) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToDouble) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToInt64));
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber op1Reg = op1->GetRegNum();
 
     assert(genIsValidFloatReg(op1Reg));
     assert(genIsValidFloatReg(targetReg));
 
-    instruction ins  = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    instruction ins  = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
     emitAttr    attr = (simdNode->GetSimdSize() > 8) ? EA_16BYTE : EA_8BYTE;
 
     if (GetEmitter()->IsMovInstruction(ins))
