@@ -1689,11 +1689,11 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 //
 void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 {
-    switch (simdNode->gtSIMDIntrinsicID)
+    switch (simdNode->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicInit:
         {
-            GenTree* op1 = simdNode->AsOp()->gtOp1;
+            GenTree* op1 = simdNode->Op(1);
             if (op1->IsIntegralConst(0))
             {
                 MakeSrcContained(simdNode, op1);
@@ -1703,7 +1703,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
-            CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
+            CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
             break;
 
         default:
