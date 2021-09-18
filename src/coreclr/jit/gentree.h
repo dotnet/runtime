@@ -3053,6 +3053,7 @@ struct GenTreeIntConCommon : public GenTree
     inline ssize_t IconValue() const;
     inline void SetIconValue(ssize_t val);
     inline INT64 IntegralValue() const;
+    inline void SetIntegralValue(int64_t value);
 
     template <typename T>
     inline void SetValueTruncating(T value);
@@ -3247,6 +3248,23 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
     return LngValue();
 #else
     return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
+#endif // TARGET_64BIT
+}
+
+inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
+{
+#ifdef TARGET_64BIT
+    SetIconValue(value);
+#else
+    if (OperIs(GT_CNS_LNG))
+    {
+        SetLngValue(value);
+    }
+    else
+    {
+        assert(FitsIn<int32_t>(value));
+        SetIconValue(static_cast<int32_t>(value));
+    }
 #endif // TARGET_64BIT
 }
 
