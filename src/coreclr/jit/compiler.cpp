@@ -2675,7 +2675,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspOrder = false;
     if (compIsForInlining())
     {
-        verbose = impInlineInfo->InlinerCompiler->verbose;
+        if (JitConfig.JitDumpNoInlinePhases() == 0)
+        {
+            verbose = impInlineInfo->InlinerCompiler->verbose;
+        }
+        else
+        {
+            verbose = false;
+        }
     }
     else
     {
@@ -2833,6 +2840,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             }
         }
     }
+
+    verboseDump &= (JitConfig.JitDumpNoTier0() == 0) || !jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
 
     if (verboseDump)
     {
