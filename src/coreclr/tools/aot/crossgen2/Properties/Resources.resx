@@ -366,4 +366,7 @@
   <data name="MakeReproPathHelp" xml:space="preserve">
     <value>Make a repro zip file in the specified path. This is used for sending error reports to the .NET team.</value>
   </data>
+  <data name="UnsupportedInputFileExtension" xml:space="preserve">
+    <value>Input file with '{0}' extension not supported</value>
+  </data>
 </root>

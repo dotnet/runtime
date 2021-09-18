@@ -421,6 +421,12 @@ public:
         return new BYTE[size];
     }
 
+    void operator delete(void* mem)
+    {
+        WRAPPER_NO_CONTRACT;
+        delete[] (BYTE*)mem;
+    }
+
 private:
     // Do not use inplace operator new on Crst. A wrong destructor would be called if the constructor fails.
     // Use CrstStatic or CrstExplicitInit instead of the inplace operator new.

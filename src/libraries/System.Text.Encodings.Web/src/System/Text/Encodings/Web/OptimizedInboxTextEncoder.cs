@@ -41,7 +41,7 @@ namespace System.Text.Encodings.Web
             _scalarEscaper = scalarEscaper;
             _allowedBmpCodePoints = allowedCodePointsBmp;
 
-#if DEBUG && !NETCOREAPP3_1
+#if DEBUG
             // Debug-only assertion to validate that we're no longer using the input
             // argument once the field value has been assigned. All accesses to the bitmap
             // should now go through our instance field. In debug mode, if any code violates
@@ -427,12 +427,11 @@ namespace System.Text.Encodings.Web
                 {
                     idx = GetIndexOfFirstCharToEncodeSsse3(pData, lengthInChars);
                 }
-#if NET5_0_OR_GREATER
                 else if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                 {
                     idx = GetIndexOfFirstCharToEncodeAdvSimd64(pData, lengthInChars);
                 }
-#endif
+
                 Debug.Assert(0 <= idx && idx <= lengthInChars);
 #endif
 

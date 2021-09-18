@@ -608,7 +608,8 @@ public:
                             LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                             if (varDsc->lvFieldCnt > 1)
                             {
-                                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
+                                m_compiler->lvaSetVarDoNotEnregister(
+                                    lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
                             }
                         }
                     }
@@ -694,7 +695,8 @@ private:
                          (val.Node() == user->AsCall()->gtCallThisArg->GetNode());
         bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
 
-        m_compiler->lvaSetVarAddrExposed(exposeParentLcl ? varDsc->lvParentLcl : val.LclNum());
+        m_compiler->lvaSetVarAddrExposed(exposeParentLcl ? varDsc->lvParentLcl
+                                                         : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
 #ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
@@ -806,7 +808,9 @@ private:
 
             if (isWide)
             {
-                m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField ? varDsc->lvParentLcl : val.LclNum());
+                m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField
+                                                     ? varDsc->lvParentLcl
+                                                     : val.LclNum() DEBUGARG(AddressExposedReason::WIDE_INDIR));
             }
             else
             {
@@ -1103,7 +1107,7 @@ private:
 
             // Promoted struct vars aren't currently handled here so the created LCL_FLD can't be
             // later transformed into a LCL_VAR and the variable cannot be enregistered.
-            m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(Compiler::DNER_LocalField));
+            m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
         }
         else
         {

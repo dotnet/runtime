@@ -1891,7 +1891,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 // genMultiRegStoreToSIMDLocal: store multi-reg value to a single-reg SIMD local
 //
 // Arguments:
-//    lclNode  -  GentreeLclVar of GT_STORE_LCL_VAR
+//    lclNode  -  GenTreeLclVar of GT_STORE_LCL_VAR
 //
 // Return Value:
 //    None
@@ -1996,6 +1996,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     else
     {
         regNumber tempXmm = lclNode->GetSingleTempReg();
+        assert(tempXmm != targetReg);
         inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
         GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
     }
@@ -2457,7 +2458,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // For small allocations we will generate up to six push 0 inline
         size_t cntRegSizedWords = amount / REGSIZE_BYTES;
-        if (cntRegSizedWords <= 6)
+        if (compiler->info.compInitMem && (cntRegSizedWords <= 6))
         {
             for (; cntRegSizedWords != 0; cntRegSizedWords--)
             {
@@ -6034,7 +6035,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 #ifdef TARGET_X86
             (!op1->isUsedFromReg() || isByteReg(op1->GetRegNum())) &&
 #endif
-            (op2->IsCnsIntOrI() && genSmallTypeCanRepresentValue(TYP_UBYTE, op2->AsIntCon()->IconValue())))
+            (op2->IsCnsIntOrI() && FitsIn<uint8_t>(op2->AsIntCon()->IconValue())))
         {
             type = TYP_UBYTE;
         }
@@ -6104,8 +6105,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         // If op2 is smaller then it cannot be in memory, we're probably missing a cast
         assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
         // If we ended up with a small type and op2 is a constant then make sure we don't lose constant bits
-        assert(!op2->IsCnsIntOrI() || !varTypeIsSmall(type) ||
-               genSmallTypeCanRepresentValue(type, op2->AsIntCon()->IconValue()));
+        assert(!op2->IsCnsIntOrI() || !varTypeIsSmall(type) || FitsIn(type, op2->AsIntCon()->IconValue()));
     }
 
     // The type cannot be larger than the machine word size

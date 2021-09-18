@@ -103,7 +103,7 @@ jobs:
 
     # Android
     - ${{ if in(parameters.platform, 'Android_x86', 'Android_x64') }}:
-      - Ubuntu.1804.Amd64.Android.Open
+      - Ubuntu.1804.Amd64.Android.29.Open
     - ${{ if in(parameters.platform, 'Android_arm', 'Android_arm64') }}:
       - Windows.10.Amd64.Android.Open
 
@@ -141,6 +141,7 @@ jobs:
           - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
             - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
+            - Windows.11.Amd64.ClientPre.Open
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:

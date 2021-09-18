@@ -143,8 +143,7 @@ void Compiler::optAddCopies()
         BlockSet paramImportantUseDom(BlockSetOps::MakeFull(this));
 
         // This will be threshold for determining heavier-than-average uses
-        BasicBlock::weight_t paramAvgWtdRefDiv2 =
-            (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
+        weight_t paramAvgWtdRefDiv2 = (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
 
         bool paramFoundImportantUse = false;
 
@@ -307,9 +306,9 @@ void Compiler::optAddCopies()
             /* dominates all the uses of the local variable         */
 
             /* Our default is to use the first block */
-            BasicBlock*          bestBlock  = fgFirstBB;
-            BasicBlock::weight_t bestWeight = bestBlock->getBBWeight(this);
-            BasicBlock*          block      = bestBlock;
+            BasicBlock* bestBlock  = fgFirstBB;
+            weight_t    bestWeight = bestBlock->getBBWeight(this);
+            BasicBlock* block      = bestBlock;
 
 #ifdef DEBUG
             if (verbose)
@@ -992,7 +991,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         else
         {
             //  If the local variable has its address exposed then bail
-            if (lclVar->lvAddrExposed)
+            if (lclVar->IsAddressExposed())
             {
                 goto DONE_ASSERTION; // Don't make an assertion
             }
@@ -1023,7 +1022,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         LclVarDsc* lclVar = &lvaTable[lclNum];
 
         //  If the local variable has its address exposed then bail
-        if (lclVar->lvAddrExposed)
+        if (lclVar->IsAddressExposed())
         {
             goto DONE_ASSERTION; // Don't make an assertion
         }
@@ -1211,7 +1210,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
 
                     //  If the local variable has its address exposed then bail
-                    if (lclVar2->lvAddrExposed)
+                    if (lclVar2->IsAddressExposed())
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
@@ -2648,17 +2647,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                     case TYP_REF:
                     case TYP_INT:
                         // Same type no conversion required
-                        conValTree = gtNewIconNode(static_cast<int>(value));
+                        conValTree = gtNewIconNode(value);
                         break;
 
                     case TYP_LONG:
                         // Implicit assignment conversion to larger integer
-                        conValTree = gtNewLconNode(static_cast<int>(value));
+                        conValTree = gtNewLconNode(value);
                         break;
 
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
-                        conValTree = gtNewDconNode(*(reinterpret_cast<float*>(&value)), TYP_FLOAT);
+                        conValTree = gtNewDconNode(*reinterpret_cast<float*>(&value), TYP_FLOAT);
                         break;
 
                     case TYP_DOUBLE:
@@ -2667,8 +2666,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         unreached();
                         break;
 
+                    case TYP_BOOL:
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                        assert(FitsIn(tree->TypeGet(), value));
+                        conValTree = gtNewIconNode(value);
+                        break;
+
                     default:
-                        // Do not support (e.g. bool(const int)).
+                        // Do not support (e.g. byref(const int)).
                         break;
                 }
             }
@@ -2747,22 +2755,18 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             {
                 return nullptr;
             }
-            newTree->ChangeOperConst(GT_CNS_DBL);
-            newTree->AsDblCon()->gtDconVal = curAssertion->op2.dconVal;
+            newTree->BashToConst(curAssertion->op2.dconVal, tree->TypeGet());
             break;
 
         case O2K_CONST_LONG:
 
             if (newTree->gtType == TYP_LONG)
             {
-                newTree->ChangeOperConst(GT_CNS_NATIVELONG);
-                newTree->AsIntConCommon()->SetLngValue(curAssertion->op2.lconVal);
+                newTree->BashToConst(curAssertion->op2.lconVal);
             }
             else
             {
-                newTree->ChangeOperConst(GT_CNS_INT);
-                newTree->AsIntCon()->gtIconVal = (int)curAssertion->op2.lconVal;
-                newTree->gtType                = TYP_INT;
+                newTree->BashToConst(static_cast<int32_t>(curAssertion->op2.lconVal));
             }
             break;
 
@@ -2805,14 +2809,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 else
 #endif // FEATURE_SIMD
                 {
-                    newTree->ChangeOperConst(GT_CNS_INT);
-                    newTree->AsIntCon()->gtIconVal = curAssertion->op2.u1.iconVal;
-                    newTree->ClearIconHandleMask();
-                    if (newTree->TypeIs(TYP_STRUCT))
+                    var_types type = tree->TypeGet();
+                    if (type == TYP_STRUCT)
                     {
                         // LCL_VAR can be init with a GT_CNS_INT, keep its type INT, not STRUCT.
-                        newTree->ChangeType(TYP_INT);
+                        type = TYP_INT;
                     }
+
+                    newTree->BashToConst(curAssertion->op2.u1.iconVal, type);
+                    newTree->ClearIconHandleMask();
                 }
                 // If we're doing an array index address, assume any constant propagated contributes to the index.
                 if (isArrIndex)
@@ -3316,13 +3321,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
         if (curAssertion->assertionKind == OAK_EQUAL)
         {
-            tree->ChangeOperConst(GT_CNS_INT);
-            tree->AsIntCon()->gtIconVal = 0;
+            tree->BashToConst(0);
         }
         else
         {
-            tree->ChangeOperConst(GT_CNS_INT);
-            tree->AsIntCon()->gtIconVal = 1;
+            tree->BashToConst(1);
         }
 
         newTree = fgMorphTree(tree);
@@ -3408,8 +3411,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         // Change the oper to const.
         if (genActualType(op1->TypeGet()) == TYP_INT)
         {
-            op1->ChangeOperConst(GT_CNS_INT);
-            op1->AsIntCon()->gtIconVal = vnStore->ConstantValue<int>(vnCns);
+            op1->BashToConst(vnStore->ConstantValue<int>(vnCns));
 
             if (vnStore->IsVNHandle(vnCns))
             {
@@ -3418,8 +3420,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
         else if (op1->TypeGet() == TYP_LONG)
         {
-            op1->ChangeOperConst(GT_CNS_NATIVELONG);
-            op1->AsIntConCommon()->SetLngValue(vnStore->ConstantValue<INT64>(vnCns));
+            op1->BashToConst(vnStore->ConstantValue<INT64>(vnCns));
 
             if (vnStore->IsVNHandle(vnCns))
             {
@@ -3429,8 +3430,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         else if (op1->TypeGet() == TYP_DOUBLE)
         {
             double constant = vnStore->ConstantValue<double>(vnCns);
-            op1->ChangeOperConst(GT_CNS_DBL);
-            op1->AsDblCon()->gtDconVal = constant;
+            op1->BashToConst(constant);
 
             // Nothing can be equal to NaN. So if IL had "op1 == NaN", then we already made op1 NaN,
             // which will yield a false correctly. Instead if IL had "op1 != NaN", then we already
@@ -3441,29 +3441,27 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         else if (op1->TypeGet() == TYP_FLOAT)
         {
             float constant = vnStore->ConstantValue<float>(vnCns);
-            op1->ChangeOperConst(GT_CNS_DBL);
-            op1->AsDblCon()->gtDconVal = constant;
+            op1->BashToConst(constant);
+
             // See comments for TYP_DOUBLE.
             allowReverse = (_isnan(constant) == 0);
         }
         else if (op1->TypeGet() == TYP_REF)
         {
-            op1->ChangeOperConst(GT_CNS_INT);
+            op1->BashToConst(0, TYP_REF);
             // The only constant of TYP_REF that ValueNumbering supports is 'null'
             noway_assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-            op1->AsIntCon()->gtIconVal = 0;
         }
         else if (op1->TypeGet() == TYP_BYREF)
         {
-            op1->ChangeOperConst(GT_CNS_INT);
-            op1->AsIntCon()->gtIconVal = static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns));
+            op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_BYREF);
         }
         else
         {
             noway_assert(!"unknown type in Global_RelOp");
         }
 
-        op1->gtVNPair.SetBoth(vnCns); // Preserve the ValueNumPair, as ChangeOperConst/SetOper will clear it.
+        op1->gtVNPair.SetBoth(vnCns); // Preserve the ValueNumPair, as BashToConst will clear it.
 
         // set foldResult to either 0 or 1
         bool foldResult = assertionKindIsEqual;
@@ -3497,17 +3495,15 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 #endif
         // If floating point, don't just substitute op1 with op2, this won't work if
         // op2 is NaN. Just turn it into a "true" or "false" yielding expression.
-        if (op1->TypeGet() == TYP_DOUBLE || op1->TypeGet() == TYP_FLOAT)
+        if (op1->TypeIs(TYP_FLOAT, TYP_DOUBLE))
         {
             // Note we can't trust the OAK_EQUAL as the value could end up being a NaN
             // violating the assertion. However, we create OAK_EQUAL assertions for floating
             // point only on JTrue nodes, so if the condition held earlier, it will hold
             // now. We don't create OAK_EQUAL assertion on floating point from GT_ASG
             // because we depend on value num which would constant prop the NaN.
-            op1->ChangeOperConst(GT_CNS_DBL);
-            op1->AsDblCon()->gtDconVal = 0;
-            op2->ChangeOperConst(GT_CNS_DBL);
-            op2->AsDblCon()->gtDconVal = 0;
+            op1->BashToConst(0.0, op1->TypeGet());
+            op2->BashToConst(0.0, op2->TypeGet());
         }
         // Change the op1 LclVar to the op2 LclVar
         else

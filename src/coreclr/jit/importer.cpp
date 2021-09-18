@@ -509,7 +509,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             for (unsigned level = 0; level < chkLevel; level++)
             {
                 assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum, false));
-                assert(!lvaTable[lclNum].lvAddrExposed ||
+                assert(!lvaTable[lclNum].IsAddressExposed() ||
                        (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT) == 0);
             }
         }
@@ -1300,7 +1300,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Case of call returning a struct via hidden retbuf arg
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+#if (defined(TARGET_WINDOWS) && !defined(TARGET_ARM)) || defined(UNIX_X86_ABI)
             // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
             if (srcCall->IsUnmanaged())
             {
@@ -1366,7 +1366,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                 }
             }
             else
-#endif
+#endif // (defined(TARGET_WINDOWS) && !defined(TARGET_ARM)) || defined(UNIX_X86_ABI)
             {
                 // insert the return value buffer into the argument list as first byref parameter
                 srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
@@ -4150,7 +4150,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* ptrToSpan      = impPopStack().val;
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
-                assert(varTypeIsIntegral(index));
+                assert(genActualType(index) == TYP_INT);
                 assert(ptrToSpan->TypeGet() == TYP_BYREF);
 
 #if defined(DEBUG)
@@ -4177,13 +4177,29 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
 
                 // Element access
-                GenTree*             indexIntPtr = impImplicitIorI4Cast(indexClone, TYP_I_IMPL);
-                GenTree*             sizeofNode  = gtNewIconNode(elemSize);
-                GenTree*             mulNode     = gtNewOperNode(GT_MUL, TYP_I_IMPL, indexIntPtr, sizeofNode);
-                CORINFO_FIELD_HANDLE ptrHnd      = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                const unsigned       ptrOffset   = info.compCompHnd->getFieldOffset(ptrHnd);
-                GenTree*             data        = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree*             result      = gtNewOperNode(GT_ADD, TYP_BYREF, data, mulNode);
+                index = indexClone;
+
+#ifdef TARGET_64BIT
+                if (index->OperGet() == GT_CNS_INT)
+                {
+                    index->gtType = TYP_I_IMPL;
+                }
+                else
+                {
+                    index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+                }
+#endif
+
+                if (elemSize != 1)
+                {
+                    GenTree* sizeofNode = gtNewIconNode(elemSize);
+                    index               = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, sizeofNode);
+                }
+
+                CORINFO_FIELD_HANDLE ptrHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
+                GenTree*             data      = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree*             result    = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
@@ -7472,6 +7488,9 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, IL_OFFSETX i
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, nullptr, ilOffset);
 
     call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+#ifdef UNIX_X86_ABI
+    call->gtFlags &= ~GTF_CALL_POP_ARGS;
+#endif
 
     return call;
 }
@@ -9745,7 +9764,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     {
         assert(varTypeIsSIMD(simdReturnType));
         JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
-                varTypeName(returnType));
+                varTypeName(simdReturnType));
         call->ChangeType(simdReturnType);
     }
 
@@ -12010,7 +12029,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* If the local is aliased or pinned, we need to spill calls and
                    indirections from the stack. */
 
-                if ((lvaTable[lclNum].lvAddrExposed || lvaTable[lclNum].lvHasLdAddrOp || lvaTable[lclNum].lvPinned) &&
+                if ((lvaTable[lclNum].IsAddressExposed() || lvaTable[lclNum].lvHasLdAddrOp ||
+                     lvaTable[lclNum].lvPinned) &&
                     (verCurrentState.esStackDepth > 0))
                 {
                     impSpillSideEffects(false,
@@ -12176,7 +12196,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* The ARGLIST cookie is a hidden 'last' parameter, we have already
                    adjusted the arg count cos this is like fetching the last param */
                 assertImp(0 < numArgs);
-                assert(lvaTable[lvaVarargsHandleArg].lvAddrExposed);
+                assert(lvaTable[lvaVarargsHandleArg].IsAddressExposed());
                 lclNum = lvaVarargsHandleArg;
                 op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
                 op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
@@ -19226,7 +19246,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     // for this method, so we won't prematurely conclude this method should never
     // be inlined.
     //
-    BasicBlock::weight_t weight = 0;
+    weight_t weight = 0;
 
     if (pInlineInfo != nullptr)
     {
@@ -19234,8 +19254,8 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     }
     else
     {
-        const float prejitHotCallerWeight = 1000000.0f;
-        weight                            = prejitHotCallerWeight;
+        const weight_t prejitHotCallerWeight = 1000000.0;
+        weight                               = prejitHotCallerWeight;
     }
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
@@ -19248,10 +19268,10 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     //
     if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
     {
-        const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
-        const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
-        profileFreq                               = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
-        hasProfile                                = true;
+        const weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        const weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        profileFreq                   = fgProfileWeightsEqual(entryWeight, 0.0) ? 0.0 : callSiteWeight / entryWeight;
+        hasProfile                    = true;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
@@ -20336,7 +20356,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                 }
             }
 
-            assert(lvaTable[tmpNum].lvAddrExposed == 0);
+            assert(!lvaTable[tmpNum].IsAddressExposed());
             if (argInfo.argHasLdargaOp)
             {
                 lvaTable[tmpNum].lvHasLdAddrOp = 1;
@@ -22177,7 +22197,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         {
             unsigned valueLcl = valueIndex->AsLclVar()->GetLclNum();
             unsigned arrayLcl = array->AsLclVar()->GetLclNum();
-            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->lvAddrExposed)
+            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->IsAddressExposed())
             {
                 JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
                 return true;
@@ -22236,9 +22256,11 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         return true;
     }
 
-    // Check for T[] with T exact.
-    if (!impIsClassExact(arrayElementHandle))
+    const bool arrayTypeIsSealed = impIsClassExact(arrayElementHandle);
+
+    if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
     {
+        // Bail out if we don't know array's exact type
         return false;
     }
 
@@ -22246,7 +22268,16 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     bool                 valueIsNonNull = false;
     CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(value, &valueIsExact, &valueIsNonNull);
 
-    if (valueHandle == arrayElementHandle)
+    // Array's type is sealed and equals to value's type
+    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
+    {
+        JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
+        return true;
+    }
+
+    // Array's type is not sealed but we know its exact type
+    if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) &&
+        (info.compCompHnd->compareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState::Must))
     {
         JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
         return true;

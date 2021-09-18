@@ -248,19 +248,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     public struct ClassWithCustomConverterPropertyFactory
     {
         [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
-        public SampleEnum MyEnum { get; set; }
+        public Serialization.Tests.SampleEnum MyEnum { get; set; }
     }
 
     public struct StructWithCustomConverterPropertyFactory
     {
         [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
-        public SampleEnum MyEnum { get; set; }
-    }
-
-    public enum SampleEnum
-    {
-        A = 1,
-        B = 2
+        public Serialization.Tests.SampleEnum MyEnum { get; set; }
     }
 
     [JsonConverter(typeof(CustomConverter_StructWithCustomConverter))] // Invalid

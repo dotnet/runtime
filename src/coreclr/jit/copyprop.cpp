@@ -232,7 +232,7 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         // 'c' with 'x.'
         if (!lvaTable[newLclNum].lvVerTypeInfo.IsThisPtr())
         {
-            if (lvaTable[newLclNum].lvAddrExposed)
+            if (lvaTable[newLclNum].IsAddressExposed())
             {
                 continue;
             }
