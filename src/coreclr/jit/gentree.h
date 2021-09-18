@@ -7750,7 +7750,7 @@ inline bool GenTree::IsSIMDZero() const
 #ifdef FEATURE_SIMD
     if ((gtOper == GT_SIMD) && (AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInit))
     {
-        return (gtGetOp1()->IsIntegralConst(0) || gtGetOp1()->IsFPZero());
+        return (AsSIMD()->Op(1)->IsIntegralConst(0) || AsSIMD()->Op(1)->IsFPZero());
     }
 #endif
 
