@@ -674,8 +674,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         /// the number of unique classes seen at that call-site</param>
         static void PrintCallsitesByLikelyClassesChart(int[] callSites)
         {
-            const int maxLikelyClasses = 8;
-            const int tableWidth = 20;
+            const int maxLikelyClasses = 10;
+            const int tableWidth = 25;
 
             if (callSites.Length < 1)
                 return;
@@ -702,7 +702,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 int shareWidth = (int)(Math.Round(share * tableWidth));
                 bool lastRow = (i == rows.Length - 1);
 
-                Console.Write($"{(lastRow ? "  ≥" : "   ")}{i}: [");
+                Console.Write($"{(lastRow ? "  ≥" : "   ")}{i,2}: [");
                 Console.Write(new string('#', shareWidth));
                 Console.Write(new string('.', tableWidth - shareWidth));
                 Console.Write("] ");
