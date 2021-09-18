@@ -18876,10 +18876,10 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 #if defined(TARGET_XARCH)
     if (!comp->canUseVexEncoding())
     {
-        return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->gtHWIntrinsicId);
+        return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
     }
 
-    switch (AsHWIntrinsic()->gtHWIntrinsicId)
+    switch (AsHWIntrinsic()->GetHWIntrinsicId())
     {
         // TODO-XArch-Cleanup: Move this switch block to be table driven.
 
@@ -18905,7 +18905,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         }
     }
 #elif defined(TARGET_ARM64)
-    return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->gtHWIntrinsicId);
+    return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
 #else
     return false;
 #endif
