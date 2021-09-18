@@ -1361,8 +1361,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
 
         var_types strType = varTypeIsFloating(data->TypeGet()) ? data->TypeGet() : type;
-        GetEmitter()->emitInsLoadStoreOp(ins_Store(strType), emitActualTypeSize(strType), data->GetRegNum(),
-                                         tree);
+        GetEmitter()->emitInsLoadStoreOp(ins_Store(strType), emitActualTypeSize(strType), data->GetRegNum(), tree);
 
         // If store was to a variable, update variable liveness after instruction was emitted.
         genUpdateLife(tree);
