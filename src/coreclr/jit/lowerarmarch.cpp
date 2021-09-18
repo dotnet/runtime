@@ -1605,7 +1605,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
             MakeSrcContained(storeLoc, op1);
             if (op1->IsSIMDZero())
             {
-                MakeSrcContained(op1, op1->gtGetOp1());
+                MakeSrcContained(op1, op1->AsSIMD()->Op(1));
             }
         }
         return;
