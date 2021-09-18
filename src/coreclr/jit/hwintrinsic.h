@@ -725,7 +725,7 @@ struct HWIntrinsic final
     {
         assert(node != nullptr);
 
-        id       = node->gtHWIntrinsicId;
+        id       = node->GetHWIntrinsicId();
         category = HWIntrinsicInfo::lookupCategory(id);
 
         assert(HWIntrinsicInfo::RequiresCodegen(id));
