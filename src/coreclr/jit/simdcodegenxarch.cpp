@@ -1503,13 +1503,12 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
     var_types targetType = simdNode->TypeGet();
     SIMDLevel level      = compiler->getSIMDSupportLevel();
 
-    // TODO-List: introduce genConsumeOperands overload for a MultiOp.
-    genConsumeHWIntrinsicOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber op1Reg   = op1->GetRegNum();
     regNumber op2Reg   = op2->GetRegNum();
     regNumber otherReg = op2Reg;
 
-    switch (simdNode->gtSIMDIntrinsicID)
+    switch (simdNode->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicEqual:
         {
@@ -1525,7 +1524,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 #endif
 
             unsigned    ival = 0;
-            instruction ins  = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
+            instruction ins  = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType, &ival);
 
             // targetReg = op1reg > op2reg
             // Therefore, we can optimize if op1Reg == targetReg
@@ -1534,7 +1533,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
             {
                 if (op2Reg == targetReg)
                 {
-                    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual);
+                    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicEqual);
                     otherReg = op1Reg;
                 }
                 else
