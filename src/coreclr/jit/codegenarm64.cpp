@@ -4439,9 +4439,9 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperRestore);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicUpperRestore);
 
-    GenTree* op1 = simdNode->gtGetOp1();
+    GenTree* op1 = simdNode->Op(1);
     assert(op1->IsLocal());
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
