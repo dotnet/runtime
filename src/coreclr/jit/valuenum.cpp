@@ -343,11 +343,11 @@ VNFunc GetVNFuncForNode(GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
-            return VNFunc(VNF_SIMD_FIRST + node->AsSIMD()->gtSIMDIntrinsicID);
+            return VNFunc(VNF_SIMD_FIRST + node->AsSIMD()->GetSIMDIntrinsicId());
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            return VNFunc(VNF_HWI_FIRST + (node->AsHWIntrinsic()->gtHWIntrinsicId - NI_HW_INTRINSIC_START - 1));
+            return VNFunc(VNF_HWI_FIRST + (node->AsHWIntrinsic()->GetHWIntrinsicId() - NI_HW_INTRINSIC_START - 1));
 #endif // FEATURE_HW_INTRINSICS
 
         case GT_CAST:
