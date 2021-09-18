@@ -1650,7 +1650,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
 
     GenTreeHWIntrinsic* hwintrinsicTree = tree->AsHWIntrinsic();
 
-    switch (hwintrinsicTree->gtHWIntrinsicId)
+    switch (hwintrinsicTree->GetHWIntrinsicId())
     {
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
