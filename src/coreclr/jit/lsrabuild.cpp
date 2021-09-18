@@ -1679,10 +1679,9 @@ int LinearScan::ComputeAvailableSrcCount(GenTree* node)
 //
 void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc)
 {
-    // The LIR traversal doesn't visit GT_LIST or GT_ARGPLACE nodes.
+    // The LIR traversal doesn't visit GT_ARGPLACE nodes.
     // GT_CLS_VAR nodes should have been eliminated by rationalizer.
     assert(tree->OperGet() != GT_ARGPLACE);
-    assert(tree->OperGet() != GT_LIST);
     assert(tree->OperGet() != GT_CLS_VAR);
 
     // The set of internal temporary registers used by this node are stored in the

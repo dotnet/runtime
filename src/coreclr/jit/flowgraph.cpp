@@ -3961,40 +3961,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         GenTree* op1 = tree->AsOp()->gtOp1;
         GenTree* op2 = tree->gtGetOp2IfPresent();
 
-        // Special handling for GT_LIST
-        if (tree->OperGet() == GT_LIST)
-        {
-            // First, handle the list items, which will be linked in forward order.
-            // As we go, we will link the GT_LIST nodes in reverse order - we will number
-            // them and update fgTreeSeqList in a subsequent traversal.
-            GenTree* nextList = tree;
-            GenTree* list     = nullptr;
-            while (nextList != nullptr && nextList->OperGet() == GT_LIST)
-            {
-                list              = nextList;
-                GenTree* listItem = list->AsOp()->gtOp1;
-                fgSetTreeSeqHelper(listItem, isLIR);
-                nextList = list->AsOp()->gtOp2;
-                if (nextList != nullptr)
-                {
-                    nextList->gtNext = list;
-                }
-                list->gtPrev = nextList;
-            }
-            // Next, handle the GT_LIST nodes.
-            // Note that fgSetTreeSeqFinish() sets the gtNext to null, so we need to capture the nextList
-            // before we call that method.
-            nextList = list;
-            do
-            {
-                assert(list != nullptr);
-                list     = nextList;
-                nextList = list->gtNext;
-                fgSetTreeSeqFinish(list, isLIR);
-            } while (list != tree);
-            return;
-        }
-
         /* Special handling for AddrMode */
         if (tree->OperIsAddrMode())
         {
@@ -4174,7 +4140,7 @@ void Compiler::fgSetTreeSeqFinish(GenTree* tree, bool isLIR)
     {
         tree->gtFlags &= ~GTF_REVERSE_OPS;
 
-        if (tree->OperIs(GT_LIST, GT_ARGPLACE))
+        if (tree->OperIs(GT_ARGPLACE))
         {
             return;
         }

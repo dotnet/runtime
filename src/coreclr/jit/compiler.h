@@ -3058,8 +3058,6 @@ public:
 
     GenTree* gtNewCpObjNode(GenTree* dst, GenTree* src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
 
-    GenTreeArgList* gtNewListNode(GenTree* op1, GenTreeArgList* op2);
-
     GenTreeCall::Use* gtNewCallArgs(GenTree* node);
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2);
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2, GenTree* node3);
@@ -3323,11 +3321,6 @@ public:
 
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
-    GenTreeArgList* gtNewArgList(GenTree* op);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3, GenTree* op4);
-
     static fgArgTabEntry* gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
     static fgArgTabEntry* gtArgEntryByNode(GenTreeCall* call, GenTree* node);
     fgArgTabEntry* gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
@@ -3405,8 +3398,6 @@ public:
 
     // Create copy of an inline or guarded devirtualization candidate tree.
     GenTreeCall* gtCloneCandidateCall(GenTreeCall* call);
-
-    GenTree* gtReplaceTree(Statement* stmt, GenTree* tree, GenTree* replacementTree);
 
     void gtUpdateSideEffects(Statement* stmt, GenTree* tree);
 
@@ -6297,7 +6288,6 @@ private:
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
-    GenTreeArgList* fgMorphArgList(GenTreeArgList* args, MorphAddrContext* mac);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
                                      GenTreeCall::Use*    args,

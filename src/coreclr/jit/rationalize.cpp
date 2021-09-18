@@ -582,25 +582,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     const bool isLateArg = (node->gtFlags & GTF_LATE_ARG) != 0;
 #endif
 
-    // First, remove any preceeding list nodes, which are not otherwise visited by the tree walk.
-    //
-    // NOTE: GT_LIST nodes used by GT_HWINTRINSIC nodes will in fact be visited.
-    for (GenTree* prev = node->gtPrev; (prev != nullptr) && prev->OperIs(GT_LIST); prev = node->gtPrev)
-    {
-        prev->gtFlags &= ~GTF_REVERSE_OPS;
-        BlockRange().Remove(prev);
-    }
-
-    // Now clear the REVERSE_OPS flag on the current node.
+    // Clear the REVERSE_OPS flag on the current node.
     node->gtFlags &= ~GTF_REVERSE_OPS;
-
-    // In addition, remove the current node if it is a GT_LIST node that is not an aggregate.
-    if (node->OperIs(GT_LIST))
-    {
-        GenTreeArgList* list = node->AsArgList();
-        BlockRange().Remove(list);
-        return Compiler::WALK_CONTINUE;
-    }
 
     LIR::Use use;
     if (parentStack.Height() < 2)

@@ -1094,11 +1094,6 @@ public:
                 // NOPs may only be present in LIR if they do not produce a value.
                 return IsNothingNode();
 
-            case GT_LIST:
-                // LIST nodes may not be present in a block's LIR sequence, but they may
-                // be present as children of an LIR node.
-                return (gtNext == nullptr) && (gtPrev == nullptr);
-
             case GT_ADDR:
             {
                 // ADDR ndoes may only be present in LIR if the location they refer to is not a
@@ -1741,17 +1736,8 @@ public:
         }
         switch (gtOper)
         {
-            case GT_LIST:
             case GT_INTRINSIC:
             case GT_LEA:
-#ifdef FEATURE_SIMD
-            case GT_SIMD:
-#endif // !FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
-#endif // FEATURE_HW_INTRINSICS
-
 #if defined(TARGET_ARM)
             case GT_PUTARG_REG:
 #endif // defined(TARGET_ARM)
@@ -1773,30 +1759,10 @@ public:
 
     inline bool IsBoxedValue();
 
-    static bool OperIsList(genTreeOps gtOper)
-    {
-        return gtOper == GT_LIST;
-    }
-
-    bool OperIsList() const
-    {
-        return OperIsList(gtOper);
-    }
-
-    static bool OperIsAnyList(genTreeOps gtOper)
-    {
-        return OperIsList(gtOper);
-    }
-
-    bool OperIsAnyList() const
-    {
-        return OperIsAnyList(gtOper);
-    }
-
     inline GenTree* gtGetOp1() const;
 
     // Directly return op2. Asserts the node is binary. Might return nullptr if the binary node allows
-    // a nullptr op2, such as GT_LIST. This is more efficient than gtGetOp2IfPresent() if you know what
+    // a nullptr op2, such as GT_LEA. This is more efficient than gtGetOp2IfPresent() if you know what
     // node type you have.
     inline GenTree* gtGetOp2() const;
 
@@ -1812,8 +1778,6 @@ public:
     bool TryGetUse(GenTree* def, GenTree*** use);
 
 private:
-    bool TryGetUseList(GenTree* def, GenTree*** use);
-
     bool TryGetUseBinOp(GenTree* def, GenTree*** use);
 
 public:
@@ -2313,9 +2277,6 @@ public:
 
 private:
     template <typename TVisitor>
-    VisitResult VisitListOperands(TVisitor visitor);
-
-    template <typename TVisitor>
     void VisitBinOpOperands(TVisitor visitor);
 
 public:
@@ -2796,10 +2757,6 @@ public:
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator: an iterator that will produce each use edge of a GenTree node in the order in which
 //                         they are used.
-//
-// The use edges of a node may not correspond exactly to the nodes on the other ends of its use edges: in
-// particular, GT_LIST nodes are expanded into their component parts. This differs from the behavior of
-// GenTree::GetChildPointer(), which does not expand lists.
 //
 // Operand iteration is common enough in the back end of the compiler that the implementation of this type has
 // traded some simplicity for speed:
@@ -3734,54 +3691,6 @@ struct GenTreeField : public GenTreeUnOp
     bool IsVolatile() const
     {
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
-    }
-};
-
-// Represents the Argument list of a call node, as a Lisp-style linked list.
-// (Originally I had hoped that this could have *only* the m_arg/m_rest fields, but it turns out
-// that enough of the GenTree mechanism is used that it makes sense just to make it a subtype.  But
-// note that in many ways, this is *not* a "real" node of the tree, but rather a mechanism for
-// giving call nodes a flexible number of children.  GenTreeArgListNodes never evaluate to registers,
-// for example.)
-
-// Note that while this extends GenTreeOp, it is *not* an EXOP.  We don't add any new fields, and one
-// is free to allocate a GenTreeOp of type GT_LIST.  If you use this type, you get the convenient Current/Rest
-// method names for the arguments.
-struct GenTreeArgList : public GenTreeOp
-{
-    GenTree*& Current()
-    {
-        return gtOp1;
-    }
-    GenTreeArgList*& Rest()
-    {
-        assert(gtOp2 == nullptr || gtOp2->OperIsAnyList());
-        return *reinterpret_cast<GenTreeArgList**>(&gtOp2);
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeArgList() : GenTreeOp()
-    {
-    }
-#endif
-
-    GenTreeArgList(GenTree* arg) : GenTreeArgList(arg, nullptr)
-    {
-    }
-
-    GenTreeArgList(GenTree* arg, GenTreeArgList* rest) : GenTreeArgList(GT_LIST, arg, rest)
-    {
-    }
-
-    GenTreeArgList(genTreeOps oper, GenTree* arg, GenTreeArgList* rest) : GenTreeOp(oper, TYP_VOID, arg, rest)
-    {
-        assert(OperIsAnyList(oper));
-        assert((arg != nullptr) && arg->IsValidCallArgument());
-        gtFlags |= arg->gtFlags & GTF_ALL_EFFECT;
-        if (rest != nullptr)
-        {
-            gtFlags |= rest->gtFlags & GTF_ALL_EFFECT;
-        }
     }
 };
 
@@ -7791,10 +7700,6 @@ inline bool GenTree::IsBoxedValue()
 
 inline bool GenTree::IsValidCallArgument()
 {
-    if (OperIsList())
-    {
-        return false;
-    }
     if (OperIs(GT_FIELD_LIST))
     {
 #if !FEATURE_MULTIREG_ARGS && !FEATURE_PUT_STRUCT_ARG_STK
@@ -7864,7 +7769,7 @@ inline GenTree* GenTree::gtGetOp2() const
 
     GenTree* op2 = AsOp()->gtOp2;
 
-    // Only allow null op2 if the node type allows it, e.g. GT_LIST.
+    // Only allow null op2 if the node type allows it, e.g. GT_LEA.
     assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
 
     return op2;

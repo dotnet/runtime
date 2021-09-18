@@ -2936,31 +2936,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 }
                 break;
 
-            case GT_LIST:
-                if ((op2 != nullptr) && op2->OperIsAnyList())
-                {
-                    ArrayStack<GenTree*> stack(getAllocator(CMK_DebugOnly));
-                    while ((tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->OperIsAnyList())
-                    {
-                        stack.Push(tree);
-                        tree = tree->gtGetOp2();
-                    }
-
-                    fgDebugCheckFlags(tree);
-
-                    while (!stack.Empty())
-                    {
-                        tree = stack.Pop();
-                        assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-                        fgDebugCheckFlags(tree->AsOp()->gtOp1);
-                        chkFlags |= (tree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
-                        chkFlags |= (tree->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
-                        fgDebugCheckFlagsHelper(tree, (tree->gtFlags & GTF_ALL_EFFECT), chkFlags);
-                    }
-
-                    return;
-                }
-                break;
             case GT_ADDR:
                 assert(!op1->CanCSE());
                 break;

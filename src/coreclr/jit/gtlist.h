@@ -241,8 +241,6 @@ GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))  // The
 
 GTNODE(JTRUE            , GenTreeOp          ,0,(GTK_UNOP|GTK_NOVALUE))
 
-GTNODE(LIST             , GenTreeArgList     ,0,(GTK_BINOP|GTK_NOVALUE))
-
 //-----------------------------------------------------------------------------
 //  Other nodes that have special structure:
 //-----------------------------------------------------------------------------

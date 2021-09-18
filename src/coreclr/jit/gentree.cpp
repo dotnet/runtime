@@ -308,7 +308,6 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeField)        <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeArgList)      <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeFieldList)    <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeColon)        <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCall)         <= TREE_NODE_SZ_LARGE); // *** large node
@@ -3844,7 +3843,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                     break;
 
-                case GT_LIST:
                 case GT_NOP:
                     costEx = 0;
                     costSz = 0;
@@ -4535,9 +4533,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     case GT_QMARK:
                     case GT_COLON:
                     case GT_MKREFANY:
-                        break;
-
-                    case GT_LIST:
                         break;
 
                     default:
@@ -6580,53 +6575,6 @@ GenTreeCall::Use* Compiler::gtNewCallArgs(GenTree* node1, GenTree* node2, GenTre
     return new (this, CMK_ASTNode) GenTreeCall::Use(node1, gtNewCallArgs(node2, node3, node4));
 }
 
-GenTreeArgList* Compiler::gtNewListNode(GenTree* op1, GenTreeArgList* op2)
-{
-    assert((op1 != nullptr) && (op1->OperGet() != GT_LIST));
-
-    return new (this, GT_LIST) GenTreeArgList(op1, op2);
-}
-
-/*****************************************************************************
- *
- *  Create a list out of one value.
- */
-
-GenTreeArgList* Compiler::gtNewArgList(GenTree* arg)
-{
-    return new (this, GT_LIST) GenTreeArgList(arg);
-}
-
-/*****************************************************************************
- *
- *  Create a list out of the two values.
- */
-
-GenTreeArgList* Compiler::gtNewArgList(GenTree* arg1, GenTree* arg2)
-{
-    return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2));
-}
-
-/*****************************************************************************
- *
- *  Create a list out of the three values.
- */
-
-GenTreeArgList* Compiler::gtNewArgList(GenTree* arg1, GenTree* arg2, GenTree* arg3)
-{
-    return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2, arg3));
-}
-
-/*****************************************************************************
- *
- *  Create a list out of the three values.
- */
-
-GenTreeArgList* Compiler::gtNewArgList(GenTree* arg1, GenTree* arg2, GenTree* arg3, GenTree* arg4)
-{
-    return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2, arg3, arg4));
-}
-
 /*****************************************************************************
  *
  *  Given a GT_CALL node, access the fgArgInfo and find the entry
@@ -7803,14 +7751,6 @@ GenTree* Compiler::gtCloneExpr(
                                 tree->AsCast()->gtCastType DEBUGARG(/*largeNode*/ TRUE));
                 break;
 
-            // The nodes below this are not bashed, so they can be allocated at their individual sizes.
-
-            case GT_LIST:
-                assert((tree->AsOp()->gtOp2 == nullptr) || tree->AsOp()->gtOp2->OperIsList());
-                copy                = new (this, GT_LIST) GenTreeArgList(tree->AsOp()->gtOp1);
-                copy->AsOp()->gtOp2 = tree->AsOp()->gtOp2;
-                break;
-
             case GT_INDEX:
             {
                 GenTreeIndex* asInd = tree->AsIndex();
@@ -8351,106 +8291,6 @@ GenTreeCall* Compiler::gtCloneCandidateCall(GenTreeCall* call)
     result->CopyReg(call);
 
     return result;
-}
-
-//------------------------------------------------------------------------
-// gtReplaceTree: Replace a tree with a new tree.
-//
-// Arguments:
-//    stmt            - The top-level root stmt of the tree being replaced.
-//                      Must not be null.
-//    tree            - The tree being replaced. Must not be null.
-//    replacementTree - The replacement tree. Must not be null.
-//
-// Return Value:
-//    The tree node that replaces the old tree.
-//
-// Assumptions:
-//    The sequencing of the stmt has been done.
-//
-// Notes:
-//    The caller must ensure that the original statement has been sequenced,
-//    and the side effect flags are updated on the statement nodes,
-//    but this method will sequence 'replacementTree', and insert it into the
-//    proper place in the statement sequence.
-
-GenTree* Compiler::gtReplaceTree(Statement* stmt, GenTree* tree, GenTree* replacementTree)
-{
-    assert(fgStmtListThreaded);
-    assert(tree != nullptr);
-    assert(stmt != nullptr);
-    assert(replacementTree != nullptr);
-
-    GenTree** treePtr    = nullptr;
-    GenTree*  treeParent = tree->gtGetParent(&treePtr);
-
-    assert(treeParent != nullptr || tree == stmt->GetRootNode());
-
-    if (treePtr == nullptr)
-    {
-        // Replace the stmt expr and rebuild the linear order for "stmt".
-        assert(treeParent == nullptr);
-        assert(fgOrder != FGOrderLinear);
-        stmt->SetRootNode(tree);
-        fgSetStmtSeq(stmt);
-    }
-    else
-    {
-        assert(treeParent != nullptr);
-
-        // Check to see if the node to be replaced is a call argument and if so,
-        // set `treeParent` to the call node.
-        GenTree* cursor = treeParent;
-        while ((cursor != nullptr) && (cursor->OperGet() == GT_LIST))
-        {
-            cursor = cursor->gtNext;
-        }
-
-        if ((cursor != nullptr) && (cursor->OperGet() == GT_CALL))
-        {
-            treeParent = cursor;
-        }
-
-#ifdef DEBUG
-        GenTree** useEdge;
-        assert(treeParent->TryGetUse(tree, &useEdge));
-        assert(useEdge == treePtr);
-#endif // DEBUG
-
-        GenTree* treeFirstNode = fgGetFirstNode(tree);
-        GenTree* treeLastNode  = tree;
-        GenTree* treePrevNode  = treeFirstNode->gtPrev;
-        GenTree* treeNextNode  = treeLastNode->gtNext;
-
-        treeParent->ReplaceOperand(treePtr, replacementTree);
-
-        // Build the linear order for "replacementTree".
-        fgSetTreeSeq(replacementTree, treePrevNode);
-
-        // Restore linear-order Prev and Next for "replacementTree".
-        if (treePrevNode != nullptr)
-        {
-            treeFirstNode         = fgGetFirstNode(replacementTree);
-            treeFirstNode->gtPrev = treePrevNode;
-            treePrevNode->gtNext  = treeFirstNode;
-        }
-        else
-        {
-            // Update the linear oder start of "stmt" if treeFirstNode
-            // appears to have replaced the original first node.
-            assert(treeFirstNode == stmt->GetTreeList());
-            stmt->SetTreeList(fgGetFirstNode(replacementTree));
-        }
-
-        if (treeNextNode != nullptr)
-        {
-            treeLastNode         = replacementTree;
-            treeLastNode->gtNext = treeNextNode;
-            treeNextNode->gtPrev = treeLastNode;
-        }
-    }
-
-    return replacementTree;
 }
 
 //------------------------------------------------------------------------
@@ -11890,29 +11730,18 @@ void Compiler::gtDispTree(GenTree*     tree,
         {
             if (tree->AsOp()->gtOp1 != nullptr)
             {
-                if (tree->OperIs(GT_PHI))
+                // Label the child of the GT_COLON operator
+                // op1 is the else part
+                if (tree->gtOper == GT_COLON)
                 {
-                    for (GenTreeArgList* args = tree->gtGetOp1()->AsArgList(); args != nullptr; args = args->Rest())
-                    {
-                        gtDispChild(args->Current(), indentStack, (args->Rest() == nullptr) ? IIArcBottom : IIArc);
-                    }
+                    childMsg = "else";
                 }
-                else
+                else if (tree->gtOper == GT_QMARK)
                 {
-                    // Label the child of the GT_COLON operator
-                    // op1 is the else part
-
-                    if (tree->gtOper == GT_COLON)
-                    {
-                        childMsg = "else";
-                    }
-                    else if (tree->gtOper == GT_QMARK)
-                    {
-                        childMsg = "   if";
-                    }
-                    gtDispChild(tree->AsOp()->gtOp1, indentStack,
-                                (tree->gtGetOp2IfPresent() == nullptr) ? IIArcBottom : IIArc, childMsg, topOnly);
+                    childMsg = "   if";
                 }
+                gtDispChild(tree->AsOp()->gtOp1, indentStack,
+                            (tree->gtGetOp2IfPresent() == nullptr) ? IIArcBottom : IIArc, childMsg, topOnly);
             }
 
             if (tree->gtGetOp2IfPresent())
@@ -12534,7 +12363,6 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
             {
                 fgArgTabEntry* curArgTabEntry = gtArgEntryByNode(call, operand);
                 assert(curArgTabEntry);
-                assert(operand->OperGet() != GT_LIST);
 
                 if (!curArgTabEntry->isLateArg())
                 {
@@ -14501,11 +14329,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     if (tree->OperIs(GT_COMMA))
     {
         return op2;
-    }
-
-    if (tree->OperIsAnyList())
-    {
-        return tree;
     }
 
     switchType = op1->TypeGet();
