@@ -91,10 +91,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             static void EnsureDirectoryBuildFiles(string testAssetsFolder, string testArtifactDirectory)
             {
-                if (Directory.Exists(testArtifactDirectory))
-                {
-                    return;
-                }
                 Directory.CreateDirectory(testArtifactDirectory);
 
                 // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
