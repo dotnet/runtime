@@ -6426,7 +6426,8 @@ GenTreeCall* Compiler::gtNewCallNode(
 
     node->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
 #ifdef UNIX_X86_ABI
-    node->gtFlags |= GTF_CALL_POP_ARGS;
+    if (callType == CT_INDIRECT || callType == CT_HELPER)
+        node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
     for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
     {
@@ -10013,6 +10014,33 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     return charsDisplayed;
 }
 
+#ifdef TARGET_X86
+inline const char* GetCallConvName(CorInfoCallConvExtension callConv)
+{
+    switch (callConv)
+    {
+        case CorInfoCallConvExtension::Managed:
+            return "Managed";
+        case CorInfoCallConvExtension::C:
+            return "C";
+        case CorInfoCallConvExtension::Stdcall:
+            return "Stdcall";
+        case CorInfoCallConvExtension::Thiscall:
+            return "Thiscall";
+        case CorInfoCallConvExtension::Fastcall:
+            return "Fastcall";
+        case CorInfoCallConvExtension::CMemberFunction:
+            return "CMemberFunction";
+        case CorInfoCallConvExtension::StdcallMemberFunction:
+            return "StdcallMemberFunction";
+        case CorInfoCallConvExtension::FastcallMemberFunction:
+            return "FastcallMemberFunction";
+        default:
+            return "UnknownCallConv";
+    }
+}
+#endif // TARGET_X86
+
 /*****************************************************************************/
 
 void Compiler::gtDispNodeName(GenTree* tree)
@@ -10098,6 +10126,10 @@ void Compiler::gtDispNodeName(GenTree* tree)
             {
                 gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " thiscall");
             }
+#ifdef TARGET_X86
+            gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " %s",
+                                              GetCallConvName(tree->AsCall()->GetUnmanagedCallConv()));
+#endif // TARGET_X86
             gtfType = gtfTypeBuf;
         }
 

@@ -2833,17 +2833,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         noway_assert(arg != nullptr);
         call->gtCallCookie = nullptr;
 
-#if defined(TARGET_X86)
-        // x86 passes the cookie on the stack as the final argument to the call.
-        GenTreeCall::Use** insertionPoint = &call->gtCallArgs;
-        for (; *insertionPoint != nullptr; insertionPoint = &((*insertionPoint)->NextRef()))
-        {
-        }
-        *insertionPoint = gtNewCallArgs(arg);
-#else  // !defined(TARGET_X86)
-        // All other architectures pass the cookie in a register.
+        // All architectures pass the cookie in a register.
         call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
-#endif // defined(TARGET_X86)
 
         nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM, NonStandardArgKind::PInvokeCookie);
         numArgs++;
@@ -2960,7 +2951,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
 #ifdef UNIX_X86_ABI
         // Add in the ret buff arg
-        if (callHasRetBuffArg)
+        if (callHasRetBuffArg &&
+            call->unmgdCallConv != CorInfoCallConvExtension::C &&     // C and Stdcall calling conventions do not
+            call->unmgdCallConv != CorInfoCallConvExtension::Stdcall) // use registers to pass arguments.
             maxRegArgs++;
 #endif
     }
@@ -18201,8 +18194,8 @@ bool Compiler::fgCheckStmtAfterTailCall()
 //
 bool Compiler::fgCanTailCallViaJitHelper()
 {
-#ifndef TARGET_X86
-    // On anything except X86 we have no faster mechanism available.
+#if !defined(TARGET_X86) || defined(UNIX_X86_ABI)
+    // On anything except windows X86 we have no faster mechanism available.
     return false;
 #else
     // The JIT helper does not properly handle the case where localloc was used.

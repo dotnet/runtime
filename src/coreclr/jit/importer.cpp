@@ -1300,7 +1300,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Case of call returning a struct via hidden retbuf arg
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+#if (defined(TARGET_WINDOWS) && !defined(TARGET_ARM)) || defined(UNIX_X86_ABI)
             // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
             if (srcCall->IsUnmanaged())
             {
@@ -1366,7 +1366,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                 }
             }
             else
-#endif
+#endif // (defined(TARGET_WINDOWS) && !defined(TARGET_ARM)) || defined(UNIX_X86_ABI)
             {
                 // insert the return value buffer into the argument list as first byref parameter
                 srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
@@ -7488,6 +7488,9 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, IL_OFFSETX i
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, nullptr, ilOffset);
 
     call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+#ifdef UNIX_X86_ABI
+    call->gtFlags &= ~GTF_CALL_POP_ARGS;
+#endif
 
     return call;
 }
