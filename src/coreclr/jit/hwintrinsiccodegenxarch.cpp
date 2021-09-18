@@ -2138,9 +2138,10 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         overwrittenOpNum = node->GetOverwrittenOpNumForFMA(use.User(), op1, op2, op3);
     }
 
-    if (overwrittenOpNum == 1)
+    // Intrinsics with CopyUpperBits semantics must have op1 as target
+    if (overwrittenOpNum == 1 || copiesUpperBits)
     {
-        if (op2->isContained())
+        if (op2->isContained() || op2->IsRegOptional())
         {
             // op1 = (op1 * [op2]) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
@@ -2156,13 +2157,11 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             op1Reg = op1->GetRegNum();
             op2Reg = op2->GetRegNum();
         }
+        isCommutative = copiesUpperBits;
     }
     else if (overwrittenOpNum == 3)
     {
         // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-        // One of the following:
-        // op3 = ([op1] * op2) + op3
-        // op3 = (op1 * [op2]) + op3
         ins    = (instruction)(ins + 1);
         op1Reg = op3->GetRegNum();
         if (op1->isContained())
@@ -2178,8 +2177,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             op3    = op2;
         }
     }
-    else if (overwrittenOpNum == 2)
+    else
     {
+        assert(overwrittenOpNum == 2);
         if (op1->isContained())
         {
             // op2 = ([op1] * op2) + op3
@@ -2197,82 +2197,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             op1Reg = op2->GetRegNum();
             op2Reg = op1->GetRegNum();
         }
-
     }
-    else
-    {
-        // No overwritten:
-        // result = (op1 * op2) + op3
-        // decide form with contained op and lastUse
-        assert(overwrittenOpNum == 0);
-        if (op2->isContained() || op2->isUsedFromSpillTemp())
-        {
-            if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
-            {
-                // result = (op1 * [op2]) + op3
-                // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
 
-                ins    = (instruction)(ins - 1);
-                op1Reg = op1->GetRegNum();
-                op2Reg = op3->GetRegNum();
-                op3    = op2;
-            }
-            else
-            {
-                // result = (op1 * [op2]) + op3
-                // 231 form XMM1 = XMM2 * [XMM3] + XMM1
-
-                ins = (instruction)(ins + 1);
-                op1Reg = op3->GetRegNum();
-                op2Reg = op1->GetRegNum();
-                op3    = op2;
-            }
-        }
-        else if (op1->isContained() || op1->isUsedFromSpillTemp())
-        {
-            if (op2->OperIs(GT_LCL_VAR) && op2->IsLastUse(0))
-            {
-                // result = ([op1] * op2) + op3
-                // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-
-                ins    = (instruction)(ins - 1);
-                op1Reg = op2->GetRegNum();
-                op2Reg = op3->GetRegNum();
-                op3    = op1;
-
-
-            }
-            else
-            {
-                // result = ([op1] * op2) + op3
-                // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-
-                ins    = (instruction)(ins + 1);
-                op1Reg = op3->GetRegNum();
-                op2Reg = op2->GetRegNum();
-                op3    = op1;
-            }
-        }
-        else
-        {
-            // op3 isContained or regOptional
-            // result = (op1 * op2) + [op3]
-            // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-            //if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
-            //{
-                op1Reg = op1->GetRegNum();
-                op2Reg = op2->GetRegNum();
-            //}
-            //else
-            //{
-            //    op1Reg = op2->GetRegNum();
-            //    op2Reg = op1->GetRegNum();
-            //}
-            //isCommutative = !copiesUpperBits;
-                isCommutative = true;
-        }
-
-        if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
+    if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
         {
             assert(node->isRMWHWIntrinsic(compiler));
 
@@ -2286,8 +2213,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             op2Reg = op1Reg;
             op1Reg = targetReg;
         }
-    }
-
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3);
     genProduceReg(node);
 }
