@@ -1828,10 +1828,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_DuplicateToVector128:
                 if (IsValidConstForMovImm(node))
                 {
-                    // Use node->gtOp1 as the above check may
-                    // have removed a cast node and changed op1
-
-                    MakeSrcContained(node, node->gtOp1);
+                    MakeSrcContained(node, node->Op(1));
                 }
                 break;
 
