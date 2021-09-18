@@ -35,12 +35,7 @@ namespace BINDER_SPACE
 
     Assembly::~Assembly()
     {
-        if (m_pPEImage != NULL)
-        {
-            BinderReleasePEImage(m_pPEImage);
-            m_pPEImage = NULL;
-        }
-
+        SAFE_RELEASE(m_pPEImage);
         SAFE_RELEASE(m_pAssemblyName);
     }
 
@@ -73,6 +68,17 @@ namespace BINDER_SPACE
 
     Exit:
         return hr;
+    }
+
+    PEImage* Assembly::GetPEImage()
+    {
+        return m_pPEImage;
+    }
+
+    void Assembly::SetPEImage(PEImage* pPEImage)
+    {
+        pPEImage->AddRef();
+        m_pPEImage = pPEImage;
     }
 
     /* static */

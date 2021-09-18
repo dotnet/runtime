@@ -31,25 +31,7 @@ inline ULONG Assembly::Release()
     return ulRef;
 }
 
-PEImage *Assembly::GetPEImage(BOOL fAddRef /* = FALSE */)
-{
-    PEImage *pPEImage = m_pPEImage;
-
-    if (fAddRef)
-    {
-        BinderAddRefPEImage(pPEImage);
-    }
-
-    return pPEImage;
-}
-
-void Assembly::SetPEImage(PEImage *pPEImage)
-{
-    BinderAddRefPEImage(pPEImage);
-    m_pPEImage = pPEImage;
-}
-
-AssemblyName *Assembly::GetAssemblyName(BOOL fAddRef /* = FALSE */)
+inline AssemblyName *Assembly::GetAssemblyName(BOOL fAddRef /* = FALSE */)
 {
     AssemblyName *pAssemblyName = m_pAssemblyName;
 
@@ -60,8 +42,7 @@ AssemblyName *Assembly::GetAssemblyName(BOOL fAddRef /* = FALSE */)
     return pAssemblyName;
 }
 
-void Assembly::SetAssemblyName(AssemblyName *pAssemblyName,
-                               BOOL          fAddRef /* = TRUE */)
+inline void Assembly::SetAssemblyName(AssemblyName *pAssemblyName, BOOL fAddRef /* = TRUE */)
 {
     SAFE_RELEASE(m_pAssemblyName);
 
@@ -72,13 +53,12 @@ void Assembly::SetAssemblyName(AssemblyName *pAssemblyName,
         pAssemblyName->AddRef();
     }
 }
-
-BOOL Assembly::GetIsInTPA()
+inline BOOL Assembly::GetIsInTPA()
 {
     return m_isInTPA;
 }
 
-void Assembly::SetIsInTPA(BOOL fIsInTPA)
+inline void Assembly::SetIsInTPA(BOOL fIsInTPA)
 {
     m_isInTPA = fIsInTPA;
 }

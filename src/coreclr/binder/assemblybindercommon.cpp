@@ -1167,7 +1167,7 @@ namespace BINDER_SPACE
 
     Exit:
 
-        BinderReleasePEImage(pPEImage);
+        SAFE_RELEASE(pPEImage);
 
         // Normalize file not found
         if ((FAILED(hr)) && IsFileNotFound(hr))

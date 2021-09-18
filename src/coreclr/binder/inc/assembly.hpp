@@ -35,10 +35,6 @@ STDAPI BinderAcquireImport(PEImage            *pPEImage,
                            IMDInternalImport **pIMetaDataAssemblyImport,
                            DWORD              *pdwPAFlags);
 
-STDAPI BinderReleasePEImage(PEImage *pPEImage);
-
-STDAPI BinderAddRefPEImage(PEImage *pPEImage);
-
 namespace BINDER_SPACE
 {
     // BINDER_SPACE::Assembly represents a result of binding to an actual assembly (PE image)
@@ -61,9 +57,9 @@ namespace BINDER_SPACE
         HRESULT Init(PEImage *pPEImage, BOOL fIsInTPA);
 
         LPCWSTR GetSimpleName();
-        inline AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
-        inline PEImage* GetPEImage(BOOL fAddRef = FALSE);
-        inline BOOL GetIsInTPA();
+        AssemblyName *GetAssemblyName(BOOL fAddRef = FALSE);
+        PEImage* GetPEImage();
+        BOOL GetIsInTPA();
 
         static PEKIND GetSystemArchitecture();
         static BOOL IsValidArchitecture(PEKIND kArchitecture);
@@ -75,9 +71,9 @@ namespace BINDER_SPACE
         }
 
     private:
-        inline void SetPEImage(PEImage *pPEImage);
-        inline void SetAssemblyName(AssemblyName *pAssemblyName, BOOL fAddRef = TRUE);
-        inline void SetIsInTPA(BOOL fIsInTPA);
+        void SetPEImage(PEImage *pPEImage);
+        void SetAssemblyName(AssemblyName *pAssemblyName, BOOL fAddRef = TRUE);
+        void SetIsInTPA(BOOL fIsInTPA);
 
         LONG                     m_cRef;
         PEImage                 *m_pPEImage;
