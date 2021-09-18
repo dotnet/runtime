@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if false
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -62,3 +64,4 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
     }
 }
+#endif
