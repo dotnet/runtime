@@ -111,7 +111,7 @@ LikelyClassHistogram::LikelyClassHistogram(INT_PTR* histogramEntries, unsigned e
 // Arguments:
 //    pLikelyClasses - [OUT] array of likely classes sorted by likelihood (descending). It must be
 //                     at least of 'maxLikelyClasses' (next argument) length.
-//                     The array consists of pairs "clsHandle - likelihood" ordered by likelihood 
+//                     The array consists of pairs "clsHandle - likelihood" ordered by likelihood
 //                     (descending) where likelihood can be any value in [0..100] range. clsHandle
 //                     is never null for [0..<return value of this function>) range, Items in
 //                     [<return value of this function>..maxLikelyClasses) are zeroed if the number
