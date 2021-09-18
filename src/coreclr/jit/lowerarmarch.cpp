@@ -667,7 +667,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         node->gtType = TYP_SIMD16;
     }
 
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
     switch (intrinsicId)
     {
@@ -680,7 +680,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // the same intrinsic as when it came in.
 
             LowerHWIntrinsicCreate(node);
-            assert(!node->OperIsHWIntrinsic() || (node->gtHWIntrinsicId != intrinsicId));
+            assert(!node->OperIsHWIntrinsic() || (node->GetHWIntrinsicId() != intrinsicId));
             LowerNode(node);
             return;
         }
