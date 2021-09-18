@@ -667,6 +667,56 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return 0;
         }
 
+        /// <summary>
+        /// Prints a chart "Call-sites grouped by number of likely classes seen"
+        /// </summary>
+        /// <param name="callSites">Each array item represents a unique call-site, and the actual value is
+        /// the number of unique classes seen at that call-site</param>
+        static void PrintCallsitesByLikelyClassesChart(int[] callSites)
+        {
+            const int maxLikelyClasses = 8;
+            const int tableWidth = 20;
+
+            if (callSites.Length < 1)
+                return;
+
+            int[] rows = new int[maxLikelyClasses + 1];
+            foreach (var item in callSites
+                .GroupBy(k => k > maxLikelyClasses ? maxLikelyClasses : k)
+                .OrderBy(d => d.Key)
+                .Select(d => new { Row = d.Key, Count = d.Count() })
+                .ToArray())
+            {
+                rows[item.Row] = item.Count;
+            }
+
+            int sum = rows.Sum();
+
+            Console.WriteLine();
+            Console.WriteLine("Call-sites grouped by number of likely classes seen:\n");
+
+            bool startWithZero = rows[0] > 0;
+            for (int i = startWithZero ? 0 : 1; i < rows.Length; i++)
+            {
+                double share = rows[i] / (double)sum;
+                int shareWidth = (int)(Math.Round(share * tableWidth));
+                bool lastRow = (i == rows.Length - 1);
+
+                Console.Write($"{(lastRow ? "  ≥" : "   ")}{i}: [");
+                Console.Write(new string('#', shareWidth));
+                Console.Write(new string('.', tableWidth - shareWidth));
+                Console.Write("] ");
+                Console.Write($"{share * 100.0,4:F1}%");
+                Console.Write($" ({rows[i]})");
+
+                if (i == 1)
+                    Console.Write(" - monomorphic call-sites");
+
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+        }
+
         static void PrintMibcStats(ProfileData data)
         {
             List<MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
@@ -719,6 +769,25 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 foreach (MethodProfileData mpd in methodsWithZeroCounters)
                     PrintOutput($"  {mpd.Method}");
             }
+
+            int[] likelyClassesInCallsites = profiledMethods
+                .SelectMany(m => m.SchemaData)
+                .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                .Select(GetUniqueClassesSeen)
+                .Where(i => i > 0) // ignore call-sites with arrays of "null" in Data
+                .ToArray();
+
+            static int GetUniqueClassesSeen(PgoSchemaElem se)
+            {
+                var data = (TypeSystemEntityOrUnknown[])se.DataObject;
+                int uniqueClassesSeen = data
+                    .Where(d => !d.IsNull) // ignore null, don't treat is as a unique call-site
+                    .GroupBy(d => d.GetHashCode())
+                    .Count();
+                return uniqueClassesSeen;
+            }
+
+            PrintCallsitesByLikelyClassesChart(likelyClassesInCallsites);
         }
 
         private struct GetLikelyClassResult
