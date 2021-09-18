@@ -83,6 +83,7 @@ struct GCGenerationInfo
     UINT64 fragmentationAfter;
 };
 
+#include "pshpack4.h"
 class GCMemoryInfoData : public Object
 {
 public:
@@ -100,6 +101,7 @@ public:
     UINT32 pauseTimePercent;
     UINT8 isCompaction;
     UINT8 isConcurrent;
+    UINT8 padding[6];
     GCGenerationInfo generationInfo0;
     GCGenerationInfo generationInfo1;
     GCGenerationInfo generationInfo2;
@@ -108,6 +110,7 @@ public:
     UINT64 pauseDuration0;
     UINT64 pauseDuration1;
 };
+#include "poppack.h"
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<GCMemoryInfoData> GCMEMORYINFODATA;
