@@ -113,10 +113,6 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
             }
-            else if (entry.AbsoluteExpiration.HasValue)
-            {
-                absoluteExpiration = entry.AbsoluteExpiration;
-            }
 
             // Applying the option's absolute expiration only if it's not already smaller.
             // This can be the case if a dependent cache entry has a smaller value, and
