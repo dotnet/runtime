@@ -749,53 +749,34 @@ struct HWIntrinsic final
     GenTree*            op2;
     GenTree*            op3;
     GenTree*            op4;
-    int                 numOperands;
+    size_t              numOperands;
     var_types           baseType;
 
 private:
     void InitializeOperands(const GenTreeHWIntrinsic* node)
     {
-        op1 = node->gtGetOp1();
-        op2 = node->gtGetOp2();
+        numOperands = node->GetOperandCount();
 
-        if (op1 == nullptr)
+        switch (numOperands)
         {
-            numOperands = 0;
-        }
-        else if (op1->OperIsList())
-        {
-            assert(op2 == nullptr);
+            case 4:
+                op4 = node->Op(4);
+                FALLTHROUGH;
+            case 3:
+                op3 = node->Op(3);
+                FALLTHROUGH;
+            case 2:
+                op2 = node->Op(2);
+                FALLTHROUGH;
+            case 1:
+                op1 = node->Op(1);
+                FALLTHROUGH;
+            case 0:
+                break;
 
-            GenTreeArgList* list = op1->AsArgList();
-            op1                  = list->Current();
-            list                 = list->Rest();
-            op2                  = list->Current();
-            list                 = list->Rest();
-            op3                  = list->Current();
-            list                 = list->Rest();
-
-            if (list != nullptr)
-            {
-                op4 = list->Current();
-                assert(list->Rest() == nullptr);
-
-                numOperands = 4;
-            }
-            else
-            {
-                numOperands = 3;
-            }
+            default:
+                unreached();
         }
-        else if (op2 != nullptr)
-        {
-            numOperands = 2;
-        }
-        else
-        {
-            numOperands = 1;
-        }
-
-        assert(HWIntrinsicInfo::lookupNumArgs(id) == numOperands);
     }
 
     void InitializeBaseType(const GenTreeHWIntrinsic* node)
