@@ -693,7 +693,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             int sum = rows.Sum();
 
             Console.WriteLine();
-            Console.WriteLine("Call-sites grouped by number of likely classes seen:\n");
+            Console.WriteLine("Call-sites grouped by number of likely classes seen:");
+            Console.WriteLine();
 
             bool startWithZero = rows[0] > 0;
             for (int i = startWithZero ? 0 : 1; i < rows.Length; i++)
@@ -702,16 +703,58 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 int shareWidth = (int)(Math.Round(share * tableWidth));
                 bool lastRow = (i == rows.Length - 1);
 
-                Console.Write($"{(lastRow ? "  ≥" : "   ")}{i,2}: [");
+                Console.Write($"        {(lastRow ? "≥" : " ")}{i,2}: [");
                 Console.Write(new string('#', shareWidth));
                 Console.Write(new string('.', tableWidth - shareWidth));
                 Console.Write("] ");
                 Console.Write($"{share * 100.0,4:F1}%");
                 Console.Write($" ({rows[i]})");
 
-                if (i == 1)
+                if (i == 0)
+                    Console.Write(" - call-sites with 'null's");
+                else if (i == 1)
                     Console.Write(" - monomorphic call-sites");
 
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+        }
+
+        /// <summary>
+        /// Prints a histogram for "likelihoods" distribution for a specific likely class (e.g. most popular one)
+        /// </summary>
+        /// <param name="likelihoods">Array of likelihoods 0-100.0</param>
+        static void PrintLikelihoodHistogram(double[] likelihoods)
+        {
+            const int columns = 10;
+            const int tableWidth = 25;
+            int columnWidth = 100 / columns;
+
+            if (likelihoods.Length == 0)
+                return; // Avoid div-by-zero
+
+            Console.WriteLine();
+            Console.WriteLine("Likelihoods of the most popular likely classes:");
+            Console.WriteLine();
+
+            likelihoods = likelihoods.OrderBy(i => i).ToArray();
+            for (int i = 0; i < columns; i++)
+            {
+                int lowerLimit = i * columnWidth;
+                int upperLimit = i * columnWidth + columnWidth;
+                int count = likelihoods.Count(l =>
+                {
+                    if (i == 0) // inclusive for [0..
+                        return l <= upperLimit;
+                    return l > lowerLimit && l <= upperLimit;
+                });
+
+                int shareWidth = (int)Math.Round((double)count / likelihoods.Length * tableWidth);
+                Console.Write(i == 0 ? "  [" : "  ("); // inclusive for [0..
+                Console.Write($"{i * columnWidth,2}-{i * columnWidth + columnWidth,3}%]: [");
+                Console.Write(new string('#', shareWidth));
+                Console.Write(new string('.', tableWidth - shareWidth));
+                Console.Write($"] {count}");
                 Console.WriteLine();
             }
             Console.WriteLine();
@@ -770,24 +813,36 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     PrintOutput($"  {mpd.Method}");
             }
 
-            int[] likelyClassesInCallsites = profiledMethods
+            PrintCallsitesByLikelyClassesChart(profiledMethods
                 .SelectMany(m => m.SchemaData)
                 .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
                 .Select(GetUniqueClassesSeen)
-                .Where(i => i > 0) // ignore call-sites with arrays of "null" in Data
-                .ToArray();
+                .ToArray());
 
             static int GetUniqueClassesSeen(PgoSchemaElem se)
             {
-                var data = (TypeSystemEntityOrUnknown[])se.DataObject;
-                int uniqueClassesSeen = data
+                int uniqueClassesSeen = ((TypeSystemEntityOrUnknown[])se.DataObject)
                     .Where(d => !d.IsNull) // ignore null, don't treat is as a unique call-site
                     .GroupBy(d => d.GetHashCode())
                     .Count();
                 return uniqueClassesSeen;
             }
 
-            PrintCallsitesByLikelyClassesChart(likelyClassesInCallsites);
+            PrintLikelihoodHistogram(profiledMethods
+                .SelectMany(m => m.SchemaData)
+                .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                .Select(GetLikelihoodOfMostPopularType)
+                .ToArray());
+
+            static double GetLikelihoodOfMostPopularType(PgoSchemaElem se)
+            {
+                int count = ((TypeSystemEntityOrUnknown[])se.DataObject)
+                    .GroupBy(d => d.GetHashCode())
+                    .OrderByDescending(d => d.Count())
+                    .FirstOrDefault(d => d.FirstOrDefault().AsType != null)
+                    ?.Count() ?? 0;
+                return count * 100.0 / se.DataObject.Length;
+            }
         }
 
         private struct GetLikelyClassResult
