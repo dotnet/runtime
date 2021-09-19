@@ -9301,34 +9301,14 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 // Variadic nodes
 #ifdef FEATURE_SIMD
         case GT_SIMD:
-            if (m_node->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
-            {
-                SetEntryStateForList(m_node->AsSIMD()->gtOp1->AsArgList());
-            }
-            else
-            {
-                SetEntryStateForBinOp();
-            }
-            return;
-#endif // FEATURE_SIMD
-
+#endif
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            if (m_node->AsHWIntrinsic()->gtOp1 == nullptr)
-            {
-                assert(m_node->NullOp1Legal());
-                m_state = -1;
-            }
-            else if (m_node->AsHWIntrinsic()->gtOp1->OperIsList())
-            {
-                SetEntryStateForList(m_node->AsHWIntrinsic()->gtOp1->AsArgList());
-            }
-            else
-            {
-                SetEntryStateForBinOp();
-            }
+#endif
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+            SetEntryStateForMultiOp();
             return;
-#endif // FEATURE_HW_INTRINSICS
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         // LEA, which may have no first operand
         case GT_LEA:
@@ -9616,37 +9596,45 @@ void GenTreeUseEdgeIterator::SetEntryStateForBinOp()
     }
 }
 
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// GenTreeUseEdgeIterator::AdvanceList: produces the next operand of a variadic node and advances the state.
+// GenTreeUseEdgeIterator::AdvanceMultiOp: produces the next operand of a multi-op node and advances the state.
 //
-// This function does not use `m_state` for anything meaningful; it simply walks the `m_argList` until
-// there are no further entries.
+// Takes advantage of the fact that GenTreeMultiOp stores the operands in a contigious array, simply
+// incrementing the "m_edge" pointer, unless the end, stored in "m_statePtr", has been reached.
 //
-void GenTreeUseEdgeIterator::AdvanceList()
+void GenTreeUseEdgeIterator::AdvanceMultiOp()
 {
-    assert(m_state == 0);
+    assert(m_node != nullptr);
+    assert(m_node->OperIs(GT_SIMD, GT_HWINTRINSIC));
 
-    if (m_statePtr == nullptr)
+    m_edge++;
+    if ((m_edge == m_statePtr))
     {
-        m_state = -1;
+        Terminate();
+    }
+}
+
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::SetEntryStateForMultiOp: produces the first operand of a multi-op node and sets the
+//                                                  required advance function.
+//
+void GenTreeUseEdgeIterator::SetEntryStateForMultiOp()
+{
+    m_edge              = m_node->AsMultiOp()->GetOperandArray();
+    size_t operandCount = m_node->AsMultiOp()->GetOperandCount();
+
+    if (operandCount == 0)
+    {
+        Terminate();
     }
     else
     {
-        GenTreeArgList* listNode = static_cast<GenTreeArgList*>(m_statePtr);
-        m_edge                   = &listNode->gtOp1;
-        m_statePtr               = listNode->Rest();
+        m_statePtr = m_edge + operandCount;
+        m_advance  = &GenTreeUseEdgeIterator::AdvanceMultiOp;
     }
 }
-
-//------------------------------------------------------------------------
-// GenTreeUseEdgeIterator::SetEntryStateForList: produces the first operand of a list node.
-//
-void GenTreeUseEdgeIterator::SetEntryStateForList(GenTreeArgList* list)
-{
-    m_statePtr = list;
-    m_advance  = &GenTreeUseEdgeIterator::AdvanceList;
-    AdvanceList();
-}
+#endif
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceCall: produces the next operand of a call node and advances the state.

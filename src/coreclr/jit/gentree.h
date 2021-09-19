@@ -2833,7 +2833,8 @@ class GenTreeUseEdgeIterator final
     AdvanceFn m_advance;
     GenTree*  m_node;
     GenTree** m_edge;
-    // Pointer sized state storage, GenTreeArgList* or GenTreePhi::Use* or GenTreeCall::Use* currently.
+    // Pointer sized state storage, GenTreePhi::Use* or GenTreeCall::Use*
+    // or the exclusive end of GenTreeMultiOp's operand array.
     void* m_statePtr;
     // Integer sized state storage, usually the operand index for non-list based nodes.
     int m_state;
@@ -2853,13 +2854,14 @@ class GenTreeUseEdgeIterator final
     void           AdvanceBinOp();
     void           SetEntryStateForBinOp();
 
-    // An advance function for list-like nodes (Phi, SIMDIntrinsicInitN, FieldList)
-    void AdvanceList();
-    void SetEntryStateForList(GenTreeArgList* list);
-
     // The advance function for call nodes
     template <int state>
     void          AdvanceCall();
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    void AdvanceMultiOp();
+    void SetEntryStateForMultiOp();
+#endif
 
     void Terminate();
 
