@@ -313,6 +313,7 @@ namespace
                 MODE_COOPERATIVE;
                 PRECONDITION(!IsLockHeld());
                 PRECONDITION(!(withFlags & ExternalObjectContext::Flags_Collected));
+                PRECONDITION(!(withFlags & ExternalObjectContext::Flags_Detached));
                 POSTCONDITION(RETVAL != NULL);
             }
             CONTRACT_END;
@@ -337,9 +338,11 @@ namespace
 
                     // Only add objects that are in the correct thread
                     // context and have the appropriate flags set.
+                    // Confirm the object hasn't been detached from the cache.
                     // If instance is in hashmap, it is active. This invariant
                     // holds because the GC is what marks and removes from the cache.
                     if (inst->ThreadContext == threadContext
+                        && !inst->IsSet(ExternalObjectContext::Flags_Detached)
                         && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
                     {
                         localList.Push(inst);
@@ -353,24 +356,24 @@ namespace
 
             // Insert objects into enumerable.
             // The ExternalObjectContexts in the hashmap are only
-            // removed and associated objects collected during a GC. Since
-            // this code is running in Cooperative mode they will not be null
-            // during detection above, but could be marked for collection
+            // detached from the cache during a GC. Since this code is
+            // running in Cooperative mode they will not be null during
+            // detection above, but could be marked for collection
             // after allocating the above array.
             SIZE_T objCount = 0;
             for (SIZE_T i = 0; i < localList.Size(); i++)
             {
                 ExternalObjectContext* inst = localList[i];
-                if (inst->IsActive())
+                if (!inst->IsSet(ExternalObjectContext::Flags_Detached))
                 {
                     gc.arrRef->SetAt(objCount, inst->GetObjectRef());
                     objCount++;
                 }
                 else
                 {
-                    // The context has been marked for collection.
+                    // The context has been detach for this cache.
                     // Since the state of this object is now under
-                    // the control of the GC, we null it out. This
+                    // the control of the Finalizer/GC, we null it out. This
                     // allows us to ignore it when we iterate over the
                     // collection later. The null here is needed because
                     // it indicates the array size is going to change
@@ -383,7 +386,7 @@ namespace
             }
 
             // During the allocation of the array to return, a GC could have
-            // occurred and objects marked "collected". In order to avoid
+            // occurred and objects detach from this cache. In order to avoid
             // having null array elements we will allocate a new array.
             // This subsequent allocation is okay because the array we are
             // replacing extends all object lifetimes.
@@ -401,7 +404,7 @@ namespace
 
             // All objects are now referenced from the array so won't be collected
             // at this point. This means we can safely iterate over the non-null
-            // and active ExternalObjectContext instances.
+            // and non-detached ExternalObjectContext instances.
             {
                 // Separate the wrapper from the tracker runtime prior to
                 // passing them onto the caller. This call is okay to make
@@ -414,9 +417,9 @@ namespace
                 {
                     ExternalObjectContext* inst = localList[i];
 
-                    // Confirm the external object wasn't collected during one of
-                    // the previous array allocations.
-                    if (inst != NULL && inst->IsActive())
+                    // Confirm the external object wasn't detached from the
+                    // cache during one of the previous array allocations.
+                    if (inst != NULL && !inst->IsSet(ExternalObjectContext::Flags_Detached))
                         InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
                 }
             }
