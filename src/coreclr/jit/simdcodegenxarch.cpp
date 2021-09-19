@@ -1202,25 +1202,25 @@ void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, r
 //
 void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
 {
-    assert((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenLo) ||
-           (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi));
+    assert((simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicWidenLo) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicWidenHi));
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types simdType = simdNode->TypeGet();
     SIMDLevel level    = compiler->getSIMDSupportLevel();
 
-    genConsumeOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber   op1Reg   = op1->GetRegNum();
     regNumber   srcReg   = op1Reg;
     emitAttr    emitSize = emitActualTypeSize(simdType);
-    instruction widenIns = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    instruction widenIns = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
 
     if (baseType == TYP_FLOAT)
     {
-        if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi)
+        if (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicWidenHi)
         {
             genSIMDExtractUpperHalf(simdNode, srcReg, targetReg);
             srcReg = targetReg;
@@ -1241,7 +1241,7 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
         {
             // permute op1Reg and put it into targetReg
             unsigned ival = 0xd4;
-            if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi)
+            if (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicWidenHi)
             {
                 ival = 0xe8;
             }
