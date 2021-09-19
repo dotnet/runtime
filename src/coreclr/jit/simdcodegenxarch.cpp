@@ -890,10 +890,10 @@ void CodeGen::genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
 //
 void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 {
-    SIMDIntrinsicID intrinsicID = simdNode->gtSIMDIntrinsicID;
+    SIMDIntrinsicID intrinsicID = simdNode->GetSIMDIntrinsicId();
     assert((intrinsicID == SIMDIntrinsicConvertToDouble) || (intrinsicID == SIMDIntrinsicConvertToInt64));
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
