@@ -3065,9 +3065,11 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     {
         if (node->AsHWIntrinsic()->OperIsMemoryLoad())
         {
-            return BuildAddrUses(node->gtGetOp1());
+            return BuildAddrUses(node->AsHWIntrinsic()->Op(1));
         }
-        BuildUse(node->gtGetOp1(), candidates);
+
+        assert(node->AsHWIntrinsic()->GetOperandCount() == 1);
+        BuildUse(node->AsHWIntrinsic()->Op(1), candidates);
         return 1;
     }
 #endif // FEATURE_HW_INTRINSICS
@@ -3129,10 +3131,13 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     {
         use = BuildUse(node, candidates);
     }
+#ifdef FEATURE_HW_INTRINSICS
     else if (node->OperIsHWIntrinsic())
     {
-        use = BuildUse(node->gtGetOp1(), candidates);
+        assert(node->AsHWIntrinsic()->GetOperandCount() == 1);
+        use = BuildUse(node->AsHWIntrinsic()->Op(1), candidates);
     }
+#endif
     else if (!node->OperIsIndir())
     {
         return 0;
