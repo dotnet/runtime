@@ -3901,6 +3901,7 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, GenTree* prevTree, bool isLIR)
 
 void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 {
+    // TODO-List-Cleanup: measure what using GenTreeVisitor here brings.
     genTreeOps oper;
     unsigned   kind;
 
@@ -4094,6 +4095,20 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             }
 
             break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            for (GenTree* operand : tree->AsMultiOp()->Operands())
+            {
+                fgSetTreeSeqHelper(operand, isLIR);
+            }
+            break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         case GT_ARR_ELEM:
 
