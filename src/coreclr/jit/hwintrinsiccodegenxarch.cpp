@@ -632,28 +632,12 @@ void CodeGen::genHWIntrinsic_R_R_RM(
 void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr simdSize, int8_t ival)
 {
     regNumber targetReg = node->GetRegNum();
-    GenTree*  op1       = node->gtGetOp1();
-    GenTree*  op2       = node->gtGetOp2();
+    GenTree*  op1       = node->Op(1);
+    GenTree*  op2       = node->Op(2);
     emitter*  emit      = GetEmitter();
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
-
-    if (op1->OperIsList())
-    {
-        assert(op2 == nullptr);
-
-        GenTreeArgList* argList = op1->AsArgList();
-
-        op1     = argList->Current();
-        argList = argList->Rest();
-
-        op2     = argList->Current();
-        argList = argList->Rest();
-
-        assert(argList->Current() != nullptr);
-        assert(argList->Rest() == nullptr);
-    }
 
     regNumber op1Reg = op1->GetRegNum();
 
@@ -662,7 +646,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
-        assert(HWIntrinsicInfo::SupportsContainment(node->gtHWIntrinsicId));
+        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
         assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
 
         TempDsc* tmpDsc = nullptr;
@@ -692,8 +676,8 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
             else
             {
                 assert(op2->AsHWIntrinsic()->OperIsMemoryLoad());
-                assert(HWIntrinsicInfo::lookupNumArgs(op2->AsHWIntrinsic()) == 1);
-                addr = op2->gtGetOp1();
+                assert(op2->AsHWIntrinsic()->GetOperandCount() == 1);
+                addr = op2->AsHWIntrinsic()->Op(1);
             }
 
             switch (addr->OperGet())
