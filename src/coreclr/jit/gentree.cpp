@@ -18809,7 +18809,7 @@ var_types GenTreeJitIntrinsic::GetSimdBaseType() const
 // Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeSIMD::OperIsMemoryLoad() const
 {
-    if (gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+    if (GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
     {
         return true;
     }
