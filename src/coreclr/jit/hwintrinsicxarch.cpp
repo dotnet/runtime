@@ -858,31 +858,15 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            if (sig->numArgs == 1)
-            {
-                op1     = impPopStack().val;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            }
-            else if (sig->numArgs == 2)
-            {
-                op2     = impPopStack().val;
-                op1     = impPopStack().val;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-            }
-            else
-            {
-                assert(sig->numArgs >= 3);
+            GenTree* args[32];
+            assert(sig->numArgs <= ArrLen(args));
 
-                GenTreeArgList* tmp = nullptr;
-
-                for (unsigned i = 0; i < sig->numArgs; i++)
-                {
-                    tmp = gtNewListNode(impPopStack().val, tmp);
-                }
-
-                op1     = tmp;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            for (int i = sig->numArgs - 1; i >= 0; i--)
+            {
+                args[i] = impPopStack().val;
             }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, args, sig->numArgs, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
