@@ -6297,9 +6297,8 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     saveLcl->SetRegNum(lclVarReg);
     SetLsraAdded(saveLcl);
 
-    GenTreeSIMD* simdNode =
-        new (compiler, GT_SIMD) GenTreeSIMD(LargeVectorSaveType, saveLcl, nullptr, SIMDIntrinsicUpperSave,
-                                            varDsc->GetSimdBaseJitType(), genTypeSize(varDsc->lvType));
+    GenTreeSIMD* simdNode = compiler->gtNewSIMDNode(LargeVectorSaveType, saveLcl, SIMDIntrinsicUpperSave,
+                                                    varDsc->GetSimdBaseJitType(), genTypeSize(varDsc));
 
     if (simdNode->GetSimdBaseJitType() == CORINFO_TYPE_UNDEF)
     {
