@@ -156,13 +156,13 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
         if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass) &&
             (schema[i].Count == 1))
         {
-            pLikelyClasses[0].likelihood = (UINT32)(schema[i].Other & 0xFF);
-            INT_PTR result               = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
-            if (ICorJitInfo::IsUnknownTypeHandle(result))
+            INT_PTR result = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
+            if ((result == 0) || ICorJitInfo::IsUnknownTypeHandle(result))
             {
                 return 0;
             }
-            pLikelyClasses[0].clsHandle = (CORINFO_CLASS_HANDLE)result;
+            pLikelyClasses[0].likelihood = (UINT32)(schema[i].Other & 0xFF);
+            pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)result;
             return 1;
         }
 
@@ -188,43 +188,46 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
 
                 case 1:
                 {
+                    LikelyClassHistogramEntry const hist0 = h.HistogramEntryAt(0);
                     // Fast path for monomorphic cases
-                    if (ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
+                    if ((hist0.m_mt == 0) || ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
                     {
                         return 0;
                     }
                     pLikelyClasses[0].likelihood = 100;
-                    pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
+                    pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
                     return 1;
                 }
 
                 case 2:
                 {
+                    LikelyClassHistogramEntry const hist0 = h.HistogramEntryAt(0);
+                    LikelyClassHistogramEntry const hist1 = h.HistogramEntryAt(0);
                     // Fast path for two classes
-                    if ((h.HistogramEntryAt(0).m_count >= h.HistogramEntryAt(1).m_count) &&
-                        !ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
+                    if ((hist0.m_count >= hist1.m_count) && (hist0.m_mt != 0) &&
+                        !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
                     {
-                        pLikelyClasses[0].likelihood = (100 * h.HistogramEntryAt(0).m_count) / h.m_totalCount;
-                        pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
+                        pLikelyClasses[0].likelihood = (100 * hist0.m_count) / h.m_totalCount;
+                        pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
 
-                        if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(1).m_mt))
+                        if ((hist1.m_mt != 0) && !ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
                         {
-                            pLikelyClasses[1].likelihood = (100 * h.HistogramEntryAt(1).m_count) / h.m_totalCount;
-                            pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(1).m_mt;
+                            pLikelyClasses[1].likelihood = (100 * hist1.m_count) / h.m_totalCount;
+                            pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)hist1.m_mt;
                             return 2;
                         }
                         return 1;
                     }
 
-                    if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(1).m_mt))
+                    if ((hist1.m_mt != 0) && !ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
                     {
-                        pLikelyClasses[0].likelihood = (100 * h.HistogramEntryAt(1).m_count) / h.m_totalCount;
-                        pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(1).m_mt;
+                        pLikelyClasses[0].likelihood = (100 * hist1.m_count) / h.m_totalCount;
+                        pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist1.m_mt;
 
-                        if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
+                        if ((hist0.m_mt != 0) && !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
                         {
-                            pLikelyClasses[1].likelihood = (100 * h.HistogramEntryAt(0).m_count) / h.m_totalCount;
-                            pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
+                            pLikelyClasses[1].likelihood = (100 * hist0.m_count) / h.m_totalCount;
+                            pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
                             return 2;
                         }
                         return 1;
@@ -251,9 +254,10 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                     unsigned knownHandles = 0;
                     for (unsigned m = 0; m < h.countHistogramElements; m++)
                     {
-                        if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(m).m_mt))
+                        LikelyClassHistogramEntry const hist = h.HistogramEntryAt(m);
+                        if ((hist.m_mt != 0) && !ICorJitInfo::IsUnknownTypeHandle(hist.m_mt))
                         {
-                            sortedEntries[knownHandles++] = h.HistogramEntryAt(m);
+                            sortedEntries[knownHandles++] = hist;
                         }
                     }
 
@@ -267,7 +271,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
 
                     for (size_t hIdx = 0; hIdx < numberOfClasses; hIdx++)
                     {
-                        const LikelyClassHistogramEntry hc = sortedEntries[hIdx];
+                        LikelyClassHistogramEntry const hc = sortedEntries[hIdx];
                         pLikelyClasses[hIdx].clsHandle     = (CORINFO_CLASS_HANDLE)hc.m_mt;
                         pLikelyClasses[hIdx].likelihood    = hc.m_count * 100 / h.m_totalCount;
                     }
