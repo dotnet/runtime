@@ -973,7 +973,7 @@ namespace System.Net.Test.Common
                 {
                     Assert.Equal(FrameType.RstStream, frame.Type);
                 }
-            } while (frame.Type != FrameType.RstStream);
+            } while (frame.Type != FrameType.RstStream || (frame is RstStreamFrame rstStreamFrame && rstStreamFrame.ErrorCode != 0x8));
 
             Assert.Equal(streamId, frame.StreamId);
         }
