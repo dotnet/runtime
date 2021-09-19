@@ -1295,10 +1295,10 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicNarrow);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicNarrow);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
-    GenTree*  op2       = simdNode->gtGetOp2();
+    GenTree*  op1       = simdNode->Op(1);
+    GenTree*  op2       = simdNode->Op(2);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
@@ -1306,7 +1306,7 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
     emitAttr  emitSize = emitTypeSize(simdType);
     SIMDLevel level    = compiler->getSIMDSupportLevel();
 
-    genConsumeOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber op1Reg = op1->GetRegNum();
     regNumber op2Reg = op2->GetRegNum();
     if (baseType == TYP_DOUBLE)
@@ -1385,7 +1385,7 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
         // get CLR type semantics; otherwise it will saturate).
         //
         int         shiftCount    = genTypeSize(baseType) * (BITS_IN_BYTE / 2);
-        instruction ins           = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+        instruction ins           = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
         instruction shiftLeftIns  = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, baseType);
         instruction shiftRightIns = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, baseType);
 
