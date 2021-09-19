@@ -3434,8 +3434,8 @@ public:
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
 
-    unsigned gtSetListOrder(GenTree* list, bool regs, bool isListCallArgs);
     unsigned gtSetCallArgsOrder(const GenTreeCall::UseList& args, bool lateArgs, int* callCostEx, int* callCostSz);
+    unsigned gtSetMultiOpOrder(GenTreeMultiOp* multiOp);
 
     void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* base, bool constOnly);
 

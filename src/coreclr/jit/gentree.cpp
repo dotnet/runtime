@@ -2544,123 +2544,6 @@ void GenTreeOp::DebugCheckLongMul()
 #endif // !defined(TARGET_64BIT) && defined(DEBUG)
 #endif // !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 
-//------------------------------------------------------------------------------
-// gtSetListOrder : Figure out the evaluation order for a list of values.
-//
-//
-// Arguments:
-//    list  - List to figure out the evaluation order for
-//    isListCallArgs - True iff the list is a list of call arguments
-//    callArgsInRegs -  True iff the list is a list of call arguments and they are passed in registers
-//
-// Return Value:
-//    True if the operation can be a root of a bitwise rotation tree; false otherwise.
-
-unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callArgsInRegs)
-{
-    assert((list != nullptr) && list->OperIsAnyList());
-    assert(!callArgsInRegs || isListCallArgs);
-
-    ArrayStack<GenTree*> listNodes(getAllocator(CMK_ArrayStack));
-
-    do
-    {
-        listNodes.Push(list);
-        list = list->AsOp()->gtOp2;
-    } while ((list != nullptr) && (list->OperIsAnyList()));
-
-    unsigned nxtlvl = (list == nullptr) ? 0 : gtSetEvalOrder(list);
-    while (!listNodes.Empty())
-    {
-        list = listNodes.Pop();
-        assert(list && list->OperIsAnyList());
-        GenTree* next = list->AsOp()->gtOp2;
-
-        unsigned level = 0;
-
-        // TODO: Do we have to compute costs differently for argument lists and
-        // all other lists?
-        // https://github.com/dotnet/runtime/issues/6622
-        unsigned costSz = (isListCallArgs || (next == nullptr)) ? 0 : 1;
-        unsigned costEx = (isListCallArgs || (next == nullptr)) ? 0 : 1;
-
-        if (next != nullptr)
-        {
-            if (isListCallArgs)
-            {
-                if (level < nxtlvl)
-                {
-                    level = nxtlvl;
-                }
-            }
-            costEx += next->GetCostEx();
-            costSz += next->GetCostSz();
-        }
-
-        GenTree* op1 = list->AsOp()->gtOp1;
-        unsigned lvl = gtSetEvalOrder(op1);
-
-        // Swap the level counts
-        if (list->gtFlags & GTF_REVERSE_OPS)
-        {
-            unsigned tmpl;
-
-            tmpl   = lvl;
-            lvl    = nxtlvl;
-            nxtlvl = tmpl;
-        }
-
-        // TODO: Do we have to compute levels differently for argument lists and
-        // all other lists?
-        // https://github.com/dotnet/runtime/issues/6622
-        if (isListCallArgs)
-        {
-            if (level < lvl)
-            {
-                level = lvl;
-            }
-        }
-        else
-        {
-            if (lvl < 1)
-            {
-                level = nxtlvl;
-            }
-            else if (lvl == nxtlvl)
-            {
-                level = lvl + 1;
-            }
-            else
-            {
-                level = lvl;
-            }
-        }
-
-        if (op1->GetCostEx() != 0)
-        {
-            costEx += op1->GetCostEx();
-            costEx += (callArgsInRegs || !isListCallArgs) ? 0 : IND_COST_EX;
-        }
-
-        if (op1->GetCostSz() != 0)
-        {
-            costSz += op1->GetCostSz();
-#ifdef TARGET_XARCH
-            if (callArgsInRegs) // push is smaller than mov to reg
-#endif
-            {
-                costSz += 1;
-            }
-        }
-
-        list->SetCosts(costEx, costSz);
-
-        nxtlvl = level;
-    }
-
-    return nxtlvl;
-}
-
 unsigned Compiler::gtSetCallArgsOrder(const GenTreeCall::UseList& args, bool lateArgs, int* callCostEx, int* callCostSz)
 {
     unsigned level  = 0;
@@ -2700,6 +2583,138 @@ unsigned Compiler::gtSetCallArgsOrder(const GenTreeCall::UseList& args, bool lat
 
     return level;
 }
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+//------------------------------------------------------------------------
+// gtSetMultiOpOrder: Calculate the costs for a MultiOp.
+//
+// Currently this function just preserves the previous behavior.
+// TODO-List-Cleanup: implement proper costing for these trees.
+//
+// Arguments:
+//    multiOp - The MultiOp tree in question
+//
+// Return Value:
+//    The Sethi "complexity" for this tree (the idealized number of
+//    registers needed to evaluate it).
+//
+unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
+{
+    // These default costs preserve previous behavior.
+    // TODO-CQ: investigate opportunities for tuning them.
+    int      costEx = 1;
+    int      costSz = 1;
+    unsigned level  = 0;
+    unsigned lvl2   = 0;
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    if (multiOp->OperIs(GT_HWINTRINSIC) && (multiOp->GetOperandCount() == 1) &&
+        multiOp->AsHWIntrinsic()->OperIsMemoryLoadOrStore())
+    {
+        costEx = IND_COST_EX;
+        costSz = 2;
+
+        GenTree* addr = multiOp->Op(1)->gtEffectiveVal();
+        level         = gtSetEvalOrder(addr);
+
+        // See if we can form a complex addressing mode.
+        if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, multiOp->TypeGet()))
+        {
+            // Nothing to do, costs have been set.
+        }
+        else
+        {
+            costEx += addr->GetCostEx();
+            costSz += addr->GetCostSz();
+        }
+
+        multiOp->SetCosts(costEx, costSz);
+        return level;
+    }
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
+    // This code is here to preserve previous behavior.
+    switch (multiOp->GetOperandCount())
+    {
+        case 0:
+            // This is a constant HWIntrinsic, we already have correct costs.
+            break;
+
+        case 1:
+            // A "unary" case.
+            level = gtSetEvalOrder(multiOp->Op(1));
+            costEx += multiOp->Op(1)->GetCostEx();
+            costSz += multiOp->Op(1)->GetCostSz();
+            break;
+
+        case 2:
+            // A "binary" case.
+            level = gtSetEvalOrder(multiOp->Op(1));
+            lvl2  = gtSetEvalOrder(multiOp->Op(2));
+
+            // The old implementation also swapped the operands
+            // and applied GTF_REVERSE_OPS. We will not support
+            // the latter for MultiOps, the former though is ok.
+            // TODO-CQ: re-enable operands swapping for commutative
+            // intrinsics here.
+            if (level < 1)
+            {
+                level = lvl2;
+            }
+            else if (level == lvl2)
+            {
+                level += 1;
+            }
+
+            costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
+            costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+            break;
+
+        default:
+            // The former "ArgList" case... we'll be emulating it here.
+            // The old implementation pushed the nodes on the list, in pre-order.
+            // Then it popped and costed them in "reverse order", so that's what
+            // we'll be doing here as well.
+
+            unsigned nxtlvl = 0;
+            for (size_t i = multiOp->GetOperandCount(); i >= 1; i--)
+            {
+                GenTree* op  = multiOp->Op(i);
+                unsigned lvl = gtSetEvalOrder(op);
+
+                if (lvl < 1)
+                {
+                    level = nxtlvl;
+                }
+                else if (lvl == nxtlvl)
+                {
+                    level = lvl + 1;
+                }
+                else
+                {
+                    level = lvl;
+                }
+
+                costEx += op->GetCostEx();
+                costSz += op->GetCostSz();
+
+                // Preserving previous behavior...
+                CLANG_FORMAT_COMMENT_ANCHOR;
+#ifndef TARGET_XARCH
+                if (op->GetCostSz() != 0)
+                {
+                    costSz += 1;
+                }
+#endif
+                nxtlvl = level;
+            }
+            break;
+    }
+
+    multiOp->SetCosts(costEx, costSz);
+    return level;
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // gtWalkOp: Traverse and mark an address expression
@@ -3953,26 +3968,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 * 2;
                     break;
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-                case GT_HWINTRINSIC:
-                {
-                    if (tree->AsHWIntrinsic()->OperIsMemoryLoadOrStore())
-                    {
-                        costEx = IND_COST_EX;
-                        costSz = 2;
-                        // See if we can form a complex addressing mode.
-
-                        GenTree* addr = op1->gtEffectiveVal();
-
-                        if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, tree->TypeGet()))
-                        {
-                            goto DONE;
-                        }
-                    }
-                }
-                break;
-#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
-
                 case GT_BLK:
                 case GT_IND:
 
@@ -4229,13 +4224,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz = op1->GetCostSz() + op2->GetCostSz();
 
                 goto DONE;
-
-            case GT_LIST:
-            {
-                const bool isListCallArgs = false;
-                const bool callArgsInRegs = false;
-                return gtSetListOrder(tree, isListCallArgs, callArgsInRegs);
-            }
 
             case GT_INDEX_ADDR:
                 costEx = 6; // cmp reg,reg; jae throw; mov reg, [addrmode]  (not taken)
@@ -4706,6 +4694,16 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costEx += 3 * IND_COST_EX;
             break;
 
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            return gtSetMultiOpOrder(tree->AsMultiOp());
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
         case GT_ARR_ELEM:
         {
             GenTreeArrElem* arrElem = tree->AsArrElem();
@@ -4862,16 +4860,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
     }
 
 DONE:
-
-#ifdef FEATURE_HW_INTRINSICS
-    if ((oper == GT_HWINTRINSIC) && (tree->gtGetOp1() == nullptr))
-    {
-        // We can have nullary HWIntrinsic nodes, and we must have non-zero cost.
-        costEx = 1;
-        costSz = 1;
-    }
-#endif // FEATURE_HW_INTRINSICS
-
     // Some path through this function must have set the costs.
     assert(costEx != -1);
     assert(costSz != -1);
