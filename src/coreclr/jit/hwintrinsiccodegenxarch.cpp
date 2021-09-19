@@ -1738,20 +1738,18 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     var_types      baseType    = node->GetSimdBaseType();
     emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
     var_types      targetType  = node->TypeGet();
     instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-    int            numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
-    GenTree*       op1         = node->gtGetOp1();
-    GenTree*       op2         = node->gtGetOp2();
+    size_t         numArgs     = node->GetOperandCount();
+    GenTree*       op1         = node->Op(1);
     regNumber      op1Reg      = REG_NA;
-    regNumber      op2Reg      = REG_NA;
     regNumber      targetReg   = node->GetRegNum();
     emitter*       emit        = GetEmitter();
 
-    genConsumeHWIntrinsicOperands(node);
+    genConsumeMultiOpOperands(node);
 
     switch (intrinsicId)
     {
@@ -1759,7 +1757,6 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX2_ConvertToUInt32:
         {
             op1Reg = op1->GetRegNum();
-            assert(numArgs == 1);
             assert((baseType == TYP_INT) || (baseType == TYP_UINT));
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
             emit->emitIns_Mov(ins, emitActualTypeSize(baseType), targetReg, op1Reg, /* canSkip */ false);
@@ -1791,24 +1788,13 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX2_GatherMaskVector128:
         case NI_AVX2_GatherMaskVector256:
         {
-            GenTreeArgList* list = op1->AsArgList();
-            op1                  = list->Current();
-            op1Reg               = op1->GetRegNum();
-
-            list   = list->Rest();
-            op2    = list->Current();
-            op2Reg = op2->GetRegNum();
-
-            list         = list->Rest();
-            GenTree* op3 = list->Current();
-
-            list             = list->Rest();
-            GenTree* op4     = nullptr;
+            GenTree* op2     = node->Op(2);
+            GenTree* op3     = node->Op(3);
             GenTree* lastOp  = nullptr;
             GenTree* indexOp = nullptr;
 
-            regNumber op3Reg       = REG_NA;
-            regNumber op4Reg       = REG_NA;
+            op1Reg                 = op1->GetRegNum();
+            regNumber op2Reg       = op2->GetRegNum();
             regNumber addrBaseReg  = REG_NA;
             regNumber addrIndexReg = REG_NA;
             regNumber maskReg      = node->ExtractTempReg(RBM_ALLFLOAT);
@@ -1816,11 +1802,13 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             if (numArgs == 5)
             {
                 assert(intrinsicId == NI_AVX2_GatherMaskVector128 || intrinsicId == NI_AVX2_GatherMaskVector256);
-                op4          = list->Current();
-                list         = list->Rest();
-                lastOp       = list->Current();
-                op3Reg       = op3->GetRegNum();
-                op4Reg       = op4->GetRegNum();
+
+                GenTree* op4 = node->Op(4);
+                lastOp       = node->Op(5);
+
+                regNumber op3Reg = op3->GetRegNum();
+                regNumber op4Reg = op4->GetRegNum();
+
                 addrBaseReg  = op2Reg;
                 addrIndexReg = op3Reg;
                 indexOp      = op3;
