@@ -65,7 +65,9 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
                 Assert.Equal(expected, SingleType.FromString(value, System.Globalization.NumberFormatInfo.InvariantInfo));
             }
             else
+            {
                 Assert.Equal(expected, SingleType.FromString(value, numberFormat));
+            }
         }
 
         [Theory]
