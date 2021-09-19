@@ -100,8 +100,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
                 static void EnsureTestProjectsFileContent(string testAssetsFolder, string dir, string type)
                 {
+                    var fileName = Path.Combine(dir, $"Directory.Build.{type}");
+                    if (File.Exists(fileName))
+                    {
+                        return;
+                    }
+
                     File.WriteAllText(
-                        Path.Combine(dir, $"Directory.Build.{type}"),
+                        fileName,
                         string.Join(
                             Environment.NewLine,
                             "<Project>",
