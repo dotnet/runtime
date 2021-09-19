@@ -2022,24 +2022,16 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     var_types      baseType    = node->GetSimdBaseType();
     emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
     instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op1         = node->Op(1);
+    GenTree*       op2         = node->Op(2);
+    GenTree*       op3         = node->Op(3);
     regNumber      targetReg   = node->GetRegNum();
 
-    assert(HWIntrinsicInfo::lookupNumArgs(node) == 3);
-
-    genConsumeHWIntrinsicOperands(node);
-    GenTreeArgList* argList = op1->AsArgList();
-    op1                     = argList->Current();
-
-    argList      = argList->Rest();
-    GenTree* op2 = argList->Current();
-
-    argList      = argList->Rest();
-    GenTree* op3 = argList->Current();
+    genConsumeMultiOpOperands(node);
 
     regNumber op1Reg;
     regNumber op2Reg;
