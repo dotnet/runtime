@@ -1508,29 +1508,6 @@ AGAIN:
                         return false;
                     }
                     break;
-#ifdef FEATURE_SIMD
-                case GT_SIMD:
-                    if ((op1->AsSIMD()->gtSIMDIntrinsicID != op2->AsSIMD()->gtSIMDIntrinsicID) ||
-                        (op1->AsSIMD()->GetSimdBaseType() != op2->AsSIMD()->GetSimdBaseType()) ||
-                        (op1->AsSIMD()->GetSimdSize() != op2->AsSIMD()->GetSimdSize()))
-                    {
-                        return false;
-                    }
-                    break;
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
-                    if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
-                        (op1->AsHWIntrinsic()->GetSimdBaseType() != op2->AsHWIntrinsic()->GetSimdBaseType()) ||
-                        (op1->AsHWIntrinsic()->GetSimdSize() != op2->AsHWIntrinsic()->GetSimdSize()) ||
-                        (op1->AsHWIntrinsic()->GetAuxiliaryType() != op2->AsHWIntrinsic()->GetAuxiliaryType()) ||
-                        (op1->AsHWIntrinsic()->GetOtherReg() != op2->AsHWIntrinsic()->GetOtherReg()))
-                    {
-                        return false;
-                    }
-                    break;
-#endif
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_QMARK:
@@ -1591,6 +1568,16 @@ AGAIN:
     {
         case GT_CALL:
             return GenTreeCall::Equals(op1->AsCall(), op2->AsCall());
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            return GenTreeSIMD::Equals(op1->AsSIMD(), op2->AsSIMD());
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            return GenTreeHWIntrinsic::Equals(op1->AsHWIntrinsic(), op2->AsHWIntrinsic());
+#endif
 
         case GT_ARR_ELEM:
 
