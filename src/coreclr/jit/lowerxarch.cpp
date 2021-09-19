@@ -750,35 +750,30 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         simdNode->gtType = TYP_SIMD16;
     }
 
-    if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
+    if (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInitN)
     {
         assert(simdNode->GetSimdBaseType() == TYP_FLOAT);
 
-        int   argCount      = 0;
-        int   constArgCount = 0;
-        float constArgValues[4]{0, 0, 0, 0};
+        size_t argCount      = simdNode->GetOperandCount();
+        size_t constArgCount = 0;
+        float  constArgValues[4]{0, 0, 0, 0};
 
-        for (GenTreeArgList* list = simdNode->gtGetOp1()->AsArgList(); list != nullptr; list = list->Rest())
+        for (GenTree* arg : simdNode->Operands())
         {
-            GenTree* arg = list->Current();
-
-            assert(arg->TypeGet() == simdNode->GetSimdBaseType());
-            assert(argCount < (int)_countof(constArgValues));
+            assert(arg->TypeIs(simdNode->GetSimdBaseType()));
 
             if (arg->IsCnsFltOrDbl())
             {
                 constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
                 constArgCount++;
             }
-
-            argCount++;
         }
 
         if (constArgCount == argCount)
         {
-            for (GenTreeArgList* list = simdNode->gtGetOp1()->AsArgList(); list != nullptr; list = list->Rest())
+            for (GenTree* arg : simdNode->Operands())
             {
-                BlockRange().Remove(list->Current());
+                BlockRange().Remove(arg);
             }
 
             assert(sizeof(constArgValues) == 16);
@@ -791,7 +786,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
             GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
-            simdNode->gtOp1 = clsVarAddr;
+            simdNode->AsOp()->gtOp1 = clsVarAddr;
             ContainCheckIndir(simdNode->AsIndir());
 
             return;
