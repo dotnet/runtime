@@ -9019,6 +9019,7 @@ unsigned GenTree::NumChildren()
     }
 }
 
+// TODO-List-Cleanup: remove.
 GenTree* GenTree::GetChild(unsigned childNum)
 {
     assert(childNum < NumChildren()); // Precondition.
@@ -9210,8 +9211,17 @@ GenTree* GenTree::GetChild(unsigned childNum)
 
                 unreached();
             }
-            case GT_NONE:
-                unreached();
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+            case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_HWINTRINSIC:
+#endif
+                return AsMultiOp()->Op(childNum + 1);
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
             default:
                 unreached();
         }
