@@ -1717,16 +1717,13 @@ public:
 #ifdef DEBUG
     bool NullOp1Legal() const
     {
-        assert(OperIsSimple(gtOper));
+        assert(OperIsSimple());
         switch (gtOper)
         {
             case GT_LEA:
             case GT_RETFILT:
             case GT_NOP:
             case GT_FIELD:
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
-#endif // FEATURE_HW_INTRINSICS
                 return true;
             case GT_RETURN:
                 return gtType == TYP_VOID;
