@@ -5203,7 +5203,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional)
 {
-    NamedIntrinsic      containingIntrinsicId = containingNode->gtHWIntrinsicId;
+    NamedIntrinsic      containingIntrinsicId = containingNode->GetHWIntrinsicId();
     HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingIntrinsicId);
 
     // We shouldn't have called in here if containingNode doesn't support containment
@@ -5370,24 +5370,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                         assert(supportsGeneralLoads == false);
                         assert(supportsSIMDScalarLoads == false);
 
-                        GenTree* op1 = containingNode->gtGetOp1();
-                        GenTree* op2 = nullptr;
-                        GenTree* op3 = nullptr;
-
-                        assert(op1->OperIsList());
-                        assert(containingNode->gtGetOp2() == nullptr);
-
-                        GenTreeArgList* argList = op1->AsArgList();
-
-                        op1     = argList->Current();
-                        argList = argList->Rest();
-
-                        op2     = argList->Current();
-                        argList = argList->Rest();
+                        GenTree* op1 = containingNode->Op(1);
+                        GenTree* op2 = containingNode->Op(2);
+                        GenTree* op3 = containingNode->Op(3);
 
                         assert(node == op2);
-
-                        op3 = argList->Current();
 
                         // The upper two bits of the immediate value are ignored if
                         // op2 comes from memory. In order to support using the upper
@@ -5563,7 +5550,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
     // TODO-XArch: Update this to be table driven, if possible.
 
-    NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
 
     switch (intrinsicId)
     {
