@@ -1653,6 +1653,7 @@ AGAIN:
  *  Returns non-zero if the given tree contains a use of a local #lclNum.
  */
 
+// TODO-List-Cleanup: rewrite with a general visitor.
 bool Compiler::gtHasRef(GenTree* tree, ssize_t lclNum, bool defOnly)
 {
     genTreeOps oper;
@@ -1799,6 +1800,23 @@ AGAIN:
             }
 
             break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            for (GenTree* operand : tree->AsMultiOp()->Operands())
+            {
+                if (gtHasRef(operand, lclNum, defOnly))
+                {
+                    return true;
+                }
+            }
+            break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         case GT_ARR_ELEM:
             if (gtHasRef(tree->AsArrElem()->gtArrObj, lclNum, defOnly))
