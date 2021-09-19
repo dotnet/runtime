@@ -2145,7 +2145,7 @@ void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
     // (POPCNT only) processors, so insert a `XOR target, target` to break the dependency via XOR triggering register
     // renaming, but only if it's not an actual dependency.
 
-    GenTree*  op1        = node->gtGetOp1();
+    GenTree*  op1        = node->Op(1);
     regNumber sourceReg1 = REG_NA;
     regNumber sourceReg2 = REG_NA;
 
