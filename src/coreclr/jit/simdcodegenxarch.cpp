@@ -1442,22 +1442,23 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr);
+    assert((simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicSub) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseAnd) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseOr));
 
-    GenTree*  op1       = simdNode->gtGetOp1();
-    GenTree*  op2       = simdNode->gtGetOp2();
+    GenTree*  op1       = simdNode->Op(1);
+    GenTree*  op2       = simdNode->Op(2);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber op1Reg   = op1->GetRegNum();
     regNumber op2Reg   = op2->GetRegNum();
     regNumber otherReg = op2Reg;
 
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    instruction ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
 
     // Currently AVX doesn't support integer.
     // if the ins is INS_cvtsi2ss or INS_cvtsi2sd, we won't use AVX.
@@ -1495,14 +1496,15 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 {
-    GenTree*  op1        = simdNode->gtGetOp1();
-    GenTree*  op2        = simdNode->gtGetOp2();
+    GenTree*  op1        = simdNode->Op(1);
+    GenTree*  op2        = simdNode->Op(2);
     var_types baseType   = simdNode->GetSimdBaseType();
     regNumber targetReg  = simdNode->GetRegNum();
     var_types targetType = simdNode->TypeGet();
     SIMDLevel level      = compiler->getSIMDSupportLevel();
 
-    genConsumeOperands(simdNode);
+    // TODO-List: introduce genConsumeOperands overload for a MultiOp.
+    genConsumeHWIntrinsicOperands(simdNode);
     regNumber op1Reg   = op1->GetRegNum();
     regNumber op2Reg   = op2->GetRegNum();
     regNumber otherReg = op2Reg;
