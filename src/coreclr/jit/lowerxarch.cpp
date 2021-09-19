@@ -3646,7 +3646,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 //
 void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId     = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
@@ -3665,7 +3665,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         {
             node->gtType = TYP_INT;
             node->SetSimdBaseJitType(CORINFO_TYPE_INT);
-            node->gtHWIntrinsicId = NI_SSE2_ConvertToInt32;
+            node->ChangeHWIntrinsicId(NI_SSE2_ConvertToInt32);
             break;
         }
 
@@ -3675,20 +3675,20 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         {
             node->gtType = TYP_UINT;
             node->SetSimdBaseJitType(CORINFO_TYPE_UINT);
-            node->gtHWIntrinsicId = NI_SSE2_ConvertToUInt32;
+            node->ChangeHWIntrinsicId(NI_SSE2_ConvertToUInt32);
             break;
         }
 
 #if defined(TARGET_AMD64)
         case TYP_LONG:
         {
-            node->gtHWIntrinsicId = NI_SSE2_X64_ConvertToInt64;
+            node->ChangeHWIntrinsicId(NI_SSE2_X64_ConvertToInt64);
             break;
         }
 
         case TYP_ULONG:
         {
-            node->gtHWIntrinsicId = NI_SSE2_X64_ConvertToUInt64;
+            node->ChangeHWIntrinsicId(NI_SSE2_X64_ConvertToUInt64);
             break;
         }
 #endif // TARGET_AMD64
@@ -3720,6 +3720,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         {
             use.ReplaceWith(cast);
         }
+
         LowerNode(cast);
     }
 }
