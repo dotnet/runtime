@@ -4331,32 +4331,22 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
 
 // Variadic nodes
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
         case GT_SIMD:
-            if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
-            {
-                assert(this->AsSIMD()->gtOp1 != nullptr);
-                this->AsSIMD()->gtOp1->VisitListOperands(visitor);
-            }
-            else
-            {
-                VisitBinOpOperands<TVisitor>(visitor);
-            }
-            return;
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
+#endif
+            for (GenTree* operand : this->AsMultiOp()->Operands())
             {
-                this->AsHWIntrinsic()->gtOp1->VisitListOperands(visitor);
-            }
-            else
-            {
-                VisitBinOpOperands<TVisitor>(visitor);
+                if (visitor(operand) == VisitResult::Abort)
+                {
+                    break;
+                }
             }
             return;
-#endif // FEATURE_HW_INTRINSICS
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         // Special nodes
         case GT_PHI:
@@ -4500,20 +4490,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             VisitBinOpOperands<TVisitor>(visitor);
             return;
     }
-}
-
-template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitListOperands(TVisitor visitor)
-{
-    for (GenTreeArgList* node = this->AsArgList(); node != nullptr; node = node->Rest())
-    {
-        if (visitor(node->gtOp1) == VisitResult::Abort)
-        {
-            return VisitResult::Abort;
-        }
-    }
-
-    return VisitResult::Continue;
 }
 
 template <typename TVisitor>
