@@ -2097,10 +2097,10 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genLZCNTIntrinsic(GenTreeHWIntrinsic* node)
 {
-    assert(node->gtHWIntrinsicId == NI_LZCNT_LeadingZeroCount ||
-           node->gtHWIntrinsicId == NI_LZCNT_X64_LeadingZeroCount);
+    assert((node->GetHWIntrinsicId() == NI_LZCNT_LeadingZeroCount) ||
+           (node->GetHWIntrinsicId() == NI_LZCNT_X64_LeadingZeroCount));
 
-    genConsumeOperands(node);
+    genConsumeMultiOpOperands(node);
     genXCNTIntrinsic(node, INS_lzcnt);
     genProduceReg(node);
 }
