@@ -24,6 +24,7 @@ namespace Internal.Pgo
         public FieldDesc AsField => _data as FieldDesc;
         public int AsUnknown => (!(_data is int)) || _data == null ? 0 : (int)_data;
         public bool IsNull => _data == null;
+        public bool IsUnknown => _data is int;
 
         public bool Equals(TypeSystemEntityOrUnknown other)
         {

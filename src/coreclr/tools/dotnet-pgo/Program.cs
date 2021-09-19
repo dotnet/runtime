@@ -675,7 +675,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         static void PrintCallsitesByLikelyClassesChart(int[] callSites)
         {
             const int maxLikelyClasses = 10;
-            const int tableWidth = 25;
+            const int tableWidth = 20;
 
             if (callSites.Length < 1)
                 return;
@@ -727,7 +727,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         static void PrintLikelihoodHistogram(double[] likelihoods)
         {
             const int columns = 10;
-            const int tableWidth = 25;
+            const int tableWidth = 20;
             int columnWidth = 100 / columns;
 
             if (likelihoods.Length == 0)
@@ -865,6 +865,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             for (int i = 0; i < schema.Length; i++)
             {
                 var elem = schema[i];
+                if (elem.ILOffset == ilOffset)
+                    continue;
+
                 if (elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)
                 {
                     Trace.Assert(elem.Count == 1);
@@ -888,7 +891,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                     int totalCount = histogram.Sum(g => g.Count());
                     // The number of unknown type handles matters for the likelihood, but not for the most likely class that we pick, so we can remove them now.
-                    histogram.RemoveAll(e => IsUnknownTypeHandle(e.Key.AsUnknown));
+                    histogram.RemoveAll(e => e.Key.IsNull || e.Key.IsUnknown);
                     if (histogram.Count == 0)
                         return new GetLikelyClassResult { IsUnknown = true };
 
