@@ -960,7 +960,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         node->gtType = TYP_SIMD16;
     }
 
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
     switch (intrinsicId)
     {
@@ -975,7 +975,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // intrinsics that are not Vector*.Create
 
             LowerHWIntrinsicCreate(node);
-            assert(!node->OperIsHWIntrinsic() || (node->gtHWIntrinsicId != intrinsicId));
+            assert(!node->OperIsHWIntrinsic() || (node->GetHWIntrinsicId() != intrinsicId));
             LowerNode(node);
             return;
         }
@@ -992,8 +992,8 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             LowerHWIntrinsicGetElement(node);
 
-            if ((node->gtHWIntrinsicId == NI_Vector128_GetElement) ||
-                (node->gtHWIntrinsicId == NI_Vector256_GetElement))
+            if ((node->GetHWIntrinsicId() == NI_Vector128_GetElement) ||
+                (node->GetHWIntrinsicId() == NI_Vector256_GetElement))
             {
                 // Most NI_Vector*_GetElement intrinsics are lowered to
                 // alternative nodes, such as the Extract intrinsics,
@@ -1040,11 +1040,9 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             if (varTypeIsFloating(node->GetSimdBaseType()))
             {
                 assert(node->GetSimdBaseType() == TYP_FLOAT);
-                assert(node->gtOp1 != nullptr);
-                assert(node->gtOp2 != nullptr);
                 assert(node->GetSimdSize() == 16);
 
-                GenTree* op2 = node->gtGetOp2();
+                GenTree* op2 = node->Op(2);
 
                 if (!op2->OperIsConst())
                 {
@@ -1058,10 +1056,10 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     BlockRange().InsertAfter(msk, tmp);
                     LowerNode(tmp);
 
-                    node->gtOp2 = tmp;
+                    node->Op(2) = tmp;
                 }
 
-                node->gtHWIntrinsicId = NI_Vector128_GetElement;
+                node->ChangeHWIntrinsicId(NI_Vector128_GetElement);
                 LowerNode(node);
             }
             break;
@@ -1071,29 +1069,26 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE41_Insert:
         case NI_SSE41_X64_Insert:
         {
-            assert(HWIntrinsicInfo::lookupNumArgs(node) == 3);
-
-            GenTreeArgList* argList = node->gtOp1->AsArgList();
+            assert(node->GetOperandCount() == 3);
 
             // Insert takes either a 32-bit register or a memory operand.
             // In either case, only SimdBaseType bits are read and so
             // widening or narrowing the operand may be unnecessary and it
             // can just be used directly.
-
-            argList->Rest()->gtOp1 = TryRemoveCastIfPresent(node->GetSimdBaseType(), argList->Rest()->gtOp1);
+            node->Op(2) = TryRemoveCastIfPresent(node->GetSimdBaseType(), node->Op(2));
             break;
         }
 
         case NI_SSE42_Crc32:
         {
-            assert(HWIntrinsicInfo::lookupNumArgs(node) == 2);
+            assert(node->GetOperandCount() == 2);
 
             // Crc32 takes either a bit register or a memory operand.
             // In either case, only gtType bits are read and so widening
             // or narrowing the operand may be unnecessary and it can
             // just be used directly.
 
-            node->gtOp2 = TryRemoveCastIfPresent(node->gtType, node->gtOp2);
+            node->Op(2) = TryRemoveCastIfPresent(node->TypeGet(), node->Op(2));
             break;
         }
 
@@ -1124,7 +1119,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             // pre-AVX doesn't actually support these intrinsics in hardware so we need to swap the operands around
-            std::swap(node->gtOp1, node->gtOp2);
+            std::swap(node->Op(1), node->Op(2));
             break;
         }
 
@@ -1139,7 +1134,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             assert(varTypeIsIntegral(node->GetSimdBaseType()));
 
             // this isn't actually supported in hardware so we need to swap the operands around
-            std::swap(node->gtOp1, node->gtOp2);
+            std::swap(node->Op(1), node->Op(2));
             break;
         }
 
