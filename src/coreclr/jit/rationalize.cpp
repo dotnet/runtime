@@ -754,13 +754,16 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 simdNode->gtType = TYP_SIMD8;
             }
             // Certain SIMD trees require rationalizing.
-            if (simdNode->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+            if (simdNode->AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
             {
                 // Rewrite this as an explicit load.
                 JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
                 unsigned int baseTypeSize = genTypeSize(simdNode->GetSimdBaseType());
-                GenTree*     address = new (comp, GT_LEA) GenTreeAddrMode(TYP_BYREF, simdNode->gtOp1, simdNode->gtOp2,
-                                                                      baseTypeSize, OFFSETOF__CORINFO_Array__data);
+
+                GenTree* base    = simdNode->Op(1);
+                GenTree* index   = (simdNode->GetOperandCount() == 2) ? simdNode->Op(2) : nullptr;
+                GenTree* address = new (comp, GT_LEA)
+                    GenTreeAddrMode(TYP_BYREF, base, index, baseTypeSize, OFFSETOF__CORINFO_Array__data);
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
@@ -776,16 +779,15 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 // of a different width.  If that assumption changes, we will EITHER have to make these type
                 // transformations during importation, and plumb the types all the way through the JIT,
                 // OR add a lot of special handling here.
-                GenTree* op1 = simdNode->gtGetOp1();
-                if (op1 != nullptr && op1->gtType == TYP_STRUCT)
-                {
-                    op1->gtType = simdType;
-                }
 
-                GenTree* op2 = simdNode->gtGetOp2IfPresent();
-                if (op2 != nullptr && op2->gtType == TYP_STRUCT)
+                // TODO-Review: the comment above seems outdated. TYP_SIMDs have been "plumbed through" the Jit.
+                // It may be that this code is actually dead.
+                for (GenTree* operand : simdNode->Operands())
                 {
-                    op2->gtType = simdType;
+                    if (operand->TypeIs(TYP_STRUCT))
+                    {
+                        operand->ChangeType(simdType);
+                    }
                 }
             }
         }
@@ -812,8 +814,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 #ifdef TARGET_ARM64
                 // Special case for GetElement/ToScalar because they take Vector64<T> and return T
                 // and T can be long or ulong.
-                if (!(hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_GetElement ||
-                      hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_ToScalar))
+                if (!((hwIntrinsicNode->GetHWIntrinsicId() == NI_Vector64_GetElement) ||
+                      (hwIntrinsicNode->GetHWIntrinsicId() == NI_Vector64_ToScalar)))
 #endif
                 {
                     // This happens when it is consumed by a GT_RET_EXPR.
