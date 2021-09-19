@@ -1417,7 +1417,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
     switch (intrinsicId)
     {
@@ -1426,12 +1426,12 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_X86Base_X64_BitScanForward:
         case NI_X86Base_X64_BitScanReverse:
         {
-            GenTree*    op1        = node->gtGetOp1();
+            GenTree*    op1        = node->Op(1);
             regNumber   targetReg  = node->GetRegNum();
             var_types   targetType = node->TypeGet();
             instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
 
-            genConsumeOperands(node);
+            genConsumeMultiOpOperands(node);
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op1);
             genProduceReg(node);
             break;
