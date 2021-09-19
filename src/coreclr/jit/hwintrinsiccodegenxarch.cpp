@@ -1451,17 +1451,13 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
-    GenTree*       op1         = node->gtGetOp1();
-    GenTree*       op2         = node->gtGetOp2();
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
     var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->GetSimdBaseType();
+    emitter*       emit        = GetEmitter();
 
-    regNumber op1Reg = REG_NA;
-    emitter*  emit   = GetEmitter();
-
-    genConsumeHWIntrinsicOperands(node);
+    genConsumeMultiOpOperands(node);
 
     switch (intrinsicId)
     {
@@ -1469,18 +1465,14 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE_X64_ConvertToInt64WithTruncation:
         {
             assert(targetType == TYP_LONG);
-            assert(op1 != nullptr);
-            assert(op2 == nullptr);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            genHWIntrinsic_R_RM(node, ins, EA_8BYTE, targetReg, op1);
+            genHWIntrinsic_R_RM(node, ins, EA_8BYTE, targetReg, node->Op(1));
             break;
         }
 
         case NI_SSE_X64_ConvertScalarToVector128Single:
         {
             assert(baseType == TYP_LONG);
-            assert(op1 != nullptr);
-            assert(op2 != nullptr);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE);
             break;
@@ -1492,21 +1484,17 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE_PrefetchNonTemporal:
         {
             assert(baseType == TYP_UBYTE);
-            assert(op2 == nullptr);
 
             // These do not support containment.
-            assert(!op1->isContained());
+            assert(!node->Op(1)->isContained());
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->GetSimdBaseType());
-            op1Reg          = op1->GetRegNum();
-            emit->emitIns_AR(ins, emitTypeSize(baseType), op1Reg, 0);
+            emit->emitIns_AR(ins, emitTypeSize(baseType), node->Op(1)->GetRegNum(), 0);
             break;
         }
 
         case NI_SSE_StoreFence:
         {
             assert(baseType == TYP_VOID);
-            assert(op1 == nullptr);
-            assert(op2 == nullptr);
             emit->emitIns(INS_sfence);
             break;
         }
