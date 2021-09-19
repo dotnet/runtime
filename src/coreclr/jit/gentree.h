@@ -7697,11 +7697,11 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal) const
 #ifdef FEATURE_SIMD
     // SIMDIntrinsicInit intrinsic with a const value as initializer
     // represents a const vector.
-    if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit) &&
-        gtGetOp1()->IsIntegralConst(constVal))
+    if ((gtOper == GT_SIMD) && (AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInit) &&
+        AsSIMD()->Op(1)->IsIntegralConst(constVal))
     {
         assert(varTypeIsIntegral(AsSIMD()->GetSimdBaseType()));
-        assert(gtGetOp2IfPresent() == nullptr);
+        assert(AsSIMD()->GetOperandCount() == 1);
         return true;
     }
 #endif // FEATURE_SIMD
@@ -7717,34 +7717,23 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal) const
             return false;
         }
 
-        GenTree* op1 = gtGetOp1();
-        GenTree* op2 = gtGetOp2();
+        NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
-        NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
-
-        if (op1 == nullptr)
+        if ((node->GetOperandCount() == 0) && (constVal == 0))
         {
-            assert(op2 == nullptr);
-
-            if (constVal == 0)
-            {
 #if defined(TARGET_XARCH)
-                return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
+            return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
 #elif defined(TARGET_ARM64)
-                return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+            return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-            }
         }
-        else if ((op2 == nullptr) && !op1->OperIsList())
+        else if ((node->GetOperandCount() == 1) && node->Op(1)->IsIntegralConst(constVal))
         {
-            if (op1->IsIntegralConst(constVal))
-            {
 #if defined(TARGET_XARCH)
-                return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
+            return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
 #elif defined(TARGET_ARM64)
-                return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
+            return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-            }
         }
     }
 #endif // FEATURE_HW_INTRINSICS
@@ -7762,7 +7751,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal) const
 inline bool GenTree::IsSIMDZero() const
 {
 #ifdef FEATURE_SIMD
-    if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit))
+    if ((gtOper == GT_SIMD) && (AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInit))
     {
         return (gtGetOp1()->IsIntegralConst(0) || gtGetOp1()->IsFPZero());
     }
