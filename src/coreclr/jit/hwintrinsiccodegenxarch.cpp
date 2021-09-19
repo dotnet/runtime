@@ -582,8 +582,8 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, e
 void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr)
 {
     regNumber targetReg = node->GetRegNum();
-    GenTree*  op1       = node->gtGetOp1();
-    GenTree*  op2       = node->gtGetOp2();
+    GenTree*  op1       = node->Op(1);
+    GenTree*  op2       = node->Op(2);
     regNumber op1Reg    = op1->GetRegNum();
 
     assert(targetReg != REG_NA);
@@ -612,7 +612,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
 
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
-        assert(HWIntrinsicInfo::SupportsContainment(node->gtHWIntrinsicId));
+        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
         assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
     }
 
