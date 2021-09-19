@@ -14190,52 +14190,72 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             }
             break;
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        case GT_HWINTRINSIC:
-        {
-            GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
-            switch (hw->gtHWIntrinsicId)
-            {
-                case NI_SSE_Xor:
-                case NI_SSE2_Xor:
-                case NI_AVX_Xor:
-                case NI_AVX2_Xor:
-                {
-                    // Transform XOR(X, 0) to X for vectors
-                    GenTree* op1 = hw->gtGetOp1();
-                    GenTree* op2 = hw->gtGetOp2();
-                    if (!gtIsActiveCSE_Candidate(tree))
-                    {
-                        if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
-                        {
-                            DEBUG_DESTROY_NODE(tree);
-                            DEBUG_DESTROY_NODE(op1);
-                            INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                            return op2;
-                        }
-                        if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
-                        {
-                            DEBUG_DESTROY_NODE(tree);
-                            DEBUG_DESTROY_NODE(op2);
-                            INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                            return op1;
-                        }
-                    }
-                    break;
-                }
-
-                default:
-                    break;
-            }
-            break;
-        }
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-
         default:
             break;
     }
     return tree;
 }
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+//------------------------------------------------------------------------
+// fgMorphMultiOp: Morph a GenTreeMultiOp (SIMD/HWINTRINSIC) tree.
+//
+// Arguments:
+//    multiOp - The tree to morph
+//
+// Return Value:
+//    The fully morphed tree.
+//
+GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
+{
+    gtUpdateNodeOperSideEffects(multiOp);
+    for (GenTree** use : multiOp->UseEdges())
+    {
+        *use = fgMorphTree(*use);
+        multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
+    }
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
+    {
+        GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
+        switch (hw->GetHWIntrinsicId())
+        {
+            case NI_SSE_Xor:
+            case NI_SSE2_Xor:
+            case NI_AVX_Xor:
+            case NI_AVX2_Xor:
+            {
+                // Transform XOR(X, 0) to X for vectors
+                GenTree* op1 = hw->Op(1);
+                GenTree* op2 = hw->Op(2);
+                if (!gtIsActiveCSE_Candidate(hw))
+                {
+                    if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
+                    {
+                        DEBUG_DESTROY_NODE(hw);
+                        DEBUG_DESTROY_NODE(op1);
+                        return op2;
+                    }
+                    if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
+                    {
+                        DEBUG_DESTROY_NODE(hw);
+                        DEBUG_DESTROY_NODE(op2);
+                        return op1;
+                    }
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
+    return multiOp;
+}
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
 //------------------------------------------------------------------------
 // fgMorphModToSubMulDiv: Transform a % b into the equivalent a - (a / b) * b
@@ -14805,6 +14825,17 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             }
             tree = fgMorphCall(tree->AsCall());
             break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            tree = fgMorphMultiOp(tree->AsMultiOp());
+            break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         case GT_ARR_ELEM:
             tree->AsArrElem()->gtArrObj = fgMorphTree(tree->AsArrElem()->gtArrObj);
