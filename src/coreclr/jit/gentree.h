@@ -879,6 +879,10 @@ private:
     // This stores the register assigned to the node. If a register is not assigned, _gtRegNum is set to REG_NA.
     regNumberSmall _gtRegNum;
 
+    // Count of operands. Used *only* by GenTreeMultiOp, exists solely due to padding constraints.
+    friend struct GenTreeMultiOp;
+    uint8_t m_operandCount;
+
 public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
     // a full-size (unsigned) format, to localize the casts here.
@@ -1618,6 +1622,16 @@ public:
     {
         return (gtOper == GT_STOREIND || gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD ||
                 OperIsStoreBlk(gtOper) || OperIsAtomicOp(gtOper));
+    }
+
+    static bool OperIsMultiOp(genTreeOps gtOper)
+    {
+        return OperIsSIMD(gtOper) || OperIsHWIntrinsic(gtOper);
+    }
+
+    bool OperIsMultiOp() const
+    {
+        return OperIsMultiOp(OperGet());
     }
 
     // This is here for cleaner FEATURE_SIMD #ifdefs.
@@ -5116,18 +5130,177 @@ struct GenTreeIntrinsic : public GenTreeOp
 #endif
 };
 
-struct GenTreeJitIntrinsic : public GenTreeOp
+// GenTreeMultiOp - a node with a flexible count of operands stored in an array.
+// The array can be an inline one, or a dynamic one, or both, with switching
+// between them supported. See GenTreeJitIntrinsic for an example of a node
+// utilizing GenTreeMultiOp. GTF_REVERSE_OPS is supported for GenTreeMultiOp's
+// with two operands.
+//
+struct GenTreeMultiOp : public GenTree
 {
+public:
+    class Iterator
+    {
+    protected:
+        GenTree** m_use;
+
+        Iterator(GenTree** use) : m_use(use)
+        {
+        }
+
+    public:
+        Iterator& operator++()
+        {
+            m_use++;
+            return *this;
+        }
+
+        bool operator==(const Iterator& other) const
+        {
+            return m_use == other.m_use;
+        }
+
+        bool operator!=(const Iterator& other) const
+        {
+            return m_use != other.m_use;
+        }
+    };
+
+    class OperandsIterator final : public Iterator
+    {
+    public:
+        OperandsIterator(GenTree** use) : Iterator(use)
+        {
+        }
+
+        GenTree* operator*()
+        {
+            return *m_use;
+        }
+    };
+
+    class UseEdgesIterator final : public Iterator
+    {
+    public:
+        UseEdgesIterator(GenTree** use) : Iterator(use)
+        {
+        }
+
+        GenTree** operator*()
+        {
+            return m_use;
+        }
+    };
+
 private:
-    ClassLayout* gtLayout;
+    GenTree** m_operands;
 
-    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
+protected:
+    template <unsigned InlineOperandCount, typename... Operands>
+    GenTreeMultiOp(genTreeOps    oper,
+                   var_types     type,
+                   CompAllocator allocator,
+                   GenTree* (&inlineOperands)[InlineOperandCount] DEBUGARG(bool largeNode),
+                   Operands... operands)
+        : GenTree(oper, type DEBUGARG(largeNode))
+    {
+        const size_t OperandCount = sizeof...(Operands);
 
-    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
-    unsigned char gtSimdSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics
+        // "OperandCount + 1" so that it works well when OperandCount is 0.
+        GenTree* operandsArray[OperandCount + 1]{operands...};
+        InitializeOperands(allocator, operandsArray, OperandCount, inlineOperands, InlineOperandCount);
+    }
+
+    template <unsigned InlineOperandCount>
+    GenTreeMultiOp(genTreeOps    oper,
+                   var_types     type,
+                   CompAllocator allocator,
+                   GenTree**     operands,
+                   size_t        operandCount,
+                   GenTree* (&inlineOperands)[InlineOperandCount] DEBUGARG(bool largeNode))
+        : GenTree(oper, type DEBUGARG(largeNode))
+    {
+        InitializeOperands(allocator, operands, operandCount, inlineOperands, InlineOperandCount);
+    }
 
 public:
+#if DEBUGGABLE_GENTREE
+    GenTreeMultiOp() : GenTree()
+    {
+    }
+#endif
+
+    GenTree*& Op(size_t index)
+    {
+        size_t actualIndex = index - 1;
+        assert(actualIndex < m_operandCount);
+        assert(m_operands[actualIndex] != nullptr);
+
+        return m_operands[actualIndex];
+    }
+
+    GenTree* Op(size_t index) const
+    {
+        return const_cast<GenTreeMultiOp*>(this)->Op(index);
+    }
+
+    // Note that unlike the general "Operands" iterator, this specialized version does not respect GTF_REVERSE_OPS.
+    IteratorPair<OperandsIterator> Operands()
+    {
+        return MakeIteratorPair(OperandsIterator(GetOperandArray()),
+                                OperandsIterator(GetOperandArray() + GetOperandCount()));
+    }
+
+    // Note that unlike the general "UseEdges" iterator, this specialized version does not respect GTF_REVERSE_OPS.
+    IteratorPair<UseEdgesIterator> UseEdges()
+    {
+        return MakeIteratorPair(UseEdgesIterator(GetOperandArray()),
+                                UseEdgesIterator(GetOperandArray() + GetOperandCount()));
+    }
+
+    size_t GetOperandCount() const
+    {
+        return m_operandCount;
+    }
+
+    GenTree** GetOperandArray(size_t startIndex = 0) const
+    {
+        return m_operands + startIndex;
+    }
+
+protected:
+    // Reconfigures the operand array, leaving it in a "dirty" state.
+    void ResetOperandArray(size_t    newOperandCount,
+                           Compiler* compiler,
+                           GenTree** inlineOperands,
+                           size_t    inlineOperandCount);
+
+    static bool OperandsAreEqual(GenTreeMultiOp* op1, GenTreeMultiOp* op2);
+
+private:
+    void InitializeOperands(CompAllocator allocator,
+                            GenTree**     operands,
+                            size_t        operandCount,
+                            GenTree**     inlineOperands,
+                            size_t        inlineOperandCount);
+
+    void SetOperandCount(size_t newOperandCount)
+    {
+        assert(FitsIn<uint8_t>(newOperandCount));
+        m_operandCount = static_cast<uint8_t>(newOperandCount);
+    }
+};
+
+struct GenTreeJitIntrinsic : public GenTreeMultiOp
+{
+protected:
+    GenTree*       gtInlineOperands[2];
+    uint16_t       gtLayoutNum;
+    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
+    unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
+
 #if defined(FEATURE_SIMD)
     union {
         SIMDIntrinsicID gtSIMDIntrinsicID; // operation Id
@@ -5137,15 +5310,16 @@ public:
     NamedIntrinsic gtHWIntrinsicId;
 #endif
 
-    ClassLayout* GetLayout() const
+public:
+    unsigned GetLayoutNum() const
     {
-        return gtLayout;
+        return gtLayoutNum;
     }
 
-    void SetLayout(ClassLayout* layout)
+    void SetLayoutNum(unsigned layoutNum)
     {
-        assert(layout != nullptr);
-        gtLayout = layout;
+        assert(FitsIn<uint16_t>(layoutNum));
+        gtLayoutNum = static_cast<uint16_t>(layoutNum);
     }
 
     regNumber GetOtherReg() const
@@ -5196,10 +5370,15 @@ public:
         assert(gtSimdSize == simdSize);
     }
 
-    GenTreeJitIntrinsic(
-        genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
-        : GenTreeOp(oper, type, op1, op2)
-        , gtLayout(nullptr)
+    template <typename... Operands>
+    GenTreeJitIntrinsic(genTreeOps    oper,
+                        var_types     type,
+                        CompAllocator allocator,
+                        CorInfoType   simdBaseJitType,
+                        unsigned      simdSize,
+                        Operands... operands)
+        : GenTreeMultiOp(oper, type, allocator, gtInlineOperands DEBUGARG(false), operands...)
+        , gtLayoutNum(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
@@ -5210,16 +5389,37 @@ public:
         assert(gtSimdSize == simdSize);
     }
 
+#if DEBUGGABLE_GENTREE
+    GenTreeJitIntrinsic() : GenTreeMultiOp()
+    {
+    }
+#endif
+
+protected:
+    GenTreeJitIntrinsic(genTreeOps    oper,
+                        var_types     type,
+                        CompAllocator allocator,
+                        GenTree**     operands,
+                        size_t        operandCount,
+                        CorInfoType   simdBaseJitType,
+                        unsigned      simdSize)
+        : GenTreeMultiOp(oper, type, allocator, operands, operandCount, gtInlineOperands DEBUGARG(false))
+        , gtLayoutNum(0)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
+        , gtOtherReg(REG_NA)
+        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
+        , gtSimdSize((unsigned char)simdSize)
+        , gtHWIntrinsicId(NI_Illegal)
+    {
+        assert(gtSimdBaseJitType == simdBaseJitType);
+        assert(gtSimdSize == simdSize);
+    }
+
+public:
     bool isSIMD() const
     {
         return gtSimdSize != 0;
     }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeJitIntrinsic() : GenTreeOp()
-    {
-    }
-#endif
 };
 
 #ifdef FEATURE_SIMD
@@ -5227,33 +5427,56 @@ public:
 /* gtSIMD   -- SIMD intrinsic   (possibly-binary op [NULL op2 is allowed] with additional fields) */
 struct GenTreeSIMD : public GenTreeJitIntrinsic
 {
-
-    GenTreeSIMD(
-        var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, simdBaseJitType, simdSize)
+    GenTreeSIMD(var_types       type,
+                CompAllocator   allocator,
+                GenTree**       operands,
+                size_t          operandCount,
+                SIMDIntrinsicID simdIntrinsicID,
+                CorInfoType     simdBaseJitType,
+                unsigned        simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, allocator, operands, operandCount, simdBaseJitType, simdSize)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
 
     GenTreeSIMD(var_types       type,
+                CompAllocator   allocator,
+                GenTree*        op1,
+                SIMDIntrinsicID simdIntrinsicID,
+                CorInfoType     simdBaseJitType,
+                unsigned        simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, allocator, simdBaseJitType, simdSize, op1)
+    {
+        gtSIMDIntrinsicID = simdIntrinsicID;
+    }
+
+    GenTreeSIMD(var_types       type,
+                CompAllocator   allocator,
                 GenTree*        op1,
                 GenTree*        op2,
                 SIMDIntrinsicID simdIntrinsicID,
                 CorInfoType     simdBaseJitType,
                 unsigned        simdSize)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, simdBaseJitType, simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, allocator, simdBaseJitType, simdSize, op1, op2)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
-
-    bool OperIsMemoryLoad() const; // Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics,
-                                   // false otherwise
 
 #if DEBUGGABLE_GENTREE
     GenTreeSIMD() : GenTreeJitIntrinsic()
     {
     }
 #endif
+
+    bool OperIsMemoryLoad() const; // Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics,
+                                   // false otherwise
+
+    SIMDIntrinsicID GetSIMDIntrinsicId() const
+    {
+        return gtSIMDIntrinsicID;
+    }
+
+    static bool Equals(GenTreeSIMD* op1, GenTreeSIMD* op2);
 };
 #endif // FEATURE_SIMD
 
@@ -5261,29 +5484,16 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
     GenTreeHWIntrinsic(var_types      type,
+                       CompAllocator  allocator,
+                       GenTree**      operands,
+                       size_t         operandCount,
                        NamedIntrinsic hwIntrinsicID,
                        CorInfoType    simdBaseJitType,
                        unsigned       simdSize,
                        bool           isSimdAsHWIntrinsic)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, simdBaseJitType, simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, operands, operandCount, simdBaseJitType, simdSize)
     {
-        gtHWIntrinsicId = hwIntrinsicID;
-
-        if (isSimdAsHWIntrinsic)
-        {
-            gtFlags |= GTF_SIMDASHW_OP;
-        }
-    }
-
-    GenTreeHWIntrinsic(var_types      type,
-                       GenTree*       op1,
-                       NamedIntrinsic hwIntrinsicID,
-                       CorInfoType    simdBaseJitType,
-                       unsigned       simdSize,
-                       bool           isSimdAsHWIntrinsic)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, simdBaseJitType, simdSize)
-    {
-        gtHWIntrinsicId = hwIntrinsicID;
+        SetHWIntrinsicId(hwIntrinsicID);
 
         if (OperIsMemoryStore())
         {
@@ -5296,18 +5506,19 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
+    template <typename... Operands>
     GenTreeHWIntrinsic(var_types      type,
-                       GenTree*       op1,
-                       GenTree*       op2,
+                       CompAllocator  allocator,
                        NamedIntrinsic hwIntrinsicID,
                        CorInfoType    simdBaseJitType,
                        unsigned       simdSize,
-                       bool           isSimdAsHWIntrinsic)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, simdBaseJitType, simdSize)
+                       bool           isSimdAsHWIntrinsic,
+                       Operands... operands)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, simdBaseJitType, simdSize, operands...)
     {
-        gtHWIntrinsicId = hwIntrinsicID;
+        SetHWIntrinsicId(hwIntrinsicID);
 
-        if (OperIsMemoryStore())
+        if ((sizeof...(Operands) > 0) && OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
         }
@@ -5316,22 +5527,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         {
             gtFlags |= GTF_SIMDASHW_OP;
         }
-    }
-
-    // Note that HW Intrinsic instructions are a sub class of GenTreeOp which only supports two operands
-    // However there are HW Intrinsic instructions that have 3 or even 4 operands and this is
-    // supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
-
-    bool OperIsMemoryLoad() const;  // Returns true for the HW Intrinsic instructions that have MemoryLoad semantics,
-                                    // false otherwise
-    bool OperIsMemoryStore() const; // Returns true for the HW Intrinsic instructions that have MemoryStore semantics,
-                                    // false otherwise
-    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
-                                          // MemoryStore semantics, false otherwise
-
-    bool IsSimdAsHWIntrinsic() const
-    {
-        return (gtFlags & GTF_SIMDASHW_OP) != 0;
     }
 
 #if DEBUGGABLE_GENTREE
@@ -5339,6 +5534,106 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     {
     }
 #endif
+
+    bool OperIsMemoryLoad() const;  // Returns true for the HW Intrinsic instructions that have MemoryLoad semantics,
+                                    // false otherwise
+    bool OperIsMemoryStore() const; // Returns true for the HW Intrinsic instructions that have MemoryStore semantics,
+                                    // false otherwise
+    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
+                                          // MemoryStore semantics, false otherwise
+    bool IsSimdAsHWIntrinsic() const
+    {
+        return (gtFlags & GTF_SIMDASHW_OP) != 0;
+    }
+
+    NamedIntrinsic GetHWIntrinsicId() const;
+
+    //---------------------------------------------------------------------------------------
+    // ChangeHWIntrinsicId: Change the intrinsic id for this node.
+    //
+    // This method just sets the intrinsic id, asserting that the new intrinsic
+    // has the same number of operands as the old one, optionally setting some of
+    // the new operands. Intrinsics with an unknown number of operands are exempt
+    // from the "do I have the same number of operands" check however, so this method must
+    // be used with care. Use "ResetHWIntrinsicId" if you need to fully reconfigure
+    // the node for a different intrinsic, with a possibly different number of operands.
+    //
+    // Arguments:
+    //    intrinsicId - the new intrinsic id for the node
+    //    operands    - optional operands to set while changing the id
+    //
+    // Notes:
+    //    It is the caller's responsibility to update side effect flags.
+    //
+    template <typename... Operands>
+    void ChangeHWIntrinsicId(NamedIntrinsic intrinsicId, Operands... operands)
+    {
+        const size_t OperandCount = sizeof...(Operands);
+        assert(OperandCount <= GetOperandCount());
+
+        SetHWIntrinsicId(intrinsicId);
+
+        GenTree*  operandsArray[OperandCount + 1]{operands...};
+        GenTree** operandsStore = GetOperandArray();
+
+        for (size_t i = 0; i < OperandCount; i++)
+        {
+            operandsStore[i] = operandsArray[i];
+        }
+    }
+
+    //---------------------------------------------------------------------------------------
+    // ResetHWIntrinsicId: Reset the intrinsic id for this node.
+    //
+    // This method resets the intrinsic id, fully reconfiguring the node. It must
+    // be supplied with all the operands the new node needs, and can allocate a
+    // new dynamic array if the operands do not fit into in an inline one, in which
+    // case a compiler argument is used to get the memory allocator.
+    //
+    // This method is similar to "ChangeHWIntrinsicId" but is more versatile and
+    // thus more expensive. Use it when you need to bash to an intrinsic id with
+    // a different number of operands than what the original node had, or, which
+    // is equivalent, when you do not know the original number of operands.
+    //
+    // Arguments:
+    //    intrinsicId - the new intrinsic id for the node
+    //    compiler    - compiler to allocate memory with, can be "nullptr" if the
+    //                  number of new operands does not exceed the length of the
+    //                  inline array (so, there are 2 or fewer of them)
+    //    operands    - *all* operands for the new node
+    //
+    // Notes:
+    //    It is the caller's responsibility to update side effect flags.
+    //
+    template <typename... Operands>
+    void ResetHWIntrinsicId(NamedIntrinsic intrinsicId, Compiler* compiler, Operands... operands)
+    {
+        const size_t NewOperandCount = sizeof...(Operands);
+        assert((compiler != nullptr) || (NewOperandCount <= ArrLen(gtInlineOperands)));
+
+        ResetOperandArray(NewOperandCount, compiler, gtInlineOperands, ArrLen(gtInlineOperands));
+        ChangeHWIntrinsicId(intrinsicId, operands...);
+    }
+
+    void ResetHWIntrinsicId(NamedIntrinsic intrinsicId, GenTree* op1, GenTree* op2)
+    {
+        ResetHWIntrinsicId(intrinsicId, static_cast<Compiler*>(nullptr), op1, op2);
+    }
+
+    void ResetHWIntrinsicId(NamedIntrinsic intrinsicId, GenTree* op1)
+    {
+        ResetHWIntrinsicId(intrinsicId, static_cast<Compiler*>(nullptr), op1);
+    }
+
+    void ResetHWIntrinsicId(NamedIntrinsic intrinsicId)
+    {
+        ResetHWIntrinsicId(intrinsicId, static_cast<Compiler*>(nullptr));
+    }
+
+    static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
+
+private:
+    void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 };
 #endif // FEATURE_HW_INTRINSICS
 
