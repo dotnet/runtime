@@ -336,9 +336,10 @@ namespace
                     ExternalObjectContext* inst = *curr;
 
                     // Only add objects that are in the correct thread
-                    // context, active, and have the appropriate flags set.
+                    // context and have the appropriate flags set.
+                    // If instance is in hashmap, it is active. This invariant
+                    // holds because the GC is what marks and removes from the cache.
                     if (inst->ThreadContext == threadContext
-                        && inst->IsActive()
                         && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
                     {
                         localList.Push(inst);
@@ -365,11 +366,25 @@ namespace
                     gc.arrRef->SetAt(objCount, inst->GetObjectRef());
                     objCount++;
                 }
+                else
+                {
+                    // The context has been marked for collection.
+                    // Since the state of this object is now under
+                    // the control of the GC, we null it out. This
+                    // allows us to ignore it when we iterate over the
+                    // collection later. The null here is needed because
+                    // it indicates the array size is going to change
+                    // and a new array allocated. That allocation is an
+                    // opportunity for the GC to remove it from this hashmap
+                    // and free the external object context.
+                    STRESS_LOG1(LF_INTEROP, LL_INFO100, "EOC no longer active: 0x%p\n", inst);
+                    localList[i] = NULL;
+                }
             }
 
-            // During the allocation of the returned enumerable, a GC
-            // could have occurred and objects marked "collected". In order to
-            // avoid having null array elements we will allocate a new array.
+            // During the allocation of the array to return, a GC could have
+            // occurred and objects marked "collected". In order to avoid
+            // having null array elements we will allocate a new array.
             // This subsequent allocation is okay because the array we are
             // replacing extends all object lifetimes.
             if (objCount < localList.Size())
@@ -384,9 +399,9 @@ namespace
                 gc.arrRef = gc.arrRefTmp;
             }
 
-            // All objects in the array are now referenced so won't be collected
-            // at this point. This means we can safely iterate over the active
-            // ExternalObjectContext instances.
+            // All objects are now referenced from the array so won't be collected
+            // at this point. This means we can safely iterate over the non-null
+            // and active ExternalObjectContext instances.
             {
                 // Separate the wrapper from the tracker runtime prior to
                 // passing them onto the caller. This call is okay to make
@@ -398,7 +413,10 @@ namespace
                 for (SIZE_T i = 0; i < localList.Size(); i++)
                 {
                     ExternalObjectContext* inst = localList[i];
-                    if (inst->IsActive())
+
+                    // Confirm the external object wasn't collected during one of
+                    // the previous array allocations.
+                    if (inst != NULL && inst->IsActive())
                         InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
                 }
             }
