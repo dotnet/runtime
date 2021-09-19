@@ -367,54 +367,6 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
 }
 
 //------------------------------------------------------------------------
-// lookupNumArgs: Gets the number of args for a given HWIntrinsic node
-//
-// Arguments:
-//    node -- The HWIntrinsic node to get the number of args for
-//
-// Return Value:
-//    The number of args for the HWIntrinsic associated with node
-int HWIntrinsicInfo::lookupNumArgs(const GenTreeHWIntrinsic* node)
-{
-    assert(node != nullptr);
-
-    NamedIntrinsic id      = node->gtHWIntrinsicId;
-    int            numArgs = lookupNumArgs(id);
-
-    if (numArgs >= 0)
-    {
-        return numArgs;
-    }
-
-    assert(numArgs == -1);
-
-    GenTree* op1 = node->gtGetOp1();
-
-    if (op1 == nullptr)
-    {
-        return 0;
-    }
-
-    if (op1->OperIsList())
-    {
-        GenTreeArgList* list = op1->AsArgList();
-        numArgs              = 0;
-
-        do
-        {
-            numArgs++;
-            list = list->Rest();
-        } while (list != nullptr);
-
-        return numArgs;
-    }
-
-    GenTree* op2 = node->gtGetOp2();
-
-    return (op2 == nullptr) ? 1 : 2;
-}
-
-//------------------------------------------------------------------------
 // lookupLastOp: Gets the last operand for a given HWIntrinsic node
 //
 // Arguments:
