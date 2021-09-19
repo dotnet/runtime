@@ -2851,6 +2851,11 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         chkFlags |= GTF_EXCEPT;
     }
 
+    if (tree->OperRequiresAsgFlag())
+    {
+        chkFlags |= GTF_ASG;
+    }
+
     if (tree->OperRequiresCallFlag(this))
     {
         chkFlags |= GTF_CALL;
@@ -3097,11 +3102,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             */
         }
 
-        if (tree->OperRequiresAsgFlag())
-        {
-            chkFlags |= GTF_ASG;
-        }
-
         if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
                                 (op1->gtOper == GT_IND && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
         {
@@ -3190,6 +3190,23 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     }
                 }
                 break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+            case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_HWINTRINSIC:
+#endif
+                // TODO-List-Cleanup: consider using the general Operands() iterator
+                // here for the "special" nodes to reduce code duplication.
+                for (GenTree* operand : tree->AsMultiOp()->Operands())
+                {
+                    fgDebugCheckFlags(operand);
+                    chkFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+                }
+                break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
             case GT_ARR_ELEM:
 
