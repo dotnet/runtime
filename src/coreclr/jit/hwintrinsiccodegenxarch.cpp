@@ -1905,18 +1905,15 @@ void CodeGen::genAESIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
-    GenTree*       op1         = node->gtGetOp1();
-    GenTree*       op2         = node->gtGetOp2();
     var_types      targetType  = node->TypeGet();
     instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
     emitter*       emit        = GetEmitter();
 
     assert(targetReg != REG_NA);
-    assert(op1 != nullptr);
 
-    genConsumeHWIntrinsicOperands(node);
+    genConsumeMultiOpOperands(node);
 
     switch (intrinsicId)
     {
@@ -1931,7 +1928,6 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_BMI2_ZeroHighBits:
         case NI_BMI2_X64_ZeroHighBits:
         {
-            assert(op2 != nullptr);
             assert((targetType == TYP_INT) || (targetType == TYP_LONG));
             genHWIntrinsic_R_R_RM(node, ins, emitTypeSize(node->TypeGet()));
             break;
@@ -1944,16 +1940,14 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_BMI1_X64_GetMaskUpToLowestSetBit:
         case NI_BMI1_X64_ResetLowestSetBit:
         {
-            assert(op2 == nullptr);
             assert((targetType == TYP_INT) || (targetType == TYP_LONG));
-            genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()), targetReg, op1);
+            genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()), targetReg, node->Op(1));
             break;
         }
 
         case NI_BMI1_TrailingZeroCount:
         case NI_BMI1_X64_TrailingZeroCount:
         {
-            assert(op2 == nullptr);
             assert((targetType == TYP_INT) || (targetType == TYP_LONG));
             genXCNTIntrinsic(node, ins);
             break;
@@ -1962,32 +1956,26 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_BMI2_MultiplyNoFlags:
         case NI_BMI2_X64_MultiplyNoFlags:
         {
-            int numArgs = HWIntrinsicInfo::lookupNumArgs(node);
+            size_t numArgs = node->GetOperandCount();
             assert(numArgs == 2 || numArgs == 3);
 
-            regNumber op1Reg = REG_NA;
-            regNumber op2Reg = REG_NA;
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            regNumber op1Reg = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
             regNumber op3Reg = REG_NA;
             regNumber lowReg = REG_NA;
 
             if (numArgs == 2)
             {
-                op1Reg = op1->GetRegNum();
-                op2Reg = op2->GetRegNum();
                 lowReg = targetReg;
             }
             else
             {
-                GenTreeArgList* argList = op1->AsArgList();
-                op1                     = argList->Current();
-                op1Reg                  = op1->GetRegNum();
-                argList                 = argList->Rest();
-                op2                     = argList->Current();
-                op2Reg                  = op2->GetRegNum();
-                argList                 = argList->Rest();
-                GenTree* op3            = argList->Current();
-                op3Reg                  = op3->GetRegNum();
-                assert(!op3->isContained());
+                op3Reg = node->Op(3)->GetRegNum();
+
+                assert(!node->Op(3)->isContained());
                 assert(op3Reg != op1Reg);
                 assert(op3Reg != targetReg);
                 assert(op3Reg != REG_EDX);
