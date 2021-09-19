@@ -4970,10 +4970,9 @@ unsigned GenTree::GetScaledIndex()
 //    Also note that when UNIX_AMD64_ABI is defined the GT_LDOBJ
 //    later gets converted to a GT_FIELD_LIST with two GT_LCL_FLDs in Lower/LowerXArch.
 //
-
 GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
-
 {
+    // TODO-List-Cleanup: remove, use TryGetUse instead.
     switch (parent->OperGet())
     {
         default:
@@ -5117,6 +5116,23 @@ GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
             }
         }
         break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            for (GenTree** use : parent->AsMultiOp()->UseEdges())
+            {
+                if (this == *use)
+                {
+                    return use;
+                }
+            }
+            break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     }
 
     return nullptr;
