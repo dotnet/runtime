@@ -952,8 +952,8 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
             else
             {
                 assert(op3->AsHWIntrinsic()->OperIsMemoryLoad());
-                assert(HWIntrinsicInfo::lookupNumArgs(op3->AsHWIntrinsic()) == 1);
-                addr = op3->gtGetOp1();
+                assert(op3->AsHWIntrinsic()->GetOperandCount() == 1);
+                addr = op3->AsHWIntrinsic()->Op(1);
             }
 
             switch (addr->OperGet())
