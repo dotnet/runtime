@@ -1697,9 +1697,11 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
             op1     = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op1);
 
-            GenTree* opList = new (this, GT_LIST) GenTreeArgList(op1, gtNewArgList(op2, op3, op4, op5));
-            retNode         = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, opList, intrinsic, simdBaseJitType,
-                                                                    simdSize, /* isSimdAsHWIntrinsic */ false);
+            const bool isSimdAsHWIntrinsic = false;
+
+            retNode = new (this, GT_HWINTRINSIC)
+                GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic, simdBaseJitType, simdSize,
+                                   isSimdAsHWIntrinsic, op1, op2, op3, op4, op5);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(indexBaseJitType);
             break;
         }
