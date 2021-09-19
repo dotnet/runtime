@@ -3205,15 +3205,17 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
 //
 int LinearScan::BuildBinaryUses(GenTreeOp* node, regMaskTP candidates)
 {
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2IfPresent();
+
 #ifdef TARGET_XARCH
     if (node->OperIsBinary() && isRMWRegOper(node))
     {
-        return BuildRMWUses(node, candidates);
+        assert(op2 != nullptr);
+        return BuildRMWUses(node, op1, op2, candidates);
     }
 #endif // TARGET_XARCH
-    int      srcCount = 0;
-    GenTree* op1      = node->gtOp1;
-    GenTree* op2      = node->gtGetOp2IfPresent();
+    int srcCount = 0;
     if (op1 != nullptr)
     {
         srcCount += BuildOperandUses(op1, candidates);

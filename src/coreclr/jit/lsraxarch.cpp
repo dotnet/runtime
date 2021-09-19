@@ -701,6 +701,8 @@ int LinearScan::BuildNode(GenTree* tree)
 //
 // Arguments:
 //    tree    - the node of interest.
+//    op1     - its first operand
+//    op2     - its second operand
 //    prefOp1 - a bool "out" parameter indicating, on return, whether op1 should be preferenced to the target.
 //    prefOp2 - a bool "out" parameter indicating, on return, whether op2 should be preferenced to the target.
 //
@@ -710,27 +712,24 @@ int LinearScan::BuildNode(GenTree* tree)
 // Notes:
 //    The caller is responsible for initializing the two "out" parameters to false.
 //
-void LinearScan::getTgtPrefOperands(GenTreeOp* tree, bool& prefOp1, bool& prefOp2)
+void LinearScan::getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2)
 {
     // If op2 of a binary-op gets marked as contained, then binary-op srcCount will be 1.
     // Even then we would like to set isTgtPref on Op1.
-    if (tree->OperIsBinary() && isRMWRegOper(tree))
+    if (isRMWRegOper(tree))
     {
-        GenTree* op1 = tree->gtGetOp1();
-        GenTree* op2 = tree->gtGetOp2();
-
         // If we have a read-modify-write operation, we want to preference op1 to the target,
         // if it is not contained.
-        if (!op1->isContained() && !op1->OperIs(GT_LIST))
+        if (!op1->isContained())
         {
-            prefOp1 = true;
+            *prefOp1 = true;
         }
 
         // Commutative opers like add/mul/and/or/xor could reverse the order of operands if it is safe to do so.
         // In that case we will preference both, to increase the chance of getting a match.
-        if (tree->OperIsCommutative() && op2 != nullptr && !op2->isContained())
+        if (tree->OperIsCommutative() && (op2 != nullptr) && !op2->isContained())
         {
-            prefOp2 = true;
+            *prefOp2 = true;
         }
     }
 }
@@ -751,7 +750,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 {
     // TODO-XArch-CQ: Make this more accurate.
     // For now, We assume that most binary operators are of the RMW form.
-    assert(tree->OperIsBinary());
+    assert(tree->OperIsBinary() || (tree->OperIsMultiOp() && (tree->AsMultiOp()->GetOperandCount() <= 2)));
 
     if (tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_BT))
     {
@@ -801,11 +800,9 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 }
 
 // Support for building RefPositions for RMW nodes.
-int LinearScan::BuildRMWUses(GenTreeOp* node, regMaskTP candidates)
+int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates)
 {
     int       srcCount      = 0;
-    GenTree*  op1           = node->gtOp1;
-    GenTree*  op2           = node->gtGetOp2IfPresent();
     regMaskTP op1Candidates = candidates;
     regMaskTP op2Candidates = candidates;
 
@@ -828,7 +825,7 @@ int LinearScan::BuildRMWUses(GenTreeOp* node, regMaskTP candidates)
 
     bool prefOp1 = false;
     bool prefOp2 = false;
-    getTgtPrefOperands(node, prefOp1, prefOp2);
+    getTgtPrefOperands(node, op1, op2, &prefOp1, &prefOp2);
     assert(!prefOp2 || node->OperIsCommutative());
 
     // Determine which operand, if any, should be delayRegFree. Normally, this would be op2,
@@ -1873,14 +1870,12 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     if (simdTree->isContained())
     {
         // Only SIMDIntrinsicInit can be contained
-        assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicInit);
+        assert(simdTree->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
     }
     SetContainsAVXFlags(simdTree->GetSimdSize());
-    GenTree* op1      = simdTree->gtGetOp1();
-    GenTree* op2      = simdTree->gtGetOp2();
-    int      srcCount = 0;
+    int srcCount = 0;
 
-    switch (simdTree->gtSIMDIntrinsicID)
+    switch (simdTree->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicInit:
         {
@@ -1893,6 +1888,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(TARGET_64BIT)
+            GenTree* op1 = simdTree->Op(1);
+
             if (op1->OperGet() == GT_LONG)
             {
                 assert(op1->isContained());
@@ -1928,19 +1925,19 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         {
             var_types baseType = simdTree->GetSimdBaseType();
             srcCount           = (short)(simdTree->GetSimdSize() / genTypeSize(baseType));
+            assert(simdTree->GetOperandCount() == static_cast<size_t>(srcCount));
+
             // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
             buildInternalFloatRegisterDefForNode(simdTree);
-            int initCount = 0;
-            for (GenTree* list = op1; list != nullptr; list = list->gtGetOp2())
+
+            for (GenTree* operand : simdTree->Operands())
             {
-                assert(list->OperGet() == GT_LIST);
-                GenTree* listItem = list->gtGetOp1();
-                assert(listItem->TypeGet() == baseType);
-                assert(!listItem->isContained());
-                BuildUse(listItem);
-                initCount++;
+                assert(operand->TypeIs(baseType));
+                assert(!operand->isContained());
+
+                BuildUse(operand);
             }
-            assert(initCount == srcCount);
+
             buildUses = false;
         }
         break;
@@ -2030,7 +2027,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicShuffleSSE2:
             // Second operand is an integer constant and marked as contained.
-            assert(simdTree->gtGetOp2()->isContainedIntOrIImmed());
+            assert(simdTree->Op(2)->isContainedIntOrIImmed());
             break;
 
         default:
@@ -2039,10 +2036,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     }
     if (buildUses)
     {
-        assert(!op1->OperIs(GT_LIST));
         assert(srcCount == 0);
         // This is overly conservative, but is here for zero diffs.
-        srcCount = BuildRMWUses(simdTree);
+        GenTree* op1 = simdTree->Op(1);
+        GenTree* op2 = (simdTree->GetOperandCount() == 2) ? simdTree->Op(2) : nullptr;
+        srcCount     = BuildRMWUses(simdTree, op1, op2);
     }
     buildInternalRegisterUses();
     BuildDef(simdTree, dstCandidates);
