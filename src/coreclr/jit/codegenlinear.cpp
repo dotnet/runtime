@@ -1592,14 +1592,14 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
             // Only load/store HW intrinsics can be contained (and the address may also be contained).
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->gtHWIntrinsicId);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->GetHWIntrinsicId());
             assert((category == HW_Category_MemoryLoad) || (category == HW_Category_MemoryStore));
-            int numArgs = HWIntrinsicInfo::lookupNumArgs(tree->AsHWIntrinsic());
-            genConsumeAddress(tree->gtGetOp1());
+            size_t numArgs = tree->AsHWIntrinsic()->GetOperandCount();
+            genConsumeAddress(tree->AsHWIntrinsic()->Op(1));
             if (category == HW_Category_MemoryStore)
             {
-                assert((numArgs == 2) && !tree->gtGetOp2()->isContained());
-                genConsumeReg(tree->gtGetOp2());
+                assert((numArgs == 2) && !tree->AsHWIntrinsic()->Op(2)->isContained());
+                genConsumeReg(tree->AsHWIntrinsic()->Op(2));
             }
             else
             {
