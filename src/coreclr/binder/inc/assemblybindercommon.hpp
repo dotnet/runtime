@@ -75,6 +75,8 @@ namespace BINDER_SPACE
             BINDER_SPACE::ApplicationContext* pApplicationContext,
             NewHolder<BINDER_SPACE::AssemblyIdentityUTF8>& assemblyIdentityHolder);
 
+        static BOOL IsValidArchitecture(PEKIND kArchitecture);
+
     private:
         static HRESULT BindByName(/* in */  ApplicationContext *pApplicationContext,
                                   /* in */  AssemblyName       *pAssemblyName,

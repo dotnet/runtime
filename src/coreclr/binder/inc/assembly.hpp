@@ -61,9 +61,6 @@ namespace BINDER_SPACE
         PEImage* GetPEImage();
         BOOL GetIsInTPA();
 
-        static PEKIND GetSystemArchitecture();
-        static BOOL IsValidArchitecture(PEKIND kArchitecture);
-
         AssemblyLoaderAllocator* GetLoaderAllocator();
         inline AssemblyBinder* GetBinder()
         {

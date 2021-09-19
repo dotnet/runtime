@@ -13,6 +13,7 @@
 #include "common.h"
 #include "assembly.hpp"
 #include "utils.hpp"
+#include "assemblybindercommon.hpp"
 
 namespace BINDER_SPACE
 {
@@ -60,7 +61,7 @@ namespace BINDER_SPACE
         SetAssemblyName(pAssemblyName.Extract(), FALSE /* fAddRef */);
 
         // Finally validate architecture
-        if (!IsValidArchitecture(kAssemblyArchitecture))
+        if (!AssemblyBinderCommon::IsValidArchitecture(kAssemblyArchitecture))
         {
             // Assembly image can't be executed on this platform
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
@@ -79,31 +80,6 @@ namespace BINDER_SPACE
     {
         pPEImage->AddRef();
         m_pPEImage = pPEImage;
-    }
-
-    /* static */
-    PEKIND Assembly::GetSystemArchitecture()
-    {
-#if defined(TARGET_X86)
-        return peI386;
-#elif defined(TARGET_AMD64)
-        return peAMD64;
-#elif defined(TARGET_ARM)
-        return peARM;
-#elif defined(TARGET_ARM64)
-        return peARM64;
-#else
-        PORTABILITY_ASSERT("Assembly::GetSystemArchitecture");
-#endif
-    }
-
-    /* static */
-    BOOL Assembly::IsValidArchitecture(PEKIND kArchitecture)
-    {
-        if (!IsPlatformArchitecture(kArchitecture))
-            return TRUE;
-
-        return (kArchitecture == GetSystemArchitecture());
     }
 
     LPCWSTR Assembly::GetSimpleName()

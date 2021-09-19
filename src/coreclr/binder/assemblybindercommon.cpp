@@ -509,7 +509,7 @@ namespace BINDER_SPACE
             hr = S_OK;
         }
 
-        if (!Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
+        if (!IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
             // Assembly reference contains wrong architecture
             IF_FAIL_GO(FUSION_E_INVALID_NAME);
@@ -1493,6 +1493,27 @@ HRESULT AssemblyBinderCommon::GetAssemblyIdentity(LPCSTR szTextualIdentity,
     EX_CATCH_HRESULT(hr);
 
     return hr;
+}
+
+BOOL AssemblyBinderCommon::IsValidArchitecture(PEKIND kArchitecture)
+{
+    if ((kArchitecture == peMSIL) || (kArchitecture == peNone))
+        return TRUE;
+
+    PEKIND processArchitecture =
+#if defined(TARGET_X86)
+        peI386;
+#elif defined(TARGET_AMD64)
+        peAMD64;
+#elif defined(TARGET_ARM)
+        peARM;
+#elif defined(TARGET_ARM64)
+        peARM64;
+#else
+        PORTABILITY_ASSERT("processArchitecture");
+#endif
+
+    return (kArchitecture == processArchitecture);
 }
 
 #endif // !defined(DACCESS_COMPILE)

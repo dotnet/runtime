@@ -127,7 +127,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
         IF_FAIL_GO(pAssemblyName->Init(pPEImage));
 
         // Validate architecture
-        if (!BINDER_SPACE::Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
+        if (!AssemblyBinderCommon::IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
