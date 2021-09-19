@@ -1049,8 +1049,8 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
             {
 #if defined(FEATURE_HW_INTRINSICS)
                 assert(rmOp->AsHWIntrinsic()->OperIsMemoryLoad());
-                assert(HWIntrinsicInfo::lookupNumArgs(rmOp->AsHWIntrinsic()) == 1);
-                addr = rmOp->gtGetOp1();
+                assert(rmOp->AsHWIntrinsic()->GetOperandCount() == 1);
+                addr = rmOp->AsHWIntrinsic()->Op(1);
 #else
                 unreached();
 #endif // FEATURE_HW_INTRINSICS
