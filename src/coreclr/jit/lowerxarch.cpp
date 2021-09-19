@@ -5390,11 +5390,11 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
 //
 void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 {
-    switch (simdNode->gtSIMDIntrinsicID)
+    switch (simdNode->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicInit:
         {
-            GenTree* op1 = simdNode->AsOp()->gtOp1;
+            GenTree* op1 = simdNode->Op(1);
 #ifndef TARGET_64BIT
             if (op1->OperGet() == GT_LONG)
             {
@@ -5430,13 +5430,13 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
-            CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
+            CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
             break;
 
         case SIMDIntrinsicShuffleSSE2:
             // Second operand is an integer constant and marked as contained.
-            assert(simdNode->AsOp()->gtOp2->IsCnsIntOrI());
-            MakeSrcContained(simdNode, simdNode->AsOp()->gtOp2);
+            assert(simdNode->Op(2)->IsCnsIntOrI());
+            MakeSrcContained(simdNode, simdNode->Op(2));
             break;
 
         default:
