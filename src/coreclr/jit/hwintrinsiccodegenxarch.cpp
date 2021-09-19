@@ -1682,20 +1682,19 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
-    GenTree*       op1         = node->gtGetOp1();
-    GenTree*       op2         = node->gtGetOp2();
+    GenTree*       op1         = node->Op(1);
+    GenTree*       op2         = node->Op(2);
     var_types      baseType    = node->GetSimdBaseType();
     var_types      targetType  = node->TypeGet();
     emitter*       emit        = GetEmitter();
 
-    genConsumeHWIntrinsicOperands(node);
+    genConsumeMultiOpOperands(node);
     regNumber op1Reg = op1->GetRegNum();
 
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
-    assert(op2 != nullptr);
     assert(!node->OperIsCommutative());
 
     switch (intrinsicId)
