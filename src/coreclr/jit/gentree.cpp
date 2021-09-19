@@ -8874,6 +8874,7 @@ bool GenTree::gtRequestSetFlags()
     return result;
 }
 
+// TODO-List-Cleanup: remove.
 unsigned GenTree::NumChildren()
 {
     if (OperIsConst() || OperIsLeaf())
@@ -8999,6 +9000,17 @@ unsigned GenTree::NumChildren()
                 }
                 return res;
             }
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+            case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_HWINTRINSIC:
+#endif
+                return static_cast<unsigned>(AsMultiOp()->GetOperandCount());
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
             case GT_NONE:
                 return 0;
             default:
