@@ -1573,11 +1573,11 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicShuffleSSE2);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicShuffleSSE2);
     noway_assert(compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported);
 
-    GenTree* op1 = simdNode->gtGetOp1();
-    GenTree* op2 = simdNode->gtGetOp2();
+    GenTree* op1 = simdNode->Op(1);
+    GenTree* op2 = simdNode->Op(2);
     assert(op2->isContained());
     assert(op2->IsCnsIntOrI());
     ssize_t   shuffleControl = op2->AsIntConCommon()->IconValue();
@@ -1589,7 +1589,7 @@ void CodeGen::genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode)
     regNumber op1Reg = genConsumeReg(op1);
     inst_Mov(targetType, targetReg, op1Reg, /* canSkip */ true);
 
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    instruction ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
     assert((shuffleControl >= 0) && (shuffleControl <= 255));
     GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(baseType), targetReg, targetReg, (int8_t)shuffleControl);
     genProduceReg(simdNode);
