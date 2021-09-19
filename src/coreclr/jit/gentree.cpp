@@ -7936,30 +7936,6 @@ GenTree* Compiler::gtCloneExpr(
             }
             break;
 
-#ifdef FEATURE_SIMD
-            case GT_SIMD:
-            {
-                GenTreeSIMD* simdOp = tree->AsSIMD();
-                copy                = gtNewSIMDNode(simdOp->TypeGet(), simdOp->gtGetOp1(), simdOp->gtGetOp2IfPresent(),
-                                     simdOp->gtSIMDIntrinsicID, simdOp->GetSimdBaseJitType(), simdOp->GetSimdSize());
-            }
-            break;
-#endif
-
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
-            {
-                GenTreeHWIntrinsic* hwintrinsicOp = tree->AsHWIntrinsic();
-                copy                              = new (this, GT_HWINTRINSIC)
-                    GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
-                                       hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
-                                       hwintrinsicOp->GetSimdBaseJitType(), hwintrinsicOp->GetSimdSize(),
-                                       hwintrinsicOp->IsSimdAsHWIntrinsic());
-                copy->AsHWIntrinsic()->SetAuxiliaryJitType(hwintrinsicOp->GetAuxiliaryJitType());
-            }
-            break;
-#endif
-
             default:
                 assert(!GenTree::IsExOp(tree->OperKind()) && tree->OperIsSimple());
                 // We're in the SimpleOp case, so it's always unary or binary.
@@ -8055,6 +8031,33 @@ GenTree* Compiler::gtCloneExpr(
 
             copy = gtCloneExprCallHelper(tree->AsCall(), addFlags, deepVarNum, deepVarVal);
             break;
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            copy = new (this, GT_SIMD)
+                GenTreeSIMD(tree->TypeGet(), getAllocator(CMK_ASTNode), tree->AsSIMD()->GetOperandArray(),
+                            tree->AsSIMD()->GetOperandCount(), tree->AsSIMD()->GetSIMDIntrinsicId(),
+                            tree->AsSIMD()->GetSimdBaseJitType(), tree->AsSIMD()->GetSimdSize());
+            goto CLONE_MULTIOP_OPERANDS;
+#endif
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            copy = new (this, GT_HWINTRINSIC)
+                GenTreeHWIntrinsic(tree->TypeGet(), getAllocator(CMK_ASTNode), tree->AsHWIntrinsic()->GetOperandArray(),
+                                   tree->AsHWIntrinsic()->GetOperandCount(), tree->AsHWIntrinsic()->GetHWIntrinsicId(),
+                                   tree->AsHWIntrinsic()->GetSimdBaseJitType(), tree->AsHWIntrinsic()->GetSimdSize(),
+                                   tree->AsHWIntrinsic()->IsSimdAsHWIntrinsic());
+            copy->AsHWIntrinsic()->SetAuxiliaryJitType(tree->AsHWIntrinsic()->GetAuxiliaryJitType());
+            goto CLONE_MULTIOP_OPERANDS;
+#endif
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+        CLONE_MULTIOP_OPERANDS:
+            for (GenTree** use : copy->AsMultiOp()->UseEdges())
+            {
+                *use = gtCloneExpr(*use, addFlags, deepVarNum, deepVarVal);
+            }
+            break;
+#endif
 
         case GT_ARR_ELEM:
         {
