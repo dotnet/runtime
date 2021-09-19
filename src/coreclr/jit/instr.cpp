@@ -1178,8 +1178,8 @@ void CodeGen::inst_RV_RV_TT(
             {
 #if defined(FEATURE_HW_INTRINSICS)
                 assert(op2->AsHWIntrinsic()->OperIsMemoryLoad());
-                assert(HWIntrinsicInfo::lookupNumArgs(op2->AsHWIntrinsic()) == 1);
-                addr = op2->gtGetOp1();
+                assert(op2->AsHWIntrinsic()->GetOperandCount() == 1);
+                addr = op2->AsHWIntrinsic()->Op(1);
 #else
                 unreached();
 #endif // FEATURE_HW_INTRINSICS
