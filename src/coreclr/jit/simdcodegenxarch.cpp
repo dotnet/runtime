@@ -1843,9 +1843,9 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
 //
 void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperSave);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicUpperSave);
 
-    GenTree* op1 = simdNode->gtGetOp1();
+    GenTree* op1 = simdNode->Op(1);
     assert(op1->IsLocal() && op1->TypeGet() == TYP_SIMD32);
     regNumber targetReg = simdNode->GetRegNum();
     regNumber op1Reg    = genConsumeReg(op1);
