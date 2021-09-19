@@ -1113,17 +1113,17 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
 //
 void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
     var_types      baseType    = node->GetSimdBaseType();
 
     assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE));
     assert((baseType >= TYP_BYTE) && (baseType <= TYP_DOUBLE));
 
-    GenTree* op1 = node->gtGetOp1();
-    GenTree* op2 = node->gtGetOp2();
+    GenTree* op1 = (node->GetOperandCount() >= 1) ? node->Op(1) : nullptr;
+    GenTree* op2 = (node->GetOperandCount() >= 2) ? node->Op(2) : nullptr;
 
-    genConsumeHWIntrinsicOperands(node);
+    genConsumeMultiOpOperands(node);
     regNumber op1Reg = (op1 == nullptr) ? REG_NA : op1->GetRegNum();
 
     emitter*    emit     = GetEmitter();
@@ -1370,13 +1370,11 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_get_Zero:
         case NI_Vector256_get_Zero:
         {
-            assert(op1 == nullptr);
             emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
             break;
         }
 
         case NI_Vector128_get_AllBitsSet:
-            assert(op1 == nullptr);
             if (varTypeIsFloating(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 // The following corresponds to vcmptrueps pseudo-op and not available without VEX prefix.
@@ -1389,7 +1387,6 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
 
         case NI_Vector256_get_AllBitsSet:
-            assert(op1 == nullptr);
             if (varTypeIsIntegral(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
