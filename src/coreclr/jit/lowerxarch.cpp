@@ -812,8 +812,9 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 {
     GenTreeCC* cc = LowerNodeCC(node, condition);
 
-    node->gtHWIntrinsicId = newIntrinsicId;
-    node->gtType          = TYP_VOID;
+    assert(HWIntrinsicInfo::lookupNumArgs(newIntrinsicId) == 2);
+    node->ChangeHWIntrinsicId(newIntrinsicId);
+    node->gtType = TYP_VOID;
     node->ClearUnusedValue();
 
     bool swapOperands    = false;
@@ -862,8 +863,8 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
         bool op1SupportsRegOptional = false;
         bool op2SupportsRegOptional = false;
 
-        if (!IsContainableHWIntrinsicOp(node, node->gtGetOp2(), &op2SupportsRegOptional) &&
-            IsContainableHWIntrinsicOp(node, node->gtGetOp1(), &op1SupportsRegOptional))
+        if (!IsContainableHWIntrinsicOp(node, node->Op(2), &op2SupportsRegOptional) &&
+            IsContainableHWIntrinsicOp(node, node->Op(1), &op1SupportsRegOptional))
         {
             // Swap operands if op2 cannot be contained but op1 can.
             swapOperands = true;
@@ -872,7 +873,7 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 
     if (swapOperands)
     {
-        std::swap(node->gtOp1, node->gtOp2);
+        std::swap(node->Op(1), node->Op(2));
 
         if (cc != nullptr)
         {
