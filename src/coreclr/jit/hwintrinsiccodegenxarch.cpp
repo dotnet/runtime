@@ -2124,9 +2124,9 @@ void CodeGen::genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genPOPCNTIntrinsic(GenTreeHWIntrinsic* node)
 {
-    assert(node->gtHWIntrinsicId == NI_POPCNT_PopCount || node->gtHWIntrinsicId == NI_POPCNT_X64_PopCount);
+    assert(node->GetHWIntrinsicId() == NI_POPCNT_PopCount || node->GetHWIntrinsicId() == NI_POPCNT_X64_PopCount);
 
-    genConsumeOperands(node);
+    genConsumeMultiOpOperands(node);
     genXCNTIntrinsic(node, INS_popcnt);
     genProduceReg(node);
 }
