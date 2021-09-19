@@ -9035,21 +9035,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberIntrinsic(tree);
         }
-
-#ifdef FEATURE_SIMD
-        else if (tree->OperGet() == GT_SIMD)
-        {
-            fgValueNumberSimd(tree);
-        }
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
-        else if (tree->OperGet() == GT_HWINTRINSIC)
-        {
-            fgValueNumberHWIntrinsic(tree);
-        }
-#endif // FEATURE_HW_INTRINSICS
-
         else // Look up the VNFunc for the node
         {
             VNFunc vnf = GetVNFuncForNode(tree);
@@ -9295,6 +9280,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_CALL:
                 fgValueNumberCall(tree->AsCall());
                 break;
+
+#ifdef FEATURE_SIMD
+            case GT_SIMD:
+                fgValueNumberSimd(tree->AsSIMD());
+                break;
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+                fgValueNumberHWIntrinsic(tree->AsHWIntrinsic());
+                break;
+#endif // FEATURE_HW_INTRINSICS
 
             case GT_CMPXCHG: // Specialop
             {
