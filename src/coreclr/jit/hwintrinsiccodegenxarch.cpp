@@ -432,7 +432,7 @@ void CodeGen::genHWIntrinsic_R_RM(
 
     if (rmOp->isContained() || rmOp->isUsedFromSpillTemp())
     {
-        assert(HWIntrinsicInfo::SupportsContainment(node->gtHWIntrinsicId));
+        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
         assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, rmOp);
 
         TempDsc* tmpDsc = nullptr;
@@ -462,8 +462,8 @@ void CodeGen::genHWIntrinsic_R_RM(
             else
             {
                 assert(rmOp->AsHWIntrinsic()->OperIsMemoryLoad());
-                assert(HWIntrinsicInfo::lookupNumArgs(rmOp->AsHWIntrinsic()) == 1);
-                addr = rmOp->gtGetOp1();
+                assert(rmOp->AsHWIntrinsic()->GetOperandCount() == 1);
+                addr = rmOp->AsHWIntrinsic()->Op(1);
             }
 
             switch (addr->OperGet())
