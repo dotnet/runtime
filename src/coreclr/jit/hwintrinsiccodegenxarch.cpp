@@ -554,7 +554,7 @@ void CodeGen::genHWIntrinsic_R_RM(
 void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr simdSize, int8_t ival)
 {
     regNumber targetReg = node->GetRegNum();
-    GenTree*  op1       = node->gtGetOp1();
+    GenTree*  op1       = node->Op(1);
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
@@ -564,7 +564,7 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, e
 
     if (op1->isContained() || op1->isUsedFromSpillTemp())
     {
-        assert(HWIntrinsicInfo::SupportsContainment(node->gtHWIntrinsicId));
+        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
         assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op1);
     }
     inst_RV_TT_IV(ins, simdSize, targetReg, op1, ival);
