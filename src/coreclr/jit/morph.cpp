@@ -5845,7 +5845,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
             if (newTree != tree)
             {
-                newTree = fgMorphSmpOp(newTree);
+                newTree = fgMorphTree(newTree);
                 return newTree;
             }
         }
@@ -10713,9 +10713,6 @@ GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
 
         tree = gtNewSimdGetElementNode(simdBaseType, simdStructNode, op2, simdBaseJitType, simdSize,
                                        /* isSimdAsHWIntrinsic */ true);
-#ifdef DEBUG
-        tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
     }
     return tree;
 }
