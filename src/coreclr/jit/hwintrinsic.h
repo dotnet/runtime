@@ -309,7 +309,6 @@ struct HWIntrinsicInfo
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
-    static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
 
 #if defined(TARGET_XARCH)
     static int lookupImmUpperBound(NamedIntrinsic intrinsic);

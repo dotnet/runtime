@@ -367,44 +367,6 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
 }
 
 //------------------------------------------------------------------------
-// lookupLastOp: Gets the last operand for a given HWIntrinsic node
-//
-// Arguments:
-//    node   -- The HWIntrinsic node to get the last operand for
-//
-// Return Value:
-//     The last operand for node
-GenTree* HWIntrinsicInfo::lookupLastOp(const GenTreeHWIntrinsic* node)
-{
-    assert(node != nullptr);
-
-    GenTree* op1 = node->gtGetOp1();
-
-    if (op1 == nullptr)
-    {
-        return nullptr;
-    }
-
-    if (op1->OperIsList())
-    {
-        GenTreeArgList* list = op1->AsArgList();
-        GenTree*        last;
-
-        do
-        {
-            last = list->Current();
-            list = list->Rest();
-        } while (list != nullptr);
-
-        return last;
-    }
-
-    GenTree* op2 = node->gtGetOp2();
-
-    return (op2 == nullptr) ? op1 : op2;
-}
-
-//------------------------------------------------------------------------
 // isImmOp: Checks whether the HWIntrinsic node has an imm operand
 //
 // Arguments:
