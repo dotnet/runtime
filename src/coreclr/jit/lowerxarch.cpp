@@ -1254,7 +1254,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 {
-    NamedIntrinsic intrinsicId     = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
@@ -1274,8 +1274,8 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     //          /--*  op1  simd
     //   node = *  HWINTRINSIC   simd   T op_Equality
 
-    GenTree* op1 = node->gtGetOp1();
-    GenTree* op2 = node->gtGetOp2();
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
 
     GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
 
@@ -1285,34 +1285,35 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         // just use PTEST. We can't support it for floating-point, however,
         // as it has both +0.0 and -0.0 where +0.0 == -0.0
 
-        node->gtOp1 = op1;
+        node->Op(1) = op1;
         BlockRange().Remove(op2);
 
-        op2 = op2->AsOp()->gtGetOp1();
-
-        if (op2 != nullptr)
+        if (op2->AsMultiOp()->GetOperandCount() == 1)
         {
             // Some zero vectors are Create/Initialization nodes with a constant zero operand
             // We should also remove this to avoid dead code
-            BlockRange().Remove(op2);
+            assert(op2->AsMultiOp()->Op(1)->IsIntegralConst(0));
+            BlockRange().Remove(op2->AsMultiOp()->Op(1));
         }
 
-        LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
+        LIR::Use op1Use(BlockRange(), &node->Op(1), node);
         ReplaceWithLclVar(op1Use);
-        op1 = node->gtOp1;
+        op1 = node->Op(1);
 
         op2 = comp->gtClone(op1);
         BlockRange().InsertAfter(op1, op2);
-        node->gtOp2 = op2;
+        node->Op(2) = op2;
 
         if (simdSize == 32)
         {
-            node->gtHWIntrinsicId = NI_AVX_TestZ;
+            // TODO-Review: LowerHWIntrinsicCC resets the id again, so why is this needed?
+            node->ChangeHWIntrinsicId(NI_AVX_TestZ);
             LowerHWIntrinsicCC(node, NI_AVX_PTEST, cmpCnd);
         }
         else
         {
-            node->gtHWIntrinsicId = NI_SSE41_TestZ;
+            // TODO-Review: LowerHWIntrinsicCC resets the id again, so why is this needed?
+            node->ChangeHWIntrinsicId(NI_SSE41_TestZ);
             LowerHWIntrinsicCC(node, NI_SSE41_PTEST, cmpCnd);
         }
 
@@ -1474,10 +1475,9 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     }
 
     node->ChangeOper(cmpOp);
-
-    node->gtType = TYP_INT;
-    node->gtOp1  = msk;
-    node->gtOp2  = mskCns;
+    node->ChangeType(TYP_INT);
+    node->AsOp()->gtOp1 = msk;
+    node->AsOp()->gtOp2 = mskCns;
 
     GenTree* cc = LowerNodeCC(node, cmpCnd);
 
