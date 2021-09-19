@@ -9400,30 +9400,24 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
 
 #ifdef FEATURE_SIMD
 // Does value-numbering for a GT_SIMD node.
-void Compiler::fgValueNumberSimd(GenTree* tree)
+void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 {
-    assert(tree->OperGet() == GT_SIMD);
-    GenTreeSIMD* simdNode = tree->AsSIMD();
-    assert(simdNode != nullptr);
-
     VNFunc       simdFunc = GetVNFuncForNode(tree);
     ValueNumPair excSetPair;
     ValueNumPair normalPair;
 
     // There are some SIMD operations that have zero args, i.e.  NI_Vector128_Zero
-    if (tree->AsOp()->gtOp1 == nullptr)
+    if (tree->GetOperandCount() == 0)
     {
         excSetPair = ValueNumStore::VNPForEmptyExcSet();
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
     }
-    else if (tree->AsOp()->gtOp1->OperIs(GT_LIST))
+    // TODO-List-Cleanup: the "tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN" case is a quirk
+    // to get zero diffs - Vector2(float, float) was imported with lists - remove it.
+    else if ((tree->GetOperandCount() > 2) || (tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN))
     {
-        assert(tree->AsOp()->gtOp2 == nullptr);
-
-        // We have a SIMD node in the GT_LIST form with 3 or more args
-        // For now we will generate a unique value number for this case.
-
-        // Generate a unique VN
+        // We have a SIMD node with 3 or more args. To retain the
+        // previous behavior, we will generate a unique VN for this case.
         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         return;
     }
@@ -9432,25 +9426,25 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         ValueNumPair resvnp = ValueNumPair();
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
 
         ValueNum addrVN       = ValueNumStore::NoVN;
-        bool     isMemoryLoad = simdNode->OperIsMemoryLoad();
+        bool     isMemoryLoad = tree->OperIsMemoryLoad();
 
         if (isMemoryLoad)
         {
             // Currently the only SIMD operation with MemoryLoad sematics is SIMDIntrinsicInitArray
             // and it has to be handled specially since it has an optional op2
             //
-            assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitArray);
+            assert(tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray);
 
             // rationalize rewrites this as an explicit load with op1 as the base address
             assert(tree->OperIsImplicitIndir());
 
             ValueNumPair op2vnp;
-            if (tree->AsOp()->gtOp2 == nullptr)
+            if (tree->GetOperandCount() != 2)
             {
-                // a nullptr for op2 means that we have an impicit index of zero
+                // No op2 means that we have an impicit index of zero
                 op2vnp = ValueNumPair(vnStore->VNZeroForType(TYP_INT), vnStore->VNZeroForType(TYP_INT));
 
                 excSetPair = op1Xvnp;
@@ -9458,7 +9452,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             else // We have an explicit index in op2
             {
                 ValueNumPair op2Xvnp;
-                vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+                vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
 
                 excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
             }
@@ -9470,7 +9464,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             if (verbose)
             {
                 printf("Treating GT_SIMD %s as a ByrefExposed load , addrVN is ",
-                       simdIntrinsicNames[simdNode->gtSIMDIntrinsicID]);
+                       simdIntrinsicNames[tree->GetSIMDIntrinsicId()]);
                 vnPrint(addrVN, 0);
             }
 #endif // DEBUG
@@ -9481,16 +9475,16 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             tree->gtVNPair.SetLiberal(loadVN);
             tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
             tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSetPair);
-            fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
+            fgValueNumberAddExceptionSetForIndirection(tree, tree->Op(1));
             return;
         }
 
-        bool encodeResultType = vnEncodesResultTypeForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID);
+        bool encodeResultType = vnEncodesResultTypeForSIMDIntrinsic(tree->GetSIMDIntrinsicId());
 
         if (encodeResultType)
         {
-            ValueNum vnSize     = vnStore->VNForIntCon(simdNode->GetSimdSize());
-            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->GetSimdBaseType()));
+            ValueNum vnSize     = vnStore->VNForIntCon(tree->GetSimdSize());
+            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(tree->GetSimdBaseType()));
             ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
             resvnp.SetBoth(simdTypeVN);
 
@@ -9504,9 +9498,9 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
 #endif
         }
 
-        if (tree->AsOp()->gtOp2 == nullptr)
+        if (tree->GetOperandCount() == 1)
         {
-            // Unary SIMD nodes have a nullptr for op2.
+            // A unary SIMD node.
             excSetPair = op1Xvnp;
             if (encodeResultType)
             {
@@ -9523,7 +9517,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         {
             ValueNumPair op2vnp;
             ValueNumPair op2Xvnp;
-            vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+            vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
 
             excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
             if (encodeResultType)
