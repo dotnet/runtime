@@ -1606,15 +1606,14 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
-    GenTree*       op1         = node->gtGetOp1();
-    GenTree*       op2         = node->gtGetOp2();
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+    GenTree*       op1         = node->Op(1);
     regNumber      targetReg   = node->GetRegNum();
     var_types      baseType    = node->GetSimdBaseType();
 
     emitter* emit = GetEmitter();
 
-    genConsumeHWIntrinsicOperands(node);
+    genConsumeMultiOpOperands(node);
 
     switch (intrinsicId)
     {
@@ -1643,6 +1642,7 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
         {
             assert(!varTypeIsFloating(baseType));
 
+            GenTree*    op2  = node->Op(2);
             instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
             emitAttr    attr = emitActualTypeSize(node->TypeGet());
 
