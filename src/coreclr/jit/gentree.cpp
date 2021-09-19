@@ -21304,13 +21304,13 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
 bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(GetHWIntrinsicId());
     if (category == HW_Category_MemoryLoad)
     {
         return true;
     }
 #ifdef TARGET_XARCH
-    else if (HWIntrinsicInfo::MaybeMemoryLoad(gtHWIntrinsicId))
+    else if (HWIntrinsicInfo::MaybeMemoryLoad(GetHWIntrinsicId()))
     {
         // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
 
@@ -21320,19 +21320,19 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
             // Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
             // Vector128<byte> BroadcastScalarToVector128(byte* source)
             // So, we need to check the argument's type is memory-reference or Vector128
-            assert(HWIntrinsicInfo::lookupNumArgs(this) == 1);
-            return (gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector128 ||
-                    gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector256) &&
-                   AsOp()->gtOp1->TypeGet() != TYP_SIMD16;
+            assert(GetOperandCount() == 1);
+            return (GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128 ||
+                    GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256) &&
+                   !Op(1)->TypeIs(TYP_SIMD16);
         }
         else if (category == HW_Category_IMM)
         {
             // Do we have less than 3 operands?
-            if (HWIntrinsicInfo::lookupNumArgs(this) < 3)
+            if (GetOperandCount() < 3)
             {
                 return false;
             }
-            else if (HWIntrinsicInfo::isAVX2GatherIntrinsic(gtHWIntrinsicId))
+            else if (HWIntrinsicInfo::isAVX2GatherIntrinsic(GetHWIntrinsicId()))
             {
                 return true;
             }
