@@ -1466,9 +1466,8 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
                     tempBaseJitType = CORINFO_TYPE_INT;
                     initVal         = gtNewIconNode((ssize_t)constVal);
                 }
-                initVal->gtType = JITtype2varType(tempBaseJitType);
-                GenTree* constVector =
-                    gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, tempBaseJitType, size);
+                initVal->gtType      = JITtype2varType(tempBaseJitType);
+                GenTree* constVector = gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, tempBaseJitType, size);
 
                 // Assign constVector to a temp, since we intend to use it more than once
                 // TODO-CQ: We have quite a few such constant vectors constructed during
