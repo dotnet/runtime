@@ -853,18 +853,7 @@ namespace System.DirectoryServices.AccountManagement
             // Since this is SAM, the remote principal must be an AD principal.
             // Build a PrincipalContext for the store which owns the principal
             // Use the ad default options so we turn sign and seal back on.
-#if USE_CTX_CACHE
             PrincipalContext remoteCtx = SDSCache.Domain.GetContext(domainName, _credentials, DefaultContextOptions.ADDefaultContextOption);
-#else
-            PrincipalContext remoteCtx = new PrincipalContext(
-                            ContextType.Domain,
-                            domainName,
-                            null,
-                            (this.credentials != null ? credentials.UserName : null),
-                            (this.credentials != null ? credentials.Password : null),
-                            DefaultContextOptions.ADDefaultContextOption);
-
-#endif
 
             SecurityIdentifier sidObj = new SecurityIdentifier(sid, 0);
 
@@ -1103,5 +1092,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-// #endif  // PAPI_REGSAM
