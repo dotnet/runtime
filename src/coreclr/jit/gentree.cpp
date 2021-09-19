@@ -6345,7 +6345,7 @@ GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, CorInfoType simdBaseJ
     var_types simdBaseType = genActualType(JitType2PreciseVarType(simdBaseJitType));
     GenTree*  initVal      = gtNewZeroConNode(simdBaseType);
     initVal->gtType        = simdBaseType;
-    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, simdBaseJitType, simdSize);
+    return gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, simdSize);
 }
 #endif // FEATURE_SIMD
 
