@@ -2646,7 +2646,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //
 void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId     = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
     var_types      simdType        = node->gtType;
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
     var_types      simdBaseType    = node->GetSimdBaseType();
@@ -2656,11 +2656,8 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
-    GenTree* op1 = node->gtGetOp1();
-    GenTree* op2 = node->gtGetOp2();
-
-    assert(op1 != nullptr);
-    assert(op2 != nullptr);
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
 
     if (op1->OperIs(GT_IND))
     {
@@ -2810,7 +2807,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
                 unreached();
         }
 
-        op2 = nullptr;
+        node->ResetHWIntrinsicId(resIntrinsic, op1);
     }
     else
     {
@@ -2853,18 +2850,15 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             default:
                 unreached();
         }
+
+        node->ResetHWIntrinsicId(resIntrinsic, op1, op2);
     }
 
-    assert(resIntrinsic != NI_Illegal);
-
-    node->gtHWIntrinsicId = resIntrinsic;
-    node->gtOp1           = op1;
-    node->gtOp2           = op2;
     node->SetSimdSize(16);
 
     if (!varTypeIsFloating(simdBaseType))
     {
-        assert(node->gtHWIntrinsicId != intrinsicId);
+        assert(node->GetHWIntrinsicId() != intrinsicId);
         LowerNode(node);
     }
 
