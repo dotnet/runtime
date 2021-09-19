@@ -21347,13 +21347,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 bool GenTreeHWIntrinsic::OperIsMemoryStore() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(GetHWIntrinsicId());
     if (category == HW_Category_MemoryStore)
     {
         return true;
     }
 #ifdef TARGET_XARCH
-    else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) &&
+    else if (HWIntrinsicInfo::MaybeMemoryStore(GetHWIntrinsicId()) &&
              (category == HW_Category_IMM || category == HW_Category_Scalar))
     {
         // Some intrinsics (without HW_Category_MemoryStore) also have MemoryStore semantics
@@ -21362,9 +21362,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
         // unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low)
         //
         // So, the 3-argument form is MemoryStore
-        if (HWIntrinsicInfo::lookupNumArgs(this) == 3)
+        if (GetOperandCount() == 3)
         {
-            switch (gtHWIntrinsicId)
+            switch (GetHWIntrinsicId())
             {
                 case NI_BMI2_MultiplyNoFlags:
                 case NI_BMI2_X64_MultiplyNoFlags:
