@@ -5221,26 +5221,23 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
             return false;
 #endif // FEATURE_ARG_SPLIT
 
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
         case GT_SIMD:
-            if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
-            {
-                assert(this->AsSIMD()->gtOp1 != nullptr);
-                return this->AsSIMD()->gtOp1->TryGetUseList(def, use);
-            }
-
-            return TryGetUseBinOp(def, use);
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
+#endif
+            for (GenTree** opUse : this->AsMultiOp()->UseEdges())
             {
-                return this->AsHWIntrinsic()->gtOp1->TryGetUseList(def, use);
+                if (*opUse == def)
+                {
+                    *use = opUse;
+                    return true;
+                }
             }
-
-            return TryGetUseBinOp(def, use);
-#endif // FEATURE_HW_INTRINSICS
+            return false;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         // Special nodes
         case GT_PHI:
@@ -5413,22 +5410,6 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
             assert(this->OperIsBinary());
             return TryGetUseBinOp(def, use);
     }
-}
-
-bool GenTree::TryGetUseList(GenTree* def, GenTree*** use)
-{
-    assert(def != nullptr);
-    assert(use != nullptr);
-
-    for (GenTreeArgList* node = this->AsArgList(); node != nullptr; node = node->Rest())
-    {
-        if (def == node->gtOp1)
-        {
-            *use = &node->gtOp1;
-            return true;
-        }
-    }
-    return false;
 }
 
 bool GenTree::TryGetUseBinOp(GenTree* def, GenTree*** use)
