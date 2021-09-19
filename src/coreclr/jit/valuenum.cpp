@@ -9538,33 +9538,26 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 // Does value-numbering for a GT_HWINTRINSIC node
-void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
+void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
-    assert(tree->OperGet() == GT_HWINTRINSIC);
-    GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
-    assert(hwIntrinsicNode != nullptr);
-
     // For safety/correctness we must mutate the global heap valuenumber
     // for any HW intrinsic that performs a memory store operation
-    if (hwIntrinsicNode->OperIsMemoryStore())
+    if (tree->OperIsMemoryStore())
     {
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    if ((tree->AsOp()->gtOp1 != nullptr) && tree->gtGetOp1()->OperIs(GT_LIST))
+    if (tree->GetOperandCount() > 2)
     {
-        // TODO-CQ: allow intrinsics with GT_LIST to be properly VN'ed, it will
+        // TODO-CQ: allow intrinsics with > 2 operands to be properly VN'ed, it will
         // allow use to process things like Vector128.Create(1,2,3,4) etc.
-        // Generate unique VN for now.
+        // Generate unique VN for now to retaing previois behavior.
         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         return;
     }
 
-    // We don't expect GT_LIST to be in the second op
-    assert((tree->AsOp()->gtOp2 == nullptr) || !tree->gtGetOp2()->OperIs(GT_LIST));
-
     VNFunc func         = GetVNFuncForNode(tree);
-    bool   isMemoryLoad = hwIntrinsicNode->OperIsMemoryLoad();
+    bool   isMemoryLoad = tree->OperIsMemoryLoad();
 
     // If we have a MemoryLoad operation we will use the fgValueNumberByrefExposedLoad
     // method to assign a value number that depends upon fgCurMemoryVN[ByrefExposed] ValueNumber
@@ -9573,7 +9566,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     {
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
 
         // The addrVN incorporates both op1's ValueNumber and the func operation
         // The func is used because operations such as LoadLow and LoadHigh perform
@@ -9588,11 +9581,11 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         tree->gtVNPair.SetLiberal(loadVN);
         tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, op1Xvnp);
-        fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
+        fgValueNumberAddExceptionSetForIndirection(tree, tree->Op(1));
         return;
     }
 
-    bool encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
+    bool encodeResultType = vnEncodesResultTypeForHWIntrinsic(tree->GetHWIntrinsicId());
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair;
@@ -9600,8 +9593,8 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 
     if (encodeResultType)
     {
-        ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->GetSimdSize());
-        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->GetSimdBaseType()));
+        ValueNum vnSize     = vnStore->VNForIntCon(tree->GetSimdSize());
+        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(tree->GetSimdBaseType()));
         ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
         resvnp.SetBoth(simdTypeVN);
 
@@ -9615,10 +9608,10 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 #endif
     }
 
-    const bool isVariableNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId) == -1;
+    const bool isVariableNumArgs = HWIntrinsicInfo::lookupNumArgs(tree->GetHWIntrinsicId()) == -1;
 
     // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
-    if (tree->AsOp()->gtOp1 == nullptr)
+    if (tree->GetOperandCount() == 0)
     {
         // Currently we don't have intrinsics with variable number of args with a parameter-less option.
         assert(!isVariableNumArgs);
@@ -9639,9 +9632,9 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     {
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
 
-        if (tree->AsOp()->gtOp2 == nullptr)
+        if (tree->GetOperandCount() == 1)
         {
             excSetPair = op1Xvnp;
 
@@ -9660,7 +9653,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         {
             ValueNumPair op2vnp;
             ValueNumPair op2Xvnp;
-            vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+            vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
 
             excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
             if (encodeResultType)
