@@ -649,7 +649,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitN);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInitN);
 
     // Right now this intrinsic is supported only on TYP_FLOAT vectors
     var_types baseType = simdNode->GetSimdBaseType();
@@ -678,19 +678,17 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
     // We will first consume the list items in execution (left to right) order,
     // and record the registers.
     regNumber operandRegs[SIMD_INTRINSIC_MAX_PARAM_COUNT];
-    unsigned  initCount = 0;
-    for (GenTree* list = simdNode->gtGetOp1(); list != nullptr; list = list->gtGetOp2())
+    size_t    initCount = simdNode->GetOperandCount();
+    for (size_t i = 1; i <= initCount; i++)
     {
-        assert(list->OperGet() == GT_LIST);
-        GenTree* listItem = list->gtGetOp1();
-        assert(listItem->TypeGet() == baseType);
-        assert(!listItem->isContained());
-        regNumber operandReg   = genConsumeReg(listItem);
-        operandRegs[initCount] = operandReg;
-        initCount++;
+        GenTree* operand = simdNode->Op(i);
+        assert(operand->TypeIs(baseType));
+        assert(!operand->isContained());
+
+        operandRegs[i - 1] = genConsumeReg(operand);
     }
 
-    unsigned int offset = 0;
+    unsigned offset = 0;
     for (unsigned i = 0; i < initCount; i++)
     {
         // We will now construct the vector from the list items in reverse order.
