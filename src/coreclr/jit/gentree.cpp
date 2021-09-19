@@ -2148,7 +2148,7 @@ AGAIN:
 
 #ifdef FEATURE_SIMD
                 case GT_SIMD:
-                    hash += tree->AsSIMD()->gtSIMDIntrinsicID;
+                    hash += tree->AsSIMD()->GetSIMDIntrinsicId();
                     hash += tree->AsSIMD()->GetSimdBaseType();
                     hash += tree->AsSIMD()->GetSimdSize();
                     break;
@@ -2156,7 +2156,7 @@ AGAIN:
 
 #ifdef FEATURE_HW_INTRINSICS
                 case GT_HWINTRINSIC:
-                    hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
+                    hash += tree->AsHWIntrinsic()->GetHWIntrinsicId();
                     hash += tree->AsHWIntrinsic()->GetSimdBaseType();
                     hash += tree->AsHWIntrinsic()->GetSimdSize();
                     hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
@@ -2249,6 +2249,21 @@ AGAIN:
                 hash = genTreeHashAdd(hash, gtHashValue(use.GetNode()));
             }
             break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            // TODO-List: rewrite with a general visitor / iterator?
+            for (GenTree* operand : tree->AsMultiOp()->Operands())
+            {
+                hash = genTreeHashAdd(hash, gtHashValue(operand));
+            }
+            break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         case GT_PHI:
             for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
