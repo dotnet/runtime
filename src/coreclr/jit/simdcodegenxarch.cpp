@@ -467,9 +467,9 @@ void CodeGen::genSIMDZero(var_types targetType, var_types baseType, regNumber ta
 //
 void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInit);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
@@ -581,7 +581,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             srcReg = targetReg;
         }
 
-        ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+        ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
         GetEmitter()->emitIns_R_R(ins, emitActualTypeSize(targetType), targetReg, srcReg);
     }
     else
