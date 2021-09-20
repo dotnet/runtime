@@ -85,7 +85,7 @@ namespace System.Text.RegularExpressions.Generator
                     break;
                 }
 
-                // If this isn't 
+                // If this isn't a RegexGeneratorAttribute, skip it.
                 if (!attributeData.AttributeClass.Equals(regexGeneratorAttributeSymbol))
                 {
                     continue;
@@ -199,29 +199,8 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Determine the namespace the class is declared in, if any
-            string? ns = null;
-            SyntaxNode? potentialNamespaceParent = typeDec.Parent;
-            while (potentialNamespaceParent is not null &&
-                    potentialNamespaceParent is not NamespaceDeclarationSyntax &&
-                    potentialNamespaceParent is not FileScopedNamespaceDeclarationSyntax)
-            {
-                potentialNamespaceParent = potentialNamespaceParent.Parent;
-            }
-
-            if (potentialNamespaceParent is BaseNamespaceDeclarationSyntax namespaceParent)
-            {
-                ns = namespaceParent.Name.ToString();
-                while (true)
-                {
-                    namespaceParent = namespaceParent.Parent as NamespaceDeclarationSyntax;
-                    if (namespaceParent is null)
-                    {
-                        break;
-                    }
-
-                    ns = $"{namespaceParent.Name}.{ns}";
-                }
-            }
+            string? ns = regexMethodSymbol?.ContainingType?.ContainingNamespace?.ToDisplayString(
+                SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
 
             var rc = new RegexType
             {

@@ -207,6 +207,25 @@ namespace System.Text.RegularExpressions.Generator.Tests
         }
 
         [Fact]
+        public async Task Valid_ClassWithNestedNamespaces()
+        {
+            Assert.Empty(await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                namespace A
+                {
+                    namespace B
+                    {
+                        partial class C
+                        {
+                            [RegexGenerator(""ab"")]
+                            private static partial Regex Valid();
+                        }
+                    }
+                }
+            ", compile: true));
+        }
+
+        [Fact]
         public async Task Valid_NestedClassWithoutNamespace()
         {
             Assert.Empty(await RunGenerator(@"

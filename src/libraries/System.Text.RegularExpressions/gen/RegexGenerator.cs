@@ -25,7 +25,9 @@ namespace System.Text.RegularExpressions.Generator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValueProvider<ImmutableArray<object?>> typesAndCompilation =
+            // Contains one entry per regex method, either the generated code for that regex method,
+            // a diagnostic to fail with, or null if no action should be taken for that regex.
+            IncrementalValueProvider<ImmutableArray<object?>> codeOrDiagnostics =
                 context.SyntaxProvider
 
                 // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator
@@ -35,7 +37,9 @@ namespace System.Text.RegularExpressions.Generator
                 // Pair each with the compilation
                 .Combine(context.CompilationProvider)
 
-                // Use a custom comparer that ignores the compilation so that it doesn't interface with the generators caching of results based on MethodDeclarationSyntax
+                // Use a custom comparer that ignores the compilation. We want to avoid regenerating for regex methods
+                // that haven't been changed, but any change to a regex method will change the Compilation, so we ignore
+                // the Compilation for purposes of caching.
                 .WithComparer(new LambdaComparer<(MethodDeclarationSyntax, Compilation)>(static (left, right) => left.Item1.Equals(left.Item2), static o => o.Item1.GetHashCode()))
 
                 // Get the resulting code string or error Diagnostic for each MethodDeclarationSyntax/Compilation pair
@@ -48,7 +52,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // When there something to output, take all the generated strings and concatenate them to output,
             // and raise all of the created diagnostics.
-            context.RegisterSourceOutput(typesAndCompilation, static (context, results) =>
+            context.RegisterSourceOutput(codeOrDiagnostics, static (context, results) =>
             {
                 var code = new List<string>(s_headersAndUsings.Length + results.Length);
 
