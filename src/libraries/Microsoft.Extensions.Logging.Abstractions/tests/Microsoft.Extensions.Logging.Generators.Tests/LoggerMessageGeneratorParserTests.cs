@@ -680,9 +680,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);    // should fail quietly on broken code
         }
 
-#if false
         [Fact]
-        [ActiveIssue("todo", TestPlatforms.Browser)]
         internal void MultipleTypeDefinitions()
         {
             // Adding a dependency to an assembly that has internal definitions of public types
@@ -730,7 +728,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(1, generatedSources.Length);
             Assert.Equal(21, generatedSources[0].SourceText.Lines.Count);
         }
-#endif
 
         private static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
             string code,
