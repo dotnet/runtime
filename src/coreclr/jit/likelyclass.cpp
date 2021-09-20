@@ -205,14 +205,12 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                     LikelyClassHistogramEntry const hist0 = h.HistogramEntryAt(0);
                     LikelyClassHistogramEntry const hist1 = h.HistogramEntryAt(0);
                     // Fast path for two classes
-                    if ((hist0.m_count >= hist1.m_count) && (hist0.m_mt != 0) &&
-                        !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
+                    if ((hist0.m_count >= hist1.m_count) && !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
                     {
                         pLikelyClasses[0].likelihood = (100 * hist0.m_count) / h.m_totalCount;
                         pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
 
-                        if ((maxLikelyClasses > 1) && (hist1.m_mt != 0) &&
-                            !ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
+                        if ((maxLikelyClasses > 1) && !ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
                         {
                             pLikelyClasses[1].likelihood = (100 * hist1.m_count) / h.m_totalCount;
                             pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)hist1.m_mt;
@@ -221,13 +219,12 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                         return 1;
                     }
 
-                    if ((hist1.m_mt != 0) && !ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
+                    if (!ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
                     {
                         pLikelyClasses[0].likelihood = (100 * hist1.m_count) / h.m_totalCount;
                         pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist1.m_mt;
 
-                        if ((maxLikelyClasses > 1) && (hist0.m_mt != 0) &&
-                            !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
+                        if ((maxLikelyClasses > 1) && !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
                         {
                             pLikelyClasses[1].likelihood = (100 * hist0.m_count) / h.m_totalCount;
                             pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
@@ -258,7 +255,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                     for (unsigned m = 0; m < h.countHistogramElements; m++)
                     {
                         LikelyClassHistogramEntry const hist = h.HistogramEntryAt(m);
-                        if ((hist.m_mt != 0) && !ICorJitInfo::IsUnknownTypeHandle(hist.m_mt))
+                        if (!ICorJitInfo::IsUnknownTypeHandle(hist.m_mt))
                         {
                             sortedEntries[knownHandles++] = hist;
                         }
