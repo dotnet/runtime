@@ -212,17 +212,28 @@ namespace HttpStress
             }
         }
 
-        static (Type exception, string message, string callSite)[] ClassifyFailure(Exception exn)
+        private static (Type exception, string message, string callSite)[] ClassifyFailure(Exception exn)
         {
             var acc = new List<(Type exception, string message, string callSite)>();
 
             for (Exception? e = exn; e != null;)
             {
-                acc.Add((e.GetType(), e.Message ?? "", new StackTrace(e, true).GetFrame(0)?.ToString() ?? ""));
+                //acc.Add((e.GetType(), e.Message ?? "", new StackTrace(e, true).GetFrame(0)?.ToString() ?? ""));
+                acc.Add((e.GetType(), e.Message ?? "", GetStackFrameId(e)));
                 e = e.InnerException;
             }
 
             return acc.ToArray();
+
+            static string GetStackFrameId(Exception e)
+            {
+                StackTrace stackTrace = new StackTrace(e, true);
+                StackFrame? frame = stackTrace.GetFrame(0);
+                if (frame == null || frame.GetFileName()?.Contains("ClientOperations.cs") == true)
+                    return "";
+                else
+                    return frame.ToString();
+            }
         }
     }
 }
