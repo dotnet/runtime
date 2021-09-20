@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions.Tests
 
                 try
                 {
-                    Regex r = await RegexHelpers.GetRegexAsync(engine, @"(@)(.+)$", matchTimeout: 200);
+                    Regex r = await RegexHelpers.GetRegexAsync(engine, @"(@)(.+)$", RegexOptions.None, TimeSpan.FromMilliseconds(200));
 
                     // Normalize the domain part of the email
                     email = r.Replace(email, match =>
@@ -136,7 +136,7 @@ namespace System.Text.RegularExpressions.Tests
                         @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
                         @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-0-9a-z]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$",
                         RegexOptions.IgnoreCase,
-                        250);
+                        TimeSpan.FromMilliseconds(250));
 
                     return r.IsMatch(email);
                 }

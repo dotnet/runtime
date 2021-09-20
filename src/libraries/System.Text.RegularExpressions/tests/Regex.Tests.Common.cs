@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -62,15 +63,26 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        public static async Task<Regex> GetRegexAsync(RegexEngine engine, string pattern, RegexOptions options = RegexOptions.None, int matchTimeout = -1)
+        public static async Task<Regex> GetRegexAsync(RegexEngine engine, string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null)
         {
+            if (options is null)
+            {
+                Assert.Null(matchTimeout);
+            }
+
             switch (engine)
             {
                 case RegexEngine.Interpreter:
-                    return new Regex(pattern, options, TimeSpan.FromMilliseconds(matchTimeout));
+                    return
+                        options is null ? new Regex(pattern) :
+                        matchTimeout is null ? new Regex(pattern, options.Value) :
+                        new Regex(pattern, options.Value, matchTimeout.Value);
 
                 case RegexEngine.Compiled:
-                    return new Regex(pattern, options | RegexOptions.Compiled, TimeSpan.FromMilliseconds(matchTimeout));
+                    return
+                        options is null ? new Regex(pattern, RegexOptions.Compiled) :
+                        matchTimeout is null ? new Regex(pattern, options.Value | RegexOptions.Compiled) :
+                        new Regex(pattern, options.Value | RegexOptions.Compiled, matchTimeout.Value);
 
                 case RegexEngine.SourceGenerated:
                     return await RegexGeneratorHelper.SourceGenRegexAsync(pattern, options, matchTimeout);
@@ -78,9 +90,6 @@ namespace System.Text.RegularExpressions.Tests
 
             throw new ArgumentException($"Unknown engine: {engine}");
         }
-
-        public static Task<Regex> GetRegexAsync(RegexEngine engine, string pattern, RegexOptions options, TimeSpan timeout) =>
-            GetRegexAsync(engine, pattern, options, (int)timeout.TotalMilliseconds);
     }
 
     public enum RegexEngine

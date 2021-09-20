@@ -8,7 +8,7 @@ namespace System.Text.RegularExpressions.Tests
 {
     public sealed class RegexGeneratorHelper
     {
-        internal static Task<Regex> SourceGenRegexAsync(string pattern, RegexOptions options = RegexOptions.None, int matchTimeout = -1, CancellationToken cancellationToken = default) =>
+        internal static Task<Regex> SourceGenRegexAsync(string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
     }
 }

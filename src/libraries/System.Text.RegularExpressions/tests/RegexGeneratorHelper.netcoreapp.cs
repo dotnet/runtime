@@ -48,18 +48,26 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         internal static async Task<Regex> SourceGenRegexAsync(
-            string pattern, RegexOptions options = RegexOptions.None, int matchTimeout = -1, CancellationToken cancellationToken = default)
+            string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default)
         {
+            Assert.True(options is not null || matchTimeout is null);
+            string attr = $"[RegexGenerator({SymbolDisplay.FormatLiteral(pattern, quote: true)}";
+            if (options is not null)
+            {
+                attr += $", {string.Join(" | ", options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}";
+                if (matchTimeout is not null)
+                {
+                    attr += string.Create(CultureInfo.InvariantCulture, $", {(int)matchTimeout.Value.TotalMilliseconds}");
+                }
+            }
+            attr += ")]";
+
             // Create the source boilerplate for the pattern
             string code = $@"
                 using System.Text.RegularExpressions;
-
                 public partial class C
                 {{
-                    [RegexGenerator(
-                        {SymbolDisplay.FormatLiteral(pattern, quote: true)},
-                        {string.Join(" | ", options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))},
-                        {matchTimeout.ToString(CultureInfo.InvariantCulture)})]
+                    {attr}
                     public static partial Regex Get();
                 }}";
 
