@@ -26,26 +26,20 @@ namespace System.Xml.Xsl.IlGen
         MaybeSideEffects,                   // True if annotated expression might have side effects
         TailCall,                           // (Invoke * *) True if invocation can be compiled as using .tailcall
         DodMerge,                           // (Dod (Loop * (Invoke * *))), where invoked function returns nodes in document order
-        IsReferenced // True if the annotated global iterator is referenced at least once
+        IsReferenced                        // True if the annotated global iterator is referenced at least once
     }
 
     internal enum OptimizerPatternArgument
     {
         StepNode = 0,                       // Step, QilNode: The QilNode of the inner step expression (Content, DescendantOrSelf, XPathFollowing, Union, etc.)
         StepInput = 1,                      // Step, QilNode: The expression from which navigation begins
-
         ElementQName = 2,                   // FilterElements, QilLiteral: All but elements of this QName are filtered by FilterElements expression
-
         KindTestType = 2,                   // FilterContentKind, XmlType: All but nodes of this XmlType are filtered by FilterContentKind expression
-
         IndexedNodes = 0,                   // EqualityIndex, QilNode: Expression that returns the nodes to be indexed
         KeyExpression = 1,                  // EqualityIndex, QilNode: Expression that returns the keys for the index
-
         DodStep = 2,                        // JoinAndDod | DodReverse, QilNode: Last step in a JoinAndDod expression, or only step in DodReverse expression
-
         MaxPosition = 2,                    // MaxPosition, int: Maximum position of the annotated iterator or length expression
-
-        RtfText = 2 // SingleTextRtf, QilNode: Expression that constructs the text of the simple text Rtf
+        RtfText = 2                         // SingleTextRtf, QilNode: Expression that constructs the text of the simple text Rtf
     }
 
     /// <summary>

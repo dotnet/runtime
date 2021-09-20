@@ -465,7 +465,7 @@ namespace System.Xml.Xsl.IlGen
         TagNameAndMappings,     // Tagname contains prefix:localName and prefix is mapped to a namespace
         TagNameAndNamespace,    // Tagname contains prefix:localName and namespace is provided
         QName,                  // Name is computed QName (no prefix available)
-        StackName // Element name has already been pushed onto XmlQueryOutput stack
+        StackName               // Element name has already been pushed onto XmlQueryOutput stack
     }
 
     /// <summary>
