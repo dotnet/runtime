@@ -292,10 +292,7 @@ namespace System.IO
         [Fact]
         public void FileInfo_Create_NullFileSecurity()
         {
-            var info = new FileInfo("path");
-
-            Assert.Throws<ArgumentNullException>("fileSecurity", () =>
-                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, null));
+            Verify_FileSecurity_CreateFile(expectedSecurity: null);
         }
 
         [Fact]
@@ -380,7 +377,8 @@ namespace System.IO
             }
             else
             {
-                info.Create(mode, rights, share, bufferSize, options, security);
+                info.Create(mode, rights, share, bufferSize, options, security).Dispose();
+                Assert.True(info.Exists);
             }
         }
 
@@ -410,7 +408,6 @@ namespace System.IO
             FileSecurity actualSecurity = actualInfo.GetAccessControl(AccessControlSections.Access);
             VerifyAccessSecurity(expectedSecurity, actualSecurity);
         }
-
 
         [Theory]
         [MemberData(nameof(RightsToDeny))]
@@ -565,9 +562,12 @@ namespace System.IO
             Assert.True(fileInfo.Exists);
             tempRootDir.CreatedSubfiles.Add(fileInfo);
 
-            var actualFileInfo = new FileInfo(path);
-            FileSecurity actualSecurity = actualFileInfo.GetAccessControl(AccessControlSections.Access);
-            VerifyAccessSecurity(expectedSecurity, actualSecurity);
+            if (expectedSecurity != null)
+            {
+                var actualFileInfo = new FileInfo(path);
+                FileSecurity actualSecurity = actualFileInfo.GetAccessControl(AccessControlSections.Access);
+                VerifyAccessSecurity(expectedSecurity, actualSecurity);
+            }
         }
 
         private void Verify_DirectorySecurity_CreateDirectory(DirectorySecurity expectedSecurity)
