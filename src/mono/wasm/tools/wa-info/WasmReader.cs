@@ -456,6 +456,7 @@ namespace WebAssemblyInfo
 
         string moduleName = "<Unknown>";
         NameMap functionNames = new();
+        Dictionary<string, UInt32> nameToFunction = new();
         NameMap globalNames = new();
         NameMap dataSegmentNames = new();
         Dictionary<UInt32, NameMap> localNames = new();
@@ -481,7 +482,7 @@ namespace WebAssemblyInfo
                             Console.WriteLine($"  module name: {moduleName}");
                         break;
                     case CustomSubSectionId.FunctionNames:
-                        ReadNameMap(functionNames, "function");
+                        ReadNameMap(functionNames, "function", nameToFunction);
                         break;
                     case CustomSubSectionId.LocalNames:
                         ReadIndirectNameMap(localNames, "local", "function");
@@ -522,7 +523,7 @@ namespace WebAssemblyInfo
             }
         }
 
-        Dictionary<UInt32, string> ReadNameMap(Dictionary<UInt32, string>? map, string mapName)
+        Dictionary<UInt32, string> ReadNameMap(Dictionary<UInt32, string>? map, string mapName, Dictionary<string,UInt32>? reversed = null)
         {
             var count = ReadU32();
             if (Program.Verbose2)
@@ -541,7 +542,11 @@ namespace WebAssemblyInfo
                 if (map.ContainsKey(idx))
                     Console.WriteLine($"\nwarning: duplicate {mapName} idx: {idx} = '{name}' in {mapName} names map ignored");
                 else
+                {
                     map[idx] = name;
+                    if (reversed != null)
+                        reversed[name] = idx;
+                }
             }
 
             return map;
@@ -728,6 +733,45 @@ namespace WebAssemblyInfo
                 value |= (~(Int64)0 << offset);
 
             return value;
+        }
+
+        public void PrintFunctions ()
+        {
+            if (functions == null)
+                return;
+
+            for (UInt32 idx=0; idx<functions.Length; idx++)
+            {
+                string? name = null;
+
+                if (Program.FunctionFilter != null)
+                {
+                    if (functionNames == null || functionNames.Count < 1)
+                        continue;
+
+                    name = functionNames[idx];
+                    if (name == null)
+                        continue;
+
+                    if (!Program.FunctionFilter.Match(name).Success)
+                        continue;
+                }
+
+                PrintFunction(idx, name);
+            }
+        }
+
+        void PrintFunction(UInt32 idx, string? name)
+        {
+            if (functions == null || functionTypes == null || funcsCode == null)
+                return;
+
+            Console.WriteLine($"{functionTypes[functions[idx].TypeIdx].ToString(name)}\n{funcsCode[idx].ToString(this)}");
+        }
+
+        public string FunctionName (UInt32 idx)
+        {
+            return functionNames[idx];
         }
     }
 }

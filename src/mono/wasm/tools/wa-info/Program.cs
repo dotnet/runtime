@@ -15,8 +15,10 @@ namespace WebAssemblyInfo
         static public bool Verbose2 { get { return VerboseLevel > 1; } }
 
         static internal Regex? AssemblyFilter;
+        static internal Regex? FunctionFilter;
         static internal Regex? TypeFilter;
         static bool AotStats;
+        static bool Disassemble;
 
         readonly static Dictionary<string, AssemblyReader> assemblies = new();
 
@@ -28,6 +30,9 @@ namespace WebAssemblyInfo
             {
                 var reader = new WasmReader(file);
                 reader.Parse();
+
+                if (Disassemble)
+                    reader.PrintFunctions();
 
                 if (!AotStats)
                     continue;
@@ -78,6 +83,12 @@ namespace WebAssemblyInfo
                 { "assembly-filter=",
                     "Filter assemblies and process only those matching {REGEX}",
                     v => AssemblyFilter = new Regex (v) },
+                { "d|disassemble",
+                    "Show functions(s) disassembled code",
+                    v => Disassemble = true },
+                { "function-filter=",
+                    "Filter wasm functions {REGEX}",
+                    v => FunctionFilter = new Regex (v) },
                 { "h|help|?",
                     "Show this message and exit",
                     v => help = v != null },

@@ -24,27 +24,41 @@ namespace WebAssemblyInfo
 
         public UInt32[] IdxArray;
 
-        public override string ToString()
+        public string ToString(WasmReader? reader)
         {
             switch (Opcode)
             {
                 case Opcode.Block:
                 case Opcode.Loop:
                 case Opcode.If:
-                    var str = $"{Opcode.ToString().ToLower()}\n{BlockToString(Block)}";
-                    return str + ((Block2 == null || Block2.Length < 1) ? "" : $"{BlockToString(Block2)}");
+                    var str = $"{Opcode.ToString().ToLower()}\n{BlockToString(Block, reader)}";
+                    return str + ((Block2 == null || Block2.Length < 1) ? "" : $"{BlockToString(Block2, reader)}");
                 case Opcode.Local_Get:
                 case Opcode.Local_Set:
                 case Opcode.Local_Tee:
-                case Opcode.Call:
                     return $"{Opcode.ToString().ToLower()} ${Idx}";
+                case Opcode.Call:
+                    return $"{Opcode.ToString().ToLower()} ${FunctionName(Idx, reader)}";
                 case Opcode.Nop:
                 default:
                     return Opcode.ToString().ToLower();
             }
         }
 
-        string BlockToString(Instruction[] instructions)
+        static string FunctionName(UInt32 idx, WasmReader? reader)
+        {
+            if (reader == null)
+                return idx.ToString();
+
+            return reader.FunctionName(idx);
+        }
+
+        public override string ToString()
+        {
+            return ToString(null);
+        }
+
+        static string BlockToString(Instruction[] instructions, WasmReader? reader)
         {
             if (instructions == null || instructions.Length < 1)
                 return "";
@@ -52,7 +66,7 @@ namespace WebAssemblyInfo
             StringBuilder sb = new();
 
             foreach (var instruction in instructions)
-                sb.AppendLine(instruction.ToString().Indent(" "));
+                sb.AppendLine(instruction.ToString(reader).Indent(" "));
 
             return sb.ToString();
         }
@@ -80,7 +94,7 @@ namespace WebAssemblyInfo
         public LocalsBlock[] Locals;
         public Instruction[] Instructions;
 
-        public override string ToString()
+        public string ToString(WasmReader? reader)
         {
             StringBuilder sb = new();
 
@@ -88,9 +102,14 @@ namespace WebAssemblyInfo
                 sb.AppendLine(lb.ToString().Indent(" "));
 
             foreach (var instruction in Instructions)
-                sb.AppendLine(instruction.ToString().Indent(" "));
+                sb.AppendLine(instruction.ToString(reader).Indent(" "));
 
             return sb.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ToString(null);
         }
     }
 
@@ -212,10 +231,15 @@ namespace WebAssemblyInfo
         public ResultType Parameters;
         public ResultType Results;
 
+        public string ToString(string? name)
+        {
+            var results = Results.Types.Length == 0 ? "" : $" (result {Results})";
+            return $"(func {name}(param {Parameters}){results})";
+        }
+
         public override string ToString()
         {
-            var results = Results.Types.Length == 0 ? "" : $" (result {Results.ToString()})";
-            return $"(func (param {Parameters}){results})";
+            return ToString(null);
         }
     }
 
