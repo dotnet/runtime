@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Interop.Ancillary</AssemblyName>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>System.Runtime.InteropServices</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>APIs required for usage of the DllImportGenerator and related tools.</Description>
+  </PropertyGroup>
+
+</Project>

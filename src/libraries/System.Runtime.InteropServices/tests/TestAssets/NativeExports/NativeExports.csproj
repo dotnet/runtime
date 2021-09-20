@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Interop.Tests.NativeExports</AssemblyName>
+    <TargetFramework>net6.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
+    <DnneGenRollForward>Major</DnneGenRollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DNNE" Version="$(DNNEVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SharedTypes\SharedTypes.csproj" />
+  </ItemGroup>
+
+</Project>
