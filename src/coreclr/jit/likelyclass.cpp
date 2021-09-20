@@ -191,7 +191,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                 {
                     LikelyClassHistogramEntry const hist0 = h.HistogramEntryAt(0);
                     // Fast path for monomorphic cases
-                    if ((hist0.m_mt == 0) || ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
+                    if (ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
                     {
                         return 0;
                     }
