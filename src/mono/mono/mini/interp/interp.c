@@ -3499,14 +3499,6 @@ main_loop:
 			return_offset = ip [1];
 			call_args_offset = ip [3];
 
-			if (csignature->hasthis) {
-				MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*); 
-
-				if (m_class_is_valuetype (this_arg->vtable->klass)) {
-					gpointer unboxed = mono_object_unbox_internal (this_arg);
-					LOCAL_VAR (call_args_offset, gpointer) = unboxed;
-				}
-			}
 			ip += 5;
 
 			goto call;
