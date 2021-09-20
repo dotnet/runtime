@@ -7,7 +7,7 @@ namespace WebAssemblyInfo
 {
     public class SignatureDecoder : ISignatureTypeProvider<string, GenericContext>
     {
-        string GetShapeRank(ArrayShape shape)
+        static string GetShapeRank(ArrayShape shape)
         {
             StringBuilder sb = new();
 
@@ -46,7 +46,7 @@ namespace WebAssemblyInfo
             return $"{elementType}&";
         }
 
-        string GetParameterTypes(MethodSignature<string> signature)
+        static string GetParameterTypes(MethodSignature<string> signature)
         {
             StringBuilder sb = new();
             var count = signature.RequiredParameterCount;
@@ -106,47 +106,28 @@ namespace WebAssemblyInfo
 
         public string GetPrimitiveType(PrimitiveTypeCode typeCode)
         {
-            switch (typeCode)
+            return typeCode switch
             {
-                case PrimitiveTypeCode.Boolean:
-                    return "bool";
-                case PrimitiveTypeCode.Byte:
-                    return "byte";
-                case PrimitiveTypeCode.Char:
-                    return "char";
-                case PrimitiveTypeCode.Double:
-                    return "double";
-                case PrimitiveTypeCode.Int16:
-                    return "short";
-                case PrimitiveTypeCode.Int32:
-                    return "int";
-                case PrimitiveTypeCode.Int64:
-                    return "long";
-                case PrimitiveTypeCode.IntPtr:
-                    return "IntPtr";
-                case PrimitiveTypeCode.Object:
-                    return "object";
-                case PrimitiveTypeCode.SByte:
-                    return "sbyte";
-                case PrimitiveTypeCode.Single:
-                    return "float";
-                case PrimitiveTypeCode.String:
-                    return "string";
-                case PrimitiveTypeCode.TypedReference:
-                    return "TypedReference";
-                case PrimitiveTypeCode.UInt16:
-                    return "ushort";
-                case PrimitiveTypeCode.UInt32:
-                    return "uint";
-                case PrimitiveTypeCode.UInt64:
-                    return "ulong";
-                case PrimitiveTypeCode.UIntPtr:
-                    return "UIntPtr";
-                case PrimitiveTypeCode.Void:
-                    return "void";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(typeCode));
-            }
+                PrimitiveTypeCode.Boolean => "bool",
+                PrimitiveTypeCode.Byte => "byte",
+                PrimitiveTypeCode.Char => "char",
+                PrimitiveTypeCode.Double => "double",
+                PrimitiveTypeCode.Int16 => "short",
+                PrimitiveTypeCode.Int32 => "int",
+                PrimitiveTypeCode.Int64 => "long",
+                PrimitiveTypeCode.IntPtr => "IntPtr",
+                PrimitiveTypeCode.Object => "object",
+                PrimitiveTypeCode.SByte => "sbyte",
+                PrimitiveTypeCode.Single => "float",
+                PrimitiveTypeCode.String => "string",
+                PrimitiveTypeCode.TypedReference => "TypedReference",
+                PrimitiveTypeCode.UInt16 => "ushort",
+                PrimitiveTypeCode.UInt32 => "uint",
+                PrimitiveTypeCode.UInt64 => "ulong",
+                PrimitiveTypeCode.UIntPtr => "UIntPtr",
+                PrimitiveTypeCode.Void => "void",
+                _ => throw new ArgumentOutOfRangeException(nameof(typeCode)),
+            };
         }
 
         public string GetSZArrayType(string elementType)

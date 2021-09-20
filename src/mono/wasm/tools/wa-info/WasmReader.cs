@@ -9,7 +9,7 @@ namespace WebAssemblyInfo
 {
     class WasmReader
     {
-        BinaryReader reader;
+        readonly BinaryReader reader;
 
         public WasmReader(string path)
         {
@@ -186,7 +186,7 @@ namespace WebAssemblyInfo
             return ma;
         }
 
-        void DumpBytes(int count)
+        public void DumpBytes(int count)
         {
             Console.WriteLine("bytes");
 
@@ -216,7 +216,7 @@ namespace WebAssemblyInfo
 
                     (instruction.Block, op) = ReadBlock(opcode == Opcode.If ? Opcode.Else : Opcode.End);
                     if (op == Opcode.Else)
-                        (instruction.Block2, op) = ReadBlock();
+                        (instruction.Block2, _) = ReadBlock();
                     break;
                 case Opcode.Memory_Size:
                 case Opcode.Memory_Grow:
@@ -455,11 +455,11 @@ namespace WebAssemblyInfo
         }
 
         string moduleName = "<Unknown>";
-        NameMap functionNames = new();
-        Dictionary<string, UInt32> nameToFunction = new();
-        NameMap globalNames = new();
-        NameMap dataSegmentNames = new();
-        Dictionary<UInt32, NameMap> localNames = new();
+        readonly NameMap functionNames = new();
+        readonly Dictionary<string, UInt32> nameToFunction = new();
+        readonly NameMap globalNames = new();
+        readonly NameMap dataSegmentNames = new();
+        readonly Dictionary<UInt32, NameMap> localNames = new();
 
         void ReadCustomNameSection(UInt32 size)
         {
