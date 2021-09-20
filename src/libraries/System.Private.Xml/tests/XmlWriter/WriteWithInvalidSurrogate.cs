@@ -68,8 +68,8 @@ namespace System.Xml.Tests
                     (char)(SurHighStart + 5), (char)(SurLowEnd),
                     (char)(SurHighStart + 5), (char)(SurLowEnd - 1),
                     (char)(SurHighStart + 5), (char)(SurLowStart),
-                    (char)(SurHighStart + 5), (char)(SurLowStart + 1),
-                    };
+                    (char)(SurHighStart + 5), (char)(SurLowStart + 1)
+                };
 
                 // Everything should be fine, no exceptions
                 writer.WriteRaw(validSurrogatePairs, 0, validSurrogatePairs.Length);
