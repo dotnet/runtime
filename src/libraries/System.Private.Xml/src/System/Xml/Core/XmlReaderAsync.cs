@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.Xml
 {
     // Represents a reader that provides fast, non-cached forward only stream access to XML data.
-    [DebuggerDisplay("{DebuggerDisplayProxy}")]
+    [DebuggerDisplay($"{{{nameof(DebuggerDisplayProxy)}}}")]
     public abstract partial class XmlReader : IDisposable
     {
         public virtual Task<string> GetValueAsync()
