@@ -26,22 +26,25 @@ namespace WebAssemblyInfo
 
         public string ToString(WasmReader? reader)
         {
+            var opStr = Opcode.ToString().ToLower().Replace("_", ".");
             switch (Opcode)
             {
                 case Opcode.Block:
                 case Opcode.Loop:
                 case Opcode.If:
-                    var str = $"{Opcode.ToString().ToLower()}\n{BlockToString(Block, reader)}";
+                    var str = $"{opStr}\n{BlockToString(Block, reader)}";
                     return str + ((Block2 == null || Block2.Length < 1) ? "" : $"{BlockToString(Block2, reader)}");
                 case Opcode.Local_Get:
                 case Opcode.Local_Set:
                 case Opcode.Local_Tee:
-                    return $"{Opcode.ToString().ToLower()} ${Idx}";
+                    return $"{opStr} ${Idx}";
                 case Opcode.Call:
-                    return $"{Opcode.ToString().ToLower()} ${FunctionName(Idx, reader)}";
+                    return $"{opStr} ${FunctionName(Idx, reader)}({Idx})";
+                case Opcode.I32_Const:
+                    return $"{opStr} {I32}";
                 case Opcode.Nop:
                 default:
-                    return Opcode.ToString().ToLower();
+                    return opStr;
             }
         }
 
