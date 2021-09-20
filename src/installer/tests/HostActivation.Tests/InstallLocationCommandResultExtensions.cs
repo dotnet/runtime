@@ -45,14 +45,14 @@ namespace HostActivation.Tests
             return assertion.HaveStdErrContaining($"Using global installation location [{installLocation}]");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveFoundDefaultInstallLocationInConfigFile(this CommandResultAssertions assertion, string installLocation)
+        public static AndConstraint<CommandResultAssertions> HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationFile)
         {
-            return assertion.HaveStdErrContaining($"Found install location path '{installLocation}'.");
+            return assertion.HaveStdErrContaining($"Looking for install_location file in '{installLocationFile}'.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveFoundArchSpecificInstallLocationInConfigFile(this CommandResultAssertions assertion, string installLocation, string arch)
+        public static AndConstraint<CommandResultAssertions> HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationFile)
         {
-            return assertion.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}' ('{arch}').");
+            return assertion.HaveStdErrContaining($"Looking for architecture specific install_location file in '{installLocationFile}'.");
         }
     }
 }

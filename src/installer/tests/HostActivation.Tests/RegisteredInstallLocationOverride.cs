@@ -57,6 +57,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // located in /etc/dotnet/install_location
                 // So we need to redirect it to a different place here.
                 string directory = Path.Combine(TestArtifact.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
                 Directory.CreateDirectory(directory);
                 PathValueOverride = directory;
             }

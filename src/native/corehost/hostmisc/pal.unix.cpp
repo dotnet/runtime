@@ -453,12 +453,12 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
 {
     file_found = true;
     bool install_location_found = false;
-    FILE* install_location_file = pal::file_open(arch_specific_install_location_file_path, "r");
+    FILE* install_location_file = pal::file_open(file_path, "r");
     if (install_location_file != nullptr)
     {
         if (!get_line_from_file(install_location_file, install_location))
         {
-            trace::warning(_X("Did not find any install location in '%s'."), install_location_file_path.c_str());
+            trace::warning(_X("Did not find any install location in '%s'."), file_path.c_str());
         }
         else
         {
@@ -473,12 +473,12 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
     {
         if (errno == ENOENT)
         {
-            trace::verbose(_X("The install_location file ['%s'] does not exist - skipping."), install_location_file_path.c_str());
+            trace::verbose(_X("The install_location file ['%s'] does not exist - skipping."), file_path.c_str());
             file_found = false;
         }
         else
         {
-            trace::error(_X("The install_location file ['%s'] failed to open: %s."), install_location_file_path.c_str(), pal::strerror(errno));
+            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno));
         }
     }
 
@@ -499,8 +499,8 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     //  ***************************
 
     pal::string_t install_location_path = get_dotnet_self_registered_config_location();
-    pal::string_t arch_specific_install_location_file_path = 
-        append_path(install_location_path, _X("install_location.") + to_lower(get_arch));
+    pal::string_t arch_specific_install_location_file_path = install_location_path;
+    append_path(&arch_specific_install_location_file_path, (_X("install_location.") + to_lower(get_arch())).c_str());
     trace::verbose(_X("Looking for architecture specific install_location file in '%s'."), arch_specific_install_location_file_path.c_str());
 
     pal::string_t install_location;
@@ -512,8 +512,9 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
             return false;
         }
 
-        pal::string_t legacy_install_location_file_path = append_path(install_location_path, _X("install_location"));
-        trace::verbose(_X("Looking for install_location file in '%s'."), arch_specific_install_location_file_path.c_str());
+        pal::string_t legacy_install_location_file_path = install_location_path;
+        append_path(&legacy_install_location_file_path, _X("install_location"));
+        trace::verbose(_X("Looking for install_location file in '%s'."), legacy_install_location_file_path.c_str());
 
         if (!get_install_location_from_file(legacy_install_location_file_path, file_found, install_location))
         {
