@@ -162,7 +162,7 @@ namespace System.Xml
                 {
                     case XmlNodeType.Attribute:
                         MoveToElement();
-                        goto case XmlNodeType.Element;
+                        return NodeType;
                     case XmlNodeType.Element:
                     case XmlNodeType.EndElement:
                     case XmlNodeType.CDATA:
@@ -354,7 +354,7 @@ namespace System.Xml
                             ResolveEntity();
                             break;
                         }
-                        goto default;
+                        goto ReturnContent;
                     default:
                         goto ReturnContent;
                 }
