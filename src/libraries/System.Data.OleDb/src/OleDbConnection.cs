@@ -568,6 +568,11 @@ namespace System.Data.OleDb
             return GetOpenConnection().SupportSchemaRowset(schema);
         }
 
+        internal OleDbTransaction? ValidateTransaction(OleDbTransaction? transaction, string method)
+        {
+            return GetOpenConnection().ValidateTransaction(transaction, method);
+        }
+
         internal static unsafe Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
         {
             if ((0 <= (int)hresult) && ((null == connection) || (null == connection.Events[EventInfoMessage])))
