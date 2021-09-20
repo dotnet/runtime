@@ -16985,20 +16985,6 @@ void Compiler::fgPromoteStructs()
         }
     }
 
-#ifdef TARGET_ARM
-    if (structPromotionHelper->GetRequiresScratchVar())
-    {
-        // Ensure that the scratch variable is allocated, in case we
-        // pass a promoted struct as an argument.
-        if (lvaPromotedStructAssemblyScratchVar == BAD_VAR_NUM)
-        {
-            lvaPromotedStructAssemblyScratchVar =
-                lvaGrabTempWithImplicitUse(false DEBUGARG("promoted struct assembly scratch var."));
-            lvaTable[lvaPromotedStructAssemblyScratchVar].lvType = TYP_I_IMPL;
-        }
-    }
-#endif // TARGET_ARM
-
 #ifdef DEBUG
     if (verbose)
     {
