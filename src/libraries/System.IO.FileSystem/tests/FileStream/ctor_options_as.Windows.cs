@@ -32,7 +32,7 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.Equal(0, fs.Length)
+                Assert.Equal(0, fs.Length);
                 Assert.Equal(preallocationSize, GetAllocatedSize(fs));
             }
         }
