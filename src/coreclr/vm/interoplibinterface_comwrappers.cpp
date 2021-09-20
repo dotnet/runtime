@@ -373,23 +373,22 @@ namespace
                 {
                     // The context has been detach for this cache.
                     // Since the state of this object is now under
-                    // the control of the Finalizer/GC, we null it out. This
-                    // allows us to ignore it when we iterate over the
-                    // collection later. The null here is needed because
-                    // it indicates the array size is going to change
-                    // and a new array allocated. That allocation is an
-                    // opportunity for the GC to remove it from this hashmap
-                    // and free the external object context.
+                    // the control of the Finalizer/GC, we null it out. 
+                    // In this scenario, the array size is going to change
+                    // and a new array will be allocated. We null out the
+                    // object here because that allocation of the new array
+                    // is an opportunity for the GC to remove the object from
+                    // this hashmap and free the external object context.
                     STRESS_LOG1(LF_INTEROP, LL_INFO100, "EOC no longer active: 0x%p\n", inst);
                     localList[i] = NULL;
                 }
             }
 
             // During the allocation of the array to return, a GC could have
-            // occurred and objects detach from this cache. In order to avoid
-            // having null array elements we will allocate a new array.
+            // occurred and objects detached from this cache. In order to avoid
+            // having null array elements, we will allocate a new array.
             // This subsequent allocation is okay because the array we are
-            // replacing extends all object lifetimes.
+            // replacing has already extended all object lifetimes.
             if (objCount < localList.Size())
             {
                 gc.arrRefTmp = (PTRARRAYREF)AllocateObjectArray((DWORD)objCount, g_pObjectClass);
