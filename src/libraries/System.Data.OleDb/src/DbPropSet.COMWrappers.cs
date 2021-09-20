@@ -21,7 +21,7 @@ namespace System.Data.OleDb
             if ((errorInfoHr == OleDbHResult.S_OK) && (pErrorInfo != IntPtr.Zero))
             {
                 UnsafeNativeMethods.IErrorInfo errorInfo = (UnsafeNativeMethods.IErrorInfo)OleDbComWrappers.Instance
-                    .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);;
+                    .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);
                 try
                 {
                     ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
