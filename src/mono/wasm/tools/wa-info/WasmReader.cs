@@ -139,6 +139,9 @@ namespace WebAssemblyInfo
                 // read expr
                 (funcsCode[i].Instructions, _) = ReadBlock();
 
+                if (Program.Verbose2)
+                    Console.WriteLine(funcsCode[i].ToString().Indent("    "));
+
                 reader.BaseStream.Seek(pos + size, SeekOrigin.Begin);
             }
         }

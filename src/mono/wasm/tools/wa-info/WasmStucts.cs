@@ -23,6 +23,39 @@ namespace WebAssemblyInfo
         public MemArg MemArg;
 
         public UInt32[] IdxArray;
+
+        public override string ToString()
+        {
+            switch (Opcode)
+            {
+                case Opcode.Block:
+                case Opcode.Loop:
+                case Opcode.If:
+                    var str = $"{Opcode.ToString().ToLower()}\n{BlockToString(Block)}";
+                    return str + ((Block2 == null || Block2.Length < 1) ? "" : $"{BlockToString(Block2)}");
+                case Opcode.Local_Get:
+                case Opcode.Local_Set:
+                case Opcode.Local_Tee:
+                case Opcode.Call:
+                    return $"{Opcode.ToString().ToLower()} ${Idx}";
+                case Opcode.Nop:
+                default:
+                    return Opcode.ToString().ToLower();
+            }
+        }
+
+        string BlockToString(Instruction[] instructions)
+        {
+            if (instructions == null || instructions.Length < 1)
+                return "";
+
+            StringBuilder sb = new();
+
+            foreach (var instruction in instructions)
+                sb.AppendLine(instruction.ToString().Indent(" "));
+
+            return sb.ToString();
+        }
     }
 
     struct MemArg
@@ -35,12 +68,30 @@ namespace WebAssemblyInfo
     {
         public UInt32 Count;
         public ValueType Type;
+
+        public override string ToString()
+        {
+            return $"local {Count} {Type}";
+        }
     }
 
     struct Code
     {
         public LocalsBlock[] Locals;
         public Instruction[] Instructions;
+
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+
+            foreach (LocalsBlock lb in Locals)
+                sb.AppendLine(lb.ToString().Indent(" "));
+
+            foreach (var instruction in Instructions)
+                sb.AppendLine(instruction.ToString().Indent(" "));
+
+            return sb.ToString();
+        }
     }
 
     enum BlockTypeKind
