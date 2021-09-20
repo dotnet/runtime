@@ -426,7 +426,7 @@ namespace System.Xml
                         WriteFullEndElement();
                         break;
                 }
-            } while (reader.Read() && (d < reader.Depth || d == reader.Depth && reader.NodeType == XmlNodeType.EndElement));
+            } while (reader.Read() && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
         }
 
         // Copies the current node from the given XPathNavigator to the writer (including child nodes).
@@ -456,7 +456,7 @@ namespace System.Xml
                             do
                             {
                                 IXmlSchemaInfo? schemaInfo = navigator.SchemaInfo;
-                                if (defattr || schemaInfo is not { IsDefault: true })
+                                if (defattr || (schemaInfo == null || !schemaInfo.IsDefault))
                                 {
                                     WriteStartAttribute(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI);
                                     // copy string value to writer
