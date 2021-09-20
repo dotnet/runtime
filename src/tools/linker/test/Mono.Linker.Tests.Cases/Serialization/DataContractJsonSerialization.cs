@@ -7,7 +7,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Serialization
 {
 	[Reference ("System.Runtime.Serialization.dll")]
-	[Reference ("System.Private.DataContractSerialization.dll")]
 	[Reference ("System.Runtime.Serialization.Primitives.dll")]
 	[Reference ("System.Runtime.Serialization.Json.dll")]
 	public class DataContractJsonSerialization

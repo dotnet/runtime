@@ -107,24 +107,31 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
+		static string GetReferenceDir ()
+		{
+			string runtimeDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
+			string ncaVersion = Path.GetFileName (runtimeDir);
+			var dotnetDir = Path.GetDirectoryName (Path.GetDirectoryName (Path.GetDirectoryName (runtimeDir)));
+			return Path.Combine (dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TFMDirectoryName);
+		}
 
 		public virtual IEnumerable<string> GetCommonReferencedAssemblies (NPath workingDirectory)
 		{
 			yield return workingDirectory.Combine ("Mono.Linker.Tests.Cases.Expectations.dll").ToString ();
 			if (Characteristics.HasFlag (TestRunCharacteristics.TargetingNetCore)) {
-				string frameworkDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
+				string referenceDir = GetReferenceDir ();
 
-				yield return typeof (object).Assembly.Location;
-				yield return Path.Combine (frameworkDir, "System.Runtime.dll");
-				yield return Path.Combine (frameworkDir, "System.Linq.Expressions.dll");
-				yield return Path.Combine (frameworkDir, "System.ComponentModel.TypeConverter.dll");
-				yield return Path.Combine (frameworkDir, "System.Console.dll");
-				yield return Path.Combine (frameworkDir, "mscorlib.dll");
-				yield return Path.Combine (frameworkDir, "System.ObjectModel.dll");
-				yield return Path.Combine (frameworkDir, "System.Runtime.Extensions.dll");
+				yield return Path.Combine (referenceDir, "mscorlib.dll");
+				yield return Path.Combine (referenceDir, "System.Collections.dll");
+				yield return Path.Combine (referenceDir, "System.ComponentModel.TypeConverter.dll");
+				yield return Path.Combine (referenceDir, "System.Console.dll");
+				yield return Path.Combine (referenceDir, "System.Linq.Expressions.dll");
+				yield return Path.Combine (referenceDir, "System.ObjectModel.dll");
+				yield return Path.Combine (referenceDir, "System.Runtime.dll");
+				yield return Path.Combine (referenceDir, "System.Runtime.Extensions.dll");
+				yield return Path.Combine (referenceDir, "System.Runtime.InteropServices.dll");
 			} else {
 				yield return "mscorlib.dll";
-
 			}
 		}
 
@@ -134,9 +141,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				if (fileName.StartsWith ("System.", StringComparison.Ordinal) || fileName.StartsWith ("Mono.", StringComparison.Ordinal) || fileName.StartsWith ("Microsoft.", StringComparison.Ordinal)) {
 					if (Characteristics.HasFlag (TestRunCharacteristics.TargetingNetCore)) {
-						// Try to find the assembly alongside the host's framework dependencies
-						var frameworkDir = Path.GetFullPath (Path.GetDirectoryName (typeof (object).Assembly.Location));
-						var filePath = Path.Combine (frameworkDir, fileName);
+						var referenceDir = GetReferenceDir ();
+						var filePath = Path.Combine (referenceDir, fileName);
 
 						if (File.Exists (filePath)) {
 							yield return filePath;
