@@ -42,11 +42,9 @@ class Module;
 class EditAndContinueModule;
 
 class PEFile;
-class PEModule;
 class PEAssembly;
 class SimpleRWLock;
 
-typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
 
 // --------------------------------------------------------------------------------
@@ -78,9 +76,6 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 //
 // 4. Dynamic - these are not actual PE images at all, but are placeholders
 //    for reflection-based modules.
-//
-// PEFiles are segmented into two subtypes: PEAssembly and PEModule.  The formere
-// is a file to be loaded as an assembly, and the latter is to be loaded as a module.
 //
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
 // See code:Module for more on modules
@@ -120,7 +115,6 @@ private:
     // ------------------------------------------------------------
 
     friend class DomainFile;
-    friend class PEModule;
 
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
@@ -199,8 +193,6 @@ public:
 
     BOOL IsAssembly() const;
     PTR_PEAssembly AsAssembly();
-    BOOL IsModule() const;
-    PTR_PEModule AsModule();
     BOOL IsSystem() const;
     BOOL IsDynamic() const;
     BOOL IsResource() const;
@@ -346,7 +338,6 @@ protected:
     {
         PEFILE_SYSTEM                 = 0x01,
         PEFILE_ASSEMBLY               = 0x02,
-        PEFILE_MODULE                 = 0x04,
     };
 
     // ------------------------------------------------------------

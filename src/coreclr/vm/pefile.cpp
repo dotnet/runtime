@@ -29,8 +29,7 @@
 #ifndef DACCESS_COMPILE
 
 // ================================================================================
-// PEFile class - this is an abstract base class for PEModule and PEAssembly
-// <TODO>@todo: rename TargetFile</TODO>
+// PEFile class - this is an abstract base class for PEAssembly
 // ================================================================================
 
 PEFile::PEFile(PEImage *identity) :
@@ -113,7 +112,6 @@ PEFile *PEFile::Open(PEImage *image)
         PRECONDITION(image != NULL);
         PRECONDITION(image->CheckFormat());
         POSTCONDITION(RETVAL != NULL);
-        POSTCONDITION(!RETVAL->IsModule());
         POSTCONDITION(!RETVAL->IsAssembly());
         THROWS;
         GC_TRIGGERS;
