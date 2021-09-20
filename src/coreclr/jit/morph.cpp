@@ -182,7 +182,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         {
             oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
         }
-        else if (JitConfig.EnableFltToIntX86Compat() > 0)
+        else if ((srcType == TYP_FLOAT) && JitConfig.EnableFltToIntX86Compat() > 0)
         {
             // This goes through helper and hence src needs to be converted to double.
             oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
