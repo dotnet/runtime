@@ -3085,6 +3085,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 	for (tmp = user_data.frames; tmp; tmp = tmp->next) {
 		f = (StackFrame *)tmp->data;
 
+#ifndef TARGET_WASM
 		/* 
 		 * Reuse the id for already existing stack frames, so invokes don't invalidate
 		 * the still valid stack frames.
@@ -3098,7 +3099,9 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 
 		if (i >= tls->frame_count)
 			f->id = mono_atomic_inc_i32 (&frame_id);
-
+#else //keep the same behavior that we have for wasm before start using debugger-agent			
+		f->id = findex+1;
+#endif
 		new_frames [findex ++] = f;
 	}
 
