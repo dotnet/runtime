@@ -629,11 +629,6 @@ namespace System.Data.OleDb
             return e;
         }
 
-        internal OleDbTransaction? ValidateTransaction(OleDbTransaction? transaction, string method)
-        {
-            return GetOpenConnection().ValidateTransaction(transaction, method);
-        }
-
         // @devnote: should be multithread safe
         public static void ReleaseObjectPool()
         {
