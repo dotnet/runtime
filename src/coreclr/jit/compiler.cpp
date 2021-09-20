@@ -1749,6 +1749,13 @@ void Compiler::compShutdown()
     }
 #endif // LOOP_HOIST_STATS
 
+#if TRACK_ENREG_STATS
+    if (JitConfig.JitEnregStats() != 0)
+    {
+        s_enregisterStats.Dump(fout);
+    }
+#endif // TRACK_ENREG_STATS
+
 #if MEASURE_PTRTAB_SIZE
 
     fprintf(fout, "\n");
@@ -5978,6 +5985,18 @@ void Compiler::compCompileFinish()
         printf(""); // in our logic this causes a flush
     }
 
+#if TRACK_ENREG_STATS
+    for (unsigned i = 0; i < lvaCount; ++i)
+    {
+        const LclVarDsc* varDsc = lvaGetDesc(i);
+
+        if (varDsc->lvRefCnt() != 0)
+        {
+            s_enregisterStats.RecordLocal(varDsc);
+        }
+    }
+#endif // TRACK_ENREG_STATS
+
     // Only call _DbgBreakCheck when we are jitting, not when we are ngen-ing
     // For ngen the int3 or breakpoint instruction will be right at the
     // start of the ngen method and we will stop when we execute it.
@@ -9676,3 +9695,231 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
     }
 }
 #endif // defined(DEBUG)
+
+#if TRACK_ENREG_STATS
+Compiler::EnregisterStats Compiler::s_enregisterStats;
+
+void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
+{
+    m_totalNumberOfVars++;
+    if (varDsc->TypeGet() == TYP_STRUCT)
+    {
+        m_totalNumberOfStructVars++;
+    }
+    if (!varDsc->lvDoNotEnregister)
+    {
+        m_totalNumberOfEnregVars++;
+        if (varDsc->TypeGet() == TYP_STRUCT)
+        {
+            m_totalNumberOfStructEnregVars++;
+        }
+    }
+    else
+    {
+        switch (varDsc->GetDoNotEnregReason())
+        {
+            case DoNotEnregisterReason::AddrExposed:
+                m_addrExposed++;
+                break;
+            case DoNotEnregisterReason::DontEnregStructs:
+                m_dontEnregStructs++;
+                break;
+            case DoNotEnregisterReason::NotRegSizeStruct:
+                m_notRegSizeStruct++;
+                break;
+            case DoNotEnregisterReason::LocalField:
+                m_localField++;
+                break;
+            case DoNotEnregisterReason::VMNeedsStackAddr:
+                m_VMNeedsStackAddr++;
+                break;
+            case DoNotEnregisterReason::LiveInOutOfHandler:
+                m_liveInOutHndlr++;
+                break;
+            case DoNotEnregisterReason::BlockOp:
+                m_blockOp++;
+                break;
+            case DoNotEnregisterReason::IsStructArg:
+                m_structArg++;
+                break;
+            case DoNotEnregisterReason::DepField:
+                m_depField++;
+                break;
+            case DoNotEnregisterReason::NoRegVars:
+                m_noRegVars++;
+                break;
+            case DoNotEnregisterReason::MinOptsGC:
+                m_minOptsGC++;
+                break;
+#if !defined(TARGET_64BIT)
+            case DoNotEnregisterReason::LongParamField:
+                m_longParamField++;
+                break;
+#endif
+#ifdef JIT32_GCENCODER
+            case DoNotEnregisterReason::PinningRef:
+                m_PinningRef++;
+                break;
+#endif
+            case DoNotEnregisterReason::LclAddrNode:
+                m_lclAddrNode++;
+                break;
+
+            case DoNotEnregisterReason::CastTakesAddr:
+                m_castTakesAddr++;
+                break;
+
+            case DoNotEnregisterReason::StoreBlkSrc:
+                m_storeBlkSrc++;
+                break;
+
+            case DoNotEnregisterReason::OneAsgRetyping:
+                m_oneAsgRetyping++;
+                break;
+
+            case DoNotEnregisterReason::SwizzleArg:
+                m_swizzleArg++;
+                break;
+
+            case DoNotEnregisterReason::BlockOpRet:
+                m_blockOpRet++;
+                break;
+
+            default:
+                unreached();
+                break;
+        }
+
+        if (varDsc->GetDoNotEnregReason() == DoNotEnregisterReason::AddrExposed)
+        {
+            // We can't `assert(IsAddressExposed())` because `fgAdjustForAddressExposedOrWrittenThis`
+            // does not clear `m_doNotEnregReason` on `this`.
+            switch (varDsc->GetAddrExposedReason())
+            {
+                case AddressExposedReason::PARENT_EXPOSED:
+                    m_parentExposed++;
+                    break;
+
+                case AddressExposedReason::TOO_CONSERVATIVE:
+                    m_tooConservative++;
+                    break;
+
+                case AddressExposedReason::ESCAPE_ADDRESS:
+                    m_escapeAddress++;
+                    break;
+
+                case AddressExposedReason::WIDE_INDIR:
+                    m_wideIndir++;
+                    break;
+
+                case AddressExposedReason::OSR_EXPOSED:
+                    m_osrExposed++;
+                    break;
+
+                case AddressExposedReason::STRESS_LCL_FLD:
+                    m_stressLclFld++;
+                    break;
+
+                case AddressExposedReason::COPY_FLD_BY_FLD:
+                    m_copyFldByFld++;
+                    break;
+
+                case AddressExposedReason::DISPATCH_RET_BUF:
+                    m_dispatchRetBuf++;
+                    break;
+
+                default:
+                    unreached();
+                    break;
+            }
+        }
+    }
+}
+
+void Compiler::EnregisterStats::Dump(FILE* fout) const
+{
+    const unsigned totalNumberOfNotStructVars =
+        s_enregisterStats.m_totalNumberOfVars - s_enregisterStats.m_totalNumberOfStructVars;
+    const unsigned totalNumberOfNotStructEnregVars =
+        s_enregisterStats.m_totalNumberOfEnregVars - s_enregisterStats.m_totalNumberOfStructEnregVars;
+    const unsigned notEnreg = s_enregisterStats.m_totalNumberOfVars - s_enregisterStats.m_totalNumberOfEnregVars;
+
+    fprintf(fout, "\nLocals enregistration statistics:\n");
+    if (m_totalNumberOfVars == 0)
+    {
+        fprintf(fout, "No locals to report.\n");
+        return;
+    }
+    fprintf(fout, "total number of locals: %d, number of enregistered: %d, notEnreg: %d, ratio: %.2f\n",
+            m_totalNumberOfVars, m_totalNumberOfEnregVars, m_totalNumberOfVars - m_totalNumberOfEnregVars,
+            (float)m_totalNumberOfEnregVars / m_totalNumberOfVars);
+
+    if (m_totalNumberOfStructVars != 0)
+    {
+        fprintf(fout, "total number of struct locals: %d, number of enregistered: %d, notEnreg: %d, ratio: %.2f\n",
+                m_totalNumberOfStructVars, m_totalNumberOfStructEnregVars,
+                m_totalNumberOfStructVars - m_totalNumberOfStructEnregVars,
+                (float)m_totalNumberOfStructEnregVars / m_totalNumberOfStructVars);
+    }
+
+    const unsigned numberOfPrimitiveLocals = totalNumberOfNotStructVars - totalNumberOfNotStructEnregVars;
+    if (numberOfPrimitiveLocals != 0)
+    {
+        fprintf(fout, "total number of primitive locals: %d, number of enregistered: %d, notEnreg: %d, ratio: %.2f\n",
+                totalNumberOfNotStructVars, totalNumberOfNotStructEnregVars, numberOfPrimitiveLocals,
+                (float)totalNumberOfNotStructEnregVars / totalNumberOfNotStructVars);
+    }
+
+    if (notEnreg == 0)
+    {
+        fprintf(fout, "All locals are enregistered.\n");
+        return;
+    }
+
+#define PRINT_STATS(stat, total)                                                                                       \
+    if (stat != 0)                                                                                                     \
+    {                                                                                                                  \
+        fprintf(fout, #stat " %d, ratio: %.2f\n", stat, (float)stat / total);                                          \
+    }
+
+    PRINT_STATS(m_addrExposed, notEnreg);
+    PRINT_STATS(m_dontEnregStructs, notEnreg);
+    PRINT_STATS(m_notRegSizeStruct, notEnreg);
+    PRINT_STATS(m_localField, notEnreg);
+    PRINT_STATS(m_VMNeedsStackAddr, notEnreg);
+    PRINT_STATS(m_liveInOutHndlr, notEnreg);
+    PRINT_STATS(m_blockOp, notEnreg);
+    PRINT_STATS(m_structArg, notEnreg);
+    PRINT_STATS(m_depField, notEnreg);
+    PRINT_STATS(m_noRegVars, notEnreg);
+    PRINT_STATS(m_minOptsGC, notEnreg);
+#if !defined(TARGET_64BIT)
+    PRINT_STATS(m_longParamField, notEnreg);
+#endif // !TARGET_64BIT
+#ifdef JIT32_GCENCODER
+    PRINT_STATS(m_PinningRef, notEnreg);
+#endif // JIT32_GCENCODER
+    PRINT_STATS(m_lclAddrNode, notEnreg);
+    PRINT_STATS(m_castTakesAddr, notEnreg);
+    PRINT_STATS(m_storeBlkSrc, notEnreg);
+    PRINT_STATS(m_oneAsgRetyping, notEnreg);
+    PRINT_STATS(m_swizzleArg, notEnreg);
+    PRINT_STATS(m_blockOpRet, notEnreg);
+
+    fprintf(fout, "\nAddr exposed details:\n");
+    if (m_addrExposed == 0)
+    {
+        fprintf(fout, "\nNo address exposed locals to report.\n");
+        return;
+    }
+
+    PRINT_STATS(m_parentExposed, m_addrExposed);
+    PRINT_STATS(m_tooConservative, m_addrExposed);
+    PRINT_STATS(m_escapeAddress, m_addrExposed);
+    PRINT_STATS(m_wideIndir, m_addrExposed);
+    PRINT_STATS(m_osrExposed, m_addrExposed);
+    PRINT_STATS(m_stressLclFld, m_addrExposed);
+    PRINT_STATS(m_copyFldByFld, m_addrExposed);
+    PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
+}
+#endif // TRACK_ENREG_STATS

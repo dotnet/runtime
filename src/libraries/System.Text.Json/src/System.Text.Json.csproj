@@ -117,13 +117,6 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Element.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Node.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonObjectInfoValues.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoInternalOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
@@ -230,14 +223,23 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\GenericMethodHolder.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonCollectionInfoValuesOfTCollection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonObjectInfoValuesOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfoValues.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfoOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfoValuesOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoInternalOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.Cache.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ParameterRef.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PropertyRef.cs" />
@@ -348,6 +350,7 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
   </ItemGroup>
 </Project>

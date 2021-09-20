@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -19,7 +20,8 @@ namespace Sample
         BenchTask[] tasks =
         {
             new ExceptionsTask(),
-            new JsonTask ()
+            new JsonTask (),
+            new WebSocketTask()
         };
         static Test instance = new Test ();
 
@@ -30,6 +32,9 @@ namespace Sample
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        // the constructors of the task we care about are already used when createing tasks field
+        [UnconditionalSuppressMessage("Trim analysis error", "IL2057")]
+        [UnconditionalSuppressMessage("Trim analysis error", "IL2072")]
         public static void SetTasks(string taskNames)
         {
             Regex pattern;
@@ -165,7 +170,7 @@ namespace Sample
                     time *= 1000;
                     unit = "us";
                 }
-                sb.Append($"| {key,32} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
+                sb.Append($"| {key.Replace('_',' '),38} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
             }
             sb.Append("</tt>");
 

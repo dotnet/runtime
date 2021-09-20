@@ -530,23 +530,27 @@ ThisType (void)
 	return TARGET_SIZEOF_VOID_P == 8 ? LLVMPointerType (LLVMInt64Type (), 0) : LLVMPointerType (LLVMInt32Type (), 0);
 }
 
+typedef struct {
+	int32_t size;
+	uint32_t align;
+} MonoSizeAlign;
+
 /*
  * get_vtype_size:
  *
  *   Return the size of the LLVM representation of the vtype T.
  */
-static guint32
-get_vtype_size (MonoType *t)
+static MonoSizeAlign
+get_vtype_size_align (MonoType *t)
 {
-	int size;
-
-	size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
+	uint32_t align = 0;
+	int32_t size = mono_class_value_size (mono_class_from_mono_type_internal (t), &align);
 
 	/* LLVMArgAsIArgs depends on this since it stores whole words */
 	while (size < 2 * TARGET_SIZEOF_VOID_P && mono_is_power_of_two (size) == -1)
 		size ++;
-
-	return size;
+	MonoSizeAlign ret = { size, align };
+	return ret;
 }
 
 /*
@@ -681,11 +685,17 @@ create_llvm_type_for_type (MonoLLVMModule *module, MonoClass *klass)
 		for (i = 0; i < size; ++i)
 			eltypes [i] = esize == 4 ? LLVMFloatType () : LLVMDoubleType ();
 	} else {
-		size = get_vtype_size (t);
-
-		eltypes = g_new (LLVMTypeRef, size);
-		for (i = 0; i < size; ++i)
-			eltypes [i] = LLVMInt8Type ();
+		MonoSizeAlign size_align = get_vtype_size_align (t);
+		eltypes = g_new (LLVMTypeRef, size_align.size);
+		size = 0;
+		uint32_t bytes = 0;
+		uint32_t chunk = size_align.align < TARGET_SIZEOF_VOID_P ? size_align.align : TARGET_SIZEOF_VOID_P;
+		for (; chunk > 0; chunk = chunk >> 1) {
+			for (; (bytes + chunk) <= size_align.size; bytes += chunk) {
+				eltypes [size] = LLVMIntType (chunk * 8);
+				++size;
+			}
+		}
 	}
 
 	name = mono_type_full_name (m_class_get_byval_arg (klass));
@@ -2672,11 +2682,11 @@ static void
 emit_vtype_to_args (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMValueRef address, LLVMArgInfo *ainfo, LLVMValueRef *args, guint32 *nargs)
 {
 	int pindex = 0;
-	int j, size, nslots;
+	int j, nslots;
 	LLVMTypeRef arg_type;
 
 	t = mini_get_underlying_type (t);
-	size = get_vtype_size (t);
+	int32_t size = get_vtype_size_align (t).size;
 
 	if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (t)))
 		address = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (LLVMInt8Type (), 0), "");
@@ -7342,7 +7352,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				} else if (ainfo->storage == LLVMArgVtypeAddr || values [ins->sreg1] == addresses [ins->sreg1]) {
 					/* LLVMArgVtypeByRef/LLVMArgVtypeAddr, have to make a copy */
 					addresses [ins->dreg] = build_alloca (ctx, t);
-					LLVMValueRef v = LLVMBuildLoad (builder, addresses [ins->sreg1], "");
+					LLVMValueRef v = LLVMBuildLoad (builder, addresses [ins->sreg1], "llvm_outarg_vt_copy");
 					LLVMBuildStore (builder, convert (ctx, v, type_to_llvm_type (ctx, t)), addresses [ins->dreg]);
 				} else {
 					addresses [ins->dreg] = addresses [ins->sreg1];
@@ -11478,7 +11488,7 @@ emit_method_inner (EmitContext *ctx)
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
 
 	if (cfg->disable_omit_fp)
-		mono_llvm_add_func_attr_nv (method, "no-frame-pointer-elim", "true");
+		mono_llvm_add_func_attr_nv (method, "frame-pointer", "all");
 
 	if (cfg->compile_aot) {
 		if (mono_aot_is_externally_callable (cfg->method)) {

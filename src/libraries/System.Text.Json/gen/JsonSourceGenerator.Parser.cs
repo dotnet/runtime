@@ -25,9 +25,12 @@ namespace System.Text.Json.SourceGeneration
             private const string SystemTextJsonNamespace = "System.Text.Json";
             private const string JsonConverterAttributeFullName = "System.Text.Json.Serialization.JsonConverterAttribute";
             private const string JsonConverterFactoryFullName = "System.Text.Json.Serialization.JsonConverterFactory";
+            private const string JsonArrayFullName = "System.Text.Json.Nodes.JsonArray";
             private const string JsonElementFullName = "System.Text.Json.JsonElement";
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
+            private const string JsonNodeFullName = "System.Text.Json.Nodes.JsonNode";
             private const string JsonObjectFullName = "System.Text.Json.Nodes.JsonObject";
+            private const string JsonValueFullName = "System.Text.Json.Nodes.JsonValue";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
@@ -45,7 +48,7 @@ namespace System.Text.Json.SourceGeneration
             private const string DictionaryTypeRef = "global::System.Collections.Generic.Dictionary";
 
             private readonly Compilation _compilation;
-            private readonly SourceProductionContext _sourceProductionContext;
+            private readonly JsonSourceGenerationContext _sourceGenerationContext;
             private readonly MetadataLoadContextInternal _metadataLoadContext;
 
             private readonly Type _ilistOfTType;
@@ -80,8 +83,11 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _guidType;
             private readonly Type? _uriType;
             private readonly Type? _versionType;
+            private readonly Type? _jsonArrayType;
             private readonly Type? _jsonElementType;
+            private readonly Type? _jsonNodeType;
             private readonly Type? _jsonObjectType;
+            private readonly Type? _jsonValueType;
 
             // Unsupported types
             private readonly Type _typeType;
@@ -139,10 +145,26 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            public Parser(Compilation compilation, in SourceProductionContext sourceProductionContext)
+            private static DiagnosticDescriptor InitOnlyPropertyDeserializationNotSupported { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1037",
+                title: new LocalizableResourceString(nameof(SR.InitOnlyPropertyDeserializationNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.InitOnlyPropertyDeserializationNotSupportedFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            private static DiagnosticDescriptor InaccessibleJsonIncludePropertiesNotSupported { get; } = new DiagnosticDescriptor(
+                id: "SYSLIB1038",
+                title: new LocalizableResourceString(nameof(SR.InaccessibleJsonIncludePropertiesNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.InaccessibleJsonIncludePropertiesNotSupportedFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public Parser(Compilation compilation, in JsonSourceGenerationContext sourceGenerationContext)
             {
                 _compilation = compilation;
-                _sourceProductionContext = sourceProductionContext;
+                _sourceGenerationContext = sourceGenerationContext;
                 _metadataLoadContext = new MetadataLoadContextInternal(_compilation);
 
                 _ilistOfTType = _metadataLoadContext.Resolve(SpecialType.System_Collections_Generic_IList_T);
@@ -177,8 +199,11 @@ namespace System.Text.Json.SourceGeneration
                 _guidType = _metadataLoadContext.Resolve(typeof(Guid));
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
+                _jsonArrayType = _metadataLoadContext.Resolve(JsonArrayFullName);
                 _jsonElementType = _metadataLoadContext.Resolve(JsonElementFullName);
+                _jsonNodeType = _metadataLoadContext.Resolve(JsonNodeFullName);
                 _jsonObjectType = _metadataLoadContext.Resolve(JsonObjectFullName);
+                _jsonValueType = _metadataLoadContext.Resolve(JsonValueFullName);
 
                 // Unsupported types.
                 _typeType = _metadataLoadContext.Resolve(typeof(Type));
@@ -192,7 +217,7 @@ namespace System.Text.Json.SourceGeneration
                 PopulateKnownTypes();
             }
 
-            public SourceGenerationSpec? GetGenerationSpec(ImmutableArray<ClassDeclarationSyntax> classDeclarationSyntaxList)
+            public SourceGenerationSpec? GetGenerationSpec(IEnumerable<ClassDeclarationSyntax> classDeclarationSyntaxList)
             {
                 Compilation compilation = _compilation;
                 INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
@@ -252,7 +277,7 @@ namespace System.Text.Json.SourceGeneration
                     if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
                     {
                         // Class or one of its containing types is not partial so we can't add to it.
-                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
+                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, Location.None, new string[] { contextTypeSymbol.Name }));
                         continue;
                     }
 
@@ -549,14 +574,6 @@ namespace System.Text.Json.SourceGeneration
                                 }
                             }
                             break;
-                        case nameof(JsonSourceGenerationOptionsAttribute.IgnoreRuntimeCustomConverters):
-                            {
-                                if (bool.TryParse(propertyValueStr, out bool value))
-                                {
-                                    options.IgnoreRuntimeCustomConverters = value;
-                                }
-                            }
-                            break;
                         case nameof(JsonSourceGenerationOptionsAttribute.IncludeFields):
                             {
                                 if (bool.TryParse(propertyValueStr, out bool value))
@@ -624,6 +641,7 @@ namespace System.Text.Json.SourceGeneration
                 string? converterInstatiationLogic = null;
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
+                bool hasInitOnlyProperties = false;
                 bool hasTypeFactoryConverter = false;
                 bool hasPropertyFactoryConverters = false;
 
@@ -847,7 +865,7 @@ namespace System.Text.Json.SourceGeneration
                     if (!type.TryGetDeserializationConstructor(useDefaultCtorInAnnotatedStructs, out ConstructorInfo? constructor))
                     {
                         classType = ClassType.TypeUnsupportedBySourceGen;
-                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonConstructorAttribute, Location.None, new string[] { $"{type}" }));
+                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonConstructorAttribute, Location.None, new string[] { $"{type}" }));
                     }
                     else
                     {
@@ -942,17 +960,28 @@ namespace System.Text.Json.SourceGeneration
                                 {
                                     if (dataExtensionPropGenSpec != null)
                                     {
-                                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonExtensionDataAttribute, Location.None, new string[] { type.Name }));
+                                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(MultipleJsonExtensionDataAttribute, Location.None, new string[] { type.Name }));
                                     }
 
                                     Type propType = spec.TypeGenerationSpec.Type;
                                     if (!IsValidDataExtensionPropertyType(propType))
                                     {
-                                        _sourceProductionContext.ReportDiagnostic(Diagnostic.Create(DataExtensionPropertyInvalid, Location.None, new string[] { type.Name, spec.ClrName }));
+                                        _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DataExtensionPropertyInvalid, Location.None, new string[] { type.Name, spec.ClrName }));
                                     }
 
                                     dataExtensionPropGenSpec = GetOrAddTypeGenerationSpec(propType, generationMode);
                                     _implicitlyRegisteredTypes.Add(dataExtensionPropGenSpec);
+                                }
+
+                                if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter)
+                                {
+                                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, Location.None, new string[] { type.Name }));
+                                    hasInitOnlyProperties = true;
+                                }
+
+                                if (spec.HasJsonInclude && (!spec.CanUseGetter || !spec.CanUseSetter || !spec.IsPublic))
+                                {
+                                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InaccessibleJsonIncludePropertiesNotSupported, Location.None, new string[] { type.Name, spec.ClrName }));
                                 }
                             }
                         }
@@ -1079,7 +1108,8 @@ namespace System.Text.Json.SourceGeneration
                     out bool canUseGetter,
                     out bool canUseSetter,
                     out bool getterIsVirtual,
-                    out bool setterIsVirtual);
+                    out bool setterIsVirtual,
+                    out bool setterIsInitOnly);
 
                 string clrName = memberInfo.Name;
                 string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
@@ -1095,6 +1125,7 @@ namespace System.Text.Json.SourceGeneration
                     RuntimePropertyName = runtimePropertyName,
                     PropertyNameVarName = propertyNameVarName,
                     IsReadOnly = isReadOnly,
+                    IsInitOnlySetter = setterIsInitOnly,
                     CanUseGetter = canUseGetter,
                     CanUseSetter = canUseSetter,
                     GetterIsVirtual = getterIsVirtual,
@@ -1227,13 +1258,15 @@ namespace System.Text.Json.SourceGeneration
                 out bool canUseGetter,
                 out bool canUseSetter,
                 out bool getterIsVirtual,
-                out bool setterIsVirtual)
+                out bool setterIsVirtual,
+                out bool setterIsInitOnly)
             {
                 isPublic = false;
                 canUseGetter = false;
                 canUseSetter = false;
                 getterIsVirtual = false;
                 setterIsVirtual = false;
+                setterIsInitOnly = false;
 
                 switch (memberInfo)
                 {
@@ -1260,15 +1293,16 @@ namespace System.Text.Json.SourceGeneration
                             if (setMethod != null)
                             {
                                 isReadOnly = false;
+                                setterIsInitOnly = setMethod.IsInitOnly();
 
                                 if (setMethod.IsPublic)
                                 {
                                     isPublic = true;
-                                    canUseSetter = !setMethod.IsInitOnly();
+                                    canUseSetter = true;
                                 }
                                 else if (setMethod.IsAssembly)
                                 {
-                                    canUseSetter = hasJsonInclude && !setMethod.IsInitOnly();
+                                    canUseSetter = hasJsonInclude;
                                 }
 
                                 setterIsVirtual = setMethod.IsVirtual;
@@ -1421,8 +1455,11 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _guidType);
                 AddTypeIfNotNull(_knownTypes, _uriType);
                 AddTypeIfNotNull(_knownTypes, _versionType);
+                AddTypeIfNotNull(_knownTypes, _jsonArrayType);
                 AddTypeIfNotNull(_knownTypes, _jsonElementType);
+                AddTypeIfNotNull(_knownTypes, _jsonNodeType);
                 AddTypeIfNotNull(_knownTypes, _jsonObjectType);
+                AddTypeIfNotNull(_knownTypes, _jsonValueType);
 
                 _knownUnsupportedTypes.Add(_typeType);
                 _knownUnsupportedTypes.Add(_serializationInfoType);

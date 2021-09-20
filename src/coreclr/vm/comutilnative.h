@@ -83,13 +83,7 @@ struct GCGenerationInfo
     UINT64 fragmentationAfter;
 };
 
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
 #include "pshpack4.h"
-#ifdef _MSC_VER 
-#pragma warning(push)
-#pragma warning(disable:4121) // alignment of a member was sensitive to packing
-#endif
-#endif
 class GCMemoryInfoData : public Object
 {
 public:
@@ -107,6 +101,7 @@ public:
     UINT32 pauseTimePercent;
     UINT8 isCompaction;
     UINT8 isConcurrent;
+    UINT8 padding[6];
     GCGenerationInfo generationInfo0;
     GCGenerationInfo generationInfo1;
     GCGenerationInfo generationInfo2;
@@ -115,12 +110,7 @@ public:
     UINT64 pauseDuration0;
     UINT64 pauseDuration1;
 };
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 #include "poppack.h"
-#endif
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<GCMemoryInfoData> GCMEMORYINFODATA;

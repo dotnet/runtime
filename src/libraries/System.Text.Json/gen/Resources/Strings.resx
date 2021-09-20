@@ -153,4 +153,16 @@
   <data name="DataExtensionPropertyInvalidTitle" xml:space="preserve">
     <value>Data extension property type invalid.</value>
   </data>
+  <data name="InitOnlyPropertyDeserializationNotSupportedTitle" xml:space="preserve">
+    <value>Deserialization of init-only properties is currently not supported in source generation mode.</value>
+  </data>
+  <data name="InitOnlyPropertyDeserializationNotSupportedFormat" xml:space="preserve">
+    <value>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</value>
+  </data>
+  <data name="InaccessibleJsonIncludePropertiesNotSupportedTitle" xml:space="preserve">
+    <value>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</value>
+  </data>
+  <data name="InaccessibleJsonIncludePropertiesNotSupportedFormat" xml:space="preserve">
+    <value>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</value>
+  </data>
 </root>

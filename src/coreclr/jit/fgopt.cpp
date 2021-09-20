@@ -2959,7 +2959,7 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
     //
     LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
 
-    if (lclDsc->lvAddrExposed)
+    if (lclDsc->IsAddressExposed())
     {
         return false;
     }

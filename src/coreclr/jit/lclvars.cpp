@@ -308,9 +308,9 @@ void Compiler::lvaInitTypeRef()
             JITDUMP("-- V%02u is OSR exposed\n", varNum);
             varDsc->lvHasLdAddrOp = 1;
 
-            if (varDsc->lvType != TYP_STRUCT)
+            if (varDsc->lvType != TYP_STRUCT) // Why does it apply only to non-structs?
             {
-                lvaSetVarAddrExposed(varNum);
+                lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
             }
         }
     }
@@ -1113,7 +1113,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             // TODO-CQ: We shouldn't have to go as far as to declare these
             // address-exposed -- DoNotEnregister should suffice.
 
-            lvaSetVarAddrExposed(varDscInfo->varNum);
+            lvaSetVarAddrExposed(varDscInfo->varNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 #endif // !TARGET_X86
         }
 
@@ -1121,7 +1121,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         {
             JITDUMP("-- V%02u is OSR exposed\n", varDscInfo->varNum);
             varDsc->lvHasLdAddrOp = 1;
-            lvaSetVarAddrExposed(varDscInfo->varNum);
+            lvaSetVarAddrExposed(varDscInfo->varNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
         }
     }
 
@@ -1230,11 +1230,11 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         varDsc->lvIsParam = 1;
         // Make sure this lives in the stack -- address may be reported to the VM.
         // TODO-CQ: This should probably be:
-        //   lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUGARG(DNER_VMNeedsStackAddr));
+        //   lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUGARG(VMNeedsStackAddr));
         // But that causes problems, so, for expedience, I switched back to this heavyweight
         // hammer.  But I think it should be possible to switch; it may just work now
         // that other problems are fixed.
-        lvaSetVarAddrExposed(varDscInfo->varNum);
+        lvaSetVarAddrExposed(varDscInfo->varNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 
         if (varDscInfo->canEnreg(TYP_I_IMPL))
         {
@@ -1555,12 +1555,12 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
  * Returns true if variable "varNum" may be address-exposed.
  */
 
-bool Compiler::lvaVarAddrExposed(unsigned varNum)
+bool Compiler::lvaVarAddrExposed(unsigned varNum) const
 {
     noway_assert(varNum < lvaCount);
-    LclVarDsc* varDsc = &lvaTable[varNum];
+    const LclVarDsc* varDsc = &lvaTable[varNum];
 
-    return varDsc->lvAddrExposed;
+    return varDsc->IsAddressExposed();
 }
 
 /*****************************************************************************
@@ -1588,7 +1588,7 @@ void Compiler::lvSetMinOptsDoNotEnreg()
     assert(!compEnregLocals());
     for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
-        lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_NoRegVars));
+        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
     }
 }
 
@@ -2505,13 +2505,13 @@ unsigned Compiler::lvaGetFieldLocal(const LclVarDsc* varDsc, unsigned int fldOff
  *  If this is a promoted struct, label it's fields the same way.
  */
 
-void Compiler::lvaSetVarAddrExposed(unsigned varNum)
+void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason))
 {
     noway_assert(varNum < lvaCount);
 
     LclVarDsc* varDsc = &lvaTable[varNum];
 
-    varDsc->lvAddrExposed = 1;
+    varDsc->SetAddressExposed(true DEBUGARG(reason));
 
     if (varDsc->lvPromoted)
     {
@@ -2520,12 +2520,12 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum)
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
             noway_assert(lvaTable[i].lvIsStructField);
-            lvaTable[i].lvAddrExposed = 1; // Make field local as address-exposed.
-            lvaSetVarDoNotEnregister(i DEBUGARG(DNER_AddrExposed));
+            lvaTable[i].SetAddressExposed(true DEBUGARG(AddressExposedReason::PARENT_EXPOSED));
+            lvaSetVarDoNotEnregister(i DEBUGARG(DoNotEnregisterReason::AddrExposed));
         }
     }
 
-    lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_AddrExposed));
+    lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::AddrExposed));
 }
 
 //------------------------------------------------------------------------
@@ -2553,7 +2553,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
             // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
             if (!lvaEnregEHVars || !lvaTable[i].lvSingleDefRegCandidate || lvaTable[i].lvRefCnt() <= 1)
             {
-                lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
+                lvaSetVarDoNotEnregister(i DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
             }
         }
     }
@@ -2561,7 +2561,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
     // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
     if (!lvaEnregEHVars || !varDsc->lvSingleDefRegCandidate || varDsc->lvRefCnt() <= 1)
     {
-        lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+        lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
     }
 #ifdef JIT32_GCENCODER
     else if (lvaKeepAliveAndReportThis() && (varNum == info.compThisArg))
@@ -2569,7 +2569,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
         // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
         // in the same register for the entire method, or keep it on the stack. If it is EH-exposed, we can't ever
         // keep it in a register, since it must also be live on the stack. Therefore, we won't attempt to allocate it.
-        lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+        lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
     }
 #endif // JIT32_GCENCODER
 }
@@ -2582,25 +2582,50 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
 void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregisterReason reason))
 {
     noway_assert(varNum < lvaCount);
-    LclVarDsc* varDsc         = &lvaTable[varNum];
-    varDsc->lvDoNotEnregister = 1;
+    LclVarDsc* varDsc = &lvaTable[varNum];
+
+    const bool wasAlreadyMarkedDoNotEnreg = (varDsc->lvDoNotEnregister == 1);
+    varDsc->lvDoNotEnregister             = 1;
 
 #ifdef DEBUG
+    if (!wasAlreadyMarkedDoNotEnreg)
+    {
+        varDsc->SetDoNotEnregReason(reason);
+    }
+
     if (verbose)
     {
         printf("\nLocal V%02u should not be enregistered because: ", varNum);
     }
+
     switch (reason)
     {
-        case DNER_AddrExposed:
+        case DoNotEnregisterReason::AddrExposed:
             JITDUMP("it is address exposed\n");
-            assert(varDsc->lvAddrExposed);
+            assert(varDsc->IsAddressExposed());
             break;
-        case DNER_IsStruct:
-            JITDUMP("it is a struct\n");
+        case DoNotEnregisterReason::DontEnregStructs:
+            JITDUMP("struct enregistration is disabled\n");
             assert(varTypeIsStruct(varDsc));
             break;
-        case DNER_IsStructArg:
+        case DoNotEnregisterReason::NotRegSizeStruct:
+            JITDUMP("struct size does not match reg size\n");
+            assert(varTypeIsStruct(varDsc));
+            break;
+        case DoNotEnregisterReason::LocalField:
+            JITDUMP("was accessed as a local field\n");
+            break;
+        case DoNotEnregisterReason::VMNeedsStackAddr:
+            JITDUMP("VM needs stack addr\n");
+            break;
+        case DoNotEnregisterReason::LiveInOutOfHandler:
+            JITDUMP("live in/out of a handler\n");
+            varDsc->lvLiveInOutOfHndlr = 1;
+            break;
+        case DoNotEnregisterReason::BlockOp:
+            JITDUMP("written/read in a block op\n");
+            break;
+        case DoNotEnregisterReason::IsStructArg:
             if (varTypeIsStruct(varDsc))
             {
                 JITDUMP("it is a struct arg\n");
@@ -2610,52 +2635,53 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
                 JITDUMP("it is reinterpreted as a struct arg\n");
             }
             break;
-        case DNER_BlockOp:
-            JITDUMP("written in a block op\n");
-            varDsc->lvLclBlockOpAddr = 1;
-            break;
-        case DNER_LocalField:
-            JITDUMP("was accessed as a local field\n");
-            varDsc->lvLclFieldExpr = 1;
-            break;
-        case DNER_VMNeedsStackAddr:
-            JITDUMP("needs stack addr\n");
-            varDsc->lvVMNeedsStackAddr = 1;
-            break;
-        case DNER_LiveInOutOfHandler:
-            JITDUMP("live in/out of a handler\n");
-            varDsc->lvLiveInOutOfHndlr = 1;
-            break;
-        case DNER_LiveAcrossUnmanagedCall:
-            JITDUMP("live across unmanaged call\n");
-            varDsc->lvLiveAcrossUCall = 1;
-            break;
-        case DNER_DepField:
+        case DoNotEnregisterReason::DepField:
             JITDUMP("field of a dependently promoted struct\n");
             assert(varDsc->lvIsStructField && (lvaGetParentPromotionType(varNum) != PROMOTION_TYPE_INDEPENDENT));
             break;
-        case DNER_NoRegVars:
+        case DoNotEnregisterReason::NoRegVars:
             JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
             assert(!compEnregLocals());
             break;
-        case DNER_MinOptsGC:
-            JITDUMP("It is a GC Ref and we are compiling MinOpts\n");
+        case DoNotEnregisterReason::MinOptsGC:
+            JITDUMP("it is a GC Ref and we are compiling MinOpts\n");
             assert(!JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()));
             break;
+#if !defined(TARGET_64BIT)
+        case DoNotEnregisterReason::LongParamField:
+            JITDUMP("it is a decomposed field of a long parameter\n");
+            break;
+#endif
 #ifdef JIT32_GCENCODER
-        case DNER_PinningRef:
+        case DoNotEnregisterReason::PinningRef:
             JITDUMP("pinning ref\n");
             assert(varDsc->lvPinned);
             break;
 #endif
-#if !defined(TARGET_64BIT)
-        case DNER_LongParamField:
-            JITDUMP("it is a decomposed field of a long parameter\n");
+        case DoNotEnregisterReason::LclAddrNode:
+            JITDUMP("LclAddrVar/Fld takes the address of this node\n");
             break;
-        case DNER_LongParamVar:
-            JITDUMP("it is a long parameter\n");
+
+        case DoNotEnregisterReason::CastTakesAddr:
+            JITDUMP("cast takes addr\n");
             break;
-#endif
+
+        case DoNotEnregisterReason::StoreBlkSrc:
+            JITDUMP("the local is used as store block src\n");
+            break;
+
+        case DoNotEnregisterReason::OneAsgRetyping:
+            JITDUMP("OneAsg forbids enreg\n");
+            break;
+
+        case DoNotEnregisterReason::SwizzleArg:
+            JITDUMP("SwizzleArg\n");
+            break;
+
+        case DoNotEnregisterReason::BlockOpRet:
+            JITDUMP("return uses a block op\n");
+            break;
+
         default:
             unreached();
             break;
@@ -3125,7 +3151,7 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
     // We only need this Quirk for TARGET_64BIT
     if (lvaTable[varNum].lvQuirkToLong)
     {
-        noway_assert(lvaTable[varNum].lvAddrExposed);
+        noway_assert(lvaTable[varNum].IsAddressExposed());
         return genTypeStSz(TYP_LONG) * sizeof(int); // return 8  (2 * 4)
     }
 #endif
@@ -3476,11 +3502,11 @@ void Compiler::lvaSortByRefCount()
         // Pinned variables may not be tracked (a condition of the GCInfo representation)
         // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
         // references when using the general GC encoding.
-        if (varDsc->lvAddrExposed)
+        if (varDsc->IsAddressExposed())
         {
             varDsc->lvTracked = 0;
             assert(varDsc->lvType != TYP_STRUCT ||
-                   varDsc->lvDoNotEnregister); // For structs, should have set this when we set lvAddrExposed.
+                   varDsc->lvDoNotEnregister); // For structs, should have set this when we set m_addrExposed.
         }
         if (varTypeIsStruct(varDsc))
         {
@@ -3493,18 +3519,18 @@ void Compiler::lvaSortByRefCount()
             }
             else if (!varDsc->IsEnregisterableType())
             {
-                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
+                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NotRegSizeStruct));
             }
             else if (varDsc->lvType == TYP_STRUCT)
             {
                 if (!varDsc->lvRegStruct && !compEnregStructLocals())
                 {
-                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::DontEnregStructs));
                 }
                 else if (varDsc->lvIsMultiRegArgOrRet())
                 {
                     // Prolog and return generators do not support SIMD<->general register moves.
-                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStructArg));
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
                 }
 #if defined(TARGET_ARM)
                 else if (varDsc->lvIsParam)
@@ -3512,30 +3538,30 @@ void Compiler::lvaSortByRefCount()
                     // On arm we prespill all struct args,
                     // TODO-Arm-CQ: keep them in registers, it will need a fix
                     // to "On the ARM we will spill any incoming struct args" logic in codegencommon.
-                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStructArg));
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
                 }
 #endif // TARGET_ARM
             }
         }
         if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
         {
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_DepField));
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::DepField));
         }
         if (varDsc->lvPinned)
         {
             varDsc->lvTracked = 0;
 #ifdef JIT32_GCENCODER
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_PinningRef));
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif
         }
         if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
         {
             varDsc->lvTracked = 0;
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_MinOptsGC));
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::MinOptsGC));
         }
         if (!compEnregLocals())
         {
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_NoRegVars));
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
         }
 #if defined(JIT32_GCENCODER) && defined(FEATURE_EH_FUNCLETS)
         if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
@@ -3551,7 +3577,7 @@ void Compiler::lvaSortByRefCount()
         //
         if (opts.MinOpts() && compHndBBtabCount > 0)
         {
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LiveInOutOfHandler));
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
         }
         else
         {
@@ -3985,7 +4011,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     if (tree->OperIsLocalAddr())
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
-        assert(varDsc->lvAddrExposed);
+        assert(varDsc->IsAddressExposed());
         varDsc->incRefCnts(weight, this);
         return;
     }
@@ -7391,7 +7417,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvDoNotEnregister)
     {
         printf(" do-not-enreg[");
-        if (varDsc->lvAddrExposed)
+        if (varDsc->IsAddressExposed())
         {
             printf("X");
         }
@@ -7399,7 +7425,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("S");
         }
-        if (varDsc->lvVMNeedsStackAddr)
+        if (varDsc->GetDoNotEnregReason() == DoNotEnregisterReason::VMNeedsStackAddr)
         {
             printf("V");
         }
@@ -7407,17 +7433,13 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("%c", varDsc->lvSingleDefDisqualifyReason);
         }
-        if (varDsc->lvLclFieldExpr)
+        if (varDsc->GetDoNotEnregReason() == DoNotEnregisterReason::LocalField)
         {
             printf("F");
         }
-        if (varDsc->lvLclBlockOpAddr)
+        if (varDsc->GetDoNotEnregReason() == DoNotEnregisterReason::BlockOp)
         {
             printf("B");
-        }
-        if (varDsc->lvLiveAcrossUCall)
-        {
-            printf("U");
         }
         if (varDsc->lvIsMultiRegArg)
         {
@@ -7446,7 +7468,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" must-init");
     }
-    if (varDsc->lvAddrExposed)
+    if (varDsc->IsAddressExposed())
     {
         printf(" addr-exposed");
     }
@@ -8011,7 +8033,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         {
             varDsc->lvExactSize = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
             varDsc->lvType      = TYP_BLK;
-            pComp->lvaSetVarAddrExposed(lclNum);
+            pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
         }
 
         tree->gtFlags |= GTF_GLOB_REF;
