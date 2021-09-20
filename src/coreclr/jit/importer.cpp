@@ -17079,29 +17079,6 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* src, CORINFO
 }
 #endif // TARGET_ARM
 
-//------------------------------------------------------------------------
-// impAssignSmallStructTypeToVar: ensure calls that return small structs whose
-//    sizes are not supported integral type sizes return values to temps.
-//
-// Arguments:
-//     op -- call returning a small struct in a register
-//     hClass -- class handle for struct
-//
-// Returns:
-//     Tree with reference to struct local to use as call return value.
-//
-// Remarks:
-//     The call will be spilled into a preceding statement.
-//     Currently handles struct returns for 3, 5, 6, and 7 byte structs.
-
-GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
-{
-    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for small struct return"));
-    impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
-    GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
-    return ret;
-}
-
 #if FEATURE_MULTIREG_RET
 //------------------------------------------------------------------------
 // impAssignMultiRegTypeToVar: ensure calls that return structs in multiple

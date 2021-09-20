@@ -4923,34 +4923,6 @@ unsigned GenTree::GetScaledIndex()
     return 0;
 }
 
-/*****************************************************************************
- *
- *  Returns true if "addr" is a GT_ADD node, at least one of whose arguments is an integer (<= 32 bit)
- *  constant.  If it returns true, it sets "*offset" to (one of the) constant value(s), and
- *  "*addr" to the other argument.
- */
-
-bool GenTree::IsAddWithI32Const(GenTree** addr, int* offset)
-{
-    if (OperGet() == GT_ADD)
-    {
-        if (AsOp()->gtOp1->IsIntCnsFitsInI32())
-        {
-            *offset = (int)AsOp()->gtOp1->AsIntCon()->gtIconVal;
-            *addr   = AsOp()->gtOp2;
-            return true;
-        }
-        else if (AsOp()->gtOp2->IsIntCnsFitsInI32())
-        {
-            *offset = (int)AsOp()->gtOp2->AsIntCon()->gtIconVal;
-            *addr   = AsOp()->gtOp1;
-            return true;
-        }
-    }
-    // Otherwise...
-    return false;
-}
-
 //------------------------------------------------------------------------
 // gtGetChildPointer: If 'parent' is the parent of this node, return the pointer
 //    to the child node so that it can be modified; otherwise, return nullptr.
@@ -12790,55 +12762,6 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
             return gtFoldExprCompare(tree);
         }
-        else if (op2->OperGet() == GT_COLON)
-        {
-            assert(tree->OperGet() == GT_QMARK);
-
-            GenTree* colon_op1 = op2->AsOp()->gtOp1;
-            GenTree* colon_op2 = op2->AsOp()->gtOp2;
-
-            if (gtCompareTree(colon_op1, colon_op2))
-            {
-                // Both sides of the GT_COLON are the same tree
-
-                GenTree* sideEffList = nullptr;
-                gtExtractSideEffList(op1, &sideEffList);
-
-                // Clear colon flags only if the qmark itself is not conditionaly executed
-                if ((tree->gtFlags & GTF_COLON_COND) == 0)
-                {
-                    fgWalkTreePre(&colon_op2, gtClearColonCond);
-                }
-
-                JITDUMP("\nIdentical GT_COLON trees!\n");
-                DISPTREE(op2);
-
-                GenTree* op;
-                if (sideEffList == nullptr)
-                {
-                    // No side-effects, just return colon_op2
-                    JITDUMP("No side effects, bashing to second operand:\n");
-                    op = colon_op2;
-                }
-                else
-                {
-                    JITDUMP("Extracting side effects...\n");
-                    DISPTREE(sideEffList);
-
-                    // Change the GT_COLON into a GT_COMMA node with the side-effects
-                    op2->ChangeOper(GT_COMMA);
-                    op2->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
-                    op2->AsOp()->gtOp1 = sideEffList;
-
-                    JITDUMP("Transformed GT_COLON into GT_COMMA:\n");
-                    op = op2;
-                }
-
-                DISPTREE(op);
-
-                return op;
-            }
-        }
     }
 
     /* Return the original node (folded/bashed or not) */
@@ -13665,16 +13588,13 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
             assert(val == 0 || val == 1);
 
-            GenTree* opToDelete;
             if (val)
             {
-                op         = op2->AsColon()->ThenNode();
-                opToDelete = op2->AsColon()->ElseNode();
+                op = op2->AsColon()->ThenNode();
             }
             else
             {
-                op         = op2->AsColon()->ElseNode();
-                opToDelete = op2->AsColon()->ThenNode();
+                op = op2->AsColon()->ElseNode();
             }
 
             // Clear colon flags only if the qmark itself is not conditionaly executed
