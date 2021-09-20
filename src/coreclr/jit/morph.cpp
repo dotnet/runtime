@@ -170,7 +170,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
 #elif defined(TARGET_AMD64)
             // Amd64: src = float, dst = uint64 or overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
-            && ((JitConfig.EnableFltToIntX86Compat() > 0) || tree->gtOverflow() || (dstType == TYP_ULONG))
+            && (tree->gtOverflow() || (dstType == TYP_ULONG))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
@@ -180,6 +180,11 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
 #endif
                 )
         {
+            oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
+        }
+        else if (JitConfig.EnableFltToIntX86Compat() > 0)
+        {
+            // This goes through helper and hence src needs to be converted to double.
             oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
         }
 
