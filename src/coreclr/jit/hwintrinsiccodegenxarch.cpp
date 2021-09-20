@@ -2177,9 +2177,8 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             op3    = op2;
         }
     }
-    else
+    else if (overwrittenOpNum == 2)
     {
-        assert(overwrittenOpNum == 2);
         if (op1->isContained())
         {
             // op2 = ([op1] * op2) + op3
@@ -2198,21 +2197,55 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             op2Reg = op1->GetRegNum();
         }
     }
+    else
+    {
+        assert(overwrittenOpNum == 0);
+        if (op1->isContained())
+        {
+            // op2 = ([op1] * op2) + op3
+            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+            ins    = (instruction)(ins - 1);
+            op1Reg = op2->GetRegNum();
+            op2Reg = op3->GetRegNum();
+            op3    = op1;
+        }
+        else
+        {
+            if (op2->isContained() || op2->IsRegOptional())
+            {
+                // op1 = (op1 * [op2]) + op3
+                // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+                ins    = (instruction)(ins - 1);
+                op1Reg = op1->GetRegNum();
+                op2Reg = op3->GetRegNum();
+                op3    = op2;
+            }
+            else
+            {
+                // op1 = (op1 * op2) + [op3]
+                // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+                op1Reg = op1->GetRegNum();
+                op2Reg = op2->GetRegNum();
+            }
+            isCommutative = copiesUpperBits;
+        }
+
+    }
 
     if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
-        {
-            assert(node->isRMWHWIntrinsic(compiler));
+    {
+        assert(node->isRMWHWIntrinsic(compiler));
 
-            // We have "reg2 = (reg1 * reg2) +/- op3" where "reg1 != reg2" on a RMW intrinsic.
-            //
-            // For non-commutative intrinsics, we should have ensured that op2 was marked
-            // delay free in order to prevent it from getting assigned the same register
-            // as target. However, for commutative intrinsics, we can just swap the operands
-            // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+        // We have "reg2 = (reg1 * reg2) +/- op3" where "reg1 != reg2" on a RMW intrinsic.
+        //
+        // For non-commutative intrinsics, we should have ensured that op2 was marked
+        // delay free in order to prevent it from getting assigned the same register
+        // as target. However, for commutative intrinsics, we can just swap the operands
+        // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
 
-            op2Reg = op1Reg;
-            op1Reg = targetReg;
-        }
+        op2Reg = op1Reg;
+        op1Reg = targetReg;
+    }
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3);
     genProduceReg(node);
 }

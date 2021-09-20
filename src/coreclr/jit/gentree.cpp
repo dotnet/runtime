@@ -21824,13 +21824,13 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
 // In the case that none of the operand is overwritten, check if any of them is lastUse.
 //
 // Return Value:
-//     The operand number overwritten or lastUse. 2 is the default value, where no overwritten and no lastUse.
+//     The operand number overwritten or lastUse. 0 is the default value, where no overwritten and no lastUse.
 //
 unsigned GenTreeHWIntrinsic::GetOverwrittenOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
     // only FMA intrinsic node should call into this function
     assert(HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) == InstructionSet_FMA);
-    unsigned overwrittenOpNum = 2; // 1->op1, 2->op2, 3->op3
+    unsigned overwrittenOpNum = 0; // 1->op1, 2->op2, 3->op3
     if (!use->OperIs(GT_STORE_LCL_VAR))
     {
         if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0)) 
