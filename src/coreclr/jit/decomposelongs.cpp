@@ -1107,8 +1107,6 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     //     shl lo, shift
                     //     shld hi, reg1, shift
 
-                    Range().Remove(gtLong);
-
                     loOp1                = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->AsOp()->gtOp1);
                     unsigned loOp1LclNum = loOp1->AsLclVarCommon()->GetLclNum();
                     Range().Remove(loOp1);
@@ -1158,11 +1156,9 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                         loOp1Use.ReplaceWithLclVar(m_compiler);
 
                         hiResult = loOp1Use.Def();
-                        Range().Remove(gtLong);
                     }
                     else
                     {
-                        Range().Remove(gtLong);
                         assert(count > 32 && count < 64);
 
                         // Move loOp1 into hiResult, do a GT_LSH with count - 32.
@@ -1183,8 +1179,6 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
             break;
             case GT_RSZ:
             {
-                Range().Remove(gtLong);
-
                 if (count < 32)
                 {
                     // Hi is a GT_RSZ, lo is a GT_RSH_LO. Will produce:
@@ -1253,8 +1247,6 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
             break;
             case GT_RSH:
             {
-                Range().Remove(gtLong);
-
                 hiOp1                = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp2);
                 unsigned hiOp1LclNum = hiOp1->AsLclVarCommon()->GetLclNum();
                 GenTree* hiCopy      = m_compiler->gtNewLclvNode(hiOp1LclNum, TYP_INT);
@@ -1329,6 +1321,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
         }
 
         // Remove shift from Range
+        Range().Remove(gtLong);
         Range().Remove(shift);
 
         return FinalizeDecomposition(use, loResult, hiResult, insertAfter);
@@ -1470,7 +1463,6 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
             hiOp1 = gtLong->gtGetOp1();
             loOp1 = gtLong->gtGetOp2();
 
-            Range().Remove(gtLong);
             loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->AsOp()->gtOp2);
             hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp1);
 
@@ -1481,10 +1473,11 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
             loOp1 = gtLong->gtGetOp1();
             hiOp1 = gtLong->gtGetOp2();
 
-            Range().Remove(gtLong);
             loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->AsOp()->gtOp1);
             hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp2);
         }
+
+        Range().Remove(gtLong);
 
         unsigned loOp1LclNum = loOp1->AsLclVarCommon()->GetLclNum();
         unsigned hiOp1LclNum = hiOp1->AsLclVarCommon()->GetLclNum();
