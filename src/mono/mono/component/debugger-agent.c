@@ -3024,7 +3024,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 {
 	ComputeFramesUserData user_data;
 	GSList *tmp;
-	int i, findex, new_frame_count;
+	int findex, new_frame_count;
 	StackFrame **new_frames, *f;
 	MonoUnwindOptions opts = (MonoUnwindOptions)(MONO_UNWIND_DEFAULT | MONO_UNWIND_REG_LOCATIONS);
 
@@ -3084,6 +3084,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 		f = (StackFrame *)tmp->data;
 
 #ifndef TARGET_WASM
+		int i;
 		/* 
 		 * Reuse the id for already existing stack frames, so invokes don't invalidate
 		 * the still valid stack frames.
