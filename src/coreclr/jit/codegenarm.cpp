@@ -1360,7 +1360,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             instGen_MemoryBarrier();
         }
 
-        regNumber   dataReg = data->GetRegNum();
+        regNumber dataReg = data->GetRegNum();
         GetEmitter()->emitInsLoadStoreOp(ins_StoreFromSrc(dataReg, type), emitActualTypeSize(type), dataReg, tree);
 
         // If store was to a variable, update variable liveness after instruction was emitted.
