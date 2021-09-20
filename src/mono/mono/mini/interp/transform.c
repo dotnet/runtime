@@ -6876,10 +6876,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			++td->ip;
 			break;
 		case CEE_ENDFINALLY: {
-			g_assert (td->clause_indexes [in_offset] != -1);
+			int clause_index = td->clause_indexes [in_offset];
+			MonoExceptionClause *clause = (clause_index != -1) ? (header->clauses + clause_index) : NULL;
+			if (!clause || (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)) {
+				mono_error_set_generic_error (error, "System", "InvalidProgramException", "");
+				goto exit;
+			}
 			td->sp = td->stack;
 			interp_add_ins (td, MINT_ENDFINALLY);
-			td->last_ins->data [0] = td->clause_indexes [in_offset];
+			td->last_ins->data [0] = clause_index;
 			link_bblocks = FALSE;
 			++td->ip;
 			break;
