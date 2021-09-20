@@ -1,0 +1,13 @@
+{
+    "version" : 1,
+    "defaultOnFailure": "fail",
+    "localRerunCount" : 2,
+    "retryOnRules": [
+      {"testName": {"regex": "System.IO.Tests.File_Exists.FailOnceThenPass"}},
+      {"testAssembly": {"wildcard": "System.IO.FileSystem.Tests.dll" }}
+    ],
+    "failOnRules": [
+    ],
+    "quarantineRules": [
+    ]
+  }
