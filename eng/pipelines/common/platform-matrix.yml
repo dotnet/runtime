@@ -21,6 +21,7 @@ parameters:
   # When set to true, passes the 'platforms' value as a job parameter also named 'platforms'.
   # Handled as an opt-in parameter to avoid excessive yaml.
   passPlatforms: false
+  container: ''
   jobParameters: {}
   variables: []
 
@@ -169,7 +170,10 @@ jobs:
       targetRid: linux-x64
       platform: Linux_x64
       container:
-        image: centos-7-20210714125435-9b5bbc2
+        ${{ if eq(parameters.container, '') }}:
+          image: centos-7-20210714125435-9b5bbc2
+        ${{ if ne(parameters.container, '') }}:
+          image: ${{ parameters.container }}
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

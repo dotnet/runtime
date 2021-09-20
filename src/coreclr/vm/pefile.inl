@@ -958,13 +958,6 @@ inline PTR_PEImageLayout PEFile::GetLoadedIL()
     return GetOpenedILimage()->GetLoadedLayout();
 };
 
-inline PTR_PEImageLayout PEFile::GetAnyILWithRef()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED);
-};
-
-
 inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/)
 {
     CONTRACTL
@@ -1151,26 +1144,6 @@ inline HRESULT PEFile::GetFlagsNoTrigger(DWORD * pdwFlags)
 // Metadata access
 // ------------------------------------------------------------
 
-#ifndef DACCESS_COMPILE
-inline void PEFile::RestoreMDImport(IMDInternalImport* pImport)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pMetadataLock->LockTaken() && m_pMetadataLock->IsWriterLock());
-    if (m_pMDImport != NULL)
-        return;
-    m_pMDImport=pImport;
-    if(m_pMDImport)
-        m_pMDImport->AddRef();
-}
-#endif
 inline void PEFile::OpenMDImport()
 {
     WRAPPER_NO_CONTRACT;

@@ -243,8 +243,8 @@ struct insGroup
     insGroup* igSelf; // for consistency checking
 #endif
 #if defined(DEBUG) || defined(LATE_DISASM)
-    BasicBlock::weight_t igWeight;    // the block weight used for this insGroup
-    double               igPerfScore; // The PerfScore for this insGroup
+    weight_t igWeight;    // the block weight used for this insGroup
+    double   igPerfScore; // The PerfScore for this insGroup
 #endif
 
 #ifdef DEBUG
@@ -1348,7 +1348,7 @@ protected:
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-    BasicBlock::weight_t getCurrentBlockWeight();
+    weight_t getCurrentBlockWeight();
 
     void dispIns(instrDesc* id);
 

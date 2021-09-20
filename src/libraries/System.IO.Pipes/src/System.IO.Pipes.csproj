@@ -167,6 +167,10 @@
              Link="Common\Interop\Unix\Interop.SetEUid.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />  
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
@@ -176,12 +180,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <!-- Include src projects during restore as TargetsWindows isn't set. -->
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or '$(MSBuildRestoreSessionId)' != ''">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />  
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(MSBuildRestoreSessionId)' != ''">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Security.Claims" />
   </ItemGroup>

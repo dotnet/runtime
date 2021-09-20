@@ -45,7 +45,6 @@ class PEFile;
 class PEModule;
 class PEAssembly;
 class SimpleRWLock;
-class AssemblyLoadContext;
 
 typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
@@ -319,7 +318,6 @@ public:
     // in some cases.
     PTR_PEImageLayout GetLoaded();
     PTR_PEImageLayout GetLoadedIL();
-    PTR_PEImageLayout GetAnyILWithRef();        //AddRefs!
     IStream * GetPdbStream();
     void ClearPdbStream();
     BOOL IsLoaded(BOOL bAllowNativeSkip=TRUE) ;
@@ -363,7 +361,6 @@ protected:
 #endif
 
     void OpenMDImport();
-    void RestoreMDImport(IMDInternalImport* pImport);
     void OpenMDImport_Unsafe();
     void OpenImporter();
     void OpenEmitter();
@@ -409,8 +406,8 @@ protected:
     Volatile<LONG>           m_refCount;
     int                      m_flags;
 
-    // AssemblyLoadContext that this PEFile is associated with
-    PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
+    // AssemblyBinder that this PEFile is associated with
+    PTR_AssemblyBinder       m_pAssemblyBinder;
 
 public:
 
@@ -459,7 +456,7 @@ public:
     LPCWSTR GetPathForErrorMessages();
 
     static PEFile* Dummy();
-    void MarkNativeImageInvalidIfOwned();
+
     void ConvertMDInternalToReadWrite();
 
 protected:
@@ -469,17 +466,10 @@ protected:
     // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
     // we need to ensure they are loaded in appropriate load context.
     //
-    // To enable this, we maintain a concept of "Fallback LoadContext", which will be set to the Binder of the
+    // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    PTR_AssemblyBinder m_pFallbackLoadContextBinder;
-
-protected:
-
-#ifndef DACCESS_COMPILE
-    void SetHostAssembly(BINDER_SPACE::Assembly * pHostAssembly)
-    { LIMITED_METHOD_CONTRACT; m_pHostAssembly = clr::SafeAddRef(pHostAssembly); }
-#endif //DACCESS_COMPILE
+    PTR_AssemblyBinder m_pFallbackBinder;
 
 public:
     // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
@@ -490,37 +480,37 @@ public:
     }
 
     // Returns the AssemblyBinder* instance associated with the PEFile
-    PTR_AssemblyBinder GetBindingContext();
+    PTR_AssemblyBinder GetBinder();
 
 #ifndef DACCESS_COMPILE
     void SetupAssemblyLoadContext();
 
-    void SetFallbackLoadContextBinder(PTR_AssemblyBinder pFallbackLoadContextBinder)
+    void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
+        m_pFallbackBinder = pFallbackBinder;
         SetupAssemblyLoadContext();
     }
 
 #endif //!DACCESS_COMPILE
 
-    // Returns AssemblyLoadContext into which the current PEFile was loaded.
-    PTR_AssemblyLoadContext GetAssemblyLoadContext()
+    // Returns AssemblyBinder which owns the context into which the current PEFile was loaded.
+    PTR_AssemblyBinder GetAssemblyBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(m_pAssemblyLoadContext != NULL);
-        return m_pAssemblyLoadContext;
+        _ASSERTE(m_pAssemblyBinder != NULL);
+        return m_pAssemblyBinder;
     }
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
-    PTR_AssemblyBinder GetFallbackLoadContextBinder()
+    PTR_AssemblyBinder GetFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackLoadContextBinder;
+        return m_pFallbackBinder;
     }
 };  // class PEFile
 
@@ -553,7 +543,7 @@ class PEAssembly : public PEFile
 #endif
 
     static PEAssembly *Open(
-        CoreBindResult* pBindResult,
+        BINDER_SPACE::Assembly* pBindResult,
         BOOL isSystem);
 
     static PEAssembly *Create(
@@ -606,7 +596,7 @@ class PEAssembly : public PEFile
 
 #ifndef DACCESS_COMPILE
     PEAssembly(
-        CoreBindResult* pBindResultInfo,
+        BINDER_SPACE::Assembly* pBindResultInfo,
         IMetaDataEmit *pEmit,
         PEFile *creator,
         BOOL system,

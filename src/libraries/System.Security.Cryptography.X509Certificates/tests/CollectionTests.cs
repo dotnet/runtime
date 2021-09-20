@@ -900,7 +900,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
 
-                chain.Build(microsoftDotCom);
+                // Halfway between microsoftDotCom's NotBefore and NotAfter
+                // This isn't a boundary condition test.
+                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+
+                bool valid = chain.Build(microsoftDotCom);
+                Assert.True(valid, "Precondition: Chain built validly");
+
                 ICollection collection = chain.ChainElements;
                 Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
                 Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(array, 0));

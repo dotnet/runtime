@@ -5,13 +5,9 @@
     <ExpectedExitCode>42</ExpectedExitCode>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <WasmExtraFilesToDeploy Include="index.html" />
   </ItemGroup>
-
-  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)\index.html" DestinationFolder="$(WasmAppDir)" />
-  </Target>
-  
 </Project>

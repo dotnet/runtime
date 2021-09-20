@@ -666,23 +666,26 @@ namespace System.Text.Json.Serialization.Tests
 
         public class CustomInt32ConverterSerializerContext : JsonSerializerContext
         {
-            public CustomInt32ConverterSerializerContext() : base(null, null) { }
+            public CustomInt32ConverterSerializerContext() : base(null) { }
             public override JsonTypeInfo? GetTypeInfo(Type _) => throw new NotImplementedException();
 
             public JsonTypeInfo<Dictionary<int, string>> DictionaryInt32String => _dictionaryInt32String ??= CreateDictionaryConverter();
             private JsonTypeInfo<Dictionary<int, string>>? _dictionaryInt32String;
 
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+
             private JsonTypeInfo<Dictionary<int, string>> CreateDictionaryConverter()
             {
                 JsonTypeInfo<int> keyInfo = JsonMetadataServices.CreateValueInfo<int>(Options, new ConverterForInt32());
                 JsonTypeInfo<string> valueInfo = JsonMetadataServices.CreateValueInfo<string>(Options, JsonMetadataServices.StringConverter);
-                return JsonMetadataServices.CreateDictionaryInfo<Dictionary<int, string>, int, string>(
-                    Options,
-                    createObjectFunc: () => new(),
-                    keyInfo, valueInfo,
-                    numberHandling: default,
-                    serializeFunc: null
-                );
+                JsonCollectionInfoValues<Dictionary<int, string>> info = new()
+                {
+                    ObjectCreator = () => new(),
+                    KeyInfo = keyInfo,
+                    ElementInfo = valueInfo,
+                };
+
+                return JsonMetadataServices.CreateDictionaryInfo<Dictionary<int, string>, int, string>(Options, info);
             }
         }
 

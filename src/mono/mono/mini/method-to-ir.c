@@ -6078,6 +6078,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		seq_points = FALSE;
 	}
 
+	if (method->wrapper_type == MONO_WRAPPER_OTHER)	{
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN) {
+			/* We could hit a seq point before attaching to the JIT (#8338) */
+			seq_points = FALSE;
+		}
+	}
+
 	if (cfg->prof_coverage) {
 		if (cfg->compile_aot)
 			g_error ("Coverage profiling is not supported with AOT.");

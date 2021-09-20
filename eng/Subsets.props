@@ -22,25 +22,25 @@
         that indicates tests should be run. Otherwise, they'll only be built.)
   -->
 
-  <PropertyGroup>
-    <DefaultSubsets>clr+mono+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
-    <!-- mono is not supported in source build. On Windows mono is supported for x86/x64 only. -->
-    <DefaultSubsets Condition="'$(DotNetBuildFromSource)' == 'true' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+host+packs</DefaultSubsets>
-  </PropertyGroup>
-
-  <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
-  <PropertyGroup>
-    <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
-    <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
-  </PropertyGroup>
-
   <!-- Determine the primary runtime flavor. This is usually CoreCLR, except on
        platforms (like s390x) where only Mono is supported. The primary runtime
        flavor is used to decide when to build the hosts and installers. -->
   <PropertyGroup>
     <PrimaryRuntimeFlavor>CoreCLR</PrimaryRuntimeFlavor>
     <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x'">Mono</PrimaryRuntimeFlavor>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefaultSubsets>clr+mono+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
+    <!-- In source build, mono is only supported as primary runtime flavor. On Windows mono is supported for x86/x64 only. -->
+    <DefaultSubsets Condition="('$(DotNetBuildFromSource)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono') or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+host+packs</DefaultSubsets>
+  </PropertyGroup>
+
+  <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
+  <PropertyGroup>
+    <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
+    <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
   </PropertyGroup>
 
   <PropertyGroup>

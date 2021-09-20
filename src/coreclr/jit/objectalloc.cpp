@@ -200,7 +200,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         {
             m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
-            if (comp->lvaTable[lclNum].lvAddrExposed)
+            if (comp->lvaTable[lclNum].IsAddressExposed())
             {
                 JITDUMP("   V%02u is address exposed\n", lclNum);
                 MarkLclVarAsEscaping(lclNum);

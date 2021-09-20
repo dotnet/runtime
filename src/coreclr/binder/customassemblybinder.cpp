@@ -14,7 +14,7 @@ using namespace BINDER_SPACE;
 // CustomAssemblyBinder implementation
 // ============================================================================
 HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                                   BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly)
+                                                       BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
@@ -47,7 +47,7 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
     //
     // 1) Lookup the assembly within the LoadContext itself. If assembly is found, use it.
     // 2) Invoke the LoadContext's Load method implementation. If assembly is found, use it.
-    // 3) Lookup the assembly within TPABinder (except for satellite requests). If assembly is found, use it.
+    // 3) Lookup the assembly within DefaultBinder (except for satellite requests). If assembly is found, use it.
     // 4) Invoke the LoadContext's ResolveSatelliteAssembly method (for satellite requests). If assembly is found, use it.
     // 5) Invoke the LoadContext's Resolving event. If assembly is found, use it.
     // 6) Raise exception.
@@ -74,11 +74,11 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
             // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
             // that has been loaded.
             //
-            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName, m_pTPABinder, &pCoreCLRFoundAssembly);
+            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName, m_pDefaultBinder, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
-                // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.
-                // In such a case, we will not overwrite the binding context (which would be wrong since it would not
+                // We maybe returned an assembly that was bound to a different AssemblyBinder instance.
+                // In such a case, we will not overwrite the binder (which would be wrong since the assembly would not
                 // be present in the cache of the current binding context).
                 if (pCoreCLRFoundAssembly->GetBinder() == NULL)
                 {
@@ -92,7 +92,7 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
 
     // Extract the assembly reference.
     //
-    // For TPA assemblies that were bound, TPABinder
+    // For TPA assemblies that were bound, DefaultBinder
     // would have already set the binder reference for the assembly, so we just need to
     // extract the reference now.
     *ppAssembly = pCoreCLRFoundAssembly.Extract();
@@ -159,17 +159,17 @@ AssemblyLoaderAllocator* CustomAssemblyBinder::GetLoaderAllocator()
 }
 
 //=============================================================================
-// Creates an instance of the AssemblyLoadContext Binder
+// Creates an instance of the CustomAssemblyBinder
 //
 // This method does not take a lock since it is invoked from the ctor of the
 // managed AssemblyLoadContext type.
 //=============================================================================
 /* static */
-HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pTPABinder,
-                                                       AssemblyLoaderAllocator* pLoaderAllocator,
-                                                       void* loaderAllocatorHandle,
-                                                       UINT_PTR ptrAssemblyLoadContext,
-                                                       CustomAssemblyBinder **ppBindContext)
+HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder,
+                                           AssemblyLoaderAllocator* pLoaderAllocator,
+                                           void* loaderAllocatorHandle,
+                                           UINT_PTR ptrAssemblyLoadContext,
+                                           CustomAssemblyBinder **ppBindContext)
 {
     HRESULT hr = E_FAIL;
     EX_TRY
@@ -182,13 +182,13 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pTPABinder,
             hr = pBinder->GetAppContext()->Init();
             if(SUCCEEDED(hr))
             {
-                // Save reference to the TPABinder that is required to be present.
-                _ASSERTE(pTPABinder != NULL);
-                pBinder->m_pTPABinder = pTPABinder;
+                // Save reference to the DefaultBinder that is required to be present.
+                _ASSERTE(pDefaultBinder != NULL);
+                pBinder->m_pDefaultBinder = pDefaultBinder;
 
                 // Save the reference to the IntPtr for GCHandle for the managed
                 // AssemblyLoadContext instance
-                pBinder->m_ptrManagedAssemblyLoadContext = ptrAssemblyLoadContext;
+                pBinder->SetManagedAssemblyLoadContext(ptrAssemblyLoadContext);
 
                 if (pLoaderAllocator != NULL)
                 {
@@ -247,22 +247,22 @@ void CustomAssemblyBinder::PrepareForLoadContextRelease(INT_PTR ptrManagedStrong
 
 CustomAssemblyBinder::CustomAssemblyBinder()
 {
-    m_pTPABinder = NULL;
+    m_pDefaultBinder = NULL;
     m_ptrManagedStrongAssemblyLoadContext = NULL;
 }
 
 void CustomAssemblyBinder::ReleaseLoadContext()
 {
-    VERIFY(m_ptrManagedAssemblyLoadContext != NULL);
+    VERIFY(GetManagedAssemblyLoadContext() != NULL);
     VERIFY(m_ptrManagedStrongAssemblyLoadContext != NULL);
 
     // This method is called to release the weak and strong handles on the managed AssemblyLoadContext
     // once the Unloading event has been fired
-    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
+    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(GetManagedAssemblyLoadContext());
     DestroyLongWeakHandle(handle);
     handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedStrongAssemblyLoadContext);
     DestroyHandle(handle);
-    m_ptrManagedAssemblyLoadContext = NULL;
+    SetManagedAssemblyLoadContext(NULL);
 }
 
 #endif // !defined(DACCESS_COMPILE)

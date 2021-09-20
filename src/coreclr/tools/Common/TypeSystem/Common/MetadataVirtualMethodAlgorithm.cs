@@ -740,7 +740,22 @@ namespace Internal.TypeSystem
             bool diamondCase = false;
             impl = null;
 
-            foreach (MetadataType runtimeInterface in currentType.RuntimeInterfaces)
+            DefType[] consideredInterfaces;
+            if (!currentType.IsInterface)
+            {
+                // If this is not an interface, only things on the interface list could provide
+                // default implementations.
+                consideredInterfaces = currentType.RuntimeInterfaces;
+            }
+            else
+            {
+                // If we're asking about an interface, include the interface in the list.
+                consideredInterfaces = new DefType[currentType.RuntimeInterfaces.Length + 1];
+                Array.Copy(currentType.RuntimeInterfaces, consideredInterfaces, currentType.RuntimeInterfaces.Length);
+                consideredInterfaces[consideredInterfaces.Length - 1] = (DefType)currentType.InstantiateAsOpen();
+            }
+
+            foreach (MetadataType runtimeInterface in consideredInterfaces)
             {
                 if (runtimeInterface == interfaceMethodOwningType)
                 {

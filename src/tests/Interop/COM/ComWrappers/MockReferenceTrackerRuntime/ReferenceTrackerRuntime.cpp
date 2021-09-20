@@ -218,6 +218,11 @@ namespace
                 }
             }
 
+            bool IsConnected()
+            {
+                return _connected;
+            }
+
             STDMETHOD(AddObjectRef)(_In_ IUnknown* c, _Out_ int* id)
             {
                 assert(c != nullptr && id != nullptr);
@@ -544,6 +549,12 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE ReleaseAllTrackerObjects()
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE Trigger_NotifyEndOfReferenceTrackingOnThread()
 {
     return TrackerRuntimeManager.NotifyEndOfReferenceTrackingOnThread();
+}
+
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE IsTrackerObjectConnected(IUnknown* inst)
+{
+    auto trackerObject = reinterpret_cast<TrackerObject::TrackerObjectImpl*>(inst);
+    return trackerObject->IsConnected();
 }
 
 extern "C" DLL_EXPORT void* STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceTrackerAndReturn(IUnknown *obj)

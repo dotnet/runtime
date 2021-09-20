@@ -52,11 +52,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void DictionaryFastPathPrimitiveValueSupported()
         {
-            Assert.NotNull(DictionaryTypeContext.Default.DictionaryStringString.Serialize);
-            Assert.NotNull(DictionaryTypeContext.Default.DictionaryStringJsonMessage.Serialize);
-            Assert.NotNull(DictionaryTypeContext.Default.JsonMessage.Serialize);
-            Assert.Null(DictionaryTypeContext.Default.String.Serialize);
-            Assert.Null(DictionaryTypeContext.Default.Int32.Serialize);
+            Assert.NotNull(DictionaryTypeContext.Default.DictionaryStringString.SerializeHandler);
+            Assert.NotNull(DictionaryTypeContext.Default.DictionaryStringJsonMessage.SerializeHandler);
+            Assert.NotNull(DictionaryTypeContext.Default.JsonMessage.SerializeHandler);
+            Assert.Null(DictionaryTypeContext.Default.String.SerializeHandler);
+            Assert.Null(DictionaryTypeContext.Default.Int32.SerializeHandler);
         }
 
         // Options with features that apply only to deserialization.

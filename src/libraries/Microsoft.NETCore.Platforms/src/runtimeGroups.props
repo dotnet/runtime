@@ -225,7 +225,7 @@
     <RuntimeGroup Include="tizen">
       <Parent>linux</Parent>
       <Architectures>x86;armel;arm64</Architectures>
-      <Versions>4.0.0;5.0.0;5.5.0;6.0.0</Versions>
+      <Versions>4.0.0;5.0.0;5.5.0;6.0.0;6.5.0</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ubuntu">

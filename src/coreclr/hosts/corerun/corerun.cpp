@@ -5,6 +5,9 @@
 #include <coreclrhost.h>
 
 #include "corerun.hpp"
+#include "dotenv.hpp"
+
+#include <fstream>
 
 using char_t = pal::char_t;
 using string_t = pal::string_t;
@@ -50,6 +53,9 @@ struct configuration
 
     // Perform self test.
     bool self_test;
+
+    // configured .env file to load
+    dotenv dotenv_configuration;
 };
 
 namespace envvar
@@ -262,6 +268,8 @@ static int run(const configuration& config)
         }
     }
 
+    config.dotenv_configuration.load_into_current_process();
+
     actions.before_coreclr_load();
 
     // Attempt to load CoreCLR.
@@ -404,6 +412,7 @@ static void display_usage()
         W("                   If a property value contains spaces, quote the entire argument.\n")
         W("                   May be supplied multiple times. Format: <key>=<value>.\n")
         W("  -d, --debug - causes corerun to wait for a debugger to attach before executing.\n")
+        W("  -e, --env - path to a .env file with environment variables that corerun should set.\n")
         W("  -?, -h, --help - show this help.\n")
         W("\n")
         W("The runtime binary is searched for in --clr-path, CORE_ROOT environment variable, then\n")
@@ -507,6 +516,18 @@ static bool parse_args(
         {
             config.self_test = true;
             return true;
+        }
+        else if (pal::strcmp(option, W("e")) == 0 || (pal::strcmp(option, W("env")) == 0))
+        {
+            i++;
+            if (i >= argc)
+            {
+                pal::fprintf(stderr, W("Option %s: missing .env file path\n"), arg);
+                break;
+            }
+
+            std::ifstream dotenvFile{ pal::convert_to_utf8(argv[i]) };
+            config.dotenv_configuration = dotenv{ pal::string_t{ argv[i] }, dotenvFile};
         }
         else if ((pal::strcmp(option, W("?")) == 0 || (pal::strcmp(option, W("h")) == 0 || (pal::strcmp(option, W("help")) == 0))))
         {
@@ -639,6 +660,9 @@ static int self_test()
             THROW_IF_FALSE(pal::string_ends_with(W("ab.cd"), W(".cd")));
             THROW_IF_FALSE(!pal::string_ends_with(W("ab.cd"), W(".cde")));
             THROW_IF_FALSE(!pal::string_ends_with(W("ab.cd"), W("ab.cde")));
+        }
+        {
+            dotenv::self_test();
         }
     }
     catch (const char_t msg[])

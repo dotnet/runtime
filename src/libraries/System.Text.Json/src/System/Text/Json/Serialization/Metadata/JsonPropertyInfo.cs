@@ -504,6 +504,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool SrcGen_HasJsonInclude { get; set; }
 
         /// <summary>
+        /// Relevant to source generated metadata: did the property have the <see cref="JsonExtensionDataAttribute"/>?
+        /// </summary>
+        internal bool SrcGen_IsExtensionData { get; set; }
+
+        /// <summary>
         /// Relevant to source generated metadata: is the property public?
         /// </summary>
         internal bool SrcGen_IsPublic { get; set; }

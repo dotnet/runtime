@@ -158,12 +158,12 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
             catch (OperationCanceledException)
             {
             }
+#if DEBUG
             catch (Exception ex)
             {
-#if DEBUG
                 Console.WriteLine("SendAndReceive fail:" + ex);
-#endif
             }
+#endif
         }
     }
 

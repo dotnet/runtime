@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 
@@ -14,7 +15,7 @@ namespace Microsoft.Extensions.DependencyModel
         public static bool IsTokenTypeProperty(this ref Utf8JsonReader reader)
             => reader.TokenType == JsonTokenType.PropertyName;
 
-        public static bool TryReadStringProperty(this ref Utf8JsonReader reader, out string name, out string value)
+        public static bool TryReadStringProperty(this ref Utf8JsonReader reader, out string? name, out string? value)
         {
             name = null;
             value = null;
@@ -62,7 +63,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        public static string[] ReadStringArray(this ref Utf8JsonReader reader)
+        public static string?[] ReadStringArray(this ref Utf8JsonReader reader)
         {
             reader.Read();
             if (reader.TokenType != JsonTokenType.StartArray)
@@ -70,7 +71,7 @@ namespace Microsoft.Extensions.DependencyModel
                 throw CreateUnexpectedException(ref reader, "[");
             }
 
-            var items = new List<string>();
+            var items = new List<string?>();
 
             while (reader.Read() && reader.TokenType == JsonTokenType.String)
             {
@@ -85,7 +86,7 @@ namespace Microsoft.Extensions.DependencyModel
             return items.ToArray();
         }
 
-        public static string ReadAsString(this ref Utf8JsonReader reader)
+        public static string? ReadAsString(this ref Utf8JsonReader reader)
         {
             Debug.Assert(reader.IsTokenTypeProperty());
             reader.Read();

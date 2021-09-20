@@ -273,7 +273,6 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void BasicTest_GetIsNetworkAvailable_Success()
         {
             Assert.True(NetworkInterface.GetIsNetworkAvailable());

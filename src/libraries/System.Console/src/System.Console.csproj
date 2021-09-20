@@ -13,6 +13,7 @@
     <Compile Include="System\ConsoleKeyInfo.cs" />
     <Compile Include="System\ConsoleModifiers.cs" />
     <Compile Include="System\IO\ConsoleStream.cs" />
+    <Compile Include="System\IO\CachedConsoleStream.cs" />
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs"

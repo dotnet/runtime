@@ -242,6 +242,24 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task Ignore_VerifyNoReferenceToGetterAndSetter()
+        {
+            // Serialize
+            var obj = new ClassWithObsoleteAndIgnoredProperty();
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialize
+            json = @"{""MyString_Obsolete"":""NewValue""}";
+            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithObsoleteAndIgnoredProperty>(json);
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            Assert.Equal("DefaultValue", obj.MyString_Obsolete);
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        [Fact]
         public async Task Ignore_PublicProperty_ConflictWithPrivateDueAttributes()
         {
             // Serialize
@@ -780,6 +798,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonIgnore]
             public string MyString { get; set; } = "DefaultValue";
+        }
+
+        public class ClassWithObsoleteAndIgnoredProperty
+        {
+            [Obsolete("Src gen should not generate reference to getter or setter")]
+            [JsonIgnore]
+            public string MyString_Obsolete { get; set; } = "DefaultValue";
         }
 
         public class ClassWithIgnoredPublicPropertyAndNewSlotPrivate : ClassWithIgnoredPublicProperty
