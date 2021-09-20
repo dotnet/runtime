@@ -5,6 +5,8 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 // This file provides helpers used to help compile some Regex source code (e.g. RegexParser) as part of the netstandard2.0 generator assembly.
@@ -13,8 +15,13 @@ namespace System.Text
 {
     internal static class StringBuilderExtensions
     {
-        public static StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span) =>
-            stringBuilder.Append(span.ToString());
+        public static unsafe StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
+        {
+            fixed (char* ptr = &MemoryMarshal.GetReference(span))
+            {
+                return stringBuilder.Append(ptr, span.Length);
+            }
+        }
 
         public static ReadOnlyMemory<char>[] GetChunks(this StringBuilder stringBuilder)
         {
@@ -31,9 +38,9 @@ namespace System
     {
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
-            var array = new char[length];
-            action(array, state);
-            return new string(array);
+            Span<char> span = length <= 256 ? stackalloc char[length] : new char[length];
+            action(span, state);
+            return span.ToString();
         }
     }
 }
