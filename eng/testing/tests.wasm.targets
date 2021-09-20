@@ -48,6 +48,7 @@
 
     <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
     <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) &amp;&amp; $(RunScriptCommand)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) %3B tail -n200 /var/log/syslog %3B dmesg</RunScriptCommand>
   </PropertyGroup>
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
