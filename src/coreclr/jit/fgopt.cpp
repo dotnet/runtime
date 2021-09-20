@@ -636,22 +636,7 @@ void Compiler::fgDfsInvPostOrder()
     // an incoming edge into the block).
     assert(fgEnterBlksSetValid);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    //
-    //    BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
-    //
-    // This causes problems on ARM, because we for BBJ_CALLFINALLY/BBJ_ALWAYS pairs, we add the BBJ_ALWAYS
-    // to the enter blocks set to prevent flow graph optimizations from removing it and creating retless call finallies
-    // (BBF_RETLESS_CALL). This leads to an incorrect DFS ordering in some cases, because we start the recursive walk
-    // from the BBJ_ALWAYS, which is reachable from other blocks. A better solution would be to change ARM to avoid
-    // creating retless calls in a different way, not by adding BBJ_ALWAYS to fgEnterBlks.
-    //
-    // So, let us make sure at least fgFirstBB is still there, even if it participates in a loop.
-    BlockSetOps::AddElemD(this, startNodes, 1);
-    assert(fgFirstBB->bbNum == 1);
-#else
     BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
-#endif
 
     assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
 
