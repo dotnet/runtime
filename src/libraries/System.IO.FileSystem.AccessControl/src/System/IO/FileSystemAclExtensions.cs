@@ -159,10 +159,10 @@ namespace System.IO
         /// <param name="share">One of the enumeration values for controlling the kind of access other FileStream objects can have to the same file.</param>
         /// <param name="bufferSize">The number of bytes buffered for reads and writes to the file.</param>
         /// <param name="options">One of the enumeration values that describes how to create or overwrite the file.</param>
-        /// <param name="fileSecurity">An object that determines the access control and audit security for the file.</param>
+        /// <param name="fileSecurity">An optional object that determines the access control and audit security for the file.</param>
         /// <returns>A file stream for the newly created file.</returns>
         /// <exception cref="ArgumentException">The <paramref name="rights" /> and <paramref name="mode" /> combination is invalid.</exception>
-        /// <exception cref="ArgumentNullException"><paramref name="fileInfo" /> or <paramref name="fileSecurity" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="fileInfo" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode" /> or <paramref name="share" /> are out of their legal enum range.
         ///-or-
         /// <paramref name="bufferSize" /> is not a positive number.</exception>
@@ -170,16 +170,11 @@ namespace System.IO
         /// <exception cref="IOException">An I/O error occurs.</exception>
         /// <exception cref="UnauthorizedAccessException">Access to the path is denied.</exception>
         /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.FileStream.#ctor(System.String,System.IO.FileMode,System.Security.AccessControl.FileSystemRights,System.IO.FileShare,System.Int32,System.IO.FileOptions,System.Security.AccessControl.FileSecurity)` .NET Framework constructor.</remarks>
-        public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity fileSecurity)
+        public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity? fileSecurity)
         {
             if (fileInfo == null)
             {
                 throw new ArgumentNullException(nameof(fileInfo));
-            }
-
-            if (fileSecurity == null)
-            {
-                throw new ArgumentNullException(nameof(fileSecurity));
             }
 
             // don't include inheritable in our bounds check for share
@@ -274,7 +269,7 @@ namespace System.IO
             return access;
         }
 
-        private static unsafe SafeFileHandle CreateFileHandle(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, FileOptions options, FileSecurity security)
+        private static unsafe SafeFileHandle CreateFileHandle(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, FileOptions options, FileSecurity? security)
         {
             Debug.Assert(fullPath != null);
 
@@ -291,23 +286,37 @@ namespace System.IO
 
             SafeFileHandle handle;
 
-            fixed (byte* pSecurityDescriptor = security.GetSecurityDescriptorBinaryForm())
+            var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
             {
-                var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    bInheritHandle = ((share & FileShare.Inheritable) != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                    lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
-                };
+                nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
+                bInheritHandle = ((share & FileShare.Inheritable) != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+            };
 
-                using (DisableMediaInsertionPrompt.Create())
+            if (security != null)
+            {
+                fixed (byte* pSecurityDescriptor = security.GetSecurityDescriptorBinaryForm())
                 {
-                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
-                    ValidateFileHandle(handle, fullPath);
+                    secAttrs.lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+                    handle = CreateFileHandleInternal(fullPath, mode, rights, share, flagsAndAttributes, &secAttrs);
                 }
+            }
+            else
+            {
+                handle = CreateFileHandleInternal(fullPath, mode, rights, share, flagsAndAttributes, &secAttrs);
             }
 
             return handle;
+
+            static unsafe SafeFileHandle CreateFileHandleInternal(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, int flagsAndAttributes, Interop.Kernel32.SECURITY_ATTRIBUTES* secAttrs)
+            {
+                SafeFileHandle handle;
+                using (DisableMediaInsertionPrompt.Create())
+                {
+                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                    ValidateFileHandle(handle, fullPath);
+                }
+                return handle;
+            }
         }
 
         private static void ValidateFileHandle(SafeFileHandle handle, string fullPath)
