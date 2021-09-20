@@ -157,10 +157,11 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
             (schema[i].Count == 1))
         {
             INT_PTR result = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
-            if ((result == 0) || ICorJitInfo::IsUnknownTypeHandle(result))
+            if (ICorJitInfo::IsUnknownTypeHandle(result))
             {
                 return 0;
             }
+            assert(result != 0); // we don't expect zero in GetLikelyClass
             pLikelyClasses[0].likelihood = (UINT32)(schema[i].Other & 0xFF);
             pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)result;
             return 1;
@@ -210,7 +211,8 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                         pLikelyClasses[0].likelihood = (100 * hist0.m_count) / h.m_totalCount;
                         pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
 
-                        if ((hist1.m_mt != 0) && !ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
+                        if ((maxLikelyClasses > 1) && (hist1.m_mt != 0) &&
+                            !ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
                         {
                             pLikelyClasses[1].likelihood = (100 * hist1.m_count) / h.m_totalCount;
                             pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)hist1.m_mt;
@@ -224,7 +226,8 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                         pLikelyClasses[0].likelihood = (100 * hist1.m_count) / h.m_totalCount;
                         pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist1.m_mt;
 
-                        if ((hist0.m_mt != 0) && !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
+                        if ((maxLikelyClasses > 1) && (hist0.m_mt != 0) &&
+                            !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
                         {
                             pLikelyClasses[1].likelihood = (100 * hist0.m_count) / h.m_totalCount;
                             pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
