@@ -371,7 +371,7 @@ namespace
                 }
                 else
                 {
-                    // The context has been detach for this cache.
+                    // The context has been detached from this cache.
                     // Since the state of this object is now under
                     // the control of the Finalizer/GC, we null it out. 
                     // In this scenario, the array size is going to change
