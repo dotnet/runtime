@@ -106,7 +106,7 @@ def main(argv):
     my_env = os.environ
 
     # Download formatting tools
-    repoRoot = os.path.dirname(os.path.dirname(os.path.dirname(coreclr)))
+    repoRoot = os.path.dirname(os.path.dirname(coreclr))
     formattingScriptFolder = os.path.join(repoRoot, "eng", "formatting")
     formattingDownloadScriptCommand = []
     if platform == 'Linux' or platform == 'OSX':
