@@ -153,7 +153,7 @@ namespace System.Xml
             "Root Level Base64 Attribute Value",    // State.RootLevelB64Attr
             "After Root Level Attribute",           // State.AfterRootLevelAttr
             "Closed",                    // State.Closed
-            "Error" // State.Error
+            "Error"                      // State.Error
         };
 
         internal static readonly string[] tokenName = {
@@ -171,7 +171,7 @@ namespace System.Xml
             "Atomic value",             // Token.AtomicValue
             "Base64",                   // Token.Base64
             "RawData",                  // Token.RawData
-            "Whitespace" // Token.Whitespace
+            "Whitespace"                // Token.Whitespace
         };
 
         private static readonly WriteState[] s_state2WriteState = {
@@ -191,7 +191,7 @@ namespace System.Xml
             WriteState.Attribute,   // State.RootLevelB64Attr
             WriteState.Attribute,   // State.AfterRootLevelAttr
             WriteState.Closed,      // State.Closed
-            WriteState.Error // State.Error
+            WriteState.Error        // State.Error
         };
 
         private static readonly State[] s_stateTableDocument = {
