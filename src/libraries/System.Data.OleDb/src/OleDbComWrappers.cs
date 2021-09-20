@@ -87,7 +87,7 @@ namespace System.Data.OleDb
 
             public unsafe System.Data.OleDb.OleDbHResult GetDescription(out string? description)
             {
-                IntPtr pDescription;
+                IntPtr pDescription = IntPtr.Zero;
                 int errorCode = ((delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)_wrappedInstance + 5 /* IErrorInfo.GetDescription slot */)))
                     (_wrappedInstance, &pDescription);
                 if (pDescription == IntPtr.Zero || errorCode < 0)
