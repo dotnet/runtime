@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
-    internal sealed partial class DBPropSet : SafeHandle
+    internal sealed class DBPropSet : SafeHandle
     {
         private readonly int propertySetCount;
 
@@ -96,7 +96,7 @@ namespace System.Data.OleDb
             }
         }
 
-        private unsafe void SetLastErrorInfo(OleDbHResult lastErrorHr)
+        private void SetLastErrorInfo(OleDbHResult lastErrorHr)
         {
             // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
             UnsafeNativeMethods.IErrorInfo? errorInfo = null;

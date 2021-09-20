@@ -21,7 +21,7 @@ namespace System.Data.OleDb
     //    it won't happen if you directly create the provider and set its properties
     // 3. First call on IDBInitialize must be Initialize, can't QI for any other interfaces before that
     [DefaultEvent("InfoMessage")]
-    public sealed partial class OleDbConnection : DbConnection, ICloneable, IDbConnection
+    public sealed class OleDbConnection : DbConnection, ICloneable, IDbConnection
     {
         private static readonly object EventInfoMessage = new object();
 
@@ -573,7 +573,7 @@ namespace System.Data.OleDb
             return GetOpenConnection().ValidateTransaction(transaction, method);
         }
 
-        internal static unsafe Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
+        internal static Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
         {
             if ((0 <= (int)hresult) && ((null == connection) || (null == connection.Events[EventInfoMessage])))
             {
