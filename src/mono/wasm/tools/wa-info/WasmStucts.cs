@@ -39,7 +39,7 @@ namespace WebAssemblyInfo
                 case Opcode.Local_Tee:
                     return $"{opStr} ${Idx}";
                 case Opcode.Call:
-                    return $"{opStr} ${FunctionName(Idx, reader)}({Idx})";
+                    return $"{opStr} ${FunctionName(Idx, reader)}";
                 case Opcode.I32_Const:
                     return $"{opStr} {I32}";
                 case Opcode.Nop:

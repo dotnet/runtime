@@ -523,7 +523,7 @@ namespace WebAssemblyInfo
             }
         }
 
-        Dictionary<UInt32, string> ReadNameMap(Dictionary<UInt32, string>? map, string mapName, Dictionary<string,UInt32>? reversed = null)
+        Dictionary<UInt32, string> ReadNameMap(Dictionary<UInt32, string>? map, string mapName, Dictionary<string, UInt32>? reversed = null)
         {
             var count = ReadU32();
             if (Program.Verbose2)
@@ -735,12 +735,12 @@ namespace WebAssemblyInfo
             return value;
         }
 
-        public void PrintFunctions ()
+        public void PrintFunctions()
         {
             if (functions == null)
                 return;
 
-            for (UInt32 idx=0; idx<functions.Length; idx++)
+            for (UInt32 idx = 0; idx < functions.Length; idx++)
             {
                 string? name = null;
 
@@ -749,7 +749,7 @@ namespace WebAssemblyInfo
                     if (functionNames == null || functionNames.Count < 1)
                         continue;
 
-                    name = functionNames[idx];
+                    name = functionNames[FunctionOffset(idx)];
                     if (name == null)
                         continue;
 
@@ -769,7 +769,12 @@ namespace WebAssemblyInfo
             Console.WriteLine($"{functionTypes[functions[idx].TypeIdx].ToString(name)}\n{funcsCode[idx].ToString(this)}");
         }
 
-        public string FunctionName (UInt32 idx)
+        UInt32 FunctionOffset(UInt32 idx)
+        {
+            return (imports == null ? 0 : (UInt32)imports.Length) + idx;
+        }
+
+        public string FunctionName(UInt32 idx)
         {
             return functionNames[idx];
         }
