@@ -81,6 +81,7 @@
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(RuntimeFlavor)' == 'mono'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
@@ -369,7 +370,7 @@
 
         <!-- Wasm App Builder always builds in Debug -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="WasmAppBuilder/"/>
 
         <!-- MonoAOTCompiler always builds in Debug -->

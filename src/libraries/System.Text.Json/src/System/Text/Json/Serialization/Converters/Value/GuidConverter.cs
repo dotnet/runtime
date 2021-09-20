@@ -15,12 +15,12 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(value);
         }
 
-        internal override Guid ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        internal override Guid ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetGuidNoValidation();
         }
 
-        internal override void WriteAsPropertyName(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             writer.WritePropertyName(value);
         }

@@ -24,9 +24,7 @@
 
 inline void FATAL_GC_ERROR()
 {
-#ifndef DACCESS_COMPILE
     GCToOSInterface::DebugBreak();
-#endif // DACCESS_COMPILE
     _ASSERTE(!"Fatal Error in GC.");
     GCToEEInterface::HandleFatalError((unsigned int)COR_E_EXECUTIONENGINE);
 }
@@ -254,8 +252,6 @@ const int policy_expand  = 2;
 #define HEAP_BALANCE_LOG (MIN_CUSTOM_LOG_LEVEL + 10)
 #define HEAP_BALANCE_TEMP_LOG (MIN_CUSTOM_LOG_LEVEL + 11)
 
-#ifndef DACCESS_COMPILE
-
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
@@ -269,9 +265,6 @@ void GCLog (const char *fmt, ... );
 
 #endif //SIMPLE_DPRINTF
 
-#else //DACCESS_COMPILE
-#define dprintf(l,x)
-#endif //DACCESS_COMPILE
 #else //TRACE_GC
 #define dprintf(l,x)
 #endif //TRACE_GC
@@ -761,6 +754,11 @@ public:
         {
             alloc_list* al = &(allocator_to_copy->alloc_list_of (i));
             alloc_list_tail_of(i) = al->alloc_list_tail();
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
+            // ensure that the write to the tail is seen by
+            // the allocating thread *before* the write to the head
+            MemoryBarrier();
+#endif
             alloc_list_head_of(i) = al->alloc_list_head();
         }
     }
@@ -850,12 +848,6 @@ public:
     size_t          allocated_since_last_pin;
 #endif //FREE_USAGE_STATS
 };
-
-static_assert(offsetof(dac_generation, allocation_context) == offsetof(generation, allocation_context), "DAC generation offset mismatch");
-static_assert(offsetof(dac_generation, start_segment) == offsetof(generation, start_segment), "DAC generation offset mismatch");
-#ifndef USE_REGIONS
-static_assert(offsetof(dac_generation, allocation_start) == offsetof(generation, allocation_start), "DAC generation offset mismatch");
-#endif //!USE_REGIONS
 
 // static data remains the same after it's initialized.
 // It's per generation.
@@ -1190,6 +1182,23 @@ public:
     static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
 };
 #endif
+
+enum bookkeeping_element
+{
+    card_table_element,
+    brick_table_element,
+#ifdef CARD_BUNDLE
+    card_bundle_table_element,
+#endif
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    software_write_watch_table_element,
+#endif
+    seg_mapping_table_element,
+#ifdef BACKGROUND_GC
+    mark_array_element,
+#endif
+    total_bookkeeping_elements
+};
 
 //class definition of the internal class
 class gc_heap
@@ -1563,6 +1572,20 @@ public:
 
     static
     uint32_t* make_card_table (uint8_t* start, uint8_t* end);
+
+    static
+    void get_card_table_element_layout (uint8_t* start, uint8_t* end, size_t layout[total_bookkeeping_elements + 1]);
+
+    static
+    void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t bookkeeping_sizes[total_bookkeeping_elements]);
+
+#ifdef USE_REGIONS
+    static
+    bool on_used_changed (uint8_t* left);
+
+    static
+    bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
+#endif //USE_REGIONS
 
     static
     void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
@@ -3193,6 +3216,8 @@ protected:
     PER_HEAP_ISOLATED
     size_t get_total_gen_estimated_reclaim (int gen_number);
     PER_HEAP_ISOLATED
+    size_t get_total_gen_size (int gen_number);
+    PER_HEAP_ISOLATED
     void get_memory_info (uint32_t* memory_load,
                           uint64_t* available_physical=NULL,
                           uint64_t* available_page_file=NULL);
@@ -4669,6 +4694,9 @@ protected:
     PER_HEAP_ISOLATED
     int generation_skip_ratio_threshold;
 
+    PER_HEAP_ISOLATED
+    int conserve_mem_setting;
+
     PER_HEAP
     BOOL gen0_bricks_cleared;
     PER_HEAP
@@ -4968,17 +4996,31 @@ public:
     PER_HEAP_ISOLATED
     size_t exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap);
 
+    PER_HEAP_ISOLATED
+    BOOL dt_high_memory_load_p();
+
 protected:
     PER_HEAP
     void update_collection_counts ();
+    
+    PER_HEAP_ISOLATED
+    size_t card_table_element_layout[total_bookkeeping_elements + 1];
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    uint8_t* bookkeeping_covered_start;
+
+    PER_HEAP_ISOLATED
+    uint8_t* bookkeeping_covered_committed;
+
+    PER_HEAP_ISOLATED
+    size_t bookkeeping_sizes[total_bookkeeping_elements];
+#endif //USE_REGIONS
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 class CFinalize
 {
-#ifdef DACCESS_COMPILE
-    friend class ::ClrDataAccess;
-#endif // DACCESS_COMPILE
 
     friend class CFinalizeStaticAsserts;
 
@@ -5621,6 +5663,8 @@ enum allocate_direction
     allocate_backward = -1,
 };
 
+typedef bool (*region_allocator_callback_fn)(uint8_t*);
+
 // The big space we reserve for regions is divided into units of region_alignment.
 // 
 // SOH regions are all basic regions, meaning their size is the same as alignment. UOH regions 
@@ -5672,7 +5716,7 @@ private:
     uint8_t* region_address_of (uint32_t* map_index);
     uint32_t* region_map_index_of (uint8_t* address);
 
-    uint8_t* allocate (uint32_t num_units, allocate_direction direction);
+    uint8_t* allocate (uint32_t num_units, allocate_direction direction, region_allocator_callback_fn fn);
     uint8_t* allocate_end (uint32_t num_units, allocate_direction direction);
 
     void enter_spin_lock();
@@ -5710,10 +5754,11 @@ private:
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
-    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction);
-    bool allocate_basic_region (uint8_t** start, uint8_t** end);
-    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size = 0);
+    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn);
+    bool allocate_basic_region (uint8_t** start, uint8_t** end, region_allocator_callback_fn fn);
+    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn);
     void delete_region (uint8_t* start);
+    void delete_region_impl (uint8_t* start);
     uint32_t get_va_memory_load()
     {
         return (uint32_t)(((global_region_left_used - global_region_start) + ((global_region_end - global_region_right_used)))* 100.0
@@ -5732,6 +5777,13 @@ public:
         return (region_map_left_end - region_map_left_start);
     }
     void move_highest_free_regions (int64_t n, bool small_region_p, region_free_list to_free_list[count_free_region_kinds]);
+
+    uint8_t* get_start() { return global_region_start; }
+
+    // global_region_left_used can be modified concurrently by allocate and delete
+    // usage of this function must make sure either it is under the region lock or we
+    // are certain that these functions cannot be running concurrently.
+    uint8_t* get_left_used_unsafe() { return global_region_left_used; }
 };
 #endif //USE_REGIONS
 

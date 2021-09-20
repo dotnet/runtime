@@ -46,9 +46,15 @@ public:
 // of a generation and its allocation context.
 class dac_generation {
 public:
-    gc_alloc_context allocation_context;
-    DPTR(dac_heap_segment) start_segment;
-    uint8_t* allocation_start;
+#define ALL_FIELDS
+#define DEFINE_FIELD(field_name, field_type) field_type field_name;
+#define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
+
+#include "dac_generation_fields.h"
+
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+#undef ALL_FIELDS
 };
 
 // Analogue for the GC CFinalize class, containing information about the finalize queue.
@@ -141,7 +147,7 @@ public:
 #define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) field_type field_name[array_length];
 
-#include "gc_typefields.h"
+#include "dac_gcheap_fields.h"
 
 #undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD
@@ -164,7 +170,14 @@ public:
 
 #define GENERATION_TABLE_FIELD_INDEX 18
 
-struct opaque_gc_heap
+// Unlike other DACized structures, these types are loaded manually in the debugger.
+// To avoid misuse, pointers to them are explicitly casted to these unused type.
+struct unused_gc_heap
+{
+    uint8_t unused;
+};
+
+struct unused_generation
 {
     uint8_t unused;
 };

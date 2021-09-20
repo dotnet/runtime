@@ -118,6 +118,10 @@
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
+      <ItemsToPush Include="@(WorkloadsVSInsertionFile)">
+        <RelativeBlobPath>$(InstallersRelativePath)workloads/$(SdkBandVersion)/%(Filename)%(Extension)</RelativeBlobPath>
+        <PublishFlatContainer>true</PublishFlatContainer>
+      </ItemsToPush>
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
@@ -171,6 +175,7 @@
 
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
+      <DownloadedWorkloadsVSInsertionFile Include="$(DownloadDirectory)*\workloads-vs\**\*" />
       <DownloadedNupkgFile
         Include="$(DownloadDirectory)**\*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
@@ -178,7 +183,7 @@
       <!-- Add files that are not affected by filtering. -->
       <UploadToBlobStorageFile
         Include="@(DownloadedArtifactFile)"
-        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile)" />
+        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile);@(DownloadedWorkloadsVSInsertionFile)" />
 
       <!--
         Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
@@ -198,6 +203,12 @@
       <RuntimeNupkgFile
         Include="$(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
+
+      <!-- Workloads VS insertion artifacts produced by src/workloads/workloads.csproj -->
+      <WorkloadsVSInsertionFile
+        Include="
+          $(DownloadDirectory)*\workloads-vs\**\*.json;
+          $(DownloadDirectory)*\workloads-vs\**\*.msi" />
 
       <!--
         Runtime packages associated with some identity packages. Need to exclude "runtime.native.*"

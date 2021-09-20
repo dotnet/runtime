@@ -383,11 +383,13 @@ namespace System.IO.Pipelines
                 try
                 {
                     BufferSegment? segment = _readHead;
+                    int segmentIndex = _readIndex;
+
                     try
                     {
                         while (segment != null)
                         {
-                            FlushResult flushResult = await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+                            FlushResult flushResult = await destination.WriteAsync(segment.Memory.Slice(segmentIndex), tokenSource.Token).ConfigureAwait(false);
 
                             if (flushResult.IsCanceled)
                             {
@@ -395,6 +397,7 @@ namespace System.IO.Pipelines
                             }
 
                             segment = segment.NextSegment;
+                            segmentIndex = 0;
 
                             if (flushResult.IsCompleted)
                             {
@@ -451,13 +454,16 @@ namespace System.IO.Pipelines
                 try
                 {
                     BufferSegment? segment = _readHead;
+                    int segmentIndex = _readIndex;
+
                     try
                     {
                         while (segment != null)
                         {
-                            await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+                            await destination.WriteAsync(segment.Memory.Slice(segmentIndex), tokenSource.Token).ConfigureAwait(false);
 
                             segment = segment.NextSegment;
+                            segmentIndex = 0;
                         }
                     }
                     finally

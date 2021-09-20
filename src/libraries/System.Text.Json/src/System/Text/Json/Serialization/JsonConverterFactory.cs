@@ -119,10 +119,10 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override void WriteAsPropertyNameAsObject(
+        internal sealed override void WriteAsPropertyNameCoreAsObject(
             Utf8JsonWriter writer, object value,
             JsonSerializerOptions options,
-            ref WriteStack state)
+            bool isWritingExtensionDataProperty)
         {
             Debug.Fail("We should never get here.");
 

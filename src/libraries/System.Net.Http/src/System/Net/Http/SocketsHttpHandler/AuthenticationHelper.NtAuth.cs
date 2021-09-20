@@ -13,6 +13,38 @@ namespace System.Net.Http
 {
     internal static partial class AuthenticationHelper
     {
+        private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
+        private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
+
+        private static volatile int s_usePortInSpn = -1;
+
+        private static bool UsePortInSpn
+        {
+            get
+            {
+                int usePortInSpn = s_usePortInSpn;
+                if (usePortInSpn != -1)
+                {
+                    return usePortInSpn != 0;
+                }
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool value))
+                {
+                    s_usePortInSpn = value ? 1 : 0;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
+                   s_usePortInSpn =
+                       Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
+                       (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                }
+
+                return s_usePortInSpn != 0;
+            }
+        }
+
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
@@ -110,7 +142,7 @@ namespace System.Net.Http
                                 hostName = result.HostName;
                             }
 
-                            if (!isProxyAuth && !authUri.IsDefaultPort)
+                            if (!isProxyAuth && !authUri.IsDefaultPort && UsePortInSpn)
                             {
                                 hostName = string.Create(null, stackalloc char[128], $"{hostName}:{authUri.Port}");
                             }

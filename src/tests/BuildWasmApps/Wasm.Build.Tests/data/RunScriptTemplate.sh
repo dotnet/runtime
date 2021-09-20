@@ -22,10 +22,15 @@ function set_env_vars()
 {
     if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
         export PATH=$BASE_DIR/dotnet-workload:$PATH
+        export SDK_HAS_WORKLOAD_INSTALLED=true
         export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/dotnet-workload
         export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
     elif [ ! -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]; then
         export WasmBuildSupportDir=$BASE_DIR/build
+    else
+        export PATH=$BASE_DIR/sdk-no-workload:$PATH
+        export SDK_HAS_WORKLOAD_INSTALLED=false
+        export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/sdk-no-workload
     fi
 }
 

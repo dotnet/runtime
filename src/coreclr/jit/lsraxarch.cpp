@@ -1364,7 +1364,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             switch (blkNode->gtBlkOpKind)
             {
                 case GenTreeBlk::BlkOpKindUnroll:
-                    if ((size % XMM_REGSIZE_BYTES) != 0)
+                    if (size < XMM_REGSIZE_BYTES)
                     {
                         regMaskTP regMask = allRegs(TYP_INT);
 #ifdef TARGET_X86
@@ -1381,7 +1381,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     if (size >= XMM_REGSIZE_BYTES)
                     {
                         buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                        SetContainsAVXFlags();
+                        SetContainsAVXFlags(size);
                     }
                     break;
 
@@ -1501,18 +1501,18 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
         {
             GenTree* const  fieldNode   = use.GetNode();
-            const var_types fieldType   = fieldNode->TypeGet();
             const unsigned  fieldOffset = use.GetOffset();
+            const var_types fieldType   = use.GetType();
 
 #ifdef TARGET_X86
             assert(fieldType != TYP_LONG);
 #endif // TARGET_X86
 
 #if defined(FEATURE_SIMD)
-            // Note that we need to check the GT_FIELD_LIST type, not 'fieldType'. This is because the
-            // GT_FIELD_LIST will be TYP_SIMD12 whereas the fieldType might be TYP_SIMD16 for lclVar, where
+            // Note that we need to check the field type, not the type of the node. This is because the
+            // field type will be TYP_SIMD12 whereas the node type might be TYP_SIMD16 for lclVar, where
             // we "round up" to 16.
-            if ((use.GetType() == TYP_SIMD12) && (simdTemp == nullptr))
+            if ((fieldType == TYP_SIMD12) && (simdTemp == nullptr))
             {
                 simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
             }
@@ -1680,25 +1680,21 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             // For small allocations up to 6 pointer sized words (i.e. 48 bytes of localloc)
             // we will generate 'push 0'.
             assert((sizeVal % REGSIZE_BYTES) == 0);
-            size_t cntRegSizedWords = sizeVal / REGSIZE_BYTES;
-            if (cntRegSizedWords > 6)
+            if (!compiler->info.compInitMem)
             {
-                if (!compiler->info.compInitMem)
+                // No need to initialize allocated stack space.
+                if (sizeVal < compiler->eeGetPageSize())
                 {
-                    // No need to initialize allocated stack space.
-                    if (sizeVal < compiler->eeGetPageSize())
-                    {
 #ifdef TARGET_X86
-                        // x86 needs a register here to avoid generating "sub" on ESP.
-                        buildInternalIntRegisterDefForNode(tree);
+                    // x86 needs a register here to avoid generating "sub" on ESP.
+                    buildInternalIntRegisterDefForNode(tree);
 #endif
-                    }
-                    else
-                    {
-                        // We need two registers: regCnt and RegTmp
-                        buildInternalIntRegisterDefForNode(tree);
-                        buildInternalIntRegisterDefForNode(tree);
-                    }
+                }
+                else
+                {
+                    // We need two registers: regCnt and RegTmp
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalIntRegisterDefForNode(tree);
                 }
             }
         }
@@ -2201,7 +2197,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     // If the index is not a constant or op1 is in register,
                     // we will use the SIMD temp location to store the vector.
-                    compiler->getSIMDInitTempVarNum();
+                    var_types requiredSimdTempType = (intrinsicId == NI_Vector128_GetElement) ? TYP_SIMD16 : TYP_SIMD32;
+                    compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
                 break;
             }

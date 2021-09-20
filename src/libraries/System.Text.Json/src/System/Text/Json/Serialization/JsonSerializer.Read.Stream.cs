@@ -21,6 +21,7 @@ namespace System.Text.Json
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
@@ -50,13 +51,15 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return ReadAllUsingOptionsAsync<TValue>(utf8Json, typeof(TValue), options, cancellationToken);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
@@ -125,7 +128,8 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            return ReadAllUsingOptionsAsync<object>(utf8Json, returnType, options, cancellationToken);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadAllAsync<object?>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -171,6 +175,7 @@ namespace System.Text.Json
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -211,6 +216,7 @@ namespace System.Text.Json
         /// Reads the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// The Stream will be read to completion.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -345,6 +351,7 @@ namespace System.Text.Json
         /// Wraps the UTF-8 encoded text into an <see cref="IAsyncEnumerable{TValue}" />
         /// that can be used to deserialize root-level JSON arrays in a streaming manner.
         /// </summary>
+        /// <typeparam name="TValue">The element type to deserialize asynchronously.</typeparam>
         /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON array.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
@@ -365,7 +372,10 @@ namespace System.Text.Json
             }
 
             options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
+            if (!options.IsInitializedForReflectionSerializer)
+            {
+                options.InitializeForReflectionSerializer();
+            }
 
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
 
@@ -617,23 +627,12 @@ namespace System.Text.Json
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static ValueTask<TValue?> ReadAllUsingOptionsAsync<TValue>(
-            Stream utf8Json,
-            Type returnType,
-            JsonSerializerOptions? options,
-            CancellationToken cancellationToken)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
-            return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static TValue? ReadAllUsingOptions<TValue>(
             Stream utf8Json,
             Type returnType,
             JsonSerializerOptions? options)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadAll<TValue>(utf8Json, jsonTypeInfo);
         }
 

@@ -113,12 +113,6 @@ namespace System.Net.Http
                 return;
             }
 
-            if (_clientControl != null)
-            {
-                _clientControl.Dispose();
-                _clientControl = null;
-            }
-
             if (_connection != null)
             {
                 // Close the QuicConnection in the background.
@@ -146,6 +140,13 @@ namespace System.Net.Http
                     {
                         Trace($"{nameof(QuicConnection)} failed to dispose: {ex}");
                     }
+
+                    if (_clientControl != null)
+                    {
+                        _clientControl.Dispose();
+                        _clientControl = null;
+                    }
+
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }

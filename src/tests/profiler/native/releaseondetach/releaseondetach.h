@@ -21,7 +21,7 @@ public:
     ReleaseOnDetach();
     virtual ~ReleaseOnDetach();
 
-    virtual GUID GetClsid();
+    static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE InitializeForAttach(IUnknown* pCorProfilerInfoUnk, void* pvClientData, UINT cbClientData);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
 

@@ -122,22 +122,17 @@ namespace HttpStress
                         }
                     }
                 });
-
-                if (configuration.HttpVersion == HttpVersion.Version30)
-                {
-                    host = host.UseQuic(options =>
-                    {
-                        options.Alpn = "h3";
-                        options.IdleTimeout = TimeSpan.FromMinutes(1);
-                    });
-                }
             };
 
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
             if (configuration.Trace)
             {
+                if (!Directory.Exists(LogHttpEventListener.LogDirectory))
+                {
+                    Directory.CreateDirectory(LogHttpEventListener.LogDirectory);
+                }
                 // Clear existing logs first.
-                foreach (var filename in Directory.GetFiles(".", "server*.log"))
+                foreach (var filename in Directory.GetFiles(LogHttpEventListener.LogDirectory, "server*.log"))
                 {
                     try
                     {
@@ -147,7 +142,7 @@ namespace HttpStress
 
                 loggerConfiguration = loggerConfiguration
                     // Output diagnostics to the file
-                    .WriteTo.File("server.log", fileSizeLimitBytes: 50 << 20, rollOnFileSizeLimit: true)
+                    .WriteTo.File(Path.Combine(LogHttpEventListener.LogDirectory, "server.log"), fileSizeLimitBytes: 100 << 20, rollOnFileSizeLimit: true)
                     .MinimumLevel.Debug();
             }
             if (configuration.LogAspNet)

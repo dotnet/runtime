@@ -769,6 +769,10 @@ public:
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
     DWORD repGetExpectedTargetArchitecture();
 
+    void recDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpDoesFieldBelongToClass(DLDL key, bool value);
+    bool repDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls);
+
     void recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result);
     void dmpIsValidToken(DLD key, DWORD value);
     bool repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
@@ -1063,7 +1067,7 @@ enum mcPackets
     Packet_TryResolveToken                               = 158, // Added 4/26/2016
     Packet_SatisfiesClassConstraints                     = 110,
     Packet_SatisfiesMethodConstraints                    = 111,
-    Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
+    Packet_DoesFieldBelongToClass                        = 112, // Added 8/12/2021
     Packet_SigInstHandleMap                              = 184,
     Packet_AllocPgoInstrumentationBySchema               = 186, // Added 1/4/2021
     Packet_GetPgoInstrumentationResults                  = 187, // Added 1/4/2021

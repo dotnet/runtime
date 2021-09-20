@@ -10,10 +10,6 @@
 
 #include "common.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
@@ -207,20 +203,6 @@ BOOL Precode::IsPointingToPrestub(PCODE target)
         return TRUE;
 #endif
 
-#ifdef FEATURE_PREJIT
-    Module *pZapModule = GetMethodDesc()->GetZapModule();
-    if (pZapModule != NULL)
-    {
-        if (IsPointingTo(target, pZapModule->GetPrestubJumpStub()))
-            return TRUE;
-
-#ifdef HAS_FIXUP_PRECODE
-        if (IsPointingTo(target, pZapModule->GetPrecodeFixupJumpStub()))
-            return TRUE;
-#endif
-    }
-#endif // FEATURE_PREJIT
-
     return FALSE;
 }
 
@@ -233,37 +215,6 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
     } CONTRACTL_END;
 
     PCODE pTarget = NULL;
-
-#if defined(FEATURE_PREJIT) && defined(HAS_FIXUP_PRECODE)
-    // Early out for common cases
-    if (!FixupPrecode::IsFixupPrecodeByASM(addr))
-        return NULL;
-
-    // This optimization makes sense in NGened code only.
-    Module * pModule = ExecutionManager::FindZapModule(addr);
-    if (pModule == NULL)
-        return NULL;
-
-    // Verify that the address is in precode section
-    if (!pModule->IsZappedPrecode(addr))
-        return NULL;
-
-    pTarget = GetPrecodeFromEntryPoint(addr)->GetTarget();
-
-    // Verify that the target is in code section
-    if (!pModule->IsZappedCode(pTarget))
-        return NULL;
-
-#if defined(_DEBUG)
-    MethodDesc * pMD_orig   = MethodTable::GetMethodDescForSlotAddress(addr);
-    MethodDesc * pMD_direct = MethodTable::GetMethodDescForSlotAddress(pTarget);
-
-    // Both the original and direct entrypoint should map to same MethodDesc
-    // Some FCalls are remapped to private methods (see System.String.CtorCharArrayStartLength)
-    _ASSERTE((pMD_orig == pMD_direct) || pMD_orig->IsRuntimeSupplied());
-#endif
-
-#endif // defined(FEATURE_PREJIT) && defined(HAS_FIXUP_PRECODE)
 
     return pTarget;
 }
@@ -363,9 +314,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     ExecutableWriterHolder<Precode> precodeWriterHolder(pPrecode, size);
     precodeWriterHolder.GetRW()->Init(pPrecode, t, pMD, pLoaderAllocator);
 
-#ifndef CROSSGEN_COMPILE
     ClrFlushInstructionCache(pPrecode, size);
-#endif
 
     return pPrecode;
 }
@@ -589,10 +538,8 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
             // GetDynamicMethodPrecodeFixupJumpStub()).
             precodeFixupJumpStub = temporaryEntryPoints + count * sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
             // TODO: how to get the size?
-#ifndef CROSSGEN_COMPILE
             precodeFixupJumpStubRW = (TADDR)entryPointsWriterHolder.GetRW() + count * sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
             emitBackToBackJump((BYTE*)precodeFixupJumpStub, (BYTE*)precodeFixupJumpStubRW, (LPVOID)GetEEFuncEntryPoint(PrecodeFixupThunk));
-#endif // !CROSSGEN_COMPILE
         }
 #endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
 
@@ -651,236 +598,7 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
     return temporaryEntryPoints;
 }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-
-static DataImage::ItemKind GetPrecodeItemKind(DataImage * image, MethodDesc * pMD, BOOL fIsPrebound = FALSE)
-{
-    STANDARD_VM_CONTRACT;
-
-    DataImage::ItemKind kind = DataImage::ITEM_METHOD_PRECODE_COLD_WRITEABLE;
-
-    DWORD flags = image->GetMethodProfilingFlags(pMD);
-
-    if (flags & (1 << WriteMethodPrecode))
-    {
-        kind = fIsPrebound ? DataImage::ITEM_METHOD_PRECODE_HOT : DataImage::ITEM_METHOD_PRECODE_HOT_WRITEABLE;
-    }
-    else
-    if (flags & (1 << ReadMethodPrecode))
-    {
-        kind = DataImage::ITEM_METHOD_PRECODE_HOT;
-    }
-    else
-    if (
-        fIsPrebound ||
-        // The generic method definitions get precode to make GetMethodDescForSlot work.
-        // This precode should not be ever written to.
-        pMD->ContainsGenericVariables() ||
-        // Interface MDs are run only for remoting and cominterop which is pretty rare. Make them cold.
-        pMD->IsInterface()
-        )
-    {
-        kind = DataImage::ITEM_METHOD_PRECODE_COLD;
-    }
-
-    return kind;
-}
-
-void Precode::Save(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodDesc * pMD = GetMethodDesc();
-    PrecodeType t = GetType();
-
-#ifdef HAS_FIXUP_PRECODE_CHUNKS
-    _ASSERTE(GetType() != PRECODE_FIXUP);
-#endif
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // StubPrecode may have straddlers (relocations crossing pages) on x86 and x64. We need
-    // to insert padding to eliminate it. To do that, we need to save these using custom ZapNode that can only
-    // be implemented in dataimage.cpp or zapper due to factoring of the header files.
-    BOOL fIsPrebound = IsPrebound(image);
-    image->SavePrecode(this,
-        pMD,
-        t,
-        GetPrecodeItemKind(image, pMD, fIsPrebound),
-        fIsPrebound);
-#else
-    _ASSERTE(FitsIn<ULONG>(SizeOf(t)));
-    image->StoreStructure((void*)GetStart(),
-        static_cast<ULONG>(SizeOf(t)),
-        GetPrecodeItemKind(image, pMD, IsPrebound(image)),
-        AlignOf(t));
-#endif // TARGET_X86 || TARGET_AMD64
-}
-
-void Precode::Fixup(DataImage *image, MethodDesc * pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    PrecodeType precodeType = GetType();
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-#if defined(HAS_FIXUP_PRECODE)
-    if (precodeType == PRECODE_FIXUP)
-    {
-        AsFixupPrecode()->Fixup(image, pMD);
-    }
-#endif
-#else // TARGET_X86 || TARGET_AMD64
-    ZapNode * pCodeNode = NULL;
-
-    if (IsPrebound(image))
-    {
-        pCodeNode = image->GetCodeAddress(pMD);
-    }
-
-    switch (precodeType) {
-    case PRECODE_STUB:
-        AsStubPrecode()->Fixup(image);
-        break;
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    case PRECODE_NDIRECT_IMPORT:
-        AsNDirectImportPrecode()->Fixup(image);
-        break;
-#endif // HAS_NDIRECT_IMPORT_PRECODE
-#ifdef HAS_FIXUP_PRECODE
-    case PRECODE_FIXUP:
-        AsFixupPrecode()->Fixup(image, pMD);
-        break;
-#endif // HAS_FIXUP_PRECODE
-    default:
-        UnexpectedPrecodeType("Precode::Save", precodeType);
-        break;
-    }
-#endif // TARGET_X86 || TARGET_AMD64
-}
-
-BOOL Precode::IsPrebound(DataImage *image)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return FALSE;
-}
-
-void Precode::SaveChunk::Save(DataImage* image, MethodDesc * pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    PrecodeType precodeType = pMD->GetPrecodeType();
-
-#ifdef HAS_FIXUP_PRECODE_CHUNKS
-    if (precodeType == PRECODE_FIXUP)
-    {
-        m_rgPendingChunk.Append(pMD);
-        return;
-    }
-#endif // HAS_FIXUP_PRECODE_CHUNKS
-
-    SIZE_T size = Precode::SizeOf(precodeType);
-    Precode* pPrecode = (Precode *)new (image->GetHeap()) BYTE[size];
-    pPrecode->Init(pPrecode, precodeType, pMD, NULL);
-    pPrecode->Save(image);
-
-    // Alias the temporary entrypoint
-    image->RegisterSurrogate(pMD, pPrecode);
-}
-
-#ifdef HAS_FIXUP_PRECODE_CHUNKS
-static void SaveFixupPrecodeChunk(DataImage * image, MethodDesc ** rgMD, COUNT_T count, DataImage::ItemKind kind)
-{
-    STANDARD_VM_CONTRACT;
-
-    ULONG size = sizeof(FixupPrecode) * count + sizeof(PTR_MethodDesc);
-    FixupPrecode * pBase = (FixupPrecode *)new (image->GetHeap()) BYTE[size];
-
-    ZapStoredStructure * pNode = image->StoreStructure(NULL, size, kind,
-        Precode::AlignOf(PRECODE_FIXUP));
-
-    for (COUNT_T i = 0; i < count; i++)
-    {
-        MethodDesc * pMD = rgMD[i];
-        FixupPrecode * pPrecode = pBase + i;
-
-        pPrecode->InitForSave((count - 1) - i);
-
-        image->BindPointer(pPrecode, pNode, i * sizeof(FixupPrecode));
-
-        // Alias the temporary entrypoint
-        image->RegisterSurrogate(pMD, pPrecode);
-    }
-
-    image->CopyData(pNode, pBase, size);
-}
-#endif // HAS_FIXUP_PRECODE_CHUNKS
-
-void Precode::SaveChunk::Flush(DataImage * image)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef HAS_FIXUP_PRECODE_CHUNKS
-    if (m_rgPendingChunk.GetCount() == 0)
-        return;
-
-    // Sort MethodDescs using the item kind for hot-cold spliting
-    struct SortMethodDesc : CQuickSort< MethodDesc * >
-    {
-        DataImage * m_image;
-
-        SortMethodDesc(DataImage *image, MethodDesc **pBase, SSIZE_T iCount)
-            : CQuickSort< MethodDesc * >(pBase, iCount),
-            m_image(image)
-        {
-        }
-
-        int Compare(MethodDesc ** ppMD1, MethodDesc ** ppMD2)
-        {
-            MethodDesc * pMD1 = *ppMD1;
-            MethodDesc * pMD2 = *ppMD2;
-
-            // Compare item kind
-            DataImage::ItemKind kind1 = GetPrecodeItemKind(m_image, pMD1);
-            DataImage::ItemKind kind2 = GetPrecodeItemKind(m_image, pMD2);
-
-            return kind1 - kind2;
-        }
-    };
-
-    SortMethodDesc sort(image, &(m_rgPendingChunk[0]), m_rgPendingChunk.GetCount());
-    sort.Sort();
-
-    DataImage::ItemKind pendingKind = DataImage::ITEM_METHOD_PRECODE_COLD_WRITEABLE;
-    COUNT_T pendingCount = 0;
-
-    COUNT_T i;
-    for (i = 0; i < m_rgPendingChunk.GetCount(); i++)
-    {
-        MethodDesc * pMD = m_rgPendingChunk[i];
-
-        DataImage::ItemKind kind = GetPrecodeItemKind(image, pMD);
-        if (kind != pendingKind)
-        {
-            if (pendingCount != 0)
-                SaveFixupPrecodeChunk(image, &(m_rgPendingChunk[i-pendingCount]), pendingCount, pendingKind);
-
-            pendingKind = kind;
-            pendingCount = 0;
-        }
-
-        pendingCount++;
-    }
-
-    // Flush the remaining items
-    SaveFixupPrecodeChunk(image, &(m_rgPendingChunk[i-pendingCount]), pendingCount, pendingKind);
-#endif // HAS_FIXUP_PRECODE_CHUNKS
-}
-
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
 #endif // !DACCESS_COMPILE
-
 
 #ifdef DACCESS_COMPILE
 void Precode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)

@@ -12,6 +12,7 @@ set(SOURCES
     gcprofiler/gcprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     metadatagetdispenser/metadatagetdispenser.cpp
+    multiple/multiple.cpp
     nullprofiler/nullprofiler.cpp
     rejitprofiler/rejitprofiler.cpp
     rejitprofiler/ilrewriter.cpp

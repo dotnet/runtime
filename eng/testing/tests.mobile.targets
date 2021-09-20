@@ -2,23 +2,21 @@
   <PropertyGroup>
     <!-- OutDir is not set early enough to set this property in .props file. -->
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+    <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' != 'true'">$(AppBundleRoot)tests\$(AssemblyName)</PublishDir>
+    <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' == 'true'">$(AppBundleRoot)runonly\$(AssemblyName)</PublishDir>
+    <BundleDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PublishDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     
     <PublishingTestsRun>true</PublishingTestsRun>
-    
     <BundleTestAppTargets>BundleTestAndroidApp</BundleTestAppTargets>
-
-    <!-- this catches the case when we are running tests, but not archiving them.
-         In case of archiving, the workload gets installed by code elsewhere -->
-    <InstallWorkloadForTesting Condition="'$(TestUsingWorkloads)' == 'true' and '$(ArchiveTests)' != 'true'">true</InstallWorkloadForTesting>
+    <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress linker warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <!-- Can be removed when SDK update picks up https://github.com/dotnet/sdk/pull/18655. -->
-    <NoWarn>$(NoWarn);IL2111</NoWarn>
+    <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
     <!-- Warns about missing Xamarin.iOS.dll -->
     <NoWarn Condition="'$(EnableSoftTrimming)' == 'true'">$(NoWarn);IL2035</NoWarn>
     <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
@@ -59,7 +57,9 @@
              AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
              Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
 
-  <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'">
+  <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'"
+                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json" 
+                                       Outputs="$(PublishDir)runtimeconfig.bin">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>
@@ -114,6 +114,7 @@
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.c"
+        IntermediateOutputPath="$(IntermediateOutputPath)"
         UseLLVM="$(MonoEnableLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
@@ -203,7 +204,7 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;$(BundleTestAppTargets);ArchiveTests" />
+          DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);$(BundleTestAppTargets);ArchiveTests" />
 
   <Target Name="PrepareForTestUsingWorkloads"
           BeforeTargets="Test"

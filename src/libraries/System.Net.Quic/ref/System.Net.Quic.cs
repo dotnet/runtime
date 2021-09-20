@@ -89,6 +89,7 @@ namespace System.Net.Quic
         public override bool CanTimeout { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
+        public bool ReadsCompleted { get { throw null; } }
         public long StreamId { get { throw null; } }
         public void AbortRead(long errorCode) { }
         public void AbortWrite(long errorCode) { }
@@ -108,6 +109,7 @@ namespace System.Net.Quic
         public override void SetLength(long value) { }
         public void Shutdown() { }
         public System.Threading.Tasks.ValueTask ShutdownCompleted(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.ValueTask WaitForWriteCompletionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public System.Threading.Tasks.ValueTask WriteAsync(System.Buffers.ReadOnlySequence<byte> buffers, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

@@ -38,11 +38,7 @@ Stub * GenerateInitPInvokeFrameHelper();
 EXTERN_C void SinglecastDelegateInvokeStub();
 #endif // FEATURE_STUBS_AS_IL
 
-#ifdef CROSSGEN_COMPILE
-#define GetEEFuncEntryPoint(pfn) 0x1001
-#else
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
-#endif
 
 //**********************************************************************
 // To be used with GetSpecificCpuInfo()

@@ -33,6 +33,9 @@ namespace System.Text.Json.Serialization.Metadata
         // If enumerable or dictionary, the JsonTypeInfo for the element type.
         private JsonTypeInfo? _elementTypeInfo;
 
+        // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
+        internal bool HasSerialize { get; set; }
+
         /// <summary>
         /// Return the JsonTypeInfo for the element type, or null if the type is not an enumerable or dictionary.
         /// </summary>
@@ -144,7 +147,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(false, "This constructor should not be called.");
         }
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, ConverterStrategy converterStrategy)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options, bool dummy)
         {
             Type = type;
             Options = options ?? throw new ArgumentNullException(nameof(options));
@@ -501,7 +504,7 @@ namespace System.Text.Json.Serialization.Metadata
                 else if (DataExtensionProperty != null &&
                     StringComparer.OrdinalIgnoreCase.Equals(paramToCheck.Name, DataExtensionProperty.NameAsString))
                 {
-                    ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty.MemberInfo!, Type);
+                    ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty);
                 }
             }
 
@@ -551,22 +554,24 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void ValidateAndAssignDataExtensionProperty(JsonPropertyInfo jsonPropertyInfo)
         {
-            Type memberType = jsonPropertyInfo.DeclaredPropertyType;
-            JsonConverter? converter = null;
-            if (typeof(IDictionary<string, object>).IsAssignableFrom(memberType) ||
-                typeof(IDictionary<string, JsonElement>).IsAssignableFrom(memberType) ||
-                // Avoid a reference to typeof(JsonNode) to support trimming.
-                (memberType.FullName == JsonObjectTypeName && ReferenceEquals(memberType.Assembly, GetType().Assembly)))
-            {
-                converter = Options.GetConverterInternal(memberType);
-            }
-
-            if (converter == null)
+            if (!IsValidDataExtensionProperty(jsonPropertyInfo))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, jsonPropertyInfo);
             }
 
             DataExtensionProperty = jsonPropertyInfo;
+        }
+
+        private bool IsValidDataExtensionProperty(JsonPropertyInfo jsonPropertyInfo)
+        {
+            Type memberType = jsonPropertyInfo.DeclaredPropertyType;
+
+            bool typeIsValid = typeof(IDictionary<string, object>).IsAssignableFrom(memberType) ||
+                typeof(IDictionary<string, JsonElement>).IsAssignableFrom(memberType) ||
+                // Avoid a reference to typeof(JsonNode) to support trimming.
+                (memberType.FullName == JsonObjectTypeName && ReferenceEquals(memberType.Assembly, GetType().Assembly));
+
+            return typeIsValid && Options.GetConverterInternal(memberType) != null;
         }
 
         private static JsonParameterInfo CreateConstructorParameter(

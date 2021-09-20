@@ -32,7 +32,7 @@
 #include "slist.h"
 #include "eventtrace.h"
 
-#include "clrprivbinderutil.h"
+#include "assemblybinderutil.h"
 
 // --------------------------------------------------------------------------------
 // Forward declared classes
@@ -45,7 +45,6 @@ class PEFile;
 class PEModule;
 class PEAssembly;
 class SimpleRWLock;
-class AssemblyLoadContext;
 
 typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
@@ -122,9 +121,6 @@ private:
 
     friend class DomainFile;
     friend class PEModule;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
@@ -246,7 +242,7 @@ public:
     // ------------------------------------------------------------
 
     BOOL IsIbcOptimized();
-    BOOL IsILImageReadyToRun();
+    BOOL IsReadyToRun();
     WORD GetSubsystem();
     mdToken GetEntryPointToken(
 #ifdef _DEBUG
@@ -320,53 +316,12 @@ public:
     // Does the loader support using a native image for this file?
     // Some implementation restrictions prevent native images from being used
     // in some cases.
-#ifdef FEATURE_PREJIT
-    BOOL IsNativeLoaded();
-    PEImage *GetNativeImageWithRef();
-    PEImage *GetPersistentNativeImage();
-#endif
-    BOOL HasNativeOrReadyToRunImage();
-    BOOL HasNativeImage();
     PTR_PEImageLayout GetLoaded();
-    PTR_PEImageLayout GetLoadedNative();
     PTR_PEImageLayout GetLoadedIL();
-    PTR_PEImageLayout GetAnyILWithRef();        //AddRefs!
     IStream * GetPdbStream();
     void ClearPdbStream();
     BOOL IsLoaded(BOOL bAllowNativeSkip=TRUE) ;
     BOOL IsPtrInILImage(PTR_CVOID data);
-
-#ifdef DACCESS_COMPILE
-    PEImage *GetNativeImage()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-#ifdef FEATURE_PREJIT
-        return m_nativeImage;
-#else
-        return NULL;
-#endif
-    }
-#endif
-
-#ifdef FEATURE_PREJIT
-    // ------------------------------------------------------------
-    // Native image config utilities
-    // ------------------------------------------------------------
-
-    static CorCompileConfigFlags GetNativeImageConfigFlags(BOOL fForceDebug = FALSE,
-                                                           BOOL fForceProfiling = FALSE,
-                                                           BOOL fForceInstrument = FALSE);
-
-    static CorCompileConfigFlags GetNativeImageConfigFlagsWithOverrides();
-
-#ifdef DEBUGGING_SUPPORTED
-    static void SetNGENDebugFlags(BOOL fAllowOpt);
-    static void GetNGENDebugFlags(BOOL *fAllowOpt);
-#endif
-
-    static BOOL ShouldTreatNIAsMSIL();
-
-#endif  // FEATURE_PREJIT
 
     // ------------------------------------------------------------
     // Resource access
@@ -382,19 +337,6 @@ public:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pImport = NULL);
 
-    // ------------------------------------------------------------
-    // Logging
-    // ------------------------------------------------------------
-
-    // The format string is intentionally unicode to avoid globalization bugs
-#ifdef FEATURE_PREJIT
-    void ExternalLog(DWORD facility, DWORD level, const WCHAR *fmt, ...) DAC_EMPTY();
-    void ExternalLog(DWORD level, const WCHAR *fmt, ...) DAC_EMPTY();
-    void ExternalLog(DWORD level, const char *msg) DAC_EMPTY();
-    virtual void ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_list args) DAC_EMPTY();
-    virtual void FlushExternalLog() DAC_EMPTY();
-#endif
-
 protected:
     // ------------------------------------------------------------
     // Internal constants
@@ -405,10 +347,6 @@ protected:
         PEFILE_SYSTEM                 = 0x01,
         PEFILE_ASSEMBLY               = 0x02,
         PEFILE_MODULE                 = 0x04,
-
-#ifdef FEATURE_PREJIT
-        PEFILE_HAS_NATIVE_IMAGE_METADATA = 0x200,
-#endif
     };
 
     // ------------------------------------------------------------
@@ -423,28 +361,20 @@ protected:
 #endif
 
     void OpenMDImport();
-    void RestoreMDImport(IMDInternalImport* pImport);
     void OpenMDImport_Unsafe();
     void OpenImporter();
     void OpenEmitter();
 
-    void ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData=FALSE);
+    void ReleaseMetadataInterfaces(BOOL bDestructor);
 
 
     friend class Module;
-#ifdef FEATURE_PREJIT
-    void SetNativeImage(PEImage *nativeImage);
-#ifndef DACCESS_COMPILE
-    virtual void ClearNativeImage();
-#endif
-#endif
 
 #ifndef DACCESS_COMPILE
     void EnsureImageOpened();
 #endif // DACCESS_COMPILE
 
     friend class ClrDataAccess;
-    BOOL HasNativeImageMetadata();
 
     // ------------------------------------------------------------
     // Instance fields
@@ -459,10 +389,6 @@ protected:
     PTR_PEImage              m_identity;
     // IL image, NULL if we didn't need to open the file
     PTR_PEImage              m_openedILimage;
-#ifdef FEATURE_PREJIT
-    // Native image
-    PTR_PEImage              m_nativeImage;
-#endif
     // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
     // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
     // IID_IMDInternalImportENC
@@ -480,14 +406,9 @@ protected:
     Volatile<LONG>           m_refCount;
     int                      m_flags;
 
-    // AssemblyLoadContext that this PEFile is associated with
-    PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
+    // AssemblyBinder that this PEFile is associated with
+    PTR_AssemblyBinder       m_pAssemblyBinder;
 
-#ifdef DEBUGGING_SUPPORTED
-#ifdef FEATURE_PREJIT
-    SVAL_DECL(DWORD, s_NGENDebugFlags);
-#endif
-#endif
 public:
 
     PTR_PEImage GetILimage()
@@ -535,68 +456,61 @@ public:
     LPCWSTR GetPathForErrorMessages();
 
     static PEFile* Dummy();
-    void MarkNativeImageInvalidIfOwned();
+
     void ConvertMDInternalToReadWrite();
 
 protected:
-    PTR_ICLRPrivAssembly m_pHostAssembly;
+    PTR_BINDER_SPACE_Assembly m_pHostAssembly;
 
     // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
     // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
     // we need to ensure they are loaded in appropriate load context.
     //
-    // To enable this, we maintain a concept of "Fallback LoadContext", which will be set to the Binder of the
+    // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    PTR_ICLRPrivBinder m_pFallbackLoadContextBinder;
-
-protected:
-
-#ifndef DACCESS_COMPILE
-    void SetHostAssembly(ICLRPrivAssembly * pHostAssembly)
-    { LIMITED_METHOD_CONTRACT; m_pHostAssembly = clr::SafeAddRef(pHostAssembly); }
-#endif //DACCESS_COMPILE
+    PTR_AssemblyBinder m_pFallbackBinder;
 
 public:
-    // Returns a non-AddRef'ed ICLRPrivAssembly*
-    PTR_ICLRPrivAssembly GetHostAssembly()
+    // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
+    PTR_BINDER_SPACE_Assembly GetHostAssembly()
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         return m_pHostAssembly;
     }
 
-    // Returns the ICLRPrivBinder* instance associated with the PEFile
-    PTR_ICLRPrivBinder GetBindingContext();
+    // Returns the AssemblyBinder* instance associated with the PEFile
+    PTR_AssemblyBinder GetBinder();
 
 #ifndef DACCESS_COMPILE
     void SetupAssemblyLoadContext();
 
-    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
+    void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
+        m_pFallbackBinder = pFallbackBinder;
         SetupAssemblyLoadContext();
     }
 
 #endif //!DACCESS_COMPILE
 
-    // Returns AssemblyLoadContext into which the current PEFile was loaded.
-    PTR_AssemblyLoadContext GetAssemblyLoadContext()
+    // Returns AssemblyBinder which owns the context into which the current PEFile was loaded.
+    PTR_AssemblyBinder GetAssemblyBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(m_pAssemblyLoadContext != NULL);
-        return m_pAssemblyLoadContext;
+        _ASSERTE(m_pAssemblyBinder != NULL);
+        return m_pAssemblyBinder;
     }
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
-    PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
+    PTR_AssemblyBinder GetFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackLoadContextBinder;
+        return m_pFallbackBinder;
     }
 };  // class PEFile
 
@@ -620,17 +534,16 @@ class PEAssembly : public PEFile
     static PEAssembly * Open(
         PEAssembly *       pParent,
         PEImage *          pPEImageIL,
-        PEImage *          pPEImageNI,
-        ICLRPrivAssembly * pHostAssembly);
+        BINDER_SPACE::Assembly * pHostAssembly);
 
     // This opens the canonical System.Private.CoreLib.dll
-    static PEAssembly *OpenSystem(IUnknown *pAppCtx);
+    static PEAssembly *OpenSystem();
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
     static PEAssembly *Open(
-        CoreBindResult* pBindResult,
+        BINDER_SPACE::Assembly* pBindResult,
         BOOL isSystem);
 
     static PEAssembly *Create(
@@ -639,7 +552,7 @@ class PEAssembly : public PEFile
 
   private:
     // Private helpers for crufty exception handling reasons
-    static PEAssembly *DoOpenSystem(IUnknown *pAppCtx);
+    static PEAssembly *DoOpenSystem();
 
   public:
 
@@ -679,41 +592,19 @@ class PEAssembly : public PEFile
     static void UrlToPath(SString &string);
     static BOOL FindLastPathSeparator(const SString &path, SString::Iterator &i);
 
-    // ------------------------------------------------------------
-    // Logging
-    // ------------------------------------------------------------
-#ifdef FEATURE_PREJIT
-    void ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_list args) DAC_EMPTY();
-    void FlushExternalLog() DAC_EMPTY();
-#endif
-
-
   protected:
 
 #ifndef DACCESS_COMPILE
     PEAssembly(
-        CoreBindResult* pBindResultInfo,
+        BINDER_SPACE::Assembly* pBindResultInfo,
         IMetaDataEmit *pEmit,
         PEFile *creator,
         BOOL system,
         PEImage * pPEImageIL = NULL,
-        PEImage * pPEImageNI = NULL,
-        ICLRPrivAssembly * pHostAssembly = NULL
+        BINDER_SPACE::Assembly * pHostAssembly = NULL
         );
     virtual ~PEAssembly();
 #endif
-
-    // ------------------------------------------------------------
-    // Loader access API
-    // ------------------------------------------------------------
-
-#ifdef FEATURE_PREJIT
-
-    void SetNativeImage(PEImage *image);
-
-    BOOL CheckNativeImageVersion(PEImage *image);
-
-#endif  // FEATURE_PREJIT
 
   private:
     // ------------------------------------------------------------
@@ -727,9 +618,5 @@ class PEAssembly : public PEFile
 typedef ReleaseHolder<PEFile> PEFileHolder;
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
-
-BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected,
-    const CORCOMPILE_VERSION_INFO *pActual,
-    PEAssembly                    *pLogAsm);
 
 #endif  // PEFILE_H_

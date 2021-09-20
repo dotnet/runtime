@@ -84,6 +84,7 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
+                AbortStream();
                 _stream.Dispose();
                 DisposeSyncHelper();
             }
@@ -94,6 +95,7 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
+                AbortStream();
                 await _stream.DisposeAsync().ConfigureAwait(false);
                 DisposeSyncHelper();
             }
@@ -127,13 +129,6 @@ namespace System.Net.Http
 
             try
             {
-                // Works around linker issue where it tries to eliminate QuicStreamAbortedException
-                // https://github.com/dotnet/runtime/issues/57010
-                #if TARGET_MOBILE
-                if (string.Empty.Length > 0)
-                    throw new QuicStreamAbortedException("", 0);
-                #endif
-
                 BufferHeaders(_request);
 
                 // If using Expect 100 Continue, setup a TCS to wait to send content until we get a response.
@@ -364,6 +359,9 @@ namespace System.Net.Http
             {
                 await content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
             }
+
+            // Set to 0 to recognize that the whole request body has been sent and therefore there's no need to abort write side in case of a premature disposal.
+            _requestContentLengthRemaining = 0;
 
             if (_sendBuffer.ActiveLength != 0)
             {
@@ -1046,6 +1044,14 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= copyLen;
                         _recvBuffer.Discard(copyLen);
                         buffer = buffer.Slice(copyLen);
+
+                        // Stop, if we've reached the end of a data frame and start of the next data frame is not buffered yet
+                        // Waiting for the next data frame may cause a hang, e.g. in echo scenario
+                        // TODO: this is inefficient if data is already available in transport
+                        if (_responseDataPayloadRemaining == 0 && _recvBuffer.ActiveLength == 0)
+                        {
+                            break;
+                        }
                     }
                     else
                     {
@@ -1063,10 +1069,9 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
 
-                        if (_responseDataPayloadRemaining == 0)
-                        {
-                            break;
-                        }
+                        // Stop, even if we are in the middle of a data frame. Waiting for the next data may cause a hang
+                        // TODO: this is inefficient if data is already available in transport
+                        break;
                     }
                 }
 
@@ -1108,6 +1113,14 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= copyLen;
                         _recvBuffer.Discard(copyLen);
                         buffer = buffer.Slice(copyLen);
+
+                        // Stop, if we've reached the end of a data frame and start of the next data frame is not buffered yet
+                        // Waiting for the next data frame may cause a hang, e.g. in echo scenario
+                        // TODO: this is inefficient if data is already available in transport
+                        if (_responseDataPayloadRemaining == 0 && _recvBuffer.ActiveLength == 0)
+                        {
+                            break;
+                        }
                     }
                     else
                     {
@@ -1125,10 +1138,9 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
 
-                        if (_responseDataPayloadRemaining == 0)
-                        {
-                            break;
-                        }
+                        // Stop, even if we are in the middle of a data frame. Waiting for the next data may cause a hang
+                        // TODO: this is inefficient if data is already available in transport
+                        break;
                     }
                 }
 
@@ -1217,6 +1229,20 @@ namespace System.Net.Http
         public void Trace(string message, [CallerMemberName] string? memberName = null) =>
             _connection.Trace(StreamId, message, memberName);
 
+        private void AbortStream()
+        {
+            // If the request body isn't completed, cancel it now.
+            if (_requestContentLengthRemaining != 0) // 0 is used for the end of content writing, -1 is used for unknown Content-Length
+            {
+                _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+            }
+            // If the response body isn't completed, cancel it now.
+            if (_responseDataPayloadRemaining != -1) // -1 is used for EOF, 0 for consumed DATA frame payload before the next read
+            {
+                _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
+            }
+        }
+
         // TODO: it may be possible for Http3RequestStream to implement Stream directly and avoid this allocation.
         private sealed class Http3ReadStream : HttpBaseStream
         {
@@ -1240,35 +1266,41 @@ namespace System.Net.Http
 
             protected override void Dispose(bool disposing)
             {
-                if (_stream != null)
+                Http3RequestStream? stream = Interlocked.Exchange(ref _stream, null);
+                if (stream is null)
                 {
-                    if (disposing)
-                    {
-                        // This will remove the stream from the connection properly.
-                        _stream.Dispose();
-                    }
-                    else
-                    {
-                        // We shouldn't be using a managed instance here, but don't have much choice -- we
-                        // need to remove the stream from the connection's GOAWAY collection.
-                        _stream._connection.RemoveStream(_stream._stream);
-                        _stream._connection = null!;
-                    }
-
-                    _stream = null;
-                    _response = null;
+                    return;
                 }
+
+                if (disposing)
+                {
+                    // This will remove the stream from the connection properly.
+                    stream.Dispose();
+                }
+                else
+                {
+                    // We shouldn't be using a managed instance here, but don't have much choice -- we
+                    // need to remove the stream from the connection's GOAWAY collection.
+                    stream._connection.RemoveStream(stream._stream);
+                    stream._connection = null!;
+                }
+
+                _response = null;
 
                 base.Dispose(disposing);
             }
 
             public override async ValueTask DisposeAsync()
             {
-                if (_stream != null)
+                Http3RequestStream? stream = Interlocked.Exchange(ref _stream, null);
+                if (stream is null)
                 {
-                    await _stream.DisposeAsync().ConfigureAwait(false);
-                    _stream = null!;
+                    return;
                 }
+
+                await stream.DisposeAsync().ConfigureAwait(false);
+
+                _response = null;
 
                 await base.DisposeAsync().ConfigureAwait(false);
             }

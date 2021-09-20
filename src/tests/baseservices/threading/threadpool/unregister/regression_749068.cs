@@ -24,11 +24,13 @@ namespace Prog
     {
         ManualResetEvent sessionNotification;
         RegisteredWaitHandle sessionRegisteredWait;
+
         public Callback()
         {
             this.sessionRegisteredWait = null;
             this.sessionNotification = null;
         }
+
         public void ServiceCallbackOnPositionAvailable(Object state, bool timedOut)
         {
 
@@ -43,20 +45,19 @@ namespace Prog
                                                                 this,   /* object state */
                                                                 -1,     /* INFINITE */
                                                                 true    /* ExecuteOnlyOnce */);
-
             }
-            Console.WriteLine("callback running");
 
+            Console.WriteLine("callback running");
         }
+
         public void call()
         {
             if (this.sessionNotification != null)
                 this.sessionNotification.Set();
         }
+
         public void register()
         {
-
-
             this.sessionNotification = new ManualResetEvent(false);
       
             this.sessionRegisteredWait = ThreadPool.RegisterWaitForSingleObject(
@@ -65,13 +66,11 @@ namespace Prog
                                                             this,   /* object state */
                                                             -1,     /* INFINITE */
                                                             true    /* ExecuteOnlyOnce */);
-
-
         }
-        public bool unregister()
+
+        public void unregister()
         {
             ManualResetEvent callbackThreadComplete = new ManualResetEvent(false);
-            int timeToWait = 5000; //milliseconds
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
             if (this.sessionRegisteredWait != null)
@@ -79,36 +78,18 @@ namespace Prog
                 if (this.sessionRegisteredWait.Unregister(callbackThreadComplete))
                 {
                     Console.WriteLine("waiting on succesful unregister");
-                    callbackThreadComplete.WaitOne(timeToWait);
+                    callbackThreadComplete.WaitOne();
                 }
             }
             this.sessionRegisteredWait = null;
 
             long elapsed = sw.ElapsedMilliseconds;
             Console.WriteLine("Elapsed: {0} millisec", elapsed);
-            if (elapsed >= timeToWait)
-            {
-                Console.WriteLine("Error. Callback was not signaled");
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("Success");
-                return true;
-            }
-            
-
-            
-
         }
-
-
     }
- 
 
     class Program
     {
-
         static int Main(string[] args)
         {
             Callback obj = new Callback();
@@ -117,20 +98,10 @@ namespace Prog
             obj.register();
 
             obj.call();
-            bool success = obj.unregister();
+            obj.unregister();
 
             Console.WriteLine("end");
-            if (success)
-            {
-                Console.WriteLine("test passed");
-                return 100;
-            }
-            else
-            {
-                Console.WriteLine("test failed");
-                return 2;
-            }
-
+            return 100;
         }
     }
 }

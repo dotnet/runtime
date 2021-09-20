@@ -2,6 +2,7 @@ project (COMClientLicensing)
 include_directories( ${INC_PLATFORM_DIR} )
 include_directories( "../../ServerContracts" )
 include_directories( "../../NativeServer" )
+include_directories("../")
 set(SOURCES
     LicenseTests.cpp
     App.manifest)

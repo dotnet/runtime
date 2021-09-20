@@ -19,11 +19,6 @@
 
 static char *bundle_path;
 
-// no-op for iOS and tvOS.
-// watchOS is not supported yet.
-#define MONO_ENTER_GC_UNSAFE
-#define MONO_EXIT_GC_UNSAFE
-
 #define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
@@ -357,9 +352,7 @@ mono_ios_runtime_init (void)
 
 #if !FORCE_INTERPRETER && (!TARGET_OS_SIMULATOR || FORCE_AOT)
     // device runtimes are configured to use lazy gc thread creation
-    MONO_ENTER_GC_UNSAFE;
     mono_gc_init_finalizer_thread ();
-    MONO_EXIT_GC_UNSAFE;
 #endif
 
     MonoAssembly *assembly = load_assembly (executable, NULL);

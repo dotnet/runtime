@@ -1,29 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
+    public partial class FileStream_ctor_options_as
     {
-        protected override long PreallocationSize => 10;
-
-        protected override long InitialLength => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
-
-        private long GetExpectedFileLength(long preallocationSize) => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
-
-        private unsafe long GetActualPreallocationSize(FileStream fileStream)
-        {
-            Interop.Kernel32.FILE_STANDARD_INFO info;
-
-            Assert.True(Interop.Kernel32.GetFileInformationByHandleEx(fileStream.SafeFileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)));
-
-            return info.AllocationSize;
-        }
-
         [Theory]
         [InlineData(@"\\?\")]
         [InlineData(@"\??\")]
@@ -36,7 +23,24 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.True(GetActualPreallocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualPreallocationSize(fs)}");
+                Assert.Equal(preallocationSize, fs.Length);
+            }
+        }
+
+        [Fact]
+        public async Task PreallocationSizeIsIgnoredForNonSeekableFiles()
+        {
+            string pipeName = GetNamedPipeServerStreamName();
+            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+            FileStreamOptions options = new() { Mode = FileMode.Open, Access = FileAccess.Write, Share = FileShare.None, PreallocationSize = 123 };
+
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In))
+            using (var clienStream = new FileStream(pipePath, options))
+            {
+                await server.WaitForConnectionAsync();
+
+                Assert.False(clienStream.CanSeek);
             }
         }
 

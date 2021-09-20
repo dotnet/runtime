@@ -114,14 +114,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task ExtensionDataProperty_CannotBindTo_CtorParam()
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => JsonSerializerWrapperForString.DeserializeWrapper<Class_ExtData_CtorParam>("{}"));
-            string exStr = ex.ToString(); // System.InvalidOperationException: 'The extension data property 'System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement] ExtensionData' on type 'System.Text.Json.Serialization.Tests.ConstructorTests+Class_ExtData_CtorParam' cannot bind with a parameter in constructor 'Void .ctor(System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement])'.'
-            Assert.Contains("System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement] ExtensionData", exStr);
+            string exStr = ex.ToString(); // System.InvalidOperationException: 'The extension data property 'ExtensionData' on type 'System.Text.Json.Serialization.Tests.ConstructorTests+Class_ExtData_CtorParam' cannot bind with a parameter in the deserialization constructor.'
+            Assert.Contains("ExtensionData", exStr);
             Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Class_ExtData_CtorParam", exStr);
         }
 
@@ -196,18 +193,45 @@ namespace System.Text.Json.Serialization.Tests
             public ChildClass[] Children { get; set; }
         }
 
-        [Fact]
-        public async Task PathForChildListFails()
+        private const string PathForChildListFails_Json = @"{""Child"":{""MyIntArray"":[1, bad]}";
+
+        [Theory]
+        [MemberData(nameof(PathForChildDictionaryFails_TestData))]
+        public async Task PathForChildListFails(int bufferSize)
         {
-            JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(@"{""Child"":{""MyIntArray"":[1, bad]}"));
+            JsonSerializerOptions options = new() { DefaultBufferSize = bufferSize };
+            JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(PathForChildListFails_Json, options));
             Assert.Contains("$.Child.MyIntArray", e.Path);
         }
 
-        [Fact]
-        public async Task PathForChildDictionaryFails()
+        public static IEnumerable<object[]> PathForChildListFails_TestData()
         {
-            JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(@"{""Child"":{""MyDictionary"":{""Key"": bad]"));
+            int maxBufferSize = PathForChildListFails_Json.Length * 2;
+            for (int i = 1; i <= maxBufferSize; i++)
+            {
+                yield return new object[] { i };
+            }
+        }
+
+        private const string PathForChildDictionaryFails_Json = @"{""Child"":{""MyDictionary"":{""Key"": bad]";
+
+        [Theory]
+        [MemberData(nameof(PathForChildDictionaryFails_TestData))]
+        public async Task PathForChildDictionaryFails(int bufferSize)
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = bufferSize };
+            JsonException e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<RootClass>(PathForChildDictionaryFails_Json, options));
             Assert.Equal("$.Child.MyDictionary.Key", e.Path);
+        }
+
+        public static IEnumerable<object[]> PathForChildDictionaryFails_TestData()
+        {
+            int maxBufferSize = PathForChildDictionaryFails_Json.Length * 2;
+
+            for (int i = 1; i <= maxBufferSize; i++)
+            {
+                yield return new object[] { i };
+            }
         }
 
         [Fact]
@@ -273,21 +297,21 @@ namespace System.Text.Json.Serialization.Tests
 
             // Baseline (no exception)
             {
-                var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(@"{""mydecimal"":1}", options);
+                var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(@"{""mydecimal"":1}", options);
                 Assert.Equal(1, obj.MyDecimal);
             }
 
             {
-                var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(@"{""MYDECIMAL"":1}", options);
+                var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(@"{""MYDECIMAL"":1}", options);
                 Assert.Equal(1, obj.MyDecimal);
             }
 
             JsonException e;
 
-            e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(@"{""mydecimal"":bad}", options));
+            e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(@"{""mydecimal"":bad}", options));
             Assert.Equal("$.mydecimal", e.Path);
 
-            e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(@"{""MYDECIMAL"":bad}", options));
+            e = await Assert.ThrowsAsync<JsonException>(() => JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(@"{""MYDECIMAL"":bad}", options));
             Assert.Equal("$.MYDECIMAL", e.Path);
         }
 

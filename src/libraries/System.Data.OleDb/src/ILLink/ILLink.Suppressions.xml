@@ -101,6 +101,6 @@
       <argument>ILLink</argument>
       <argument>IL2111</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Data.OleDb.OleDbDataReader.BuildSchemaTable(MetaData[])</property>
+      <property name="Target">M:System.Data.OleDb.OleDbDataReader.BuildSchemaTable(System.Data.OleDb.MetaData[])</property>
     </attribute>  </assembly>
 </linker>

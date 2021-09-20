@@ -252,9 +252,7 @@ private:
         }
         CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
         DelegateInvokeStubManager::g_pManager->AddStub(pNewStub);
-#endif
     }
 };
 

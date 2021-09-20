@@ -12,9 +12,6 @@
 #include "stdafx.h"
 
 #include <encee.h>
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif // FEATURE_PREJIT
 #include <virtualcallstub.h>
 #include "peimagelayout.inl"
 

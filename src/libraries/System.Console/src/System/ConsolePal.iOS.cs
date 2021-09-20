@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
 namespace System
 {
-    internal sealed class NSLogStream : ConsoleStream
+    internal sealed class NSLogStream : CachedConsoleStream
     {
-        public NSLogStream() : base(FileAccess.Write) {}
+        public NSLogStream(Encoding encoding) : base(encoding) {}
 
-        public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
-
-        public override unsafe void Write(ReadOnlySpan<byte> buffer)
+        protected override unsafe void Print(ReadOnlySpan<char> line)
         {
-            fixed (byte* ptr = buffer)
+            fixed (char* ptr = line)
             {
-                Interop.Sys.Log(ptr, buffer.Length);
+                Interop.Sys.Log((byte*)ptr, line.Length * 2);
             }
         }
     }
@@ -28,9 +28,9 @@ namespace System
 
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
 
-        public static Stream OpenStandardOutput() => new NSLogStream();
+        public static Stream OpenStandardOutput() => new NSLogStream(OutputEncoding);
 
-        public static Stream OpenStandardError() => new NSLogStream();
+        public static Stream OpenStandardError() => new NSLogStream(OutputEncoding);
 
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
 

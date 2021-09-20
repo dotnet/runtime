@@ -471,6 +471,12 @@ namespace Internal.JitInterface
                     {
                         if (!FunctionJustThrows(methodIL))
                         {
+                            if (MethodBeingCompiled.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                            {
+                                // Harvest the method being compiled for the purpose of populating the type resolver
+                                var resolver = _compilation.NodeFactory.Resolver;
+                                resolver.AddModuleTokenForMethod(MethodBeingCompiled, new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle));
+                            }
                             CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
                             codeGotPublished = true;
                         }

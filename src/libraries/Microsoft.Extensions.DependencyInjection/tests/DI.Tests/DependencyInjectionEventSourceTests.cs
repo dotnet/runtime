@@ -216,6 +216,26 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void EmitsScopeDisposedEvent()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IFakeService, FakeService>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            using (var scope = serviceProvider.CreateScope())
+            {
+                scope.ServiceProvider.GetService<IFakeService>();
+            }
+
+            var scopeDisposedEvent = _listener.EventData.Single(e => e.EventName == "ScopeDisposed");
+
+            Assert.Equal(1, GetProperty<int>(scopeDisposedEvent, "scopedServicesResolved"));
+            Assert.Equal(1, GetProperty<int>(scopeDisposedEvent, "disposableServices"));
+            Assert.Equal(5, scopeDisposedEvent.EventId);
+        }
+
+        [Fact]
         public void EmitsServiceRealizationFailedEvent()
         {
             var exception = new Exception("Test error.");
@@ -241,14 +261,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             serviceCollection.AddScoped<IFakeMultipleService, FakeDisposableCallbackInnerService>();
             serviceCollection.AddTransient<IFakeMultipleService, FakeDisposableCallbackInnerService>();
             serviceCollection.AddSingleton<IFakeService, FakeDisposableCallbackInnerService>();
+            serviceCollection.AddScoped(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+            serviceCollection.AddTransient<IFakeOpenGenericService<PocoClass>, FakeOpenGenericService<PocoClass>>();
 
             using ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
             EventWrittenEventArgs serviceProviderBuiltEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderBuilt");
             GetProperty<int>(serviceProviderBuiltEvent, "serviceProviderHashCode"); // assert hashcode exists as an int
             Assert.Equal(4, GetProperty<int>(serviceProviderBuiltEvent, "singletonServices"));
-            Assert.Equal(1, GetProperty<int>(serviceProviderBuiltEvent, "scopedServices"));
-            Assert.Equal(2, GetProperty<int>(serviceProviderBuiltEvent, "transientServices"));
+            Assert.Equal(2, GetProperty<int>(serviceProviderBuiltEvent, "scopedServices"));
+            Assert.Equal(3, GetProperty<int>(serviceProviderBuiltEvent, "transientServices"));
+            Assert.Equal(1, GetProperty<int>(serviceProviderBuiltEvent, "closedGenericsServices"));
+            Assert.Equal(1, GetProperty<int>(serviceProviderBuiltEvent, "openGenericsServices"));
             Assert.Equal(7, serviceProviderBuiltEvent.EventId);
 
             EventWrittenEventArgs serviceProviderDescriptorsEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderDescriptors");
@@ -290,6 +314,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService\",",
                 "      \"lifetime\": \"Singleton\",",
                 "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\"",
+                "    },",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOpenGenericService`1[TValue]\",",
+                "      \"lifetime\": \"Scoped\",",
+                "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeOpenGenericService`1[TVal]\"",
+                "    },",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOpenGenericService`1[Microsoft.Extensions.DependencyInjection.Specification.Fakes.PocoClass]\",",
+                "      \"lifetime\": \"Transient\",",
+                "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeOpenGenericService`1[Microsoft.Extensions.DependencyInjection.Specification.Fakes.PocoClass]\"",
                 "    }",
                 "  ]",
                 "}"),

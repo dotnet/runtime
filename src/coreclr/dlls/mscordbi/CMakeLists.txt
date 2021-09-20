@@ -76,7 +76,6 @@ set(COREDBI_LIBRARIES
 if(CLR_CMAKE_HOST_WIN32)
 
     list(APPEND COREDBI_LIBRARIES
-        mdhotdata-staticcrt
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -93,7 +92,6 @@ if(CLR_CMAKE_HOST_WIN32)
 elseif(CLR_CMAKE_HOST_UNIX)
 
     list(APPEND COREDBI_LIBRARIES
-        mdhotdata_full
         palrt
         # share the PAL in the dac module
         mscordaccore

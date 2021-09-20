@@ -79,7 +79,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     {
         noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
 #ifdef TARGET_AMD64
-        if ((int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
+        if ((size_t)(int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
         {
             // initReg = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = initReg
             genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
@@ -1891,7 +1891,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 // genMultiRegStoreToSIMDLocal: store multi-reg value to a single-reg SIMD local
 //
 // Arguments:
-//    lclNode  -  GentreeLclVar of GT_STORE_LCL_VAR
+//    lclNode  -  GenTreeLclVar of GT_STORE_LCL_VAR
 //
 // Return Value:
 //    None
@@ -1996,6 +1996,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     else
     {
         regNumber tempXmm = lclNode->GetSingleTempReg();
+        assert(tempXmm != targetReg);
         inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
         GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
     }
@@ -2457,7 +2458,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // For small allocations we will generate up to six push 0 inline
         size_t cntRegSizedWords = amount / REGSIZE_BYTES;
-        if (cntRegSizedWords <= 6)
+        if (compiler->info.compInitMem && (cntRegSizedWords <= 6))
         {
             for (; cntRegSizedWords != 0; cntRegSizedWords--)
             {
@@ -2511,7 +2512,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             amount /= STACK_ALIGN;
         }
 
-        genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
+        genSetRegToIcon(regCnt, amount, ((size_t)(int)amount == amount) ? TYP_INT : TYP_LONG);
     }
 
     if (compiler->info.compInitMem)
@@ -2781,7 +2782,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         assert(src->IsIntegralConst(0));
         assert(willUseSimdMov);
 #ifdef TARGET_AMD64
-        assert(size % 16 == 0);
+        assert(size >= XMM_REGSIZE_BYTES);
 #else
         assert(size % 8 == 0);
 #endif
@@ -2796,16 +2797,26 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
+        unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                               ? YMM_REGSIZE_BYTES
+                               : XMM_REGSIZE_BYTES;
+
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
         {
             // If the source is constant 0 then always use xorps, it's faster
             // than copying the constant from a GPR to a XMM register.
-            emit->emitIns_R_R(INS_xorps, EA_16BYTE, srcXmmReg, srcXmmReg);
+            emit->emitIns_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
         }
         else
         {
             emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
+
+            if (regSize == YMM_REGSIZE_BYTES)
+            {
+                // Extend the bytes in the lower lanes to the upper lanes
+                emit->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, srcXmmReg, srcXmmReg, srcXmmReg, 1);
+            }
 #ifdef TARGET_X86
             // For x86, we need one more to convert it from 8 bytes to 16 bytes.
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
@@ -2813,7 +2824,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
 
         instruction simdMov      = simdUnalignedMovIns();
-        unsigned    regSize      = XMM_REGSIZE_BYTES;
         unsigned    bytesWritten = 0;
 
         while (bytesWritten < size)
@@ -2827,8 +2837,21 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
             if (bytesWritten + regSize > size)
             {
+#ifdef TARGET_AMD64
+                if (size - bytesWritten <= XMM_REGSIZE_BYTES)
+                {
+                    regSize = XMM_REGSIZE_BYTES;
+                }
+
+                // Shift dstOffset back to use full SIMD move
+                unsigned shiftBack = regSize - (size - bytesWritten);
+                assert(shiftBack <= regSize);
+                bytesWritten -= shiftBack;
+                dstOffset -= shiftBack;
+#else
                 assert(srcIntReg != REG_NA);
                 break;
+#endif
             }
 
             if (dstLclNum != BAD_VAR_NUM)
@@ -2848,13 +2871,33 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         size -= bytesWritten;
     }
 
-    // Fill the remainder using normal stores.
-    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
+// Fill the remainder using normal stores.
+#ifdef TARGET_AMD64
+    unsigned regSize = REGSIZE_BYTES;
+
+    while (regSize > size)
     {
-        while (regSize > size)
+        regSize /= 2;
+    }
+
+    for (; size > regSize; size -= regSize, dstOffset += regSize)
+    {
+        if (dstLclNum != BAD_VAR_NUM)
         {
-            regSize /= 2;
+            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
         }
+        else
+        {
+            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
+                                dstAddrIndexScale, dstOffset);
+        }
+    }
+
+    if (size > 0)
+    {
+        unsigned shiftBack = regSize - size;
+        assert(shiftBack <= regSize);
+        dstOffset -= shiftBack;
 
         if (dstLclNum != BAD_VAR_NUM)
         {
@@ -2866,6 +2909,24 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                                 dstAddrIndexScale, dstOffset);
         }
     }
+#else // TARGET_X86
+    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
+    {
+        while (regSize > size)
+        {
+            regSize /= 2;
+        }
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
+                                dstAddrIndexScale, dstOffset);
+        }
+    }
+#endif
 }
 
 #ifdef TARGET_AMD64
@@ -3016,8 +3077,13 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         instruction simdMov = simdUnalignedMovIns();
-        for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize;
-             size -= regSize, srcOffset += regSize, dstOffset += regSize)
+
+        // Get the largest SIMD register available if the size is large enough
+        unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                               ? YMM_REGSIZE_BYTES
+                               : XMM_REGSIZE_BYTES;
+
+        for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
             if (srcLclNum != BAD_VAR_NUM)
             {
@@ -3040,15 +3106,109 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             }
         }
 
-        // TODO-CQ-XArch: On x86 we could copy 8 byte at once by using MOVQ instead of four 4 byte MOV stores.
-        // On x64 it may also be worth copying a 4/8 byte remainder using MOVD/MOVQ, that avoids the need to
-        // allocate a GPR just for the remainder.
+        if (size > 0)
+        {
+            if (size <= XMM_REGSIZE_BYTES)
+            {
+                regSize = XMM_REGSIZE_BYTES;
+            }
+
+            // Copy the remainder by moving the last regSize bytes of the buffer
+            unsigned shiftBack = regSize - size;
+            assert(shiftBack <= regSize);
+
+            srcOffset -= shiftBack;
+            dstOffset -= shiftBack;
+
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        }
+
+        return;
     }
 
+    // Fill the remainder with normal loads/stores
     if (size > 0)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
 
+#ifdef TARGET_AMD64
+        unsigned regSize = REGSIZE_BYTES;
+
+        while (regSize > size)
+        {
+            regSize /= 2;
+        }
+
+        for (; size > regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        {
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        }
+
+        if (size > 0)
+        {
+            unsigned shiftBack = regSize - size;
+            assert(shiftBack <= regSize);
+
+            srcOffset -= shiftBack;
+            dstOffset -= shiftBack;
+
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        }
+#else // TARGET_X86
         for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
             while (regSize > size)
@@ -3076,6 +3236,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                     dstAddrIndexScale, dstOffset);
             }
         }
+#endif
     }
 }
 
@@ -5383,7 +5544,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // clang-format on
         }
     }
-#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_READYTORUN
     else if (call->gtEntryPoint.addr != nullptr)
     {
         // clang-format off
@@ -5674,7 +5835,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         assert(varDsc->GetRegNum() != REG_STK);
 
         assert(!varDsc->lvIsStructField || (compiler->lvaTable[varDsc->lvParentLcl].lvFieldCnt == 1));
-        var_types storeType = genActualType(varDsc->lvaArgType()); // We own the memory and can use the full move.
+        var_types storeType = varDsc->GetActualRegisterType(); // We own the memory and can use the full move.
         GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->GetRegNum(), varNum, 0);
 
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
@@ -5789,7 +5950,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
             // Is register argument already in the right register?
             // If not load it from its stack location.
-            var_types loadType = varDsc->lvaArgType();
+            var_types loadType = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
             if (varTypeIsStruct(varDsc->TypeGet()))
@@ -5840,7 +6001,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         if (compiler->info.compIsVarArgs)
         {
             regNumber intArgReg;
-            var_types loadType = varDsc->lvaArgType();
+            var_types loadType = varDsc->GetRegisterType();
             regNumber argReg   = varDsc->GetArgReg(); // incoming arg register
 
             if (varTypeIsFloating(loadType))
@@ -6034,7 +6195,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 #ifdef TARGET_X86
             (!op1->isUsedFromReg() || isByteReg(op1->GetRegNum())) &&
 #endif
-            (op2->IsCnsIntOrI() && genSmallTypeCanRepresentValue(TYP_UBYTE, op2->AsIntCon()->IconValue())))
+            (op2->IsCnsIntOrI() && FitsIn<uint8_t>(op2->AsIntCon()->IconValue())))
         {
             type = TYP_UBYTE;
         }
@@ -6104,8 +6265,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         // If op2 is smaller then it cannot be in memory, we're probably missing a cast
         assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
         // If we ended up with a small type and op2 is a constant then make sure we don't lose constant bits
-        assert(!op2->IsCnsIntOrI() || !varTypeIsSmall(type) ||
-               genSmallTypeCanRepresentValue(type, op2->AsIntCon()->IconValue()));
+        assert(!op2->IsCnsIntOrI() || !varTypeIsSmall(type) || FitsIn(type, op2->AsIntCon()->IconValue()));
     }
 
     // The type cannot be larger than the machine word size
@@ -8625,7 +8785,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                 continue;
             }
 
-            var_types storeType = varDsc->lvaArgType();
+            var_types storeType = varDsc->GetRegisterType();
             regNumber argReg    = varDsc->GetArgReg();
 
             instruction store_ins = ins_Store(storeType);
@@ -8695,7 +8855,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
             continue;
         }
 
-        var_types loadType = varDsc->lvaArgType();
+        var_types loadType = varDsc->GetRegisterType();
         regNumber argReg   = varDsc->GetArgReg();
 
         instruction load_ins = ins_Load(loadType);

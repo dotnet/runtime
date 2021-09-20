@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
@@ -131,14 +132,12 @@ namespace Microsoft.Extensions.Options.Tests
         [Fact]
         public void SnapshotOptionsAreCachedPerScope()
         {
-            var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
             var services = new ServiceCollection()
                 .AddOptions()
-                .AddSingleton<IConfigureOptions<FakeOptions>, TestConfigure>()
-                .AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new ConfigurationChangeTokenSource<FakeOptions>(Options.DefaultName, config))
-                .AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new ConfigurationChangeTokenSource<FakeOptions>("1", config))
+                .AddScoped<IConfigureOptions<FakeOptions>, TestConfigure>()
                 .BuildServiceProvider();
 
+            var cache = services.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
             var factory = services.GetRequiredService<IServiceScopeFactory>();
             FakeOptions options = null;
             FakeOptions namedOne = null;
@@ -150,30 +149,18 @@ namespace Microsoft.Extensions.Options.Tests
                 namedOne = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1");
                 Assert.Equal(namedOne, scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1"));
                 Assert.Equal(2, TestConfigure.ConfigureCount);
-
-                // Reload triggers Configure for the two registered change tokens.
-                config.Reload();
-                Assert.Equal(4, TestConfigure.ConfigureCount);
-
-                // Reload should not affect current scope.
-                var options2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value;
-                Assert.Equal(options, options2);
-                var namedOne2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1");
-                Assert.Equal(namedOne, namedOne2);
             }
             Assert.Equal(1, TestConfigure.CtorCount);
-
-            // Reload should be reflected in a fresh scope.
             using (var scope = factory.CreateScope())
             {
                 var options2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value;
                 Assert.NotEqual(options, options2);
-                Assert.Equal(4, TestConfigure.ConfigureCount);
+                Assert.Equal(3, TestConfigure.ConfigureCount);
                 var namedOne2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1");
-                Assert.NotEqual(namedOne, namedOne2);
+                Assert.NotEqual(namedOne2, namedOne);
                 Assert.Equal(4, TestConfigure.ConfigureCount);
             }
-            Assert.Equal(1, TestConfigure.CtorCount);
+            Assert.Equal(2, TestConfigure.CtorCount);
         }
 
         [Fact]
@@ -212,6 +199,48 @@ namespace Microsoft.Extensions.Options.Tests
         private void CheckLifetime(IServiceCollection services, Type serviceType, ServiceLifetime lifetime)
         {
             Assert.NotNull(services.Where(s => s.ServiceType == serviceType && s.Lifetime == lifetime).SingleOrDefault());
+        }
+
+        /// <summary>
+        /// Duplicates an aspnetcore test to ensure when an IOptionsSnapshot is resolved both in
+        /// the root scope and a created scope, that dependent services are created both times.
+        /// </summary>
+        [Fact]
+        public void RecreateAspNetCore_AddOidc_CustomStateAndAccount_SetsUpConfiguration()
+        {
+            var services = new ServiceCollection().AddOptions();
+
+            int calls = 0;
+
+            services.TryAddEnumerable(ServiceDescriptor.Scoped<IPostConfigureOptions<RemoteAuthenticationOptions<OidcProviderOptions>>, DefaultOidcOptionsConfiguration>());
+            services.Replace(ServiceDescriptor.Scoped(typeof(NavigationManager), _ =>
+            {
+                calls++;
+                return new NavigationManager();
+            }));
+
+            using ServiceProvider provider = services.BuildServiceProvider();
+
+            using IServiceScope scope = provider.CreateScope();
+
+            // from the root scope.
+            var rootOptions = provider.GetRequiredService<IOptionsSnapshot<RemoteAuthenticationOptions<OidcProviderOptions>>>();
+
+            // from the created scope
+            var scopedOptions = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<RemoteAuthenticationOptions<OidcProviderOptions>>>();
+
+            // we should have 2 navigation managers. One in the root scope, and one in the created scope.
+            Assert.Equal(2, calls);
+        }
+
+        private class OidcProviderOptions { }
+        private class RemoteAuthenticationOptions<TRemoteAuthenticationProviderOptions> where TRemoteAuthenticationProviderOptions : new() { }
+        private class NavigationManager { }
+
+        private class DefaultOidcOptionsConfiguration : IPostConfigureOptions<RemoteAuthenticationOptions<OidcProviderOptions>>
+        {
+            public DefaultOidcOptionsConfiguration(NavigationManager navigationManager) { }
+            public void PostConfigure(string name, RemoteAuthenticationOptions<OidcProviderOptions> options) { }
         }
     }
 }

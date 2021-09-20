@@ -30,11 +30,11 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         private void RootBuiltInConverters()
         {
-            s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
-            s_defaultFactoryConverters ??= new JsonConverter[]
+            s_defaultSimpleConverters = GetDefaultSimpleConverters();
+            s_defaultFactoryConverters = new JsonConverter[]
             {
                 // Check for disallowed types.
-                new DisallowedTypeConverterFactory(),
+                new UnsupportedTypeConverterFactory(),
                 // Nullable converter should always be next since it forwards to any nullable type.
                 new NullableConverterFactory(),
                 new EnumConverterFactory(),

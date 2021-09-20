@@ -367,7 +367,7 @@ namespace System.Reflection.TypeLoading
 
         public static byte[] ToUtf8(this string s) => Encoding.UTF8.GetBytes(s);
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         public static string ToUtf16(this ReadOnlySpan<byte> utf8) => Encoding.UTF8.GetString(utf8);
 #else
         public static unsafe string ToUtf16(this ReadOnlySpan<byte> utf8)

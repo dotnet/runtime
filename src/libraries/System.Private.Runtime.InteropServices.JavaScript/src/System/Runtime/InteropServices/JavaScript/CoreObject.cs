@@ -18,14 +18,12 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </remarks>
     public abstract class CoreObject : JSObject
     {
-        protected CoreObject(int jsHandle) : base(jsHandle, true)
+        internal CoreObject(IntPtr jsHandle) : base(jsHandle)
         {
-            object result = Interop.Runtime.BindCoreObject(jsHandle, GCHandleValue, out int exception);
-            if (exception != 0)
-                throw new JSException(SR.Format(SR.CoreObjectErrorBinding, result));
         }
 
-        internal CoreObject(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
-        { }
+        protected CoreObject(string typeName, params object[] _params) : base(typeName, _params)
+        {
+        }
     }
 }

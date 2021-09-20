@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Internal.Runtime.InteropServices is CoreCLR-only -->
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
     <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->

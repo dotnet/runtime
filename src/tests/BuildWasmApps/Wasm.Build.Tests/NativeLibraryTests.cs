@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,7 +16,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
@@ -48,7 +47,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("from pinvoke: 142", output);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectUsingSkiaSharp(BuildArgs buildArgs, RunHost host, string id)

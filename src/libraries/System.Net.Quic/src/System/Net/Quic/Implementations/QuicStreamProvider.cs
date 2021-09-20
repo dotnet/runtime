@@ -15,6 +15,8 @@ namespace System.Net.Quic.Implementations
 
         internal abstract bool CanRead { get; }
 
+        internal abstract bool ReadsCompleted { get; }
+
         internal abstract int ReadTimeout { get; set; }
 
         internal abstract int Read(Span<byte> buffer);
@@ -44,6 +46,8 @@ namespace System.Net.Quic.Implementations
         internal abstract ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default);
 
         internal abstract ValueTask ShutdownCompleted(CancellationToken cancellationToken = default);
+
+        internal abstract ValueTask WaitForWriteCompletionAsync(CancellationToken cancellationToken = default);
 
         internal abstract void Shutdown();
 

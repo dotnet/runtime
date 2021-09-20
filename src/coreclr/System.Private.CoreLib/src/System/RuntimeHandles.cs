@@ -1480,14 +1480,6 @@ namespace System
                                                       ObjectHandleOnStack retField);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Interop.BOOL _ContainsPropertyMatchingHash(QCallModule module, int propertyToken, uint hash);
-
-        internal static bool ContainsPropertyMatchingHash(RuntimeModule module, int propertyToken, uint hash)
-        {
-            return _ContainsPropertyMatchingHash(new QCallModule(ref module), propertyToken, hash) != Interop.BOOL.FALSE;
-        }
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void GetModuleType(QCallModule handle, ObjectHandleOnStack type);
 
         internal static RuntimeType GetModuleType(RuntimeModule module)

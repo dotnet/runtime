@@ -1880,7 +1880,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Converter was called");
         }
     }
 

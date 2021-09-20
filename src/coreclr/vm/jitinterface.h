@@ -11,9 +11,6 @@
 #define JITINTERFACE_H
 
 #include "corjit.h"
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif // FEATURE_PREJIT
 
 #ifndef TARGET_UNIX
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
@@ -69,12 +66,10 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 void InitJITHelpers1();
 void InitJITHelpers2();
 
-#ifndef CROSSGEN_COMPILE
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
                         CORJIT_FLAGS flags,
                         ULONG* sizeOfCode = NULL);
-#endif // CROSSGEN_COMPILE
 
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,
@@ -624,7 +619,6 @@ struct  HeapList;
 struct _hpCodeHdr;
 typedef struct _hpCodeHdr CodeHeader;
 
-#ifndef CROSSGEN_COMPILE
 // CEEJitInfo is the concrete implementation of callbacks that the EE must provide for the JIT to do its
 // work.   See code:ICorJitInfo#JitToEEInterface for more on this interface.
 class CEEJitInfo : public CEEInfo
@@ -692,6 +686,8 @@ public:
     uint16_t getRelocTypeHint(void * target) override final;
 
     uint32_t getExpectedTargetArchitecture() override final;
+
+    bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls) override final;
 
     void ResetForJitRetry()
     {
@@ -1022,7 +1018,6 @@ protected :
     } m_gphCache;
 
 };
-#endif // CROSSGEN_COMPILE
 
 /*********************************************************************/
 /*********************************************************************/

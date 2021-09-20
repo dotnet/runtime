@@ -381,6 +381,7 @@ namespace System.Collections.Generic
         /// Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>.
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
+        /// <returns>The new capacity of this queue.</returns>
         public int EnsureCapacity(int capacity)
         {
             if (capacity < 0)

@@ -32,7 +32,7 @@ if (CLR_CMAKE_HOST_WIN32)
     string(REPLACE "/GR-" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   endif()
 
-  set(CLR_SDK_REF_PACK "")
+  set(CLR_SDK_REF_PACK_OUTPUT "")
   set(CLR_SDK_REF_PACK_DISCOVERY_ERROR "")
   set(CLR_SDK_REF_PACK_DISCOVERY_RESULT 0)
 
@@ -40,14 +40,14 @@ if (CLR_CMAKE_HOST_WIN32)
     message("Using live-built ref assemblies for C++/CLI runtime tests.")
     execute_process(
         COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_LIST_DIR}/getRefPackFolderFromArtifacts.ps1"
-        OUTPUT_VARIABLE CLR_SDK_REF_PACK
+        OUTPUT_VARIABLE CLR_SDK_REF_PACK_OUTPUT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_VARIABLE CLR_SDK_REF_PACK_DISCOVERY_ERROR
         RESULT_VARIABLE CLR_SDK_REF_PACK_DISCOVERY_RESULT)
   else()
     execute_process(
         COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_LIST_DIR}/getRefPackFolderFromSdk.ps1"
-        OUTPUT_VARIABLE CLR_SDK_REF_PACK
+        OUTPUT_VARIABLE CLR_SDK_REF_PACK_OUTPUT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_VARIABLE CLR_SDK_REF_PACK_DISCOVERY_ERROR
         RESULT_VARIABLE CLR_SDK_REF_PACK_DISCOVERY_RESULT)
@@ -56,6 +56,8 @@ if (CLR_CMAKE_HOST_WIN32)
   if (NOT CLR_SDK_REF_PACK_DISCOVERY_RESULT EQUAL 0)
     message(FATAL_ERROR "Unable to find reference assemblies: ${CLR_SDK_REF_PACK_DISCOVERY_ERROR}")
   endif()
+
+  string(REGEX REPLACE ".*refPackPath=(.*)" "\\1" CLR_SDK_REF_PACK ${CLR_SDK_REF_PACK_OUTPUT})
 
   add_compile_options(/AI${CLR_SDK_REF_PACK})
 

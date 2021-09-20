@@ -54,7 +54,7 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
-        public static bool IsCaseInsensitiveOS => IsWindows || IsOSX;
+        public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
         public static bool IsThreadingSupported => !IsBrowser;
@@ -266,6 +266,28 @@ namespace System
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
+
+        public static bool IsSubstAvailable
+        {
+            get
+            {
+                try
+                {
+                    if (IsWindows)
+                    {
+                        string systemRoot = Environment.GetEnvironmentVariable("SystemRoot");
+                        if (string.IsNullOrWhiteSpace(systemRoot))
+                        {
+                            return false;
+                        }
+                        string system32 = Path.Combine(systemRoot, "System32");
+                        return File.Exists(Path.Combine(system32, "subst.exe"));
+                    }
+                }
+                catch { }
+                return false;
+            }
+        }
 
         private static Version GetICUVersion()
         {

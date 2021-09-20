@@ -400,7 +400,7 @@ namespace DebuggerTests
             var ss_local_gs = new
             {
                 StringField = TString("ss_local#SimpleStruct#string#0#SimpleStruct#gs#StringField"),
-                List = TObject("System.Collections.Generic.List<System.DateTime>"),
+                List = TObject("System.Collections.Generic.List<System.DateTime>", description: "Count = 1"),
                 Options = TEnum("DebuggerTests.Options", "Option1")
             };
 
@@ -447,7 +447,7 @@ namespace DebuggerTests
                 await CompareObjectPropertiesFor(ss_arg_props, "gs", new
                 {
                     StringField = TString("ValueTypesTest#MethodWithStructArgs#updated#gs#StringField#3"),
-                    List = TObject("System.Collections.Generic.List<System.DateTime>"),
+                    List = TObject("System.Collections.Generic.List<System.DateTime>", description: "Count = 1"),
                     Options = TEnum("DebuggerTests.Options", "Option1")
                 });
             }
@@ -463,7 +463,7 @@ namespace DebuggerTests
                 // Check ss_local.gs
                 var gs_props = await GetObjectOnLocals(ss_arg_props, "gs");
                 CheckString(gs_props, "StringField", "ss_local#SimpleStruct#string#0#SimpleStruct#gs#StringField");
-                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>");
+                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>", description: "Count = 1");
             }
 
             // ----------- Step back to the caller ---------

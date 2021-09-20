@@ -324,7 +324,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             // If preallocationSize has been provided for a creatable and writeable file
-            if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode))
+            if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode, this))
             {
                 int fallocateResult = Interop.Sys.PosixFAllocate(this, 0, preallocationSize);
                 if (fallocateResult != 0)

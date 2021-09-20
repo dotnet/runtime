@@ -4023,6 +4023,51 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
     // CPU usage statistics
     int elementsNeeded = NumberOfProcessors > g_SystemInfo.dwNumberOfProcessors ?
                                                   NumberOfProcessors : g_SystemInfo.dwNumberOfProcessors;
+
+    //
+    // When CLR threads are not using all groups, GetCPUBusyTime_NT will read element X from
+    // the "prevCPUInfo.usageBuffer" array if and only if "prevCPUInfo.affinityMask" contains a
+    // set bit in bit position X. This implies that GetCPUBusyTime_NT would read past the end
+    // of the "usageBuffer" array if the index of the highest set bit in "affinityMask" was
+    // ever larger than the index of the last array element.
+    //
+    // If necessary, expand "elementsNeeded" to ensure that the index of the last array element
+    // is always at least as large as the index of the highest set bit in the "affinityMask".
+    //
+    // This expansion is necessary in any case where the mask returned by GetCurrentProcessCpuMask
+    // (which is just a wrapper around the Win32 GetProcessAffinityMask API) contains set bits
+    // at indices greater than or equal to the larger of the basline CPU count values (i.e.,
+    // ThreadpoolMgr::NumberOfProcessors and g_SystemInfo.dwNumberOfProcessors) that were
+    // captured earlier on (during ThreadpoolMgr::Initialize and during EEStartupHelper,
+    // respectively). Note that in the relevant scenario (i.e., when CLR threads are not using
+    // all groups) the mask and CPU counts are all collected via "group-unaware" APIs and are
+    // all "group-local" values as a result.
+    //
+    // Expansion is necessary in at least the following cases:
+    //
+    //    - If the baseline CPU counts were captured while running in groups that contain fewer
+    //      CPUs (in a multi-group system with heterogenous CPU counts across groups), but this code
+    //      is now running in a group that contains a larger number of CPUs.
+    //
+    //    - If CPUs were hot-added to the system and then added to the current process affinity
+    //      mask at some point after the baseline CPU counts were captured.
+    //
+    if (!CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+    {
+        int elementsNeededToCoverMask = 0;
+        DWORD_PTR remainingMask = prevCPUInfo.affinityMask;
+        while (remainingMask != 0)
+        {
+            elementsNeededToCoverMask++;
+            remainingMask >>= 1;
+        }
+
+        if (elementsNeeded < elementsNeededToCoverMask)
+        {
+            elementsNeeded = elementsNeededToCoverMask;
+        }
+    }
+
     if (!ClrSafeInt<int>::multiply(elementsNeeded, sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION),
                                                   prevCPUInfo.usageBufferSize))
         return 0;

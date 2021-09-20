@@ -20,12 +20,12 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteNumberValue(value);
         }
 
-        internal override ulong ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        internal override ulong ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetUInt64WithQuotes();
         }
 
-        internal override void WriteAsPropertyName(Utf8JsonWriter writer, ulong value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, ulong value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             writer.WritePropertyName(value);
         }

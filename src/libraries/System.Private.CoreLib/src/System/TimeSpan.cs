@@ -28,7 +28,7 @@ namespace System
     [Serializable]
     public readonly struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, ISpanFormattable
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>,
           IAdditiveIdentity<TimeSpan, TimeSpan>,
           IComparisonOperators<TimeSpan, TimeSpan>,
@@ -41,7 +41,7 @@ namespace System
           ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
           IUnaryNegationOperators<TimeSpan, TimeSpan>,
           IUnaryPlusOperators<TimeSpan, TimeSpan>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         public const long TicksPerMillisecond = 10000;
@@ -90,7 +90,7 @@ namespace System
         {
             long totalMilliSeconds = ((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds;
             if (totalMilliSeconds > MaxMilliSeconds || totalMilliSeconds < MinMilliSeconds)
-                throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             _ticks = (long)totalMilliSeconds * TicksPerMillisecond;
         }
 
@@ -215,15 +215,14 @@ namespace System
         private static TimeSpan Interval(double value, double scale)
         {
             if (double.IsNaN(value))
-                throw new ArgumentException(SR.Arg_CannotBeNaN);
-            double ticks = value * scale;
-            return IntervalFromDoubleTicks(ticks);
+                ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN();
+            return IntervalFromDoubleTicks(value * scale);
         }
 
         private static TimeSpan IntervalFromDoubleTicks(double ticks)
         {
             if ((ticks > long.MaxValue) || (ticks < long.MinValue) || double.IsNaN(ticks))
-                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
+                ThrowHelper.ThrowOverflowException_TimeSpanTooLong();
             if (ticks == long.MaxValue)
                 return TimeSpan.MaxValue;
             return new TimeSpan((long)ticks);

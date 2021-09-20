@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public static class DynamicChainTests
     {
         private static X509Extension BasicConstraintsCA => new X509BasicConstraintsExtension(

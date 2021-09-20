@@ -429,12 +429,6 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     // NULL out / initialize members of the global profapi structure
     g_profControlBlock.Init();
 
-    if (IsCompilationProcess())
-    {
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling disabled for ngen process.\n"));
-        return S_OK;
-    }
-
     AttemptLoadProfilerForStartup();
     AttemptLoadDelayedStartupProfilers();
     AttemptLoadProfilerList();

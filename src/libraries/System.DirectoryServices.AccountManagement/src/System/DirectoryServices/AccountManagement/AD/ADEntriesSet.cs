@@ -113,5 +113,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-// #endif // PAPI_AD

@@ -575,11 +575,22 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        /// Whether <see cref="InitializeForReflectionSerializer()"/> needs to be called.
+        /// </summary>
+        internal bool IsInitializedForReflectionSerializer { get; set; }
+
+        /// <summary>
+        /// Initializes the converters for the reflection-based serializer.
+        /// <seealso cref="InitializeForReflectionSerializer"/> must be checked before calling.
+        /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal void RootBuiltInConvertersAndTypeInfoCreator()
+        internal void InitializeForReflectionSerializer()
         {
+            // For threading cases, the state that is set here can be overwritten.
             RootBuiltInConverters();
-            _typeInfoCreationFunc ??= CreateJsonTypeInfo;
+            _typeInfoCreationFunc = CreateJsonTypeInfo;
+            IsInitializedForReflectionSerializer = true;
 
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
@@ -620,6 +631,7 @@ namespace System.Text.Json
         /// Return the TypeInfo for root API calls.
         /// This has a LRU cache that is intended only for public API calls that specify the root type.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal JsonTypeInfo GetOrAddClassForRootType(Type type)
         {
             JsonTypeInfo? jsonTypeInfo = _lastClass;

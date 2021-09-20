@@ -252,16 +252,17 @@ namespace System.Text.Json.Serialization
                 TKey key;
                 string unescapedPropertyNameAsString;
 
+                _keyConverter ??= GetConverter<TKey>(state.Current.JsonTypeInfo.KeyTypeInfo!);
+
                 // Special case string to avoid calling GetString twice and save one allocation.
-                if (KeyType == typeof(string))
+                if (_keyConverter.IsInternalConverter && KeyType == typeof(string))
                 {
                     unescapedPropertyNameAsString = reader.GetString()!;
                     key = (TKey)(object)unescapedPropertyNameAsString;
                 }
                 else
                 {
-                    _keyConverter ??= GetConverter<TKey>(state.Current.JsonTypeInfo.KeyTypeInfo!);
-                    key = _keyConverter.ReadAsPropertyName(ref reader, typeToConvert, options);
+                    key = _keyConverter.ReadAsPropertyNameCore(ref reader, KeyType, options);
                     unescapedPropertyNameAsString = reader.GetString()!;
                 }
 

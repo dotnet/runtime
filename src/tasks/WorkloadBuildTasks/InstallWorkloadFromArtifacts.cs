@@ -30,6 +30,8 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string?        SdkDir             { get; set; }
 
+        public bool           OnlyUpdateManifests{ get; set; }
+
         public ITaskItem[]    ExtraNuGetSources  { get; set; } = Array.Empty<ITaskItem>();
 
         public override bool Execute()
@@ -51,6 +53,9 @@ namespace Microsoft.Workload.Build.Tasks
             string nugetConfigContents = GetNuGetConfig();
             if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), nugetConfigContents, stopOnMissing: true))
                 return false;
+
+            if (OnlyUpdateManifests)
+                return !Log.HasLoggedErrors;
 
             string nugetConfigPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             File.WriteAllText(nugetConfigPath, nugetConfigContents);

@@ -807,6 +807,94 @@ namespace System.Diagnostics.Metrics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRecordingMeasurementsWithTagList()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                Meter meter = new Meter("RecordingMeasurementsWithTagList");
+
+                using (MeterListener listener = new MeterListener())
+                {
+                    Counter<int> counter = meter.CreateCounter<int>("Counter");
+                    Histogram<int> histogram = meter.CreateHistogram<int>("histogram");
+
+                    listener.EnableMeasurementEvents(counter, counter);
+                    listener.EnableMeasurementEvents(histogram, histogram);
+
+                    KeyValuePair<string, object?>[] expectedTags = null;
+
+                    listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state) => {
+                        for (int i = 0; i < expectedTags.Length; i++)
+                        {
+                            Assert.Equal(expectedTags[i], tags[i]);
+                        }
+                    });
+
+                    // 0 Tags
+
+                    expectedTags = new KeyValuePair<string, object?>[0];
+                    counter.Add(10, new TagList());
+                    histogram.Record(10, new TagList());
+
+                    // 1 Tags
+                    expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key1", "Value1") };
+                    counter.Add(10, new TagList() { expectedTags[0] });
+                    histogram.Record(10, new TagList() { new KeyValuePair<string, object?>("Key1", "Value1") });
+
+                    // 2 Tags
+                    expectedTags = new List<KeyValuePair<string, object?>>
+                    {
+                        {"Key1", "Value1"},
+                        {"Key2", "Value2"}
+                    }.ToArray();
+
+                    counter.Add(10, new TagList() { expectedTags[0], expectedTags[1] });
+                    histogram.Record(10, new TagList() { expectedTags[0], expectedTags[1] });
+
+                    // 8 Tags
+                    expectedTags = new List<KeyValuePair<string, object?>>
+                    {
+                        { "Key1", "Value1" },
+                        { "Key2", "Value2" },
+                        { "Key3", "Value3" },
+                        { "Key4", "Value4" },
+                        { "Key5", "Value5" },
+                        { "Key6", "Value6" },
+                        { "Key7", "Value7" },
+                        { "Key8", "Value8" },
+                    }.ToArray();
+
+                    counter.Add(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7] });
+                    histogram.Record(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7] });
+
+                    // 13 Tags
+                    expectedTags = new List<KeyValuePair<string, object?>>
+                    {
+                        { "Key1", "Value1" },
+                        { "Key2", "Value2" },
+                        { "Key3", "Value3" },
+                        { "Key4", "Value4" },
+                        { "Key5", "Value5" },
+                        { "Key6", "Value6" },
+                        { "Key7", "Value7" },
+                        { "Key8", "Value8" },
+                        { "Key9", "Value9" },
+                        { "Key10", "Value10" },
+                        { "Key11", "Value11" },
+                        { "Key12", "Value12" },
+                        { "Key13", "Value13" },
+                    }.ToArray();
+
+                    counter.Add(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7],
+                                                     expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
+                    histogram.Record(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7],
+                                                     expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
+                }
+
+            }).Dispose();
+        }
+
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct
         {
             switch (tags.Length)
@@ -816,6 +904,11 @@ namespace System.Diagnostics.Metrics.Tests
                 case 2: counter.Add(value, tags[0], tags[1]); break;
                 case 3: counter.Add(value, tags[0], tags[1], tags[2]); break;
                 case 4: counter.Add(value, tags[0], tags[1], tags[2], tags[3]); break;
+                case 5: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4]); break;
+                case 6: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5]); break;
+                case 7: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6]); break;
+                case 8: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]); break;
+                case 9: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7], tags[8]); break;
                 default: counter.Add(value, tags); break;
             }
         }
@@ -829,6 +922,11 @@ namespace System.Diagnostics.Metrics.Tests
                 case 2: histogram.Record(value, tags[0], tags[1]); break;
                 case 3: histogram.Record(value, tags[0], tags[1], tags[2]); break;
                 case 4: histogram.Record(value, tags[0], tags[1], tags[2], tags[3]); break;
+                case 5: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4]); break;
+                case 6: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5]); break;
+                case 7: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6]); break;
+                case 8: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]); break;
+                case 9: histogram.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7], tags[8]); break;
                 default: histogram.Record(value, tags); break;
             }
         }
@@ -940,13 +1038,86 @@ namespace System.Diagnostics.Metrics.Tests
             listener.Start();
 
             expectedValue = record(instrument, expectedValue, expectedTags);
-            expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("K1", "V1") };
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+            }.ToArray();
             expectedValue = record(instrument, expectedValue, expectedTags);
-            expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("K1", "V1"), new KeyValuePair<string, object?>("K2", "V2") };
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+                { "K2", "V2" },
+            }.ToArray();
             expectedValue = record(instrument, expectedValue, expectedTags);
-            expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("K1", "V1"), new KeyValuePair<string, object?>("K2", "V2"), new KeyValuePair<string, object?>("K3", "V3") };
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+                { "K2", "V2" },
+                { "K3", "V3" },
+            }.ToArray();
             expectedValue = record(instrument, expectedValue, expectedTags);
-            expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("K1", "V1"), new KeyValuePair<string, object?>("K2", "V2"), new KeyValuePair<string, object?>("K3", "V3"), new KeyValuePair<string, object?>("K4", "V4") };
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+                { "K2", "V2" },
+                { "K3", "V3" },
+                { "K4", "V4" },
+            }.ToArray();
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+                { "K2", "V2" },
+                { "K3", "V3" },
+                { "K4", "V4" },
+                { "K5", "V5" },
+            }.ToArray();
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+                { "K2", "V2" },
+                { "K3", "V3" },
+                { "K4", "V4" },
+                { "K5", "V5" },
+                { "K6", "V6" },
+            }.ToArray();
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+                { "K2", "V2" },
+                { "K3", "V3" },
+                { "K4", "V4" },
+                { "K5", "V5" },
+                { "K6", "V6" },
+                { "K7", "V7" },
+            }.ToArray();
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+                { "K2", "V2" },
+                { "K3", "V3" },
+                { "K4", "V4" },
+                { "K5", "V5" },
+                { "K6", "V6" },
+                { "K7", "V7" },
+                { "K8", "V8" },
+            }.ToArray();
+            expectedValue = record(instrument, expectedValue, expectedTags);
+            expectedTags = new List<KeyValuePair<string, object?>>
+            {
+                { "K1", "V1" },
+                { "K2", "V2" },
+                { "K3", "V3" },
+                { "K4", "V4" },
+                { "K5", "V5" },
+                { "K6", "V6" },
+                { "K7", "V7" },
+                { "K8", "V8" },
+                { "K9", "V9" },
+            }.ToArray();
             expectedValue = record(instrument, expectedValue, expectedTags);
         }
 
@@ -963,6 +1134,9 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.True(false, "We encountered unsupported type");
             return default;
         }
-
+    }
+    public static class DiagnosticsCollectionExtensions
+    {
+        public static void Add<T1, T2>(this ICollection<KeyValuePair<T1, T2>> collection, T1 item1, T2 item2) => collection?.Add(new KeyValuePair<T1, T2>(item1, item2));
     }
 }

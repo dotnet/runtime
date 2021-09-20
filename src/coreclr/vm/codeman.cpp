@@ -46,9 +46,6 @@
 SPTR_IMPL(EECodeManager, ExecutionManager, m_pDefaultCodeMan);
 
 SPTR_IMPL(EEJitManager, ExecutionManager, m_pEEJitManager);
-#ifdef FEATURE_PREJIT
-SPTR_IMPL(NativeImageJitManager, ExecutionManager, m_pNativeImageJitManager);
-#endif
 #ifdef FEATURE_READYTORUN
 SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 #endif
@@ -950,8 +947,8 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    
+#if !defined(DACCESS_COMPILE)
+
 
     Thread *pThread = GetThreadNULLOk();
 
@@ -966,7 +963,7 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
     if (pThread->PreemptiveGCDisabled() || (pThread == ThreadSuspend::GetSuspensionThread()))
         return ScanNoReaderLock;
 
-    
+
 
     return ScanReaderLock;
 #else
@@ -1150,7 +1147,6 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 #endif // FEATURE_EH_FUNCLETS
 
 
-#ifndef CROSSGEN_COMPILE
 
 #ifndef DACCESS_COMPILE
 
@@ -1234,15 +1230,12 @@ void EEJitManager::SetCpuInfo()
     LIMITED_METHOD_CONTRACT;
 
     //
-    // NOTE: This function needs to be kept in sync with Zapper::CompileAssembly()
     // NOTE: This function needs to be kept in sync with compSetProcesor() in jit\compiler.cpp
     //
 
     CORJIT_FLAGS CPUCompileFlags;
 
 #if defined(TARGET_X86)
-    // NOTE: if you're adding any flags here, you probably should also be doing it
-    // for ngen (zapper.cpp)
     CORINFO_CPU cpuInfo;
     GetSpecificCpuInfo(&cpuInfo);
 
@@ -1489,7 +1482,6 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Crc32);
     }
 #endif // HOST_64BIT
-#ifndef CROSSGEN_COMPILE
     if (GetDataCacheZeroIDReg() == 4)
     {
         // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).
@@ -1498,7 +1490,6 @@ void EEJitManager::SetCpuInfo()
         // We set the flag when the instruction is permitted and the block size is 64 bytes.
         CPUCompileFlags.Set(InstructionSet_Dczva);
     }
-#endif
 #endif // TARGET_ARM64
 
     CPUCompileFlags.Set64BitInstructionSetVariants();
@@ -1553,7 +1544,7 @@ JIT_LOAD_DATA g_JitLoadData;
 //     ':'  - (colon)
 //
 //  Returns false if we find any of these characters in 'pwzJitName'
-//  Returns true if we reach the null terminator without encountering 
+//  Returns true if we reach the null terminator without encountering
 //  any of these characters.
 //
 static bool ValidateJitName(LPCWSTR pwzJitName)
@@ -1834,7 +1825,6 @@ BOOL EEJitManager::LoadJIT()
     return IsJitLoaded();
 }
 
-#ifndef CROSSGEN_COMPILE
 //**************************************************************************
 
 CodeFragmentHeap::CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind)
@@ -2011,7 +2001,6 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 
     AddBlock(pMem, dwSize);
 }
-#endif // !CROSSGEN_COMPILE
 
 //**************************************************************************
 
@@ -4178,17 +4167,6 @@ void EEJitManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 #endif // #ifdef DACCESS_COMPILE
 
-#else // CROSSGEN_COMPILE
-// stub for compilation
-BOOL EEJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
-    PCODE currentPC,
-    MethodDesc ** ppMethodDesc,
-    EECodeInfo * pCodeInfo)
-{
-    _ASSERTE(FALSE);
-    return FALSE;
-}
-#endif // !CROSSGEN_COMPILE
 
 
 #ifndef DACCESS_COMPILE
@@ -4211,12 +4189,7 @@ void ExecutionManager::Init()
 
     m_pDefaultCodeMan = new EECodeManager();
 
-#ifndef CROSSGEN_COMPILE
     m_pEEJitManager = new EEJitManager();
-#endif
-#ifdef FEATURE_PREJIT
-    m_pNativeImageJitManager = new NativeImageJitManager();
-#endif
 
 #ifdef FEATURE_READYTORUN
     m_pReadyToRunJitManager = new ReadyToRunJitManager();
@@ -4382,7 +4355,6 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
 
     if (pRS->flags & RangeSection::RANGE_SECTION_CODEHEAP)
     {
-#ifndef CROSSGEN_COMPILE
         // Typically if we find a Jit Manager we are inside a managed method
         // but on we could also be in a stub, so we check for that
         // as well and we don't consider stub to be real managed code.
@@ -4392,7 +4364,6 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
         CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
         if (!pCHdr->IsStubCodeBlock())
             return TRUE;
-#endif
     }
 #ifdef FEATURE_READYTORUN
     else
@@ -4402,24 +4373,6 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
             return TRUE;
     }
 #endif
-    else
-    {
-#ifdef FEATURE_PREJIT
-        // Check that we are in the range with true managed code. We don't
-        // consider jump stubs or precodes to be real managed code.
-
-        Module * pModule = dac_cast<PTR_Module>(pRS->pHeapListOrZapModule);
-
-        NGenLayoutInfo * pLayoutInfo = pModule->GetNGenLayoutInfo();
-
-        if (pLayoutInfo->m_CodeSections[0].IsInRange(currentPC) ||
-            pLayoutInfo->m_CodeSections[1].IsInRange(currentPC) ||
-            pLayoutInfo->m_CodeSections[2].IsInRange(currentPC))
-        {
-            return TRUE;
-        }
-#endif
-    }
 
     return FALSE;
 }
@@ -4461,7 +4414,7 @@ LPCWSTR ExecutionManager::GetJitName()
 
     // Try to obtain a name for the jit library from the env. variable
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(&pwzJitName)));
-    
+
     if (NULL == pwzJitName)
     {
         pwzJitName = MAKEDLLNAME_W(W("clrjit"));
@@ -4706,26 +4659,6 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
                    dac_cast<TADDR>(pHp));
 }
 
-#ifdef FEATURE_PREJIT
-
-void ExecutionManager::AddNativeImageRange(TADDR StartRange,
-                                           SIZE_T Size,
-                                           Module * pModule)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pModule));
-    } CONTRACTL_END;
-
-    AddRangeHelper(StartRange,
-                   StartRange + Size,
-                   GetNativeImageJitManager(),
-                   RangeSection::RANGE_SECTION_NONE,
-                   dac_cast<TADDR>(pModule));
-}
-#endif
-
 void ExecutionManager::AddRangeHelper(TADDR          pStartRange,
                                       TADDR          pEndRange,
                                       IJitManager *  pJit,
@@ -4942,7 +4875,7 @@ void ExecutionManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 #endif // #ifdef DACCESS_COMPILE
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 {
@@ -5283,7 +5216,7 @@ DONE:
 
     RETURN((PCODE)jumpStub);
 }
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T ofsAdj,
     PTR_RUNTIME_FUNCTION pFunctionEntry, TADDR moduleBase,
@@ -5395,768 +5328,7 @@ static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR
 }
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef FEATURE_PREJIT
-//***************************************************************************************
-//***************************************************************************************
-
-#ifndef DACCESS_COMPILE
-
-NativeImageJitManager::NativeImageJitManager()
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-GCInfoToken NativeImageJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        HOST_NOCALLS;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    PTR_RUNTIME_FUNCTION pRuntimeFunction = dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader);
-    TADDR baseAddress = JitTokenToModuleBase(MethodToken);
-
-#ifndef DACCESS_COMPILE
-    if (g_IBCLogger.InstrEnabled())
-    {
-        PTR_NGenLayoutInfo pNgenLayout = JitTokenToZapModule(MethodToken)->GetNGenLayoutInfo();
-        PTR_MethodDesc pMD = NativeUnwindInfoLookupTable::GetMethodDesc(pNgenLayout, pRuntimeFunction, baseAddress);
-        g_IBCLogger.LogMethodGCInfoAccess(pMD);
-    }
-#endif
-
-    SIZE_T nUnwindDataSize;
-    PTR_VOID pUnwindData = GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);
-
-    // GCInfo immediatelly follows unwind data
-    // GCInfo from an NGEN-ed image is always the current version
-    return{ dac_cast<PTR_BYTE>(pUnwindData) + nUnwindDataSize, GCINFO_VERSION };
-}
-
-unsigned NativeImageJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    NGenLayoutInfo * pNgenLayout = JitTokenToZapModule(MethodToken)->GetNGenLayoutInfo();
-
-    //early out if the method doesn't have EH info bit set.
-    if (!NativeUnwindInfoLookupTable::HasExceptionInfo(pNgenLayout, PTR_RUNTIME_FUNCTION(MethodToken.m_pCodeHeader)))
-        return 0;
-
-    PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE pExceptionLookupTable = dac_cast<PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE>(pNgenLayout->m_ExceptionInfoLookupTable.StartAddress());
-    _ASSERTE(pExceptionLookupTable != NULL);
-
-    SIZE_T size = pNgenLayout->m_ExceptionInfoLookupTable.Size();
-    COUNT_T numLookupTableEntries = (COUNT_T)(size / sizeof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY));
-    // at least 2 entries (1 valid entry + 1 sentinal entry)
-    _ASSERTE(numLookupTableEntries >= 2);
-
-    DWORD methodStartRVA = (DWORD)(JitTokenToStartAddress(MethodToken) - JitTokenToModuleBase(MethodToken));
-
-    COUNT_T ehInfoSize = 0;
-    DWORD exceptionInfoRVA = NativeExceptionInfoLookupTable::LookupExceptionInfoRVAForMethod(pExceptionLookupTable,
-                                                                  numLookupTableEntries,
-                                                                  methodStartRVA,
-                                                                  &ehInfoSize);
-    if (exceptionInfoRVA == 0)
-        return 0;
-
-    pEnumState->iCurrentPos = 0;
-    pEnumState->pExceptionClauseArray = JitTokenToModuleBase(MethodToken) + exceptionInfoRVA;
-
-    return ehInfoSize / sizeof(CORCOMPILE_EXCEPTION_CLAUSE);
-}
-
-PTR_EXCEPTION_CLAUSE_TOKEN NativeImageJitManager::GetNextEHClause(EH_CLAUSE_ENUMERATOR* pEnumState,
-                              EE_ILEXCEPTION_CLAUSE* pEHClauseOut)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    unsigned iCurrentPos = pEnumState->iCurrentPos;
-    pEnumState->iCurrentPos++;
-
-    CORCOMPILE_EXCEPTION_CLAUSE* pClause = &(dac_cast<PTR_CORCOMPILE_EXCEPTION_CLAUSE>(pEnumState->pExceptionClauseArray)[iCurrentPos]);
-
-    // copy to the input parmeter, this is a nice abstraction for the future
-    // if we want to compress the Clause encoding, we can do without affecting the call sites
-    pEHClauseOut->TryStartPC = pClause->TryStartPC;
-    pEHClauseOut->TryEndPC = pClause->TryEndPC;
-    pEHClauseOut->HandlerStartPC = pClause->HandlerStartPC;
-    pEHClauseOut->HandlerEndPC = pClause->HandlerEndPC;
-    pEHClauseOut->Flags = pClause->Flags;
-    pEHClauseOut->FilterOffset = pClause->FilterOffset;
-
-    return dac_cast<PTR_EXCEPTION_CLAUSE_TOKEN>(pClause);
-}
-
-#ifndef DACCESS_COMPILE
-
-TypeHandle NativeImageJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
-                                              CrawlFrame* pCf)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    _ASSERTE(NULL != pCf);
-    _ASSERTE(NULL != pEHClause);
-    _ASSERTE(IsTypedHandler(pEHClause));
-
-    MethodDesc *pMD = PTR_MethodDesc(pCf->GetFunction());
-
-    _ASSERTE(pMD != NULL);
-
-    Module* pModule = pMD->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
-
-    SigTypeContext typeContext(pMD);
-    VarKind k = hasNoVars;
-
-    mdToken typeTok = pEHClause->ClassToken;
-
-    // In the vast majority of cases the code under the "if" below
-    // will not be executed.
-    //
-    // First grab the representative instantiations.  For code
-    // shared by multiple generic instantiations these are the
-    // canonical (representative) instantiation.
-    if (TypeFromToken(typeTok) == mdtTypeSpec)
-    {
-        PCCOR_SIGNATURE pSig;
-        ULONG cSig;
-        IfFailThrow(pModule->GetMDImport()->GetTypeSpecFromToken(typeTok, &pSig, &cSig));
-
-        SigPointer psig(pSig, cSig);
-        k = psig.IsPolyType(&typeContext);
-
-        // Grab the active class and method instantiation.  This exact instantiation is only
-        // needed in the corner case of "generic" exception catching in shared
-        // generic code.  We don't need the exact instantiation if the token
-        // doesn't contain E_T_VAR or E_T_MVAR.
-        if ((k & hasSharableVarsMask) != 0)
-        {
-            Instantiation classInst;
-            Instantiation methodInst;
-            pCf->GetExactGenericInstantiations(&classInst,&methodInst);
-            SigTypeContext::InitTypeContext(pMD,classInst, methodInst,&typeContext);
-        }
-    }
-
-    return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
-                                                          ClassLoader::ReturnNullIfNotFound);
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-//-----------------------------------------------------------------------------
-// Ngen info manager
-//-----------------------------------------------------------------------------
-BOOL NativeImageJitManager::GetBoundariesAndVars(
-        const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
-        OUT ULONG32 * pcMap,
-        OUT ICorDebugInfo::OffsetMapping **ppMap,
-        OUT ULONG32 * pcVars,
-        OUT ICorDebugInfo::NativeVarInfo **ppVars)
-{
-    CONTRACTL {
-        THROWS;       // on OOM.
-        GC_NOTRIGGER; // getting vars shouldn't trigger
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    // We want the module that the code is instantiated in, not necessarily the one
-    // that it was declared in. This only matters for ngen-generics.
-    MethodDesc * pMD = request.GetMD();
-    Module * pModule = pMD->GetZapModule();
-    PREFIX_ASSUME(pModule != NULL);
-
-    PTR_BYTE pDebugInfo = pModule->GetNativeDebugInfo(pMD);
-
-    // No header created, which means no jit information is available.
-    if (pDebugInfo == NULL)
-        return FALSE;
-
-    // Uncompress. This allocates memory and may throw.
-    CompressDebugInfo::RestoreBoundariesAndVars(
-        fpNew, pNewData, // allocators
-        pDebugInfo,      // input
-        pcMap, ppMap,    // output
-        pcVars, ppVars,  // output
-        FALSE);          // no patchpoint info
-
-    return TRUE;
-}
-
-#ifdef DACCESS_COMPILE
-//
-// Need to write out debug info
-//
-void NativeImageJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
-{
-    SUPPORTS_DAC;
-
-    Module * pModule = pMD->GetZapModule();
-    PREFIX_ASSUME(pModule != NULL);
-    PTR_BYTE pDebugInfo = pModule->GetNativeDebugInfo(pMD);
-
-    if (pDebugInfo != NULL)
-    {
-        CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo);
-    }
-}
-#endif
-
-PCODE NativeImageJitManager::GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset)
-{
-    WRAPPER_NO_CONTRACT;
-
-    MethodRegionInfo methodRegionInfo;
-    JitTokenToMethodRegionInfo(MethodToken, &methodRegionInfo);
-
-    if (relOffset < methodRegionInfo.hotSize)
-        return methodRegionInfo.hotStartAddress + relOffset;
-
-    SIZE_T coldOffset = relOffset - methodRegionInfo.hotSize;
-    _ASSERTE(coldOffset < methodRegionInfo.coldSize);
-    return methodRegionInfo.coldStartAddress + coldOffset;
-}
-
-BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
-                                            PCODE        currentPC,
-                                            MethodDesc** ppMethodDesc,
-                                            EECodeInfo * pCodeInfo)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    TADDR currentInstr = PCODEToPINSTR(currentPC);
-
-    Module * pModule = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule);
-
-    NGenLayoutInfo * pLayoutInfo = pModule->GetNGenLayoutInfo();
-    DWORD iRange = 0;
-
-    if (pLayoutInfo->m_CodeSections[0].IsInRange(currentInstr))
-    {
-        iRange = 0;
-    }
-    else
-    if (pLayoutInfo->m_CodeSections[1].IsInRange(currentInstr))
-    {
-        iRange = 1;
-    }
-    else
-    if (pLayoutInfo->m_CodeSections[2].IsInRange(currentInstr))
-    {
-        iRange = 2;
-    }
-    else
-    {
-        return FALSE;
-    }
-
-    TADDR ImageBase = pRangeSection->LowAddress;
-
-    DWORD RelativePc = (DWORD)(currentInstr - ImageBase);
-
-    PTR_RUNTIME_FUNCTION FunctionEntry;
-
-    if (iRange == 2)
-    {
-        int ColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
-                                                                               pLayoutInfo->m_pRuntimeFunctions[2],
-                                                                               0,
-                                                                               pLayoutInfo->m_nRuntimeFunctions[2] - 1);
-
-        if (ColdMethodIndex < 0)
-            return FALSE;
-
-#ifdef FEATURE_EH_FUNCLETS
-        // Save the raw entry
-        int RawColdMethodIndex = ColdMethodIndex;
-
-        PTR_CORCOMPILE_COLD_METHOD_ENTRY pColdCodeMap = pLayoutInfo->m_ColdCodeMap;
-
-        while (pColdCodeMap[ColdMethodIndex].mainFunctionEntryRVA == 0)
-            ColdMethodIndex--;
-
-        FunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(ImageBase + pColdCodeMap[ColdMethodIndex].mainFunctionEntryRVA);
-#else
-        DWORD ColdUnwindData = pLayoutInfo->m_pRuntimeFunctions[2][ColdMethodIndex].UnwindData;
-        _ASSERTE((ColdUnwindData & RUNTIME_FUNCTION_INDIRECT) != 0);
-        FunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(ImageBase + (ColdUnwindData & ~RUNTIME_FUNCTION_INDIRECT));
-#endif
-
-        if (ppMethodDesc)
-        {
-            DWORD methodDescRVA;
-
-            COUNT_T iIndex = (COUNT_T)(FunctionEntry - pLayoutInfo->m_pRuntimeFunctions[0]);
-            if (iIndex >= pLayoutInfo->m_nRuntimeFunctions[0])
-            {
-                iIndex = (COUNT_T)(FunctionEntry - pLayoutInfo->m_pRuntimeFunctions[1]);
-                _ASSERTE(iIndex < pLayoutInfo->m_nRuntimeFunctions[1]);
-                methodDescRVA = pLayoutInfo->m_MethodDescs[1][iIndex];
-            }
-            else
-            {
-                methodDescRVA = pLayoutInfo->m_MethodDescs[0][iIndex];
-            }
-            _ASSERTE(methodDescRVA != NULL);
-
-            // Note that the MethodDesc does not have to be restored. (It happens when we are called
-            // from SetupGcCoverageForNativeMethod.)
-            *ppMethodDesc = PTR_MethodDesc((methodDescRVA & ~HAS_EXCEPTION_INFO_MASK) + ImageBase);
-        }
-
-        if (pCodeInfo)
-        {
-            PTR_RUNTIME_FUNCTION ColdFunctionTable = pLayoutInfo->m_pRuntimeFunctions[2];
-
-            PTR_RUNTIME_FUNCTION ColdFunctionEntry =  ColdFunctionTable + ColdMethodIndex;
-            DWORD coldCodeOffset = (DWORD)(RelativePc - RUNTIME_FUNCTION__BeginAddress(ColdFunctionEntry));
-            pCodeInfo->m_relOffset = pLayoutInfo->m_ColdCodeMap[ColdMethodIndex].hotCodeSize + coldCodeOffset;
-
-            // We are using RUNTIME_FUNCTION as METHODTOKEN
-            pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(FunctionEntry));
-
-#ifdef FEATURE_EH_FUNCLETS
-            PTR_RUNTIME_FUNCTION RawColdFunctionEntry = ColdFunctionTable + RawColdMethodIndex;
-#ifdef TARGET_AMD64
-            if ((RawColdFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) != 0)
-            {
-                RawColdFunctionEntry = PTR_RUNTIME_FUNCTION(ImageBase + (RawColdFunctionEntry->UnwindData & ~RUNTIME_FUNCTION_INDIRECT));
-            }
-#endif // TARGET_AMD64
-            pCodeInfo->m_pFunctionEntry = RawColdFunctionEntry;
-#endif
-        }
-    }
-    else
-    {
-        PTR_DWORD pRuntimeFunctionLookupTable = dac_cast<PTR_DWORD>(pLayoutInfo->m_UnwindInfoLookupTable[iRange]);
-
-        _ASSERTE(pRuntimeFunctionLookupTable != NULL);
-
-        DWORD RelativeToCodeStart = (DWORD)(currentInstr - dac_cast<TADDR>(pLayoutInfo->m_CodeSections[iRange].StartAddress()));
-        COUNT_T iStrideIndex = RelativeToCodeStart / RUNTIME_FUNCTION_LOOKUP_STRIDE;
-
-        // The lookup table may not be big enough to cover the entire code range if there was padding inserted during NGen image layout.
-        // The last entry is lookup table entry covers the rest of the code range in this case.
-        if (iStrideIndex >= pLayoutInfo->m_UnwindInfoLookupTableEntryCount[iRange])
-            iStrideIndex = pLayoutInfo->m_UnwindInfoLookupTableEntryCount[iRange] - 1;
-
-        int Low = pRuntimeFunctionLookupTable[iStrideIndex];
-        int High = pRuntimeFunctionLookupTable[iStrideIndex+1];
-
-        PTR_RUNTIME_FUNCTION FunctionTable = pLayoutInfo->m_pRuntimeFunctions[iRange];
-        PTR_DWORD pMethodDescs = pLayoutInfo->m_MethodDescs[iRange];
-
-        int MethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(RelativePc,
-                                                                               FunctionTable,
-                                                                               Low,
-                                                                               High);
-
-        if (MethodIndex < 0)
-            return FALSE;
-
-#ifdef FEATURE_EH_FUNCLETS
-        // Save the raw entry
-        PTR_RUNTIME_FUNCTION RawFunctionEntry = FunctionTable + MethodIndex;;
-
-        // Skip funclets to get the method desc
-        while (pMethodDescs[MethodIndex] == 0)
-            MethodIndex--;
-#endif
-
-        FunctionEntry = FunctionTable + MethodIndex;
-
-        if (ppMethodDesc)
-        {
-            DWORD methodDescRVA = pMethodDescs[MethodIndex];
-            _ASSERTE(methodDescRVA != NULL);
-
-            // Note that the MethodDesc does not have to be restored. (It happens when we are called
-            // from SetupGcCoverageForNativeMethod.)
-            *ppMethodDesc = PTR_MethodDesc((methodDescRVA & ~HAS_EXCEPTION_INFO_MASK) + ImageBase);
-
-            // We are likely executing the code already or going to execute it soon. However, there are a few cases like
-            // code:MethodTable::GetMethodDescForSlot where it is not the case. Log the code access here to avoid these
-            // cases from touching cold code maps.
-            g_IBCLogger.LogMethodCodeAccess(*ppMethodDesc);
-        }
-
-        // Get the function entry that corresponds to the real method desc.
-        _ASSERTE((RelativePc >= RUNTIME_FUNCTION__BeginAddress(FunctionEntry)));
-
-        if (pCodeInfo)
-        {
-            pCodeInfo->m_relOffset = (DWORD)
-                (RelativePc - RUNTIME_FUNCTION__BeginAddress(FunctionEntry));
-
-            // We are using RUNTIME_FUNCTION as METHODTOKEN
-            pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(FunctionEntry));
-
-#ifdef FEATURE_EH_FUNCLETS
-            AMD64_ONLY(_ASSERTE((RawFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0));
-            pCodeInfo->m_pFunctionEntry = RawFunctionEntry;
-#endif
-        }
-    }
-
-    return TRUE;
-}
-
-#if defined(FEATURE_EH_FUNCLETS)
-PTR_RUNTIME_FUNCTION NativeImageJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (!pCodeInfo->IsValid())
-    {
-        return NULL;
-    }
-
-    // code:NativeImageJitManager::JitCodeToMethodInfo computes PTR_RUNTIME_FUNCTION eagerly. This path is only
-    // reachable via EECodeInfo::GetMainFunctionInfo, and so we can just return the main entry.
-    _ASSERTE(pCodeInfo->GetRelOffset() == 0);
-
-    return dac_cast<PTR_RUNTIME_FUNCTION>(pCodeInfo->GetMethodToken().m_pCodeHeader);
-}
-
-TADDR NativeImageJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
-    NGenLayoutInfo * pLayoutInfo = JitTokenToZapModule(pCodeInfo->GetMethodToken())->GetNGenLayoutInfo();
-
-    if (pLayoutInfo->m_CodeSections[2].IsInRange(pCodeInfo->GetCodeAddress()))
-    {
-        // If the address is in the cold section, then we assume it is cold main function
-        // code, NOT a funclet. So, don't do the backward walk: just return the start address
-        // of the main function.
-        // @ARMTODO: Handle hot/cold splitting with EH funclets
-        return pCodeInfo->GetStartAddress();
-    }
-#endif
-
-    return IJitManager::GetFuncletStartAddress(pCodeInfo);
-}
-
-DWORD NativeImageJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    PTR_RUNTIME_FUNCTION pFirstFuncletFunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader) + 1;
-
-    TADDR moduleBase = JitTokenToModuleBase(MethodToken);
-    DWORD nFunclets = 0;
-    MethodRegionInfo regionInfo;
-    JitTokenToMethodRegionInfo(MethodToken, &regionInfo);
-
-    // pFirstFuncletFunctionEntry will work for ARM when passed to GetFuncletStartOffsetsHelper()
-    // even if it is a fragment of the main body and not a RUNTIME_FUNCTION for the beginning
-    // of the first hot funclet, because GetFuncletStartOffsetsHelper() will skip all the function
-    // fragments until the first funclet, if any, is found.
-
-    GetFuncletStartOffsetsHelper(regionInfo.hotStartAddress, regionInfo.hotSize, 0,
-        pFirstFuncletFunctionEntry, moduleBase,
-        &nFunclets, pStartFuncletOffsets, dwLength);
-
-    // There are no funclets in cold section on ARM yet
-    // @ARMTODO: support hot/cold splitting in functions with EH
-#if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
-    if (regionInfo.coldSize != NULL)
-    {
-        NGenLayoutInfo * pLayoutInfo = JitTokenToZapModule(MethodToken)->GetNGenLayoutInfo();
-
-        int iColdMethodIndex = NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(
-                                                    (DWORD)(regionInfo.coldStartAddress - moduleBase),
-                                                    pLayoutInfo->m_pRuntimeFunctions[2],
-                                                    0,
-                                                    pLayoutInfo->m_nRuntimeFunctions[2] - 1);
-
-        PTR_RUNTIME_FUNCTION pFunctionEntry = pLayoutInfo->m_pRuntimeFunctions[2] + iColdMethodIndex;
-
-        _ASSERTE(regionInfo.coldStartAddress == moduleBase + RUNTIME_FUNCTION__BeginAddress(pFunctionEntry));
-
-#ifdef TARGET_AMD64
-        // Skip cold part of the method body
-        if ((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) != 0)
-            pFunctionEntry++;
-#endif
-
-        GetFuncletStartOffsetsHelper(regionInfo.coldStartAddress, regionInfo.coldSize, regionInfo.hotSize,
-            pFunctionEntry, moduleBase,
-            &nFunclets, pStartFuncletOffsets, dwLength);
-    }
-#endif // !TARGET_ARM && !_TARGET_ARM64
-
-    return nFunclets;
-}
-
-BOOL NativeImageJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!pCodeInfo->IsFunclet())
-        return FALSE;
-
-    //
-    // The generic IsFilterFunclet implementation is touching exception handling tables.
-    // It is bad for working set because of it is sometimes called during GC stackwalks.
-    // The optimized version for native images does not touch exception handling tables.
-    //
-
-    NGenLayoutInfo * pLayoutInfo = JitTokenToZapModule(pCodeInfo->GetMethodToken())->GetNGenLayoutInfo();
-
-    SIZE_T size;
-    PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &size);
-    _ASSERTE(pUnwindData != NULL);
-
-    // Personality routine is always the last element of the unwind data
-    DWORD rvaPersonalityRoutine = *(dac_cast<PTR_DWORD>(dac_cast<TADDR>(pUnwindData) + size) - 1);
-
-    BOOL fRet = (pLayoutInfo->m_rvaFilterPersonalityRoutine == rvaPersonalityRoutine);
-
-    // Verify that the optimized implementation is in sync with the slow implementation
-    _ASSERTE(fRet == IJitManager::IsFilterFunclet(pCodeInfo));
-
-    return fRet;
-}
-
-#endif  // FEATURE_EH_FUNCLETS
-
-StubCodeBlockKind NativeImageJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    Module * pZapModule = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule);
-
-    if (pZapModule->IsZappedPrecode(currentPC))
-    {
-        return STUB_CODE_BLOCK_PRECODE;
-    }
-
-    NGenLayoutInfo * pLayoutInfo = pZapModule->GetNGenLayoutInfo();
-    _ASSERTE(pLayoutInfo != NULL);
-
-    if (pLayoutInfo->m_JumpStubs.IsInRange(currentPC))
-    {
-        return STUB_CODE_BLOCK_JUMPSTUB;
-    }
-
-    if (pLayoutInfo->m_StubLinkStubs.IsInRange(currentPC))
-    {
-        return STUB_CODE_BLOCK_STUBLINK;
-    }
-
-    if (pLayoutInfo->m_VirtualMethodThunks.IsInRange(currentPC))
-    {
-        return STUB_CODE_BLOCK_VIRTUAL_METHOD_THUNK;
-    }
-
-    if (pLayoutInfo->m_ExternalMethodThunks.IsInRange(currentPC))
-    {
-        return STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK;
-    }
-
-    return STUB_CODE_BLOCK_UNKNOWN;
-}
-
-PTR_Module NativeImageJitManager::JitTokenToZapModule(const METHODTOKEN& MethodToken)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return dac_cast<PTR_Module>(MethodToken.m_pRangeSection->pHeapListOrZapModule);
-}
-void NativeImageJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken,
-                                                   MethodRegionInfo * methodRegionInfo)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    _ASSERTE(methodRegionInfo != NULL);
-
-    //
-    // Initialize methodRegionInfo assuming that the method is entirely hot.  This is the common
-    // case (either binary is not procedure split or the current method is all hot).  We can
-    // adjust these values later if necessary.
-    //
-
-    methodRegionInfo->hotStartAddress  = JitTokenToStartAddress(MethodToken);
-    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
-    methodRegionInfo->coldStartAddress = 0;
-    methodRegionInfo->coldSize         = 0;
-
-    RangeSection *rangeSection = MethodToken.m_pRangeSection;
-    PREFIX_ASSUME(rangeSection != NULL);
-
-    Module * pModule = dac_cast<PTR_Module>(rangeSection->pHeapListOrZapModule);
-
-    NGenLayoutInfo * pLayoutInfo = pModule->GetNGenLayoutInfo();
-
-    //
-    // If this module is not procedure split, then we're done.
-    //
-    if (pLayoutInfo->m_CodeSections[2].Size() == 0)
-        return;
-
-    //
-    // Perform a binary search in the cold range section until we find our method
-    //
-
-    TADDR ImageBase = rangeSection->LowAddress;
-
-    int Low = 0;
-    int High = pLayoutInfo->m_nRuntimeFunctions[2] - 1;
-
-    PTR_RUNTIME_FUNCTION pRuntimeFunctionTable = pLayoutInfo->m_pRuntimeFunctions[2];
-    PTR_CORCOMPILE_COLD_METHOD_ENTRY pColdCodeMap = pLayoutInfo->m_ColdCodeMap;
-
-    while (Low <= High)
-    {
-        int Middle = Low + (High - Low) / 2;
-
-        int ColdMethodIndex = Middle;
-
-        PTR_RUNTIME_FUNCTION FunctionEntry;
-
-#ifdef FEATURE_EH_FUNCLETS
-        while (pColdCodeMap[ColdMethodIndex].mainFunctionEntryRVA == 0)
-            ColdMethodIndex--;
-
-        FunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(ImageBase + pColdCodeMap[ColdMethodIndex].mainFunctionEntryRVA);
-#else
-        DWORD ColdUnwindData = pRuntimeFunctionTable[ColdMethodIndex].UnwindData;
-        _ASSERTE((ColdUnwindData & RUNTIME_FUNCTION_INDIRECT) != 0);
-        FunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(ImageBase + (ColdUnwindData & ~RUNTIME_FUNCTION_INDIRECT));
-#endif
-
-        if (FunctionEntry == dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader))
-        {
-            PTR_RUNTIME_FUNCTION ColdFunctionEntry = pRuntimeFunctionTable + ColdMethodIndex;
-
-            methodRegionInfo->coldStartAddress = ImageBase + RUNTIME_FUNCTION__BeginAddress(ColdFunctionEntry);
-
-            //
-            // At this point methodRegionInfo->hotSize is set to the total size of
-            // the method obtained from the GC info (we set that in the init code above).
-            // Use that and coldHeader->hotCodeSize to compute the hot and cold code sizes.
-            //
-
-            ULONG hotCodeSize = pColdCodeMap[ColdMethodIndex].hotCodeSize;
-
-            methodRegionInfo->coldSize         = methodRegionInfo->hotSize - hotCodeSize;
-            methodRegionInfo->hotSize          = hotCodeSize;
-
-            return;
-        }
-        else if (FunctionEntry < dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader))
-        {
-            Low = Middle + 1;
-        }
-        else
-        {
-            // Use ColdMethodIndex to take advantage of entries skipped while looking for method start
-            High = ColdMethodIndex - 1;
-        }
-    }
-
-    //
-    // We didn't find it.  Therefore this method doesn't have a cold section.
-    //
-
-    return;
-}
-
-#ifdef DACCESS_COMPILE
-
-void NativeImageJitManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    IJitManager::EnumMemoryRegions(flags);
-}
-
-#if defined(FEATURE_EH_FUNCLETS)
-
-//
-// EnumMemoryRegionsForMethodUnwindInfo - enumerate the memory necessary to read the unwind info for the
-// specified method.
-//
-// Note that in theory, a dump generation library could save the unwind information itself without help
-// from us, since it's stored in the image in the standard function table layout for Win64.  However,
-// dump-generation libraries assume that the image will be available at debug time, and if the image
-// isn't available then it is acceptable for stackwalking to break.  For ngen images (which are created
-// on the client), it usually isn't possible to have the image available at debug time, and so for minidumps
-// we must explicitly ensure the unwind information is saved into the dump.
-//
-// Arguments:
-//     flags - EnumMem flags
-//     pMD   - MethodDesc for the method in question
-//
-void NativeImageJitManager::EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
-{
-    // Get the RUNTIME_FUNCTION entry for this method
-    PTR_RUNTIME_FUNCTION pRtf = pCodeInfo->GetFunctionEntry();
-
-    if (pRtf==NULL)
-    {
-        return;
-    }
-
-    // Enumerate the function entry and other entries needed to locate it in the program exceptions directory
-    Module * pModule = JitTokenToZapModule(pCodeInfo->GetMethodToken());
-    EnumRuntimeFunctionEntriesToFindEntry(pRtf, pModule->GetFile()->GetLoadedNative());
-
-    SIZE_T size;
-    PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pRtf, &size);
-    if (pUnwindData != NULL)
-        DacEnumMemoryRegion(PTR_TO_TADDR(pUnwindData), size);
-}
-
-#endif //FEATURE_EH_FUNCLETS
-#endif // #ifdef DACCESS_COMPILE
-
-#endif // FEATURE_PREJIT
-
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#if defined(FEATURE_READYTORUN)
 
 // Return start of exception info for a method, or 0 if the method has no EH info
 DWORD NativeExceptionInfoLookupTable::LookupExceptionInfoRVAForMethod(PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE pExceptionLookupTable,
@@ -6273,266 +5445,6 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
     return -1;
 }
 
-#ifdef FEATURE_PREJIT
-BOOL NativeUnwindInfoLookupTable::HasExceptionInfo(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    DWORD methodDescRVA = NativeUnwindInfoLookupTable::GetMethodDescRVA(pNgenLayout, pMainRuntimeFunction);
-    return (methodDescRVA & HAS_EXCEPTION_INFO_MASK);
-}
-
-PTR_MethodDesc NativeUnwindInfoLookupTable::GetMethodDesc(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction, TADDR moduleBase)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    DWORD methodDescRVA = NativeUnwindInfoLookupTable::GetMethodDescRVA(pNgenLayout, pMainRuntimeFunction);
-    return PTR_MethodDesc((methodDescRVA & ~HAS_EXCEPTION_INFO_MASK) + moduleBase);
-}
-
-DWORD NativeUnwindInfoLookupTable::GetMethodDescRVA(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    COUNT_T iIndex = (COUNT_T)(pMainRuntimeFunction - pNgenLayout->m_pRuntimeFunctions[0]);
-    DWORD rva = 0;
-    if (iIndex >= pNgenLayout->m_nRuntimeFunctions[0])
-    {
-        iIndex = (COUNT_T)(pMainRuntimeFunction - pNgenLayout->m_pRuntimeFunctions[1]);
-        _ASSERTE(iIndex < pNgenLayout->m_nRuntimeFunctions[1]);
-        rva = pNgenLayout->m_MethodDescs[1][iIndex];
-    }
-    else
-    {
-        rva = pNgenLayout->m_MethodDescs[0][iIndex];
-    }
-    _ASSERTE(rva != 0);
-
-    return rva;
-}
-#endif // FEATURE_PREJIT
-
-#endif // FEATURE_PREJIT || FEATURE_READYTORUN
-
-
-
-#ifdef FEATURE_PREJIT
-
-MethodIterator::MethodIterator(PTR_Module pModule, MethodIteratorOptions mio)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    Init(pModule, pModule->GetNativeImage(),  mio);
-}
-
-MethodIterator::MethodIterator(PTR_Module pModule, PEDecoder * pPEDecoder, MethodIteratorOptions mio)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    Init(pModule, pPEDecoder,  mio);
-}
-
-void MethodIterator::Init(PTR_Module pModule, PEDecoder * pPEDecoder, MethodIteratorOptions mio)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    m_ModuleBase = dac_cast<TADDR>(pPEDecoder->GetBase());
-
-    methodIteratorOptions = mio;
-
-    m_pNgenLayout = pModule->GetNGenLayoutInfo();
-
-    m_fHotMethodsDone = FALSE;
-    m_CurrentRuntimeFunctionIndex = -1;
-    m_CurrentColdRuntimeFunctionIndex = 0;
-}
-
-BOOL MethodIterator::Next()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    m_CurrentRuntimeFunctionIndex ++;
-
-    if (!m_fHotMethodsDone)
-    {
-        //iterate the hot methods
-        if (methodIteratorOptions & Hot)
-        {
-#ifdef FEATURE_EH_FUNCLETS
-            //Skip to the next method.
-            // skip over method fragments and funclets.
-            while (m_CurrentRuntimeFunctionIndex < m_pNgenLayout->m_nRuntimeFunctions[0])
-            {
-                if (m_pNgenLayout->m_MethodDescs[0][m_CurrentRuntimeFunctionIndex] != 0)
-                    return TRUE;
-                m_CurrentRuntimeFunctionIndex++;
-            }
-#else
-            if (m_CurrentRuntimeFunctionIndex < m_pNgenLayout->m_nRuntimeFunctions[0])
-                return TRUE;
-#endif
-        }
-        m_CurrentRuntimeFunctionIndex = 0;
-        m_fHotMethodsDone = TRUE;
-    }
-
-    if (methodIteratorOptions & Unprofiled)
-    {
-#ifdef FEATURE_EH_FUNCLETS
-         //Skip to the next method.
-        // skip over method fragments and funclets.
-        while (m_CurrentRuntimeFunctionIndex < m_pNgenLayout->m_nRuntimeFunctions[1])
-        {
-            if (m_pNgenLayout->m_MethodDescs[1][m_CurrentRuntimeFunctionIndex] != 0)
-                return TRUE;
-            m_CurrentRuntimeFunctionIndex++;
-        }
-#else
-        if (m_CurrentRuntimeFunctionIndex < m_pNgenLayout->m_nRuntimeFunctions[1])
-            return TRUE;
-#endif
-    }
-
-    return FALSE;
-}
-
-PTR_MethodDesc MethodIterator::GetMethodDesc()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return NativeUnwindInfoLookupTable::GetMethodDesc(m_pNgenLayout, GetRuntimeFunction(), m_ModuleBase);
-}
-
-GCInfoToken MethodIterator::GetGCInfoToken()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // get the gc info from the RT function
-    SIZE_T size;
-    PTR_VOID pUnwindData = GetUnwindDataBlob(m_ModuleBase, GetRuntimeFunction(), &size);
-    PTR_VOID gcInfo = (PTR_VOID)((PTR_BYTE)pUnwindData + size);
-    // MethodIterator is used to iterate over methods of an NgenImage.
-    // So, GcInfo version is always current
-    return{ gcInfo, GCINFO_VERSION };
-}
-
-TADDR MethodIterator::GetMethodStartAddress()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_ModuleBase + RUNTIME_FUNCTION__BeginAddress(GetRuntimeFunction());
-}
-
-TADDR MethodIterator::GetMethodColdStartAddress()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PTR_RUNTIME_FUNCTION CurrentFunctionEntry = GetRuntimeFunction();
-
-    //
-    // Catch up with hot code
-    //
-    for ( ; m_CurrentColdRuntimeFunctionIndex < m_pNgenLayout->m_nRuntimeFunctions[2]; m_CurrentColdRuntimeFunctionIndex++)
-    {
-        PTR_RUNTIME_FUNCTION ColdFunctionEntry = m_pNgenLayout->m_pRuntimeFunctions[2] + m_CurrentColdRuntimeFunctionIndex;
-
-        PTR_RUNTIME_FUNCTION FunctionEntry;
-
-#ifdef FEATURE_EH_FUNCLETS
-        DWORD MainFunctionEntryRVA = m_pNgenLayout->m_ColdCodeMap[m_CurrentColdRuntimeFunctionIndex].mainFunctionEntryRVA;
-
-        if (MainFunctionEntryRVA == 0)
-            continue;
-
-        FunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(m_ModuleBase + MainFunctionEntryRVA);
-#else
-        DWORD ColdUnwindData = ColdFunctionEntry->UnwindData;
-        _ASSERTE((ColdUnwindData & RUNTIME_FUNCTION_INDIRECT) != 0);
-        FunctionEntry = dac_cast<PTR_RUNTIME_FUNCTION>(m_ModuleBase + (ColdUnwindData & ~RUNTIME_FUNCTION_INDIRECT));
-#endif
-
-        if (CurrentFunctionEntry == FunctionEntry)
-        {
-            // we found a match
-            return m_ModuleBase + RUNTIME_FUNCTION__BeginAddress(ColdFunctionEntry);
-        }
-        else
-        if (CurrentFunctionEntry < FunctionEntry)
-        {
-            // method does not have cold code
-            return NULL;
-        }
-    }
-
-    return NULL;
-}
-
-PTR_RUNTIME_FUNCTION MethodIterator::GetRuntimeFunction()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(m_CurrentRuntimeFunctionIndex >= 0);
-    _ASSERTE(m_CurrentRuntimeFunctionIndex < (m_fHotMethodsDone ? m_pNgenLayout->m_nRuntimeFunctions[1] : m_pNgenLayout->m_nRuntimeFunctions[0]));
-    return (m_fHotMethodsDone ? m_pNgenLayout->m_pRuntimeFunctions[1] : m_pNgenLayout->m_pRuntimeFunctions[0]) + m_CurrentRuntimeFunctionIndex;
-}
-
-ULONG MethodIterator::GetHotCodeSize()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetMethodColdStartAddress() != NULL);
-    return m_pNgenLayout->m_ColdCodeMap[m_CurrentColdRuntimeFunctionIndex].hotCodeSize;
-}
-
-void MethodIterator::GetMethodRegionInfo(IJitManager::MethodRegionInfo *methodRegionInfo)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    methodRegionInfo->hotStartAddress  = GetMethodStartAddress();
-    methodRegionInfo->coldStartAddress = GetMethodColdStartAddress();
-    GCInfoToken gcInfoToken = GetGCInfoToken();
-    methodRegionInfo->hotSize          = ExecutionManager::GetNativeImageJitManager()->GetCodeManager()->GetFunctionSize(gcInfoToken);
-    methodRegionInfo->coldSize         = 0;
-
-    if (methodRegionInfo->coldStartAddress != NULL)
-    {
-        //
-        // At this point methodRegionInfo->hotSize is set to the total size of
-        // the method obtained from the GC info (we set that in the init code above).
-        // Use that and pCMH->hotCodeSize to compute the hot and cold code sizes.
-        //
-
-        ULONG hotCodeSize = GetHotCodeSize();
-
-        methodRegionInfo->coldSize         = methodRegionInfo->hotSize - hotCodeSize;
-        methodRegionInfo->hotSize          = hotCodeSize;
-    }
-}
-
-#endif // FEATURE_PREJIT
-
-
-
-#ifdef FEATURE_READYTORUN
 
 //***************************************************************************************
 //***************************************************************************************

@@ -672,10 +672,6 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 
     _ASSERTE(pHInst != NULL);
 
-#ifdef CROSSGEN_COMPILE
-    // The resources are embeded into the .exe itself for crossgen
-    *pHInst = (HINSTANCE)GetClrModuleBase();
-#else
 
 #ifdef SELF_NO_HOST
     _ASSERTE(!"CCompRC::LoadLibraryThrows not implemented for SELF_NO_HOST");
@@ -692,7 +688,6 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
     hr = LoadLibraryHelper(pHInst, rcPath);
 #endif
 
-#endif // CROSSGEN_COMPILE
 
     return hr;
 }

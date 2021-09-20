@@ -571,7 +571,7 @@ namespace System.Xml.Serialization
             if (type.IsEnum)
                 return false;
 
-            switch (type.GetTypeCode())
+            switch (Type.GetTypeCode(type))
             {
                 case TypeCode.String: return true;
                 case TypeCode.Int32: return true;

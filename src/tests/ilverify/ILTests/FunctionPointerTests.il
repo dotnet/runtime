@@ -56,7 +56,7 @@
         ret
     }
 
-    .method public hidebysig instance void Call.SendFunctionPointerWithInaccessibleReturnType_Invalid_MethodAccess_MethodAccess() cil managed
+    .method public hidebysig instance void Call.SendFunctionPointerWithInaccessibleReturnType_Invalid_MethodAccess.MethodAccess() cil managed
     {
         newobj instance void C::.ctor()
         ldftn class D/D_Private D::StaticMethodReturningPrivateTypeInstance(int32)
