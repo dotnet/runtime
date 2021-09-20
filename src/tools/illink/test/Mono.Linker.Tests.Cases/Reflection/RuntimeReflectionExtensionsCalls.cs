@@ -83,7 +83,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEvent;
 
 			[Kept]
@@ -158,7 +158,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> Event;
 
 			[Kept]

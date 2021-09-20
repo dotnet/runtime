@@ -1385,6 +1385,11 @@ namespace Mono.Linker.Steps
 				MarkingHelpers.MarkForwardedScope (new TypeReference (exportedType.Namespace, exportedType.Name, module, exportedType.Scope));
 			}
 
+			// Mark scopes of type references by traversing the assembly.
+			new TypeReferenceMarker (assembly, MarkingHelpers).Process ();
+
+			// Also mark the scopes of metadata typeref rows to cover any not discovered by the traversal.
+			// This can happen when the compiler emits typerefs into IL which aren't strictly necessary per ECMA 335.
 			foreach (TypeReference typeReference in module.GetTypeReferences ())
 				MarkingHelpers.MarkForwardedScope (typeReference);
 		}
