@@ -3263,8 +3263,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             dataReg = data->GetRegNum();
         }
 
-        var_types   type = varTypeIsFloating(data->TypeGet()) ? data->TypeGet() : tree->TypeGet();
-        instruction ins  = ins_Store(type);
+        var_types   type = tree->TypeGet();
+        instruction ins  = ins_StoreFromSrc(dataReg, type);
 
         if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
         {
