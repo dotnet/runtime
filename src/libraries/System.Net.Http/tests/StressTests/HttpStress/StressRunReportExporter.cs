@@ -19,27 +19,61 @@ namespace HttpStress
     {
         public static string GetFailureFingerprint((Type, string, string)[] key)
         {
-            using BinaryWriter bw = new BinaryWriter(new MemoryStream());
+            StringBuilder sb = new StringBuilder();
             foreach ((Type ex, string message, string callSite) in key)
             {
-                if (ex.FullName != null)
-                {
-                    bw.Write(ex.FullName);
-                }
-
-                bw.Write(message);
-                bw.Write(callSite);
-            }
-            bw.Seek(0, SeekOrigin.Begin);
-            using MD5 md5 = MD5.Create();
-            byte[] hash = md5.ComputeHash(bw.BaseStream);
-            StringBuilder sb = new StringBuilder();
-            foreach (byte x in hash)
-            {
-                sb.Append(x.ToString("X2"));
+                AppendFingerprintPart(sb, ex, message, callSite);
             }
             return sb.ToString();
+
+            //using BinaryWriter bw = new BinaryWriter(new MemoryStream());
+            //foreach ((Type ex, string message, string callSite) in key)
+            //{
+            //    if (ex.FullName != null)
+            //    {
+            //        bw.Write(ex.FullName);
+            //    }
+            //    bw.Write(message);
+            //    bw.Write(callSite);
+            //}
+            //bw.Seek(0, SeekOrigin.Begin);
+            //using MD5 md5 = MD5.Create();
+            //byte[] hash = md5.ComputeHash(bw.BaseStream);
+            //StringBuilder sb = new StringBuilder();
+            //foreach (byte x in hash)
+            //{
+            //    sb.Append(x.ToString("X2"));
+            //}
+            //return sb.ToString();
         }
+
+        private static void AppendFingerprintPart(StringBuilder sb, Type ex, string message, string callSite)
+        {
+            if (ex.FullName != null)
+            {
+                AppendHash(sb, ex.FullName);
+            }
+            sb.Append('.');
+            AppendHash(sb, message);
+            sb.Append('.');
+            AppendHash(sb, callSite);
+            sb.Append("--");
+
+            static void AppendHash(StringBuilder sb, string textToHash)
+            {
+                using BinaryWriter bw = new BinaryWriter(new MemoryStream());
+                bw.Write(textToHash);
+                bw.Seek(0, SeekOrigin.Begin);
+                using MD5 md5 = MD5.Create();
+                byte[] hash = md5.ComputeHash(bw.BaseStream);
+                foreach (byte x in hash)
+                {
+                    sb.Append(x.ToString("X2"));
+                }
+            }
+        }
+
+        
 
         public static void Test()
         {

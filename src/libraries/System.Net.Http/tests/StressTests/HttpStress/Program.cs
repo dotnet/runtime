@@ -28,6 +28,8 @@ namespace HttpStress
 
         public static async Task<int> Main(string[] args)
         {
+            //StressRunReportExporter.Test();
+            //return await Task.FromResult(0);
             if (!TryParseCli(args, out Configuration? config))
             {
                 return (int)ExitCode.CliError;
