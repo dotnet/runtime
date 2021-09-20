@@ -11,6 +11,15 @@ namespace System.IO.Tests
 {
     public partial class FileStream_ctor_options_as
     {
+        private unsafe long GetAllocatedSize(FileStream fileStream)
+        {
+            Interop.Kernel32.FILE_STANDARD_INFO info;
+
+            Assert.True(Interop.Kernel32.GetFileInformationByHandleEx(fileStream.SafeFileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)));
+
+            return info.AllocationSize;
+        }
+
         [Theory]
         [InlineData(@"\\?\")]
         [InlineData(@"\??\")]
@@ -23,31 +32,15 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
             {
-                Assert.Equal(preallocationSize, fs.Length);
-            }
-        }
-
-        [Fact]
-        public async Task PreallocationSizeIsIgnoredForNonSeekableFiles()
-        {
-            string pipeName = GetNamedPipeServerStreamName();
-            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
-
-            FileStreamOptions options = new() { Mode = FileMode.Open, Access = FileAccess.Write, Share = FileShare.None, PreallocationSize = 123 };
-
-            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In))
-            using (var clienStream = new FileStream(pipePath, options))
-            {
-                await server.WaitForConnectionAsync();
-
-                Assert.False(clienStream.CanSeek);
+                Assert.Equal(0, fs.Length)
+                Assert.Equal(preallocationSize, GetAllocatedSize(fs));
             }
         }
 
         [ConditionalTheory(nameof(IsFat32))]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
-        [InlineData(FileMode.OpenOrCreate)]
+        [InlineData(FileMode.Truncate)]
         public void WhenFileIsTooLargeTheErrorMessageContainsAllDetails(FileMode mode)
         {
             const long tooMuch = uint.MaxValue + 1L; // more than FAT32 max size

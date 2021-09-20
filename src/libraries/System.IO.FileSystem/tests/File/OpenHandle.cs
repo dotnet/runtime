@@ -14,14 +14,14 @@ namespace System.IO.Tests
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
             FileAccess access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite;
-            return new FileStream(File.OpenHandle(path, mode, access, preallocationSize: PreallocationSize), access);
+            return new FileStream(File.OpenHandle(path, mode, access), access);
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
-            => new FileStream(File.OpenHandle(path, mode, access, preallocationSize: PreallocationSize), access);
+            => new FileStream(File.OpenHandle(path, mode, access), access);
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new FileStream(File.OpenHandle(path, mode, access, share, options, PreallocationSize), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+            => new FileStream(File.OpenHandle(path, mode, access, share, options), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
 
         [Fact]
         public override void NegativePreallocationSizeThrows()

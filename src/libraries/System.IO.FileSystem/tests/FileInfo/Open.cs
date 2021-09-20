@@ -81,8 +81,7 @@ namespace System.IO.Tests
             return new FileInfo(path).Open(
                 new FileStreamOptions {
                     Mode = mode,
-                    Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite,
-                    PreallocationSize = PreallocationSize
+                    Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite
                 });
         }
 
@@ -91,8 +90,7 @@ namespace System.IO.Tests
             return new FileInfo(path).Open(
                 new FileStreamOptions {
                     Mode = mode,
-                    Access = access,
-                    PreallocationSize = PreallocationSize
+                    Access = access
                 });
         }
 
@@ -104,8 +102,7 @@ namespace System.IO.Tests
                     Access = access,
                     Share = share,
                     Options = options,
-                    BufferSize = bufferSize,
-                    PreallocationSize = PreallocationSize
+                    BufferSize = bufferSize
                 });
         }
     }

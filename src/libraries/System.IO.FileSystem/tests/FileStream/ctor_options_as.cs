@@ -9,8 +9,6 @@ namespace System.IO.Tests
 {
     public abstract class FileStream_ctor_options_as_base : FileStream_ctor_str_fm_fa_fs_buffer_fo
     {
-        protected abstract long PreallocationSize { get; }
-
         protected override string GetExpectedParamName(string paramName) => "value";
 
         protected override FileStream CreateFileStream(string path, FileMode mode)
@@ -18,8 +16,7 @@ namespace System.IO.Tests
                     new FileStreamOptions
                     {
                         Mode = mode,
-                        Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite,
-                        PreallocationSize = PreallocationSize
+                        Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite
                     });
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
@@ -27,8 +24,7 @@ namespace System.IO.Tests
                     new FileStreamOptions
                     {
                         Mode = mode,
-                        Access = access,
-                        PreallocationSize = PreallocationSize
+                        Access = access
                     });
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
@@ -39,26 +35,18 @@ namespace System.IO.Tests
                         Access = access,
                         Share = share,
                         BufferSize = bufferSize,
-                        Options = options,
-                        PreallocationSize = PreallocationSize
+                        Options = options
                     });
 
-        protected FileStreamOptions GetOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options, long preAllocationSize)
+        protected FileStreamOptions GetOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
             => new FileStreamOptions
             {
                 Mode = mode,
                 Access = access,
                 Share = share,
                 Options = options,
-                PreallocationSize = preAllocationSize
+                PreallocationSize = preallocationSize
             };
-    }
-
-    public class FileStream_ctor_options_as_zero : FileStream_ctor_options_as_base
-    {
-        protected override long PreallocationSize => 0; // specifying 0 should have no effect
-
-        protected override long InitialLength => 0;
     }
 
     [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
@@ -70,10 +58,6 @@ namespace System.IO.Tests
     [Collection("NoParallelTests")]
     public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
     {
-        protected override long PreallocationSize => 10;
-
-        protected override long InitialLength => 10;
-
         [Fact]
         public virtual void NegativePreallocationSizeThrows()
         {
@@ -83,71 +67,39 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(FileMode.Create, 0L)]
-        [InlineData(FileMode.CreateNew, 0L)]
-        [InlineData(FileMode.OpenOrCreate, 0L)]
-        public void WhenFileIsCreatedWithoutPreallocationSizeSpecifiedItsLengthIsZero(FileMode mode, long preallocationSize)
-        {
-            using (var fs = new FileStream(GetPathToNonExistingFile(), GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
-            {
-                Assert.Equal(0, fs.Length);
-                Assert.Equal(0, fs.Position);
-            }
-        }
-
-        [Theory]
-        [InlineData(FileMode.Open, 20L)]
-        [InlineData(FileMode.Open, 5L)]
-        [InlineData(FileMode.Append, 20L)]
-        [InlineData(FileMode.Append, 5L)]
-        public void PreallocationSizeIsIgnoredForFileModeOpenAndAppend(FileMode mode, long preallocationSize)
+        [InlineData(FileMode.Append)]
+        [InlineData(FileMode.Open)]
+        [InlineData(FileMode.OpenOrCreate)]
+        public void PreallocationSizeThrowsForFileModeOpenAndAppend(FileMode mode)
         {
             const int initialSize = 10;
             string filePath = GetPathToNonExistingFile();
             File.WriteAllBytes(filePath, new byte[initialSize]);
 
-            using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
-            {
-                Assert.Equal(initialSize, fs.Length); // it has NOT been changed
-                Assert.Equal(mode == FileMode.Append ? initialSize : 0, fs.Position);
-            }
-        }
-
-        [Theory]
-        [InlineData(FileMode.OpenOrCreate, 20L)] // preallocationSize > initialSize
-        [InlineData(FileMode.OpenOrCreate, 5L)] // preallocationSize < initialSize
-        public void WhenExistingFileIsBeingOpenedWithOpenOrCreateModeTheLengthRemainsUnchanged(FileMode mode, long preallocationSize)
-        {
-            const int initialSize = 10;
-            string filePath = GetPathToNonExistingFile();
-            byte[] initialData = RandomNumberGenerator.GetBytes(initialSize);
-            File.WriteAllBytes(filePath, initialData);
-
-            using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
-            {
-                Assert.Equal(initialSize, fs.Length); // it was not changed
-                Assert.Equal(0, fs.Position);
-
-                byte[] actualContent = new byte[initialData.Length];
-                Assert.Equal(actualContent.Length, fs.Read(actualContent));
-                AssertExtensions.SequenceEqual(initialData, actualContent); // the initial content was not changed
-            }
+            Assert.Throws<ArgumentException>(
+                () => new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize: 20)));
         }
 
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
-        [InlineData(FileMode.OpenOrCreate)]
-        public void WhenFileIsCreatedWithPreallocationSizeSpecifiedTheLengthIsSetAndTheContentIsZeroed(FileMode mode)
+        [InlineData(FileMode.Truncate)]
+        public void PreallocationSize(FileMode mode)
         {
             const long preallocationSize = 123;
 
-            using (var fs = new FileStream(GetPathToNonExistingFile(), GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
+            string filePath = GetPathToNonExistingFile();
+            if (mode == FileMode.Truncate)
             {
-                Assert.Equal(preallocationSize, fs.Length);
-                Assert.Equal(0, fs.Position);
+                const int initialSize = 10;
+                File.WriteAllBytes(filePath, new byte[initialSize]);
+            }
 
-                AssertFileContentHasBeenZeroed(0, (int)fs.Length, fs);
+            using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
+            {
+                Assert.Equal(0, fs.Length);
+                Assert.True(GetAllocatedSize(fs) > preallocationSize);
+                Assert.Equal(0, fs.Position);
             }
         }
 
@@ -159,7 +111,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
-        [InlineData(FileMode.OpenOrCreate)]
+        [InlineData(FileMode.Truncate)]
         public void WhenDiskIsFullTheErrorMessageContainsAllDetails(FileMode mode)
         {
             const long tooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
@@ -179,24 +131,6 @@ namespace System.IO.Tests
             Assert.False(exists);
         }
 
-        [Fact]
-        public void WhenFileIsTruncatedWithPreallocationSizeSpecifiedTheLengthIsSetAndTheContentIsZeroed()
-        {
-            const int initialSize = 10_000; // this must be more than 4kb which seems to be minimum allocation size on Windows
-            const long preallocationSize = 100;
-
-            string filePath = GetPathToNonExistingFile();
-            File.WriteAllBytes(filePath, Enumerable.Repeat((byte)1, initialSize).ToArray());
-
-            using (var fs = new FileStream(filePath, GetOptions(FileMode.Truncate, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
-            {
-                Assert.Equal(preallocationSize, fs.Length);
-                Assert.Equal(0, fs.Position);
-
-                AssertFileContentHasBeenZeroed(0, (int)fs.Length, fs);
-            }
-        }
-
         private string GetPathToNonExistingFile()
         {
             string filePath = GetTestFilePath();
@@ -207,17 +141,6 @@ namespace System.IO.Tests
             }
 
             return filePath;
-        }
-
-        private static void AssertFileContentHasBeenZeroed(int from, int to, FileStream fs)
-        {
-            int expectedByteCount = to - from;
-            int extraByteCount = 1;
-            byte[] content = Enumerable.Repeat((byte)1, expectedByteCount + extraByteCount).ToArray();
-            fs.Position = from;
-            Assert.Equal(expectedByteCount, fs.Read(content));
-            Assert.All(content.SkipLast(extraByteCount), @byte => Assert.Equal(0, @byte));
-            Assert.Equal(to, fs.Position);
         }
     }
 }
