@@ -29,7 +29,7 @@ namespace System.Data.OleDb
             if ((OleDbHResult.S_OK == hr) && (IntPtr.Zero != pErrorInfo))
             {
                 UnsafeNativeMethods.IErrorInfo errorInfo = (UnsafeNativeMethods.IErrorInfo)OleDbComWrappers.Instance
-                    .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);;
+                    .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);
                 try
                 {
                     if (hresult < 0)
