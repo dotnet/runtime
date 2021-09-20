@@ -115,7 +115,10 @@ namespace System.Xml
         }
 
         // Skips to the end tag of the current element.
-        public virtual Task SkipAsync() => ReadState != ReadState.Interactive ? Task.CompletedTask : SkipSubtreeAsync();
+        public virtual Task SkipAsync()
+        {
+            return ReadState != ReadState.Interactive ? Task.CompletedTask : SkipSubtreeAsync();
+        }
 
         // Returns decoded bytes of the current base64 text content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count)
