@@ -309,7 +309,7 @@ namespace System.Xml.Serialization
             "yyyy-MM-ddTHH:mm:ss.fffzzzzzz",
             "yyyy-MM-ddTHH:mm:ss.ffffzzzzzz",
             "yyyy-MM-ddTHH:mm:ss.fffffzzzzzz",
-            "yyyy-MM-ddTHH:mm:ss.ffffffzzzzzz",
+            "yyyy-MM-ddTHH:mm:ss.ffffffzzzzzz"
         };
 
         private static readonly string[] s_allDateFormats = new string[] {
@@ -329,7 +329,7 @@ namespace System.Xml.Serialization
             "yyyy-MM",
             "yyyy-MMZ",
             "yyyy-MMzzzzzz",
-            "yyyyzzzzzz",
+            "yyyyzzzzzz"
         };
 
         private static readonly string[] s_allTimeFormats = new string[] {
@@ -356,7 +356,7 @@ namespace System.Xml.Serialization
             "HH:mm:ss.fffzzzzzz",
             "HH:mm:ss.ffffzzzzzz",
             "HH:mm:ss.fffffzzzzzz",
-            "HH:mm:ss.ffffffzzzzzz",
+            "HH:mm:ss.ffffffzzzzzz"
         };
 
         internal static DateTime ToDateTime(string value)

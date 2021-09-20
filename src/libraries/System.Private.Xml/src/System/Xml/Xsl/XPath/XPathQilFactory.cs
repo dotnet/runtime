@@ -138,7 +138,7 @@ namespace System.Xml.Xsl.XPath
             double opCode = op switch
             {
                 QilNodeType.Eq => (double)XsltLibrary.ComparisonOperator.Eq,
-                _ => (double)XsltLibrary.ComparisonOperator.Ne,
+                _ => (double)XsltLibrary.ComparisonOperator.Ne
             };
             return XsltInvokeEarlyBound(QName("EqualityOperator"),
                 XsltMethods.EqualityOperator, T.BooleanX, new QilNode[] { Double(opCode), left, right }
@@ -156,7 +156,7 @@ namespace System.Xml.Xsl.XPath
                 QilNodeType.Lt => (double)XsltLibrary.ComparisonOperator.Lt,
                 QilNodeType.Le => (double)XsltLibrary.ComparisonOperator.Le,
                 QilNodeType.Gt => (double)XsltLibrary.ComparisonOperator.Gt,
-                _ => (double)XsltLibrary.ComparisonOperator.Ge,
+                _ => (double)XsltLibrary.ComparisonOperator.Ge
             };
             return XsltInvokeEarlyBound(QName("RelationalOperator"),
                 XsltMethods.RelationalOperator, T.BooleanX, new QilNode[] { Double(opCode), left, right }

@@ -312,7 +312,7 @@ namespace System.Xml.Xsl.Runtime
             NeedCurrent = 0,
             HaveCurrentNeedNext,
             HaveCurrentNoNext,
-            HaveCurrentHaveNext,
+            HaveCurrentHaveNext
         };
 
         /// <summary>

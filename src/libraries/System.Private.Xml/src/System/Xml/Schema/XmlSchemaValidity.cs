@@ -9,6 +9,6 @@ namespace System.Xml.Schema
 
         Valid,
 
-        Invalid,
+        Invalid
     }
 }

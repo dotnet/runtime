@@ -22,7 +22,7 @@ namespace System.Xml
             CheckPrefixMapping = 0x4,   // Validate the prefix --> namespace mapping
             All = 0x7,
             AllExceptNCNames = 0x6,
-            AllExceptPrefixMapping = 0x3,
+            AllExceptPrefixMapping = 0x3
         };
 
         //-----------------------------------------------

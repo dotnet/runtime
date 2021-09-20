@@ -54,14 +54,14 @@ namespace System.Xml
             InReadAttributeValue,
             InReadValueChunk,
             InReadContentAsBinary,
-            InReadElementContentAsBinary,
+            InReadElementContentAsBinary
         }
 
         private enum ParsingMode
         {
             Full,
             SkipNode,
-            SkipContent,
+            SkipContent
         }
 
         private enum EntityType
@@ -73,14 +73,14 @@ namespace System.Xml
             Skipped,
             FakeExpanded,
             Unexpanded,
-            ExpandedInAttribute,
+            ExpandedInAttribute
         }
 
         private enum EntityExpandType
         {
             All,
             OnlyGeneral,
-            OnlyCharacter,
+            OnlyCharacter
         }
 
         private enum IncrementalReadState
@@ -103,7 +103,7 @@ namespace System.Xml
 
             ReadContentAsBinary_OnCachedValue,
             ReadContentAsBinary_OnPartialValue,
-            ReadContentAsBinary_End,
+            ReadContentAsBinary_End
         }
 
         //
@@ -3287,7 +3287,7 @@ namespace System.Xml
                 {
                     "utf-16" => new UTF16Decoder(false),
                     "utf-16BE" => new UTF16Decoder(true),
-                    _ => encoding.GetDecoder(),
+                    _ => encoding.GetDecoder()
                 };
             }
         }

@@ -22,7 +22,7 @@ namespace MS.Internal.Xml.XPath
             None = 0x00,
             SmartDesc = 0x01,
             PosFilter = 0x02,  // Node has this flag set when it has position predicate applied to it
-            Filter = 0x04,  // Subtree we compiling will be filtered. i.e. Flag not set on rightmost filter.
+            Filter = 0x04 // Subtree we compiling will be filtered. i.e. Flag not set on rightmost filter.
         }
         // Output props. We return them Down->Up.
         // These are properties of Query tree we have built already.
@@ -36,7 +36,7 @@ namespace MS.Internal.Xml.XPath
             PosFilter = 0x01,  // This filter or inner filter was positional: foo[1] or foo[1][true()]
             HasPosition = 0x02,  // Expression may ask position() of the context
             HasLast = 0x04,  // Expression may ask last() of the context
-            NonFlat = 0x08,  // Some nodes may be descendent of others
+            NonFlat = 0x08 // Some nodes may be descendent of others
         }
 
         // comment are approximate. This is my best understanding:

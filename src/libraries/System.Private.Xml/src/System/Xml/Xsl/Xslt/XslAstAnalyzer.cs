@@ -1006,7 +1006,7 @@ namespace System.Xml.Xsl.Xslt
                 /*Divide    */ XslFlags.Number,
                 /*Modulo    */ XslFlags.Number,
                 /*UnaryMinus*/ XslFlags.Number,
-                /*Union     */ XslFlags.Nodeset,
+                /*Union     */ XslFlags.Nodeset
             };
 
             public XslFlags Operator(XPathOperator op, XslFlags left, XslFlags right)
@@ -1210,8 +1210,8 @@ namespace System.Xml.Xsl.Xslt
             /*Sum               */ XslFlags.Number,
             /*Floor             */ XslFlags.Number,
             /*Ceiling           */ XslFlags.Number,
-            /*Round             */ XslFlags.Number,
-        };
+            /*Round             */ XslFlags.Number
+            };
             #endregion
 
             #region Xslt Function Flags
@@ -1224,8 +1224,8 @@ namespace System.Xml.Xsl.Xslt
             /*GenerateId        */ XslFlags.String, // | XslFlags.Current if 0 args
             /*SystemProperty    */ XslFlags.String | XslFlags.Number,
             /*ElementAvailable  */ XslFlags.Boolean,
-            /*FunctionAvailable */ XslFlags.Boolean,
-        };
+            /*FunctionAvailable */ XslFlags.Boolean
+            };
             #endregion
         }
     }

@@ -71,7 +71,7 @@ namespace System.Xml.Xsl.Qil
                     5 => _earlBnd,
                     6 => _funList,
                     7 => _rootNod,
-                    _ => throw new IndexOutOfRangeException(),
+                    _ => throw new IndexOutOfRangeException()
                 };
             }
             set

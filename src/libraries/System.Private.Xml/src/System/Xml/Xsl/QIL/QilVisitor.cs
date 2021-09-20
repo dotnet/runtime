@@ -235,7 +235,7 @@ namespace System.Xml.Xsl.Qil
                 QilNodeType.XsltCopyOf => VisitXsltCopyOf((QilUnary)n),
                 QilNodeType.XsltConvert => VisitXsltConvert((QilTargetType)n),
 
-                _ => VisitUnknown(n),
+                _ => VisitUnknown(n)
             };
         }
 
@@ -252,7 +252,7 @@ namespace System.Xml.Xsl.Qil
 
                 QilNodeType.Function => VisitFunctionReference((QilFunction)n),
 
-                _ => VisitUnknown(n),
+                _ => VisitUnknown(n)
             };
         }
 

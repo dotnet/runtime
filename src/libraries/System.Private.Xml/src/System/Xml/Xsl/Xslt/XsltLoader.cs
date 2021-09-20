@@ -338,7 +338,7 @@ namespace System.Xml.Xsl.Xslt
             new XsltAttribute("version",                V1Req | V2Req),
             new XsltAttribute("id",                     V1Opt | V2Opt),
             new XsltAttribute("default-validation",     V2Opt),
-            new XsltAttribute("input-type-annotations", V2Opt),
+            new XsltAttribute("input-type-annotations", V2Opt)
         };
         private void LoadRealStylesheet()
         {
@@ -1334,7 +1334,7 @@ namespace System.Xml.Xsl.Xslt
             None = 0x00,
             AllowParam = 0x01,
             AllowSort = 0x02,
-            AllowFallback = 0x04,
+            AllowFallback = 0x04
         }
 
         private List<XslNode> LoadInstructions()

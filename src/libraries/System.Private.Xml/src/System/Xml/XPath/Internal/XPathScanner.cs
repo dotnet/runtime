@@ -380,7 +380,7 @@ namespace MS.Internal.Xml.XPath
             String = 's',   // Quoted string constant
             Number = 'd',   // _Number constant
             Axe = 'a',   // Axe (like child::)
-            Eof = 'E',
+            Eof = 'E'
         };
     }
 }

@@ -684,7 +684,7 @@ namespace System.Xml.Xsl.XPath
             Relational,
             Arithmetic,
             Negate,
-            Union,
+            Union
         }
 
         private static readonly XPathOperatorGroup[] s_operatorGroup = {
@@ -703,7 +703,7 @@ namespace System.Xml.Xsl.XPath
             /*Divide    */ XPathOperatorGroup.Arithmetic,
             /*Modulo    */ XPathOperatorGroup.Arithmetic,
             /*UnaryMinus*/ XPathOperatorGroup.Negate,
-            /*Union     */ XPathOperatorGroup.Union,
+            /*Union     */ XPathOperatorGroup.Union
         };
 
         private static readonly QilNodeType[] s_qilOperator = {
@@ -722,7 +722,7 @@ namespace System.Xml.Xsl.XPath
             /*Divide     */ QilNodeType.Divide,
             /*Modulo     */ QilNodeType.Modulo,
             /*UnaryMinus */ QilNodeType.Negate,
-            /*Union      */ QilNodeType.Sequence,
+            /*Union      */ QilNodeType.Sequence
         };
 
         // XmlNodeType(s) of nodes by XPathAxis
@@ -741,7 +741,7 @@ namespace System.Xml.Xsl.XPath
             /*Preceding       */ XmlNodeKindFlags.Content,
             /*PrecedingSibling*/ XmlNodeKindFlags.Content,
             /*Self            */ XmlNodeKindFlags.Any,
-            /*Root            */ XmlNodeKindFlags.Document,
+            /*Root            */ XmlNodeKindFlags.Document
         };
 
         // ----------------------------------------------------------------

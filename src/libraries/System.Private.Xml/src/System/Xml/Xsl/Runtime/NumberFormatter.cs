@@ -69,7 +69,7 @@ namespace System.Xml.Xsl.Runtime
         Zodiac1,                    // 0x7532 -- CJK-heavenly-stem (10 numbers)
         Zodiac2,                    // 0x5b50 -- CJK-earthly-branch (12 numbers)
         Zodiac3,                    // 0x7532 -- (Zodiac1 + Zodiac2 Combination)
-        LastSpecial = Zodiac3,
+        LastSpecial = Zodiac3
     }
 
     internal abstract class NumberFormatterBase

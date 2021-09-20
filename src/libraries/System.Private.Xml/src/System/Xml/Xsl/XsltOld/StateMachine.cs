@@ -143,7 +143,7 @@ namespace System.Xml.Xsl.XsltOld
             /* Whitespace            */ new int[] { InElm|B,   InElm|U|C|B,   NsV|U,   NsV,     InElm|C|B,       AttrV|U, AttrV,   InElm|C|B,       InElm,           InElm|B|P,       InCmt,   InPI  },
             /* ProcessingInstruction */ new int[] { InPI |B,   InPI |U|C|B,   Error,   Error,   InPI |C|B,       Error,   Error,   InPI |C|B,       InPI |B,         InPI |B|P,       Error,   Error },
             /* Comment               */ new int[] { InCmt|B,   InCmt|U|C|B,   Error,   Error,   InCmt|C|B,       Error,   Error,   InCmt|C|B,       InCmt|B,         InCmt|B|P,       Error,   Error },
-            /* All                   */ new int[] { Error,     Error,         Error,   Error,   Error,           Error,   Error,   Error,           Error,           Error,           Error,   Error },
+            /* All                   */ new int[] { Error,     Error,         Error,   Error,   Error,           Error,   Error,   Error,           Error,           Error,           Error,   Error }
         };
 
         private static readonly int[][] s_EndTransitions = {
@@ -157,7 +157,7 @@ namespace System.Xml.Xsl.XsltOld
             /* Whitespace            */ new int[] { Assrt,     Assrt,         Assrt,   Assrt,   Assrt,           Assrt,   Assrt,   Assrt,           Assrt,           Assrt,           Assrt,   Assrt  },
             /* ProcessingInstruction */ new int[] { Assrt,     Assrt,         Assrt,   Assrt,   Assrt,           Assrt,   Assrt,   Assrt,           Assrt,           Assrt,           Assrt,   EndEm|E},
             /* Comment               */ new int[] { Assrt,     Assrt,         Assrt,   Assrt,   Assrt,           Assrt,   Assrt,   Assrt,           Assrt,           Assrt,           EndEm|E, Assrt  },
-            /* All                   */ new int[] { Assrt,     Assrt,         Assrt,   Assrt,   Assrt,           Assrt,   Assrt,   Assrt,           Assrt,           Assrt,           Assrt,   Assrt  },
+            /* All                   */ new int[] { Assrt,     Assrt,         Assrt,   Assrt,   Assrt,           Assrt,   Assrt,   Assrt,           Assrt,           Assrt,           Assrt,   Assrt  }
         };
     }
 }

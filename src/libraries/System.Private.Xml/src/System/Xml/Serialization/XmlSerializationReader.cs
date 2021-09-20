@@ -1293,7 +1293,7 @@ namespace System.Xml.Serialization
                 XmlNodeType.CDATA => "CDATA",
                 XmlNodeType.Comment => "<--",
                 XmlNodeType.ProcessingInstruction => "<?",
-                _ => "(unknown)",
+                _ => "(unknown)"
             };
 
         protected Exception CreateUnknownTypeException(XmlQualifiedName type)

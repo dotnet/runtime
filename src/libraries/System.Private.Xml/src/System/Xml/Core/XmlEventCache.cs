@@ -48,7 +48,7 @@ namespace System.Xml
             EndBase64,
             Close,
             Flush,
-            Dispose,
+            Dispose
         }
 
 #if DEBUG

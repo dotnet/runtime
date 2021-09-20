@@ -14,6 +14,6 @@ namespace System.Xml.Resolvers
         None = 0x00,
         Xhtml10 = 0x01,
         Rss091 = 0x02,
-        All = 0xFFFF,
+        All = 0xFFFF
     }
 }

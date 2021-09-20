@@ -14,6 +14,6 @@ namespace System.Xml.XPath
         Whitespace,
         ProcessingInstruction,
         Comment,
-        All,
+        All
     }
 }

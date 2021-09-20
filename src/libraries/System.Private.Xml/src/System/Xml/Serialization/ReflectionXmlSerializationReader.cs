@@ -1225,7 +1225,7 @@ namespace System.Xml.Serialization
                         "Char" => XmlConvert.ToChar(value),
                         "TimeSpan" => XmlConvert.ToTimeSpan(value),
                         "DateTimeOffset" => XmlConvert.ToDateTimeOffset(value),
-                        _ => throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"unknown FormatterName: {mapping.TypeDesc.FormatterName}")),
+                        _ => throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"unknown FormatterName: {mapping.TypeDesc.FormatterName}"))
                     };
                     return retObj;
                 }

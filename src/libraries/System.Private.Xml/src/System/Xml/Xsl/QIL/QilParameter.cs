@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.Qil
                 {
                     0 => Binding!,
                     1 => _name!,
-                    _ => throw new IndexOutOfRangeException(),
+                    _ => throw new IndexOutOfRangeException()
                 };
             }
             set

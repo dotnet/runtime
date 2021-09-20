@@ -156,7 +156,7 @@ namespace System.Xml.Xsl.Qil
                 QilNodeType.XsltCopyOf => CheckXsltCopyOf((QilUnary)n),
                 QilNodeType.XsltConvert => CheckXsltConvert((QilTargetType)n),
 
-                _ => CheckUnknown(n),
+                _ => CheckUnknown(n)
             };
             #endregion
         }

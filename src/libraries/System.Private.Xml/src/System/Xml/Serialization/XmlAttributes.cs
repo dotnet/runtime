@@ -19,7 +19,7 @@ namespace System.Xml.Serialization
         AnyElements = 0x100,
         AnyAttribute = 0x200,
         ChoiceIdentifier = 0x400,
-        XmlnsDeclarations = 0x800,
+        XmlnsDeclarations = 0x800
     }
 
     /// <devdoc>

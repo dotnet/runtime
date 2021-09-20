@@ -19,7 +19,7 @@ namespace System.Xml
         Xml = 0,    // Use Xml 1.0 rules to serialize
         Html = 1,    // Use Html rules specified by Xslt specification to serialize
         Text = 2,    // Only serialize text blocks
-        AutoDetect = 3,    // Choose between Xml and Html output methods at runtime (using Xslt rules to do so)
+        AutoDetect = 3 // Choose between Xml and Html output methods at runtime (using Xslt rules to do so)
     }
 
     /// <summary>
@@ -29,7 +29,7 @@ namespace System.Xml
     {
         Unknown = -1,
         False = 0,
-        True = 1,
+        True = 1
     };
 
     internal enum XmlStandalone
@@ -37,7 +37,7 @@ namespace System.Xml
         // Do not change the constants - XmlBinaryWriter depends in it
         Omit = 0,
         Yes = 1,
-        No = 2,
+        No = 2
     }
 
     // XmlWriterSettings class specifies basic features of an XmlWriter.

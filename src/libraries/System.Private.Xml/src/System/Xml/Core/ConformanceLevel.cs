@@ -13,6 +13,6 @@ namespace System.Xml
         Fragment = 1,
 
         // Conformance level for XML document as specified in XML 1.0 Specification
-        Document = 2,
+        Document = 2
     }
 }

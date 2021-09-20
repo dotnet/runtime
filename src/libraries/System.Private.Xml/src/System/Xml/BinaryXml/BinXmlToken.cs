@@ -78,6 +78,6 @@ namespace System.Xml
         XSD_UNSIGNEDSHORT = 0x89,
         XSD_UNSIGNEDINT = 0x8A,
         XSD_UNSIGNEDLONG = 0x8B,
-        XSD_QNAME = 0x8C,
+        XSD_QNAME = 0x8C
     }
 }

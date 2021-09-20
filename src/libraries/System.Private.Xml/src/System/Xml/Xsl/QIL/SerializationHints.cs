@@ -9,6 +9,6 @@ namespace System.Xml.Xsl.Qil
     {
         None = 0,
         CData,
-        DisableOutputEscaping,
+        DisableOutputEscaping
     }
 }

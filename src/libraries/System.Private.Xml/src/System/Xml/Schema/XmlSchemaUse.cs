@@ -18,6 +18,6 @@ namespace System.Xml.Schema
         Prohibited,
 
         [XmlEnum("required")]
-        Required,
+        Required
     }
 }

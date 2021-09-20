@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.IlGen
         Parameter,                          // Each value is stored as a parameter to the current method
         Local,                              // Each value is stored as a local variable in the current method
         Current,                            // Each value is stored as an iterator's Current property
-        Global,                             // Each value is stored as a global variable
+        Global // Each value is stored as a global variable
     };
 
 

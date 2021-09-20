@@ -41,7 +41,7 @@ namespace System.Xml.Xsl.Xslt
                 XslNodeType.ValueOfDoe => VisitValueOfDoe((XslNode)node),
                 XslNodeType.Variable => VisitVariable((VarPar)node),
                 XslNodeType.WithParam => VisitWithParam((VarPar)node),
-                _ => VisitUnknown((XslNode)node),
+                _ => VisitUnknown((XslNode)node)
             };
 
         protected virtual T VisitApplyImports(XslNode node) { return VisitChildren(node); }

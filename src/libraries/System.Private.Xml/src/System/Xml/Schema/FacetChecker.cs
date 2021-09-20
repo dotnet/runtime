@@ -702,8 +702,8 @@ namespace System.Xml.Schema
             new Map('i', "\\p{_xmlI}"),
             new Map('I', "\\P{_xmlI}"),
             new Map('w', "\\p{_xmlW}"),
-            new Map('W', "\\P{_xmlW}"),
-        };
+            new Map('W', "\\P{_xmlW}")
+            };
             private static string Preprocess(string pattern)
             {
                 StringBuilder bufBld = new StringBuilder();

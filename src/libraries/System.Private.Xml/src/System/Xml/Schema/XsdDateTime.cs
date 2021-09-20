@@ -59,7 +59,7 @@ namespace System.Xml.Schema
             GMonthDay,
             GDay,
             GMonth,
-            XdrDateTime,
+            XdrDateTime
         }
 
         // Internal representation of DateTimeKind
@@ -366,7 +366,7 @@ namespace System.Xml.Schema
                 // Adjust to UTC and then convert to local in the current time zone
                 XsdDateTimeKind.LocalEastOfZulu => new DateTime(_dt.Subtract(new TimeSpan(ZoneHour, ZoneMinute, 0)).Ticks, DateTimeKind.Utc),
                 XsdDateTimeKind.LocalWestOfZulu => new DateTime(_dt.Add(new TimeSpan(ZoneHour, ZoneMinute, 0)).Ticks, DateTimeKind.Utc),
-                _ => _dt,
+                _ => _dt
             };
 
         /// <summary>

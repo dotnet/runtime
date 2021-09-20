@@ -100,7 +100,7 @@ namespace System.Xml.Xsl.IlGen
             typeof(int),                                // XmlTypeCode.UnsignedByte
             typeof(decimal),                            // XmlTypeCode.PositiveInteger
             typeof(TimeSpan),                           // XmlTypeCode.YearMonthDuration
-            typeof(TimeSpan),                           // XmlTypeCode.DayTimeDuration
+            typeof(TimeSpan) // XmlTypeCode.DayTimeDuration
         };
 
         private static readonly Type[] s_typeCodeToCachedStorage = {
@@ -158,7 +158,7 @@ namespace System.Xml.Xsl.IlGen
             typeof(IList<int>),                         // XmlTypeCode.UnsignedByte
             typeof(IList<decimal>),                     // XmlTypeCode.PositiveInteger
             typeof(IList<TimeSpan>),                    // XmlTypeCode.YearMonthDuration
-            typeof(IList<TimeSpan>),                    // XmlTypeCode.DayTimeDuration
+            typeof(IList<TimeSpan>) // XmlTypeCode.DayTimeDuration
         };
     }
 }

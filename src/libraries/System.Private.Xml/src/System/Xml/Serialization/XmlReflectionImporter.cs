@@ -615,7 +615,7 @@ namespace System.Xml.Serialization
                 ImportContext.Element => "element",
                 ImportContext.Attribute => "attribute",
                 ImportContext.Text => "text",
-                _ => throw new ArgumentException(SR.XmlInternalError, nameof(context)),
+                _ => throw new ArgumentException(SR.XmlInternalError, nameof(context))
             };
 
         private static Exception InvalidAttributeUseException(Type type)

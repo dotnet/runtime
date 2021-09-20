@@ -291,7 +291,7 @@ namespace System.Xml.Xsl.Xslt
             GenerateId,
             SystemProperty,
             ElementAvailable,
-            FunctionAvailable,
+            FunctionAvailable
         }
 
         private static readonly XmlTypeCode[] s_argFnDocument = { XmlTypeCode.Item, XmlTypeCode.Node };

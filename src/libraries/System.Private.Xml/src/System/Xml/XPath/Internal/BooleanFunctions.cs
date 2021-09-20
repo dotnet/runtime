@@ -42,7 +42,7 @@ namespace MS.Internal.Xml.XPath
                 FT.FuncTrue => true,
                 FT.FuncFalse => false,
                 FT.FuncLang => Lang(nodeIterator!),
-                _ => false,
+                _ => false
             };
 
         internal static bool toBoolean(double number)

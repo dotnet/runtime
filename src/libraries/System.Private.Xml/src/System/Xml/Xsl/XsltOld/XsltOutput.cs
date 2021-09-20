@@ -18,7 +18,7 @@ namespace System.Xml.Xsl.XsltOld
             Html,
             Text,
             Other,
-            Unknown,
+            Unknown
         }
 
         private OutputMethod _method = OutputMethod.Unknown;

@@ -39,6 +39,6 @@ namespace System.Xml.Xsl
         SideEffects = 0x4000,
 
         // Indicates that the corresponding graph vertex has been already visited in flag propagation process.
-        Stop = 0x8000,
+        Stop = 0x8000
     }
 }

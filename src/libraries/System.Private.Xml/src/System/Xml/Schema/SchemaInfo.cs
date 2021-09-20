@@ -19,7 +19,7 @@ namespace System.Xml.Schema
         ProhibitedAnyAttribute,
         ProhibitedAttribute,
         AttributeNameMismatch,
-        ValidateAttributeInvalidCall,
+        ValidateAttributeInvalidCall
     }
 
     internal sealed class SchemaInfo : IDtdInfo

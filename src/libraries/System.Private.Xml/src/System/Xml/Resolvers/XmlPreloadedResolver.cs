@@ -138,11 +138,11 @@ namespace System.Xml.Resolvers
             new XmlKnownDtdData( "-//W3C//DTD XHTML 1.0 Frameset//EN", "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd", "xhtml1-frameset.dtd" ),
             new XmlKnownDtdData( "-//W3C//ENTITIES Latin 1 for XHTML//EN", "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent", "xhtml-lat1.ent" ),
             new XmlKnownDtdData( "-//W3C//ENTITIES Symbols for XHTML//EN", "http://www.w3.org/TR/xhtml1/DTD/xhtml-symbol.ent", "xhtml-symbol.ent" ),
-            new XmlKnownDtdData( "-//W3C//ENTITIES Special for XHTML//EN", "http://www.w3.org/TR/xhtml1/DTD/xhtml-special.ent", "xhtml-special.ent" ),
+            new XmlKnownDtdData( "-//W3C//ENTITIES Special for XHTML//EN", "http://www.w3.org/TR/xhtml1/DTD/xhtml-special.ent", "xhtml-special.ent" )
         };
 
         private static readonly XmlKnownDtdData[] s_rss091_Dtd = new XmlKnownDtdData[] {
-            new XmlKnownDtdData( "-//Netscape Communications//DTD RSS 0.91//EN", "http://my.netscape.com/publish/formats/rss-0.91.dtd", "rss-0.91.dtd" ),
+            new XmlKnownDtdData( "-//Netscape Communications//DTD RSS 0.91//EN", "http://my.netscape.com/publish/formats/rss-0.91.dtd", "rss-0.91.dtd" )
         };
 
         //

@@ -139,7 +139,7 @@ namespace System.Xml.Schema
         {
             Keys,
             Values,
-            DictionaryEntry,
+            DictionaryEntry
         }
 
         internal struct XmlSchemaObjectEntry

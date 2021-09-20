@@ -60,7 +60,7 @@ namespace System.Xml.Serialization
         CtorInaccessible = 0x20000,
         UsePrivateImplementation = 0x40000,
         GenericInterface = 0x80000,
-        Unsupported = 0x100000,
+        Unsupported = 0x100000
     }
 
     // Shorthands for common trimmer constants

@@ -22,7 +22,7 @@ namespace System.Xml
             Initial,
             InReadBinary,
             Error,
-            Interactive,  // Interactive means other than ReadState.Initial and ReadState.Error; still needs to call
+            Interactive // Interactive means other than ReadState.Initial and ReadState.Error; still needs to call
                           // underlying XmlReader to find out if the reported ReadState should be Interactive or EndOfFile
         };
 

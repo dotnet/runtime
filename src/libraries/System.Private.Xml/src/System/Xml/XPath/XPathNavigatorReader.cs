@@ -24,7 +24,7 @@ namespace System.Xml.XPath
             InReadBinary,
             EOF,
             Closed,
-            Error,
+            Error
         }
 
         private XPathNavigator _nav;

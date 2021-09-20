@@ -12,7 +12,7 @@ namespace System.Xml
         {
             None,
             InReadContent,
-            InReadElementContent,
+            InReadElementContent
         }
 
         // Fields

@@ -29,7 +29,7 @@ namespace MS.Internal.Xml.XPath
             DIV,
             MOD,
             /*Union     */
-            UNION,
+            UNION
         };
 
         private static readonly Op[] s_invertOp = {
@@ -41,7 +41,7 @@ namespace MS.Internal.Xml.XPath
             /*LT     */ Op.GT,
             /*LE     */ Op.GE,
             /*GT     */ Op.LT,
-            /*GE     */ Op.LE,
+            /*GE     */ Op.LE
         };
 
         public static Operator.Op InvertOperator(Operator.Op op)

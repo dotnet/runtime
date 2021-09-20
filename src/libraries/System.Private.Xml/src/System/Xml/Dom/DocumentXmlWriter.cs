@@ -16,7 +16,7 @@ namespace System.Xml
         PrependChild,
         AppendChild,
         AppendAttribute,
-        ReplaceToFollowingSibling,
+        ReplaceToFollowingSibling
     }
 
     // Implements a XmlWriter that augments a XmlDocument.
@@ -30,7 +30,7 @@ namespace System.Xml
             Fragment,
             Content,
 
-            Last, // always last
+            Last // always last
         }
 
         private enum Method
@@ -51,7 +51,7 @@ namespace System.Xml
             WriteProcessingInstruction,
             WriteEntityRef,
             WriteWhitespace,
-            WriteString,
+            WriteString
         }
 
         private readonly DocumentXmlWriterType _type; // writer type
@@ -615,7 +615,7 @@ namespace System.Xml
 // Method.Whitespace:
             State.Error,    State.Error,    State.Prolog,   State.Content,  State.Content,
 // Method.String:
-            State.Error,    State.Error,    State.Error,    State.Content,  State.Content,
+            State.Error,    State.Error,    State.Error,    State.Content,  State.Content
         };
 
         private void VerifyState(Method method)

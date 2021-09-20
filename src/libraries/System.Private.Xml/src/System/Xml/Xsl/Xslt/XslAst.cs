@@ -55,7 +55,7 @@ namespace System.Xml.Xsl.Xslt
         ValueOf,
         ValueOfDoe,
         Variable,
-        WithParam,
+        WithParam
     }
 
     internal sealed class NsDecl
@@ -195,7 +195,7 @@ namespace System.Xml.Xsl.Xslt
     {
         NotStarted = 0,
         Processing = 1,
-        Completed = 2,
+        Completed = 2
     }
 
     internal sealed class AttributeSet : ProtoTemplate
@@ -351,7 +351,7 @@ namespace System.Xml.Xsl.Xslt
     {
         Single,
         Multiple,
-        Any,
+        Any
     }
 
     internal sealed class Number : XslNode

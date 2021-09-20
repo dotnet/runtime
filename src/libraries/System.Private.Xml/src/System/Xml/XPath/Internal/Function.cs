@@ -37,7 +37,7 @@ namespace MS.Internal.Xml.XPath
             FuncFloor,
             FuncCeiling,
             FuncRound,
-            FuncUserDefined,
+            FuncUserDefined
         };
 
         private readonly FunctionType _functionType;

@@ -886,7 +886,7 @@ namespace MS.Internal.Xml.Cache
                 XPathNodeType.Attribute => XPathNodeHelper.GetLocation(_pageCurrent, _idxCurrent),
 
                 // Collapsed text nodes are always last
-                _ => int.MaxValue,
+                _ => int.MaxValue
             };
         }
 

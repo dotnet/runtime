@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.IlGen
         MaybeSideEffects,                   // True if annotated expression might have side effects
         TailCall,                           // (Invoke * *) True if invocation can be compiled as using .tailcall
         DodMerge,                           // (Dod (Loop * (Invoke * *))), where invoked function returns nodes in document order
-        IsReferenced,                       // True if the annotated global iterator is referenced at least once
+        IsReferenced // True if the annotated global iterator is referenced at least once
     }
 
     internal enum OptimizerPatternArgument
@@ -45,7 +45,7 @@ namespace System.Xml.Xsl.IlGen
 
         MaxPosition = 2,                    // MaxPosition, int: Maximum position of the annotated iterator or length expression
 
-        RtfText = 2,                        // SingleTextRtf, QilNode: Expression that constructs the text of the simple text Rtf
+        RtfText = 2 // SingleTextRtf, QilNode: Expression that constructs the text of the simple text Rtf
     }
 
     /// <summary>

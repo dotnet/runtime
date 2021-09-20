@@ -20,6 +20,6 @@ namespace System.Xml.Xsl.XPath
         Preceding,
         PrecedingSibling,
         Self,
-        Root,
+        Root
     }
 }

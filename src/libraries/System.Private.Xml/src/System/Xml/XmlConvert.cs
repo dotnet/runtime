@@ -15,7 +15,7 @@ namespace System.Xml
     internal enum ExceptionType
     {
         ArgumentException,
-        XmlException,
+        XmlException
     }
 
     // Options for serializing and deserializing DateTime
@@ -24,7 +24,7 @@ namespace System.Xml
         Local,
         Utc,
         Unspecified,
-        RoundtripKind,
+        RoundtripKind
     }
 
     /// <devdoc>
@@ -1241,7 +1241,7 @@ namespace System.Xml
                     "---ddzzzzzz",
                     "--MM--",                       // month
                     "--MM--Z",
-                    "--MM--zzzzzz",
+                    "--MM--zzzzzz"
                 };
             }
         }
@@ -1352,7 +1352,7 @@ namespace System.Xml
                 DateTimeKind.Local => value,
                 DateTimeKind.Unspecified => new DateTime(value.Ticks, DateTimeKind.Local),
                 DateTimeKind.Utc => value.ToLocalTime(),
-                _ => value,
+                _ => value
             };
 
         private static DateTime SwitchToUtcTime(DateTime value) =>
@@ -1361,7 +1361,7 @@ namespace System.Xml
                 DateTimeKind.Utc => value,
                 DateTimeKind.Unspecified => new DateTime(value.Ticks, DateTimeKind.Utc),
                 DateTimeKind.Local => value.ToUniversalTime(),
-                _ => value,
+                _ => value
             };
 
         internal static Uri ToUri(string? s)

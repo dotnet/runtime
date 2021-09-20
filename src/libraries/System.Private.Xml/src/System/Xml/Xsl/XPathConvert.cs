@@ -92,7 +92,7 @@ namespace System.Xml.Xsl
         public static readonly double[] C10toN = {
             1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e07, 1e08, 1e09,
             1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
-            1e20, 1e21, 1e22,
+            1e20, 1e21, 1e22
         };
 
         // Returns 1 if argument is non-zero, and 0 otherwise
@@ -1404,7 +1404,7 @@ namespace System.Xml.Xsl
                 new BigNumber( 0x1027FFF5, 0xAEF8AA17, 0xC4C5E310,  1276, 1 ), // 10^384
                 new BigNumber( 0xB5E54F71, 0xE9B09C58, 0xF28A9C07,  1382, 1 ), // 10^416
                 new BigNumber( 0xA7EA9C88, 0xEBF7F3D3, 0x957A4AE1,  1489, 1 ), // 10^448
-                new BigNumber( 0x7DF40A74, 0x0795A262, 0xB83ED8DC,  1595, 1 ), // 10^480
+                new BigNumber( 0x7DF40A74, 0x0795A262, 0xB83ED8DC,  1595, 1 ) // 10^480
             };
 
             private static readonly BigNumber[] s_tenPowersNeg = new BigNumber[46] {
@@ -1454,7 +1454,7 @@ namespace System.Xml.Xsl
                 new BigNumber( 0x88DBA000, 0xB11B0857, 0xA686E3E8, -1275, 1 ), // 10^-384 (rounded up)
                 new BigNumber( 0x1A4EB007, 0x3FFC68A6, 0x871A4981, -1381, 1 ), // 10^-416 (rounded up)
                 new BigNumber( 0x84C663CF, 0xB6074244, 0xDB377599, -1488, 1 ), // 10^-448 (rounded up)
-                new BigNumber( 0x61EB52E2, 0x79007736, 0xB1D983B4, -1594, 1 ), // 10^-480
+                new BigNumber( 0x61EB52E2, 0x79007736, 0xB1D983B4, -1594, 1 ) // 10^-480
             };
             #endregion
 

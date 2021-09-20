@@ -29,7 +29,7 @@ namespace System.Xml
             InReadBinaryContent,
             ReaderClosed,
             Error,
-            None,
+            None
         }
 
         internal sealed class ValidationEventHandling : IValidationEventHandling

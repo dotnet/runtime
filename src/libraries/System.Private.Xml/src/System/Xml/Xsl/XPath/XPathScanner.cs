@@ -53,7 +53,7 @@ namespace System.Xml.Xsl.XPath
         Star = '*',      // NameTest
         Slash = '/',      // Operator '/'
         Dollar = '$',      // First part of VariableReference
-        RBrace = '}',      // Used for AVTs
+        RBrace = '}' // Used for AVTs
     };
 
     internal sealed class XPathScanner

@@ -113,6 +113,6 @@ namespace System.Xml.Schema
 
         YearMonthDuration,
 
-        DayTimeDuration,
+        DayTimeDuration
     }
 }
