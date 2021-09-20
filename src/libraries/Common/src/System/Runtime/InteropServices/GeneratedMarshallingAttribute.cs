@@ -8,17 +8,32 @@
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    internal class GeneratedMarshallingAttribute : Attribute
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    sealed class GeneratedMarshallingAttribute : Attribute
     {
     }
 
     [AttributeUsage(AttributeTargets.Struct)]
-    internal class BlittableTypeAttribute : Attribute
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    sealed class BlittableTypeAttribute : Attribute
     {
     }
 
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-    internal class NativeMarshallingAttribute : Attribute
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    sealed class NativeMarshallingAttribute : Attribute
     {
         public NativeMarshallingAttribute(Type nativeType)
         {
@@ -28,14 +43,46 @@ namespace System.Runtime.InteropServices
         public Type NativeType { get; }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field)]
-    internal class MarshalUsingAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field, AllowMultiple = true)]
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    sealed class MarshalUsingAttribute : Attribute
     {
+        public MarshalUsingAttribute()
+        {
+            CountElementName = string.Empty;
+        }
+
         public MarshalUsingAttribute(Type nativeType)
+            :this()
         {
             NativeType = nativeType;
         }
 
-        public Type NativeType { get; }
+        public Type? NativeType { get; }
+
+        public string CountElementName { get; set; }
+
+        public int ConstantElementCount { get; set; }
+
+        public int ElementIndirectionLevel { get; set; }
+
+        public const string ReturnsCountValue = "return-value";
+    }
+
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    sealed class GenericContiguousCollectionMarshallerAttribute : Attribute
+    {
+        public GenericContiguousCollectionMarshallerAttribute()
+        {
+        }
     }
 }

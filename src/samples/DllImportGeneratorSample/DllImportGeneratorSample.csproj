@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
@@ -10,14 +10,14 @@
     <!-- Indicate to the compiler to output generated files to disk. Source addded
          by the DllImportGenerator can be found in the intermediate directory. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <IncludeDllImportGeneratorSources>false</IncludeDllImportGeneratorSources>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
-    <ProjectReference Include="..\DllImportGenerator\DllImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\TestAssets\NativeExports\NativeExports.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\Ancillary.Interop\Ancillary.Interop.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\TestAssets\NativeExports\NativeExports.csproj" />
   </ItemGroup>
 
 </Project>

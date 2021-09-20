@@ -14,7 +14,12 @@ using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.GeneratedMarshalling
 {
-    internal unsafe ref struct ArrayMarshaller<T>
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    unsafe ref struct ArrayMarshaller<T>
     {
         private T[]? _managedArray;
         private readonly int _sizeOfNativeElement;
@@ -118,7 +123,12 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
     }
 
-    internal unsafe ref struct PtrArrayMarshaller<T> where T : unmanaged
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    unsafe ref struct PtrArrayMarshaller<T> where T : unmanaged
     {
         private T*[]? _managedArray;
         private readonly int _sizeOfNativeElement;

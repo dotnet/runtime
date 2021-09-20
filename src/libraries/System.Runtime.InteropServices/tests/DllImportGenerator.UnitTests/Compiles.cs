@@ -338,7 +338,11 @@ namespace DllImportGenerator.UnitTests
             yield break;
         }
 
+#pragma warning disable xUnit1004 // Test methods should not be skipped.
+                                  // If we have any new experimental APIs that we are implementing that have not been approved,
+                                  // we will add new scenarios for this test.
         [Theory(Skip = "No current scenarios to test.")]
+#pragma warning restore
         [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
         public async Task ValidateSnippetsWithMarshalType(string source)
         {

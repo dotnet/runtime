@@ -40,7 +40,9 @@ namespace DllImportGenerator.UnitTests
                 });
         }
 
+#pragma warning disable xUnit1004 // Test methods should not be skipped. These tests will be updated to use the new incremental work tracking APIs and enabled then.
         [Fact(Skip = RequiresIncrementalSyntaxTreeModifySupport)]
+#pragma warning restore
         public async Task AppendingUnrelatedSource_DoesNotRegenerateSource()
         {
             string source = $"namespace NS{{{CodeSnippets.BasicParametersAndModifiers<int>()}}}";
@@ -164,7 +166,9 @@ namespace DllImportGenerator.UnitTests
                 });
         }
 
+#pragma warning disable xUnit1004 // Test methods should not be skipped. These tests will be updated to use the new incremental work tracking APIs and enabled then.
         [Fact(Skip = RequiresIncrementalSyntaxTreeModifySupport)]
+#pragma warning restore
         public async Task ChangingMarshallingAttributes_SameStrategy_DoesNotRegenerate()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<bool>();

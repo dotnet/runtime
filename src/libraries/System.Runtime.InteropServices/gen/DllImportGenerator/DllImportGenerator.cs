@@ -15,7 +15,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 namespace Microsoft.Interop
 {
     [Generator]
-    public class DllImportGenerator : IIncrementalGenerator
+    public sealed class DllImportGenerator : IIncrementalGenerator
     {
         private const string GeneratedDllImport = nameof(GeneratedDllImport);
         private const string GeneratedDllImportAttribute = nameof(GeneratedDllImportAttribute);
