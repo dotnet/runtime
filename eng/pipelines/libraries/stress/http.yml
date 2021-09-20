@@ -81,6 +81,7 @@ jobs:
       sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/share
     displayName: Own shared dumps and files
     condition: failed()
+
   - publish: $(Build.ArtifactStagingDirectory)/share
     artifact: DumpsLinux
     condition: failed()
