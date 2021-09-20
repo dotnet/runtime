@@ -126,6 +126,19 @@ public class ReliabilityFramework
     internal static bool IsRunningAsUnitTest = false;
     internal static bool IsRunningLongGCTests = false;
 
+    internal MethodInfo _privateCollectionCountMethod;
+
+    private int PrivateCollectionCount(int generation)
+    {
+        if (_privateCollectionCountMethod == null)
+        {
+            _privateCollectionCountMethod = typeof(GC).GetMethod("_CollectionCount", BindingFlags.NonPublic | BindingFlags.Static);
+        }
+        object result = _privateCollectionCountMethod.Invoke(null, new object[] { generation, 1 });
+        int value = (int)result;
+        return value;
+    }
+
     /// <summary>
     /// Our main execution routine for the reliability framework.  Here we create an instance of the framework & run the reliability tests
     /// in it.  All code in here will execute in our starting app domain.
@@ -270,6 +283,8 @@ public class ReliabilityFramework
 
         GC.Collect(2);
         GC.WaitForPendingFinalizers();
+        
+        Environment.Exit(0);
         return (retVal);
     }
 
@@ -851,11 +866,14 @@ public class ReliabilityFramework
             {
                 Thread.Sleep(secondsIter * 1000);
                 long currentAllocatedBytes = GC.GetTotalAllocatedBytes(false);
-                msg = String.Format("============current number of tests running {0,4}, allocated {1:n0} so far, {2:n0} since last; (GC {3}:{4}:{5}), waited {6}s",
+                msg = String.Format("============current number of tests running {0,4}, allocated {1:n0} so far, {2:n0} since last; (GC {3}:{4}:{5}/{6}:{7}:{8}), waited {9}s",
                     _testsRunningCount, currentAllocatedBytes, (currentAllocatedBytes - lastAllocatedBytes),
                     GC.CollectionCount(0),
                     GC.CollectionCount(1),
                     GC.CollectionCount(2),
+                    PrivateCollectionCount(0),
+                    PrivateCollectionCount(1),
+                    PrivateCollectionCount(2),
                     (waitCnt * secondsIter));
                 lastAllocatedBytes = currentAllocatedBytes;
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
@@ -1170,7 +1188,10 @@ public class ReliabilityFramework
                             {   // make sure no one accesses the assembly load context at the same time (between here & RunReliabilityTests)
                                 if (daTest.RunningCount == 1 && daTest.HasAssemblyLoadContext)
                                 {   // only unload when the last test finishes.
+                                    daTest.MyLoader = null;
+                                    daTest.TestObject = null;
                                     UnloadAssemblyLoadContext(daTest);
+                                    TestPreLoader(daTest, _curTestSet.DiscoveryPaths);  // need to reload assembly & AssemblyLoadContext
                                     RunCommands(daTest.PostCommands, "post", daTest);
                                 }
                             }
@@ -1356,8 +1377,10 @@ public class ReliabilityFramework
             if (alc != null)
             {
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "FAILED unloading AssemblyLoadContext: " + alc.FriendlyName + " for " + test.Index.ToString());
+                return;
             }
         }
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "SUCCEED unloading AssemblyLoadContext for " + test.Index.ToString());
     }
 
     /// <summary>
