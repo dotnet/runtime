@@ -488,6 +488,30 @@ namespace System.Data.OleDb
             return result;
         }
 
+        internal void OnInfoMessage(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode)
+        {
+            OleDbInfoMessageEventHandler? handler = (OleDbInfoMessageEventHandler?)Events[EventInfoMessage];
+            if (null != handler)
+            {
+                try
+                {
+                    OleDbException exception = OleDbException.CreateException(errorInfo, errorCode, null);
+                    OleDbInfoMessageEventArgs e = new OleDbInfoMessageEventArgs(exception);
+                    handler(this, e);
+                }
+                catch (Exception e)
+                { // eat the exception
+                    // UNDONE - should not be catching all exceptions!!!
+                    if (!ADP.IsCatchableOrSecurityExceptionType(e))
+                    {
+                        throw;
+                    }
+
+                    ADP.TraceExceptionWithoutRethrow(e);
+                }
+            }
+        }
+
         public override void Open()
         {
             InnerConnection.OpenConnection(this, ConnectionFactory);
