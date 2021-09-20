@@ -247,16 +247,15 @@ namespace HostActivation.Tests
             {
                 Directory.CreateDirectory(testArtifactsPath);
 
-                string directory = Path.Combine(testArtifactsPath, "installLocationOverride");
-                Directory.CreateDirectory(directory);
-                string nonExistentLocationFile = Path.Combine(directory, "install_location");
+                string installLocationDirectory = Path.Combine(testArtifactsPath, "installLocationOverride");
+                Directory.CreateDirectory(installLocationDirectory);
                 string defaultInstallLocation = Path.Combine(testArtifactsPath, "defaultInstallLocation");
 
                 Command.Create(appExe)
                     .CaptureStdErr()
                     .EnvironmentVariable(
-                        Constants.TestOnlyEnvironmentVariables.InstallLocationFilePath,
-                        nonExistentLocationFile)
+                        Constants.TestOnlyEnvironmentVariables.InstallLocationPath,
+                        installLocationDirectory)
                     .EnvironmentVariable(
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         defaultInstallLocation)
