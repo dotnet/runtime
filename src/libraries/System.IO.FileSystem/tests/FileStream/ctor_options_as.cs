@@ -98,7 +98,10 @@ namespace System.IO.Tests
             using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
             {
                 Assert.Equal(0, fs.Length);
-                Assert.True(GetAllocatedSize(fs) > preallocationSize);
+                if (SupportsPreallocation)
+                {
+                    Assert.True(GetAllocatedSize(fs) >= preallocationSize);
+                }
                 Assert.Equal(0, fs.Position);
             }
         }

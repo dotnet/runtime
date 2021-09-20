@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Tests
 {
@@ -21,5 +22,9 @@ namespace System.IO.Tests
             string[] parts = stdout.Split(' ');
             return long.Parse(parts[0]) * long.Parse(parts[1]);
         }
+
+        private static bool SupportsPreallocation =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
     }
 }

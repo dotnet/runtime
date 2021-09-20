@@ -92,5 +92,7 @@ namespace System.IO.Tests
            out uint fileSystemFlags,
            StringBuilder fileSystemNameBuffer,
            int fileSystemNameSize);
+
+        private static bool SupportsPreallocation => true;
     }
 }

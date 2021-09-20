@@ -102,6 +102,7 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Browser.cs" />
+    <Compile Include="FileStream\ctor_options_as.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->

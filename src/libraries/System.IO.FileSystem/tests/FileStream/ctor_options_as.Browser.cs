@@ -1,0 +1,15 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace System.IO.Tests
+{
+    public partial class FileStream_ctor_options_as
+    {
+        private static long GetAllocatedSize(FileStream fileStream)
+        {
+            return 0;
+        }
+
+        private static bool SupportsPreallocation => false;
+    }
+}
