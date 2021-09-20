@@ -69,3 +69,11 @@ Git provides a number of hooks to enable running scripts before commit, push, pu
 #### Auto-format before committing
 
 To enable auto-formatting before committing, you can create a `.git/hooks/pre-commit` file in your local `dotnet/runtime` clone and add a call to the script located at `eng/formatting/format.sh` to auto-format your code before committing. Since Git for Windows also installs Git Bash, this script will work for both Windows and non-Windows platforms.
+
+The following code block can be used as the contents of the `pre-commit` file to enable the auto-formatting hook:
+
+```sh
+#!/bin/sh
+./eng/formatting/format.sh
+
+```
