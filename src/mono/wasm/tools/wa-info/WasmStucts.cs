@@ -96,6 +96,7 @@ namespace WebAssemblyInfo
     {
         public LocalsBlock[] Locals;
         public Instruction[] Instructions;
+        public UInt32 Size;
 
         public string ToString(WasmReader? reader)
         {

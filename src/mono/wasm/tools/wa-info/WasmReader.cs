@@ -142,6 +142,7 @@ namespace WebAssemblyInfo
                 if (Program.Verbose2)
                     Console.WriteLine(funcsCode[i].ToString().Indent("    "));
 
+                funcsCode[i].Size = (UInt32)(reader.BaseStream.Position - pos + 4);
                 reader.BaseStream.Seek(pos + size, SeekOrigin.Begin);
             }
         }
@@ -777,6 +778,55 @@ namespace WebAssemblyInfo
         public string FunctionName(UInt32 idx)
         {
             return functionNames[idx];
+        }
+
+        public void FindFunctionsCallingInterp()
+        {
+            if (funcsCode == null || imports == null)
+                return;
+
+            if (!nameToFunction.TryGetValue("mini_llvmonly_get_interp_entry", out var interpIdx))
+            {
+                Console.WriteLine("Unable to find `mini_llvmonly_get_interp_entry` function. Make sure the wasm is built with AOT and native debug symbols enabled.");
+
+                return;
+            }
+
+            uint count = 0, totalCount = 0;
+            for (UInt32 idx = 0; idx < funcsCode.Length; idx++)
+            {
+                UInt32 funcIdx = idx + (UInt32)imports.Length;
+                var name = functionNames[funcIdx];
+                if (Program.FunctionFilter != null && !Program.FunctionFilter.Match(name).Success)
+                    continue;
+
+                totalCount++;
+
+                if (FunctionCallsFunction(funcIdx, interpIdx))
+                {
+                    count++;
+
+                    if (Program.Verbose)
+                        Console.WriteLine($"function {name} calls interpreter, code size: {funcsCode[idx].Size}");
+                }
+            }
+
+            Console.WriteLine($"AOT stats: {count} function(s) call(s) interpreter, {(totalCount == 0 ? 0 : ((double)100 * count) / totalCount):N2}% of {totalCount} functions");
+        }
+
+        bool FunctionCallsFunction(UInt32 idx, UInt32 calledIdx)
+        {
+            if (funcsCode == null || imports == null)
+                return false;
+
+            var code = funcsCode[idx - imports.Length];
+            foreach (var inst in code.Instructions)
+            {
+                if (inst.Opcode == Opcode.Call && inst.Idx == calledIdx)
+                    return true;
+            }
+
+            return false;
         }
     }
 }

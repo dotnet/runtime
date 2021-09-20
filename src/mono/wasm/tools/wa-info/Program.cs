@@ -37,11 +37,17 @@ namespace WebAssemblyInfo
                 if (!AotStats)
                     continue;
 
+                reader.FindFunctionsCallingInterp();
+
                 var dir = Path.GetDirectoryName(file);
                 if (dir == null)
                     continue;
 
-                foreach (var path in Directory.GetFiles(Path.Combine(dir, "managed"), "*.dll"))
+                var managedDir = Path.Combine(dir, "managed");
+                if (!Directory.Exists(managedDir))
+                    continue;
+
+                foreach (var path in Directory.GetFiles(managedDir, "*.dll"))
                 {
                     if (AssemblyFilter != null && !AssemblyFilter.Match(Path.GetFileName(path)).Success)
                         continue;
