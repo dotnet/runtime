@@ -21,8 +21,6 @@ variables:
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress
   - name: sdkBaseImage
     value: dotnet-sdk-libraries-current
-  - name: shareRoot
-    value: $(System.DefaultWorkingDirectory)/share
 
 jobs:
 - job: linux
@@ -53,8 +51,8 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(shareRoot)/client/3.0"
-      export SERVER_SHARE="$(shareRoot)/server/3.0"
+      export CLIENT_SHARE="$(Build.ArtifactStagingDirectory)/share/client/3.0"
+      export SERVER_SHARE="$(Build.ArtifactStagingDirectory)/share/server/3.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -xops 10"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -62,8 +60,8 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(shareRoot)/client/2.0"
-      export SERVER_SHARE="$(shareRoot)/server/2.0"
+      export CLIENT_SHARE="$(Build.ArtifactStagingDirectory)/share/client/2.0"
+      export SERVER_SHARE="$(Build.ArtifactStagingDirectory)/share/server/2.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -71,8 +69,8 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - bash: |
       cd '$(httpStressProject)'
-      export CLIENT_SHARE="$(shareRoot)/client/1.1"
-      export SERVER_SHARE="$(shareRoot)/server/1.1"
+      export CLIENT_SHARE="$(Build.ArtifactStagingDirectory)/share/client/1.1"
+      export SERVER_SHARE="$(Build.ArtifactStagingDirectory)/share/server/1.1"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
@@ -80,10 +78,10 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
   - bash: |
-      sudo chown -R $(id -u):$(id -g) $(shareRoot)
+      sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/share
     displayName: Own shared dumps and files
     condition: failed()
-  - publish: $(shareRoot)
+  - publish: $(Build.ArtifactStagingDirectory)/share
     artifact: DumpsLinux
     condition: failed()
 
@@ -119,8 +117,8 @@ jobs:
     displayName: Disable Firewall
   - powershell: |
       cd '$(httpStressProject)'
-      $env:CLIENT_SHARE="$(shareRoot)/client/2.0"
-      $env:SERVER_SHARE="$(shareRoot)/server/2.0"
+      $env:CLIENT_SHARE="$(Build.ArtifactStagingDirectory)/share/client/2.0"
+      $env:SERVER_SHARE="$(Build.ArtifactStagingDirectory)/share/server/2.0"
       New-Item -Force $env:CLIENT_SHARE -ItemType Directory
       New-Item -Force $env:SERVER_SHARE -ItemType Directory
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
@@ -130,8 +128,8 @@ jobs:
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
   - powershell: |
       cd '$(httpStressProject)'
-      $env:CLIENT_SHARE="$(shareRoot)/client/1.1"
-      $env:SERVER_SHARE="$(shareRoot)/server/1.1"
+      $env:CLIENT_SHARE="$(Build.ArtifactStagingDirectory)/share/client/1.1"
+      $env:SERVER_SHARE="$(Build.ArtifactStagingDirectory)/share/server/1.1"
       New-Item -Force $env:CLIENT_SHARE -ItemType Directory
       New-Item -Force $env:SERVER_SHARE -ItemType Directory
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
@@ -140,7 +138,7 @@ jobs:
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-  - publish: $(shareRoot)
+  - publish: $(Build.ArtifactStagingDirectory)/share
     artifact: DumpsWindows
     condition: failed()
 
