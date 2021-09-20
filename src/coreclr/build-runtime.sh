@@ -208,7 +208,7 @@ fi
 if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
-    copy_version_files
+    eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
 
     build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
