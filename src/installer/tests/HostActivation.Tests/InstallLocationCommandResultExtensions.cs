@@ -3,6 +3,7 @@
 
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -45,14 +46,14 @@ namespace HostActivation.Tests
             return assertion.HaveStdErrContaining($"Using global installation location [{installLocation}]");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationFile)
+        public static AndConstraint<CommandResultAssertions> HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationPath)
         {
-            return assertion.HaveStdErrContaining($"Looking for install_location file in '{installLocationFile}'.");
+            return assertion.HaveStdErrContaining($"Looking for install_location file in '{Path.Combine(installLocationPath, "install_location")}'.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationFile)
+        public static AndConstraint<CommandResultAssertions> HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationPath, string architecture)
         {
-            return assertion.HaveStdErrContaining($"Looking for architecture specific install_location file in '{installLocationFile}'.");
+            return assertion.HaveStdErrContaining($"Looking for architecture specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.");
         }
     }
 }

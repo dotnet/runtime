@@ -175,7 +175,7 @@ namespace HostActivation.Tests
                 if (!OperatingSystem.IsWindows())
                 {
                     result.Should()
-                        .HaveLookedForArchitectureSpecificInstallLocation(Path.Combine(registeredInstallLocationOverride.PathValueOverride, "install_location." + arch2.ToLowerInvariant()));
+                        .HaveLookedForArchitectureSpecificInstallLocation(registeredInstallLocationOverride.PathValueOverride, arch2);
                 }
 
                 result.Should().HaveUsedGlobalInstallLocation(path2);
@@ -203,7 +203,7 @@ namespace HostActivation.Tests
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .DotNetRoot(null)
                     .Execute()
-                    .Should().HaveLookedForDefaultInstallLocation(Path.Combine(registeredInstallLocationOverride.PathValueOverride, "install_location"))
+                    .Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride)
                     .And.HaveUsedConfigFileInstallLocation(reallyLongPath);
             }
         }

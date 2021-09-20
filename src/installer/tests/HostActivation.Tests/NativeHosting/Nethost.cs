@@ -219,13 +219,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 if (shouldUseArchSpecificInstallLocation)
                 {
-                    string archSpecificFilePath = Path.Combine(registeredInstallLocationOverride.PathValueOverride,
-                        "install_location." + sharedState.RepoDirectories.BuildArchitecture.ToLowerInvariant());
-                    result.Should().HaveLookedForArchitectureSpecificInstallLocation(archSpecificFilePath);
+                    result.Should().HaveLookedForArchitectureSpecificInstallLocation(
+                        registeredInstallLocationOverride.PathValueOverride,
+                        sharedState.RepoDirectories.BuildArchitecture);
                 }
                 else
                 {
-                    result.Should().HaveLookedForDefaultInstallLocation(Path.Combine(registeredInstallLocationOverride.PathValueOverride, "install_location"));
+                    result.Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride);
                 }
 
                 if (shouldPass)
@@ -265,10 +265,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .DotNetRoot(null)
                     .Execute();
 
-                string archSpecificFilePath = Path.Combine(registeredInstallLocationOverride.PathValueOverride,
-                    "install_location." + sharedState.RepoDirectories.BuildArchitecture.ToLowerInvariant());
                 result.Should().Pass()
-                    .And.HaveLookedForArchitectureSpecificInstallLocation(archSpecificFilePath)
+                    .And.HaveLookedForArchitectureSpecificInstallLocation(
+                        registeredInstallLocationOverride.PathValueOverride,
+                        sharedState.RepoDirectories.BuildArchitecture)
                     .And.HaveUsedConfigFileInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
@@ -295,10 +295,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .DotNetRoot(null)
                     .Execute();
 
-                string archSpecificFilePath = Path.Combine(registeredInstallLocationOverride.PathValueOverride,
-                    "install_location." + sharedState.RepoDirectories.BuildArchitecture.ToLowerInvariant());
                 result.Should().Pass()
-                    .And.HaveLookedForArchitectureSpecificInstallLocation(archSpecificFilePath)
+                    .And.HaveLookedForArchitectureSpecificInstallLocation(
+                        registeredInstallLocationOverride.PathValueOverride,
+                        sharedState.RepoDirectories.BuildArchitecture)
                     .And.HaveUsedConfigFileInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
