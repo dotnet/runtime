@@ -357,7 +357,9 @@ static int objref_id = 0;
 
 static int event_request_id = 0;
 
+#ifndef TARGET_WASM
 static int frame_id = 0;
+#endif
 
 static GPtrArray *event_requests;
 
