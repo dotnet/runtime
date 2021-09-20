@@ -2353,7 +2353,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     if (op2->isContained() || op2->IsRegOptional())
                     {
                         // op1 = (op1 * [op2]) + op3
-                        srcCount += BuildOperandUses(op2);
+                        srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op1);
                         srcCount += BuildDelayFreeUses(op3, op1);
                     }
                     else
@@ -2362,6 +2362,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
                         srcCount += BuildDelayFreeUses(op2, op1);
 
+                    }
+                }
+                else if (overwrittenOpNum == 2)
+                {
+                    tgtPrefUse = BuildUse(op2);
+                    srcCount += 1;
+
+                    if (op1->isContained())
+                    {
+                        // op2 = ([op1] * op2) + op3
+                        srcCount += BuildOperandUses(op1);
+                        srcCount += BuildDelayFreeUses(op3, op2);
+                    }
+                    else
+                    {
+                        // op2 = (op1 * op2) + [op3]
+                        srcCount += BuildDelayFreeUses(op1, op2);
+                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
                     }
                 }
                 else if (overwrittenOpNum == 3)
@@ -2385,22 +2403,34 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 else
                 {
-                    assert(overwrittenOpNum == 2);
-                    tgtPrefUse = BuildUse(op2);
-                    srcCount += 1;
-
+                    assert(overwrittenOpNum == 0);
                     if (op1->isContained())
                     {
-                        // op2 = ([op1] * op2) + op3
+                        tgtPrefUse = BuildUse(op2);
+                        srcCount += 1;
+                        // result = ([op1] * op2) + op3
                         srcCount += BuildOperandUses(op1);
                         srcCount += BuildDelayFreeUses(op3, op2);
                     }
                     else
                     {
-                        // op2 = (op1 * op2) + [op3]
-                        srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
-                        srcCount += BuildDelayFreeUses(op1, op2);
+                        tgtPrefUse = BuildUse(op1);
+                        srcCount += 1;
+
+                        if (op2->isContained() || op2->IsRegOptional())
+                        {
+                            // result = (op1 * [op2]) + op3
+                            srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op1);
+                            srcCount += BuildDelayFreeUses(op3, op1);
+                        }
+                        else
+                        {
+                            // result = (op1 * op2) + [op3]
+                            srcCount += BuildDelayFreeUses(op2, op1);
+                            srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+                        }
                     }
+
                 }
                 
                 buildUses = false;
