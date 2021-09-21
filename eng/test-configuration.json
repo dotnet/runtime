@@ -1,13 +1,5 @@
 {
     "version" : 1,
     "defaultOnFailure": "rerun",
-    "localRerunCount" : 2,
-    "retryOnRules": [
-      {"testName": {"regex": "System.Buffers.ArrayPool.Tests.ArrayPoolUnitTests.SharedInstanceCreatesAnInstanceOnFirstCall"}},
-      {"testAssembly": {"wildcard": "System.Buffers.Tests.dll" }}
-    ],
-    "failOnRules": [
-    ],
-    "quarantineRules": [
-    ]
+    "localRerunCount" : 1
   }

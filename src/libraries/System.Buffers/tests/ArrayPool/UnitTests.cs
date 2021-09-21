@@ -28,7 +28,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void SharedInstanceCreatesAnInstanceOnFirstCall()
         {
-            Assert.Null(ArrayPool<byte>.Shared);
+            Assert.NotNull(ArrayPool<byte>.Shared);
         }
 
         [Fact]
