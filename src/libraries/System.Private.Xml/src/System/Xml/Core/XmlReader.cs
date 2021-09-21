@@ -3,7 +3,6 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -938,10 +937,7 @@ namespace System.Xml
                 throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
 
-            if (namespaceURI == null)
-            {
-                throw new ArgumentNullException(nameof(namespaceURI));
-            }
+            ArgumentNullException.ThrowIfNull(namespaceURI);
 
             // atomize local name and namespace
             localName = NameTable.Add(localName);
@@ -1008,10 +1004,7 @@ namespace System.Xml
                 throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
 
-            if (namespaceURI == null)
-            {
-                throw new ArgumentNullException(nameof(namespaceURI));
-            }
+            ArgumentNullException.ThrowIfNull(namespaceURI);
             // save the element or root depth
             int parentDepth = Depth;
             if (NodeType != XmlNodeType.Element)
@@ -1084,10 +1077,7 @@ namespace System.Xml
                 throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
 
-            if (namespaceURI == null)
-            {
-                throw new ArgumentNullException(nameof(namespaceURI));
-            }
+            ArgumentNullException.ThrowIfNull(namespaceURI);
 
             // atomize local name and namespace
             localName = NameTable.Add(localName);
@@ -1436,10 +1426,7 @@ namespace System.Xml
                 throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
 
-            if (namespaceURI == null)
-            {
-                throw new ArgumentNullException(nameof(namespaceURI));
-            }
+            ArgumentNullException.ThrowIfNull(namespaceURI);
 
             if (NodeType != XmlNodeType.Element)
             {
@@ -1641,10 +1628,7 @@ namespace System.Xml
         // Creates an XmlReader for parsing XML from the given Uri.
         public static XmlReader Create(string inputUri)
         {
-            if (inputUri == null)
-            {
-                throw new ArgumentNullException(nameof(inputUri));
-            }
+            ArgumentNullException.ThrowIfNull(inputUri);
 
             if (inputUri.Length == 0)
             {
@@ -1672,10 +1656,7 @@ namespace System.Xml
         // Creates an XmlReader according for parsing XML from the given stream.
         public static XmlReader Create(Stream input)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             // Avoid using XmlReader.Create(Stream, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
@@ -1705,10 +1686,7 @@ namespace System.Xml
         // Creates an XmlReader according for parsing XML from the given TextReader.
         public static XmlReader Create(TextReader input)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             // Avoid using XmlReader.Create(TextReader, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
@@ -1747,10 +1725,7 @@ namespace System.Xml
         // !!!!!!
         internal static XmlReader CreateSqlReader(Stream input, XmlReaderSettings? settings, XmlParserContext inputContext)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
 
