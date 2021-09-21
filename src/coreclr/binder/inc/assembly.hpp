@@ -29,14 +29,9 @@
 
 namespace BINDER_SPACE
 {
-    // BINDER_SPACE::Assembly represents a result of binding to an actual assembly (PE image)
+    // BINDER_SPACE::Assembly represents a result of binding to an actual assembly (PEImage)
     // It is basically a tuple of 1) physical assembly and 2) binder which created/owns this binding
     // We also store whether it was bound using TPA list
-    //
-    // UNDONE: perhaps rename to "BoundAssembly"?
-    //         check the ownership, if it is owned by the binder, do we need ref counting?
-    //         elaborate why IsInTPA needed
-    //
     class Assembly
     {
     public:

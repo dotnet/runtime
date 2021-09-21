@@ -312,30 +312,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-#if !defined(DACCESS_COMPILE)
-    /* static */
-    HRESULT AssemblyBinderCommon::BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly)
-    {
-        HRESULT hr = S_OK;
-        _ASSERTE(ppSystemAssembly != NULL);
-
-        EX_TRY
-        {
-            ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-            StackSString systemPath(SystemDomain::System()->SystemDirectory());
-            hr = AssemblyBinderCommon::BindToSystem(systemPath, &pAsm);
-            if (SUCCEEDED(hr))
-            {
-                _ASSERTE(pAsm != NULL);
-                *ppSystemAssembly = pAsm.Extract();
-            }
-        }
-        EX_CATCH_HRESULT(hr);
-
-        return hr;
-    }
-#endif // !defined(DACCESS_COMPILE)
-
     /* static */
     HRESULT AssemblyBinderCommon::BindToSystem(SString   &systemDirectory,
                                                Assembly **ppSystemAssembly)
@@ -1428,7 +1404,7 @@ Exit:
     return hr;
 }
 
-HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** ppDefaultBinder)
+HRESULT AssemblyBinderCommon::CreateDefaultBinder(DefaultAssemblyBinder** ppDefaultBinder)
 {
     HRESULT hr = S_OK;
     EX_TRY
@@ -1450,47 +1426,6 @@ HRESULT AssemblyBinderCommon::DefaultBinderSetupContext(DefaultAssemblyBinder** 
     EX_CATCH_HRESULT(hr);
 
 Exit:
-    return hr;
-}
-
-HRESULT AssemblyBinderCommon::GetAssemblyIdentity(LPCSTR szTextualIdentity,
-                                                  BINDER_SPACE::ApplicationContext* pApplicationContext,
-                                                  NewHolder<AssemblyIdentityUTF8>& assemblyIdentityHolder)
-{
-    HRESULT hr = S_OK;
-    _ASSERTE(szTextualIdentity != NULL);
-
-    EX_TRY
-    {
-        AssemblyIdentityUTF8 * pAssemblyIdentity = NULL;
-        if (pApplicationContext != NULL)
-        {
-            // This returns a cached copy owned by application context
-            hr = pApplicationContext->GetAssemblyIdentity(szTextualIdentity, &pAssemblyIdentity);
-            if (SUCCEEDED(hr))
-            {
-                assemblyIdentityHolder = pAssemblyIdentity;
-                assemblyIdentityHolder.SuppressRelease();
-            }
-        }
-        else
-        {
-            SString sTextualIdentity;
-
-            sTextualIdentity.SetUTF8(szTextualIdentity);
-
-            // This is a private copy
-            pAssemblyIdentity = new AssemblyIdentityUTF8();
-            hr = TextualIdentityParser::Parse(sTextualIdentity, pAssemblyIdentity);
-            if (SUCCEEDED(hr))
-            {
-                pAssemblyIdentity->PopulateUTF8Fields();
-                assemblyIdentityHolder = pAssemblyIdentity;
-            }
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
     return hr;
 }
 

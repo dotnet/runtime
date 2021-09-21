@@ -397,9 +397,6 @@ protected:
     Volatile<LONG>           m_refCount;
     int                      m_flags;
 
-    // AssemblyBinder that this PEFile is associated with
-    PTR_AssemblyBinder       m_pAssemblyBinder;
-
 public:
 
     PTR_PEImage GetILimage()
@@ -471,28 +468,17 @@ public:
     }
 
     // Returns the AssemblyBinder* instance associated with the PEFile
-    PTR_AssemblyBinder GetBinder();
+    // which owns the context into which the current PEFile was loaded.
+    PTR_AssemblyBinder GetAssemblyBinder();
 
 #ifndef DACCESS_COMPILE
-    void SetupAssemblyLoadContext();
-
     void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
         m_pFallbackBinder = pFallbackBinder;
-        SetupAssemblyLoadContext();
     }
 
 #endif //!DACCESS_COMPILE
-
-    // Returns AssemblyBinder which owns the context into which the current PEFile was loaded.
-    PTR_AssemblyBinder GetAssemblyBinder()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_pAssemblyBinder != NULL);
-        return m_pAssemblyBinder;
-    }
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }

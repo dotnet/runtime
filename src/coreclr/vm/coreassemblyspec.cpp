@@ -192,12 +192,8 @@ HRESULT BaseAssemblySpec::ParseName()
 
         BINDER_SPACE::ApplicationContext *pAppContext = NULL;
         DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
-        if (pBinder != NULL)
-        {
-            pAppContext = pBinder->GetAppContext();
-        }
 
-        hr = BINDER_SPACE::AssemblyBinderCommon::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
+        hr = pBinder->GetAppContext()->GetAssemblyIdentity(m_pAssemblyName, &pAssemblyIdentity);
 
         if (FAILED(hr))
         {
@@ -225,6 +221,8 @@ HRESULT BaseAssemblySpec::ParseName()
 
         // Copy and own any fields we do not already own
         CloneFields();
+
+        pAssemblyIdentity.SuppressRelease();
     }
     EX_CATCH_HRESULT(hr);
 
