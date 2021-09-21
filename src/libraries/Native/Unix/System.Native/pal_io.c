@@ -1019,7 +1019,7 @@ int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
 #elif defined(F_PREALLOCATE) // macOS
     fstore_t fstore;
     fstore.fst_flags = F_ALLOCATEALL; // Allocate all requested space or no space at all.
-    fstore.fst_posmode = F_PEOFPOSMODE; // allocate from the physical end of file.
+    fstore.fst_posmode = F_PEOFPOSMODE; // Allocate from the physical end of file.
     fstore.fst_offset = (off_t)offset;
     fstore.fst_length = (off_t)length;
     fstore.fst_bytesalloc = 0; // output size, can be > length
