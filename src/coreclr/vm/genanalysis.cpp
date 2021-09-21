@@ -23,7 +23,7 @@ bool gcGenAnalysisDump = false;
     if (gcGenAnalysisConfigured == GcGenAnalysisState::Uninitialized)
     {
         bool match = true;
-        CLRConfigStringHolder gcGenAnalysisCmd(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisCmd));
+        CLRConfigStringHolder gcGenAnalysisCmd(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisCmd));
         if (gcGenAnalysisCmd != nullptr)
         {
             // Get the managed command line.
@@ -35,24 +35,24 @@ bool gcGenAnalysisDump = false;
             match = false;
         }
         if (match && !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisBytes")) &&
-                     !CLRConfig::IsConfigOptionSpecified(W("INTERNAL_GCGenAnalysisTimeUSec")) &&
-                     !CLRConfig::IsConfigOptionSpecified(W("INTERNAL_GCGenAnalysisTimeMSec")))
+                     !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisTimeUSec")) &&
+                     !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisTimeMSec")))
         {
             match = false;
         }
         if (match)
         {
-            gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisBytes);
-            gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisTimeUSec) * 10;
+            gcGenAnalysisBytes = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisBytes);
+            gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisTimeUSec) * 10;
             if (gcGenAnalysisTime == 0)
             {
-                gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisTimeMSec) * 10000;
+                gcGenAnalysisTime = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisTimeMSec) * 10000;
             }
-            gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisGen);
-            gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisIndex);
+            gcGenAnalysisGen = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisGen);
+            gcGenAnalysisIndex = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisIndex);
             gcGenAnalysisBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
-            gcGenAnalysisTrace = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisTrace);
-            gcGenAnalysisDump = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCGenAnalysisDump);
+            gcGenAnalysisTrace = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisTrace);
+            gcGenAnalysisDump = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCGenAnalysisDump);
             gcGenAnalysisConfigured = GcGenAnalysisState::Enabled;
         }
         else
