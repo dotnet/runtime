@@ -16,7 +16,7 @@ namespace System.Data.Common
             int dwReserved,
             System.IntPtr* ppIErrorInfo);
 
-        internal static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
+        internal static System.Data.OleDb.OleDbHResult GetErrorInfo(
             int dwReserved,
             out UnsafeNativeMethods.IErrorInfo? ppIErrorInfo)
         {
