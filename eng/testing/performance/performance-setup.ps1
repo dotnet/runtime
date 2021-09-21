@@ -125,6 +125,10 @@ if ($RunFromPerformanceRepo) {
 }
 else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+	if ( $LASTEXITCODE -ne 0 ) {
+		Write-Output "git clone failed with code $LASTEXITCODE"
+		exit 1
+	}
 }
 
 if($MonoDotnet -ne "")

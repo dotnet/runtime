@@ -267,6 +267,9 @@ else
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
+	if [ "$LASTEXITCODE" -ne "0" ]; then
+		echo "git clone failed with code $LASTEXITCODE"
+		exit 1
 
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
