@@ -20703,14 +20703,14 @@ void gc_heap::gc1()
 #endif //FEATURE_LOH_COMPACTION
 
     decommit_ephemeral_segment_pages();
-#ifdef USE_REGIONS
-    distribute_free_regions();
-#endif //USE_REGIONS
-
     fire_pevents();
 
     if (!(settings.concurrent))
     {
+#ifdef USE_REGIONS
+        distribute_free_regions();
+#endif //USE_REGIONS
+
         rearrange_uoh_segments();
         update_end_ngc_time();
         update_end_gc_time_per_heap();
