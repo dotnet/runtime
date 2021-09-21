@@ -45,6 +45,33 @@ namespace WebAssemblyInfo
                     return $"{opStr} {FunctionName(Idx, reader)}";
                 case Opcode.I32_Const:
                     return $"{opStr} {I32}";
+                case Opcode.I32_Load:
+                case Opcode.I64_Load:
+                case Opcode.F32_Load:
+                case Opcode.F64_Load:
+                case Opcode.I32_Load8_S:
+                case Opcode.I32_Load8_U:
+                case Opcode.I32_Load16_S:
+                case Opcode.I32_Load16_U:
+                case Opcode.I64_Load8_S:
+                case Opcode.I64_Load8_U:
+                case Opcode.I64_Load16_S:
+                case Opcode.I64_Load16_U:
+                case Opcode.I64_Load32_S:
+                case Opcode.I64_Load32_U:
+                case Opcode.I32_Store:
+                case Opcode.I64_Store:
+                case Opcode.F32_Store:
+                case Opcode.F64_Store:
+                case Opcode.I32_Store8:
+                case Opcode.I32_Store16:
+                case Opcode.I64_Store8:
+                case Opcode.I64_Store16:
+                case Opcode.I64_Store32:
+                    var offset = MemArg.Offset != 0 ? $" offset:{MemArg.Offset}" : null;
+                    var align = MemArg.Align != 0 ? $" align:{MemArg.Align}" : null;
+
+                    return $"{opStr}{offset}{align}";
                 case Opcode.Nop:
                 default:
                     return opStr;
