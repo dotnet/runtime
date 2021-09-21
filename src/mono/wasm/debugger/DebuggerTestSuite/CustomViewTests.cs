@@ -68,10 +68,14 @@ namespace DebuggerTests
         [Fact]
         public async Task UsingDebuggerDisplayConcurrent()
         {
-            async void CheckProperties(JObject pause_location)
+            async Task<bool> CheckProperties(JObject pause_location)
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 0");
+                var l = GetAndAssertObjectWithName(locals, "myList");
+                var val = l["value"];
+                if (val["description"].Value<string>() != "Count = 0")
+                    return false;
+                return true;
             }
 
             var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest2", "run", 2);
@@ -84,19 +88,16 @@ namespace DebuggerTests
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-custom-view-test.cs", bp.Value["locations"][0]["lineNumber"].Value<int>()+2, bp.Value["locations"][0]["columnNumber"].Value<int>(),  "run");
 
-            System.Collections.Generic.List<Thread> threads = new System.Collections.Generic.List<Thread>();
-
-            for (int i = 0 ; i < 7; i++)
+            System.Collections.Generic.List<Task<bool>> tasks = new System.Collections.Generic.List<Task<bool>>();
+            for (int i = 0 ; i < 10; i++)
             {
-                Thread thread = new Thread(() => CheckProperties(pause_location));
-                thread.Start();
-                threads.Add(thread);
+                var task = CheckProperties(pause_location);
+                tasks.Add(task);
             }
-            foreach(Thread thread in threads)
+            foreach(Task<bool> task in tasks)
             {
-                thread.Join();
+                Assert.True(task.Result);
             }
-            Thread.Sleep(10000);
         }
     }
 }
