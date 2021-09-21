@@ -107,7 +107,7 @@ namespace System.Text.RegularExpressions.Tests
             var dll = new MemoryStream();
             comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
             EmitResult results = comp.Emit(dll, options: s_emitOptions, cancellationToken: cancellationToken);
-            if (!results.Success)
+            if (!results.Success || results.Diagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)) + Environment.NewLine +
