@@ -1586,9 +1586,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30862/b30862/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54371</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30869/b30869/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1640,17 +1637,11 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b27873/b27873/**">
             <Issue>https://github.com/dotnet/runtime/issues/54381</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54371</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b71179/b71179/**">
             <Issue>https://github.com/dotnet/runtime/issues/54381</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b37578/b37578/**">
             <Issue>https://github.com/dotnet/runtime/issues/54381</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/badendfinally/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54371</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54372</Issue>
