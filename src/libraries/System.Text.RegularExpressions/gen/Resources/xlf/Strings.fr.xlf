@@ -123,8 +123,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 10 or greater is required.</source>
-        <target state="new">C# LangVersion of 10 or greater is required.</target>
+        <source>C# LangVersion of 10 or greater is required</source>
+        <target state="new">C# LangVersion of 10 or greater is required</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
@@ -133,8 +133,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
-        <source>The RegexGeneratorAttribute is malformed.</source>
-        <target state="new">The RegexGeneratorAttribute is malformed.</target>
+        <source>The RegexGeneratorAttribute is malformed</source>
+        <target state="new">The RegexGeneratorAttribute is malformed</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidRegexGeneratorAttributeTitle">
+        <source>Invalid RegexGenerator usage</source>
+        <target state="new">Invalid RegexGenerator usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -168,8 +173,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MultipleRegexGeneratorAttributesMessage">
-        <source>Multiple RegexGeneratorAttributes were applied to the same method. Only one is allowed.</source>
-        <target state="new">Multiple RegexGeneratorAttributes were applied to the same method. Only one is allowed.</target>
+        <source>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</source>
+        <target state="new">Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -218,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be static, partial, parameterless, non-generic, and return Regex.</source>
-        <target state="new">Regex method must be static, partial, parameterless, non-generic, and return Regex.</target>
+        <source>Regex method must be static, partial, parameterless, non-generic, and return Regex</source>
+        <target state="new">Regex method must be static, partial, parameterless, non-generic, and return Regex</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">

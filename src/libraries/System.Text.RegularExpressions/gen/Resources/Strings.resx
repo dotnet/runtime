@@ -117,20 +117,23 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="InvalidRegexGeneratorAttributeTitle" xml:space="preserve">
+    <value>Invalid RegexGenerator usage</value>
+  </data>
   <data name="InvalidRegexGeneratorAttributeMessage" xml:space="preserve">
-    <value>The RegexGeneratorAttribute is malformed.</value>
+    <value>The RegexGeneratorAttribute is malformed</value>
   </data>
   <data name="MultipleRegexGeneratorAttributesMessage" xml:space="preserve">
-    <value>Multiple RegexGeneratorAttributes were applied to the same method. Only one is allowed.</value>
+    <value>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</value>
   </data>
   <data name="InvalidRegexArgumentsMessage" xml:space="preserve">
     <value>The specified regex is invalid. '{0}'</value>
   </data>
   <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
-    <value>Regex method must be static, partial, parameterless, non-generic, and return Regex.</value>
+    <value>Regex method must be static, partial, parameterless, non-generic, and return Regex</value>
   </data>
   <data name="InvalidLangVersionMessage" xml:space="preserve">
-    <value>C# LangVersion of 10 or greater is required.</value>
+    <value>C# LangVersion of 10 or greater is required</value>
   </data>
   <data name="Generic" xml:space="preserve">
     <value>Regular expression parser error '{0}' at offset {1}.</value>
