@@ -193,6 +193,8 @@ typedef struct {
 	char *method_name;
 	GHashTable *jit_callees;
 	LLVMValueRef long_bb_break_var;
+	int *gc_var_indexes;
+	LLVMValueRef gc_pin_area;
 } EmitContext;
 
 typedef struct {
@@ -3732,6 +3734,18 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 	LLVMDisposeBuilder (builder);
 }
 
+#ifdef TARGET_WASM
+static void
+emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
+{
+	LLVMValueRef index0 = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+	LLVMValueRef index1 = LLVMConstInt (LLVMInt32Type (), ctx->gc_var_indexes [vreg] - 1, FALSE);
+	LLVMValueRef indexes [] = { index0, index1 };
+	LLVMValueRef addr = LLVMBuildGEP (builder, ctx->gc_pin_area, indexes, 2, "");
+	mono_llvm_build_store (builder, convert (ctx, ctx->values [vreg], IntPtrType ()), addr, TRUE, LLVM_BARRIER_NONE);
+}
+#endif
+
 /*
  * emit_entry_bb:
  *
@@ -3752,6 +3766,27 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 	ctx->alloca_builder = create_builder (ctx);
 
+#ifdef TARGET_WASM
+	/*
+	 * For GC stack scanning to work, allocate an area on the stack and store
+	 * every ref vreg into it after its written. Because the stack is scanned
+	 * conservatively, the objects will be pinned, so the vregs can directly
+	 * reference the objects, there is no need to load them from the stack
+	 * on every access.
+	 */
+	ctx->gc_var_indexes = g_new0 (int, cfg->next_vreg);
+	int ngc_vars = 0;
+	for (i = 0; i < cfg->next_vreg; ++i) {
+		if (vreg_is_ref (cfg, i)) {
+			ctx->gc_var_indexes [i] = ngc_vars + 1;
+			ngc_vars ++;
+		}
+	}
+
+	// FIXME: Count only live vregs
+	ctx->gc_pin_area = build_alloca_llvm_type_name (ctx, LLVMArrayType (IntPtrType (), ngc_vars), 0, "gc_pin");
+#endif
+
 	/*
 	 * Handle indirect/volatile variables by allocating memory for them
 	 * using 'alloca', and storing their address in a temporary.
@@ -3762,13 +3797,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 		if ((var->opcode == OP_GSHAREDVT_LOCAL || var->opcode == OP_GSHAREDVT_ARG_REGOFFSET))
 			continue;
-
-#ifdef TARGET_WASM
-		// For GC stack scanning to work, have to spill all reference variables to the stack
-		// Some ref variables have type intptr
-		if (ctx->has_safepoints && (MONO_TYPE_IS_REFERENCE (var->inst_vtype) || var->inst_vtype->type == MONO_TYPE_I) && var != ctx->cfg->rgctx_var)
-			var->flags |= MONO_INST_INDIRECT;
-#endif
 
 		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (mini_type_is_vtype (var->inst_vtype) && !MONO_CLASS_IS_SIMD (ctx->cfg, var->klass))) {
 			vtype = type_to_llvm_type (ctx, var->inst_vtype);
@@ -3965,6 +3993,19 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			set_metadata_flag (rgctx_alloc, "mono.this");
 		}
 	}
+
+#ifdef TARGET_WASM
+	/*
+	 * Store ref arguments to the pin area.
+	 * FIXME: This might not be needed, since the caller already does it ?
+	 */
+	for (i = 0; i < cfg->num_varinfo; ++i) {
+		MonoInst *var = cfg->varinfo [i];
+
+		if (var->opcode == OP_ARG && vreg_is_ref (cfg, var->dreg) && ctx->values [var->dreg])
+			emit_gc_pin (ctx, builder, var->dreg);
+	}
+#endif
 
 	/* Initialize the method if needed */
 	if (cfg->compile_aot) {
@@ -10998,9 +11039,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				values [ins->dreg] = convert (ctx, values [ins->dreg], ctx->vreg_types [ins->dreg]);
 		}
 
-		/* Add stores for volatile variables */
-		if (!skip_volatile_store && spec [MONO_INST_DEST] != ' ' && spec [MONO_INST_DEST] != 'v' && !MONO_IS_STORE_MEMBASE (ins))
-			emit_volatile_store (ctx, ins->dreg);
+		/* Add stores for volatile/ref variables */
+		if (spec [MONO_INST_DEST] != ' ' && spec [MONO_INST_DEST] != 'v' && !MONO_IS_STORE_MEMBASE (ins)) {
+			if (!skip_volatile_store)
+				emit_volatile_store (ctx, ins->dreg);
+#ifdef TARGET_WASM
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
+				emit_gc_pin (ctx, builder, ins->dreg);
+#endif
+		}
 	}
 
 	if (!ctx_ok (ctx))
@@ -11152,6 +11199,7 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx->vreg_cli_types);
 	g_free (ctx->is_dead);
 	g_free (ctx->unreachable);
+	g_free (ctx->gc_var_indexes);
 	g_ptr_array_free (ctx->phi_values, TRUE);
 	g_free (ctx->bblocks);
 	g_hash_table_destroy (ctx->region_to_handler);
@@ -12015,12 +12063,12 @@ after_codegen:
 			g_free (name);
 		}
 
-		/*
+#if 0
 		int err = LLVMVerifyFunction (ctx->lmethod, LLVMPrintMessageAction);
 		if (err != 0)
 			LLVMDumpValue (ctx->lmethod);
 		g_assert (err == 0);
-		*/
+#endif
 	} else {
 		//LLVMVerifyFunction (method, 0);
 		llvm_jit_finalize_method (ctx);
