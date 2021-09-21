@@ -548,13 +548,7 @@ namespace System.Xml.Serialization
             }
             else if (ShouldUseReflectionBasedSerialization(_mapping) || _isReflectionBasedSerializer)
             {
-                XmlMapping mapping = GetMapping();
-                ElementAccessor element = mapping.Accessor;
-                string elementNamespace = element.Form == XmlSchemaForm.Qualified ? element.Namespace! : string.Empty;
-
-                return mapping.IsReadable &&
-                    mapping.GenerateSerializer &&
-                    xmlReader.IsStartElement(element.Name, elementNamespace);
+                return ReflectionMethodEnabled;
             }
             else
             {
