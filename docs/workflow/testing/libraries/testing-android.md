@@ -103,7 +103,7 @@ XHarness for Android doesn't talk much and only saves test results to a file. Ho
 ```
 adb logcat -s "DOTNET"
 ```
-Or simply open `logcat` window in Android Studio or Visual Stuido.
+Or simply open `logcat` window in Android Studio or Visual Studio.
 
 ### AVD Manager
 If Android Studio is installed, [AVD Manager](https://developer.android.com/studio/run/managing-avds) can be used from the IDE to create and start Android virtual devices. Otherwise, the Android SDK provides the [`avdmanager` command line tool](https://developer.android.com/studio/command-line/avdmanager).
