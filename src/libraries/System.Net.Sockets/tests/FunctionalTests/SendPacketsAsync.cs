@@ -527,15 +527,12 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        public static bool IsNotWindows11 = !PlatformDetection.IsWindows10Version22000OrGreater;
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
+        [ConditionalFact(nameof(IsNotWindows11))]
         public void SendPacketsElement_FileStreamLargeOffset_Throws()
         {
-            if (PlatformDetection.IsWindows10Version22000OrGreater)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
-                throw new SkipTestException("Unstable on Windows 11");
-            }
-
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true))
             {
                 stream.Seek(s_testFileSize / 2, SeekOrigin.Begin);
@@ -556,14 +553,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
+        [ConditionalFact(nameof(IsNotWindows11))]
         public void SendPacketsElement_FileStreamWithOptions_Success() {
-            if (PlatformDetection.IsWindows10Version22000OrGreater)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
-                throw new SkipTestException("Unstable on Windows 11");
-            }
-
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan)) {
                 var element = new SendPacketsElement(stream, 0, s_testFileSize);
                 SendPackets(element, s_testFileSize, GetExpectedContent(element));
@@ -593,14 +585,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
+        [ConditionalFact(nameof(IsNotWindows11))]
         public void SendPacketsElement_FileStreamMultiPartMixed_MultipleFileStreams_Success() {
-            if (PlatformDetection.IsWindows10Version22000OrGreater)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
-                throw new SkipTestException("Unstable on Windows 11");
-            }
-
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
             using (var stream2 = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous)) {
                 var elements = new[]
