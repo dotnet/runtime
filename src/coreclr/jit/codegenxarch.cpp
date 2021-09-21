@@ -3075,7 +3075,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (size >= XMM_REGSIZE_BYTES)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
-        // regNumber swapReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         instruction simdMov = simdUnalignedMovIns();
 
@@ -3106,10 +3105,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                     emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
                                         dstAddrIndexScale, dstOffset);
                 }
-
-                // regNumber _r = tempReg;
-                // tempReg      = swapReg;
-                // swapReg      = _r;
             }
 
             if (regSize == YMM_REGSIZE_BYTES) {
