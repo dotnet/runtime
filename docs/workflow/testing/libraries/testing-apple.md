@@ -37,8 +37,8 @@ Run tests one by one for each test suite on a simulator:
 
 In order to run the tests on a device:
 - Set the `-os` parameter to a device-related value (see above)
-- Specify `DevTeamProvisioning` (see [developer.apple.com/account/#/membership](https://developer.apple.com/account/#/membership), scroll down to `Team ID`). 
-  
+- Specify `DevTeamProvisioning` (see [developer.apple.com/account/#/membership](https://developer.apple.com/account/#/membership), scroll down to `Team ID`).
+
 For example:
 ```
 ./build.sh libs.tests -os iOS -arch x64 -test /p:DevTeamProvisioning=H1A2B3C4D5
