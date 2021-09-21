@@ -483,7 +483,8 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     }
     else
     {
-        assert(helper != CORINFO_HELP_READYTORUN_NEW); // If this is true, then we should have collected a non-null entrypoint above
+        assert(helper != CORINFO_HELP_READYTORUN_NEW); // If this is true, then we should have collected a non-null
+                                                       // entrypoint above
     }
 #endif
 
