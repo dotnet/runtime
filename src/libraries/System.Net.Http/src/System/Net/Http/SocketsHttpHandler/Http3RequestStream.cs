@@ -276,7 +276,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
-            catch (OperationCanceledException ex) when (ex.CancellationToken == requestCancellationSource.Token)
+            catch (OperationCanceledException ex) when (ex.CancellationToken == requestCancellationSource.Token || ex.CancellationToken == _sendContentCts?.Token)
             {
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
                 if (cancellationToken.IsCancellationRequested)
