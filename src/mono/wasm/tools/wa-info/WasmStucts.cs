@@ -38,8 +38,11 @@ namespace WebAssemblyInfo
                 case Opcode.Local_Set:
                 case Opcode.Local_Tee:
                     return $"{opStr} ${Idx}";
+                case Opcode.Global_Get:
+                case Opcode.Global_Set:
+                    return $"{opStr} {GlobalName(Idx, reader)}";
                 case Opcode.Call:
-                    return $"{opStr} ${FunctionName(Idx, reader)}";
+                    return $"{opStr} {FunctionName(Idx, reader)}";
                 case Opcode.I32_Const:
                     return $"{opStr} {I32}";
                 case Opcode.Nop:
@@ -51,9 +54,17 @@ namespace WebAssemblyInfo
         static string FunctionName(UInt32 idx, WasmReader? reader)
         {
             if (reader == null)
-                return idx.ToString();
+                return $"[{idx.ToString()}]";
 
             return reader.FunctionName(idx);
+        }
+
+        static string GlobalName(UInt32 idx, WasmReader? reader)
+        {
+            if (reader == null)
+                return $"${idx.ToString()}";
+
+            return $"${reader.GlobalName(idx)}";
         }
 
         public override string ToString()

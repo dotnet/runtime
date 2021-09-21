@@ -780,6 +780,11 @@ namespace WebAssemblyInfo
             return functionNames[idx];
         }
 
+        public string GlobalName(UInt32 idx)
+        {
+            return globalNames[idx];
+        }
+
         public void FindFunctionsCallingInterp()
         {
             if (funcsCode == null || imports == null)
