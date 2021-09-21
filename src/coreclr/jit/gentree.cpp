@@ -7880,7 +7880,7 @@ GenTree* Compiler::gtCloneExpr(
                 copy                        = new (this, GT_ALLOCOBJ)
                     GenTreeAllocObj(tree->TypeGet(), asAllocObj->gtNewHelper, asAllocObj->gtHelperHasSideEffects,
                                     asAllocObj->gtAllocObjClsHnd, asAllocObj->gtOp1);
-#ifdef FEATURE_READYTORUN
+#ifdef FEATURE_READYTORUN_COMPILER
                 copy->AsAllocObj()->gtEntryPoint = asAllocObj->gtEntryPoint;
 #endif
             }
