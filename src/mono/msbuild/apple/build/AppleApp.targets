@@ -1,5 +1,9 @@
 <Project>
-  <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="AppleAppBuilderTask" 
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
+             TaskName="ILStrip"
+             AssemblyFile="$(ILStripTasksAssemblyPath)" />
 
   <Target Name="AppleBuildApp" AfterTargets="$(AppleBuildAppAfterThisTarget)" />
 
@@ -7,6 +11,8 @@
 
   <Target Name="_InitializeCommonProperties">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
+    <Error Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
+           Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'adhoc' to sign with an adhoc key, or '-' to skip signing all together.." />
 
     <PropertyGroup>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
@@ -87,9 +93,12 @@
         AotModulesTablePath="$(AppleAppBundleDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MonoAotCrossDir)">
+        LLVMPath="$(MonoAotCrossDir)"
+        IntermediateOutputPath="$(_MobileIntermediateOutputPath)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
     </MonoAOTCompiler>
+
+    <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'" Assemblies="@(_AppleAssembliesInternal)" />
 
     <ItemGroup>
       <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
@@ -97,11 +106,6 @@
   </Target>
 
   <Target Name="_AppleGenerateAppBundle">
-    <PropertyGroup>
-      <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
-      <DevTeamProvisioning Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS') and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
-    </PropertyGroup>
-
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
     <AppleAppBuilderTask
@@ -115,8 +119,9 @@
         ForceInterpreter="$(MonoForceInterpreter)"
         InvariantGlobalization="$(InvariantGlobalization)"
         UseConsoleUITemplate="True"
-        GenerateXcodeProject="True"
-        BuildAppBundle="True"
+        GenerateXcodeProject="$(GenerateXcodeProject)"
+        GenerateCMakeProject="$(GenerateCMakeProject)"
+        BuildAppBundle="$(GenerateXcodeProject)"
         Optimized="$(Optimized)"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(AppleAppBundleDir)"
@@ -125,8 +130,8 @@
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
 
-    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
-    <Message Importance="High" Text="App: $(AppBundlePath)"/>
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)" Condition="'$(GenerateXcodeProject)' == 'true'" />
+    <Message Importance="High" Text="App: $(AppBundlePath)" Condition="'$(GenerateXcodeProject)' == 'true'"/>
   </Target>
 
   <Target Name="_AfterAppleBuildApp">
