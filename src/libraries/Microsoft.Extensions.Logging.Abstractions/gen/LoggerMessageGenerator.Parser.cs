@@ -438,11 +438,21 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             // determine the namespace the class is declared in, if any
                                             SyntaxNode? potentialNamespaceParent = classDec.Parent;
-                                            while (potentialNamespaceParent != null && potentialNamespaceParent is not NamespaceDeclarationSyntax)
+                                            while (potentialNamespaceParent != null &&
+                                                   potentialNamespaceParent is not NamespaceDeclarationSyntax
+#if ROSLYN4_0_OR_GREATER
+                                                   && potentialNamespaceParent is not FileScopedNamespaceDeclarationSyntax
+#endif
+                                                   )
                                             {
                                                 potentialNamespaceParent = potentialNamespaceParent.Parent;
                                             }
+
+#if ROSLYN4_0_OR_GREATER
+                                            if (potentialNamespaceParent is BaseNamespaceDeclarationSyntax namespaceParent)
+#else
                                             if (potentialNamespaceParent is NamespaceDeclarationSyntax namespaceParent)
+#endif
                                             {
                                                 nspace = namespaceParent.Name.ToString();
                                                 while (true)

@@ -72,15 +72,6 @@ namespace System.Text.Json.SourceGeneration
         public bool HasPropertyFactoryConverters { get; private set; }
         public bool HasTypeFactoryConverter { get; private set; }
 
-        public string FastPathSerializeMethodName
-        {
-            get
-            {
-                Debug.Assert(GenerateSerializationLogic);
-                return $"{TypeInfoPropertyName}Serialize";
-            }
-        }
-
         public string? ImmutableCollectionBuilderName
         {
             get
