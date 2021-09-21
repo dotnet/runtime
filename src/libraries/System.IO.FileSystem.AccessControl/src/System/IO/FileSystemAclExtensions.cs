@@ -297,7 +297,6 @@ namespace System.IO
             (rights & FileSystemRights.Synchronize) != 0 ||
             ((int)rights & Interop.Kernel32.GenericOperations.GENERIC_WRITE) != 0;
 
-
         private static unsafe SafeFileHandle CreateFileHandle(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, FileOptions options, FileSecurity? security)
         {
             Debug.Assert(fullPath != null);
