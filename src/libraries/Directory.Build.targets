@@ -135,6 +135,11 @@
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
+    <PackageReference Include="NETStandard.Library" Condition="'$(IsTestProject)' == 'True' and $(TargetFrameworks.Contains('net461'))" Version="$(NetStandardLibraryVersion)" />
+  </ItemGroup>
+
   <Target Name="SetGenApiProperties"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
