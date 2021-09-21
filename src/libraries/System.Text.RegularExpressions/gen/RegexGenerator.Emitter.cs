@@ -2774,7 +2774,7 @@ namespace System.Text.RegularExpressions.Generator
 
             int AddGoto(int destpos)
             {
-                if (forwardJumpsThroughSwitch![destpos] == -1)
+                if (forwardJumpsThroughSwitch[destpos] == -1)
                 {
                     forwardJumpsThroughSwitch[destpos] = AddBacktrackNote(0, labels![destpos], destpos);
                 }
