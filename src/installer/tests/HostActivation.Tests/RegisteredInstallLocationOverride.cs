@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 foreach (var location in locations)
                 {
                     string installLocationFileName = "install_location" +
-                        (!string.IsNullOrWhiteSpace(location.Architecture) ? ("." + location.Architecture) : string.Empty);
+                        (!string.IsNullOrWhiteSpace(location.Architecture) ? ("_" + location.Architecture) : string.Empty);
                     File.WriteAllText(Path.Combine(PathValueOverride, installLocationFileName), location.Path);
                 }
             }
