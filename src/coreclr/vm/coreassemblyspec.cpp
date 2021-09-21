@@ -91,9 +91,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     }
     else
     {
-        hr = pAppDomain->GetDefaultBinder()->Bind(m_wszCodeBase,
-                                                  GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
-                                                  &pPrivAsm);
+        hr = pAppDomain->GetDefaultBinder()->Bind(m_wszCodeBase, &pPrivAsm);
     }
 
     if (SUCCEEDED(hr))

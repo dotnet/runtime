@@ -26,7 +26,6 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
                                             NULL, // szCodeBase
-                                            NULL, // pParentAssembly
                                             excludeAppPaths,
                                             ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
@@ -189,7 +188,6 @@ HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssem
 }
 
 HRESULT DefaultAssemblyBinder::Bind(LPCWSTR                  wszCodeBase,
-                                    PEAssembly              *pParentAssembly,
                                     BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
@@ -201,7 +199,6 @@ HRESULT DefaultAssemblyBinder::Bind(LPCWSTR                  wszCodeBase,
         hr = AssemblyBinderCommon::BindAssembly(this,
                                                 NULL, // pAssemblyName
                                                 wszCodeBase,
-                                                pParentAssembly,
                                                 false, // excludeAppPaths
                                                 &pAsm);
         if(SUCCEEDED(hr))

@@ -239,7 +239,6 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                                /* in */  AssemblyName        *pAssemblyName,
                                                /* in */  LPCWSTR              szCodeBase,
-                                               /* in */  PEAssembly          *pParentAssembly,
                                                /* in */  bool                 excludeAppPaths,
                                                /* out */ Assembly           **ppAssembly)
     {

@@ -23,6 +23,14 @@ class DefaultAssemblyBinder;
 class PEAssembly;
 class PEImage;
 
+STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
+                            PEImage            ** ppPEImage,
+                            BundleFileLocation bundleFileLocation);
+
+STDAPI BinderAcquireImport(PEImage* pPEImage,
+                           IMDInternalImport** pIMetaDataAssemblyImport,
+                           DWORD* pdwPAFlags);
+
 namespace BINDER_SPACE
 {
     class AssemblyIdentityUTF8;
@@ -33,7 +41,6 @@ namespace BINDER_SPACE
         static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder, 
                                     /* in */  AssemblyName        *pAssemblyName,
                                     /* in */  LPCWSTR              szCodeBase,
-                                    /* in */  PEAssembly          *pParentAssembly,
                                     /* in */  bool                 excludeAppPaths,
                                     /* out */ Assembly           **ppAssembly);
 

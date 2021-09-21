@@ -58,8 +58,6 @@ public:
 #endif
     PEImageLayout();
     virtual ~PEImageLayout();
-    static void Startup();
-    static CHECK CheckStartup();
     static BOOL CompareBase(UPTR path, UPTR mapping);
 
     // Refcount above images.

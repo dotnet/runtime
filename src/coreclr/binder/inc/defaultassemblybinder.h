@@ -39,7 +39,6 @@ public:
                               SString  &sAppPaths);
 
     HRESULT Bind(LPCWSTR      wszCodeBase,
-                 PEAssembly  *pParentAssembly,
                  BINDER_SPACE::Assembly **ppAssembly);
 
 private:

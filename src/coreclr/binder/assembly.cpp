@@ -17,14 +17,6 @@
 
 namespace BINDER_SPACE
 {
-    namespace
-    {
-        BOOL IsPlatformArchitecture(PEKIND kArchitecture)
-        {
-            return ((kArchitecture != peMSIL) && (kArchitecture != peNone));
-        }
-    };
-
     Assembly::Assembly()
     {
         m_cRef = 1;
@@ -49,23 +41,23 @@ namespace BINDER_SPACE
 
         // Get assembly name def from meta data import and store it for later refs access
         IF_FAIL_GO(pAssemblyName->Init(pPEImage));
-
-        // Safe architecture for validation
-        PEKIND kAssemblyArchitecture;
-        kAssemblyArchitecture = pAssemblyName->GetArchitecture();
-        SetIsInTPA(fIsInTPA);
-        SetPEImage(pPEImage);
         pAssemblyName->SetIsDefinition(TRUE);
 
-        // Now take ownership of assembly names
-        SetAssemblyName(pAssemblyName.Extract(), FALSE /* fAddRef */);
-
-        // Finally validate architecture
+        // validate architecture
+        PEKIND kAssemblyArchitecture = pAssemblyName->GetArchitecture();
         if (!AssemblyBinderCommon::IsValidArchitecture(kAssemblyArchitecture))
         {
             // Assembly image can't be executed on this platform
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
+
+        m_isInTPA = fIsInTPA;
+
+        pPEImage->AddRef();
+        m_pPEImage = pPEImage;
+
+        // Now take ownership of assembly name
+        m_pAssemblyName = pAssemblyName.Extract();
 
     Exit:
         return hr;
@@ -76,21 +68,10 @@ namespace BINDER_SPACE
         return m_pPEImage;
     }
 
-    void Assembly::SetPEImage(PEImage* pPEImage)
-    {
-        pPEImage->AddRef();
-        m_pPEImage = pPEImage;
-    }
-
     LPCWSTR Assembly::GetSimpleName()
     {
         AssemblyName *pAsmName = GetAssemblyName();
         return (pAsmName == nullptr ? nullptr : (LPCWSTR)pAsmName->GetSimpleName());
-    }
-
-    AssemblyLoaderAllocator* Assembly::GetLoaderAllocator()
-    {
-        return m_pBinder ? m_pBinder->GetLoaderAllocator() : NULL;
     }
 }
 

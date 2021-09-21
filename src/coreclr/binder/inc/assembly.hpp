@@ -27,14 +27,6 @@
 
 #include "bundle.h"
 
-STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
-                            PEImage          **ppPEImage,
-                            BundleFileLocation bundleFileLocation);
-
-STDAPI BinderAcquireImport(PEImage            *pPEImage,
-                           IMDInternalImport **pIMetaDataAssemblyImport,
-                           DWORD              *pdwPAFlags);
-
 namespace BINDER_SPACE
 {
     // BINDER_SPACE::Assembly represents a result of binding to an actual assembly (PE image)
@@ -61,17 +53,12 @@ namespace BINDER_SPACE
         PEImage* GetPEImage();
         BOOL GetIsInTPA();
 
-        AssemblyLoaderAllocator* GetLoaderAllocator();
         inline AssemblyBinder* GetBinder()
         {
             return m_pBinder;
         }
 
     private:
-        void SetPEImage(PEImage *pPEImage);
-        void SetAssemblyName(AssemblyName *pAssemblyName, BOOL fAddRef = TRUE);
-        void SetIsInTPA(BOOL fIsInTPA);
-
         LONG                     m_cRef;
         PEImage                 *m_pPEImage;
         AssemblyName            *m_pAssemblyName;

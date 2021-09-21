@@ -42,25 +42,9 @@ inline AssemblyName *Assembly::GetAssemblyName(BOOL fAddRef /* = FALSE */)
     return pAssemblyName;
 }
 
-inline void Assembly::SetAssemblyName(AssemblyName *pAssemblyName, BOOL fAddRef /* = TRUE */)
-{
-    SAFE_RELEASE(m_pAssemblyName);
-
-    m_pAssemblyName = pAssemblyName;
-
-    if (fAddRef && (pAssemblyName != NULL))
-    {
-        pAssemblyName->AddRef();
-    }
-}
 inline BOOL Assembly::GetIsInTPA()
 {
     return m_isInTPA;
-}
-
-inline void Assembly::SetIsInTPA(BOOL fIsInTPA)
-{
-    m_isInTPA = fIsInTPA;
 }
 
 #endif

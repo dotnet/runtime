@@ -28,7 +28,6 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
                                             NULL,  // szCodeBase
-                                            NULL,  // pParentAssembly
                                             false, //excludeAppPaths,
                                             ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
