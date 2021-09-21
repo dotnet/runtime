@@ -130,14 +130,16 @@ namespace System.IO.Strategies
 
         internal static void ValidateArgumentsForPreallocation(FileMode mode, FileAccess access)
         {
+            // The user will be writing into the preallocated space.
             if ((access & FileAccess.Write) == 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidPreallocateAccess, nameof(access));
             }
 
+            // Only allow preallocation for newly created/overwritten files.
+            // When we fail to preallocate, we'll remove the file.
             if (mode != FileMode.Create &&
-                mode != FileMode.CreateNew &&
-                mode != FileMode.Truncate)
+                mode != FileMode.CreateNew)
             {
                 throw new ArgumentException(SR.Argument_InvalidPreallocateMode, nameof(mode));
             }

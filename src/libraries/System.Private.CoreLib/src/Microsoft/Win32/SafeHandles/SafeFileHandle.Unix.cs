@@ -323,36 +323,24 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            if (preallocationSize > 0)
+            if (preallocationSize > 0 && Interop.Sys.FAllocate(this, 0, preallocationSize) < 0)
             {
-                if (Interop.Sys.FAllocate(this, 0, preallocationSize) < 0)
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                // Only throw for errors that indicate there is not enough space.
+                if (errorInfo.Error == Interop.Error.EFBIG ||
+                    errorInfo.Error == Interop.Error.ENOSPC)
                 {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    Dispose();
 
-                    if (errorInfo.Error != Interop.Error.EOPNOTSUPP && // Not supported by filesystem.
-                        errorInfo.Error != Interop.Error.ENOSYS &&     // Not supported by kernel.
-                        errorInfo.Error != Interop.Error.ESPIPE &&     // Not a file.
-                        errorInfo.Error != Interop.Error.ENODEV)       // Not a file.
-                    {
-                        Dispose();
-                        Interop.Sys.Unlink(path!); // remove the file to mimic Windows behaviour (atomic operation)
+                    // Delete the file we've created.
+                    Debug.Assert(mode == FileMode.Create || mode == FileMode.CreateNew);
+                    Interop.Sys.Unlink(path!);
 
-                        switch (errorInfo.Error)
-                        {
-                            case Interop.Error.EFBIG:
-                                throw new IOException(SR.Format(
-                                    SR.IO_FileTooLarge_Path_AllocationSize,
-                                    path,
-                                    preallocationSize));
-                            case Interop.Error.ENOSPC:
-                                throw new IOException(SR.Format(
-                                    SR.IO_DiskFull_Path_AllocationSize,
-                                    path,
-                                    preallocationSize));
-                            default:
-                                throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
-                        }
-                    }
+                    throw new IOException(SR.Format(errorInfo.Error == Interop.Error.EFBIG
+                                                        ? SR.IO_FileTooLarge_Path_AllocationSize
+                                                        : SR.IO_DiskFull_Path_AllocationSize,
+                                            path, preallocationSize));
                 }
             }
         }

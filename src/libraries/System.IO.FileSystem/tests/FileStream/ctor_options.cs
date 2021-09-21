@@ -66,7 +66,8 @@ namespace System.IO.Tests
         [InlineData(FileMode.Append)]
         [InlineData(FileMode.Open)]
         [InlineData(FileMode.OpenOrCreate)]
-        public void PreallocationSizeThrowsForFileModeOpenAndAppend(FileMode mode)
+        [InlineData(FileMode.Truncate)]
+        public void PreallocationSizeThrowsForExistingFiles(FileMode mode)
         {
             const int initialSize = 10;
             string filePath = GetPathToNonExistingFile();
@@ -79,19 +80,11 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
-        [InlineData(FileMode.Truncate)]
         public void PreallocationSize(FileMode mode)
         {
             const long preallocationSize = 123;
 
-            string filePath = GetPathToNonExistingFile();
-            if (mode == FileMode.Truncate)
-            {
-                const int initialSize = 10;
-                File.WriteAllBytes(filePath, new byte[initialSize]);
-            }
-
-            using (var fs = CreateFileStream(filePath, mode, FileAccess.ReadWrite, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize))
+            using (var fs = CreateFileStream(GetPathToNonExistingFile(), mode, FileAccess.ReadWrite, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize))
             {
                 Assert.Equal(0, fs.Length);
                 if (SupportsPreallocation)
@@ -114,7 +107,6 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
-        [InlineData(FileMode.Truncate)]
         public void WhenDiskIsFullTheErrorMessageContainsAllDetails(FileMode mode)
         {
             const long tooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
