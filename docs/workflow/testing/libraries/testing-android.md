@@ -83,6 +83,17 @@ The following shows how to run tests for a specific library
 ./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
 ```
 
+### Running the functional tests
+
+There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tests/FunctionalTests/) which aim to test some specific features/configurations/modes on a target mobile platform.
+
+A functional test can be run the same way as any library test suite, e.g.:
+```
+./dotnet.sh build /t:Test /p:TargetOS=Android /p:TargetArchitecture=x64 /p:Configuration=Release src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
+```
+
+Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
+
 ### Test App Design
 Android app is basically a [Java Instrumentation](https://github.com/dotnet/runtime/blob/main/src/mono/msbuild/AndroidAppBuilder/Templates/MonoRunner.java) and a simple Activity that inits the Mono Runtime via JNI. This Mono Runtime starts a simple xunit test
 runner called XHarness.TestRunner (see https://github.com/dotnet/xharness) which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool with ADB embedded to deploy `*.apk` to a target (device or emulator) and obtain logs once tests are completed.
