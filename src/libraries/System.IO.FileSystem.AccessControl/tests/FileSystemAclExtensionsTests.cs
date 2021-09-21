@@ -289,10 +289,11 @@ namespace System.IO
                 CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
         }
 
-        [Fact]
-        public void FileInfo_Create_NullFileSecurity()
+        [Theory]
+        [MemberData(nameof(ValidArgumentsWriteableStreamNullFileSecurity))]
+        public void FileInfo_Create_NullFileSecurity(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize)
         {
-            Verify_FileSecurity_CreateFile(expectedSecurity: null);
+            Verify_FileSecurity_CreateFile(mode, rights, share, bufferSize, FileOptions.None, expectedSecurity: null);
         }
 
         [Fact]
@@ -546,6 +547,29 @@ namespace System.IO
             // yield return new object[] { FileSystemRights.WriteData }; // WriteData == CreateFiles
             yield return new object[] { FileSystemRights.WriteExtendedAttributes };
         }
+
+        private static readonly FileSystemRights[] s_writeableFileSystemRights = new[]
+        {
+            FileSystemRights.WriteData,
+            FileSystemRights.AppendData,
+            FileSystemRights.WriteExtendedAttributes,
+            FileSystemRights.DeleteSubdirectoriesAndFiles,
+            FileSystemRights.WriteAttributes,
+            FileSystemRights.Delete,
+            FileSystemRights.ChangePermissions,
+            FileSystemRights.TakeOwnership,
+            FileSystemRights.Synchronize,
+            FileSystemRights.FullControl,
+            FileSystemRights.Modify,
+            FileSystemRights.Write
+        };
+
+        public static IEnumerable<object[]> ValidArgumentsWriteableStreamNullFileSecurity() =>
+            from mode in new[] { FileMode.Create, FileMode.CreateNew, FileMode.OpenOrCreate }
+            from rights in s_writeableFileSystemRights
+            from share in new[] { FileShare.None, FileShare.Read, FileShare.Write, FileShare.ReadWrite }
+            from bufferSize in new[] { 1, DefaultBufferSize }
+            select new object[] { mode, rights, share, bufferSize };
 
         private void Verify_FileSecurity_CreateFile(FileSecurity expectedSecurity)
         {
