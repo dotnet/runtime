@@ -1,18 +1,23 @@
 # Testing Libraries on Android
 
+## Prerequisites
+
 The following dependencies should be installed in order to be able to run tests:
 
+- OpenJDK
 - Android NDK
 - Android SDK
-- OpenJDK
-- OpenSSL
+
+To manage the dependencies, you can install them via terminal or using Android Studio.
+
+### Using a terminal
 
 OpenJDK can be installed on Linux (Ubuntu) using `apt-get`:
 ```bash
 sudo apt-get install openjdk-8 zip unzip
 ```
 
-Android SDK, NDK and OpenSSL can be automatically installed via the following script:
+Android SDK and NDK can be automatically installed via the following script:
 ```bash
 #!/usr/bin/env bash
 set -e
@@ -21,7 +26,6 @@ NDK_VER=r21b
 SDK_VER=6200805_latest
 SDK_API_LEVEL=29
 SDK_BUILD_TOOLS=29.0.3
-OPENSSL_VER=1.1.1g-alpha-1
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     HOST_OS=darwin
@@ -47,7 +51,20 @@ yes | ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/sdkmanager --sdk_root=${ANDROI
 ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-${SDK_API_LEVEL}" "build-tools;${SDK_BUILD_TOOLS}"
 ```
 
+### Using Android Studio
+
+Android Studio offers a convenient UI:
+- to install all the dependencies;
+- to manage android virtual devices;
+- to make easy use of adb logs.
+
 ## Building Libs and Tests for Android
+
+Before running a build you might want to set the Android SDK and NDK environment variables:
+```
+export ANDROID_SDK_ROOT=<PATH-TO-ANDROID-SDK>
+export ANDROID_NDK_ROOT=<PATH-TO-ANDROID-NDK>  
+```
 
 Now we're ready to build everything for Android:
 ```
