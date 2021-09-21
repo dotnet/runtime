@@ -54,10 +54,10 @@ namespace System.Text.RegularExpressions.Generator
             // and raise all of the created diagnostics.
             context.RegisterSourceOutput(codeOrDiagnostics, static (context, results) =>
             {
-                var code = new List<string>(s_headersAndUsings.Length + results.Length);
+                var code = new List<string>(s_headers.Length + results.Length);
 
                 // Add file header and required usings
-                code.AddRange(s_headersAndUsings);
+                code.AddRange(s_headers);
 
                 foreach (object? result in results)
                 {
