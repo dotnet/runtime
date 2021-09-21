@@ -48,12 +48,13 @@ namespace System
 
         [StackTraceHidden]
         [DoesNotReturn]
-        public static void Throw(object? instance) =>
-            Throw(instance?.GetType());
+        public static void Throw(object instance) =>
+            Throw(instance.GetType());
 
+        [StackTraceHidden]
         [DoesNotReturn]
-        public static void Throw(Type? type) =>
-            throw new ObjectDisposedException(type?.FullName);
+        public static void Throw(Type type) =>
+            throw new ObjectDisposedException(type.FullName);
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
