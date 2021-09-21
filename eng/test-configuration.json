@@ -1,10 +1,10 @@
 {
     "version" : 1,
-    "defaultOnFailure": "fail",
+    "defaultOnFailure": "rerun",
     "localRerunCount" : 2,
     "retryOnRules": [
-      {"testName": {"regex": "System.IO.Tests.File_Exists.FailOnceThenPass"}},
-      {"testAssembly": {"wildcard": "System.IO.FileSystem.Tests.dll" }}
+      {"testName": {"regex": "System.Buffers.ArrayPool.Tests.ArrayPoolUnitTests.SharedInstanceCreatesAnInstanceOnFirstCall"}},
+      {"testAssembly": {"wildcard": "System.Buffers.Tests.dll" }}
     ],
     "failOnRules": [
     ],

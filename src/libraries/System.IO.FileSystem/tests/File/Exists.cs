@@ -19,19 +19,6 @@ namespace System.IO.Tests
         #region UniversalTests
 
         [Fact]
-        public void FailOnceThenPass()
-        {
-            var path = GetTestFilePath();
-            bool exists = File.Exists(path);
-            if (!exists)
-            {
-                path.Create().Dispose();
-            }
-
-            Assert.True(exists, $"File should exist: {path}");
-        }
-
-        [Fact]
         public void NullAsPath_ReturnsFalse()
         {
             Assert.False(Exists(null));
