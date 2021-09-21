@@ -83,6 +83,11 @@ namespace System.Data.OleDb
                     source = Marshal.PtrToStringBSTR(pSource);
                 }
 
+                if (pSource != IntPtr.Zero)
+                {
+                    Marshal.FreeBSTR(pSource);
+                }
+
                 return (System.Data.OleDb.OleDbHResult)errorCode;
             }
 
@@ -98,6 +103,11 @@ namespace System.Data.OleDb
                 else
                 {
                     description = Marshal.PtrToStringBSTR(pDescription);
+                }
+
+                if (pSource != IntPtr.Zero)
+                {
+                    Marshal.FreeBSTR(pDescription);
                 }
 
                 return (System.Data.OleDb.OleDbHResult)errorCode;
