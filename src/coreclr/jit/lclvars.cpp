@@ -1629,28 +1629,11 @@ bool Compiler::lvaFieldOffsetCmp::operator()(const lvaStructFieldInfo& field1, c
 Compiler::StructPromotionHelper::StructPromotionHelper(Compiler* compiler)
     : compiler(compiler)
     , structPromotionInfo()
-#ifdef TARGET_ARM
-    , requiresScratchVar(false)
-#endif // TARGET_ARM
 #ifdef DEBUG
     , retypedFieldsMap(compiler->getAllocator(CMK_DebugOnly))
 #endif // DEBUG
 {
 }
-
-#ifdef TARGET_ARM
-//--------------------------------------------------------------------------------------------
-// GetRequiresScratchVar - do we need a stack area to assemble small fields in order to place them in a register.
-//
-// Return value:
-//   true if there was a small promoted variable and scratch var is required .
-//
-bool Compiler::StructPromotionHelper::GetRequiresScratchVar()
-{
-    return requiresScratchVar;
-}
-
-#endif // TARGET_ARM
 
 //--------------------------------------------------------------------------------------------
 // TryPromoteStructVar - promote struct var if it is possible and profitable.
@@ -1843,14 +1826,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
         {
             // Don't promote vars whose struct types violates the invariant.  (Alignment == size for primitives.)
             return false;
-        }
-        // If we have any small fields we will allocate a single PromotedStructScratch local var for the method.
-        // This is a stack area that we use to assemble the small fields in order to place them in a register
-        // argument.
-        //
-        if (fieldInfo.fldSize < TARGET_POINTER_SIZE)
-        {
-            requiresScratchVar = true;
         }
 #endif // TARGET_ARM
     }
