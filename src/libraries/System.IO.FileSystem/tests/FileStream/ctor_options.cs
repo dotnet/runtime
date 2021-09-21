@@ -98,6 +98,10 @@ namespace System.IO.Tests
                 {
                     Assert.True(GetAllocatedSize(fs) >= preallocationSize);
                 }
+                else
+                {
+                    Assert.Equal(0, GetAllocatedSize(fs));
+                }
                 Assert.Equal(0, fs.Position);
             }
         }
