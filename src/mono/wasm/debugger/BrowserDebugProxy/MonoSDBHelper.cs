@@ -1224,9 +1224,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(typeId);
 
             var reader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetProperties, commandParams, token);
-            var ms = new MemoryStream();
-            reader.BaseStream.CopyTo(ms);
-            typeInfo.PropertiesBuffer = ms.ToArray();
+            typeInfo.PropertiesBuffer = reader.ReadBytes((int)reader.BaseStream.Length);
             reader.BaseStream.Position = 0;
             return reader;
         }

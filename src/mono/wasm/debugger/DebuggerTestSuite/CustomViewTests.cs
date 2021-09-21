@@ -8,6 +8,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using Xunit;
+using System.Collections.Generic;
 
 namespace DebuggerTests
 {
@@ -88,7 +89,7 @@ namespace DebuggerTests
 
             pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-custom-view-test.cs", bp.Value["locations"][0]["lineNumber"].Value<int>()+2, bp.Value["locations"][0]["columnNumber"].Value<int>(),  "run");
 
-            System.Collections.Generic.List<Task<bool>> tasks = new System.Collections.Generic.List<Task<bool>>();
+            List<Task<bool>> tasks = new();
             for (int i = 0 ; i < 10; i++)
             {
                 var task = CheckProperties(pause_location);
