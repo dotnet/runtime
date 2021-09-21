@@ -33,7 +33,7 @@ namespace System.IO.Tests
             using (var fs = CreateFileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.None, preallocationSize))
             {
                 Assert.Equal(0, fs.Length);
-                Assert.Equal(preallocationSize, GetAllocatedSize(fs));
+                Assert.True(GetAllocatedSize(fs) >= preallocationSize);
             }
         }
 
