@@ -298,7 +298,8 @@
           Inputs="@(_BitcodeFile);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)"
           Outputs="@(_BitcodeFile->'%(ObjectFile)')"
           Condition="'$(_WasmShouldAOT)' == 'true' and @(_BitcodeFile->Count()) > 0"
-          DependsOnTargets="_WasmWriteRspForCompilingBitcode">
+          DependsOnTargets="_WasmWriteRspForCompilingBitcode"
+          Returns="@(FileWrites)">
 
     <ItemGroup>
       <_BitCodeFile Dependencies="%(_BitCodeFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)" />
@@ -364,7 +365,8 @@
   <Target Name="_WasmLinkDotNet"
           Inputs="@(_WasmLinkDependencies);$(_EmccDefaultFlagsRsp);$(_EmccLinkRsp)"
           Outputs="$(_WasmIntermediateOutputPath)dotnet.js;$(_WasmIntermediateOutputPath)dotnet.wasm"
-          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking">
+          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
+          Returns="@(FileWrites)" >
 
     <Message Text="Linking with emcc. This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
