@@ -223,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be static, partial, parameterless, non-generic, and return Regex</source>
-        <target state="new">Regex method must be static, partial, parameterless, non-generic, and return Regex</target>
+        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
+        <target state="new">Regex method must be partial, parameterless, non-generic, and return Regex</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">

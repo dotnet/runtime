@@ -23,6 +23,22 @@ namespace System.Text.RegularExpressions.Generator.Tests
     [PlatformSpecific(~TestPlatforms.Browser)]
     public class RegexGeneratorParserTests
     {
+        [Fact]
+        public async Task Diagnostic_MultipleAttributes()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""ab"")]
+                    [RegexGenerator(""abc"")]
+                    private static partial Regex MultipleAttributes();
+                }
+            ");
+
+            Assert.Equal("SYSLIB1041", Assert.Single(diagnostics).Id);
+        }
+
         [Theory]
         [InlineData("ab[]")]
         public async Task Diagnostic_InvalidRegexPattern(string pattern)
@@ -81,21 +97,6 @@ namespace System.Text.RegularExpressions.Generator.Tests
                 {
                     [RegexGenerator(""ab"")]
                     private static partial int MethodMustReturnRegex();
-                }
-            ");
-
-            Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
-        }
-
-        [Fact]
-        public async Task Diagnostic_MethodMustBeStatic()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
-                using System.Text.RegularExpressions;
-                partial class C
-                {
-                    [RegexGenerator(""ab"")]
-                    private partial Regex MethodMustBeStatic();
                 }
             ");
 
@@ -173,6 +174,67 @@ namespace System.Text.RegularExpressions.Generator.Tests
                     [RegexGenerator(""ab"")]
                     private static partial Regex Valid();
                 }
+            ", compile: true));
+        }
+
+        [Theory]
+        [InlineData("RegexOptions.None")]
+        [InlineData("RegexOptions.Compiled")]
+        [InlineData("RegexOptions.IgnoreCase | RegexOptions.CultureInvariant")]
+        public async Task Valid_PatternOptions(string options)
+        {
+            Assert.Empty(await RunGenerator($@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    [RegexGenerator(""ab"", {options})]
+                    private static partial Regex Valid();
+                }}
+            ", compile: true));
+        }
+
+        [Theory]
+        [InlineData("-1")]
+        [InlineData("1")]
+        [InlineData("1_000")]
+        public async Task Valid_PatternOptionsTimeout(string timeout)
+        {
+            Assert.Empty(await RunGenerator($@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    [RegexGenerator(""ab"", RegexOptions.None, {timeout})]
+                    private static partial Regex Valid();
+                }}
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_NamedArguments()
+        {
+            Assert.Empty(await RunGenerator($@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    [RegexGenerator(pattern: ""ab"", options: RegexOptions.None, matchTimeoutMilliseconds: -1)]
+                    private static partial Regex Valid();
+                }}
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_ReorderedNamedArguments()
+        {
+            Assert.Empty(await RunGenerator($@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    [RegexGenerator(options: RegexOptions.None, matchTimeoutMilliseconds: -1, pattern: ""ab"")]
+                    private static partial Regex Valid1();
+
+                    [RegexGenerator(matchTimeoutMilliseconds: -1, pattern: ""ab"", options: RegexOptions.None)]
+                    private static partial Regex Valid2();
+                }}
             ", compile: true));
         }
 
@@ -319,68 +381,46 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
-        [Fact]
-        public async Task Valid_InternalRegex()
+        public static IEnumerable<object[]> Valid_Modifiers_MemberData()
         {
-            Assert.Empty(await RunGenerator(@"
-                using System.Text.RegularExpressions;
-                partial class C
+            foreach (string type in new[] { "class", "struct", "record", "record struct", "record class", "interface" })
+            {
+                string[] typeModifiers = type switch
                 {
-                    [RegexGenerator(""ab"")]
-                    internal static partial Regex Valid();
+                    "class" => new[] { "", "public", "public sealed", "internal abstract", "internal static" },
+                    _ => new[] { "", "public", "internal" }
+                };
+
+                foreach (string typeModifier in typeModifiers)
+                {
+                    foreach (bool instance in typeModifier.Contains("static") ? new[] { false } : new[] { false, true })
+                    {
+                        string[] methodVisibilities = type switch
+                        {
+                            "class" when !typeModifier.Contains("sealed") && !typeModifier.Contains("static") => new[] { "public", "internal", "private protected", "protected internal", "private" },
+                            _ => new[] { "public", "internal", "private" }
+                        };
+
+                        foreach (string methodVisibility in methodVisibilities)
+                        {
+                            yield return new object[] { type, typeModifier, instance, methodVisibility };
+                        }
+                    }
                 }
-            ", compile: true));
+            }
         }
 
-        [Fact]
-        public async Task Valid_PublicRegex()
+        [Theory]
+        [MemberData(nameof(Valid_Modifiers_MemberData))]
+        public async Task Valid_Modifiers(string type, string typeModifier, bool instance, string methodVisibility)
         {
-            Assert.Empty(await RunGenerator(@"
+            Assert.Empty(await RunGenerator(@$"
                 using System.Text.RegularExpressions;
-                partial class C
-                {
+                {typeModifier} partial {type} C
+                {{
                     [RegexGenerator(""ab"")]
-                    public static partial Regex Valid();
-                }
-            ", compile: true));
-        }
-
-        [Fact]
-        public async Task Valid_PrivateProtectedRegex()
-        {
-            Assert.Empty(await RunGenerator(@"
-                using System.Text.RegularExpressions;
-                partial class C
-                {
-                    [RegexGenerator(""ab"")]
-                    private protected static partial Regex Valid();
-                }
-            ", compile: true));
-        }
-
-        [Fact]
-        public async Task Valid_PublicSealedClass()
-        {
-            Assert.Empty(await RunGenerator(@"
-                using System.Text.RegularExpressions;
-                public sealed partial class C
-                {
-                    [RegexGenerator(""ab"")]
-                    private static partial Regex Valid();
-                }
-            ", compile: true));
-        }
-
-        [Fact]
-        public async Task Valid_InternalAbstractClass()
-        {
-            Assert.Empty(await RunGenerator(@"
-                using System.Text.RegularExpressions;
-                internal abstract partial class C
-                {
-                    [RegexGenerator(""ab"")]
-                    private static partial Regex Valid();
-                }
+                    {methodVisibility} {(instance ? "" : "static")} partial Regex Valid();
+                }}
             ", compile: true));
         }
 
@@ -407,45 +447,6 @@ namespace System.Text.RegularExpressions.Generator.Tests
 
                     [RegexGenerator(""d"")]
                     public static partial Regex E();
-                }
-            ", compile: true));
-        }
-
-        [Fact]
-        public async Task Valid_OnStruct()
-        {
-            Assert.Empty(await RunGenerator(@"
-                using System.Text.RegularExpressions;
-                internal partial struct C
-                {
-                    [RegexGenerator(""ab"")]
-                    private static partial Regex Valid();
-                }
-            ", compile: true));
-        }
-
-        [Fact]
-        public async Task Valid_OnRecord()
-        {
-            Assert.Empty(await RunGenerator(@"
-                using System.Text.RegularExpressions;
-                internal partial record C
-                {
-                    [RegexGenerator(""ab"")]
-                    private static partial Regex Valid();
-                }
-            ", compile: true));
-        }
-
-        [Fact]
-        public async Task Valid_OnRecordStruct()
-        {
-            Assert.Empty(await RunGenerator(@"
-                using System.Text.RegularExpressions;
-                internal partial record struct C
-                {
-                    [RegexGenerator(""ab"")]
-                    private static partial Regex Valid();
                 }
             ", compile: true));
         }
@@ -503,7 +504,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
 
             comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
             EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
-            if (!results.Success)
+            if (!results.Success || results.Diagnostics.Length != 0 || generatorResults.Diagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)) + Environment.NewLine +

@@ -75,17 +75,9 @@ namespace System.Text.RegularExpressions.Generator
                 return null;
             }
 
-            DiagnosticDescriptor? errorDescriptor = null;
             RegexMethod? regexMethod = null;
             foreach (AttributeData attributeData in boundAttributes)
             {
-                // If we already encountered an error, stop looking at this method's attributes.
-                if (errorDescriptor is not null)
-                {
-                    break;
-                }
-
-                // If this isn't a RegexGeneratorAttribute, skip it.
                 if (!attributeData.AttributeClass.Equals(regexGeneratorAttributeSymbol))
                 {
                     continue;
@@ -93,37 +85,26 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (attributeData.ConstructorArguments.Any(ca => ca.Kind == TypedConstantKind.Error))
                 {
-                    errorDescriptor = DiagnosticDescriptors.InvalidRegexGeneratorAttribute;
-                    break;
+                    return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexGeneratorAttribute, methodSyntax.GetLocation());
+                }
+
+                if (regexMethod is not null)
+                {
+                    return Diagnostic.Create(DiagnosticDescriptors.MultipleRegexGeneratorAttributes, methodSyntax.GetLocation());
                 }
 
                 ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
-                if (items.Length is > 0 and <= 3 && items[0].Value is string pattern)
+                if (items.Length == 0 || items.Length > 3)
                 {
-                    switch (items.Length)
-                    {
-                        case 1:
-                            regexMethod = new RegexMethod { Pattern = pattern };
-                            break;
-
-                        case 2:
-                            regexMethod = new RegexMethod { Pattern = pattern, Options = items[1].Value as int?, };
-                            break;
-
-                        case 3:
-                            regexMethod = new RegexMethod { Pattern = pattern, Options = items[1].Value as int?, MatchTimeout = items[2].Value as int?, };
-                            break;
-                    }
+                    return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexGeneratorAttribute, methodSyntax.GetLocation());
                 }
-                else
+
+                regexMethod = items.Length switch
                 {
-                    errorDescriptor = DiagnosticDescriptors.InvalidRegexGeneratorAttribute;
-                }
-            }
-
-            if (errorDescriptor is not null)
-            {
-                return Diagnostic.Create(errorDescriptor, methodSyntax.GetLocation());
+                    1 => new RegexMethod { Pattern = items[0].Value as string },
+                    2 => new RegexMethod { Pattern = items[0].Value as string, Options = items[1].Value as int? },
+                    _ => new RegexMethod { Pattern = items[0].Value as string, Options = items[1].Value as int?, MatchTimeout = items[2].Value as int? },
+                };
             }
 
             if (regexMethod is null)
@@ -137,7 +118,6 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             if (!regexMethodSymbol.IsPartialDefinition ||
-                !regexMethodSymbol.IsStatic ||
                 regexMethodSymbol.Parameters.Length != 0 ||
                 regexMethodSymbol.Arity != 0 ||
                 !regexMethodSymbol.ReturnType.Equals(regexSymbol))
@@ -236,7 +216,8 @@ namespace System.Text.RegularExpressions.Generator
                 kind == SyntaxKind.ClassDeclaration ||
                 kind == SyntaxKind.StructDeclaration ||
                 kind == SyntaxKind.RecordDeclaration ||
-                kind == SyntaxKind.RecordStructDeclaration;
+                kind == SyntaxKind.RecordStructDeclaration ||
+                kind == SyntaxKind.InterfaceDeclaration;
         }
 
         /// <summary>A type holding a regex method.</summary>

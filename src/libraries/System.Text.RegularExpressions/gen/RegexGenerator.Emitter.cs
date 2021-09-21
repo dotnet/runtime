@@ -72,9 +72,8 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("{");
             writer.Indent++;
 
-            // Generate a unique name to describe the regex instance.  This includes both
-            // the method name the user provided and a unique counter value, plus a simple
-            // non-randomized (for determinism) hash of the previous content to try to make
+            // Generate a name to describe the regex instance.  This includes the method name
+            // the user provided and a non-randomized (for determinism) hash of it to try to make
             // the name that much harder to predict.
             string generatedName = $"GeneratedRegex_{regexClass.Method.MethodName}_";
             generatedName += ComputeStringHash(generatedName).ToString("X");
