@@ -94,11 +94,11 @@ if ! docker-compose --file "$compose_file" build $build_args; then
 fi
 
 if [[ $buildonly -eq 0 ]]; then
-    export IMAGE_SHARE="/share"
-    export CLIENT_SHARE="${CLIENT_SHARE:-$(mktemp -d)}"
-    export SERVER_SHARE="${SERVER_SHARE:-$(mktemp -d)}"
-    mkdir -p ${CLIENT_SHARE}
-    mkdir -p ${SERVER_SHARE}
+    export DUMPS_SHARE_MOUNT_ROOT="/dumps-share"
+    export CLIENT_DUMPS_SHARE="${CLIENT_DUMPS_SHARE:-$(mktemp -d)}"
+    export SERVER_DUMPS_SHARE="${SERVER_DUMPS_SHARE:-$(mktemp -d)}"
+    mkdir -p ${CLIENT_DUMPS_SHARE}
+    mkdir -p ${SERVER_DUMPS_SHARE}
 
     export HTTPSTRESS_CLIENT_ARGS=$clientstressargs
     export HTTPSTRESS_SERVER_ARGS=$serverstressargs

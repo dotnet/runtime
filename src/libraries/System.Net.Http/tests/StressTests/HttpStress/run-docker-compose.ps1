@@ -73,15 +73,15 @@ finally {
 
 if (!$buildOnly)
 {
-    $env:IMAGE_SHARE="C:/share"
-    if (!$env:CLIENT_SHARE) {
-        $env:CLIENT_SHARE=Join-Path $env:Temp $(New-Guid)
+    $env:DUMPS_SHARE_MOUNT_ROOT="C:/dumps-share"
+    if (!$env:CLIENT_DUMPS_SHARE) {
+        $env:CLIENT_DUMPS_SHARE=Join-Path $env:Temp $(New-Guid)
     }
-    if (!$env:SERVER_SHARE) {
-        $env:SERVER_SHARE=Join-Path $env:Temp $(New-Guid)
+    if (!$env:SERVER_DUMPS_SHARE) {
+        $env:SERVER_DUMPS_SHARE=Join-Path $env:Temp $(New-Guid)
     }
-    New-Item -Force $env:CLIENT_SHARE -ItemType Directory
-    New-Item -Force $env:SERVER_SHARE -ItemType Directory
+    New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+    New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
 
     $env:HTTPSTRESS_CLIENT_ARGS = $clientStressArgs
     $env:HTTPSTRESS_SERVER_ARGS = $serverStressArgs
