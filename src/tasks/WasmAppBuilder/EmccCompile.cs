@@ -95,6 +95,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     if (!ShouldCompile(srcFile, objFile, depFiles, out string reason))
                     {
                         Log.LogMessage(MessageImportance.Low, $"Skipping {srcFile} because {reason}.");
+                        outputItems.Add(CreateOutputItemFor(srcFile, objFile));
                     }
                     else
                     {
@@ -107,7 +108,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 if (_numCompiled == _totalFiles)
                 {
                     // nothing to do!
-                    return true;
+                    OutputFiles = outputItems.ToArray();
+                    return !Log.HasLoggedErrors;
                 }
 
                 if (_numCompiled > 0)
@@ -200,9 +202,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     else
                         Log.LogMessage(MessageImportance.Low, $"Copied {tmpObjFile} to {objFile}");
 
-                    ITaskItem newItem = new TaskItem(objFile);
-                    newItem.SetMetadata("SourceFile", srcFile);
-                    outputItems.Add(newItem);
+                    outputItems.Add(CreateOutputItemFor(srcFile, objFile));
 
                     int count = Interlocked.Increment(ref _numCompiled);
                     Log.LogMessage(MessageImportance.High, $"[{count}/{_totalFiles}] {Path.GetFileName(srcFile)} -> {Path.GetFileName(objFile)} [took {elapsedSecs:F}s]");
@@ -218,6 +218,13 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 {
                     File.Delete(tmpObjFile);
                 }
+            }
+
+            ITaskItem CreateOutputItemFor(string srcFile, string objFile)
+            {
+                ITaskItem newItem = new TaskItem(objFile);
+                newItem.SetMetadata("SourceFile", srcFile);
+                return newItem;
             }
         }
 
