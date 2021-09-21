@@ -601,9 +601,8 @@ var MonoSupportLib = {
 
 		mono_wasm_send_dbg_command_with_parms: function (id, command_set, command, command_parameters, length, valtype, newvalue)
 		{
-			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
-			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
-			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, dataHeap.byteOffset, length, valtype, newvalue.toString());
+			var dataHeap = this.mono_wasm_load_bytes_into_heap (this._base64_to_uint8 (command_parameters));
+			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, dataHeap, length, valtype, newvalue.toString());
 			let { res_ok, res } = MONO.commands_received;
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_invoke_method_debugger_agent_with_parms`);
@@ -612,11 +611,8 @@ var MonoSupportLib = {
 
 		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
 		{
-			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
-			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
-
-			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
-
+			var dataHeap = this.mono_wasm_load_bytes_into_heap (this._base64_to_uint8 (command_parameters));
+			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap, command_parameters.length);
 			let { res_ok, res } = MONO.commands_received;
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_send_dbg_command`);
