@@ -1093,11 +1093,11 @@ store_local (TransformData *td, int local)
 		td->last_ins->data [0] = td->locals [local].size;
 }
 
-static guint16
-get_data_item_index (TransformData *td, void *ptr)
+static guint32
+get_data_item_wide_index (TransformData *td, void *ptr)
 {
 	gpointer p = g_hash_table_lookup (td->data_hash, ptr);
-	guint index;
+	guint32 index;
 	if (p != NULL)
 		return GPOINTER_TO_UINT (p) - 1;
 	if (td->max_data_items == td->n_data_items) {
@@ -1109,6 +1109,20 @@ get_data_item_index (TransformData *td, void *ptr)
 	++td->n_data_items;
 	g_hash_table_insert (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
 	return index;
+}
+
+static guint16
+get_data_item_index (TransformData *td, void *ptr)
+{
+	guint32 index = get_data_item_wide_index (td, ptr);
+	g_assertf (index <= G_MAXUINT16, "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
+	return (guint16)index;
+}
+
+static gboolean
+is_data_item_wide_index (guint32 data_item_index)
+{
+	return data_item_index > G_MAXUINT16;
 }
 
 static guint16
@@ -1346,6 +1360,9 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, g
 		break;
 	case MintOpTwoShorts:
 		g_string_append_printf (str, " %u,%u", *(guint16*)data, *(guint16 *)(data + 1));
+		break;
+	case MintOpTwoInts:
+		g_string_append_printf (str, " %u,%u", (guint32)READ32(data), (guint32)READ32(data + 2));
 		break;
 	case MintOpShortAndInt:
 		g_string_append_printf (str, " %u,%u", *(guint16*)data, (guint32)READ32(data + 1));
@@ -4199,7 +4216,20 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				if (interp_emit_load_const (td, field_addr, mt))
 					return;
 			}
-			if (mt == MINT_TYPE_VT) {
+		}
+		guint32 vtable_index = get_data_item_wide_index (td, vtable);
+		guint32 addr_index = get_data_item_wide_index (td, (char*)field_addr);
+		gboolean wide_data = is_data_item_wide_index (vtable_index) || is_data_item_wide_index (addr_index);
+		guint32 klass_index = !wide_data ? 0 : get_data_item_wide_index (td, field_class);
+		if (is_load) {
+			if (G_UNLIKELY (wide_data)) {
+				interp_add_ins (td, MINT_LDSFLD_W);
+				if (mt == MINT_TYPE_VT) {
+					push_type_vt (td, field_class, size);
+				} else {
+					push_type (td, stack_type [mt], field_class);
+				}
+			} else if (mt == MINT_TYPE_VT) {
 				interp_add_ins (td, MINT_LDSFLD_VT);
 				push_type_vt (td, field_class, size);
 			} else {
@@ -4208,15 +4238,24 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			}
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 		} else {
-			interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
+			if (G_LIKELY (!wide_data))
+				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
+			else
+				interp_add_ins (td, MINT_STSFLD_W);
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 		}
 
-		td->last_ins->data [0] = get_data_item_index (td, vtable);
-		td->last_ins->data [1] = get_data_item_index (td, (char*)field_addr);
-		if (mt == MINT_TYPE_VT)
-			td->last_ins->data [2] = size;
+		if (G_LIKELY (!wide_data)) {
+			td->last_ins->data [0] = (guint16) vtable_index;
+			td->last_ins->data [1] = (guint16) addr_index;
+			if (mt == MINT_TYPE_VT)
+				td->last_ins->data [2] = size;
+		} else {
+			WRITE32_INS (td->last_ins, 0, &vtable_index);
+			WRITE32_INS (td->last_ins, 2, &addr_index);
+			WRITE32_INS (td->last_ins, 4, &klass_index);
+		}
 
 	}
 }
