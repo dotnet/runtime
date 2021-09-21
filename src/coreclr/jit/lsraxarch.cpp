@@ -1213,13 +1213,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
         regMaskTP ctrlExprCandidates = RBM_NONE;
 
         // In case of fast tail implemented as jmp, make sure that gtControlExpr is
-        // computed into a register.
+        // computed into appropriate registers.
         if (call->IsFastTailCall())
         {
-            assert(!ctrlExpr->isContained());
-            // Fast tail call - make sure that call target is always computed in RAX
-            // so that epilog sequence can generate "jmp rax" to achieve fast tail call.
-            ctrlExprCandidates = RBM_RAX;
+            // Fast tail call - make sure that call target is always computed in volatile registers
+            // that will not be restored in the epilog sequence.
+            ctrlExprCandidates = RBM_INT_CALLEE_TRASH;
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))

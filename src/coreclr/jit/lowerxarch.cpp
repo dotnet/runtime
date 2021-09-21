@@ -4464,32 +4464,27 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         // we should never see a gtControlExpr whose type is void.
         assert(ctrlExpr->TypeGet() != TYP_VOID);
 
-        // In case of fast tail implemented as jmp, make sure that gtControlExpr is
-        // computed into a register.
-        if (!call->IsFastTailCall())
-        {
 #ifdef TARGET_X86
-            // On x86, we need to generate a very specific pattern for indirect VSD calls:
-            //
-            //    3-byte nop
-            //    call dword ptr [eax]
-            //
-            // Where EAX is also used as an argument to the stub dispatch helper. Make
-            // sure that the call target address is computed into EAX in this case.
-            if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
-            {
-                assert(ctrlExpr->isIndir());
-                MakeSrcContained(call, ctrlExpr);
-            }
-            else
+        // On x86, we need to generate a very specific pattern for indirect VSD calls:
+        //
+        //    3-byte nop
+        //    call dword ptr [eax]
+        //
+        // Where EAX is also used as an argument to the stub dispatch helper. Make
+        // sure that the call target address is computed into EAX in this case.
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        {
+            assert(ctrlExpr->isIndir());
+            MakeSrcContained(call, ctrlExpr);
+        }
+        else
 #endif // TARGET_X86
-                if (ctrlExpr->isIndir())
-            {
-                // We may have cases where we have set a register target on the ctrlExpr, but if it
-                // contained we must clear it.
-                ctrlExpr->SetRegNum(REG_NA);
-                MakeSrcContained(call, ctrlExpr);
-            }
+            if (ctrlExpr->isIndir())
+        {
+            // We may have cases where we have set a register target on the ctrlExpr, but if it
+            // contained we must clear it.
+            ctrlExpr->SetRegNum(REG_NA);
+            MakeSrcContained(call, ctrlExpr);
         }
     }
 

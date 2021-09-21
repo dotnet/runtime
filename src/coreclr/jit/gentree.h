@@ -4770,7 +4770,7 @@ struct GenTreeCall final : public GenTree
     GenTree* gtControlExpr;
 
     union {
-        CORINFO_METHOD_HANDLE gtCallMethHnd; // CT_USER_FUNC
+        CORINFO_METHOD_HANDLE gtCallMethHnd; // CT_USER_FUNC or CT_HELPER
         GenTree*              gtCallAddr;    // CT_INDIRECT
     };
 
