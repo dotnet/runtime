@@ -8051,10 +8051,7 @@ void gc_heap::set_brick (size_t index, ptrdiff_t val)
         brick_table [index] = (short)val+1;
     else
         brick_table [index] = (short)val;
-    if (brick_table[index] == 0)
-    {
-        GCToOSInterface::DebugBreak();
-    }
+
     dprintf (3, ("set brick[%Ix] to %d\n", index, (short)val));
 }
 
@@ -11661,6 +11658,7 @@ void gc_heap::clear_gen0_bricks()
 
 void gc_heap::check_gen0_bricks()
 {
+//#ifdef _DEBUG
 #ifdef USE_REGIONS
     heap_segment* gen0_region = generation_start_segment (generation_of (0));
     while (gen0_region)
@@ -11674,6 +11672,7 @@ void gc_heap::check_gen0_bricks()
         size_t end_b = brick_of (heap_segment_allocated (gen0_region));
         for (size_t b = brick_of (start); b < end_b; b++)
         {
+            assert (brick_table[b] != 0);
             if (brick_table[b] == 0)
             {
                 GCToOSInterface::DebugBreak();
@@ -11684,6 +11683,7 @@ void gc_heap::check_gen0_bricks()
         gen0_region = heap_segment_next (gen0_region);
 #endif //USE_REGIONS
     }
+//#endif //_DEBUG
 }
 
 #ifdef BACKGROUND_GC
