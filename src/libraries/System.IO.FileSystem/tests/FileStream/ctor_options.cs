@@ -67,7 +67,7 @@ namespace System.IO.Tests
         [InlineData(FileMode.Open)]
         [InlineData(FileMode.OpenOrCreate)]
         [InlineData(FileMode.Truncate)]
-        public void PreallocationSizeThrowsForExistingFiles(FileMode mode)
+        public void PreallocationSizeThrowsForFileModesThatOpenExistingFiles(FileMode mode)
         {
             const int initialSize = 10;
             string filePath = GetPathToNonExistingFile();
@@ -80,11 +80,49 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
-        public void PreallocationSize(FileMode mode)
+        public void PreallocationSizeThrowsForReadOnlyAccess(FileMode mode)
+        {
+            Assert.Throws<ArgumentException>(
+                () => CreateFileStream(GetPathToNonExistingFile(), mode, FileAccess.Read, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 20));
+        }
+
+        [Theory]
+        [InlineData(FileMode.Create, false)]
+        [InlineData(FileMode.Create, true)]
+        [InlineData(FileMode.CreateNew, false)]
+        [InlineData(FileMode.Append, false)]
+        [InlineData(FileMode.Append, true)]
+        [InlineData(FileMode.Open, true)]
+        [InlineData(FileMode.OpenOrCreate, true)]
+        [InlineData(FileMode.OpenOrCreate, false)]
+        [InlineData(FileMode.Truncate, true)]
+        public void ZeroPreallocationSizeDoesNotAllocate(FileMode mode, bool createFile)
+        {
+            string filename = GetPathToNonExistingFile();
+
+            if (createFile)
+            {
+                File.WriteAllText(filename, "");
+            }
+
+            using (var fs = CreateFileStream(filename, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0))
+            {
+                Assert.Equal(0, fs.Length);
+                Assert.Equal(0, GetAllocatedSize(fs));
+                Assert.Equal(0, fs.Position);
+            }
+        }
+
+        [Theory]
+        [InlineData(FileAccess.Write, FileMode.Create)]
+        [InlineData(FileAccess.Write, FileMode.CreateNew)]
+        [InlineData(FileAccess.ReadWrite, FileMode.Create)]
+        [InlineData(FileAccess.ReadWrite, FileMode.CreateNew)]
+        public void PreallocationSize(FileAccess access, FileMode mode)
         {
             const long preallocationSize = 123;
 
-            using (var fs = CreateFileStream(GetPathToNonExistingFile(), mode, FileAccess.ReadWrite, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize))
+            using (var fs = CreateFileStream(GetPathToNonExistingFile(), mode, access, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize))
             {
                 Assert.Equal(0, fs.Length);
                 if (SupportsPreallocation)
