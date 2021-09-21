@@ -196,7 +196,7 @@ namespace System.IO
             }
 
             // Do not allow using combinations of non-writing file system rights with writing file modes
-            if ((rights & FileSystemRights.Write) == 0 &&
+            if (!HasWriteableFileSystemRights(rights) &&
                 (mode == FileMode.Truncate || mode == FileMode.CreateNew || mode == FileMode.Create || mode == FileMode.Append))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndFileSystemRightsCombo, mode, rights));
@@ -256,18 +256,47 @@ namespace System.IO
         private static FileAccess GetFileStreamFileAccess(FileSystemRights rights)
         {
             FileAccess access = 0;
-            if ((rights & FileSystemRights.ReadData) != 0 || ((int)rights & Interop.Kernel32.GenericOperations.GENERIC_READ) != 0)
+
+            if (rights == (FileSystemRights)0)
+            {
+                return access;
+            }
+
+            if (rights == FileSystemRights.FullControl)
+            {
+                return FileAccess.ReadWrite;
+            }
+
+            if ((rights & FileSystemRights.ReadData) != 0 ||
+                (rights & FileSystemRights.ReadExtendedAttributes) != 0 ||
+                (rights & FileSystemRights.ExecuteFile) != 0 ||
+                (rights & FileSystemRights.ReadAttributes) != 0 ||
+                (rights & FileSystemRights.ReadPermissions) != 0 ||
+                ((int)rights & Interop.Kernel32.GenericOperations.GENERIC_READ) != 0)
             {
                 access = FileAccess.Read;
             }
 
-            if ((rights & FileSystemRights.WriteData) != 0 || ((int)rights & Interop.Kernel32.GenericOperations.GENERIC_WRITE) != 0)
+            if (HasWriteableFileSystemRights(rights))
             {
-                access = access == FileAccess.Read ? FileAccess.ReadWrite : FileAccess.Write;
+                access |= FileAccess.Write;
             }
 
             return access;
         }
+
+        private static bool HasWriteableFileSystemRights(FileSystemRights rights) =>
+            (rights & FileSystemRights.WriteData) != 0 ||
+            (rights & FileSystemRights.AppendData) != 0 ||
+            (rights & FileSystemRights.WriteExtendedAttributes) != 0 ||
+            (rights & FileSystemRights.DeleteSubdirectoriesAndFiles) != 0 ||
+            (rights & FileSystemRights.WriteAttributes) != 0 ||
+            (rights & FileSystemRights.Delete) != 0 ||
+            (rights & FileSystemRights.ChangePermissions) != 0 ||
+            (rights & FileSystemRights.TakeOwnership) != 0 ||
+            (rights & FileSystemRights.Synchronize) != 0 ||
+            ((int)rights & Interop.Kernel32.GenericOperations.GENERIC_WRITE) != 0;
+
 
         private static unsafe SafeFileHandle CreateFileHandle(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, FileOptions options, FileSecurity? security)
         {
