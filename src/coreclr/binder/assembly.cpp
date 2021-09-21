@@ -44,8 +44,7 @@ namespace BINDER_SPACE
         pAssemblyName->SetIsDefinition(TRUE);
 
         // validate architecture
-        PEKIND kAssemblyArchitecture = pAssemblyName->GetArchitecture();
-        if (!AssemblyBinderCommon::IsValidArchitecture(kAssemblyArchitecture))
+        if (!AssemblyBinderCommon::IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
             // Assembly image can't be executed on this platform
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
