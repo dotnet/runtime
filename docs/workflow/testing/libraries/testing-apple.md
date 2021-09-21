@@ -60,6 +60,24 @@ A functional test can be run the same way as any library test suite, e.g.:
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
 
+### Testing various configurations
+
+It's possible to test various configurations by setting a combination of additional MSBuild properties such as `RunAOTCompilation`,`MonoEnableInterpreter`, and some more.
+
+1. Interpreter Only
+
+This configuration is necessary for hot reload scenarios.
+
+To enable the interpreter, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=true` to a build command.
+
+2. AOT only
+
+To build for AOT only mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=false` to a build command. 
+
+3. AOT-LLVM
+
+To build for AOT-LLVM mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=false /p:MonoEnableLLVM=true` to a build command. 
+
 ### Test App Design
 iOS/tvOS `*.app` (or `*.ipa`) is basically a simple [ObjC app](https://github.com/dotnet/runtime/blob/main/src/mono/msbuild/AppleAppBuilder/Templates/main-console.m) that inits the Mono Runtime. This Mono Runtime starts a simple xunit test
 runner called XHarness.TestRunner (see https://github.com/dotnet/xharness) which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool to deploy `*.app` and `*.ipa` to a target (device or simulator) and listens for logs via network sockets.
