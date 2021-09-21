@@ -3075,6 +3075,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (size >= XMM_REGSIZE_BYTES)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
+        // regNumber swapReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         instruction simdMov = simdUnalignedMovIns();
 
@@ -3083,65 +3084,38 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                ? YMM_REGSIZE_BYTES
                                : XMM_REGSIZE_BYTES;
 
-        for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
-        {
-            if (srcLclNum != BAD_VAR_NUM)
+        while (size >= regSize) {
+            for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
             {
-                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-            }
-            else
-            {
-                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                    srcAddrIndexScale, srcOffset);
+                if (srcLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+                }
+                else
+                {
+                    emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                        srcAddrIndexScale, srcOffset);
+                }
+
+                if (dstLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+                }
+                else
+                {
+                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                        dstAddrIndexScale, dstOffset);
+                }
+
+                // regNumber _r = tempReg;
+                // tempReg      = swapReg;
+                // swapReg      = _r;
             }
 
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
-        }
-
-        if (size > 0)
-        {
-            if (size <= XMM_REGSIZE_BYTES)
-            {
+            if (regSize == YMM_REGSIZE_BYTES) {
                 regSize = XMM_REGSIZE_BYTES;
             }
-
-            // Copy the remainder by moving the last regSize bytes of the buffer
-            unsigned shiftBack = regSize - size;
-            assert(shiftBack <= regSize);
-
-            srcOffset -= shiftBack;
-            dstOffset -= shiftBack;
-
-            if (srcLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-            }
-            else
-            {
-                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                    srcAddrIndexScale, srcOffset);
-            }
-
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
         }
-
-        return;
     }
 
     // Fill the remainder with normal loads/stores
