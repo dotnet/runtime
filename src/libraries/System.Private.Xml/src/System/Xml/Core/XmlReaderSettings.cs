@@ -3,8 +3,7 @@
 
 using System.IO;
 using System.Diagnostics;
-using System.Globalization;
-using System.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Schema;
 
 namespace System.Xml
@@ -12,7 +11,7 @@ namespace System.Xml
     // XmlReaderSettings class specifies basic features of an XmlReader.
     public sealed class XmlReaderSettings
     {
-        internal static readonly XmlReaderSettings s_defaultReaderSettings = new XmlReaderSettings() { ReadOnly = true };
+        internal static readonly XmlReaderSettings s_defaultReaderSettings = new() { ReadOnly = true };
 
         //
         // Fields
@@ -20,8 +19,7 @@ namespace System.Xml
 
         private bool _useAsync;
 
-
-        // Nametable
+        // NameTable
         private XmlNameTable? _nameTable;
 
         // XmlResolver
@@ -55,9 +53,6 @@ namespace System.Xml
         // other settings
         private bool _closeInput;
 
-        // read-only flag
-        private bool _isReadOnly;
-
         // Creation of validating readers is hidden behind a delegate which is only initialized if the ValidationType
         // property is set. This is for AOT builds where the tree shaker can reduce the validating readers away
         // if nobody calls the ValidationType setter. Might also help with non-AOT build when ILLinker is used.
@@ -78,10 +73,7 @@ namespace System.Xml
 
         public bool Async
         {
-            get
-            {
-                return _useAsync;
-            }
+            get => _useAsync;
             set
             {
                 CheckReadOnly(nameof(Async));
@@ -89,13 +81,10 @@ namespace System.Xml
             }
         }
 
-        // Nametable
+        // NameTable
         public XmlNameTable? NameTable
         {
-            get
-            {
-                return _nameTable;
-            }
+            get => _nameTable;
             set
             {
                 CheckReadOnly(nameof(NameTable));
@@ -126,23 +115,17 @@ namespace System.Xml
         }
 
         //This is used by get XmlResolver in Xsd.
-        //Check if the config set to prohibit default resovler
+        //Check if the config set to prohibit default resolver
         //notice we must keep GetXmlResolver() to avoid dead lock when init System.Config.ConfigurationManager
         internal XmlResolver? GetXmlResolver_CheckConfig()
         {
-            if (!LocalAppContextSwitches.AllowDefaultResolver && !IsXmlResolverSet)
-                return null;
-            else
-                return _xmlResolver;
+            return LocalAppContextSwitches.AllowDefaultResolver || IsXmlResolverSet ? _xmlResolver : null;
         }
 
         // Text settings
         public int LineNumberOffset
         {
-            get
-            {
-                return _lineNumberOffset;
-            }
+            get => _lineNumberOffset;
             set
             {
                 CheckReadOnly(nameof(LineNumberOffset));
@@ -152,10 +135,7 @@ namespace System.Xml
 
         public int LinePositionOffset
         {
-            get
-            {
-                return _linePositionOffset;
-            }
+            get => _linePositionOffset;
             set
             {
                 CheckReadOnly(nameof(LinePositionOffset));
@@ -166,17 +146,14 @@ namespace System.Xml
         // Conformance settings
         public ConformanceLevel ConformanceLevel
         {
-            get
-            {
-                return _conformanceLevel;
-            }
+            get => _conformanceLevel;
             set
             {
                 CheckReadOnly(nameof(ConformanceLevel));
 
                 if ((uint)value > (uint)ConformanceLevel.Document)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ThrowArgumentOutOfRangeException(nameof(value));
                 }
                 _conformanceLevel = value;
             }
@@ -184,10 +161,7 @@ namespace System.Xml
 
         public bool CheckCharacters
         {
-            get
-            {
-                return _checkCharacters;
-            }
+            get => _checkCharacters;
             set
             {
                 CheckReadOnly(nameof(CheckCharacters));
@@ -197,16 +171,13 @@ namespace System.Xml
 
         public long MaxCharactersInDocument
         {
-            get
-            {
-                return _maxCharactersInDocument;
-            }
+            get => _maxCharactersInDocument;
             set
             {
                 CheckReadOnly(nameof(MaxCharactersInDocument));
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ThrowArgumentOutOfRangeException(nameof(value));
                 }
                 _maxCharactersInDocument = value;
             }
@@ -214,16 +185,13 @@ namespace System.Xml
 
         public long MaxCharactersFromEntities
         {
-            get
-            {
-                return _maxCharactersFromEntities;
-            }
+            get => _maxCharactersFromEntities;
             set
             {
                 CheckReadOnly(nameof(MaxCharactersFromEntities));
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ThrowArgumentOutOfRangeException(nameof(value));
                 }
                 _maxCharactersFromEntities = value;
             }
@@ -232,10 +200,7 @@ namespace System.Xml
         // Filtering settings
         public bool IgnoreWhitespace
         {
-            get
-            {
-                return _ignoreWhitespace;
-            }
+            get => _ignoreWhitespace;
             set
             {
                 CheckReadOnly(nameof(IgnoreWhitespace));
@@ -245,10 +210,7 @@ namespace System.Xml
 
         public bool IgnoreProcessingInstructions
         {
-            get
-            {
-                return _ignorePIs;
-            }
+            get => _ignorePIs;
             set
             {
                 CheckReadOnly(nameof(IgnoreProcessingInstructions));
@@ -258,10 +220,7 @@ namespace System.Xml
 
         public bool IgnoreComments
         {
-            get
-            {
-                return _ignoreComments;
-            }
+            get => _ignoreComments;
             set
             {
                 CheckReadOnly(nameof(IgnoreComments));
@@ -272,10 +231,7 @@ namespace System.Xml
         [Obsolete("XmlReaderSettings.ProhibitDtd has been deprecated. Use DtdProcessing instead.")]
         public bool ProhibitDtd
         {
-            get
-            {
-                return _dtdProcessing == DtdProcessing.Prohibit;
-            }
+            get => _dtdProcessing == DtdProcessing.Prohibit;
             set
             {
                 CheckReadOnly(nameof(ProhibitDtd));
@@ -285,17 +241,14 @@ namespace System.Xml
 
         public DtdProcessing DtdProcessing
         {
-            get
-            {
-                return _dtdProcessing;
-            }
+            get => _dtdProcessing;
             set
             {
                 CheckReadOnly(nameof(DtdProcessing));
 
                 if ((uint)value > (uint)DtdProcessing.Parse)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ThrowArgumentOutOfRangeException(nameof(value));
                 }
                 _dtdProcessing = value;
             }
@@ -303,10 +256,7 @@ namespace System.Xml
 
         public bool CloseInput
         {
-            get
-            {
-                return _closeInput;
-            }
+            get => _closeInput;
             set
             {
                 CheckReadOnly(nameof(CloseInput));
@@ -316,10 +266,7 @@ namespace System.Xml
 
         public ValidationType ValidationType
         {
-            get
-            {
-                return _validationType;
-            }
+            get => _validationType;
             set
             {
                 CheckReadOnly(nameof(ValidationType));
@@ -332,7 +279,7 @@ namespace System.Xml
 
                 if ((uint)value > (uint)ValidationType.Schema)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ThrowArgumentOutOfRangeException(nameof(value));
                 }
                 _validationType = value;
             }
@@ -340,34 +287,27 @@ namespace System.Xml
 
         public XmlSchemaValidationFlags ValidationFlags
         {
-            get
-            {
-                return _validationFlags;
-            }
+            get => _validationFlags;
             set
             {
                 CheckReadOnly(nameof(ValidationFlags));
 
-                if ((uint)value > (uint)(XmlSchemaValidationFlags.ProcessInlineSchema | XmlSchemaValidationFlags.ProcessSchemaLocation |
-                                           XmlSchemaValidationFlags.ReportValidationWarnings | XmlSchemaValidationFlags.ProcessIdentityConstraints |
-                                           XmlSchemaValidationFlags.AllowXmlAttributes))
+                if ((uint)value > (uint)(XmlSchemaValidationFlags.ProcessInlineSchema
+                                         | XmlSchemaValidationFlags.ProcessSchemaLocation
+                                         | XmlSchemaValidationFlags.ReportValidationWarnings
+                                         | XmlSchemaValidationFlags.ProcessIdentityConstraints
+                                         | XmlSchemaValidationFlags.AllowXmlAttributes))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ThrowArgumentOutOfRangeException(nameof(value));
                 }
+
                 _validationFlags = value;
             }
         }
 
         public XmlSchemaSet Schemas
         {
-            get
-            {
-                if (_schemas == null)
-                {
-                    _schemas = new XmlSchemaSet();
-                }
-                return _schemas;
-            }
+            get => _schemas ??= new XmlSchemaSet();
             set
             {
                 CheckReadOnly(nameof(Schemas));
@@ -400,7 +340,7 @@ namespace System.Xml
 
         public XmlReaderSettings Clone()
         {
-            XmlReaderSettings clonedSettings = (this.MemberwiseClone() as XmlReaderSettings)!;
+            XmlReaderSettings clonedSettings = (XmlReaderSettings)MemberwiseClone();
             clonedSettings.ReadOnly = false;
             return clonedSettings;
         }
@@ -415,23 +355,21 @@ namespace System.Xml
 
         internal XmlReader CreateReader(string inputUri, XmlParserContext? inputContext)
         {
-            if (inputUri == null)
-            {
-                throw new ArgumentNullException(nameof(inputUri));
-            }
+            ArgumentNullException.ThrowIfNull(inputUri);
+
             if (inputUri.Length == 0)
             {
                 throw new ArgumentException(SR.XmlConvert_BadUri, nameof(inputUri));
             }
 
             // resolve and open the url
-            XmlResolver tmpResolver = this.GetXmlResolver() ?? new XmlUrlResolver();
+            XmlResolver tmpResolver = GetXmlResolver() ?? new XmlUrlResolver();
 
             // create text XML reader
             XmlReader reader = new XmlTextReaderImpl(inputUri, this, inputContext, tmpResolver);
 
             // wrap with validating reader
-            if (this.ValidationType != ValidationType.None)
+            if (ValidationType != ValidationType.None)
             {
                 reader = AddValidation(reader);
             }
@@ -446,28 +384,15 @@ namespace System.Xml
 
         internal XmlReader CreateReader(Stream input, Uri? baseUri, string? baseUriString, XmlParserContext? inputContext)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
-            if (baseUriString == null)
-            {
-                if (baseUri == null)
-                {
-                    baseUriString = string.Empty;
-                }
-                else
-                {
-                    baseUriString = baseUri.ToString();
-                }
-            }
+            baseUriString ??= baseUri?.ToString() ?? string.Empty;
 
             // create text XML reader
             XmlReader reader = new XmlTextReaderImpl(input, null, 0, this, baseUri, baseUriString, inputContext, _closeInput);
 
             // wrap with validating reader
-            if (this.ValidationType != ValidationType.None)
+            if (ValidationType != ValidationType.None)
             {
                 reader = AddValidation(reader);
             }
@@ -482,21 +407,15 @@ namespace System.Xml
 
         internal XmlReader CreateReader(TextReader input, string? baseUriString, XmlParserContext? inputContext)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
-            if (baseUriString == null)
-            {
-                baseUriString = string.Empty;
-            }
+            baseUriString ??= string.Empty;
 
             // create xml text reader
             XmlReader reader = new XmlTextReaderImpl(input, this, baseUriString, inputContext);
 
             // wrap with validating reader
-            if (this.ValidationType != ValidationType.None)
+            if (ValidationType != ValidationType.None)
             {
                 reader = AddValidation(reader);
             }
@@ -511,48 +430,29 @@ namespace System.Xml
 
         internal XmlReader CreateReader(XmlReader reader)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             return AddValidationAndConformanceWrapper(reader);
         }
 
-        internal bool ReadOnly
-        {
-            get
-            {
-                return _isReadOnly;
-            }
-            set
-            {
-                _isReadOnly = value;
-            }
-        }
-
+        internal bool ReadOnly { get; set; }
         private void CheckReadOnly(string propertyName)
         {
-            if (_isReadOnly)
+            if (ReadOnly)
             {
-                throw new XmlException(SR.Xml_ReadOnlyProperty, this.GetType().Name + '.' + propertyName);
+                throw new XmlException(SR.Xml_ReadOnlyProperty, $"{GetType().Name}.{propertyName}");
             }
         }
 
         //
         // Private methods
         //
-        private void Initialize()
-        {
-            Initialize(null);
-        }
-
-        private void Initialize(XmlResolver? resolver)
+        private void Initialize(XmlResolver? resolver = null)
         {
             _nameTable = null;
             _xmlResolver = resolver;
             // limit the entity resolving to 10 million character. the caller can still
-            // override it to any other value or set it to zero for unlimiting it
+            // override it to any other value or set it to zero for unlimited it
             _maxCharactersFromEntities = (long)1e7;
 
             _lineNumberOffset = 0;
@@ -575,7 +475,7 @@ namespace System.Xml
 
             _useAsync = false;
 
-            _isReadOnly = false;
+            ReadOnly = false;
             IsXmlResolverSet = false;
         }
 
@@ -586,14 +486,13 @@ namespace System.Xml
             {
                 resolver = GetXmlResolver_CheckConfig();
 
-                if (resolver == null &&
-                    !this.IsXmlResolverSet)
+                if (resolver == null && !IsXmlResolverSet)
                 {
                     resolver = new XmlUrlResolver();
                 }
             }
 
-            return AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: false);
+            return AddValidationAndConformanceInternal(reader, resolver, false);
         }
 
         private XmlReader AddValidationAndConformanceWrapper(XmlReader reader)
@@ -604,7 +503,7 @@ namespace System.Xml
                 resolver = GetXmlResolver_CheckConfig();
             }
 
-            return AddValidationAndConformanceInternal(reader, resolver, addConformanceWrapper: true);
+            return AddValidationAndConformanceInternal(reader, resolver, true);
         }
 
         private XmlReader AddValidationAndConformanceInternal(XmlReader reader, XmlResolver? resolver, bool addConformanceWrapper)
@@ -655,7 +554,7 @@ namespace System.Xml
 
         private XmlValidatingReaderImpl CreateDtdValidatingReader(XmlReader baseReader)
         {
-            return new XmlValidatingReaderImpl(baseReader, this.GetEventHandler(), (this.ValidationFlags & XmlSchemaValidationFlags.ProcessIdentityConstraints) != 0);
+            return new XmlValidatingReaderImpl(baseReader, GetEventHandler(), (ValidationFlags & XmlSchemaValidationFlags.ProcessIdentityConstraints) != 0);
         }
 
         internal XmlReader AddConformanceWrapper(XmlReader baseReader)
@@ -766,20 +665,22 @@ namespace System.Xml
 
             if (needWrap)
             {
-                IXmlNamespaceResolver? readerAsNSResolver = baseReader as IXmlNamespaceResolver;
-                if (readerAsNSResolver != null)
+                if ( baseReader is IXmlNamespaceResolver readerAsNsResolver)
                 {
-                    return new XmlCharCheckingReaderWithNS(baseReader, readerAsNSResolver, checkChars, noWhitespace, noComments, noPIs, dtdProc);
+                    return new XmlCharCheckingReaderWithNS(baseReader, readerAsNsResolver, checkChars, noWhitespace, noComments, noPIs, dtdProc);
                 }
-                else
-                {
-                    return new XmlCharCheckingReader(baseReader, checkChars, noWhitespace, noComments, noPIs, dtdProc);
-                }
+
+                return new XmlCharCheckingReader(baseReader, checkChars, noWhitespace, noComments, noPIs, dtdProc);
             }
-            else
-            {
-                return baseReader;
-            }
+
+            return baseReader;
+        }
+
+        [DoesNotReturn]
+        [StackTraceHidden]
+        private static void ThrowArgumentOutOfRangeException(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName);
         }
     }
 }
