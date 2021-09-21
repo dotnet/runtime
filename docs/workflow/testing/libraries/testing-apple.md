@@ -1,18 +1,43 @@
-# Testing Libraries on iOS and tvOS
+# Testing Libraries on iOS, tvOS, and MacCatalyst
 
-In order to build libraries and tests for iOS or tvOS you need recent version of XCode installed (e.g. 11.3 or higher).
+## Prerequisites
 
-Build Libraries for iOS Simulator:
+- XCode 11.3 or higher
+
+## Building Libs and Tests
+
+You can build and run the library tests:
+- on a simulator;
+- on a device.
+
+Run the following command in a terminal:
+```
+./build.sh mono+libs -os <TARGET_OS> -arch x64
+```
+where `<TARGET_OS>` is one of the following:
+
+| simulator     | device|
+|:--------------|:------|
+| iOSSimulator  | iOS   |
+| tvOSSimulator | tvOS  |
+| MacCatalyst   |       |
+
+
+e.g., to build for a iOS simulator, run:
 ```
 ./build.sh mono+libs -os iOSSimulator -arch x64
 ```
+
 Run tests one by one for each test suite on a simulator:
 ```
 ./build.sh libs.tests -os iOSSimulator -arch x64 -test
 ```
+
+### Building for a device
+
 In order to run the tests on a device:
-- Set the os to `iOS` instead of `iOSSimulator`
-- Specify `DevTeamProvisioning` (see [developer.apple.com/account/#/membership](https://developer.apple.com/account/#/membership), scroll down to `Team ID`):
+- Set the `-os` parameter to a device-related value (see above);
+- Specify `DevTeamProvisioning` (see [developer.apple.com/account/#/membership](https://developer.apple.com/account/#/membership), scroll down to `Team ID`), e.g.:
 ```
 ./build.sh libs.tests -os iOS -arch x64 -test /p:DevTeamProvisioning=H1A2B3C4D5
 ```
@@ -24,11 +49,21 @@ In order to run the tests on a device:
 ./dotnet.sh build src/libraries/System.Numerics.Vectors/tests /t:Test /p:TargetOS=iOS /p:TargetArchitecture=x64
 ```
 
+### Running the functional tests
+
+There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tests/FunctionalTests/) which aim to test some specific features/configurations/modes on a target mobile platform.
+
+A functional test can be run the same way as any library test suite, e.g.:
+```
+./dotnet.sh build /t:Test /p:TargetOS=iOSSimulator /p:TargetArchitecture=x64 /p:Configuration=Release src/tests/FunctionalTests/iOS/Simulator/PInvoke/iOS.Simulator.PInvoke.Test.csproj
+```
+
+Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
+
 ### Test App Design
 iOS/tvOS `*.app` (or `*.ipa`) is basically a simple [ObjC app](https://github.com/dotnet/runtime/blob/main/src/mono/msbuild/AppleAppBuilder/Templates/main-console.m) that inits the Mono Runtime. This Mono Runtime starts a simple xunit test
 runner called XHarness.TestRunner (see https://github.com/dotnet/xharness) which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool to deploy `*.app` and `*.ipa` to a target (device or simulator) and listens for logs via network sockets.
 
 ### Existing Limitations
-- Most of the test suites crash on devices due to #35674
 - Simulator uses JIT mode only at the moment (to be extended with FullAOT and Interpreter)
 - Interpreter is not enabled yet.
