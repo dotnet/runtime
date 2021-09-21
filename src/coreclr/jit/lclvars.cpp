@@ -1234,7 +1234,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         assert(mostRecentlyActivePhase == PHASE_PRE_IMPORT);
 
         // TODO-Cleanup: this is preImportation phase, why do we try to work with regs here?
-        // this could should probably be deleted.
+        // Should it be just deleted?
         if (varDscInfo->canEnreg(TYP_I_IMPL))
         {
             /* Another register argument */
