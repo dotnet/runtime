@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -1112,13 +1113,23 @@ namespace System.Xml
         // Returns true if the given argument is a valid Name.
         public static bool IsName(string str)
         {
-            return str == null ? throw new NullReferenceException() : ValidateNames.IsNameNoNamespaces(str);
+            if (str is null)
+            {
+                ArgumentNullException.ThrowIfNull(nameof(str));
+            }
+
+            return ValidateNames.IsNameNoNamespaces(str);
         }
 
         // Returns true if the given argument is a valid NmToken.
         public static bool IsNameToken(string str)
         {
-            return str == null ? throw new NullReferenceException() : ValidateNames.IsNmtokenNoNamespaces(str);
+            if (str is null)
+            {
+                ArgumentNullException.ThrowIfNull(nameof(str));
+            }
+
+            return ValidateNames.IsNmtokenNoNamespaces(str);
         }
 
         // Returns the inner content (including markup) of an element or attribute as a string.
