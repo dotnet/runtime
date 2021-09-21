@@ -7475,6 +7475,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
 #ifdef FEATURE_READYTORUN_COMPILER
     if (usingReadyToRunHelper)
     {
+        assert(lookup.addr != nullptr);
         allocObj->gtEntryPoint = lookup;
     }
 #endif
@@ -7879,6 +7880,9 @@ GenTree* Compiler::gtCloneExpr(
                 copy                        = new (this, GT_ALLOCOBJ)
                     GenTreeAllocObj(tree->TypeGet(), asAllocObj->gtNewHelper, asAllocObj->gtHelperHasSideEffects,
                                     asAllocObj->gtAllocObjClsHnd, asAllocObj->gtOp1);
+#ifdef FEATURE_READYTORUN
+                copy->AsAllocObj()->gtEntryPoint = asAllocObj->gtEntryPoint;
+#endif
             }
             break;
 
