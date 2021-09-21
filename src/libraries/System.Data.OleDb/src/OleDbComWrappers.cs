@@ -105,7 +105,7 @@ namespace System.Data.OleDb
                     description = Marshal.PtrToStringBSTR(pDescription);
                 }
 
-                if (pSource != IntPtr.Zero)
+                if (pDescription != IntPtr.Zero)
                 {
                     Marshal.FreeBSTR(pDescription);
                 }
