@@ -2,20 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Tests.Schemas.OrderPayload;
+using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Text.Json.Nodes.Tests
+namespace System.Text.Json.Serialization.Tests
 {
-    public static class SerializerInteropTests
+    public abstract class NodeInteropTests : SerializerTests
     {
-        [Fact]
-        public static void CompareResultsAgainstSerializer()
-        {
-            List<Order> obj = Serialization.Tests.StreamTests.PopulateLargeObject(2);
-            string expected = JsonSerializer.Serialize(obj);
+        public NodeInteropTests(JsonSerializerWrapperForString serializerWrapper) : base(serializerWrapper) { }
 
-            JsonArray jArray = JsonSerializer.Deserialize<JsonArray>(expected);
+        [Fact]
+        public async Task CompareResultsAgainstSerializer()
+        {
+            List<Order> obj = JsonTestHelper.PopulateLargeObject(2);
+            string expected = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+
+            JsonArray jArray = await JsonSerializerWrapperForString.DeserializeWrapper<JsonArray>(expected);
             string actual = jArray.ToJsonString();
             Assert.Equal(expected, actual);
 
@@ -24,7 +28,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(expected, actual);
         }
 
-        private class Poco
+        public class Poco
         {
             public string MyString { get; set; }
             public JsonNode Node { get; set; }
@@ -35,7 +39,7 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
-        public static void NodesAsPocoProperties()
+        public async Task NodesAsPocoProperties()
         {
             const string Expected = "{\"MyString\":null,\"Node\":42,\"Array\":[43],\"Value\":44,\"IntValue\":45,\"Object\":{\"Property\":46}}";
 
@@ -51,10 +55,10 @@ namespace System.Text.Json.Nodes.Tests
                 }
             };
 
-            string json = JsonSerializer.Serialize(poco);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(poco);
             Assert.Equal(Expected, json);
 
-            poco = JsonSerializer.Deserialize<Poco>(json);
+            poco = await JsonSerializerWrapperForString.DeserializeWrapper<Poco>(json);
             Assert.Equal(42, (int)poco.Node);
             Assert.Equal(43, (int)poco.Array[0]);
             Assert.Equal(44, (int)poco.Value);
