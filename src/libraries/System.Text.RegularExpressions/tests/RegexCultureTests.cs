@@ -69,6 +69,20 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void CharactersLowercasedOneByOne(RegexOptions options)
+        {
+            using (new ThreadCultureChange("en-US"))
+            {
+                Assert.True(new Regex("\uD801\uDC00", options | RegexOptions.IgnoreCase).IsMatch("\uD801\uDC00"));
+                Assert.True(new Regex("\uD801\uDC00", options | RegexOptions.IgnoreCase).IsMatch("abcdefg\uD801\uDC00"));
+                Assert.True(new Regex("\uD801", options | RegexOptions.IgnoreCase).IsMatch("\uD801\uDC00"));
+                Assert.True(new Regex("\uDC00", options | RegexOptions.IgnoreCase).IsMatch("\uD801\uDC00"));
+            }
+        }
+
         /// <summary>
         /// See https://en.wikipedia.org/wiki/Dotted_and_dotless_I
         /// </summary>
