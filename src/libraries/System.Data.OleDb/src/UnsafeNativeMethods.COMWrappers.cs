@@ -29,6 +29,8 @@ namespace System.Data.Common
                 ppIErrorInfo = (UnsafeNativeMethods.IErrorInfo)OleDbComWrappers.Instance
                     .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);
             }
+
+            return hr;
         }
 
         internal static void ReleaseErrorInfoObject(UnsafeNativeMethods.IErrorInfo errorInfo)
