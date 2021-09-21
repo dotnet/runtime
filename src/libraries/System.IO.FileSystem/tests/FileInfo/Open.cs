@@ -74,7 +74,7 @@ namespace System.IO.Tests
         }
     }
 
-    public class FileInfo_Open_options_as : FileStream_ctor_options_as
+    public class FileInfo_Open_options : FileStream_ctor_options
     {
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
@@ -103,6 +103,19 @@ namespace System.IO.Tests
                     Share = share,
                     Options = options,
                     BufferSize = bufferSize
+                });
+        }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+        {
+            return new FileInfo(path).Open(
+                new FileStreamOptions {
+                    Mode = mode,
+                    Access = access,
+                    Share = share,
+                    Options = options,
+                    BufferSize = bufferSize,
+                    PreallocationSize = preallocationSize
                 });
         }
     }

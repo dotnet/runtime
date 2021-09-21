@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class FileStream_ctor_options_as
+    public partial class FileStream_ctor_options
     {
         private unsafe long GetAllocatedSize(FileStream fileStream)
         {
@@ -30,7 +30,7 @@ namespace System.IO.Tests
 
             string filePath = prefix + Path.GetFullPath(GetPathToNonExistingFile());
 
-            using (var fs = new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
+            using (var fs = CreateFileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.None, preallocationSize))
             {
                 Assert.Equal(0, fs.Length);
                 Assert.Equal(preallocationSize, GetAllocatedSize(fs));
@@ -48,7 +48,7 @@ namespace System.IO.Tests
             string filePath = GetPathToNonExistingFile();
             Assert.StartsWith(Path.GetTempPath(), filePath); // this is what IsFat32 method relies on
 
-            IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, tooMuch)));
+            IOException ex = Assert.Throws<IOException>(() => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.None, tooMuch));
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(tooMuch.ToString(), ex.Message);
 

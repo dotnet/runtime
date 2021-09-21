@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.IO.Tests
 {
-    public partial class FileStream_ctor_options_as
+    public partial class FileStream_ctor_options
     {
         private static long GetAllocatedSize(FileStream fileStream)
         {

@@ -7,7 +7,11 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public abstract class FileStream_ctor_options_as_base : FileStream_ctor_str_fm_fa_fs_buffer_fo
+    // Don't run in parallel as the WhenDiskIsFullTheErrorMessageContainsAllDetails test
+    // consumes entire available free space on the disk (only on Linux, this is how posix_fallocate works)
+    // and if we try to run other disk-writing test in the meantime we are going to get "No space left on device" exception.
+    [Collection("NoParallelTests")]
+    public partial class FileStream_ctor_options : FileStream_ctor_str_fm_fa_fs_buffer_fo
     {
         protected override string GetExpectedParamName(string paramName) => "value";
 
@@ -38,32 +42,24 @@ namespace System.IO.Tests
                         Options = options
                     });
 
-        protected FileStreamOptions GetOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
-            => new FileStreamOptions
-            {
-                Mode = mode,
-                Access = access,
-                Share = share,
-                Options = options,
-                PreallocationSize = preallocationSize
-            };
-    }
+        protected virtual FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+            => new FileStream(path,
+                    new FileStreamOptions
+                    {
+                        Mode = mode,
+                        Access = access,
+                        Share = share,
+                        BufferSize = bufferSize,
+                        Options = options,
+                        PreallocationSize = preallocationSize
+                    });
 
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
-
-    // Don't run in parallel as the WhenDiskIsFullTheErrorMessageContainsAllDetails test
-    // consumes entire available free space on the disk (only on Linux, this is how posix_fallocate works)
-    // and if we try to run other disk-writing test in the meantime we are going to get "No space left on device" exception.
-    [Collection("NoParallelTests")]
-    public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
-    {
         [Fact]
         public virtual void NegativePreallocationSizeThrows()
         {
-            string filePath = GetPathToNonExistingFile();
+            string filePath = GetTestFilePath();
             ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
-                () => new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, -1)));
+                () => CreateFileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: -1));
         }
 
         [Theory]
@@ -77,7 +73,7 @@ namespace System.IO.Tests
             File.WriteAllBytes(filePath, new byte[initialSize]);
 
             Assert.Throws<ArgumentException>(
-                () => new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize: 20)));
+                () => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 20));
         }
 
         [Theory]
@@ -95,7 +91,7 @@ namespace System.IO.Tests
                 File.WriteAllBytes(filePath, new byte[initialSize]);
             }
 
-            using (var fs = new FileStream(filePath, GetOptions(mode, FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize)))
+            using (var fs = CreateFileStream(filePath, mode, FileAccess.ReadWrite, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize))
             {
                 Assert.Equal(0, fs.Length);
                 if (SupportsPreallocation)
@@ -121,7 +117,7 @@ namespace System.IO.Tests
 
             string filePath = GetPathToNonExistingFile();
 
-            IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, tooMuch)));
+            IOException ex = Assert.Throws<IOException>(() => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, tooMuch));
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(tooMuch.ToString(), ex.Message);
 
@@ -146,4 +142,7 @@ namespace System.IO.Tests
             return filePath;
         }
     }
+
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
 }
