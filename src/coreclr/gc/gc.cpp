@@ -8051,6 +8051,11 @@ void gc_heap::set_brick (size_t index, ptrdiff_t val)
         brick_table [index] = (short)val+1;
     else
         brick_table [index] = (short)val;
+    if (brick_table[index] == 0)
+    {
+        GCToOSInterface::DebugBreak();
+    }
+    dprintf (3, ("set brick[%Ix] to %d\n", index, (short)val));
 }
 
 inline
@@ -11654,6 +11659,33 @@ void gc_heap::clear_gen0_bricks()
     }
 }
 
+void gc_heap::check_gen0_bricks()
+{
+#ifdef USE_REGIONS
+    heap_segment* gen0_region = generation_start_segment (generation_of (0));
+    while (gen0_region)
+    {
+        uint8_t* start = heap_segment_mem (gen0_region);
+#else 
+    heap_segment* gen0_region = ephemeral_heap_segment;
+    uint8_t* start = generation_allocation_start (generation_of (0));
+    {
+#endif //USE_REGIONS
+        size_t end_b = brick_of (heap_segment_allocated (gen0_region));
+        for (size_t b = brick_of (start); b < end_b; b++)
+        {
+            if (brick_table[b] == 0)
+            {
+                GCToOSInterface::DebugBreak();
+            }
+        }
+
+#ifdef USE_REGIONS
+        gen0_region = heap_segment_next (gen0_region);
+#endif //USE_REGIONS
+    }
+}
+
 #ifdef BACKGROUND_GC
 void gc_heap::rearrange_small_heap_segments()
 {
@@ -15100,6 +15132,10 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
         clear_start = obj_end;
     }
 
+    // fetch the ephemeral_heap_segment *before* we release the msl
+    // - ephemeral_heap_segment may change due to other threads allocating
+    heap_segment* gen0_segment = ephemeral_heap_segment;
+
     // check if space to clear is all dirty from prior use or only partially
     if ((seg == 0) || (clear_limit <= heap_segment_used (seg)))
     {
@@ -15141,7 +15177,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
 #endif //FEATURE_EVENT_TRACE 
 
     //this portion can be done after we release the lock
-    if (seg == ephemeral_heap_segment ||
+    if (seg == gen0_segment ||
        ((seg == nullptr) && (gen_number == 0) && (limit_size >= CLR_SIZE / 2)))
     {
         if (gen0_must_clear_bricks > 0)
@@ -20275,9 +20311,13 @@ void gc_heap::gc1()
         {
             mark_phase (n, FALSE);
 
+            check_gen0_bricks();
+
             GCScan::GcRuntimeStructuresValid (FALSE);
             plan_phase (n);
             GCScan::GcRuntimeStructuresValid (TRUE);
+
+            check_gen0_bricks();
         }
     }
 
@@ -21589,6 +21629,7 @@ void gc_heap::garbage_collect (int n)
     gc_t_join.start_ts(this);
 #endif //JOIN_STATS
     clear_gen0_bricks();
+    check_gen0_bricks();
 #endif //MULTIPLE_HEAPS
 
     if ((settings.pause_mode == pause_no_gc) && current_no_gc_region_info.minimal_gc_p)
