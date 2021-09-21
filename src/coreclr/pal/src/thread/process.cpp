@@ -113,6 +113,11 @@ extern "C"
 #include <kvm.h>
 #endif
 
+#ifdef __FreeBSD__
+#include <sys/sysctl.h>
+#include <sys/user.h>
+#endif
+
 extern char *g_szCoreCLRPath;
 
 using namespace CorUnix;
@@ -2045,7 +2050,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     *disambiguationKey = 0;
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 
     // On OS X, we return the process start time expressed in Unix time (the number of seconds
     // since the start of the Unix epoch).
@@ -2056,7 +2061,11 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     if (ret == 0)
     {
+#if defined(__APPLE__)
         timeval procStartTime = info.kp_proc.p_starttime;
+#else // __FreeBSD__
+        timeval procStartTime = info.ki_start;
+#endif
         long secondsSinceEpoch = procStartTime.tv_sec;
 
         *disambiguationKey = secondsSinceEpoch;

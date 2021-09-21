@@ -18,8 +18,13 @@ check_cxx_source_compiles("
     }
     " HAVE_PTHREAD_THREADID_NP)
 
+if(HAVE_PTHREAD_NP_H)
+  set(PTHREAD_NP_H_INCLUDE "#include <pthread_np.h>")
+endif()
+
 check_cxx_source_compiles("
     #include <pthread.h>
+    ${PTHREAD_NP_H_INCLUDE}
     #include <stdint.h>
 
     int main()
