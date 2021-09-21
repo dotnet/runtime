@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -629,8 +630,8 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 writer.WriteLine("goto ReturnFalse;");
                             }
-                            writer.WriteLine();
                             writer.WriteLine("i += indexOfPos;");
+                            writer.WriteLine();
 
                             if (lcc.Length > 1)
                             {
@@ -648,16 +649,40 @@ namespace System.Text.RegularExpressions.Generator
                                 writer.WriteLine("goto ReturnFalse;");
                             }
                         }
+                        writer.WriteLine();
                     }
 
                     Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
-                    for (; charClassIndex < lcc.Length; charClassIndex++)
+                    if (charClassIndex < lcc.Length)
                     {
-                        // if (!CharInClass(textSpan[i + charClassIndex], prefix[0], "...")) continue;
+                        // if (!CharInClass(textSpan[i + charClassIndex], prefix[0], "...") ||
+                        //     ...)
+                        // {
+                        //     continue;
+                        // }
                         Debug.Assert(needLoop);
-                        string spanIndex = charClassIndex > 0 ? $"span[i + {charClassIndex}]" : "span[i]";
-                        string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, lcc[charClassIndex].CharClass, lcc[charClassIndex].CaseInsensitive);
-                        writer.WriteLine($"if (!{charInClassExpr}) continue;");
+                        int start = charClassIndex;
+                        for (; charClassIndex < lcc.Length; charClassIndex++)
+                        {
+                            string spanIndex = charClassIndex > 0 ? $"span[i + {charClassIndex}]" : "span[i]";
+                            string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, lcc[charClassIndex].CharClass, lcc[charClassIndex].CaseInsensitive);
+
+                            if (charClassIndex == start)
+                            {
+                                writer.Write($"if (!{charInClassExpr}");
+                            }
+                            else
+                            {
+                                writer.WriteLine(" ||");
+                                writer.Write($"    !{charInClassExpr}");
+                            }
+                        }
+                        writer.WriteLine(")");
+                        using (EmitBlock(writer, null))
+                        {
+                            writer.WriteLine("continue;");
+                        }
+                        writer.WriteLine();
                     }
 
                     writer.WriteLine("base.runtextpos = runtextpos + i;");
@@ -791,7 +816,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             string SpanLengthCheck(int requiredLength, string? dynamicRequiredLength = null) =>
-                $"{Sum(textSpanPos + requiredLength, dynamicRequiredLength)} > (uint){textSpanLocal}.Length";
+                $"(uint){textSpanLocal}.Length < {Sum(textSpanPos + requiredLength, dynamicRequiredLength)}";
 
             // Adds the value of textSpanPos into the runtextpos local, slices textspan by the corresponding amount,
             // and zeros out textSpanPos.
@@ -1205,7 +1230,7 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.End:
-                        using (EmitBlock(writer, $"if ({textSpanPos} < {textSpanLocal}.Length)"))
+                        using (EmitBlock(writer, $"if ({textSpanLocal}.Length > {textSpanPos})"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
@@ -1231,49 +1256,96 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle a multiple-character match.
             void EmitMultiChar(RegexNode node)
             {
+                bool caseInsensitive = IsCaseInsensitive(node);
+
                 string str = node.Str!;
                 Debug.Assert(str.Length != 0);
 
-                // TODO: RegexOptions.Compiled has a more complicated unrolling here, but it knows the code is being compiled on the same
-                // endianness and bitness machine as it'll be executed on.  Determine if we want to do something more here.
-
-                bool caseInsensitive = IsCaseInsensitive(node);
-
-                const int MaxUnrollLength = 8; // TODO: Tune this
+                const int MaxUnrollLength = 64;
                 if (str.Length <= MaxUnrollLength)
                 {
-                    writer.WriteLine($"if ((uint){textSpanLocal}.Length < {textSpanPos + str.Length} ||");
-                    for (int i = 0; i < str.Length; i++)
+                    // Unroll shorter strings.
+
+                    // TODO: This might employ 64-bit operations on a 32-bit machine.  Decide if avoiding that
+                    // is worth adding further complexity for (RegexOptions.Compiled doesn't have to deal with
+                    // this, as the machine generating the code in-memory is the same one running it.)
+
+                    // For strings more than two characters and when performing case-sensitive searches, we try to do fewer comparisons
+                    // by comparing 2 or 4 characters at a time.  Because we might be compiling on one endianness and running on another,
+                    // both little and big endian values are emitted and which is used is selected at run-time.
+                    ReadOnlySpan<byte> byteStr = MemoryMarshal.AsBytes(str.AsSpan());
+                    bool useMultiCharReads = !caseInsensitive && byteStr.Length > sizeof(uint);
+                    if (useMultiCharReads)
                     {
+                        writer.WriteLine($"ref byte byteStr = ref global::System.Runtime.InteropServices.MemoryMarshal.GetReference(global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal}));");
+                    }
+
+                    writer.Write($"if ((uint){textSpanLocal}.Length < {textSpanPos + str.Length}");
+
+                    if (useMultiCharReads)
+                    {
+                        while (byteStr.Length >= sizeof(ulong))
+                        {
+                            writer.WriteLine(" ||");
+                            ulong little = BinaryPrimitives.ReadUInt64LittleEndian(byteStr);
+                            ulong big = BinaryPrimitives.ReadUInt64BigEndian(byteStr);
+                            writer.Write($"    global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<ulong>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}ul : 0x{big:X}ul)");
+                            textSpanPos += sizeof(ulong) / 2;
+                            byteStr = byteStr.Slice(sizeof(ulong));
+                        }
+
+                        while (byteStr.Length >= sizeof(uint))
+                        {
+                            writer.WriteLine(" ||");
+                            uint little = BinaryPrimitives.ReadUInt32LittleEndian(byteStr);
+                            uint big = BinaryPrimitives.ReadUInt32BigEndian(byteStr);
+                            writer.Write($"    global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<uint>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}u : 0x{big:X}u)");
+                            textSpanPos += sizeof(uint) / 2;
+                            byteStr = byteStr.Slice(sizeof(uint));
+                        }
+                    }
+
+                    // Emit remaining comparisons character by character.
+                    for (int i = (str.Length * 2 - byteStr.Length) / 2; i < str.Length; i++)
+                    {
+                        writer.WriteLine(" ||");
                         writer.Write($"    {ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos}]", caseInsensitive)} != {Literal(str[i])}");
                         textSpanPos++;
-                        writer.WriteLine(i < str.Length - 1 ? " ||" : ")");
                     }
+
+                    writer.WriteLine(")");
                     using (EmitBlock(writer, null))
                     {
                         writer.WriteLine($"goto {doneLabel};");
                     }
                 }
-                else if (!caseInsensitive)
-                {
-                    using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({textSpanLocal}.Slice({textSpanPos}), {Literal(node.Str)}))"))
-                    {
-                        writer.WriteLine($"goto {doneLabel};");
-                    }
-                    textSpanPos += node.Str.Length;
-                }
                 else
                 {
-                    EmitSpanLengthCheck(str.Length);
-                    string i = GetNextLocalId();
-                    using (EmitBlock(writer, $"for (int {i} = 0; {i} < {Literal(str)}.Length; {i}++)"))
+                    // Longer strings are compared character by character.  If this is a case-sensitive comparison, we can simply
+                    // delegate to StartsWith.  If this is case-insensitive, we open-code the comparison loop, as we need to lowercase
+                    // each character involved, and none of the StringComparison options provide the right semantics of comparing
+                    // character-by-character while respecting the culture.
+                    if (!caseInsensitive)
                     {
-                        using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos} + {i}]")} != {ToLower(hasTextInfo, options, $"{Literal(str)}[{i}]")})"))
+                        using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({textSpanLocal}.Slice({textSpanPos}), {Literal(node.Str)}))"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
+                        textSpanPos += node.Str.Length;
                     }
-                    textSpanPos += node.Str.Length;
+                    else
+                    {
+                        EmitSpanLengthCheck(str.Length);
+                        string i = GetNextLocalId();
+                        using (EmitBlock(writer, $"for (int {i} = 0; {i} < {Literal(node.Str)}.Length; {i}++)"))
+                        {
+                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos} + {i}]")} != {Literal(str)}[{i}])"))
+                            {
+                                writer.WriteLine($"goto {doneLabel};");
+                            }
+                        }
+                        textSpanPos += node.Str.Length;
+                    }
                 }
             }
 

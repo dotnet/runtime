@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions.Generator;
 using System.Threading;
@@ -36,14 +37,13 @@ namespace System.Text.RegularExpressions.Tests
 
             // Typically we'd want to use the right reference assemblies, but as we're not persisting any
             // assets and only using this for testing purposes, referencing implementation assemblies is sufficient.
-
-            string corelib = Assembly.GetAssembly(typeof(object))!.Location;
-            string runtimeDir = Path.GetDirectoryName(corelib)!;
+            string corelibPath = typeof(object).Assembly.Location;
             return new[]
             {
-                MetadataReference.CreateFromFile(corelib),
-                MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Runtime.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Text.RegularExpressions.dll"))
+                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(corelibPath), "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(typeof(Unsafe).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Regex).Assembly.Location),
             };
         }
 

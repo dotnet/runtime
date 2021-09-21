@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -517,13 +517,13 @@ namespace System.Text.RegularExpressions.Generator.Tests
 
         private static MetadataReference[] CreateReferences()
         {
-            string corelib = Assembly.GetAssembly(typeof(object))!.Location;
-            string runtimeDir = Path.GetDirectoryName(corelib)!;
+            string corelibPath = typeof(object).Assembly.Location;
             return new[]
             {
-                MetadataReference.CreateFromFile(corelib),
-                MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Runtime.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(runtimeDir, "System.Text.RegularExpressions.dll"))
+                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(corelibPath)!, "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(typeof(Unsafe).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Regex).Assembly.Location),
             };
         }
     }
