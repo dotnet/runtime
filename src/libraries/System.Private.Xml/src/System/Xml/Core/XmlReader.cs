@@ -1113,10 +1113,7 @@ namespace System.Xml
         // Returns true if the given argument is a valid Name.
         public static bool IsName(string str)
         {
-            if (str is null)
-            {
-                ArgumentNullException.ThrowIfNull(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             return ValidateNames.IsNameNoNamespaces(str);
         }
@@ -1124,10 +1121,7 @@ namespace System.Xml
         // Returns true if the given argument is a valid NmToken.
         public static bool IsNameToken(string str)
         {
-            if (str is null)
-            {
-                ArgumentNullException.ThrowIfNull(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             return ValidateNames.IsNmtokenNoNamespaces(str);
         }
