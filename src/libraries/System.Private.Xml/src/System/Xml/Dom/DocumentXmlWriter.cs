@@ -29,7 +29,6 @@ namespace System.Xml
             Prolog,
             Fragment,
             Content,
-
             Last // always last
         }
 

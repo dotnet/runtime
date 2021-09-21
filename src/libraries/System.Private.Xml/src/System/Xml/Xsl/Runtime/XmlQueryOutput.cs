@@ -19,7 +19,7 @@ namespace System.Xml.Xsl.Runtime
         WithinAttr,             // Adding text to an attribute
         WithinNmsp,             // Adding text to an namespace
         WithinComment,          // Adding text to a comment
-        WithinPI // Adding text to a processing instruction
+        WithinPI                // Adding text to a processing instruction
     };
 
 
@@ -39,11 +39,11 @@ namespace System.Xml.Xsl.Runtime
         private XmlRawWriter _xwrt;                  // Output to XmlRawWriter--get and set this using the Writer property
 
         // It is OK to set these properties directly
-        private readonly XmlQueryRuntime _runtime;            // The XmlQueryRuntime instance that keeps global state
+        private readonly XmlQueryRuntime _runtime;   // The XmlQueryRuntime instance that keeps global state
         private XmlAttributeCache _attrCache;        // Cache used to detect duplicate attributes
         private int _depth;                          // Depth of the currently constructing tree
         private XmlState _xstate;                    // Current XML state
-        private readonly XmlSequenceWriter _seqwrt;           // Current XmlSequenceWriter
+        private readonly XmlSequenceWriter _seqwrt;  // Current XmlSequenceWriter
         private XmlNamespaceManager _nsmgr;          // Output namespace manager
         private int _cntNmsp;                        // Number of pending namespaces
         private Dictionary<string, string> _conflictPrefixes;         // Remembers prefixes that were auto-generated previously in case they can be reused
