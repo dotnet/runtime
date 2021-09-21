@@ -194,7 +194,10 @@ namespace System.Xml.Serialization
             if (xmlTypeMapping == null)
                 throw new ArgumentNullException(nameof(xmlTypeMapping));
 
-            _tempAssembly = GenerateTempAssembly(xmlTypeMapping);
+            if (Mode != SerializationMode.ReflectionOnly)
+            {
+                _tempAssembly = GenerateTempAssembly(xmlTypeMapping);
+            }
             _mapping = xmlTypeMapping;
         }
 
@@ -218,6 +221,12 @@ namespace System.Xml.Serialization
                 _primitiveType = type;
                 return;
             }
+
+            if (Mode == SerializationMode.ReflectionOnly)
+            {
+                return;
+            }
+
             _tempAssembly = s_cache[defaultNamespace, type];
             if (_tempAssembly == null)
             {
@@ -270,7 +279,10 @@ namespace System.Xml.Serialization
             DefaultNamespace = defaultNamespace;
             _rootType = type;
             _mapping = GenerateXmlTypeMapping(type, overrides, extraTypes, root, defaultNamespace);
-            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
+            if (Mode != SerializationMode.ReflectionOnly)
+            {
+                _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
+            }
         }
 
         [RequiresUnreferencedCode("calls ImportTypeMapping")]
