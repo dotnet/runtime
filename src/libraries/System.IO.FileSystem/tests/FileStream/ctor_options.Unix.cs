@@ -10,11 +10,14 @@ namespace System.IO.Tests
     {
         private static long GetAllocatedSize(FileStream fileStream)
         {
+            bool isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
             // Call 'stat' to get the number of blocks, and size of blocks.
             using var px = Process.Start(new ProcessStartInfo
             {
                 FileName = "stat",
-                ArgumentList = { "-c", "%b %B", fileStream.Name },
+                ArgumentList = { isOSX ? "-f"    : "-c",
+                                 isOSX ? "%b %k" : "%b %B",
+                                 fileStream.Name },
                 RedirectStandardOutput = true
             });
             string stdout = px.StandardOutput.ReadToEnd();

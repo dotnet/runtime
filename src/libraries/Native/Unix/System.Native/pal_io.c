@@ -1025,22 +1025,7 @@ int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
     fstore.fst_bytesalloc = 0; // output size, can be > length
 
     while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
-#elif defined(F_ALLOCSP) || defined(F_ALLOCSP64) // FreeBSD
-    #if HAVE_FLOCK64
-    struct flock64 lockArgs;
-    int command = F_ALLOCSP64;
-    #else
-    struct flock lockArgs;
-    int command = F_ALLOCSP;
-    #endif
-
-    lockArgs.l_whence = SEEK_SET;
-    lockArgs.l_start = (off_t)offset;
-    lockArgs.l_len = (off_t)length;
-
-    while ((result = fcntl(fileDescriptor, command, &lockArgs)) == -1 && errno == EINTR);
 #else
-    #error unsupported
     (void)offset; // unused
     (void)length; // unused
     result = -1;
