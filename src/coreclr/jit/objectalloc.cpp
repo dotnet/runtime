@@ -481,6 +481,10 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
         assert(comp->opts.IsReadyToRun());
         helperCall->AsCall()->setEntryPoint(entryPoint);
     }
+    else
+    {
+        assert(helper != CORINFO_HELP_READYTORUN_NEW); // If this is true, then we should have collected a non-null entrypoint above
+    }
 #endif
 
     return helperCall;
