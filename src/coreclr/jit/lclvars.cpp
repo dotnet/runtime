@@ -1231,8 +1231,10 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         LclVarDsc* varDsc = varDscInfo->varDsc;
         varDsc->lvType    = TYP_I_IMPL;
         varDsc->lvIsParam = 1;
-        lvaSetVarDoNotEnregister(lvaVarargsHandleArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        assert(mostRecentlyActivePhase == PHASE_PRE_IMPORT);
 
+        // TODO-Cleanup: this is preImportation phase, why do we try to work with regs here?
+        // this could should probably be deleted.
         if (varDscInfo->canEnreg(TYP_I_IMPL))
         {
             /* Another register argument */
