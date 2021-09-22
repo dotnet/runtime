@@ -296,6 +296,8 @@ namespace System.Xml
             }
         }
 
+        internal bool ReadOnly { get; set; }
+
         public void Reset()
         {
             CheckReadOnly();
@@ -396,7 +398,6 @@ namespace System.Xml
             return AddValidationAndConformanceWrapper(reader);
         }
 
-        internal bool ReadOnly { get; set; }
         private void CheckReadOnly([CallerMemberName] string? propertyName = null)
         {
             if (ReadOnly)
