@@ -605,7 +605,9 @@ var MonoSupportLib = {
 			{
 				if (this.debugger_buffer)
 					Module._free (this.debugger_buffer);
-				var length = command_parameters.length > this.debugger_buffer_len ? command_parameters.length : 256;
+				else
+					this.debugger_buffer_len = 256;
+				var length = command_parameters.length > this.debugger_buffer_len ? command_parameters.length : this.debugger_buffer_len;
 				this.debugger_buffer = Module._malloc (length);
 				this.heap_bytes = new Uint8Array (Module.HEAPU8.buffer, this.debugger_buffer, length);
 				this.debugger_buffer_len = length;
