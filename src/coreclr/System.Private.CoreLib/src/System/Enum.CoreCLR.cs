@@ -36,7 +36,7 @@ namespace System
             {
                 ulong[]? values = null;
                 string[]? names = null;
-                RuntimeTypeHandle enumTypeHandle = enumType.GetTypeHandleInternal();
+                RuntimeTypeHandle enumTypeHandle = enumType.TypeHandle;
                 GetEnumValuesAndNames(
                     new QCallTypeHandle(ref enumTypeHandle),
                     ObjectHandleOnStack.Create(ref values),
