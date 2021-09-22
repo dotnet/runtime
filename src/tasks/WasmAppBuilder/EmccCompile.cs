@@ -125,31 +125,20 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 _tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 Directory.CreateDirectory(_tempPath);
 
-                int allowedParallelism = Math.Min(SourceFiles.Length, Environment.ProcessorCount);
+                int allowedParallelism = DisableParallelCompile ? 1 : Math.Min(SourceFiles.Length, Environment.ProcessorCount);
                 if (BuildEngine is IBuildEngine9 be9)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
 
-                if (DisableParallelCompile || allowedParallelism == 1)
+                ParallelLoopResult result = Parallel.ForEach(filesToCompile,
+                                                new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                                (toCompile, state) =>
                 {
-                    foreach ((string srcFile, string outFile) in filesToCompile)
-                    {
-                        if (!ProcessSourceFile(srcFile, outFile))
-                            return false;
-                    }
-                }
-                else
-                {
-                    ParallelLoopResult result = Parallel.ForEach(filesToCompile,
-                                                    new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                    (toCompile, state) =>
-                    {
-                        if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
-                            state.Stop();
-                    });
+                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
+                        state.Stop();
+                });
 
-                    if (!result.IsCompleted && !Log.HasLoggedErrors)
-                        Log.LogError("Unknown failure occured while compiling. Check logs to get more details.");
-                }
+                if (!result.IsCompleted && !Log.HasLoggedErrors)
+                    Log.LogError("Unknown failure occured while compiling. Check logs to get more details.");
 
                 if (!Log.HasLoggedErrors)
                 {

@@ -346,6 +346,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             Log.LogError(laee.Message);
             return false;
         }
+        finally
+        {
+            if (_cache != null && _cache.Save(CacheFilePath!))
+                _fileWrites.Add(CacheFilePath!);
+            FileWrites = _fileWrites.ToArray();
+        }
     }
 
     private bool ExecuteInternal()
@@ -380,42 +386,29 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         else
         {
-            int allowedParallelism = Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
+            int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
-            if (DisableParallelAot || allowedParallelism == 1)
-            {
-                foreach (var args in argsList)
-                {
-                    if (!PrecompileLibrarySerial(args))
-                        return !Log.HasLoggedErrors;
-                }
-            }
-            else
-            {
-                ParallelLoopResult result = Parallel.ForEach(
-                                                        argsList,
-                                                        new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                        (args, state) => PrecompileLibraryParallel(args, state));
+            ParallelLoopResult result = Parallel.ForEach(
+                                            argsList,
+                                            new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                            (args, state) => PrecompileLibraryParallel(args, state));
 
-                if (!result.IsCompleted)
-                {
-                    return false;
-                }
+            Log.LogMessage(MessageImportance.High, $"result: {result.IsCompleted}");
+            if (result.IsCompleted)
+            {
+                int numUnchanged = _totalNumAssemblies - _numCompiled;
+                if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
+                    Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
             }
-
-            int numUnchanged = _totalNumAssemblies - _numCompiled;
-            if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
-                Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+            else if (!Log.HasLoggedErrors)
+            {
+                Log.LogError($"Precompiling failed due to unknown reasons. Check log for more info");
+            }
         }
 
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
-
-        if (_cache.Save(CacheFilePath!))
-            _fileWrites.Add(CacheFilePath!);
-        FileWrites = _fileWrites.ToArray();
-
         return !Log.HasLoggedErrors;
     }
 
@@ -788,28 +781,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private bool PrecompileLibrarySerial(PrecompileArguments args)
-    {
-        try
-        {
-            if (PrecompileLibrary(args))
-                return true;
-        }
-        catch (LogAsErrorException laee)
-        {
-            Log.LogError($"Precompile failed for {args.AOTAssembly}: {laee.Message}");
-        }
-        catch (Exception ex)
-        {
-            if (Log.HasLoggedErrors)
-                Log.LogMessage(MessageImportance.Low, $"Precompile failed for {args.AOTAssembly}: {ex}");
-            else
-                Log.LogError($"Precompile failed for {args.AOTAssembly}: {ex}");
-        }
-
-        return false;
-    }
-
     private void PrecompileLibraryParallel(PrecompileArguments args, ParallelLoopState state)
     {
         try
@@ -819,14 +790,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         catch (LogAsErrorException laee)
         {
-            Log.LogError($"Precompile failed for {args.AOTAssembly}: {laee.Message}");
+            Log.LogError($"Precompiling failed for {args.AOTAssembly}: {laee.Message}");
         }
         catch (Exception ex)
         {
             if (Log.HasLoggedErrors)
                 Log.LogMessage(MessageImportance.Low, $"Precompile failed for {args.AOTAssembly}: {ex}");
             else
-                Log.LogError($"Precompile failed for {args.AOTAssembly}: {ex}");
+                Log.LogError($"Precompiling failed for {args.AOTAssembly}: {ex}");
         }
 
         state.Break();
@@ -955,10 +926,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)
         {
-            if (!dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
-                throw new LogAsErrorException($"Bug: Could not find item in the dict with key {item.ItemSpec}");
+            if (dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
+            {
+                // throw new LogAsErrorException($"Bug: Could not find item in the dict with key {item.ItemSpec}");
 
-            outItems.Add(dictItem);
+                outItems.Add(dictItem);
+            }
         }
         return outItems;
     }
@@ -1008,7 +981,7 @@ internal class FileCache
         }
 
         _oldCache ??= new();
-        _newCache = new();
+        _newCache = new(_oldCache.FileHashes);
     }
 
     public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
@@ -1125,6 +1098,10 @@ public enum MonoAotModulesTableLanguage
 
 internal class CompilerCache
 {
+    public CompilerCache() => FileHashes = new();
+    public CompilerCache(IDictionary<string, string> oldHashes)
+        => FileHashes = new(oldHashes);
+
     [JsonPropertyName("file_hashes")]
-    public ConcurrentDictionary<string, string> FileHashes { get; set; } = new();
+    public ConcurrentDictionary<string, string> FileHashes { get; set; }
 }
