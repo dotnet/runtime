@@ -513,13 +513,7 @@ namespace System.IO.Compression
             // of the ExtraField block. Thus we must force the stream's position to the proper place.
             reader.BaseStream.AdvanceToPosition(endExtraFields);
 
-            if (saveExtraFieldsAndComments)
-                header.FileComment = reader.ReadBytes(header.FileCommentLength);
-            else
-            {
-                reader.BaseStream.Position += header.FileCommentLength;
-                header.FileComment = null;
-            }
+            header.FileComment = reader.ReadBytes(header.FileCommentLength);
 
             header.UncompressedSize = zip64.UncompressedSize == null
                                                     ? uncompressedSizeSmall
@@ -583,8 +577,7 @@ namespace System.IO.Compression
             Debug.Assert((archiveComment == null) || (archiveComment.Length <= ZipFileCommentMaxLength));
 
             writer.Write(archiveComment != null ? (ushort)archiveComment.Length : (ushort)0); // zip file comment length
-            if (archiveComment != null)
-                writer.Write(archiveComment);
+            writer.Write(archiveComment ?? Array.Empty<byte>());
         }
 
         public static bool TryReadBlock(BinaryReader reader, out ZipEndOfCentralDirectoryBlock eocdBlock)

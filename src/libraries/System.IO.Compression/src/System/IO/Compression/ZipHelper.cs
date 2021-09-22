@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text;
 
 namespace System.IO.Compression
 {
@@ -192,6 +193,18 @@ namespace System.IO.Compression
                 bufferPointer = bytesToRead - 1;
                 return true;
             }
+        }
+
+        // Converts the specified string into bytes using the optional specified encoding. If null, then the encoding is calculated from the string itself.
+        internal static byte[] EncodeStringToBytes(string text, Encoding? encoding, out bool isUTF8)
+        {
+            Debug.Assert(text != null);
+
+            if (encoding == null)
+                encoding = RequiresUnicode(text) ? Encoding.UTF8 : Encoding.ASCII;
+
+            isUTF8 = encoding.Equals(Encoding.UTF8);
+            return encoding.GetBytes(text);
         }
     }
 }
