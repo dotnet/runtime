@@ -581,10 +581,24 @@ var MonoSupportLib = {
 			MONO.commands_received = buffer_obj;
 		},
 
+		mono_wasm_malloc_and_set_debug_buffer: function (command_parameters)
+		{
+			if (!this.debugger_buffer || command_parameters.length > this.debugger_buffer_len)
+			{
+				if (this.debugger_buffer)
+					Module._free (this.debugger_buffer);
+				var length = command_parameters.length > this.debugger_buffer_len ? command_parameters.length : 256;
+				this.debugger_buffer = Module._malloc (length);
+				this.heap_bytes = new Uint8Array (Module.HEAPU8.buffer, this.debugger_buffer, length);
+				this.debugger_buffer_len = length;
+			}
+			this.heap_bytes.set(this._base64_to_uint8 (command_parameters));
+		},
+
 		mono_wasm_send_dbg_command_with_parms: function (id, command_set, command, command_parameters, length, valtype, newvalue)
 		{
-			var dataHeap = this.mono_wasm_load_bytes_into_heap (this._base64_to_uint8 (command_parameters));
-			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, dataHeap, length, valtype, newvalue.toString());
+			this.mono_wasm_malloc_and_set_debug_buffer(command_parameters);
+			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, this.debugger_buffer, length, valtype, newvalue.toString());
 			let { res_ok, res } = MONO.commands_received;
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_invoke_method_debugger_agent_with_parms`);
@@ -593,8 +607,8 @@ var MonoSupportLib = {
 
 		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
 		{
-			var dataHeap = this.mono_wasm_load_bytes_into_heap (this._base64_to_uint8 (command_parameters));
-			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap, command_parameters.length);
+			this.mono_wasm_malloc_and_set_debug_buffer(command_parameters);
+			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, this.debugger_buffer, command_parameters.length);
 			let { res_ok, res } = MONO.commands_received;
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_send_dbg_command`);
