@@ -20,8 +20,6 @@ namespace System
             return _impl.Value;
         }
 
-        internal bool IsRuntimeImplemented() => this is RuntimeType;
-
         internal virtual bool IsTypeBuilder() => false;
 
         public bool IsInterface

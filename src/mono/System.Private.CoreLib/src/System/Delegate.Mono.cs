@@ -99,7 +99,7 @@ namespace System
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
-            if (!target.IsRuntimeImplemented())
+            if (target is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
             this.data = new DelegateData()
@@ -197,7 +197,7 @@ namespace System
             if (!(type is RuntimeType rtType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            if (!target.IsRuntimeImplemented())
+            if (target is not RuntimeType())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
