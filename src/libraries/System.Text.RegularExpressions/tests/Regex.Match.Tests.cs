@@ -465,7 +465,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         public static IEnumerable<object[]> Match_Basic_TestData_WithEngine() =>
-    RegexHelpers.PrependEngines(Match_Basic_TestData());
+            RegexHelpers.PrependEngines(Match_Basic_TestData());
 
         public static IEnumerable<object[]> Match_Basic_TestData_NetCore_WithEngine() =>
             RegexHelpers.PrependEngines(Match_Basic_TestData());
@@ -1197,7 +1197,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void TestCultureEdgeCasesAroundTurkishCharacters()
+        public void TestCharIsLowerCultureEdgeCasesAroundTurkishCharacters()
         {
             Assert.Equal(new Regex("[\u012F-\u0130]", RegexOptions.IgnoreCase).IsMatch("\u0130"), new Regex("[\u012F\u0130]", RegexOptions.IgnoreCase).IsMatch("\u0130"));
             Assert.Equal(new Regex("[\u012F-\u0130]", RegexOptions.IgnoreCase | RegexOptions.Compiled).IsMatch("\u0130"), new Regex("[\u012F\u0130]", RegexOptions.IgnoreCase | RegexOptions.Compiled).IsMatch("\u0130"));
