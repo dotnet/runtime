@@ -158,8 +158,6 @@
       <_EmccAssertionLevelDefault>0</_EmccAssertionLevelDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0 -s ASSERTIONS=$(_EmccAssertionLevelDefault)</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' == 'Debug'">-O1</_EmccOptimizationFlagDefault>
-      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(OS)' != 'Windows_NT' and '$(Configuration)' == 'Debug'">-Os</_EmccOptimizationFlagDefault>
-      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' != 'Debug'">-Oz</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
 
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
