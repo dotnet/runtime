@@ -581,6 +581,30 @@ namespace System
         }
         public virtual bool Equals(Type? o) => o == null ? false : object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
+        [Intrinsic]
+        public static bool operator ==(Type? left, Type? right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if (left is null || right is null)
+                return false;
+
+            // Runtime types are never equal to non-runtime types
+            // If `left` is a non-runtime type with a weird Equals implementation
+            // this is where operator `==` would differ from `Equals` call.
+            if (left is RuntimeType || right is RuntimeType)
+                return false;
+
+            return left.Equals(right);
+        }
+
+        [Intrinsic]
+        public static bool operator !=(Type? left, Type? right)
+        {
+            return !(left == right);
+        }
+
         [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
