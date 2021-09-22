@@ -1,9 +1,7 @@
 <Project>
   <ItemGroup>
     <!-- Upgrade the NETStandard.Library transitive xunit dependency to avoid transitive 1.x NS dependencies. -->
-    <PackageReference Include="NETStandard.Library"
-                      Version="$(NetStandardLibraryVersion)"
-                      Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibraryVersion)" />
   </ItemGroup>
 
   <!-- Run target (F5) support. -->
