@@ -14,7 +14,18 @@ for path in "${__VersionFolder}/"*{.h,.c}; do
         substitute="$(printf 'static char sccsid[] __attribute__((used)) = "@(#)Version N/A @Commit: %s";\n' "$commit")"
         version_file_contents="$(cat "$path" | sed "s|^static.*|$substitute|")"
         version_file_destination="$__RepoRoot/artifacts/obj/_version.c"
-        if [[ ! -e "$version_file_destination" || "$version_file_contents" != "$(<"$__RepoRoot/artifacts/obj/_version.c")" ]]; then
+        current_contents=
+        is_placeholder_file=
+        if [[ -e "$version_file_destination" ]]; then
+            current_contents="$(<"$__RepoRoot/artifacts/obj/_version.c")"
+            # If the current file has the version placeholder this script uses, we can update it
+            # to have the current commit. Otherwise, use the current version file that has the actual product version.
+            is_placeholder_file="$(echo $current_contents | grep "@(#)Version N/A @Commit:")"
+        else
+            # Treat a non-existent file like a file that doesn't exist.
+            is_placeholder_file=1
+        fi
+        if [[ "$is_placeholder_file" && "$version_file_contents" != "$current_contents" ]]; then
             echo "$version_file_contents" > "$version_file_destination"
         fi
     elif [[ ! -e "$__RepoRoot/artifacts/obj/$(basename "$path")" ]]; then
