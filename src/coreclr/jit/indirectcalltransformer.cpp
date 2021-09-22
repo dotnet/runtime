@@ -417,9 +417,8 @@ private:
         GenTree* GetHiddenArgument(GenTree* fixedFptrAddress)
         {
             GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
-            GenTree* wordSize = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
-            GenTree* hiddenArgumentPtr =
-                compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
+            GenTree* wordSize          = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
+            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
             return compiler->gtNewOperNode(GT_IND, fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
         }
 
