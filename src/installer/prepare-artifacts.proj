@@ -123,6 +123,7 @@
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
+      <!-- Source build intermediated packages will be pushed and signed by the sourcebuild leg. -->
       <ItemsToPush Remove="@(ItemsToPush)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
       <ItemsToSignPostBuild Remove="@(ItemsToSignPostBuild)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
     </ItemGroup>
