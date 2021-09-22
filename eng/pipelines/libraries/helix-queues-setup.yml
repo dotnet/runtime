@@ -103,9 +103,13 @@ jobs:
     - ${{ if in(parameters.platform, 'Android_arm', 'Android_arm64') }}:
       - Windows.10.Amd64.Android.Open
 
-    # iOS Simulator/Mac Catalyst arm64
-    - ${{ if in(parameters.platform, 'MacCatalyst_arm64', 'iOSSimulator_arm64') }}:
+    # iOS Simulator
+    - ${{ if in(parameters.platform, 'iOSSimulator_arm64') }}:
       - OSX.1100.ARM64.Open
+
+    # Mac Catalyst arm64
+    - ${{ if in(parameters.platform, 'MacCatalyst_arm64') }}:
+      - OSX.1200.ARM64.Open
 
     # iOS/tvOS simulator x64/x86 & MacCatalyst x64
     - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'iOSSimulator_x86', 'tvOSSimulator_x64', 'MacCatalyst_x64') }}:
