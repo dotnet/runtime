@@ -2837,21 +2837,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
             if (bytesWritten + regSize > size)
             {
-#ifdef TARGET_AMD64
-                if (size - bytesWritten <= XMM_REGSIZE_BYTES)
-                {
-                    regSize = XMM_REGSIZE_BYTES;
-                }
-
-                // Shift dstOffset back to use full SIMD move
-                unsigned shiftBack = regSize - (size - bytesWritten);
-                assert(shiftBack <= regSize);
-                bytesWritten -= shiftBack;
-                dstOffset -= shiftBack;
-#else
                 assert(srcIntReg != REG_NA);
                 break;
-#endif
             }
 
             if (dstLclNum != BAD_VAR_NUM)
@@ -2866,6 +2853,10 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
             dstOffset += regSize;
             bytesWritten += regSize;
+
+            if (regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES) {
+                regSize = XMM_REGSIZE_BYTES;
+            }
         }
 
         size -= bytesWritten;
