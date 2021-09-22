@@ -8,13 +8,17 @@ To help enable an easy workflow and reduce the number of formatting changes requ
 
 ### C#/VB
 
-C# and VB code in the repository use the built-in Roslyn support for EditorConfig to enable auto-formatting in many IDEs. As a result, no additional tools are required to enable keeping your code formatted.
+C# and VB code in the repository use the built-in Roslyn support for EditorConfig to enable auto-formatting in many IDEs. As a result, no additional tools are required to enable keeping your code formatted. If you want to use `dotnet format` to do formatting or are using the git pre-commit hook mentioned later in this document, you can run `./dotnet.cmd tool restore` or `./dotnet.sh tool restore` from the root of the repository to enable the `dotnet format` command.
 
 ### C/C++
 
 To download the formatting tools for C++, run the `download-tools.ps1/sh` script in the `eng/formatting` folder. Specifically, run the `download-tools.ps1` script if you're on Windows, or the `download-tools.sh` script otherwise.
 
 This script will download the `clang-format` and `clang-tidy` tools to the `artifacts/tools` folder in your clone of the repository. Only specific parts of the repository use `clang-tidy`, so this document primarily focuses on setting up `clang-format` for C and C++ scenarios.
+
+#### CoreCLR JIT
+
+The JIT team uses a special `jit-format` tool that runs `clang-format` and `clang-tidy` on their directory with their settings. You can get the `jit-format` tool from the [dotnet/jitutils repository](https://github.com/dotnet/jitutils).
 
 ## Setting up automatic formatting
 
