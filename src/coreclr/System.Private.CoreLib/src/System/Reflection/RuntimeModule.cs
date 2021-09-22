@@ -53,7 +53,7 @@ namespace System.Reflection
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
                 if (!(typeArg is RuntimeType))
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                typeHandleArgs[i] = typeArg.GetTypeHandleInternal();
+                typeHandleArgs[i] = typeArg.TypeHandle;
             }
             return typeHandleArgs;
         }
