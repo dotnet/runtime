@@ -1025,7 +1025,8 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         useType             = TYP_UNKNOWN;
     }
 #endif
-    if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
+    if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
+        !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
@@ -5528,7 +5529,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (TargetArchitecture::IsX64)
         {
             // MacOS x64 uses the Unix jit variant in crossgen2, not a special jit
-            info.compMatchedVM = info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
+            info.compMatchedVM =
+                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
         }
         else
         {
@@ -5537,7 +5539,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
     else if (TargetOS::IsWindows)
     {
-        info.compMatchedVM        = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
     }
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target

@@ -3086,7 +3086,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         var_types hfaType  = TYP_UNDEF;
         unsigned  hfaSlots = 0;
 
-        bool passUsingFloatRegs;
+        bool     passUsingFloatRegs;
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
         unsigned size          = 0;
         unsigned byteSize      = 0;
@@ -3439,7 +3439,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     }
                 }
             }
-#else  // not TARGET_ARM or TARGET_ARM64
+#else // not TARGET_ARM or TARGET_ARM64
 
 #if defined(UNIX_AMD64_ABI)
 
@@ -4294,14 +4294,14 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             if (!compMacOsArm64Abi())
             {
                 printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
-                    "outgoingArgSpaceSize=%d\n",
-                    argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
-                    outgoingArgSpaceSize);
+                       "outgoingArgSpaceSize=%d\n",
+                       argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
+                       outgoingArgSpaceSize);
             }
             else
             {
                 printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
-                    outgoingArgSpaceSize);
+                       outgoingArgSpaceSize);
             }
 #else
             printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),

@@ -11809,7 +11809,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             else
             {
                 printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
-                    putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
+                       putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
             }
 #endif
             if (putArg->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
@@ -11847,7 +11847,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             else
             {
                 printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
-                    putArg->gtNumRegs);
+                       putArg->gtNumRegs);
             }
 #endif
         }

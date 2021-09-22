@@ -11821,8 +11821,11 @@ const instruction INS_SQRT = INS_vsqrt;
 
 #ifdef TARGET_ARM64
 
-const instruction INS_MULADD = INS_madd;
-inline const instruction INS_BREAKPOINT_osHelper() { return TargetOS::IsUnix ? INS_brk : INS_bkpt; }
+const instruction        INS_MULADD = INS_madd;
+inline const instruction INS_BREAKPOINT_osHelper()
+{
+    return TargetOS::IsUnix ? INS_brk : INS_bkpt;
+}
 #define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
 
 const instruction INS_ABS  = INS_fabs;

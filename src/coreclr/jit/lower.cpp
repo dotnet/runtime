@@ -1942,7 +1942,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
             unsigned int overwrittenStart = put->getArgOffset();
             unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
-            int baseOff = -1; // Stack offset of first arg on stack
+            int          baseOff          = -1; // Stack offset of first arg on stack
 
             for (unsigned callerArgLclNum = 0; callerArgLclNum < comp->info.compArgsCount; callerArgLclNum++)
             {
@@ -2555,8 +2555,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 op2->SetIconValue(0xff);
                 op2->gtType = castOp->gtType;
 #else
-                castOp->gtType        = castToType;
-                op2->gtType           = castToType;
+                castOp->gtType = castToType;
+                op2->gtType    = castToType;
 #endif
                 // If we have any contained memory ops on castOp, they must now not be contained.
                 if (castOp->OperIsLogical())

@@ -1914,7 +1914,7 @@ double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
         uint64_t adjHex = 0x43F0000000000000UL;
         d               = (double)s64 + *(double*)&adjHex;
 #else
-        d                             = (double)uIntVal;
+        d = (double)uIntVal;
 #endif
     }
     else
@@ -1962,7 +1962,7 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
 
     u64 = UINT64(INT64(d));
 #else
-    u64                               = UINT64(d);
+    u64   = UINT64(d);
 #endif // TARGET_XARCH
 
     return u64;

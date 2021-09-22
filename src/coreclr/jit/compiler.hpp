@@ -2362,9 +2362,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 inline var_types Compiler::mangleVarArgsType(var_types type)
 {
 #if defined(TARGET_ARMARCH)
-    if (opts.compUseSoftFP
-        || (TargetOS::IsWindows && info.compIsVarArgs)
-        )
+    if (opts.compUseSoftFP || (TargetOS::IsWindows && info.compIsVarArgs))
     {
         switch (type)
         {

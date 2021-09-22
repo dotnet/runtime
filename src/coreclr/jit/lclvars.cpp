@@ -5630,7 +5630,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     }
 
     lclNum += argLcls;
-#else // !TARGET_ARM
+#else  // !TARGET_ARM
     for (unsigned i = 0; i < argSigLen; i++)
     {
         unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
@@ -5806,8 +5806,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         varDsc->SetStackOffset(argOffs);
         argOffs += TARGET_POINTER_SIZE;
 #elif defined(TARGET_ARM64)
-// Register arguments on ARM64 only take stack space when they have a frame home.
-// Unless on windows and in a vararg method.
+        // Register arguments on ARM64 only take stack space when they have a frame home.
+        // Unless on windows and in a vararg method.
         if (compFeatureArgSplit() && this->info.compIsVarArgs)
         {
             if (varDsc->lvType == TYP_STRUCT && varDsc->GetOtherArgReg() >= MAX_REG_ARG &&
@@ -6017,7 +6017,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         const unsigned argAlignment = eeGetArgAlignment(varDsc->lvType, isFloatHfa);
         if (compMacOsArm64Abi())
         {
-            argOffs                     = roundUp(argOffs, argAlignment);
+            argOffs = roundUp(argOffs, argAlignment);
         }
 
         assert((argSize % argAlignment) == 0);

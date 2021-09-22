@@ -679,9 +679,9 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    GenTree* source = treeNode->gtOp1;
+    GenTree*  source = treeNode->gtOp1;
     var_types targetType;
-    
+
     if (!compMacOsArm64Abi())
     {
         targetType = genActualType(source->TypeGet());
