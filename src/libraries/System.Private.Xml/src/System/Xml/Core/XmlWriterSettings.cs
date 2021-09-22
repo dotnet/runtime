@@ -7,9 +7,7 @@ using System.IO;
 using System.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-#if !HIDE_XSL
 using System.Xml.Xsl.Runtime;
-#endif
 
 namespace System.Xml
 {
