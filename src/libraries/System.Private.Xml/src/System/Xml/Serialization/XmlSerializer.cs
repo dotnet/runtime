@@ -542,13 +542,17 @@ namespace System.Xml.Serialization
                 TypeDesc typeDesc = (TypeDesc)TypeScope.PrimtiveTypes[_primitiveType]!;
                 return xmlReader.IsStartElement(typeDesc.DataType!.Name!, string.Empty);
             }
+            else if (ShouldUseReflectionBasedSerialization(_mapping) || _isReflectionBasedSerializer)
+            {
+                // If we should use reflection, we will try to do reflection-based deserialization, without fallback.
+                // Don't check xmlReader.IsStartElement to avoid having to duplicate SOAP deserialization logic here.
+                // It is better to return an incorrect 'true', which will throw during Deserialize than to return an
+                // incorrect 'false', and the caller won't even try to Deserialize when it would succeed.
+                return true;
+            }
             else if (_tempAssembly != null)
             {
                 return _tempAssembly.CanRead(_mapping, xmlReader);
-            }
-            else if (ShouldUseReflectionBasedSerialization(_mapping) || _isReflectionBasedSerializer)
-            {
-                return ReflectionMethodEnabled;
             }
             else
             {
