@@ -122,6 +122,10 @@ if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
     
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
+	if (!$?) {
+		Write-Output "Failed to copy $SourceDirectory"
+		exit 1
+	}
 }
 else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
@@ -136,15 +140,27 @@ if($MonoDotnet -ne "")
     $UsingMono = "true"
     $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
     Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
+	if (!$?) {
+		Write-Output "Failed to move $MonoDotnet"
+		exit 1
+	}
 }
 
 if ($UseCoreRun) {
     $NewCoreRoot = (Join-Path $PayloadDirectory "Core_Root")
     Move-Item -Path $CoreRootDirectory -Destination $NewCoreRoot
+	if (!$?) {
+		Write-Output "Failed to move $CoreRootDirectory"
+		exit 1
+	}
 }
 if ($UseBaselineCoreRun) {
     $NewBaselineCoreRoot = (Join-Path $PayloadDirectory "Baseline_Core_Root")
     Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
+	if (!$?) {
+		Write-Output "Failed to move $BaselineCoreRootDirectory"
+		exit 1
+	}
 }
 
 if ($AndroidMono) {
@@ -153,6 +169,10 @@ if ($AndroidMono) {
         mkdir $WorkItemDirectory
     }
     Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+	if (!$?) {
+		Write-Output "Failed to copy $SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk"
+		exit 1
+	}
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -163,8 +183,16 @@ if ($iOSMono) {
     }
     if($iOSLlvmBuild) {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
+		if (!$?) {
+			Write-Output "Failed to copy $SourceDirectory\iosHelloWorld\llvm"
+			exit 1
+		}
     } else {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
+		if (!$?) {
+			Write-Output "Failed to copy $SourceDirectory\iosHelloWorld\nollvm"
+			exit 1
+		}
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
@@ -172,6 +200,10 @@ if ($iOSMono) {
 
 $DocsDir = (Join-Path $PerformanceDirectory "docs")
 robocopy $DocsDir $WorkItemDirectory
+if (!$?) {
+	Write-Output "Failed to copy $DocsDir"
+	exit 1
+}
 
 # Set variables that we will need to have in future steps
 $ci = $true

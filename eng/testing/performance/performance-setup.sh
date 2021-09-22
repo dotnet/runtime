@@ -267,18 +267,24 @@ else
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
-	if [ "$LASTEXITCODE" -ne "0" ]; then
-		echo "git clone failed with code $LASTEXITCODE"
+	if [ "$?" -ne "0" ]; then
+		echo "git clone failed with code $?"
 		exit 1
 
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
+	if [ "$?" -ne "0" ]; then
+		echo "Failed to move $docs_directory"
+		exit 1
 fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
+	if [ "$?" -ne "0" ]; then
+		echo "Failed to move $wasm_runtime_loc"
+		exit 1
     # install emsdk, $source_directory/src/mono/wasm/ has the nuget.config with require feed. EMSDK may be available in the payload in a different directory, should visit this install to avoid deplicated payload.
     pushd $source_directory/src/mono/wasm/
     make provision-wasm
@@ -286,8 +292,14 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     popd
     # wasm aot and interpreter need some source code from dotnet\runtime repo
     rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests --exclude __download__
+	if [ "$?" -ne "0" ]; then
+		echo "Failed to sync $source_directory/*"
+		exit 1
     # copy wasm build drop to the location that aot and interpreter build expects
     rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
+	if [ "$?" -ne "0" ]; then
+		echo "Failed to sync $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/*"
+		exit 1
     rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600" 
@@ -300,22 +312,34 @@ if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then
     using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
     mv $mono_dotnet $mono_dotnet_path
+	if [ "$?" -ne "0" ]; then
+		echo "Failed to move $mono_dotnet"
+		exit 1
 fi
 
 if [[ "$monoaot" == "true" ]]; then
     monoaot_dotnet_path=$payload_directory/monoaot
     mv $monoaot_path $monoaot_dotnet_path
+	if [ "$?" -ne "0" ]; then
+		echo "Failed to move $monoaot_path"
+		exit 1
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
 fi
 
 if [[ "$use_core_run" = true ]]; then
     new_core_root=$payload_directory/Core_Root
     mv $core_root_directory $new_core_root
+	if [ "$?" -ne "0" ]; then
+		echo "Failed to move $core_root_directory"
+		exit 1
 fi
 
 if [[ "$use_baseline_core_run" = true ]]; then
-  new_baseline_core_root=$payload_directory/Baseline_Core_Root
-  mv $baseline_core_root_directory $new_baseline_core_root
+	new_baseline_core_root=$payload_directory/Baseline_Core_Root
+	mv $baseline_core_root_directory $new_baseline_core_root
+	if [ "$?" -ne "0" ]; then
+		echo "Failed to move $baseline_core_root_directory"
+		exit 1
 fi
 
 ci=true
