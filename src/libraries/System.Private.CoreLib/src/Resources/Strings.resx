@@ -2659,9 +2659,6 @@
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
   </data>
-  <data name="IO_InconsistentLinkType" xml:space="preserve">
-    <value>The link's file system entry type is inconsistent with that of its target: {0}</value>
-  </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
   </data>

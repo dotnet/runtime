@@ -3,6 +3,7 @@
 
 #include "ClientTests.h"
 #include <memory>
+#include <windows_version_helpers.h>
 
 
 void Validate_Numeric_In_ReturnByRef();
@@ -31,6 +32,11 @@ using ComMTA = ComInit<COINIT_MULTITHREADED>;
 
 int __cdecl main()
 {
+    if (is_windows_nano() == S_OK)
+    {
+        ::puts("RegFree COM is not supported on Windows Nano. Auto-passing this test.\n");
+        return 100;
+    }
     ComMTA init;
     if (FAILED(init.Result))
         return -1;
@@ -72,7 +78,7 @@ void Validate_Numeric_In_ReturnByRef()
         1,
         lcid,
         &methodId));
-    
+
     BYTE b1 = 24;
     BYTE b2;
     SHORT s1 = 53;
@@ -94,7 +100,7 @@ void Validate_Numeric_In_ReturnByRef()
         params.rgvarg = new VARIANTARG[params.cArgs];
         params.cNamedArgs = 0;
         params.rgdispidNamedArgs = nullptr;
-    
+
         V_VT(&params.rgvarg[13]) = VT_UI1;
         V_UI1(&params.rgvarg[13]) = b1;
         V_VT(&params.rgvarg[12]) = VT_BYREF | VT_UI1;
@@ -204,7 +210,7 @@ void Validate_Float_In_ReturnAndUpdateByRef()
         1,
         lcid,
         &methodId));
-    
+
     const float a = 12.34f;
     const float b_orig = 1.234f;
     const float expected = b_orig + a;
@@ -271,7 +277,7 @@ void Validate_Double_In_ReturnAndUpdateByRef()
         1,
         lcid,
         &methodId));
-    
+
     const double a = 1856.5634;
     const double b_orig = 587867.757;
     const double expected = a + b_orig;

@@ -754,6 +754,11 @@ public:
         {
             alloc_list* al = &(allocator_to_copy->alloc_list_of (i));
             alloc_list_tail_of(i) = al->alloc_list_tail();
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
+            // ensure that the write to the tail is seen by
+            // the allocating thread *before* the write to the head
+            MemoryBarrier();
+#endif
             alloc_list_head_of(i) = al->alloc_list_head();
         }
     }
@@ -2019,6 +2024,8 @@ protected:
     void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP
     void clear_gen0_bricks();
+    PER_HEAP
+    void check_gen0_bricks();
 #ifdef BACKGROUND_GC
     PER_HEAP
     void rearrange_small_heap_segments();
@@ -4990,6 +4997,9 @@ public:
 
     PER_HEAP_ISOLATED
     size_t exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap);
+
+    PER_HEAP_ISOLATED
+    BOOL dt_high_memory_load_p();
 
 protected:
     PER_HEAP

@@ -195,7 +195,7 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
     }
     else if (CFEqual(keyString, CFSTR("NonEmptySubject")) || CFEqual(keyString, CFSTR("GrayListedKey")) ||
              CFEqual(keyString, CFSTR("CTRequired")) || CFEqual(keyString, CFSTR("GrayListedLeaf")) ||
-             CFEqual(keyString, CFSTR("IdLinkage")))
+             CFEqual(keyString, CFSTR("IdLinkage")) || CFEqual(keyString, CFSTR("DuplicateExtension")))
     {
         // Not a "problem" that we report.
     }

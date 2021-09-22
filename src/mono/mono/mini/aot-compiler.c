@@ -391,6 +391,7 @@ typedef struct MonoAotCompile {
 	GHashTable *objc_selector_to_index;
 	GList *profile_data;
 	GHashTable *profile_methods;
+	GHashTable *blob_hash;
 #ifdef EMIT_WIN32_UNWIND_INFO
 	GList *unwind_info_section_cache;
 #endif
@@ -3095,6 +3096,44 @@ add_to_blob (MonoAotCompile *acfg, const guint8 *data, guint32 data_len)
 	return add_stream_data (&acfg->blob, (char*)data, data_len);
 }
 
+typedef struct {
+	guint8 *data;
+	int len, align;
+	guint32 offset;
+} BlobItem;
+
+static guint
+blob_item_hash (gconstpointer key)
+{
+	BlobItem *item = (BlobItem*)key;
+	guint i, a;
+
+	for (i = a = 0; i < item->len; ++i)
+		a ^= (((guint)item->data [i]) << (i & 0xf));
+
+	return a;
+}
+
+static gboolean
+blob_item_equal (gconstpointer a, gconstpointer b)
+{
+	BlobItem *item1 = (BlobItem*)a;
+	BlobItem *item2 = (BlobItem*)b;
+
+	if (item1->len != item2->len || item1->align != item2->align)
+		return FALSE;
+	return memcmp (item1->data, item2->data, item1->len) == 0;
+}
+
+static void
+blob_item_free (gpointer val)
+{
+	BlobItem *item = (BlobItem*)val;
+
+	g_free (item->data);
+	g_free (item);
+}
+
 static guint32
 add_to_blob_aligned (MonoAotCompile *acfg, const guint8 *data, guint32 data_len, guint32 align)
 {
@@ -3106,11 +3145,31 @@ add_to_blob_aligned (MonoAotCompile *acfg, const guint8 *data, guint32 data_len,
 
 	count = acfg->blob.index % align;
 
+	BlobItem tmp;
+	tmp.data = (guint8*)data;
+	tmp.len = data_len;
+	tmp.align = align;
+	if (!acfg->blob_hash)
+		acfg->blob_hash = g_hash_table_new_full (blob_item_hash, blob_item_equal, NULL, blob_item_free);
+	BlobItem *cached = g_hash_table_lookup (acfg->blob_hash, &tmp);
+	if (cached)
+		return cached->offset;
+
 	/* we assume the stream data will be aligned */
 	if (count)
 		add_stream_data (&acfg->blob, buf, 4 - count);
 
-	return add_stream_data (&acfg->blob, (char*)data, data_len);
+	guint32 offset = add_stream_data (&acfg->blob, (char*)data, data_len);
+
+	BlobItem *item = g_new0 (BlobItem, 1);
+	item->data = g_malloc (data_len);
+	memcpy (item->data, data, data_len);
+	item->len = data_len;
+	item->align = align;
+	item->offset = offset;
+	g_hash_table_insert (acfg->blob_hash, item, item);
+
+	return offset;
 }
 
 /* Emit a table of data into the aot image */
@@ -13191,6 +13250,8 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->plt_entry_debug_sym_cache);
 	g_hash_table_destroy (acfg->klass_blob_hash);
 	g_hash_table_destroy (acfg->method_blob_hash);
+	if (acfg->blob_hash)
+		g_hash_table_destroy (acfg->blob_hash);
 	got_info_free (&acfg->got_info);
 	got_info_free (&acfg->llvm_got_info);
 	arch_free_unwind_info_section_cache (acfg);

@@ -246,8 +246,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
-    tree->ChangeOperConst(GT_CNS_INT);
-    tree->AsIntCon()->gtIconVal = relopValue;
+    tree->BashToConst(relopValue);
 
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
     return true;
@@ -396,21 +395,17 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // both a pred that is not a true pred, and a fall through, we defer optimizing
     // the fall through pred as well.
     //
-    // This creates an ordering issue, and to resolve it we have to walk the pred
-    // list twice. Classification of preds should be cheap so we just rerun the
-    // reachability checks twice as well.
-    //
     int               numPreds          = 0;
     int               numAmbiguousPreds = 0;
     int               numTruePreds      = 0;
     int               numFalsePreds     = 0;
-    BasicBlock*       uniqueTruePred    = nullptr;
-    BasicBlock*       uniqueFalsePred   = nullptr;
     BasicBlock*       fallThroughPred   = nullptr;
     BasicBlock* const trueSuccessor     = domBlock->bbJumpDest;
     BasicBlock* const falseSuccessor    = domBlock->bbNext;
     BasicBlock* const trueTarget        = block->bbJumpDest;
     BasicBlock* const falseTarget       = block->bbNext;
+    BlockSet          truePreds         = BlockSetOps::MakeEmpty(this);
+    BlockSet          ambiguousPreds    = BlockSetOps::MakeEmpty(this);
 
     for (BasicBlock* const predBlock : block->PredBlocks())
     {
@@ -421,6 +416,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         if (predBlock->bbJumpKind == BBJ_SWITCH)
         {
             JITDUMP(FMT_BB " is a switch pred\n", predBlock->bbNum);
+            BlockSetOps::AddElemD(this, ambiguousPreds, predBlock->bbNum);
             numAmbiguousPreds++;
             continue;
         }
@@ -441,6 +437,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             // lead to more complications, and it isn't that common. So we tolerate it.
             //
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
+            BlockSetOps::AddElemD(this, ambiguousPreds, predBlock->bbNum);
             numAmbiguousPreds++;
             continue;
         }
@@ -451,19 +448,12 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             {
                 JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
                 numAmbiguousPreds++;
+                BlockSetOps::AddElemD(this, ambiguousPreds, predBlock->bbNum);
                 continue;
             }
 
-            if (numTruePreds == 0)
-            {
-                uniqueTruePred = predBlock;
-            }
-            else
-            {
-                uniqueTruePred = nullptr;
-            }
-
             numTruePreds++;
+            BlockSetOps::AddElemD(this, truePreds, predBlock->bbNum);
             JITDUMP(FMT_BB " is a true pred\n", predBlock->bbNum);
         }
         else
@@ -473,17 +463,9 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             if (!BasicBlock::sameEHRegion(predBlock, falseTarget))
             {
                 JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
+                BlockSetOps::AddElemD(this, ambiguousPreds, predBlock->bbNum);
                 numAmbiguousPreds++;
                 continue;
-            }
-
-            if (numFalsePreds == 0)
-            {
-                uniqueFalsePred = predBlock;
-            }
-            else
-            {
-                uniqueFalsePred = nullptr;
             }
 
             numFalsePreds++;
@@ -534,30 +516,14 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     //
     for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        if (predBlock->bbJumpKind == BBJ_SWITCH)
+        // If this was an ambiguous pred, skip.
+        //
+        if (BlockSetOps::IsMember(this, ambiguousPreds, predBlock->bbNum))
         {
-            // Skip over switch preds, they will continue to flow to block.
-            //
             continue;
         }
 
-        const bool isTruePred =
-            ((predBlock == domBlock) && (trueSuccessor == block)) || optReachable(trueSuccessor, predBlock, domBlock);
-        const bool isFalsePred =
-            ((predBlock == domBlock) && (falseSuccessor == block)) || optReachable(falseSuccessor, predBlock, domBlock);
-
-        if (isTruePred == isFalsePred)
-        {
-            // Skip over ambiguous preds, they will continue to flow to block.
-            //
-            continue;
-        }
-
-        if (!BasicBlock::sameEHRegion(predBlock, isTruePred ? trueTarget : falseTarget))
-        {
-            // Skip over eh constrained preds, they will continue to flow to block.
-            continue;
-        }
+        const bool isTruePred = BlockSetOps::IsMember(this, truePreds, predBlock->bbNum);
 
         // Is this the one and only unambiguous fall through pred?
         //
@@ -584,7 +550,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             }
             else
             {
-                assert(isFalsePred);
                 JITDUMP("Fall through flow from pred " FMT_BB " -> " FMT_BB " implies predicate false\n",
                         predBlock->bbNum, block->bbNum);
                 JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", block->bbNum,
@@ -609,7 +574,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             }
             else
             {
-                assert(isFalsePred);
                 JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
                         " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                         predBlock->bbNum, block->bbNum, predBlock->bbNum, falseTarget->bbNum);

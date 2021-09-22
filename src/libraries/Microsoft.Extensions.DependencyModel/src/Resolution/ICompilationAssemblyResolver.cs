@@ -7,6 +7,6 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 {
     public interface ICompilationAssemblyResolver
     {
-        bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies);
+        bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies);
     }
 }

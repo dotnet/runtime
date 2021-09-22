@@ -2165,7 +2165,7 @@ namespace System
                 for (int i = 0; i < n; i++)
                 {
                     var th = new RuntimeTypeHandle(h[i]);
-                    a[i] = (RuntimeType)GetTypeFromHandle(th);
+                    a[i] = (RuntimeType)GetTypeFromHandle(th)!;
                 }
                 return a;
             }

@@ -266,7 +266,7 @@ class MulticoreJitProfilePlayer
 friend class MulticoreJitRecorder;
 
 private:
-    AssemblyBinder * m_pBinderContext;
+    AssemblyBinder                   * m_pBinder;
     LONG                               m_nMySession;
     unsigned                           m_nStartTime;
     BYTE                             * m_pFileBuffer;
@@ -310,7 +310,7 @@ private:
 
 public:
 
-    MulticoreJitProfilePlayer(AssemblyBinder * pBinderContext, LONG nSession);
+    MulticoreJitProfilePlayer(AssemblyBinder * pBinder, LONG nSession);
 
     ~MulticoreJitProfilePlayer();
 
@@ -605,7 +605,7 @@ class MulticoreJitRecorder
 {
 private:
     AppDomain               * m_pDomain;            // AutoStartProfile could be called from SystemDomain
-    AssemblyBinder * m_pBinderContext;
+    AssemblyBinder          * m_pBinder;
     SString                   m_fullFileName;
     MulticoreJitPlayerStat  & m_stats;
 
@@ -646,34 +646,32 @@ private:
 
 public:
 
-    MulticoreJitRecorder(AppDomain * pDomain, AssemblyBinder * pBinderContext, bool fRecorderActive)
+    MulticoreJitRecorder(AppDomain * pDomain, AssemblyBinder * pBinder, bool fRecorderActive)
         : m_stats(pDomain->GetMulticoreJitManager().GetStats())
         , m_ModuleList(nullptr)
         , m_JitInfoArray(nullptr)
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_pDomain           = pDomain;
-        m_pBinderContext    = pBinderContext;
+        m_pDomain = pDomain;
+        m_pBinder = pBinder;
 
         if (fRecorderActive)
         {
-            m_ModuleList        = new (nothrow) RecorderModuleInfo[MAX_MODULES];
+            m_ModuleList = new (nothrow) RecorderModuleInfo[MAX_MODULES];
         }
-        m_ModuleCount       = 0;
 
-        m_ModuleDepCount    = 0;
+        m_ModuleCount = 0;
+        m_ModuleDepCount = 0;
 
         if (fRecorderActive)
         {
-            m_JitInfoArray      = new (nothrow) RecorderInfo[MAX_METHODS];
+            m_JitInfoArray = new (nothrow) RecorderInfo[MAX_METHODS];
         }
-        m_JitInfoCount      = 0;
 
-        m_fFirstMethod      = true;
-        m_fAborted          = false;
-
-
+        m_JitInfoCount = 0;
+        m_fFirstMethod = true;
+        m_fAborted = false;
         m_stats.Clear();
     }
 

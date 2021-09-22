@@ -3676,13 +3676,10 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 		if (fsig->param_count == 0 || (!fsig->hasthis && fsig->param_count == 1)) {
 			supported = TRUE;
 		} else {
-			/* Allow scalar parameters and a gsharedvt first parameter */
-			supported = MONO_TYPE_IS_PRIMITIVE (fsig->params [0]) || MONO_TYPE_IS_REFERENCE (fsig->params [0]) || fsig->params [0]->byref || mini_is_gsharedvt_type (fsig->params [0]);
-			if (supported) {
-				for (int i = 1; i < fsig->param_count; ++i) {
-					if (!(fsig->params [i]->byref || MONO_TYPE_IS_PRIMITIVE (fsig->params [i]) || MONO_TYPE_IS_REFERENCE (fsig->params [i]) || MONO_TYPE_ISSTRUCT (fsig->params [i])))
-						supported = FALSE;
-				}
+			supported = TRUE;
+			for (int i = 0; i < fsig->param_count; ++i) {
+				if (!(fsig->params [i]->byref || MONO_TYPE_IS_PRIMITIVE (fsig->params [i]) || MONO_TYPE_IS_REFERENCE (fsig->params [i]) || MONO_TYPE_ISSTRUCT (fsig->params [i]) || mini_is_gsharedvt_type (fsig->params [i])))
+					supported = FALSE;
 			}
 		}
 	}
@@ -3703,7 +3700,22 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 
 		/* !fsig->hasthis is for the wrapper for the Object.GetType () icall */
 		if (fsig->hasthis && fsig->param_count) {
-			/* Call mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args) */
+			/* Call mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean *deref_args, gpointer *args) */
+			gboolean has_gsharedvt = FALSE;
+			for (int i = 0; i < fsig->param_count; ++i) {
+				if (mini_is_gsharedvt_type (fsig->params [i]))
+					has_gsharedvt = TRUE;
+			}
+			/* Pass an array of bools which signal whenever the corresponding argument is a gsharedvt ref type */
+			if (has_gsharedvt) {
+				MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+				ins->dreg = alloc_preg (cfg);
+				ins->inst_imm = fsig->param_count;
+				MONO_ADD_INS (cfg->cbb, ins);
+				args [3] = ins;
+			} else {
+				EMIT_NEW_PCONST (cfg, args [3], 0);
+			}
 			/* Pass the arguments using a localloc-ed array using the format expected by runtime_invoke () */
 			MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
 			ins->dreg = alloc_preg (cfg);
@@ -3711,20 +3723,20 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 			MONO_ADD_INS (cfg->cbb, ins);
 			args [4] = ins;
 
-			/* Only the first argument is allowed to be gsharedvt */
-			/* args [3] = deref_arg */
-			if (mini_is_gsharedvt_type (fsig->params [0])) {
-				int deref_arg_reg;
-				ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (fsig->params [0]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
-				deref_arg_reg = alloc_preg (cfg);
-				/* deref_arg = BOX_TYPE != MONO_GSHAREDVT_BOX_TYPE_VTYPE */
-				EMIT_NEW_BIALU_IMM (cfg, args [3], OP_ISUB_IMM, deref_arg_reg, ins->dreg, 1);
-			} else {
-				EMIT_NEW_ICONST (cfg, args [3], 0);
-			}
-
 			for (int i = 0; i < fsig->param_count; ++i) {
 				int addr_reg;
+
+				if (mini_is_gsharedvt_type (fsig->params [i])) {
+					MonoInst *is_deref;
+					int deref_arg_reg;
+					ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (fsig->params [i]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
+					deref_arg_reg = alloc_preg (cfg);
+					/* deref_arg = BOX_TYPE != MONO_GSHAREDVT_BOX_TYPE_VTYPE */
+					EMIT_NEW_BIALU_IMM (cfg, is_deref, OP_ISUB_IMM, deref_arg_reg, ins->dreg, 1);
+					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, args [3]->dreg, i, is_deref->dreg);
+				} else if (has_gsharedvt) {
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, args [3]->dreg, i, 0);
+				}
 
 				if (mini_is_gsharedvt_type (fsig->params [i]) || MONO_TYPE_IS_PRIMITIVE (fsig->params [i]) || MONO_TYPE_ISSTRUCT (fsig->params [i])) {
 					EMIT_NEW_VARLOADA_VREG (cfg, ins, sp [i + 1]->dreg, fsig->params [i]);
@@ -6076,6 +6088,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		/* We could hit a seq point before attaching to the JIT (#8338) */
 		seq_points = FALSE;
+	}
+
+	if (method->wrapper_type == MONO_WRAPPER_OTHER)	{
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN) {
+			/* We could hit a seq point before attaching to the JIT (#8338) */
+			seq_points = FALSE;
+		}
 	}
 
 	if (cfg->prof_coverage) {
