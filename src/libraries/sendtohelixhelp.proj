@@ -310,11 +310,23 @@
       <AppleTestTarget Condition="'$(TargetOS)' == 'MacCatalyst'">maccatalyst</AppleTestTarget>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
+      <iOSBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSBuildTargetsDir>
+      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
+
+      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.16.4-Darwin-x86_64.tar.gz</CMakeUrl>
+
+      <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
+        source build-apple-app.sh
+      </_XHarnessAppleCustomCommand>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
       <!-- Create work items for test apps -->
       <XHarnessAppBundleToTest 
         Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
       
       <!-- To save on overall size, we compress each app after building. -->
@@ -322,6 +334,7 @@
         Include="$([System.IO.Directory]::GetFiles('$(TestArchiveTestsRoot)', '*.zip', System.IO.SearchOption.AllDirectories))"
         Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
 
       <!-- Create work items for run-only apps -->
@@ -357,15 +370,6 @@
         <ExpectedExitCode>42</ExpectedExitCode>
       </XHarnessApkToTest>
     </ItemGroup>
-
-    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">
-      <iOSBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSBuildTargetsDir>
-      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
-
-      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.16.4-Darwin-x86_64.tar.gz</CMakeUrl>
-
-      <XHarnessAppleShouldBuildApps Condition="'$(NeedsiOSSDK)' == 'true'">true</XHarnessAppleShouldBuildApps>
-    </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
@@ -425,6 +429,7 @@
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
+      <HelixCorrelationPayload Include="$(ILStripTaskDir)"                       Destination="build/ILStrip" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())" />
       <HelixCorrelationPayload Include="$(iOSBuildTargetsDir)"                   Destination="build/apple" />

@@ -43,29 +43,11 @@
     <PropertyGroup>
       <_TestProjectName>$([System.IO.Path]::GetFileName('$(AppBundlePath)'))</_TestProjectName>
       <_XHarnessAppPath>$([MSBuild]::NormalizeDirectory($(XHARNESS_EXECUTION_DIR), $(_TestProjectName)))</_XHarnessAppPath>
-
-      <_DebugDir>$([MSBuild]::NormalizeDirectory($(XHARNESS_EXECUTION_DIR), $(_TestProjectName)))</_DebugDir>
     </PropertyGroup>
     <ItemGroup>
       <_AppBundleFiles Include="$(AppBundlePath)\**\*" />
       <_AppBundleFiles Include="$(XHARNESS_EXECUTION_DIR)\*.mobileprovision" />
-
-      <_DebugPublishFiles Include="$(OriginalPublishDir)**\*" />
-      <_DebugAppFiles Include="$(TestRootDir)**\*" />
     </ItemGroup>
-
-    <MakeDir Directories="$(_DebugDir)" />
-    <MakeDir Directories="$(_DebugDir)publish" />
-    <MakeDir Directories="$(_DebugDir)apple_build" />
-
-    <Copy SourceFiles="@(_DebugPublishFiles)"
-          DestinationFiles="@(_DebugPublishFiles->'$(_DebugDir)publish\%(RecursiveDir)%(Filename)%(Extension)')" />
-    <!--<Copy SourceFiles="@(_DebugAppFiles)"
-          DestinationFiles="@(_DebugAppFiles->'$(_DebugDir)apple_build\%(RecursiveDir)%(Filename)%(Extension)')" />-->
-
-    <ZipDirectory SourceDirectory="$(_DebugDir)"
-                  DestinationFile="$([MSBuild]::NormalizePath('$(XHARNESS_EXECUTION_DIR)', '$(_TestProjectName).zip'))"
-                  Overwrite="true" />
 
     <MakeDir Directories="$(_XHarnessAppPath)" />
 

@@ -165,7 +165,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:EnableSoftTrimming=true /p:BuildDarwinFrameworks=true
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:EnableSoftTrimming=true /p:BuildTestsOnHelix=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -177,8 +177,8 @@ jobs:
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot
-        interpreter: true
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildiOSAppsOnHelix=true
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),
