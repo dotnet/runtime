@@ -586,7 +586,7 @@ namespace System.Xml
                 }
             }
 
-            if (IsQuerySpecific && baseWriterSettings is not { IsQuerySpecific: true })
+            if (this.IsQuerySpecific && (baseWriterSettings == null || !baseWriterSettings.IsQuerySpecific))
             {
                 // Create QueryOutputWriterV1 if CData sections or DocType need to be tracked
                 writer = new QueryOutputWriterV1(writer, this);
