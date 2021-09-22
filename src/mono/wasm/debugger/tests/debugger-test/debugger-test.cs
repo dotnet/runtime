@@ -770,3 +770,40 @@ public class MainPage
     }
 }
 
+public class LoopClass
+{
+    public static void LoopToBreak()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            Console.WriteLine($"should pause only on i == 3");
+        }
+        Console.WriteLine("breakpoint to check");
+    }
+}
+
+public class SteppingInto
+{
+    static int currentCount = 0;
+    static MyIncrementer incrementer = new MyIncrementer();
+    public static void MethodToStep()
+    {
+        currentCount = incrementer.Increment(currentCount);
+    }
+}
+
+public class MyIncrementer
+{
+    private Func<DateTime> todayFunc = () => DateTime.Now;
+
+    public int Increment(int count)
+    {
+        var today = todayFunc();
+        if (today.DayOfWeek == DayOfWeek.Sunday)
+        {
+            return count + 2;
+        }
+
+        return count + 1;
+    }
+}

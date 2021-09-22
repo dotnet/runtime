@@ -91,10 +91,10 @@ namespace System.IO.MemoryMappedFiles.Tests
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    if ((OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || PlatformDetection.IsInContainer) &&
+                    if ((OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || PlatformDetection.IsInContainer) &&
                         (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
                     {
-                        // Containers and OSX with SIP enabled do not have execute permissions by default.
+                        // Containers and OSXlike platforms with SIP enabled do not have execute permissions by default.
                         throw new SkipTestException("Insufficient execute permission.");
                     }
 

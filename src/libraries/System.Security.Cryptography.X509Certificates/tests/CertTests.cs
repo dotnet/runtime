@@ -388,6 +388,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #endif
 
                 // State held on X509Certificate2
+                Assert.ThrowsAny<CryptographicException>(() => c.RawDataMemory);
                 Assert.ThrowsAny<CryptographicException>(() => c.RawData);
                 Assert.ThrowsAny<CryptographicException>(() => c.SignatureAlgorithm);
                 Assert.ThrowsAny<CryptographicException>(() => c.Version);
@@ -472,6 +473,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] second = cert.RawData;
                 Assert.NotSame(first, second);
             }
+        }
+
+        [Fact]
+        public static void RawDataMemory_NoCopy()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                ReadOnlyMemory<byte> first = cert.RawDataMemory;
+                ReadOnlyMemory<byte> second = cert.RawDataMemory;
+                Assert.True(first.Span == second.Span, "RawDataMemory returned different values.");
+            }
+        }
+
+        [Fact]
+        public static void RawDataMemory_RoundTrip_LifetimeIndependentOfCert()
+        {
+            ReadOnlyMemory<byte> memory;
+
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                memory = cert.RawDataMemory;
+            }
+
+            AssertExtensions.SequenceEqual(TestData.MsCertificate.AsSpan(), memory.Span);
         }
 
         [Fact]

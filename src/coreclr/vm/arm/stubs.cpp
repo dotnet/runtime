@@ -1559,11 +1559,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
 {
-    bool isRelative = MethodTable::VTableIndir2_t::isRelative
-                      && pMD->IsVtableSlot();
-
-    _ASSERTE(!isRelative);
-
     // Use direct call if possible.
     if (pMD->HasStableEntryPoint())
     {
@@ -1575,33 +1570,12 @@ void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
         // mov r12, #slotaddress
         ThumbEmitMovConstant(ThumbReg(12), (TADDR)pMD->GetAddrOfSlot());
 
-        if (isRelative)
-        {
-            // mov r4, r12
-            ThumbEmitMovRegReg(ThumbReg(4), ThumbReg(12));
-        }
-
         // ldr r12, [r12]
         ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(12), 0);
-
-        if (isRelative)
-        {
-            // add r12, r4
-            ThumbEmitAddReg(ThumbReg(12), ThumbReg(4));
-        }
     }
 
-    if (!isRelative)
-    {
-        // bx r12
-        ThumbEmitJumpRegister(ThumbReg(12));
-    }
-    else
-    {
-        // Replace LR with R12 on stack: hybrid-tail call, same as for EmitShuffleThunk
-        // str r12, [sp, 4]
-        ThumbEmitStoreRegIndirect(ThumbReg(12), thumbRegSp, 4);
-    }
+    // bx r12
+    ThumbEmitJumpRegister(ThumbReg(12));
 }
 
 VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg)
@@ -1659,22 +1633,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         ThumbEmitIncrement(ThumbReg(0), sizeof(MethodTable*));
     }
 
-    bool isRelative = MethodTable::VTableIndir2_t::isRelative
-                      && pSharedMD->IsVtableSlot();
-
-    _ASSERTE(!isRelative);
-
-    if (isRelative)
-    {
-        ThumbEmitProlog(1, 0, FALSE);
-    }
-
     ThumbEmitTailCallManagedMethod(pSharedMD);
-
-    if (isRelative)
-    {
-        ThumbEmitEpilog();
-    }
 }
 
 
@@ -2244,8 +2203,6 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
-
-    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
 
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :

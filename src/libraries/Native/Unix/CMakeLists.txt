@@ -5,7 +5,7 @@ if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     # CMake 3.14.5 contains bug fixes for iOS
     cmake_minimum_required(VERSION 3.14.5)
 elseif(CLR_CMAKE_TARGET_MACCATALYST)
-    # CMake 3.18.1 properly generates MacCatalyst C and CXX compilers
+    # CMake 3.18.1 properly generates MacCatalyst C compiler
     cmake_minimum_required(VERSION 3.18.1)
 endif()
 cmake_policy(SET CMP0042 NEW)
@@ -13,7 +13,7 @@ cmake_policy(SET CMP0042 NEW)
 project(CoreFX C)
 
 include(../../../../eng/native/configurepaths.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
@@ -25,37 +25,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 
-# We mark the function which needs exporting with PALEXPORT
-add_compile_options(-fvisibility=hidden)
-
-add_compile_options(-Wno-format-nonliteral)
-add_compile_options(-Wno-disabled-macro-expansion)
-add_compile_options(-Wno-padded)
-add_compile_options(-Wno-empty-translation-unit)
-add_compile_options(-Wno-cast-align)
-add_compile_options(-Wno-typedef-redefinition)
-add_compile_options(-Wno-c11-extensions)
-add_compile_options(-Wno-unknown-pragmas)
-
-check_c_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
-if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
-  add_compile_options(-Wimplicit-fallthrough)
-endif()
-
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
-add_compile_options(-g)
-if(CMAKE_C_COMPILER_ID STREQUAL Clang)
-    add_compile_options(-Wthread-safety)
-    add_compile_options(-Wno-thread-safety-analysis)
-elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
-    add_compile_options(-Wno-stringop-truncation)
-endif()
-
-# Suppress warnings-as-errors in release branches to reduce servicing churn
-if (PRERELEASE)
-    add_compile_options(-Werror)
-endif()
 
 if(STATIC_LIBS_ONLY)
     # Suppress exporting of the PAL APIs
@@ -69,95 +40,19 @@ else()
 endif()
 
 if(CLR_CMAKE_TARGET_BROWSER)
-    # The emscripten build has additional warnings so -Werror breaks
-    add_compile_options(-Wno-unused-parameter)
-    add_compile_options(-Wno-unused-function)
-    add_compile_options(-Wno-alloca)
-    add_compile_options(-Wno-implicit-int-float-conversion)
-
     set(GEN_SHARED_LIB 0)
     set(STATIC_LIB_DESTINATION .)
-endif()
-
-if(CLR_CMAKE_TARGET_MACCATALYST)
-    # -target overrides -mmacosx-version-min so suppress warning about that
-    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
-    set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
-    add_link_options(-Wno-overriding-t-option)
-    if (CLR_CMAKE_TARGET_ARCH_AMD64)
-        set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios13.5-macabi")
-        add_link_options(-target x86_64-apple-ios13.5-macabi)
-    elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
-        set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
-        add_link_options(-target arm64-apple-ios14.2-macabi)
-    endif()
-
-    # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
-    # add_compile_options so that they take effect on the configuration functions
-    # in various configure.cmake files.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-
 endif()
 
 if(CLR_CMAKE_TARGET_TVOS)
     # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
     string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
-    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
     string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
-    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
     add_compile_options(-fembed-bitcode)
     add_link_options(-fembed-bitcode)
 endif()
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
-    add_definitions(-DTARGET_64BIT=1)
-    add_definitions(-DTARGET_AMD64)
-elseif (CLR_CMAKE_TARGET_ARCH_I386)
-    add_definitions(-DTARGET_32BIT=1)
-    add_definitions(-DTARGET_X86)
-    add_definitions(-D_FILE_OFFSET_BITS=64)
-elseif (CLR_CMAKE_TARGET_ARCH_WASM)
-    add_definitions(-DTARGET_32BIT=1)
-    add_definitions(-DTARGET_WASM)
-elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
-    add_definitions(-DTARGET_64BIT=1)
-    add_definitions(-DTARGET_ARM64)
-elseif (CLR_CMAKE_TARGET_ARCH_MIPS64)
-    add_definitions(-DTARGET_64BIT=1)
-    add_definitions(-DTARGET_MIPS64)
-elseif (CLR_CMAKE_TARGET_ARCH_S390X)
-    add_definitions(-DTARGET_64BIT=1)
-    add_definitions(-DTARGET_S390X)
-    add_definitions(-DBIGENDIAN=1)
-elseif (CLR_CMAKE_TARGET_ARCH_ARM)
-    add_definitions(-DTARGET_32BIT=1)
-    add_definitions(-DTARGET_ARM)
-    add_definitions(-D_FILE_OFFSET_BITS=64)
-
-    if (CLR_CMAKE_TARGET_ARCH_ARMV7L)
-        if(ARM_SOFTFP)
-            add_compile_options(-mfloat-abi=softfp)
-        endif ()
-
-        add_compile_options(-mthumb)
-        if (NOT DEFINED CLR_ARM_FPU_TYPE)
-            set(CLR_ARM_FPU_TYPE vfpv3)
-        endif(NOT DEFINED CLR_ARM_FPU_TYPE)
-
-        add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
-        if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
-            set(CLR_ARM_FPU_CAPABILITY 0x7)
-        endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
-
-        add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
-        add_compile_options(-march=armv7-a)
-    endif()
-endif ()
-
 if(CLR_CMAKE_TARGET_ANDROID)
-    add_definitions(-DTARGET_ANDROID)
     if(CROSS_ROOTFS)
         include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
     endif()
@@ -206,50 +101,13 @@ else ()
     message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
 endif ()
 
-if(CLR_CMAKE_TARGET_BROWSER)
-elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
-
-   # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
-   add_compile_options(-fstack-protector)
-else ()
-   add_compile_options(-fstack-protector-strong)
 endif ()
 
 if (CLR_CMAKE_TARGET_LINUX)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 endif ()
-
-# CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
-# CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
-#
-# For example:
-#       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
-#
-if(CLR_CMAKE_TARGET_UNIX)
-    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
-        if(CLR_CMAKE_TARGET_OSX)
-            add_definitions(-DTARGET_OSX)
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-bind_at_load")
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-bind_at_load" )
-        else()
-            add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-            if(CLR_CMAKE_TARGET_SUNOS)
-                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -DTARGET_SUNOS)
-            else()
-                # -z,now is required for full relro.
-                # see https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
-                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1 -Wl,-z,relro,-z,now")
-                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1 -Wl,-z,relro,-z,now" )
-            endif()
-        endif()
-    endif()
-
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
-    add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
-    add_definitions(-DTARGET_UNIX)
-endif(CLR_CMAKE_TARGET_UNIX)
 
 include(configure.cmake)
 
@@ -261,6 +119,14 @@ endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     add_compile_options(-Weverything)
+    add_compile_options(-Wno-format-nonliteral)
+    add_compile_options(-Wno-disabled-macro-expansion)
+    add_compile_options(-Wno-padded)
+    add_compile_options(-Wno-empty-translation-unit)
+    add_compile_options(-Wno-cast-align)
+    add_compile_options(-Wno-typedef-redefinition)
+    add_compile_options(-Wno-c11-extensions)
+    add_compile_options(-Wno-thread-safety-analysis)
 endif()
 
 add_subdirectory(System.Native)

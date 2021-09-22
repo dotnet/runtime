@@ -325,7 +325,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     pMT->ClearFlag(MethodTable::enum_flag_GenericsMask);
     pMT->SetFlag(MethodTable::enum_flag_GenericsMask_GenericInst);
 
-    pMT->m_pParentMethodTable.SetValueMaybeNull(NULL);
+    pMT->m_pParentMethodTable = NULL;
 
     // Non non-virtual slots
     pMT->ClearFlag(MethodTable::enum_flag_HasSingleNonVirtualSlot);
@@ -401,7 +401,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         if (canShareVtableChunks)
         {
             // Share the canonical chunk
-            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
+            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()]);
         }
         else
         {
@@ -446,7 +446,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // dictionary pointers.
     Dictionary * pDict = (Dictionary*) (pMemory + cbMT + cbOptional + cbIMap + cbPerInst);
     MethodTable::PerInstInfoElem_t *pPInstInfo = (MethodTable::PerInstInfoElem_t *) (pMT->GetPerInstInfo() + (pOldMT->GetNumDicts()-1));
-    pPInstInfo->SetValueMaybeNull(pDict);
+    *pPInstInfo = pDict;
 
     // Fill in the instantiation section of the generic dictionary.  The remainder of the
     // generic dictionary will be zeroed, which is the correct initial state.
@@ -460,7 +460,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     if (pLayout != NULL)
     {
         _ASSERTE(pLayout->GetMaxSlots() > 0);
-        PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1].GetValue();
+        PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1];
         DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + ntypars);
         *pSizeSlot = cbInstAndDictSlotSize;
     }

@@ -1304,12 +1304,6 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            if (!ModuleHandle.ContainsPropertyMatchingHash(declaringModuleHandle, tkProperty, filter.GetHashToMatch()))
-                            {
-                                Debug.Assert(!filter.Match(declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty)));
-                                continue;
-                            }
-
                             MdUtf8String name = declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty);
 
                             if (!filter.Match(name))

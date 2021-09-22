@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <!-- Using a csproj extension to get the correct multi-targeting behavior. -->
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.1;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0</TargetFrameworks>
     <!-- Reference the outputs for the dependency nodes calculation. -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <IsPackable>true</IsPackable>
     <!-- This is a meta package and doesn't contain any libs. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
-    <PackageDescription>This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.</PackageDescription>
+    <PackageDescription>This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET as well as .NET Standard.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -54,15 +54,19 @@
                       Version="$(ServiceModelVersion)" />
   </ItemGroup>
 
+  <!-- Packages which are inbox on frameworks newer than .NET Standard 2.0. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Reflection.Emit" Version="$(SystemReflectionEmitVersion)" />
+    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="$(SystemReflectionEmitILGenerationVersion)" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemReflectionEmitLightweightVersion)" />
+  </ItemGroup>
+
   <!-- Packages which are inbox in NET6 and shouldn't and can't be referenced anymore. -->
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="$(SystemDataDataSetExtensionsVersion)" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
     <PackageReference Include="System.IO.Pipes.AccessControl" Version="$(SystemIOPipesAccessControlVersion)" />
-    <PackageReference Include="System.Reflection.Emit" Version="$(SystemReflectionEmitVersion)" />
-    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="$(SystemReflectionEmitILGenerationVersion)" />
-    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="$(SystemReflectionEmitLightweightVersion)" />
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />

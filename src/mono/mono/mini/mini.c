@@ -669,6 +669,11 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			}
 		}
 	}
+
+#ifdef TARGET_WASM
+	if (mini_type_is_reference (type))
+		mono_mark_vreg_as_ref (cfg, vreg);
+#endif
 	
 	cfg->varinfo [num] = inst;
 
@@ -2793,6 +2798,12 @@ insert_safepoints (MonoCompile *cfg)
 				printf ("SKIPPING SAFEPOINTS for interp-in wrappers.\n");
 			return;
 		}
+	}
+
+	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+		return;
 	}
 
 	if (cfg->verbose_level > 1)

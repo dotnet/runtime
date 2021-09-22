@@ -462,45 +462,22 @@ VOID UMThunkMarshInfo::RunTimeInit()
     if (IsCompletelyInited())
         return;
 
-    PCODE pFinalILStub = NULL;
-    MethodDesc* pStubMD = NULL;
-
     MethodDesc * pMD = GetMethod();
 
-    // Lookup NGened stub - currently we only support ngening of reverse delegate invoke interop stubs
-    if (pMD != NULL && pMD->IsEEImpl())
-    {
-        DWORD dwStubFlags = NDIRECTSTUB_FL_NGENEDSTUB | NDIRECTSTUB_FL_REVERSE_INTEROP | NDIRECTSTUB_FL_DELEGATE;
+    PInvokeStaticSigInfo sigInfo;
 
-#if defined(DEBUGGING_SUPPORTED)
-        // Combining the next two lines, and eliminating jitDebuggerFlags, leads to bad codegen in x86 Release builds using Visual C++ 19.00.24215.1.
-        CORJIT_FLAGS jitDebuggerFlags = GetDebuggerCompileFlags(GetModule(), CORJIT_FLAGS());
-        if (jitDebuggerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL;
-        }
-#endif // DEBUGGING_SUPPORTED
+    if (pMD != NULL)
+        new (&sigInfo) PInvokeStaticSigInfo(pMD);
+    else
+        new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
 
-        pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags, &pStubMD);
-    }
+    DWORD dwStubFlags = 0;
 
-    if (pFinalILStub == NULL)
-    {
-        PInvokeStaticSigInfo sigInfo;
+    if (sigInfo.IsDelegateInterop())
+        dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
-        if (pMD != NULL)
-            new (&sigInfo) PInvokeStaticSigInfo(pMD);
-        else
-            new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
-
-        DWORD dwStubFlags = 0;
-
-        if (sigInfo.IsDelegateInterop())
-            dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
-
-        pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
-        pFinalILStub = JitILStub(pStubMD);
-    }
+    MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
+    PCODE pFinalILStub = JitILStub(pStubMD);
 
     // Must be the last thing we set!
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);

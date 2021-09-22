@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
+    [JsonSourceGenerationOptions(IncludeFields = true)]
     [JsonSerializable(typeof(Location), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation", GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(NumberTypes), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -25,13 +26,21 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     internal partial class MixedModeContext : JsonSerializerContext, ITestContext
     {
+        public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization;
     }
 
     public sealed class MixedModeContextTests : RealWorldContextTests
@@ -41,29 +50,37 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override void EnsureFastPathGeneratedAsExpected()
         {
-            Assert.Null(MixedModeContext.Default.Location.Serialize);
-            Assert.NotNull(MixedModeContext.Default.RepeatedLocation.Serialize);
-            Assert.Null(MixedModeContext.Default.NumberTypes.Serialize);
-            Assert.NotNull(MixedModeContext.Default.CampaignSummaryViewModel.Serialize);
-            Assert.Null(MixedModeContext.Default.IndexViewModel.Serialize);
-            Assert.Null(MixedModeContext.Default.WeatherForecastWithPOCOs.Serialize);
-            Assert.NotNull(MixedModeContext.Default.EmptyPoco.Serialize);
-            Assert.NotNull(MixedModeContext.Default.HighLowTemps.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyType.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyType2.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyTypeWithCallbacks.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyTypeWithPropertyOrdering.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyIntermediateType.Serialize);
-            Assert.Null(MixedModeContext.Default.HighLowTempsImmutable.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyNestedClass.Serialize);
-            Assert.NotNull(MixedModeContext.Default.MyNestedNestedClass.Serialize);
-            Assert.Null(MixedModeContext.Default.ObjectArray.Serialize);
-            Assert.Null(MixedModeContext.Default.String.Serialize);
-            Assert.NotNull(MixedModeContext.Default.ClassWithEnumAndNullable.Serialize);
-            Assert.Null(MixedModeContext.Default.ClassWithCustomConverter.Serialize);
-            Assert.Null(MixedModeContext.Default.StructWithCustomConverter.Serialize);
-            Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.ClassWithBadCustomConverter.Serialize);
-            Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.StructWithBadCustomConverter.Serialize);
+            Assert.Null(MixedModeContext.Default.Location.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.RepeatedLocation.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.NumberTypes.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.CampaignSummaryViewModel.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.IndexViewModel.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.WeatherForecastWithPOCOs.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.EmptyPoco.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.HighLowTemps.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyType.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyType2.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyTypeWithCallbacks.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyIntermediateType.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyNestedClass.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyNestedNestedClass.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.String.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.ClassWithEnumAndNullable.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverter.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverter.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverterFactory.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverterFactory.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverterProperty.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverterProperty.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
+            Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }
 
         [Fact]

@@ -325,4 +325,4 @@ FUNCTIONS
     uint16_t getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
-
+    bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)

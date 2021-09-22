@@ -20,6 +20,10 @@ const static AbiDetails mono_abi_details = {	\
 
 DECLARE_ABI_DETAILS (1, 2, 4, 8, 4, 8, 4)
 
+#elif TARGET_S390X
+
+DECLARE_ABI_DETAILS (1, 2, 4, 8, 4, 8, 8)
+
 #else
 
 #define DECL_OFFSET(struct,field)

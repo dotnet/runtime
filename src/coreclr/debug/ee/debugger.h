@@ -1895,7 +1895,6 @@ public:
                     AppDomain *pAppDomain,
                     DomainFile * pDomainFile,
                     BOOL fAttaching);
-    void LoadModuleFinished(Module* pRuntimeModule, AppDomain * pAppDomain);
     DebuggerModule * AddDebuggerModule(DomainFile * pDomainFile);
 
 

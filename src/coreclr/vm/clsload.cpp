@@ -3123,57 +3123,6 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
             return existing;
 
         pTable->InsertValue(typeHnd);
-
-#ifdef _DEBUG
-        // Checks to help ensure that the CoreLib in the ngen process does not get contaminated with pointers to the compilation domains.
-        if (pLoaderModule->IsSystem() && IsCompilationProcess() && pLoaderModule->HasNativeImage())
-        {
-            CorElementType kind = pTypeKey->GetKind();
-            MethodTable *typeHandleMethodTable = typeHnd.GetMethodTable();
-            if ((typeHandleMethodTable != NULL) && (typeHandleMethodTable->GetLoaderAllocator() != pLoaderModule->GetLoaderAllocator()))
-            {
-                _ASSERTE(!"MethodTable of type loaded into CoreLib during NGen is not from CoreLib!");
-            }
-            if ((kind != ELEMENT_TYPE_FNPTR) && (kind != ELEMENT_TYPE_VAR) && (kind != ELEMENT_TYPE_MVAR))
-            {
-                if ((kind == ELEMENT_TYPE_SZARRAY) || (kind == ELEMENT_TYPE_ARRAY) || (kind == ELEMENT_TYPE_BYREF) || (kind == ELEMENT_TYPE_PTR) || (kind == ELEMENT_TYPE_VALUETYPE))
-                {
-                    // Check to ensure param value is also part of CoreLib.
-                    if (pTypeKey->GetElementType().GetLoaderAllocator() != pLoaderModule->GetLoaderAllocator())
-                    {
-                        _ASSERTE(!"Param value of type key used to load type during NGEN not located within CoreLib yet type is placed into CoreLib");
-                    }
-                }
-                else if (kind == ELEMENT_TYPE_FNPTR)
-                {
-                    // Check to ensure the parameter types of fnptr are in CoreLib
-                    for (DWORD i = 0; i <= pTypeKey->GetNumArgs(); i++)
-                    {
-                        if (pTypeKey->GetRetAndArgTypes()[i].GetLoaderAllocator() != pLoaderModule->GetLoaderAllocator())
-                        {
-                            _ASSERTE(!"Ret or Arg type of function pointer type key used to load type during NGEN not located within CoreLib yet type is placed into CoreLib");
-                        }
-                    }
-                }
-                else if (kind == ELEMENT_TYPE_CLASS)
-                {
-                    // Check to ensure that the generic parameters are all within CoreLib
-                    for (DWORD i = 0; i < pTypeKey->GetNumGenericArgs(); i++)
-                    {
-                        if (pTypeKey->GetInstantiation()[i].GetLoaderAllocator() != pLoaderModule->GetLoaderAllocator())
-                        {
-                            _ASSERTE(!"Instantiation parameter of generic class type key used to load type during NGEN not located within CoreLib yet type is placed into CoreLib");
-                        }
-                    }
-                }
-                else
-                {
-                    // Should not be able to get here
-                    _ASSERTE(!"Unknown type key type");
-                }
-            }
-        }
-#endif // DEBUG
     }
     else
     {
@@ -4213,21 +4162,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
     _ASSERTE(m_accessCheckType != kNormalAccessibilityChecks);
 
-    if (NingenEnabled())
-    {
-        // NinGen should always perform normal accessibility checks
-        _ASSERTE(false);
-
-        if (m_fThrowIfTargetIsInaccessible)
-        {
-            ThrowAccessException(pContext, pTargetMT, NULL);
-        }
-
-        return FALSE;
-    }
-
     BOOL canAccessTarget = FALSE;
-
 
     // In CoreCLR kRestrictedMemberAccess means that one can access private/internal
     // classes/members in app code.

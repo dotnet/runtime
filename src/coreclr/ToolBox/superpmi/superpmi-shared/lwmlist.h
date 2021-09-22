@@ -157,6 +157,7 @@ LWM(TryResolveToken, Agnostic_CORINFO_RESOLVED_TOKENin, TryResolveTokenValue)
 LWM(SatisfiesClassConstraints, DWORDLONG, DWORD)
 LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
+LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
 
 #undef LWM

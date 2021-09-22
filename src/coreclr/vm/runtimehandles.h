@@ -398,9 +398,6 @@ public:
     FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectModuleBaseObject * pModuleUNSAFE);
 
     static
-    BOOL QCALLTYPE ContainsPropertyMatchingHash(QCall::ModuleHandle pModule, INT32 tkProperty, ULONG hash);
-
-    static
     void QCALLTYPE ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType);
 
     static

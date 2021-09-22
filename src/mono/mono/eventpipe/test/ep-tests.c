@@ -620,7 +620,7 @@ test_create_delete_provider_with_callback (void)
 	EventPipeProvider *test_provider = NULL;
 	EventPipeProviderConfiguration provider_config;
 
-	EventPipeProviderConfiguration *current_provider_config =ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
+	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;

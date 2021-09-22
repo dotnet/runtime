@@ -525,6 +525,39 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
+        /// Tests that DiagnosticSourceEventSource can read property values from base classes
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaseClassDuplicateProperties()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestBaseClassProperties"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
+                    eventSourceListener.Enable(
+                        "  TestBaseClassProperties/TestEvent1:Point_X=Point.X;Point_Y=Point.Y;Url=Url\r\n");
+
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern.
+                    MyClass val = new MyOtherDerivedClass() { Url = "MyUrl", Point = new MyDerivedPoint() { X = 3, Y = 5 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", val);
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestBaseClassProperties", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(4, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("3", eventSourceListener.LastEvent.Arguments["Point_X"]);
+                    Assert.Equal("5", eventSourceListener.LastEvent.Arguments["Point_Y"]);
+                    Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["Url"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
+        }
+
+        /// <summary>
         /// Test that things work properly for Linux newline conventions.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1353,6 +1386,11 @@ namespace System.Diagnostics.Tests
         public string AnotherString { get; set; }
     }
 
+    internal class MyOtherDerivedClass : MyClass
+    {
+        public new MyDerivedPoint Point { get; set; }
+    }
+
     /// <summary>
     /// classes for test data.
     /// </summary>
@@ -1361,6 +1399,9 @@ namespace System.Diagnostics.Tests
         public int X { get; set; }
         public int Y { get; set; }
     }
+
+    internal class MyDerivedPoint : MyPoint
+    { }
 
     /// <summary>
     /// classes for test data

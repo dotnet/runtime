@@ -29,17 +29,11 @@
 
 STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
                             PEImage          **ppPEImage,
-                            PEImage          **ppNativeImage,
-                            BOOL               fExplicitBindToNativeImage,
                             BundleFileLocation bundleFileLocation);
 
 STDAPI BinderAcquireImport(PEImage            *pPEImage,
                            IMDInternalImport **pIMetaDataAssemblyImport,
-                           DWORD              *pdwPAFlags,
-                           BOOL                bNativeImage);
-
-STDAPI BinderHasNativeHeader(PEImage *pPEImage,
-                             BOOL    *result);
+                           DWORD              *pdwPAFlags);
 
 STDAPI BinderReleasePEImage(PEImage *pPEImage);
 
@@ -71,7 +65,6 @@ namespace BINDER_SPACE
         HRESULT Init(/* in */ IMDInternalImport       *pIMetaDataAssemblyImport,
                      /* in */ PEKIND                   PeKind,
                      /* in */ PEImage                 *pPEImage,
-                     /* in */ PEImage                 *pPENativeImage,
                      /* in */ SString                 &assemblyPath,
                      /* in */ BOOL                     fIsInTPA);
 
@@ -81,8 +74,6 @@ namespace BINDER_SPACE
         inline SString &GetPath();
 
         inline PEImage *GetPEImage(BOOL fAddRef = FALSE);
-        inline PEImage *GetNativePEImage(BOOL fAddRef = FALSE);
-        inline PEImage *GetNativeOrILPEImage(BOOL fAddRef = FALSE);
 
         HRESULT GetMVID(GUID *pMVID);
 
@@ -105,7 +96,6 @@ namespace BINDER_SPACE
         };
 
         inline void SetPEImage(PEImage *pPEImage);
-        inline void SetNativePEImage(PEImage *pNativePEImage);
 
         inline void SetAssemblyName(AssemblyName *pAssemblyName,
                                     BOOL          fAddRef = TRUE);
@@ -116,7 +106,6 @@ namespace BINDER_SPACE
 
         LONG                     m_cRef;
         PEImage                 *m_pPEImage;
-        PEImage                 *m_pNativePEImage;
         IMDInternalImport       *m_pMDImport;
         AssemblyName            *m_pAssemblyName;
         SString                  m_assemblyPath;

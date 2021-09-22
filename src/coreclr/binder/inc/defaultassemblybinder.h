@@ -6,29 +6,30 @@
 #define __DEFAULT_ASSEMBLY_BINDER_H__
 
 #include "applicationcontext.hpp"
-#include "assemblyloadcontext.h"
+#include "assemblybinder.h"
 
 class PEAssembly;
 class PEImage;
 
-class DefaultAssemblyBinder final : public AssemblyLoadContext
+class DefaultAssemblyBinder final : public AssemblyBinder
 {
 public:
-    //=========================================================================
-    // AssemblyBinder functions
-    //-------------------------------------------------------------------------
 
     HRESULT BindUsingPEImage(PEImage* pPEImage,
-        BOOL fIsNativeImage,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly) override;
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly) override;
 
-    AssemblyLoaderAllocator* GetLoaderAllocator()
+    AssemblyLoaderAllocator* GetLoaderAllocator() override
     {
         // Not supported by this binder
         return NULL;
+    }
+
+    bool IsDefault() override
+    {
+        return true;
     }
 
 public:
@@ -39,8 +40,6 @@ public:
 
     HRESULT Bind(LPCWSTR      wszCodeBase,
                  PEAssembly  *pParentAssembly,
-                 BOOL         fNgenExplicitBind,
-                 BOOL         fExplicitBindToNativeImage,
                  BINDER_SPACE::Assembly **ppAssembly);
 
 private:

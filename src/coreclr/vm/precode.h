@@ -31,9 +31,6 @@ enum PrecodeType {
 
 // For more details see. file:../../doc/BookOfTheRuntime/ClassLoader/MethodDescDesign.doc
 class Precode {
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     BYTE m_data[SIZEOF_PRECODE_BASE];
 

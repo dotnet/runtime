@@ -49,13 +49,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //   GenTreeOps nodes, for which codegen will generate the branch
 //     - it will use the appropriate kind based on the opcode, though it's not
 //       clear why SCK_OVERFLOW == SCK_ARITH_EXCPN
-// SCK_PAUSE_EXEC is not currently used.
 //
 enum SpecialCodeKind
 {
     SCK_NONE,
     SCK_RNGCHK_FAIL,                // target when range check fails
-    SCK_PAUSE_EXEC,                 // target to stop (e.g. to allow GC)
     SCK_DIV_BY_ZERO,                // target for divide by zero (Not used on X86/X64)
     SCK_ARITH_EXCPN,                // target on arithmetic exception
     SCK_OVERFLOW = SCK_ARITH_EXCPN, // target on overflow
@@ -1062,12 +1060,6 @@ public:
     {
         return (opKind & GTK_EXOP) != 0;
     }
-    // Returns the operKind with the GTK_EX_OP bit removed (the
-    // kind of operator, unary or binary, that is extended).
-    static unsigned StripExOp(unsigned opKind)
-    {
-        return opKind & ~GTK_EXOP;
-    }
 
     bool IsValue() const
     {
@@ -1878,11 +1870,6 @@ public:
     unsigned GetScaleIndexShf();
     unsigned GetScaledIndex();
 
-    // Returns true if "addr" is a GT_ADD node, at least one of whose arguments is an integer
-    // (<= 32 bit) constant.  If it returns true, it sets "*offset" to (one of the) constant value(s), and
-    // "*addr" to the other argument.
-    bool IsAddWithI32Const(GenTree** addr, int* offset);
-
 public:
     static unsigned char s_gtNodeSizes[];
 #if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
@@ -1933,7 +1920,6 @@ public:
     void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN); // set gtOper
     void SetOperResetFlags(genTreeOps oper);                              // set gtOper and reset flags
 
-    void ChangeOperConst(genTreeOps oper); // ChangeOper(constOper)
     // set gtOper and only keep GTF_COMMON_MASK flags
     void ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);
     void ChangeOperUnchecked(genTreeOps oper);
@@ -1954,6 +1940,9 @@ public:
             }
         }
     }
+
+    template <typename T>
+    void BashToConst(T value, var_types type = TYP_UNDEF);
 
 #if NODEBASH_STATS
     static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);
@@ -3053,6 +3042,10 @@ struct GenTreeIntConCommon : public GenTree
     inline ssize_t IconValue() const;
     inline void SetIconValue(ssize_t val);
     inline INT64 IntegralValue() const;
+    inline void SetIntegralValue(int64_t value);
+
+    template <typename T>
+    inline void SetValueTruncating(T value);
 
     GenTreeIntConCommon(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
         : GenTree(oper, type DEBUGARG(largeNode))
@@ -3169,20 +3162,6 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     void FixupInitBlkValue(var_types asgType);
 
-#ifdef TARGET_64BIT
-    void TruncateOrSignExtend32()
-    {
-        if (gtFlags & GTF_UNSIGNED)
-        {
-            gtIconVal = UINT32(gtIconVal);
-        }
-        else
-        {
-            gtIconVal = INT32(gtIconVal);
-        }
-    }
-#endif // TARGET_64BIT
-
 #if DEBUGGABLE_GENTREE
     GenTreeIntCon() : GenTreeIntConCommon()
     {
@@ -3259,6 +3238,60 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
 #else
     return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
 #endif // TARGET_64BIT
+}
+
+inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
+{
+#ifdef TARGET_64BIT
+    SetIconValue(value);
+#else
+    if (OperIs(GT_CNS_LNG))
+    {
+        SetLngValue(value);
+    }
+    else
+    {
+        assert(FitsIn<int32_t>(value));
+        SetIconValue(static_cast<int32_t>(value));
+    }
+#endif // TARGET_64BIT
+}
+
+//------------------------------------------------------------------------
+// SetValueTruncating: Set the value, truncating to TYP_INT if necessary.
+//
+// The function will truncate the supplied value to a 32 bit signed
+// integer if the node's type is not TYP_LONG, otherwise setting it
+// as-is. Note that this function intentionally does not check for
+// small types (such nodes are created in lowering) for TP reasons.
+//
+// This function is intended to be used where its truncating behavior is
+// desirable. One example is folding of ADD(CNS_INT, CNS_INT) performed in
+// wider integers, which is typical when compiling on 64 bit hosts, as
+// most aritmetic is done in ssize_t's aka int64_t's in that case, while
+// the node itself can be of a narrower type.
+//
+// Arguments:
+//    value - Value to set, truncating to TYP_INT if the node is not of TYP_LONG
+//
+// Notes:
+//    This function is templated so that it works well with compiler warnings of
+//    the form "Operation may overflow before being assigned to a wider type", in
+//    case "value" is of type ssize_t, which is common.
+//
+template <typename T>
+inline void GenTreeIntConCommon::SetValueTruncating(T value)
+{
+    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
+
+    if (TypeIs(TYP_LONG))
+    {
+        SetLngValue(value);
+    }
+    else
+    {
+        SetIconValue(static_cast<int32_t>(value));
+    }
 }
 
 /* gtDblCon -- double  constant (GT_CNS_DBL) */
@@ -4737,7 +4770,7 @@ struct GenTreeCall final : public GenTree
     GenTree* gtControlExpr;
 
     union {
-        CORINFO_METHOD_HANDLE gtCallMethHnd; // CT_USER_FUNC
+        CORINFO_METHOD_HANDLE gtCallMethHnd; // CT_USER_FUNC or CT_HELPER
         GenTree*              gtCallAddr;    // CT_INDIRECT
     };
 

@@ -43,36 +43,10 @@ PEImage *Assembly::GetPEImage(BOOL fAddRef /* = FALSE */)
     return pPEImage;
 }
 
-PEImage *Assembly::GetNativePEImage(BOOL fAddRef /* = FALSE */)
-{
-    PEImage *pNativePEImage = m_pNativePEImage;
-
-    if (fAddRef)
-    {
-        BinderAddRefPEImage(pNativePEImage);
-    }
-
-    return pNativePEImage;
-}
-
-PEImage *Assembly::GetNativeOrILPEImage(BOOL fAddRef /* = FALSE */)
-{
-    PEImage* pPEImage = GetNativePEImage(fAddRef);
-    if (pPEImage == NULL)
-        pPEImage = GetPEImage(fAddRef);
-    return pPEImage;
-}
-
 void Assembly::SetPEImage(PEImage *pPEImage)
 {
     BinderAddRefPEImage(pPEImage);
     m_pPEImage = pPEImage;
-}
-
-void Assembly::SetNativePEImage(PEImage *pNativePEImage)
-{
-    BinderAddRefPEImage(pNativePEImage);
-    m_pNativePEImage = pNativePEImage;
 }
 
 AssemblyName *Assembly::GetAssemblyName(BOOL fAddRef /* = FALSE */)

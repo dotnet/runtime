@@ -15,8 +15,6 @@
 #include "liteweightstgdb.h"
 #include "metadatatracker.h"
 
-#include "../hotdata/export.h"
-
 __checkReturn
 HRESULT _CallInitOnMemHelper(CLiteWeightStgdb<CMiniMd> *pStgdb, ULONG cbData, LPCVOID pData)
 {
@@ -185,58 +183,3 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
 ErrExit:
     return hr;
 } // CLiteWeightStgdb<MiniMd>::InitOnMem
-
-
-template <class MiniMd>
-__checkReturn
-HRESULT
-CLiteWeightStgdb<MiniMd>::InitHotPools(
-    DataBuffer hotMetaDataBuffer)
-{
-    HRESULT hr;
-    MetaData::HotMetaData hotMetaData;
-    MetaData::HotHeapsDirectoryIterator heapsIterator;
-
-    IfFailRet(hotMetaData.Initialize(hotMetaDataBuffer));
-
-    IfFailRet(hotMetaData.GetHeapsDirectoryIterator(&heapsIterator));
-
-    for (;;)
-    {
-        MetaData::HotHeap   hotHeap;
-        MetaData::HeapIndex hotHeapIndex;
-
-        hr = heapsIterator.GetNext(&hotHeap, &hotHeapIndex);
-        if (hr == S_FALSE)
-        {   // End of iteration
-            return S_OK;
-        }
-
-        switch (hotHeapIndex.Get())
-        {
-        case MetaData::HeapIndex::StringHeapIndex:
-            {
-                m_MiniMd.m_StringHeap.InitializeHotData(hotHeap);
-                break;
-            }
-        case MetaData::HeapIndex::GuidHeapIndex:
-            {
-                m_MiniMd.m_GuidHeap.InitializeHotData(hotHeap);
-                break;
-            }
-        case MetaData::HeapIndex::UserStringHeapIndex:
-            {
-                m_MiniMd.m_UserStringHeap.InitializeHotData(hotHeap);
-                break;
-            }
-        case MetaData::HeapIndex::BlobHeapIndex:
-            {
-                m_MiniMd.m_BlobHeap.InitializeHotData(hotHeap);
-                break;
-            }
-        default:
-            Debug_ReportInternalError("There's a bug in HotHeapsDirectoryIterator - it should verify the heap index.");
-            IfFailRet(METADATA_E_INTERNAL_ERROR);
-        }
-    }
-} // CLiteWeightStgdb<MiniMd>::InitHotPools

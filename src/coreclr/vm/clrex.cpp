@@ -69,11 +69,6 @@ OBJECTREF CLRException::GetThrowable()
 
     OBJECTREF throwable = NULL;
 
-    if (NingenEnabled())
-    {
-        return NULL;
-    }
-
     Thread *pThread = GetThread();
 
     if (pThread->IsRudeAbortInitiated()) {

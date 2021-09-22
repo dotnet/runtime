@@ -63,6 +63,15 @@ HeapTableIndex(DPTR(unused_gc_heap**) heaps, size_t index)
     }
 
 // if (field_offset != -1)
+//    p_field.EnumMem();
+#define ENUM(field_name, field_type)                                                         \
+    LOAD_BASE(field_name, field_type)                                                        \
+    if (field_name##_offset != -1)                                                           \
+    {                                                                                        \
+        p_##field_name.EnumMem();                                                            \
+    }
+
+// if (field_offset != -1)
 //    result.field = DPTR(field_type)field_name
 #define LOAD_DPTR(field_name, field_type)                                                    \
     LOAD_BASE(field_name, field_type*)                                                       \
@@ -85,6 +94,13 @@ HeapTableIndex(DPTR(unused_gc_heap**) heaps, size_t index)
             result.field_name[i] = *p_##field_name;                                          \
             p_##field_name = p_##field_name + 1;                                             \
         }                                                                                    \
+    }
+
+#define ENUM_ARRAY(field_name, field_type, array_length)                                     \
+    LOAD_BASE(field_name, field_type)                                                        \
+    if (field_name##_offset != -1)                                                           \
+    {                                                                                        \
+        DacEnumMemoryRegion(p_##field_name.GetAddr(), sizeof(field_type) * array_length);    \
     }
 
 inline bool IsRegion()
@@ -121,6 +137,26 @@ LoadGcHeapData(TADDR heap)
     return result;
 }
 
+inline void EnumGcHeap(TADDR heap)
+{
+    DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
+    int field_index = 0;
+
+#define BASE heap
+#define ALL_FIELDS
+#define DEFINE_FIELD(field_name, field_type) ENUM(field_name, field_type)
+#define DEFINE_DPTR_FIELD(field_name, field_type) ENUM(field_name, field_type)
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) ENUM_ARRAY(field_name, field_type, array_length)
+
+#include "../../gc/dac_gcheap_fields.h"
+
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+#undef ALL_FIELDS
+#undef BASE
+}
+
 // Load an instance of dac_generation for the generation pointed by generation.
 // Fields that does not exist in the current generation instance is zero initialized.
 // Return the dac_generation object.
@@ -148,6 +184,26 @@ LoadGeneration(TADDR generation)
     return result;
 }
 
+inline void EnumGeneration(TADDR generation)
+{
+    DPTR(int) field_offsets = g_gcDacGlobals->generation_field_offsets;
+    int field_index = 0;
+
+#define BASE generation
+#define ALL_FIELDS
+#define DEFINE_FIELD(field_name, field_type) ENUM(field_name, field_type)
+#define DEFINE_DPTR_FIELD(field_name, field_type) ENUM(field_name, field_type)
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) ENUM_ARRAY(field_name, field_type, array_length)
+
+#include "../../gc/dac_generation_fields.h"
+
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+#undef ALL_FIELDS
+#undef BASE
+}
+
 // Indexes into a given generation table, returning a dac_generation
 inline dac_generation
 GenerationTableIndex(DPTR(unused_generation) base, size_t index)
@@ -155,10 +211,7 @@ GenerationTableIndex(DPTR(unused_generation) base, size_t index)
     return LoadGeneration(TableIndex(base, index, g_gcDacGlobals->generation_size).GetAddr());
 }
 
-// Indexes into a heap's generation table, given the heap instance
-// and the desired index. Returns a dac_generation
-inline dac_generation
-ServerGenerationTableIndex(TADDR heap, size_t index)
+inline TADDR ServerGenerationTableAddress(TADDR heap)
 {
     DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
     int field_index = GENERATION_TABLE_FIELD_INDEX;
@@ -166,7 +219,25 @@ ServerGenerationTableIndex(TADDR heap, size_t index)
     LOAD_BASE (generation_table, unused_generation);
     #undef BASE
     assert (generation_table_offset != -1);
+    return p_generation_table.GetAddr();
+}
+
+// Indexes into a heap's generation table, given the heap instance
+// and the desired index. Returns a dac_generation
+inline dac_generation
+ServerGenerationTableIndex(TADDR heap, size_t index)
+{
+    DPTR(unused_generation) p_generation_table = ServerGenerationTableAddress(heap);
     return LoadGeneration(TableIndex(p_generation_table, index, g_gcDacGlobals->generation_size).GetAddr());
+}
+
+inline void EnumGenerationTable(TADDR generation_table)
+{
+    DPTR(unused_generation) p_generation_table = generation_table;
+    for (unsigned int i = 0; i < *g_gcDacGlobals->max_gen + 2; i++)
+    {
+        EnumGeneration(TableIndex(p_generation_table, i, g_gcDacGlobals->generation_size).GetAddr());
+    }
 }
 
 #undef LOAD_ARRAY

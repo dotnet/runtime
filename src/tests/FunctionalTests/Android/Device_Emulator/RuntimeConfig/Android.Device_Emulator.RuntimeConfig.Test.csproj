@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <MainLibraryFileName>Android.Device_Emulator.RuntimeConfig.Test.dll</MainLibraryFileName>
+    <ExpectedExitCode>42</ExpectedExitCode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

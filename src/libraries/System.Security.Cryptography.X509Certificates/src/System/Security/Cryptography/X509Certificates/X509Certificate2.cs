@@ -312,18 +312,22 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] RawData
+        public byte[] RawData => RawDataMemory.ToArray();
+
+        /// <summary>
+        /// Gets the raw data of a certificate.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="RawData" />, this does not create a fresh copy of the data
+        /// every time.
+        /// </remarks>
+        public ReadOnlyMemory<byte> RawDataMemory
         {
             get
             {
                 ThrowIfInvalid();
 
-                byte[]? rawData = _lazyRawData;
-                if (rawData == null)
-                {
-                    rawData = _lazyRawData = Pal.RawData;
-                }
-                return rawData.CloneByteArray();
+                return _lazyRawData ??= Pal.RawData;
             }
         }
 

@@ -7,13 +7,9 @@
                                             !$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '6.0'))">true</BrowserWorkloadDisabled>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(BrowserWorkloadDisabled)' == 'true'">
-        <_NativeBuildNeeded Condition="'$(RunAOTCompilation)' == 'true'">true</_NativeBuildNeeded>
-        <WorkloadDisabledWithReason Condition="'$(_NativeBuildNeeded)' == 'true'">WebAssembly workloads (required for AOT) are only supported for projects targeting net6.0+</WorkloadDisabledWithReason>
-    </PropertyGroup>
-
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
-        <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
+        <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
+        <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmBuildNative)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
         <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''" >$(WasmNativeWorkload)</UsingBrowserRuntimeWorkload>
     </PropertyGroup>
 
@@ -128,7 +124,21 @@
                         />
     </ItemGroup>
 
-    <Target Name="ErrorDisabledWorkload" Condition="'$(WorkloadDisabledWithReason)' != ''" BeforeTargets="Publish">
-      <Error Text="$(WorkloadDisabledWithReason)" />
+    <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
+         and emit a warning -->
+    <Target Name="_CheckBrowserWorkloadNeededButNotAvailable"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmNativeWorkload)' != 'true'"
+            BeforeTargets="Build">
+
+      <Warning Condition="@(NativeFileReference->Count()) > 0"
+               Text="%40(NativeFileReference) is not empty, but the native references won't be linked in, because neither %24(WasmBuildNative), nor %24(RunAOTCompilation) are 'true'. NativeFileReference=@(NativeFileReference)" />
+    </Target>
+
+    <Target Name="_ErrorDisabledWorkload" Condition="'$(BrowserWorkloadDisabled)' == 'true'" BeforeTargets="Build">
+      <Error Condition="'$(RunAOTCompilation)' == 'true'"
+             Text="WebAssembly workloads, required for AOT, are only supported for projects targeting net6.0+ . Set %24(RunAOTCompilation)=false to disable it." />
+
+      <Error Condition="@(NativeFileReference->Count()) > 0"
+             Text="WebAssembly workloads, required for linking native files (from %40(NativeFileReference)), are only supported for projects targeting net6.0+ ." />
     </Target>
 </Project>

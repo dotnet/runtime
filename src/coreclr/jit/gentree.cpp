@@ -1226,18 +1226,31 @@ void GenTreeCall::ResetArgInfo()
     // only sets up fgArgInfo, it also adds non-standard args to the IR, and we need
     // to remove that extra IR so it doesn't get added again.
     //
-    // NOTE: this doesn't handle all possible cases. There might be cases where we
-    // should be removing non-standard arg IR but currently aren't.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(TARGET_X86)
-    if (IsVirtualStub())
+    unsigned argNum = 0;
+    if (gtCallThisArg != nullptr)
     {
-        JITDUMP("Removing VSD non-standard arg [%06u] to prepare for re-morphing call [%06u]\n",
-                Compiler::dspTreeID(gtCallArgs->GetNode()), gtTreeID);
-        gtCallArgs = gtCallArgs->GetNext();
+        argNum++;
     }
-#endif // !defined(TARGET_X86)
+
+    Use** link = &gtCallArgs;
+    while ((*link) != nullptr)
+    {
+        const fgArgTabEntry* entry = fgArgInfo->GetArgEntry(argNum);
+        if (entry->isNonStandard() && entry->isNonStandardArgAddedLate())
+        {
+            JITDUMP("Removing non-standarg arg %s [%06u] to prepare for re-morphing call [%06u]\n",
+                    getNonStandardArgKindName(entry->nonStandardArgKind), Compiler::dspTreeID((*link)->GetNode()),
+                    gtTreeID);
+
+            *link = (*link)->GetNext();
+        }
+        else
+        {
+            link = &(*link)->NextRef();
+        }
+
+        argNum++;
+    }
 
     fgArgInfo = nullptr;
 }
@@ -1929,7 +1942,7 @@ Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTree** pTree, fgWalk
         unsigned   lclNum = tree->AsLclVarCommon()->GetLclNum();
         LclVarDsc* varDsc = &comp->lvaTable[lclNum];
 
-        if (varDsc->lvHasLdAddrOp || varDsc->lvAddrExposed)
+        if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
         {
             ((AddrTakenDsc*)data->pCallbackData)->hasAddrTakenLcl = true;
             return WALK_ABORT;
@@ -1941,7 +1954,7 @@ Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTree** pTree, fgWalk
 
 /*****************************************************************************
  *
- *  Return true if this tree contains locals with lvHasLdAddrOp or lvAddrExposed
+ *  Return true if this tree contains locals with lvHasLdAddrOp or IsAddressExposed()
  *  flag(s) set.
  */
 
@@ -4910,34 +4923,6 @@ unsigned GenTree::GetScaledIndex()
     return 0;
 }
 
-/*****************************************************************************
- *
- *  Returns true if "addr" is a GT_ADD node, at least one of whose arguments is an integer (<= 32 bit)
- *  constant.  If it returns true, it sets "*offset" to (one of the) constant value(s), and
- *  "*addr" to the other argument.
- */
-
-bool GenTree::IsAddWithI32Const(GenTree** addr, int* offset)
-{
-    if (OperGet() == GT_ADD)
-    {
-        if (AsOp()->gtOp1->IsIntCnsFitsInI32())
-        {
-            *offset = (int)AsOp()->gtOp1->AsIntCon()->gtIconVal;
-            *addr   = AsOp()->gtOp2;
-            return true;
-        }
-        else if (AsOp()->gtOp2->IsIntCnsFitsInI32())
-        {
-            *offset = (int)AsOp()->gtOp2->AsIntCon()->gtIconVal;
-            *addr   = AsOp()->gtOp1;
-            return true;
-        }
-    }
-    // Otherwise...
-    return false;
-}
-
 //------------------------------------------------------------------------
 // gtGetChildPointer: If 'parent' is the parent of this node, return the pointer
 //    to the child node so that it can be modified; otherwise, return nullptr.
@@ -6413,7 +6398,8 @@ GenTreeCall* Compiler::gtNewCallNode(
 
     node->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
 #ifdef UNIX_X86_ABI
-    node->gtFlags |= GTF_CALL_POP_ARGS;
+    if (callType == CT_INDIRECT || callType == CT_HELPER)
+        node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
     for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
     {
@@ -7475,6 +7461,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
 #ifdef FEATURE_READYTORUN
     if (usingReadyToRunHelper)
     {
+        assert(lookup.addr != nullptr);
         allocObj->gtEntryPoint = lookup;
     }
 #endif
@@ -7879,6 +7866,9 @@ GenTree* Compiler::gtCloneExpr(
                 copy                        = new (this, GT_ALLOCOBJ)
                     GenTreeAllocObj(tree->TypeGet(), asAllocObj->gtNewHelper, asAllocObj->gtHelperHasSideEffects,
                                     asAllocObj->gtAllocObjClsHnd, asAllocObj->gtOp1);
+#ifdef FEATURE_READYTORUN
+                copy->AsAllocObj()->gtEntryPoint = asAllocObj->gtEntryPoint;
+#endif
             }
             break;
 
@@ -10000,6 +9990,33 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     return charsDisplayed;
 }
 
+#ifdef TARGET_X86
+inline const char* GetCallConvName(CorInfoCallConvExtension callConv)
+{
+    switch (callConv)
+    {
+        case CorInfoCallConvExtension::Managed:
+            return "Managed";
+        case CorInfoCallConvExtension::C:
+            return "C";
+        case CorInfoCallConvExtension::Stdcall:
+            return "Stdcall";
+        case CorInfoCallConvExtension::Thiscall:
+            return "Thiscall";
+        case CorInfoCallConvExtension::Fastcall:
+            return "Fastcall";
+        case CorInfoCallConvExtension::CMemberFunction:
+            return "CMemberFunction";
+        case CorInfoCallConvExtension::StdcallMemberFunction:
+            return "StdcallMemberFunction";
+        case CorInfoCallConvExtension::FastcallMemberFunction:
+            return "FastcallMemberFunction";
+        default:
+            return "UnknownCallConv";
+    }
+}
+#endif // TARGET_X86
+
 /*****************************************************************************/
 
 void Compiler::gtDispNodeName(GenTree* tree)
@@ -10085,6 +10102,10 @@ void Compiler::gtDispNodeName(GenTree* tree)
             {
                 gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " thiscall");
             }
+#ifdef TARGET_X86
+            gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " %s",
+                                              GetCallConvName(tree->AsCall()->GetUnmanagedCallConv()));
+#endif // TARGET_X86
             gtfType = gtfTypeBuf;
         }
 
@@ -10730,7 +10751,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
             if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_STORE_LCL_VAR)
             {
                 LclVarDsc* varDsc = &lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-                if (varDsc->lvAddrExposed)
+                if (varDsc->IsAddressExposed())
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
@@ -11561,7 +11582,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         break;
 
         case GT_PHYSREG:
-            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeUsesFloatReg(tree)));
+            printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg));
             break;
 
         case GT_IL_OFFSET:
@@ -12745,55 +12766,6 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
             return gtFoldExprCompare(tree);
         }
-        else if (op2->OperGet() == GT_COLON)
-        {
-            assert(tree->OperGet() == GT_QMARK);
-
-            GenTree* colon_op1 = op2->AsOp()->gtOp1;
-            GenTree* colon_op2 = op2->AsOp()->gtOp2;
-
-            if (gtCompareTree(colon_op1, colon_op2))
-            {
-                // Both sides of the GT_COLON are the same tree
-
-                GenTree* sideEffList = nullptr;
-                gtExtractSideEffList(op1, &sideEffList);
-
-                // Clear colon flags only if the qmark itself is not conditionaly executed
-                if ((tree->gtFlags & GTF_COLON_COND) == 0)
-                {
-                    fgWalkTreePre(&colon_op2, gtClearColonCond);
-                }
-
-                JITDUMP("\nIdentical GT_COLON trees!\n");
-                DISPTREE(op2);
-
-                GenTree* op;
-                if (sideEffList == nullptr)
-                {
-                    // No side-effects, just return colon_op2
-                    JITDUMP("No side effects, bashing to second operand:\n");
-                    op = colon_op2;
-                }
-                else
-                {
-                    JITDUMP("Extracting side effects...\n");
-                    DISPTREE(sideEffList);
-
-                    // Change the GT_COLON into a GT_COMMA node with the side-effects
-                    op2->ChangeOper(GT_COMMA);
-                    op2->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
-                    op2->AsOp()->gtOp1 = sideEffList;
-
-                    JITDUMP("Transformed GT_COLON into GT_COMMA:\n");
-                    op = op2;
-                }
-
-                DISPTREE(op);
-
-                return op;
-            }
-        }
     }
 
     /* Return the original node (folded/bashed or not) */
@@ -13620,16 +13592,13 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
             assert(val == 0 || val == 1);
 
-            GenTree* opToDelete;
             if (val)
             {
-                op         = op2->AsColon()->ThenNode();
-                opToDelete = op2->AsColon()->ElseNode();
+                op = op2->AsColon()->ThenNode();
             }
             else
             {
-                op         = op2->AsColon()->ElseNode();
-                opToDelete = op2->AsColon()->ThenNode();
+                op = op2->AsColon()->ElseNode();
             }
 
             // Clear colon flags only if the qmark itself is not conditionaly executed
@@ -14675,9 +14644,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         DISPTREE(tree);
 
                         // Fold into GT_IND of null byref.
-                        tree->ChangeOperConst(GT_CNS_INT);
-                        tree->ChangeType(TYP_BYREF);
-                        tree->AsIntCon()->SetIconValue(0);
+                        tree->BashToConst(0, TYP_BYREF);
                         if (vnStore != nullptr)
                         {
                             fgValueNumberTreeConst(tree);
@@ -14899,13 +14866,12 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             // Also all conditional folding jumps here since the node hanging from
             // GT_JTRUE has to be a GT_CNS_INT - value 0 or 1.
 
-            tree->ChangeOperConst(GT_CNS_INT);
-            tree->ChangeType(TYP_INT);
             // Some operations are performed as 64 bit instead of 32 bit so the upper 32 bits
             // need to be discarded. Since constant values are stored as ssize_t and the node
             // has TYP_INT the result needs to be sign extended rather than zero extended.
-            tree->AsIntCon()->SetIconValue(static_cast<int>(i1));
+            tree->BashToConst(static_cast<int>(i1));
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
+
             if (vnStore != nullptr)
             {
                 fgValueNumberTreeConst(tree);
@@ -15003,6 +14969,9 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         goto INTEGRAL_OVF;
                     }
                     lval1 = ltemp;
+#ifdef TARGET_64BIT
+                    fieldSeq = GetFieldSeqStore()->Append(op1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
+#endif
                     break;
 
                 case GT_SUB:
@@ -15108,11 +15077,13 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             }
 
         CNS_LONG:
-
+#if !defined(TARGET_64BIT)
             if (fieldSeq != FieldSeqStore::NotAField())
             {
+                assert(!"Field sequences on CNS_LNG nodes!?");
                 return tree;
             }
+#endif // !defined(TARGET_64BIT)
 
             JITDUMP("\nFolding long operator with constant nodes into a constant:\n");
             DISPTREE(tree);
@@ -15120,8 +15091,10 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             assert((GenTree::s_gtNodeSizes[GT_CNS_NATIVELONG] == TREE_NODE_SZ_SMALL) ||
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
-            tree->ChangeOperConst(GT_CNS_NATIVELONG);
-            tree->AsIntConCommon()->SetLngValue(lval1);
+            tree->BashToConst(lval1);
+#ifdef TARGET_64BIT
+            tree->AsIntCon()->gtFieldSeq = fieldSeq;
+#endif
             if (vnStore != nullptr)
             {
                 fgValueNumberTreeConst(tree);
@@ -15279,8 +15252,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             assert((GenTree::s_gtNodeSizes[GT_CNS_DBL] == TREE_NODE_SZ_SMALL) ||
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
-            tree->ChangeOperConst(GT_CNS_DBL);
-            tree->AsDblCon()->gtDconVal = d1;
+            tree->BashToConst(d1, tree->TypeGet());
             if (vnStore != nullptr)
             {
                 fgValueNumberTreeConst(tree);

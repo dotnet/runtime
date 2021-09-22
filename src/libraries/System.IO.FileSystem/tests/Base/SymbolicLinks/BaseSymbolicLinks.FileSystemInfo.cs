@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.IO.Tests
@@ -54,7 +52,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData(nameof(LinkTarget_PathToTarget_Data))]
+        [MemberData(nameof(SymbolicLink_LinkTarget_PathToTarget_Data))]
         public void LinkTarget_Succeeds(string pathToTarget)
         {
             FileSystemInfo linkInfo = CreateSymbolicLink(GetRandomLinkPath(), pathToTarget);
@@ -85,17 +83,6 @@ namespace System.IO.Tests
             linkInfo.Refresh();
             Assert.Equal(newPathToTarget, linkInfo.LinkTarget);
             Assert.Equal(newLinkInfo.LinkTarget, linkInfo.LinkTarget);
-        }
-
-        public static IEnumerable<object[]> LinkTarget_PathToTarget_Data
-        {
-            get
-            {
-                foreach (string path in PathToTargetData)
-                {
-                    yield return new object[] { path };
-                }
-            }
         }
     }
 }

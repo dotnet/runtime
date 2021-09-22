@@ -510,15 +510,10 @@ void IBCLogger::LogMethodAccessHelper(const MethodDesc* pMD, ULONG flagNum)
         if (g_pObjectClass == NULL || g_pStringClass == NULL)
             goto DelayCallback;
 
-        RelativeFixupPointer<PTR_MethodTable> * ppMT = pMD->GetMethodTablePtr();
-        if (ppMT->IsNull())
+        PTR_MethodTable pMT = pMD->GetMethodTable();
+        if (pMT == NULL)
             goto DelayCallback;
 
-        TADDR pMaybeTaggedMT = ppMT->GetValueMaybeTagged((TADDR)ppMT);
-        if (CORCOMPILE_IS_POINTER_TAGGED(pMaybeTaggedMT))
-            goto DelayCallback;
-
-        MethodTable *pMT = (MethodTable *)pMaybeTaggedMT;
         if (!pMT->IsRestored_NoLogging())
             goto DelayCallback;
 
