@@ -12,7 +12,7 @@
 //
 // A fat function pointer is a pointer with the second least significant bit
 // (aka FAT_POINTER_MASK) set. If the bit is set, the pointer (after clearing the bit)
-// actually points to a tuple <method pointer, instantiation argument pointer> where
+// actually points to a tuple <method pointer, instantiation argument> where
 // instantiationArgument is a hidden first argument required by method pointer.
 //
 // Fat pointers are used in CoreRT as a replacement for instantiating stubs,
@@ -410,7 +410,7 @@ private:
         // GetHiddenArgument: load hidden argument.
         //
         // Arguments:
-        //    fixedFptrAddress - pointer to the tuple <methodPointer, instantiationArgumentPointer>
+        //    fixedFptrAddress - pointer to the tuple <methodPointer, instantiationArgument>
         //
         // Return Value:
         //    generic context hidden argument.
@@ -418,9 +418,8 @@ private:
         {
             GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
             GenTree* wordSize = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
-            GenTree* hiddenArgumentPtrPtr =
+            GenTree* hiddenArgumentPtr =
                 compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
-            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_IND, pointerType, hiddenArgumentPtrPtr);
             return compiler->gtNewOperNode(GT_IND, fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
         }
 
