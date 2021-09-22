@@ -346,18 +346,20 @@ namespace System.Xml
                 newSettings.CloseOutput = true;
             }
 
-            using var fs = new FileStream
-            (
-                outputFileName,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.Read,
-                0x1000,
-                _useAsync
-            );
+            FileStream? fs = null;
+            try
+            {
+                // open file stream
+                fs = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.Read, 0x1000, _useAsync);
 
-            // create writer
-            return newSettings.CreateWriter(fs);
+                // create writer
+                return newSettings.CreateWriter(fs);
+            }
+            catch
+            {
+                fs?.Dispose();
+                throw;
+            }
         }
 
         internal XmlWriter CreateWriter(Stream output)
