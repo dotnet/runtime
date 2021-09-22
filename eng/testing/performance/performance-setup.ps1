@@ -122,14 +122,14 @@ if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
     
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
-	if (!$?) {
-		Write-Output "Failed to copy $SourceDirectory"
+	if ($LASTEXITCODE -ne 0) {
+		Write-Output "Failed to copy $SourceDirectory: exit code $LASTEXITCODE"
 		exit 1
 	}
 }
 else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
-	if ( $LASTEXITCODE -ne 0 ) {
+	if ($LASTEXITCODE -ne 0) {
 		Write-Output "git clone failed with code $LASTEXITCODE"
 		exit 1
 	}
@@ -200,8 +200,8 @@ if ($iOSMono) {
 
 $DocsDir = (Join-Path $PerformanceDirectory "docs")
 robocopy $DocsDir $WorkItemDirectory
-if (!$?) {
-	Write-Output "Failed to copy $DocsDir"
+if (!$LASTEXITCODE -ne 0) {
+	Write-Output "Failed to copy $DocsDir: exit code $LASTEXITCODE"
 	exit 1
 }
 
