@@ -16,7 +16,6 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_SourceFiles)" DestinationFolder="$(SdkWithWorkloadForTestingPath)\%(_SourceFiles.RecursiveDir)" />
-    <Copy SourceFiles="$(MonoProjectRoot)\wasm\BlazorOverwrite.targets" DestinationFiles="$(SdkWithWorkloadForTestingPath)\sdk\$(SdkVersionForWorkloadTesting)\Sdks\Microsoft.NET.Sdk.BlazorWebAssembly\targets\Microsoft.NET.Sdk.BlazorWebAssembly.6_0.targets" />
 
     <WriteLinesToFile File="$(SdkWithWorkloadStampPath)" Lines="" Overwrite="true" />
   </Target>
@@ -41,7 +40,6 @@
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(SdkWithNoWorkloadForTestingPath) -Version $(SdkVersionForWorkloadTesting)"' />
 
-    <Copy SourceFiles="$(MonoProjectRoot)\wasm\BlazorOverwrite.targets" DestinationFiles="$(SdkWithNoWorkloadForTestingPath)\sdk\$(SdkVersionForWorkloadTesting)\Sdks\Microsoft.NET.Sdk.BlazorWebAssembly\targets\Microsoft.NET.Sdk.BlazorWebAssembly.6_0.targets" />
     <WriteLinesToFile File="$(SdkWithNoWorkloadStampPath)" Lines="" Overwrite="true" />
   </Target>
 
