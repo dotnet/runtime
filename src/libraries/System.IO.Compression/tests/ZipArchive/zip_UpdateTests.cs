@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -355,5 +356,159 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(0, compressionMethod); // stored => 0, deflate => 8
             }
         }
+
+
+        [Theory]
+        [MemberData(nameof(TestComments))]
+        public static void Update_ZipArchive_Comment(string? comment)
+        {
+            string expectedComment = GetExpectedComment(comment);
+            string updatedComment = "Updated comment " + comment;
+            string expectedUpdatedComment = GetExpectedComment(updatedComment);
+
+            using var stream = new MemoryStream();
+            var testStream = new WrappedStream(stream, true, true, true, null);
+
+            // Create
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                zip.Comment = comment;
+                Assert.Equal(expectedComment, zip.Comment);
+            }
+            // Read (verify creation)
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true))
+            {
+                Assert.Equal(expectedComment, zip.Comment);
+            }
+            // Update
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true))
+            {
+                zip.Comment = updatedComment;
+                Assert.Equal(expectedUpdatedComment, zip.Comment);
+            }
+            // Read (verify update)
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read))
+            {
+                Assert.Equal(expectedUpdatedComment, zip.Comment);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestComments))]
+        public static void Update_ZipArchiveEntry_Comment(string? comment)
+        {
+            string expectedComment = GetExpectedComment(comment);
+            string updatedComment = "Updated comment " + comment;
+            string expectedUpdatedComment = GetExpectedComment(updatedComment);
+
+            var stream = new MemoryStream();
+            var testStream = new WrappedStream(stream, true, true, true, null);
+
+            // Create
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                ZipArchiveEntry entry = zip.CreateEntry("testfile.txt", CompressionLevel.NoCompression);
+
+                entry.Comment = comment;
+                Assert.Equal(expectedComment, entry.Comment);
+            }
+            // Read (verify creation)
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true))
+            {
+                foreach (ZipArchiveEntry entry in zip.Entries)
+                {
+                    Assert.Equal(expectedComment, entry.Comment);
+                }
+            }
+            // Update
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true))
+            {
+                foreach (ZipArchiveEntry entry in zip.Entries)
+                {
+                    entry.Comment = updatedComment;
+                    Assert.Equal(expectedUpdatedComment, entry.Comment);
+                }
+            }
+            // Read (verify update)
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry entry in zip.Entries)
+                {
+                    Assert.Equal(expectedUpdatedComment, entry.Comment);
+                }
+            }
+        }
+
+        [Fact]
+        // General purpose bit flag must get the appropriate bit set if a file comment is unicode
+        public static void Update_ZipArchive_And_ZipArchiveEntry_UnicodeComment()
+        {
+            UTF8Encoding utf8Encoding = new(encoderShouldEmitUTF8Identifier: true);
+
+            string comment = "This Unicode string has 2 characters outside the " + "ASCII range:\n" + "Pi (\u03a0), and Sigma (\u03a3).";
+            string updatedComment = "Updated comment " + comment;
+
+            var stream = new MemoryStream();
+            var testStream = new WrappedStream(stream, true, true, true, null);
+
+            // Create with UTF8 encoding
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true, utf8Encoding))
+            {
+                zip.Comment = comment;
+                ZipArchiveEntry entry = zip.CreateEntry("testfile.txt", CompressionLevel.NoCompression);
+                entry.Comment = comment;
+
+                Assert.Equal(comment, zip.Comment);
+                Assert.Equal(comment, entry.Comment);
+            }
+            // Read with UTF8 encoding (verify creation)
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true, utf8Encoding))
+            {
+                Assert.Equal(comment, zip.Comment);
+                foreach (ZipArchiveEntry entry in zip.Entries)
+                {
+                    Assert.Equal(comment, entry.Comment);
+                }
+            }
+            // Update with UTF8 encoding
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true, utf8Encoding))
+            {
+                zip.Comment = updatedComment;
+                Assert.Equal(updatedComment, zip.Comment);
+
+                foreach (ZipArchiveEntry entry in zip.Entries)
+                {
+                    entry.Comment = updatedComment;
+                    Assert.Equal(updatedComment, entry.Comment);
+                }
+            }
+            // Read with UTF8 encoding (verify update)
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false, utf8Encoding))
+            {
+                Assert.Equal(updatedComment, zip.Comment);
+                foreach (ZipArchiveEntry entry in zip.Entries)
+                {
+                    Assert.Equal(updatedComment, entry.Comment);
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> TestComments()
+        {
+            yield return new object[] { null }; // Should get saved as empty string.
+            yield return new object[] { "" };
+            yield return new object[] { "1" };
+            yield return new object[] { new string('x', ushort.MaxValue) };
+            yield return new object[] { new string('y', ushort.MaxValue + 1) }; // Should get truncated.
+        }
+
+        // Ensures the specified comment is returned as a non-null string no longer than ushort.MaxValue.
+        private static string GetExpectedComment(string? comment)
+        {
+            string nonNullComment = comment ?? string.Empty;
+            int nonNullCommentMaxLength = nonNullComment.Length > ushort.MaxValue ? ushort.MaxValue : nonNullComment.Length;
+            return nonNullComment.Substring(0, nonNullCommentMaxLength);
+        }
+
     }
 }
