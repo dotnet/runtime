@@ -11659,29 +11659,32 @@ void gc_heap::clear_gen0_bricks()
 void gc_heap::check_gen0_bricks()
 {
 //#ifdef _DEBUG
+    if (gen0_bricks_cleared)
+    {
 #ifdef USE_REGIONS
-    heap_segment* gen0_region = generation_start_segment (generation_of (0));
-    while (gen0_region)
-    {
-        uint8_t* start = heap_segment_mem (gen0_region);
-#else 
-    heap_segment* gen0_region = ephemeral_heap_segment;
-    uint8_t* start = generation_allocation_start (generation_of (0));
-    {
-#endif //USE_REGIONS
-        size_t end_b = brick_of (heap_segment_allocated (gen0_region));
-        for (size_t b = brick_of (start); b < end_b; b++)
+        heap_segment* gen0_region = generation_start_segment (generation_of (0));
+        while (gen0_region)
         {
-            assert (brick_table[b] != 0);
-            if (brick_table[b] == 0)
+            uint8_t* start = heap_segment_mem (gen0_region);
+#else 
+        heap_segment* gen0_region = ephemeral_heap_segment;
+        uint8_t* start = generation_allocation_start (generation_of (0));
+        {
+#endif //USE_REGIONS
+            size_t end_b = brick_of (heap_segment_allocated (gen0_region));
+            for (size_t b = brick_of (start); b < end_b; b++)
             {
-                GCToOSInterface::DebugBreak();
+                assert (brick_table[b] != 0);
+                if (brick_table[b] == 0)
+                {
+                    GCToOSInterface::DebugBreak();
+                }
             }
-        }
 
 #ifdef USE_REGIONS
-        gen0_region = heap_segment_next (gen0_region);
+            gen0_region = heap_segment_next (gen0_region);
 #endif //USE_REGIONS
+        }
     }
 //#endif //_DEBUG
 }
@@ -21628,8 +21631,8 @@ void gc_heap::garbage_collect (int n)
 #ifdef JOIN_STATS
     gc_t_join.start_ts(this);
 #endif //JOIN_STATS
-    clear_gen0_bricks();
     check_gen0_bricks();
+    clear_gen0_bricks();
 #endif //MULTIPLE_HEAPS
 
     if ((settings.pause_mode == pause_no_gc) && current_no_gc_region_info.minimal_gc_p)
