@@ -4134,7 +4134,7 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HW_INTRINSIC_CHK:
-#endif      // FEATURE_HW_INTRINSICS
+#endif // FEATURE_HW_INTRINSICS
             // Evaluate the trees left to right
             fgSetTreeSeqHelper(tree->AsBoundsChk()->gtIndex, isLIR);
             fgSetTreeSeqHelper(tree->AsBoundsChk()->gtArrLen, isLIR);

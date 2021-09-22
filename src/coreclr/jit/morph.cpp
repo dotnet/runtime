@@ -3599,7 +3599,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                             // Whenever we pass an integer register argument
                             // we skip the corresponding floating point register argument
                             intArgRegNum = min(intArgRegNum + size, MAX_REG_ARG);
-#endif                      // WINDOWS_AMD64_ABI
+#endif // WINDOWS_AMD64_ABI
                             // No supported architecture supports partial structs using float registers.
                             assert(fltArgRegNum <= MAX_FLOAT_REG_ARG);
                         }

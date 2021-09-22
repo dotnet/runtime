@@ -3567,7 +3567,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                     user->ChangeType(returnType);
                     break;
                 }
-#endif          // FEATURE_SIMD
+#endif // FEATURE_SIMD
                 // importer has a separate mechanism to retype calls to helpers,
                 // keep it for now.
                 assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_CORERT_ABI)));
@@ -6488,7 +6488,7 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_PUTARG_STK:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
-#endif      // FEATURE_ARG_SPLIT
+#endif // FEATURE_ARG_SPLIT
             // The regNum must have been set by the lowering of the call.
             assert(node->GetRegNum() != REG_NA);
             break;
