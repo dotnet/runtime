@@ -325,6 +325,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(OutputType)}=Library' can not be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
+        foreach (var asmItem in Assemblies)
+        {
+            string? fullPath = asmItem.GetMetadata("FullPath");
+            if (!File.Exists(fullPath))
+                throw new LogAsErrorException($"Could not find {fullPath} to AOT");
+        }
+
         return !Log.HasLoggedErrors;
     }
 
@@ -347,6 +354,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
 
         _assembliesToCompile = EnsureAndGetAssembliesInTheSameDir(Assemblies);
+        _assembliesToCompile = FilterAssemblies(_assembliesToCompile);
 
         if (!string.IsNullOrEmpty(AotModulesTablePath) && !GenerateAotModulesTable(_assembliesToCompile, Profilers, AotModulesTablePath))
             return false;
@@ -428,31 +436,43 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
     }
 
-    private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(ITaskItem[] originalAssemblies)
+    private IList<ITaskItem> FilterAssemblies(IEnumerable<ITaskItem> assemblies)
     {
         List<ITaskItem> filteredAssemblies = new();
-        string firstAsmDir = Path.GetDirectoryName(originalAssemblies[0].GetMetadata("FullPath")) ?? string.Empty;
-        bool allInSameDir = true;
-
-        foreach (var origAsm in originalAssemblies)
+        foreach (var asmItem in assemblies)
         {
-            if (allInSameDir && Path.GetDirectoryName(origAsm.GetMetadata("FullPath")) != firstAsmDir)
-                allInSameDir = false;
-
-            if (ShouldSkip(origAsm))
+            if (ShouldSkip(asmItem))
             {
                 if (parsedAotMode == MonoAotMode.LLVMOnly)
-                    throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {origAsm.ItemSpec}");
+                    throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {asmItem.ItemSpec}");
 
-                Log.LogMessage(MessageImportance.Low, $"Skipping {origAsm.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
+                Log.LogMessage(MessageImportance.Low, $"Skipping {asmItem.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
                 continue;
             }
 
-            filteredAssemblies.Add(origAsm);
+            string assemblyPath = asmItem.GetMetadata("FullPath");
+            PEReader reader = new(File.OpenRead(assemblyPath), PEStreamOptions.Default);
+            if (!reader.HasMetadata)
+            {
+                Log.LogWarning($"Skipping unmanaged {assemblyPath} for AOT");
+                continue;
+            }
+
+            filteredAssemblies.Add(asmItem);
         }
 
+        return filteredAssemblies;
+
+        static bool ShouldSkip(ITaskItem asmItem)
+            => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
+    }
+
+    private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(IList<ITaskItem> assemblies)
+    {
+        string firstAsmDir = Path.GetDirectoryName(assemblies.First().GetMetadata("FullPath")) ?? string.Empty;
+        bool allInSameDir = assemblies.All(asm => Path.GetDirectoryName(asm.GetMetadata("FullPath")) == firstAsmDir);
         if (allInSameDir)
-            return filteredAssemblies;
+            return assemblies;
 
         // Copy to aot-in
 
@@ -460,28 +480,23 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         Directory.CreateDirectory(aotInPath);
 
         List<ITaskItem> newAssemblies = new();
-        foreach (var origAsm in originalAssemblies)
+        foreach (var asmItem in assemblies)
         {
-            string asmPath = origAsm.GetMetadata("FullPath");
+            string asmPath = asmItem.GetMetadata("FullPath");
             string newPath = Path.Combine(aotInPath, Path.GetFileName(asmPath));
 
             // FIXME: delete files not in originalAssemblies though
             // FIXME: or .. just delete the whole dir?
             if (Utils.CopyIfDifferent(asmPath, newPath, useHash: true))
                 Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
+            _fileWrites.Add(newPath);
 
-            if (!ShouldSkip(origAsm))
-            {
-                ITaskItem newAsm = new TaskItem(newPath);
-                origAsm.CopyMetadataTo(newAsm);
-                newAssemblies.Add(newAsm);
-            }
+            ITaskItem newAsm = new TaskItem(newPath);
+            asmItem.CopyMetadataTo(newAsm);
+            newAssemblies.Add(newAsm);
         }
 
         return newAssemblies;
-
-        static bool ShouldSkip(ITaskItem asmItem)
-            => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
     }
 
     private PrecompileArguments GetPrecompileArgumentsFor(ITaskItem assemblyItem, string? monoPaths)
