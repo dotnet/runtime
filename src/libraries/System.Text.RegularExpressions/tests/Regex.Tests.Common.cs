@@ -53,9 +53,12 @@ namespace System.Text.RegularExpressions.Tests
             get
             {
                 yield return RegexEngine.Interpreter;
+
                 yield return RegexEngine.Compiled;
+
                 if (PlatformDetection.IsNetCore &&
                     PlatformDetection.IsReflectionEmitSupported && // the source generator doesn't use reflection emit, but it does use Roslyn for the equivalent
+                    PlatformDetection.IsNotMobile &&
                     PlatformDetection.IsNotBrowser)
                 {
                     yield return RegexEngine.SourceGenerated;
