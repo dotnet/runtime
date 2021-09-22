@@ -5,9 +5,9 @@
 #include "icorjitcompiler.h"
 #include "icorjitinfo.h"
 
-void interceptor_ICJC::setJitOs(CORINFO_OS os)
+void interceptor_ICJC::setTargetOS(CORINFO_OS os)
 {
-    original_ICorJitCompiler->setJitOs(os);
+    original_ICorJitCompiler->setTargetOS(os);
 }
 
 CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,            /* IN */

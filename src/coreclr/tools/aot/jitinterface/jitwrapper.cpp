@@ -45,7 +45,7 @@ DLL_EXPORT int JitCompileMethod(
 
 DLL_EXPORT void JitSetOs(ICorJitCompiler* pJit, CORINFO_OS os)
 {
-    pJit->setJitOs(os);
+    pJit->setTargetOS(os);
 }
 
 DLL_EXPORT void JitProcessShutdownWork(ICorJitCompiler * pJit)

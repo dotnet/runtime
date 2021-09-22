@@ -2185,6 +2185,10 @@ void CodeGen::genGenerateMachineCode()
         {
             printf(" - Windows");
         }
+        else if (TargetOS::IsMacOS)
+        {
+            printf(" - MacOS");
+        }
         else if (TargetOS::IsUnix)
         {
             printf(" - Unix");

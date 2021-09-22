@@ -307,7 +307,11 @@ bool TargetOS::IsUnix              = false;
 bool TargetOS::IsMacOS             = false;
 #endif
 
-void CILJit::setJitOs(CORINFO_OS os)
+/*****************************************************************************
+ * Set the OS that this JIT should be generating code for. The contract with the VM
+ * is that this must be called before compileMethod is called.
+ */
+void CILJit::setTargetOS(CORINFO_OS os)
 {
 #ifdef TARGET_OS_RUNTIMEDETERMINED
     TargetOS::IsMacOS             = os == CORINFO_MACOS;

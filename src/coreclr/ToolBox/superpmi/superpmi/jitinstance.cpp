@@ -312,7 +312,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         {
             pParam->pThis->lt.Start();
         }
-        pParam->pThis->pJitInstance->setJitOs(os);
+        pParam->pThis->pJitInstance->setTargetOS(os);
         CorJitResult jitResult = pParam->pThis->pJitInstance->compileMethod(pParam->pThis->icji, &pParam->info,
                                                                        pParam->flags, &NEntryBlock, &NCodeSizeBlock);
         if (pParam->collectThroughput)

@@ -1676,7 +1676,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
                         pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_VERSION_CHECK;
 
                         // Specify to the JIT that it is working with the OS that we are compiled against
-                        pICorJitCompiler->setJitOs(getClrVmOs());
+                        pICorJitCompiler->setTargetOS(getClrVmOs());
 
                         // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
                         *ppICorJitCompiler = pICorJitCompiler;

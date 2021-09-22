@@ -6,8 +6,6 @@
 #define _JIT_H_
 /*****************************************************************************/
 
-#include "targetosarch.h"
-
 //
 // clr.sln only defines _DEBUG
 // The jit uses DEBUG rather than _DEBUG
@@ -185,6 +183,7 @@
 #include "utilcode.h" // this defines assert as _ASSERTE
 #include "host.h"     // this redefines assert for the JIT to use assertAbort
 #include "utils.h"
+#include "targetosarch.h"
 
 #ifdef DEBUG
 #define INDEBUG(x) x
