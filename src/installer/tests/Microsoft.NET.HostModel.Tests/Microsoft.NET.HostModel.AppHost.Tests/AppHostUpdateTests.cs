@@ -375,7 +375,7 @@ namespace Microsoft.NET.HostModel.Tests
 
         private static int GetFilePermissionValue(string path)
         {
-            var modeValue = FileStatusProvider.GetFileMode(path);
+            int modeValue = FileStatusProvider.GetFileMode(path);
 
             // st_mode is typically a 16-bits value, high 4 bits are filetype and low 12
             // bits are permission. we will clear first 20 bits (a byte and a nibble) with
