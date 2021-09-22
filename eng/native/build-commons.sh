@@ -94,6 +94,32 @@ build_native()
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
+    if [[ "$targetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+        if [[ -z "$ANDROID_NDK_ROOT" ]]; then
+            echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
+            exit 1
+        fi
+
+        # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=21 $cmakeArgs"
+
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
+        __Compiler="default"
+
+        if [[ "$platformArch" == x64 ]]; then
+            cmakeArgs="-DANDROID_ABI=x86_64 $cmakeArgs"
+        elif [[ "$platformArch" == x86 ]]; then
+            cmakeArgs="-DANDROID_ABI=x86 $cmakeArgs"
+        elif [[ "$platformArch" == arm64 ]]; then
+            cmakeArgs="-DANDROID_ABI=arm64-v8a $cmakeArgs"
+        elif [[ "$platformArch" == arm ]]; then
+            cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
+        else
+            echo "Error: Unknown Android architecture $platformArch."
+            exit 1
+        fi
+    fi
+
     if [[ "$__UseNinja" == 1 ]]; then
         generator="ninja"
         buildTool="$(command -v ninja || command -v ninja-build)"

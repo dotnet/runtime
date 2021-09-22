@@ -13,6 +13,8 @@ var BindingSupportLib = {
 		_js_handle_free_list: [],
 		_next_js_handle: 1,
 
+		ws_send_buffer_blocking_threshold: 65536,
+
 		mono_wasm_marshal_enum_as_int: true,
 		mono_bindings_init: function (binding_asm) {
 			this.BINDING_ASM = binding_asm;
@@ -42,7 +44,17 @@ var BindingSupportLib = {
 			this.cs_owned_js_handle_symbol = Symbol.for("wasm cs_owned_js_handle");
 			this.delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 			this.delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
+			this.promise_control_symbol = Symbol.for("wasm promise_control");
 			this.listener_registration_count_symbol = Symbol.for("wasm listener_registration_count");
+			this.wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
+			this.wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
+			this.wasm_ws_pending_send_buffer_type = Symbol.for("wasm ws_pending_send_buffer_type");
+			this.wasm_ws_pending_receive_event_queue = Symbol.for("wasm ws_pending_receive_event_queue");
+			this.wasm_ws_pending_receive_promise_queue = Symbol.for("wasm ws_pending_receive_promise_queue");
+			this.wasm_ws_pending_open_promise = Symbol.for("wasm ws_pending_open_promise");
+			this.wasm_ws_pending_close_promises = Symbol.for("wasm ws_pending_close_promises");
+			this.wasm_ws_pending_send_promises = Symbol.for("wasm ws_pending_send_promises");
+			this.wasm_ws_is_aborted = Symbol.for("wasm ws_is_aborted");
 
 			// please keep System.Runtime.InteropServices.JavaScript.Runtime.MappedType in sync
 			Object.prototype[this.wasm_type_symbol] = 0;
@@ -147,6 +159,7 @@ var BindingSupportLib = {
 			this._set_tcs_result = bind_runtime_method ("SetTaskSourceResult","io");
 			this._set_tcs_failure = bind_runtime_method ("SetTaskSourceFailure","is");
 			this._get_tcs_task = bind_runtime_method ("GetTaskSourceTask","i!");
+			this._task_from_result = bind_runtime_method ("TaskFromResult","o!");
 			this._setup_js_cont = bind_runtime_method ("SetupJSContinuation", "mo");
 			
 			this._object_to_string = bind_runtime_method ("ObjectToString", "m");
@@ -162,16 +175,6 @@ var BindingSupportLib = {
 				return Promise.resolve(js_obj) === js_obj ||
 						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
 			};
-			this.isChromium = false;
-			if (globalThis.navigator) {
-				var nav = globalThis.navigator;
-				if (nav.userAgentData && nav.userAgentData.brands) {
-					this.isChromium = nav.userAgentData.brands.some((i) => i.brand == 'Chromium');
-				}
-				else if (globalThis.navigator.userAgent) {
-					this.isChromium = nav.userAgent.includes("Chrome");
-				}
-			}
 
 			this._empty_string = "";
 			this._empty_string_ptr = 0;
@@ -195,8 +198,10 @@ var BindingSupportLib = {
 			// As such, it's not possible for this gc_handle to be invoked by JS anymore, so
 			//  we can release the tracking weakref (it's null now, by definition),
 			//  and tell the C# side to stop holding a reference to the managed object.
-			this._js_owned_object_table.delete(gc_handle);
-			this._release_js_owned_object_by_gc_handle(gc_handle);
+			// "The FinalizationRegistry callback is called potentially multiple times"
+			if (this._js_owned_object_table.delete(gc_handle)) {
+				this._release_js_owned_object_by_gc_handle(gc_handle);
+			}
 		},
 
 		_lookup_js_owned_object: function (gc_handle) {
@@ -246,7 +251,7 @@ var BindingSupportLib = {
 				// let go of the thenable reference
 				this._mono_wasm_release_js_handle(thenable_js_handle);
 
-				// when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after use
+				// when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after promise resolve/reject
 				if (!this._use_finalization_registry) {
 					this._release_js_owned_object_by_gc_handle(tcs_gc_handle);
 				}
@@ -255,7 +260,7 @@ var BindingSupportLib = {
 				// let go of the thenable reference
 				this._mono_wasm_release_js_handle(thenable_js_handle);
 
-				// when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after use
+				// when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after promise resolve/reject
 				if (!this._use_finalization_registry) {
 					this._release_js_owned_object_by_gc_handle(tcs_gc_handle);
 				}
@@ -267,9 +272,39 @@ var BindingSupportLib = {
 			}
 
 			// returns raw pointer to tcs.Task
-			return this._get_tcs_task(tcs_gc_handle);
+			return {
+				task_ptr: this._get_tcs_task(tcs_gc_handle),
+				then_js_handle: thenable_js_handle,
+			};
 		},
-
+		_create_cancelable_promise: function (afterResolve, afterReject) {
+			var promise_control = null;
+			const promise = new Promise(function (resolve, reject) {
+				promise_control = {
+					isDone: false,
+					resolve: (data) => {
+						if (!promise_control.isDone) {
+							promise_control.isDone = true;
+							resolve(data);
+							if (afterResolve) {
+								afterResolve();
+							}
+						}
+					},
+					reject: (reason) => {
+						if (!promise_control.isDone) {
+							promise_control.isDone = true;
+							reject(reason);
+							if (afterReject) {
+								afterReject();
+							}
+						}
+					}
+				};
+			});
+			promise[this.promise_control_symbol] = promise_control;
+			return { promise, promise_control }
+		},
 		_unbox_task_root_as_promise: function (root) {
 			this.bindings_lazy_init ();
 			const self = this;
@@ -287,38 +322,19 @@ var BindingSupportLib = {
 
 			// If the promise for this gc_handle was already collected (or was never created)
 			if (!result) {
+				const explicitFinalization = self._use_finalization_registry
+					? null
+					: () => self._js_owned_object_finalized(gc_handle);
 
-				var cont_obj = null;
+				const { promise, promise_control } = this._create_cancelable_promise(explicitFinalization, explicitFinalization);
+
 				// note that we do not implement promise/task roundtrip
 				// With more complexity we could recover original instance when this promise is marshaled back to C#.
-				var result = new Promise(function (resolve, reject) {
-					if (self._use_finalization_registry) {
-						cont_obj = {
-							resolve: resolve,
-							reject: reject
-						};
-					} else {
-						// when FinalizationRegistry is not supported by this browser, we will do immediate cleanup after use
-						cont_obj = {
-							resolve: function () {
-								const res = resolve.apply(null, arguments);
-								self._js_owned_object_table.delete(gc_handle);
-								self._release_js_owned_object_by_gc_handle(gc_handle);
-								return res;
-							},
-							reject: function () {
-								const res = reject.apply(null, arguments);
-								self._js_owned_object_table.delete(gc_handle);
-								self._release_js_owned_object_by_gc_handle(gc_handle);
-								return res;
-							}
-						};
-					}
-				});
+				result = promise;
 
 				// register C# side of the continuation
-				this._setup_js_cont (root.value, cont_obj );
-				
+				this._setup_js_cont(root.value, promise_control);
+
 				// register for GC of the Task after the JS side is done with the promise
 				if (this._use_finalization_registry) {
 					this._js_owned_object_registry.register(result, gc_handle);
@@ -435,6 +451,17 @@ var BindingSupportLib = {
 			}
 
 			return result;
+		},
+
+		wrap_error: function (is_exception, ex) {
+			var res = "unknown exception";
+			if (ex) {
+				res = ex.toString()
+			}
+			if (is_exception) {
+				setValue(is_exception, 1, "i32");
+			}
+			return BINDING.js_string_to_mono_string (res);
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
@@ -797,7 +824,9 @@ var BindingSupportLib = {
 				case typeof js_obj === "boolean":
 					return this._box_js_bool (js_obj);
 				case this.isThenable(js_obj) === true:
-					return this._wrap_js_thenable_as_task (js_obj);
+					var { task_ptr } = this._wrap_js_thenable_as_task(js_obj);
+					// task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
+					return task_ptr;
 				case js_obj.constructor.name === "Date":
 					// getTime() is always UTC
 					return this._create_date_time(js_obj.getTime());
@@ -1755,6 +1784,246 @@ var BindingSupportLib = {
 			}
 			return obj;
 		},
+		Queue: function Queue() {
+			// amortized time, By Kate Morley http://code.iamkate.com/ under CC0 1.0
+
+			// initialise the queue and offset
+			var queue = [];
+			var offset = 0;
+
+			// Returns the length of the queue.
+			this.getLength = function () {
+				return (queue.length - offset);
+			}
+
+			// Returns true if the queue is empty, and false otherwise.
+			this.isEmpty = function () {
+				return (queue.length == 0);
+			}
+
+			/* Enqueues the specified item. The parameter is:
+			*
+			* item - the item to enqueue
+			*/
+			this.enqueue = function (item) {
+				queue.push(item);
+			}
+
+			/* Dequeues an item and returns it. If the queue is empty, the value
+			* 'undefined' is returned.
+			*/
+			this.dequeue = function () {
+
+				// if the queue is empty, return immediately
+				if (queue.length == 0) return undefined;
+
+				// store the item at the front of the queue
+				var item = queue[offset];
+				
+				// for GC's sake
+				queue[offset] = null;
+
+				// increment the offset and remove the free space if necessary
+				if (++offset * 2 >= queue.length) {
+					queue = queue.slice(offset);
+					offset = 0;
+				}
+
+				// return the dequeued item
+				return item;
+			}
+
+			/* Returns the item at the front of the queue (without dequeuing it). If the
+			 * queue is empty then undefined is returned.
+			 */
+			this.peek = function () {
+				return (queue.length > 0 ? queue[offset] : undefined);
+			}
+
+			this.drain = function (onEach) {
+				while (this.getLength()) {
+					var item = this.dequeue();
+					onEach(item);
+				}
+			}
+		},
+		_text_encoder_utf8: undefined,
+		_mono_wasm_web_socket_on_message: function (ws, event) {
+			const event_queue = ws[this.wasm_ws_pending_receive_event_queue];
+			const promise_queue = ws[this.wasm_ws_pending_receive_promise_queue];
+
+			if (typeof event.data === 'string') {
+				if (this._text_encoder_utf8 === undefined) {
+					this._text_encoder_utf8 = new TextEncoder();
+				}
+				event_queue.enqueue({
+					type: 0,// WebSocketMessageType.Text
+					// according to the spec https://encoding.spec.whatwg.org/
+					// - Unpaired surrogates will get replaced with 0xFFFD
+					// - utf8 encode specifically is defined to never throw
+					data: this._text_encoder_utf8.encode(event.data),
+					offset: 0
+				})
+			}
+			else {
+				if (event.data.constructor.name !== "ArrayBuffer") {
+					throw new Error('ERR19: WebSocket receive expected ArrayBuffer');
+				}
+				event_queue.enqueue({
+					type: 1,// WebSocketMessageType.Binary
+					data: new Uint8Array(event.data),
+					offset: 0
+				})
+			}
+			if (promise_queue.getLength() && event_queue.getLength() > 1) {
+				throw new Error("ERR20: Invalid WS state");// assert
+			}
+			while (promise_queue.getLength() && event_queue.getLength()) {
+				const promise_control = promise_queue.dequeue();
+				this._mono_wasm_web_socket_receive_buffering(event_queue,
+					promise_control.buffer_root, promise_control.buffer_offset, promise_control.buffer_length,
+					promise_control.response_root);
+				promise_control.resolve(null)
+			}
+			MONO.prevent_timer_throttling();
+		},
+		_mono_wasm_web_socket_receive_buffering: function (event_queue, buffer_root, buffer_offset, buffer_length, response_root) {
+			const event = event_queue.peek();
+
+			const count = Math.min(buffer_length, event.data.length - event.offset);
+			if (count > 0) {
+				const targetView = Module.HEAPU8.subarray(buffer_root.value + buffer_offset, buffer_root.value + buffer_offset + buffer_length);
+				const sourceView = event.data.subarray(event.offset, event.offset + count);
+				targetView.set(sourceView, 0);
+				event.offset += count;
+			}
+			const end_of_message = event.data.length === event.offset ? 1 : 0;
+			if (end_of_message) {
+				event_queue.dequeue();
+			}
+			setValue(response_root.value + 0, count, "i32");
+			setValue(response_root.value + 4, event.type, "i32");
+			setValue(response_root.value + 8, end_of_message, "i32");
+		},
+
+		_text_decoder_utf8: undefined,
+		_mono_wasm_web_socket_send_buffering: function (ws, buffer_root, buffer_offset, length, message_type, end_of_message) {
+			var buffer = ws[this.wasm_ws_pending_send_buffer];
+			var offset = 0;
+			var message_ptr = buffer_root.value + buffer_offset;
+
+			if (buffer) {
+				offset = ws[this.wasm_ws_pending_send_buffer_offset];
+				// match desktop WebSocket behavior by copying message_type of the first part
+				message_type = ws[this.wasm_ws_pending_send_buffer_type];
+				// if not empty message, append to existing buffer
+				if (length !== 0) {
+					const view = Module.HEAPU8.subarray(message_ptr, message_ptr + length);
+					if (offset + length > buffer.length) {
+						const newbuffer = new Uint8Array((offset + length + 50) * 1.5); // exponential growth
+						newbuffer.set(buffer, 0, offset);// copy previous buffer
+						newbuffer.set(view, offset);// append copy at the end
+						ws[this.wasm_ws_pending_send_buffer] = buffer = newbuffer;
+					}
+					else {
+						buffer.set(view, offset);// append copy at the end
+					}
+					offset += length;
+					ws[this.wasm_ws_pending_send_buffer_offset] = offset;
+				}
+			}
+			else if (!end_of_message) {
+				// create new buffer
+				if (length !== 0) {
+					const view = Module.HEAPU8.subarray(message_ptr, message_ptr + length);
+					buffer = new Uint8Array(view); // copy
+					offset = length;
+					ws[this.wasm_ws_pending_send_buffer_offset] = offset;
+					ws[this.wasm_ws_pending_send_buffer] = buffer;
+				}
+				ws[this.wasm_ws_pending_send_buffer_type] = message_type;
+			}
+			else {
+				// use the buffer only localy
+				if (length !== 0) {
+					const memoryView = Module.HEAPU8.subarray(message_ptr, message_ptr + length);
+					buffer = memoryView; // send will make a copy
+					offset = length;
+				}
+			}
+			// buffer was updated, do we need to trim and convert it to final format ?
+			if (end_of_message) {
+				if (offset == 0) {
+					return new Uint8Array();
+				}
+				if (message_type === 0) {
+					// text, convert from UTF-8 bytes to string, because of bad browser API
+					if (this._text_decoder_utf8 === undefined) {
+						// we do not validate outgoing data https://github.com/dotnet/runtime/issues/59214
+						this._text_decoder_utf8 = new TextDecoder('utf-8', { fatal: false });
+					}
+
+					// See https://github.com/whatwg/encoding/issues/172
+					var bytes = typeof SharedArrayBuffer !== 'undefined' && buffer instanceof SharedArrayBuffer
+						? buffer.slice(0, offset)
+						: buffer.subarray(0, offset);
+					return this._text_decoder_utf8.decode(bytes);
+				} else {
+					// binary, view to used part of the buffer
+					return buffer.subarray(0, offset);
+				}
+			}
+			return null;
+		},
+		_mono_wasm_web_socket_send_and_wait: function (ws, buffer, thenable_js_handle) {
+			// send and return promise
+			ws.send(buffer);
+			ws[this.wasm_ws_pending_send_buffer] = null;
+
+			// if the remaining send buffer is small, we don't block so that the throughput doesn't suffer. 
+			// Otherwise we block so that we apply some backpresure to the application sending large data.
+			// this is different from Managed implementation
+			if (ws.bufferedAmount < BINDING.ws_send_buffer_blocking_threshold) {
+				return null; // no promise
+			}
+
+			// block the promise/task until the browser passed the buffer to OS
+			const { promise, promise_control } = BINDING._create_cancelable_promise();
+			const pending = ws[BINDING.wasm_ws_pending_send_promises];
+			pending.push(promise_control);
+
+			var nextDelay = 1;
+			const polling_check = () => {
+				// was it all sent yet ?
+				if (ws.bufferedAmount === 0) {
+					promise_control.resolve(null);
+				}
+				else if (ws.readyState != WebSocket.OPEN) {
+					// only reject if the data were not sent
+					// bufferedAmount does not reset to zero once the connection closes
+					promise_control.reject("InvalidState: The WebSocket is not connected.");
+				} 
+				else if(!promise_control.isDone) {
+					globalThis.setTimeout(polling_check, nextDelay);
+					// exponentially longer delays, up to 1000ms
+					nextDelay = Math.min(nextDelay * 1.5, 1000);
+					return;
+				}
+				// remove from pending
+				const index = pending.indexOf(promise_control);
+				if (index > -1) {
+					pending.splice(index, 1);
+				}
+			};
+
+			globalThis.setTimeout(polling_check, 0);
+
+			const { task_ptr, then_js_handle } = BINDING._wrap_js_thenable_as_task(promise);
+			// task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
+			setValue(thenable_js_handle, then_js_handle, "i32");
+
+			return task_ptr;
+		},
 	},
 	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception) {
 		let argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (method_name);
@@ -1763,14 +2032,12 @@ var BindingSupportLib = {
 
 			var js_name = BINDING.conv_string (nameRoot.value);
 			if (!js_name || (typeof(js_name) !== "string")) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("ERR12: Invalid method name object '" + nameRoot.value + "'");
+				return BINDING.wrap_error(is_exception, "ERR12: Invalid method name object '" + nameRoot.value + "'");
 			}
 
 			var obj = BINDING.get_js_obj (js_handle);
 			if (!obj) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("ERR13: Invalid JS object handle '" + js_handle + "' while invoking '"+js_name+"'");
+				return BINDING.wrap_error(is_exception, "ERR13: Invalid JS object handle '" + js_handle + "' while invoking '"+js_name+"'");
 			}
 
 			var js_args = BINDING._mono_array_root_to_js_array(argsRoot);
@@ -1782,12 +2049,8 @@ var BindingSupportLib = {
 					throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
 				var res = m.apply (obj, js_args);
 				return BINDING._js_to_mono_obj(true, res);
-			} catch (e) {
-				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
-				if (res === null || res === undefined)
-					res = "unknown exception";
-				return BINDING.js_string_to_mono_string (res);
+			} catch (ex) {
+				return BINDING.wrap_error(is_exception, ex);
 			}
 		} finally {
 			argsRoot.release();
@@ -1801,27 +2064,20 @@ var BindingSupportLib = {
 		try {
 			var js_name = BINDING.conv_string (nameRoot.value);
 			if (!js_name) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid property name object '" + nameRoot.value + "'");
+				return BINDING.wrap_error(is_exception, "Invalid property name object '" + nameRoot.value + "'");
 			}
 
 			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			if (!obj) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("ERR01: Invalid JS object handle '" + js_handle + "' while geting '"+js_name+"'");
+				return BINDING.wrap_error(is_exception, "ERR01: Invalid JS object handle '" + js_handle + "' while geting '"+js_name+"'");
 			}
 
-			var res;
 			try {
 				var m = obj [js_name];
 
 				return BINDING._js_to_mono_obj (true, m);
-			} catch (e) {
-				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
-				if (res === null || typeof res === "undefined")
-					res = "unknown exception";
-				return BINDING.js_string_to_mono_string (res);
+			} catch (ex) {
+				return BINDING.wrap_error(is_exception, ex);
 			}
 		} finally {
 			nameRoot.release();
@@ -1833,14 +2089,12 @@ var BindingSupportLib = {
 			BINDING.bindings_lazy_init ();
 			var property = BINDING.conv_string (nameRoot.value);
 			if (!property) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
+				return BINDING.wrap_error(is_exception, "Invalid property name object '" + property_name + "'");
 			}
 
 			var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			if (!js_obj) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("ERR02: Invalid JS object handle '" + js_handle + "' while setting '"+property+"'");
+				return BINDING.wrap_error(is_exception, "ERR02: Invalid JS object handle '" + js_handle + "' while setting '"+property+"'");
 			}
 
 			var result = false;
@@ -1880,19 +2134,14 @@ var BindingSupportLib = {
 
 		var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 		if (!obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("ERR03: Invalid JS object handle '" + js_handle + "' while getting ["+property_index+"]");
+			return BINDING.wrap_error(is_exception, "ERR03: Invalid JS object handle '" + js_handle + "' while getting ["+property_index+"]");
 		}
 
 		try {
 			var m = obj [property_index];
 			return BINDING._js_to_mono_obj (true, m);
-		} catch (e) {
-			var res = e.toString ();
-			setValue (is_exception, 1, "i32");
-			if (res === null || typeof res === "undefined")
-				res = "unknown exception";
-			return BINDING.js_string_to_mono_string (res);
+		} catch (ex) {
+			return BINDING.wrap_error(is_exception, ex);
 		}
 	},
 	mono_wasm_set_by_index: function(js_handle, property_index, value, is_exception) {
@@ -1902,8 +2151,7 @@ var BindingSupportLib = {
 
 			var obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 			if (!obj) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("ERR04: Invalid JS object handle '" + js_handle + "' while setting ["+property_index+"]");
+				return BINDING.wrap_error(is_exception, "ERR04: Invalid JS object handle '" + js_handle + "' while setting ["+property_index+"]");
 			}
 
 			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
@@ -1911,12 +2159,8 @@ var BindingSupportLib = {
 			try {
 				obj [property_index] = js_value;
 				return true;
-			} catch (e) {
-				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
-				if (res === null || typeof res === "undefined")
-					res = "unknown exception";
-				return BINDING.js_string_to_mono_string (res);
+			} catch (ex) {
+				return BINDING.wrap_error(is_exception, ex);
 			}
 		} finally {
 			valueRoot.release();
@@ -1940,8 +2184,7 @@ var BindingSupportLib = {
 
 			// TODO returning null may be useful when probing for browser features
 			if (globalObj === null || typeof globalObj === undefined) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
+				return BINDING.wrap_error(is_exception, "Global object '" + js_name + "' not found.");
 			}
 
 			return BINDING._js_to_mono_obj (true, globalObj);
@@ -1961,15 +2204,13 @@ var BindingSupportLib = {
 			var js_name = BINDING.conv_string (nameRoot.value);
 
 			if (!js_name) {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid name @" + nameRoot.value);
+				return BINDING.wrap_error(is_exception, "Invalid name @" + nameRoot.value);
 			}
 
 			var coreObj = globalThis[js_name];
 
 			if (coreObj === null || typeof coreObj === "undefined") {
-				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("JavaScript host object '" + js_name + "' not found.");
+				return BINDING.wrap_error(is_exception, "JavaScript host object '" + js_name + "' not found.");
 			}
 
 			var js_args = BINDING._mono_array_root_to_js_array(argsRoot);
@@ -1993,12 +2234,8 @@ var BindingSupportLib = {
 				// returns boxed js_handle int, because on exception we need to return String on same method signature
 				// here we don't have anything to in-flight reference, as the JSObject doesn't exist yet
 				return BINDING._js_to_mono_obj(false, js_handle);
-			} catch (e) {
-				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
-				if (res === null || res === undefined)
-					res = "Error allocating object.";
-				return BINDING.js_string_to_mono_string (res);
+			} catch (ex) {
+				return BINDING.wrap_error(is_exception, ex);
 			}
 		} finally {
 			argsRoot.release();
@@ -2010,8 +2247,7 @@ var BindingSupportLib = {
 
 		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 		if (!js_obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("ERR06: Invalid JS object handle '" + js_handle + "'");
+			return BINDING.wrap_error(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'");
 		}
 
 		// returns pointer to C# array
@@ -2022,8 +2258,7 @@ var BindingSupportLib = {
 
 		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 		if (!js_obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("ERR07: Invalid JS object handle '" + js_handle + "'");
+			return BINDING.wrap_error(is_exception, "ERR07: Invalid JS object handle '" + js_handle + "'");
 		}
 
 		var res = BINDING.typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
@@ -2041,8 +2276,7 @@ var BindingSupportLib = {
 
 		var js_obj = BINDING.mono_wasm_get_jsobj_from_js_handle (js_handle);
 		if (!js_obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("ERR08: Invalid JS object handle '" + js_handle + "'");
+			return BINDING.wrap_error(is_exception, "ERR08: Invalid JS object handle '" + js_handle + "'");
 		}
 
 		var res = BINDING.typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
@@ -2059,9 +2293,9 @@ var BindingSupportLib = {
 			if (!obj)
 				throw new Error("ERR09: Invalid JS object handle for '"+sName+"'");
 
-			const prevent_timer_throttling = !BINDING.isChromium || obj.constructor.name !== 'WebSocket'
+			const prevent_timer_throttling = !MONO.isChromium || obj.constructor.name !== 'WebSocket'
 				? null
-				: () => MONO.prevent_timer_throttling(0);
+				: MONO.prevent_timer_throttling;
 
 			var listener = BINDING._wrap_delegate_gc_handle_as_function(listener_gc_handle, prevent_timer_throttling);
 			if (!listener)
@@ -2081,8 +2315,8 @@ var BindingSupportLib = {
 			else
 				obj.addEventListener(sName, listener);
 			return 0;
-		} catch (exc) {
-			return BINDING.js_string_to_mono_string(exc.message);
+		} catch (ex) {
+			return BINDING.wrap_error(null, ex);
 		} finally {
 			nameRoot.release();
 		}
@@ -2110,19 +2344,255 @@ var BindingSupportLib = {
 			if (!BINDING._use_finalization_registry) {
 				listener[BINDING.listener_registration_count_symbol]--;
 				if (listener[BINDING.listener_registration_count_symbol] === 0) {
-					BINDING._js_owned_object_table.delete(listener_gc_handle);
-					BINDING._release_js_owned_object_by_gc_handle(listener_gc_handle);
+					BINDING._js_owned_object_finalized(listener_gc_handle);
 				}
 			}
 
 			return 0;
-		} catch (exc) {
-			return BINDING.js_string_to_mono_string(exc.message);
+		} catch (ex) {
+			return BINDING.wrap_error(null, ex);
 		} finally {
 			nameRoot.release();
 		}
 	},
+	mono_wasm_cancel_promise: function (thenable_js_handle, is_exception) {
+		try {
+			const promise = BINDING.mono_wasm_get_jsobj_from_js_handle(thenable_js_handle)
+			const promise_control = promise[BINDING.promise_control_symbol];
+			promise_control.reject("OperationCanceledException");
+		}
+		catch (ex) {
+			return BINDING.wrap_error(is_exception, ex);
+		}
+	},
+	mono_wasm_web_socket_open: function (uri, subProtocols, on_close, web_socket_js_handle, thenable_js_handle, is_exception) {
+		const uri_root = MONO.mono_wasm_new_root(uri);
+		const sub_root = MONO.mono_wasm_new_root(subProtocols);
+		const on_close_root = MONO.mono_wasm_new_root(on_close);
+		try {
+			const js_uri = BINDING.conv_string(uri_root.value);
+			if (!js_uri) {
+				return BINDING.wrap_error(is_exception, "ERR12: Invalid uri '" + uri_root.value + "'");
+			}
 
+			const js_subs = BINDING._mono_array_root_to_js_array(sub_root);
+
+			const js_on_close = BINDING._wrap_delegate_root_as_function(on_close_root);
+
+			const ws = new globalThis.WebSocket(js_uri, js_subs);
+			var { promise, promise_control: open_promise_control } = BINDING._create_cancelable_promise();
+
+			ws[BINDING.wasm_ws_pending_receive_event_queue] = new BINDING.Queue();
+			ws[BINDING.wasm_ws_pending_receive_promise_queue] = new BINDING.Queue();
+			ws[BINDING.wasm_ws_pending_open_promise] = open_promise_control;
+			ws[BINDING.wasm_ws_pending_send_promises] = [];
+			ws[BINDING.wasm_ws_pending_close_promises] = [];
+			ws.binaryType = "arraybuffer";
+			const local_on_open = (ev) => {
+				if (ws[BINDING.wasm_ws_is_aborted]) return;
+				open_promise_control.resolve(null);
+				MONO.prevent_timer_throttling();
+			}
+			const local_on_message = (ev) => {
+				if (ws[BINDING.wasm_ws_is_aborted]) return;
+				BINDING._mono_wasm_web_socket_on_message(ws, ev);
+				MONO.prevent_timer_throttling();
+			}
+			const local_on_close = (ev) => {
+				ws.removeEventListener('message', local_on_message);
+				if (ws[BINDING.wasm_ws_is_aborted]) return;
+				js_on_close(ev.code, ev.reason);
+
+				// this reject would not do anything if there was already "open" before it.
+				open_promise_control.reject(ev.reason);
+
+				for (var close_promise_control of ws[BINDING.wasm_ws_pending_close_promises]) {
+					close_promise_control.resolve();
+				}
+
+				// send close to any pending receivers, to wake them
+				ws[BINDING.wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
+					const response_root = receive_promise_control.response_root;
+					setValue(response_root.value + 0, 0, "i32");// count
+					setValue(response_root.value + 4, 2, "i32");// type:close
+					setValue(response_root.value + 8, 1, "i32");// end_of_message: true
+					receive_promise_control.resolve(null);
+				});
+			}
+			ws.addEventListener('message', local_on_message);
+			ws.addEventListener('open', local_on_open, { once: true });
+			ws.addEventListener('close', local_on_close, { once: true });
+
+			var ws_js_handle = BINDING.mono_wasm_get_js_handle(ws);
+			setValue(web_socket_js_handle, ws_js_handle, "i32");
+
+			var { task_ptr, then_js_handle } = BINDING._wrap_js_thenable_as_task(promise);
+			// task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
+			setValue(thenable_js_handle, then_js_handle, "i32");
+
+			return task_ptr;
+		}
+		catch (ex) {
+			return BINDING.wrap_error(is_exception, ex);
+		}
+		finally {
+			uri_root.release();
+			sub_root.release();
+			on_close_root.release();
+		}
+	},
+	mono_wasm_web_socket_send: function (webSocket_js_handle, buffer_ptr, offset, length, message_type, end_of_message, thenable_js_handle, is_exception) {
+		const buffer_root = MONO.mono_wasm_new_root(buffer_ptr);
+		try {
+			const ws = BINDING.mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle)
+			if (!ws)
+				throw new Error("ERR17: Invalid JS object handle " + webSocket_js_handle);
+
+			if (ws.readyState != WebSocket.OPEN) {
+				throw new Error("InvalidState: The WebSocket is not connected.");
+			}
+
+			const whole_buffer = BINDING._mono_wasm_web_socket_send_buffering(ws, buffer_root, offset, length, message_type, end_of_message);
+
+			if (!end_of_message) {
+				return null; // we are done buffering synchronously, no promise
+			}
+			return BINDING._mono_wasm_web_socket_send_and_wait(ws, whole_buffer, thenable_js_handle);
+		}
+		catch (ex) {
+			return BINDING.wrap_error(is_exception, ex);
+		}
+		finally {
+			buffer_root.release();
+		}
+	},
+	mono_wasm_web_socket_receive: function (webSocket_js_handle, buffer_ptr, offset, length, response_ptr, thenable_js_handle, is_exception) {
+		const buffer_root = MONO.mono_wasm_new_root(buffer_ptr);
+		const response_root = MONO.mono_wasm_new_root(response_ptr);
+		const release_buffer = () => {
+			buffer_root.release();
+			response_root.release();
+		}
+
+		try {
+			const ws = BINDING.mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle)
+			if (!ws)
+				throw new Error("ERR18: Invalid JS object handle " + webSocket_js_handle);
+			const event_queue = ws[BINDING.wasm_ws_pending_receive_event_queue];
+			const promise_queue = ws[BINDING.wasm_ws_pending_receive_promise_queue];
+
+			const readyState = ws.readyState;
+			if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
+				throw new Error("InvalidState: The WebSocket is not connected.");
+			}
+
+			if (event_queue.getLength()) {
+				if (promise_queue.getLength() != 0) {
+					throw new Error("ERR20: Invalid WS state");// assert
+				}
+				// finish synchronously
+				BINDING._mono_wasm_web_socket_receive_buffering(event_queue, buffer_root, offset, length, response_root);
+				release_buffer();
+
+				setValue(thenable_js_handle, 0, "i32");
+				return null;
+			}
+
+			const { promise, promise_control } = BINDING._create_cancelable_promise(release_buffer, release_buffer);
+			promise_control.buffer_root = buffer_root;
+			promise_control.buffer_offset = offset;
+			promise_control.buffer_length = length;
+			promise_control.response_root = response_root;
+			promise_queue.enqueue(promise_control);
+
+			const { task_ptr, then_js_handle } = BINDING._wrap_js_thenable_as_task(promise);
+			// task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
+			setValue(thenable_js_handle, then_js_handle, "i32");
+			return task_ptr;
+		}
+		catch (ex) {
+			return BINDING.wrap_error(is_exception, ex);
+		}
+	},
+	mono_wasm_web_socket_close: function (webSocket_js_handle, code, reason, wait_for_close_received, thenable_js_handle, is_exception) {
+		const reason_root = MONO.mono_wasm_new_root(reason);
+		try {
+			const ws = BINDING.mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle)
+			if (!ws)
+				throw new Error("ERR19: Invalid JS object handle " + webSocket_js_handle);
+
+			if (ws.readyState == WebSocket.CLOSED) {
+				return null;// no promise
+			}
+
+			const js_reason = BINDING.conv_string(reason_root.value);
+
+			if (wait_for_close_received) {
+				const { promise, promise_control } = BINDING._create_cancelable_promise();
+				ws[BINDING.wasm_ws_pending_close_promises].push(promise_control);
+
+				if (js_reason) {
+					ws.close(code, js_reason);
+				} else {
+					ws.close(code);
+				}
+
+				var { task_ptr, then_js_handle } = BINDING._wrap_js_thenable_as_task(promise);
+				// task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
+				setValue(thenable_js_handle, then_js_handle, "i32");
+
+				return task_ptr;
+			}
+			else {
+				if (!BINDING.mono_wasm_web_socket_close_warning) {
+					BINDING.mono_wasm_web_socket_close_warning = true;
+					console.warn('WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.');
+				}
+				if (js_reason) {
+					ws.close(code, js_reason);
+				} else {
+					ws.close(code);
+				}
+				setValue(thenable_js_handle, 0, "i32");
+				return null;// no promise
+			}
+		}
+		catch (ex) {
+			return BINDING.wrap_error(is_exception, ex);
+		}
+		finally {
+			reason_root.release();
+		}
+	},
+	mono_wasm_web_socket_abort: function (webSocket_js_handle, is_exception) {
+		try {
+			const ws = BINDING.mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle)
+			if (!ws)
+				throw new Error("ERR18: Invalid JS object handle " + webSocket_js_handle);
+			
+			ws[BINDING.wasm_ws_is_aborted] = true;
+			const open_promise_control = ws[BINDING.wasm_ws_pending_open_promise];
+			if (open_promise_control) {
+				open_promise_control.reject("OperationCanceledException");
+			}
+			for(var close_promise_control of ws[BINDING.wasm_ws_pending_close_promises]){
+				close_promise_control.reject("OperationCanceledException");
+			}
+			for (var send_promise_control of ws[BINDING.wasm_ws_pending_send_promises]) {
+				send_promise_control.reject("OperationCanceledException")
+			}
+
+			ws[BINDING.wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
+				receive_promise_control.reject("OperationCanceledException");
+			});
+
+			// this is different from Managed implementation
+			ws.close(1000, 'Connection was aborted.');
+		}
+		catch (ex) {
+			return BINDING.wrap_error(is_exception, ex);
+		}
+	},
 };
 
 autoAddDeps(BindingSupportLib, '$BINDING')

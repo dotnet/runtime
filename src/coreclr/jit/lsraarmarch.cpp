@@ -176,9 +176,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // computed into a register.
         if (call->IsFastTailCall())
         {
-            // Fast tail call - make sure that call target is always computed in R12(ARM32)/IP0(ARM64)
-            // so that epilog sequence can generate "br xip0/r12" to achieve fast tail call.
-            ctrlExprCandidates = RBM_FASTTAILCALL_TARGET;
+            // Fast tail call - make sure that call target is always computed in volatile registers
+            // that will not be overridden by epilog sequence.
+            ctrlExprCandidates = RBM_INT_CALLEE_TRASH;
         }
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())

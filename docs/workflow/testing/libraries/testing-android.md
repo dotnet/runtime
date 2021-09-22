@@ -106,3 +106,7 @@ The emulator can be launched with a variety of options. Run `emulator -help` to 
 - `-os Android` is not supported for Windows yet (`WSL` can be used instead)
 - XHarness.CLI is not able to boot emulators yet (so you need to boot via `AVD Manager` or IDE)
 - AOT and Interpreter modes are not supported yet
+
+### Debugging the native runtime code using Android Studio
+
+See [Debugging Android](../../debugging/mono/android-debugging.md)

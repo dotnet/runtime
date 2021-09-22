@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Text;
+using System.Collections;
 
 #nullable enable
 
@@ -96,7 +97,9 @@ namespace Wasm.Build.Tests
 
         public static void UpdateTo(this IDictionary<string, (string fullPath, bool unchanged)> dict, bool unchanged, params string[] filenames)
         {
-            foreach (var filename in filenames)
+            IEnumerable<string> keys = filenames.Length == 0 ? dict.Keys.ToList() : filenames;
+
+            foreach (var filename in keys)
             {
                 if (!dict.TryGetValue(filename, out var oldValue))
                 {

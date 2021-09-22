@@ -94,18 +94,20 @@ namespace System.Net.Test.Common
 
         private void CloseWebSocket()
         {
-            if (_websocket != null && (_websocket.State == WebSocketState.Open || _websocket.State == WebSocketState.Connecting || _websocket.State == WebSocketState.None))
+            if (_websocket == null) return;
+
+            var state = _websocket.State;
+            if (state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.CloseSent) return;
+
+            try
             {
-                try
-                {
-                    var task = _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
-                    // Block and wait for the task to complete synchronously
-                    Task.WaitAll(task);
-                }
-                catch (Exception)
-                {
-                }
-            }            
+                var task = _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
+                // Block and wait for the task to complete synchronously
+                Task.WaitAll(task);
+            }
+            catch (Exception)
+            {
+            }
         }
     }
 

@@ -3260,7 +3260,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
 
         var_types   type = tree->TypeGet();
-        instruction ins  = ins_Store(type);
+        instruction ins  = ins_StoreFromSrc(dataReg, type);
 
         if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
         {

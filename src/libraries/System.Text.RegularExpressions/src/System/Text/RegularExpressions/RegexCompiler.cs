@@ -69,12 +69,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringIndexOfCharInt = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int) })!;
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
 
-        /// <summary>
-        /// The max recursion depth used for computations that can recover for not walking the entire node tree.
-        /// This is used to avoid stack overflows on degenerate expressions.
-        /// </summary>
-        private const int MaxRecursionDepth = 20;
-
         protected ILGenerator? _ilg;
         /// <summary>true if the compiled code is saved for later use, potentially on a different machine.</summary>
         private readonly bool _persistsAssembly;
@@ -824,43 +818,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Gets whether the specified character participates in case conversion.</summary>
-        /// <remarks>
-        /// This method is used to perform operations as if they were case-sensitive even if they're
-        /// specified as being case-insensitive.  Such a reduction can be applied when the only character
-        /// that would lower-case to the one being searched for / compared against is that character itself.
-        /// </remarks>
-        private static bool ParticipatesInCaseConversion(int comparison)
-        {
-            Debug.Assert((uint)comparison <= char.MaxValue);
-
-            switch (char.GetUnicodeCategory((char)comparison))
-            {
-                case UnicodeCategory.ClosePunctuation:
-                case UnicodeCategory.ConnectorPunctuation:
-                case UnicodeCategory.Control:
-                case UnicodeCategory.DashPunctuation:
-                case UnicodeCategory.DecimalDigitNumber:
-                case UnicodeCategory.FinalQuotePunctuation:
-                case UnicodeCategory.InitialQuotePunctuation:
-                case UnicodeCategory.LineSeparator:
-                case UnicodeCategory.OpenPunctuation:
-                case UnicodeCategory.OtherNumber:
-                case UnicodeCategory.OtherPunctuation:
-                case UnicodeCategory.ParagraphSeparator:
-                case UnicodeCategory.SpaceSeparator:
-                    // All chars in these categories meet the criteria that the only way
-                    // `char.ToLower(toTest, AnyCulture) == charInAboveCategory` is when
-                    // toTest == charInAboveCategory.
-                    return false;
-
-                default:
-                    // We don't know (without testing the character against every other
-                    // character), so assume it does.
-                    return true;
-            }
-        }
-
         /// <summary>
         /// Generates the first section of the MSIL. This section contains all
         /// the forward logic, and corresponds directly to the regex codes.
@@ -1435,7 +1392,7 @@ namespace System.Text.RegularExpressions
                         Stloc(testLocal);
                         Ldloc(testLocal);
                         Call(s_stringGetCharsMethod);
-                        if (_boyerMoorePrefix.CaseInsensitive && ParticipatesInCaseConversion(_boyerMoorePrefix.Pattern[charindex]))
+                        if (_boyerMoorePrefix.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(_boyerMoorePrefix.Pattern[charindex]))
                         {
                             CallToLower();
                         }
@@ -1700,9 +1657,9 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                // if (!CharInClass(textSpan[i], prefix[0], "...")) goto returnFalse;
-                // if (!CharInClass(textSpan[i + 1], prefix[1], "...")) goto returnFalse;
-                // if (!CharInClass(textSpan[i + 2], prefix[2], "...")) goto returnFalse;
+                // if (!CharInClass(textSpan[i], prefix[0], "...")) continue;
+                // if (!CharInClass(textSpan[i + 1], prefix[1], "...")) continue;
+                // if (!CharInClass(textSpan[i + 2], prefix[2], "...")) continue;
                 // ...
                 Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
                 for ( ; charClassIndex < _leadingCharClasses.Length; charClassIndex++)
@@ -1771,13 +1728,9 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            // We use an empty bit from the node's options to store data on whether a node contains captures.
-            Debug.Assert(Regex.MaxOptionShift == 10);
-            const RegexOptions HasCapturesFlag = (RegexOptions)(1 << 31);
-
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
-            if (!NodeSupportsNonBacktrackingImplementation(node, maxDepth: MaxRecursionDepth))
+            if (!RegexNode.NodeSupportsSimplifiedCodeGenerationImplementation(node, maxDepth: RegexNode.DefaultMaxRecursionDepth))
             {
                 return false;
             }
@@ -1852,7 +1805,7 @@ namespace System.Text.RegularExpressions
             Call(s_captureMethod);
 
             // If the graph contained captures, undo any remaining to handle failed matches.
-            if ((node.Options & HasCapturesFlag) != 0)
+            if ((node.Options & RegexNode.HasCapturesFlag) != 0)
             {
                 // while (Crawlpos() != 0) Uncapture();
 
@@ -1885,170 +1838,6 @@ namespace System.Text.RegularExpressions
 
             // Generated code successfully with non-backtracking implementation.
             return true;
-
-            // Determines whether the node supports an optimized implementation that doesn't allow for backtracking.
-            static bool NodeSupportsNonBacktrackingImplementation(RegexNode node, int maxDepth)
-            {
-                bool supported = false;
-
-                // We only support the default left-to-right, not right-to-left, which requires more complication in the gerated code.
-                // (Right-to-left is only employed when explicitly asked for by the developer or by lookbehind assertions.)
-                // We also limit the recursion involved to prevent stack dives; this limitation can be removed by switching
-                // away from a recursive implementation (done for convenience) to an iterative one that's more complicated
-                // but within the same problems.
-                if ((node.Options & RegexOptions.RightToLeft) == 0 && maxDepth > 0)
-                {
-                    int childCount = node.ChildCount();
-                    Debug.Assert((node.Options & HasCapturesFlag) == 0);
-
-                    switch (node.Type)
-                    {
-                        // One/Notone/Set/Multi don't involve any repetition and are easily supported.
-                        case RegexNode.One:
-                        case RegexNode.Notone:
-                        case RegexNode.Set:
-                        case RegexNode.Multi:
-                        // Boundaries are like set checks and don't involve repetition, either.
-                        case RegexNode.Boundary:
-                        case RegexNode.NonBoundary:
-                        case RegexNode.ECMABoundary:
-                        case RegexNode.NonECMABoundary:
-                        // Anchors are also trivial.
-                        case RegexNode.Beginning:
-                        case RegexNode.Start:
-                        case RegexNode.Bol:
-                        case RegexNode.Eol:
-                        case RegexNode.End:
-                        case RegexNode.EndZ:
-                        // {Set/One/Notone}loopatomic are optimized nodes that represent non-backtracking variable-length loops.
-                        // These consume their {Set/One} inputs as long as they match, and don't give up anything they
-                        // matched, which means we can support them without backtracking.
-                        case RegexNode.Oneloopatomic:
-                        case RegexNode.Notoneloopatomic:
-                        case RegexNode.Setloopatomic:
-                        // "Empty" is easy: nothing is emitted for it.
-                        // "Nothing" is also easy: it doesn't match anything.
-                        // "UpdateBumpalong" doesn't match anything, it's just an optional directive to the engine.
-                        case RegexNode.Empty:
-                        case RegexNode.Nothing:
-                        case RegexNode.UpdateBumpalong:
-                            supported = true;
-                            break;
-
-                        // Repeaters don't require backtracking as long as their min and max are equal.
-                        // At that point they're just a shorthand for writing out the One/Notone/Set
-                        // that number of times.
-                        case RegexNode.Oneloop:
-                        case RegexNode.Notoneloop:
-                        case RegexNode.Setloop:
-                            Debug.Assert(node.Next == null || node.Next.Type != RegexNode.Atomic, "Loop should have been transformed into an atomic type.");
-                            goto case RegexNode.Onelazy;
-                        case RegexNode.Onelazy:
-                        case RegexNode.Notonelazy:
-                        case RegexNode.Setlazy:
-                            supported = node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic);
-                            break;
-
-                        // {Lazy}Loop repeaters are the same, except their child also needs to be supported.
-                        // We also support such loops being atomic.
-                        case RegexNode.Loop:
-                        case RegexNode.Lazyloop:
-                            supported =
-                                (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic)) &&
-                                NodeSupportsNonBacktrackingImplementation(node.Child(0), maxDepth - 1);
-                            break;
-
-                        // We can handle atomic as long as we can handle making its child atomic, or
-                        // its child doesn't have that concept.
-                        case RegexNode.Atomic:
-                        // Lookahead assertions also only require that the child node be supported.
-                        // The RightToLeft check earlier is important to differentiate lookbehind,
-                        // which is not supported.
-                        case RegexNode.Require:
-                        case RegexNode.Prevent:
-                            supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), maxDepth - 1);
-                            break;
-
-                        // We can handle alternates as long as they're atomic (a root / global alternate is
-                        // effectively atomic, as nothing will try to backtrack into it as it's the last thing).
-                        // Its children must all also be supported.
-                        case RegexNode.Alternate:
-                            if (node.Next != null &&
-                                (node.IsAtomicByParent() || // atomic alternate
-                                (node.Next.Type == RegexNode.Capture && node.Next.Next is null))) // root alternate
-                            {
-                                goto case RegexNode.Concatenate;
-                            }
-                            break;
-
-                        // Concatenation doesn't require backtracking as long as its children don't.
-                        case RegexNode.Concatenate:
-                            supported = true;
-                            for (int i = 0; i < childCount; i++)
-                            {
-                                if (supported && !NodeSupportsNonBacktrackingImplementation(node.Child(i), maxDepth - 1))
-                                {
-                                    supported = false;
-                                    break;
-                                }
-                            }
-                            break;
-
-                        case RegexNode.Capture:
-                            // Currently we only support capnums without uncapnums (for balancing groups)
-                            supported = node.N == -1;
-                            if (supported)
-                            {
-                                // And we only support them in certain places in the tree.
-                                RegexNode? parent = node.Next;
-                                while (parent != null)
-                                {
-                                    switch (parent.Type)
-                                    {
-                                        case RegexNode.Alternate:
-                                        case RegexNode.Atomic:
-                                        case RegexNode.Capture:
-                                        case RegexNode.Concatenate:
-                                        case RegexNode.Require:
-                                            parent = parent.Next;
-                                            break;
-
-                                        default:
-                                            parent = null;
-                                            supported = false;
-                                            break;
-                                    }
-                                }
-
-                                if (supported)
-                                {
-                                    // And we only support them if their children are supported.
-                                    supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), maxDepth - 1);
-
-                                    // If we've found a supported capture, mark all of the nodes in its parent
-                                    // hierarchy as containing a capture.
-                                    if (supported)
-                                    {
-                                        parent = node;
-                                        while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
-                                        {
-                                            parent.Options |= HasCapturesFlag;
-                                            parent = parent.Next;
-                                        }
-                                    }
-                                }
-                            }
-                            break;
-                    }
-                }
-#if DEBUG
-                if (!supported && (node.Options & RegexOptions.Debug) != 0)
-                {
-                    Debug.WriteLine($"Unable to use non-backtracking code gen: node {node.Description()} isn't supported.");
-                }
-#endif
-                return supported;
-            }
 
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
 
@@ -2167,7 +1956,7 @@ namespace System.Text.RegularExpressions
                 // as the alternation is atomic, so we're not concerned about captures after
                 // the alternation.
                 RentedLocalBuilder? startingCrawlpos = null;
-                if ((node.Options & HasCapturesFlag) != 0)
+                if ((node.Options & RegexNode.HasCapturesFlag) != 0)
                 {
                     startingCrawlpos = RentInt32Local();
                     Ldthis();
@@ -2499,7 +2288,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Onelazy:
                     case RegexNode.Oneloop:
                     case RegexNode.Oneloopatomic:
-                        if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                        if (IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch))
                         {
                             CallToLower();
                         }
@@ -2509,7 +2298,7 @@ namespace System.Text.RegularExpressions
 
                     default:
                         Debug.Assert(node.Type == RegexNode.Notone || node.Type == RegexNode.Notonelazy || node.Type == RegexNode.Notoneloop || node.Type == RegexNode.Notoneloopatomic);
-                        if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                        if (IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch))
                         {
                             CallToLower();
                         }
@@ -2733,7 +2522,7 @@ namespace System.Text.RegularExpressions
                     EmitTextSpanOffset();
                     textSpanPos++;
                     LdindU2();
-                    if (caseInsensitive && ParticipatesInCaseConversion(s[i]))
+                    if (caseInsensitive && RegexCharClass.ParticipatesInCaseConversion(s[i]))
                     {
                         CallToLower();
                     }
@@ -2911,7 +2700,7 @@ namespace System.Text.RegularExpressions
 
                 if (node.Type == RegexNode.Notoneloopatomic &&
                     maxIterations == int.MaxValue &&
-                    (!IsCaseInsensitive(node) || !ParticipatesInCaseConversion(node.Ch)))
+                    (!IsCaseInsensitive(node) || !RegexCharClass.ParticipatesInCaseConversion(node.Ch)))
                 {
                     // For Notoneloopatomic, we're looking for a specific character, as everything until we find
                     // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
@@ -3045,7 +2834,7 @@ namespace System.Text.RegularExpressions
                     switch (node.Type)
                     {
                         case RegexNode.Oneloopatomic:
-                            if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                            if (IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch))
                             {
                                 CallToLower();
                             }
@@ -3053,7 +2842,7 @@ namespace System.Text.RegularExpressions
                             BneFar(doneLabel);
                             break;
                         case RegexNode.Notoneloopatomic:
-                            if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                            if (IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch))
                             {
                                 CallToLower();
                             }
@@ -3139,7 +2928,7 @@ namespace System.Text.RegularExpressions
                 switch (node.Type)
                 {
                     case RegexNode.Oneloopatomic:
-                        if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                        if (IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch))
                         {
                             CallToLower();
                         }
@@ -3147,7 +2936,7 @@ namespace System.Text.RegularExpressions
                         BneFar(skipUpdatesLabel);
                         break;
                     case RegexNode.Notoneloopatomic:
-                        if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                        if (IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch))
                         {
                             CallToLower();
                         }
@@ -3179,7 +2968,7 @@ namespace System.Text.RegularExpressions
             void EmitAtomicNodeLoop(RegexNode node)
             {
                 Debug.Assert(node.Type == RegexNode.Loop);
-                Debug.Assert(node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic));
+                Debug.Assert(node.M == node.N || (node.Next != null && (node.Next.Type is RegexNode.Atomic or RegexNode.Capture)));
                 Debug.Assert(node.M < int.MaxValue);
 
                 // If this is actually a repeater, emit that instead.
@@ -4230,7 +4019,7 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
-                        if (IsCaseInsensitive() && ParticipatesInCaseConversion(Operand(0)))
+                        if (IsCaseInsensitive() && RegexCharClass.ParticipatesInCaseConversion(Operand(0)))
                         {
                             CallToLower();
                         }
@@ -4276,7 +4065,7 @@ namespace System.Text.RegularExpressions
                                 Add();
                             }
                             Call(s_stringGetCharsMethod);
-                            if (IsCaseInsensitive() && ParticipatesInCaseConversion(str[i]))
+                            if (IsCaseInsensitive() && RegexCharClass.ParticipatesInCaseConversion(str[i]))
                             {
                                 CallToLower();
                             }
@@ -4319,7 +4108,7 @@ namespace System.Text.RegularExpressions
                             Ldc(str.Length - i);
                             Sub();
                             Call(s_stringGetCharsMethod);
-                            if (IsCaseInsensitive() && ParticipatesInCaseConversion(str[i]))
+                            if (IsCaseInsensitive() && RegexCharClass.ParticipatesInCaseConversion(str[i]))
                             {
                                 CallToLower();
                             }
@@ -4522,7 +4311,7 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            if (IsCaseInsensitive() && ParticipatesInCaseConversion(Operand(0)))
+                            if (IsCaseInsensitive() && RegexCharClass.ParticipatesInCaseConversion(Operand(0)))
                             {
                                 CallToLower();
                             }
@@ -4631,7 +4420,7 @@ namespace System.Text.RegularExpressions
                         // we can use the vectorized IndexOf to search for the target character.
                         if ((Code() == RegexCode.Notoneloop || Code() == RegexCode.Notoneloopatomic) &&
                             !IsRightToLeft() &&
-                            (!IsCaseInsensitive() || !ParticipatesInCaseConversion(Operand(0))))
+                            (!IsCaseInsensitive() || !RegexCharClass.ParticipatesInCaseConversion(Operand(0))))
                         {
                             // i = runtext.AsSpan(runtextpos, len).IndexOf(ch);
                             Ldloc(_runtextLocal!);
@@ -4799,7 +4588,7 @@ namespace System.Text.RegularExpressions
                             }
                             else
                             {
-                                if (IsCaseInsensitive() && ParticipatesInCaseConversion(Operand(0)))
+                                if (IsCaseInsensitive() && RegexCharClass.ParticipatesInCaseConversion(Operand(0)))
                                 {
                                     CallToLower();
                                 }
@@ -5000,7 +4789,7 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            if (IsCaseInsensitive() && ParticipatesInCaseConversion(Operand(0)))
+                            if (IsCaseInsensitive() && RegexCharClass.ParticipatesInCaseConversion(Operand(0)))
                             {
                                 CallToLower();
                             }
@@ -5130,7 +4919,7 @@ namespace System.Text.RegularExpressions
             // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
             if (!invariant && RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
             {
-                // char.GetUnicodeInfo(ch) == category
+                // char.GetUnicodeCategory(ch) == category
                 Call(s_charGetUnicodeInfo);
                 Ldc((int)category);
                 Ceq();
