@@ -34,7 +34,9 @@ public:
         MethodSet& operator=(const MethodSet& other) = delete;
 
     public:
-        MethodSet() {}
+        MethodSet()
+        {
+        }
 
         inline const char* list() const
         {
@@ -82,7 +84,9 @@ private:
     JitConfigValues& operator=(const JitConfigValues& other) = delete;
 
 public:
-    JitConfigValues() {}
+    JitConfigValues()
+    {
+    }
 
     inline bool isInitialized() const
     {

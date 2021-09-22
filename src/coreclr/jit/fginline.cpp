@@ -923,8 +923,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     param.inlineCandidateInfo = inlineCandidateInfo;
     param.inlineInfo          = &inlineInfo;
     bool success              = eeRunWithErrorTrap<Param>(
-        [](Param* pParam)
-        {
+        [](Param* pParam) {
             // Init the local var info of the inlinee
             pParam->pThis->impInlineInitVars(pParam->inlineInfo);
 

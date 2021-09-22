@@ -734,8 +734,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 //                 |____ (ICon)        (The actual case constant)
                 GenTree* gtCaseCond = comp->gtNewOperNode(GT_EQ, TYP_INT, comp->gtNewLclvNode(tempLclNum, tempLclType),
                                                           comp->gtNewIconNode(i, tempLclType));
-                GenTree* gtCaseBranch = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtCaseCond);
-                LIR::Range caseRange  = LIR::SeqTree(comp, gtCaseBranch);
+                GenTree*   gtCaseBranch = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtCaseCond);
+                LIR::Range caseRange    = LIR::SeqTree(comp, gtCaseBranch);
                 currentBBRange->InsertAtEnd(std::move(caseRange));
             }
         }
@@ -877,9 +877,9 @@ bool Lowering::TryLowerSwitchToBitTest(
     // table and/or swap the blocks if it's beneficial.
     //
 
-    BasicBlock* bbCase0 = nullptr;
-    BasicBlock* bbCase1 = jumpTable[0];
-    size_t bitTable = 1;
+    BasicBlock* bbCase0  = nullptr;
+    BasicBlock* bbCase1  = jumpTable[0];
+    size_t      bitTable = 1;
 
     for (unsigned bitIndex = 1; bitIndex < bitCount; bitIndex++)
     {
@@ -940,7 +940,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     if (bbSwitch->bbNext == bbCase0)
     {
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
-        bbSwitchCondition = GenCondition::C;
+        bbSwitchCondition    = GenCondition::C;
         bbSwitch->bbJumpDest = bbCase1;
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
@@ -951,7 +951,7 @@ bool Lowering::TryLowerSwitchToBitTest(
         assert(bbSwitch->bbNext == bbCase1);
 
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
-        bbSwitchCondition = GenCondition::NC;
+        bbSwitchCondition    = GenCondition::NC;
         bbSwitch->bbJumpDest = bbCase0;
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
@@ -963,8 +963,8 @@ bool Lowering::TryLowerSwitchToBitTest(
     //
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
-    GenTree* bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
-    GenTree* bitTest = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
+    GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
+    GenTree*  bitTest      = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->gtFlags |= GTF_SET_FLAGS;
     GenTreeCC* jcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, bbSwitchCondition);
     jcc->gtFlags |= GTF_USE_FLAGS;
@@ -1966,7 +1966,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 // Compute offset of this stack argument relative to the first stack arg.
                 // This will be its offset into the incoming arg space area.
                 unsigned int argStart = static_cast<unsigned int>(callerArgDsc->GetStackOffset() - baseOff);
-                unsigned int argEnd = argStart + comp->lvaLclSize(callerArgLclNum);
+                unsigned int argEnd   = argStart + comp->lvaLclSize(callerArgLclNum);
 #endif
 
                 // If ranges do not overlap then this PUTARG_STK will not mess up the arg.
@@ -2529,7 +2529,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_XARCH
                  || IsContainableMemoryOp(castOp)
 #endif
-                );
+                     );
 
             if (removeCast)
             {
@@ -2542,8 +2542,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 op2->SetIconValue(0xff);
                 op2->gtType = castOp->gtType;
 #else
-                castOp->gtType = castToType;
-                op2->gtType = castToType;
+                castOp->gtType        = castToType;
+                op2->gtType           = castToType;
 #endif
                 // If we have any contained memory ops on castOp, they must now not be contained.
                 if (castOp->OperIsLogical())
@@ -3150,7 +3150,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 {
                     unsigned size = layout->GetSize();
                     assert((size <= 8) || (size == 16));
-                    bool isPowerOf2 = (((size - 1) & size) == 0);
+                    bool isPowerOf2    = (((size - 1) & size) == 0);
                     bool isTypeDefined = (lclRegType != TYP_UNDEF);
                     assert(isPowerOf2 == isTypeDefined);
                 }
@@ -3567,9 +3567,9 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                     user->ChangeType(returnType);
                     break;
                 }
-#endif // FEATURE_SIMD
-       // importer has a separate mechanism to retype calls to helpers,
-       // keep it for now.
+#endif          // FEATURE_SIMD
+                // importer has a separate mechanism to retype calls to helpers,
+                // keep it for now.
                 assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_CORERT_ABI)));
                 assert(call->IsHelperCall());
                 assert(returnType == user->TypeGet());
@@ -4079,7 +4079,7 @@ void Lowering::InsertPInvokeMethodProlog()
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     GenTreeCall::Use* argList = comp->gtNewCallArgs(frameAddr);
 #else
-    GenTreeCall::Use* argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
+    GenTreeCall::Use*     argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
 #endif
 
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, argList);
@@ -4255,7 +4255,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
         GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
 #else
-        GenTreeCall::Use* args = comp->gtNewCallArgs(frameAddr);
+        GenTreeCall::Use* args    = comp->gtNewCallArgs(frameAddr);
 #endif
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
         GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, args);
@@ -5299,7 +5299,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 #ifdef TARGET_ARM64
                  && !simpleMul // On ARM64 we will use a 32x32->64 bit multiply as that's faster.
 #endif
-        )
+                 )
         {
             adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
@@ -6488,8 +6488,8 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_PUTARG_STK:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
-       // The regNum must have been set by the lowering of the call.
+#endif      // FEATURE_ARG_SPLIT
+            // The regNum must have been set by the lowering of the call.
             assert(node->GetRegNum() != REG_NA);
             break;
 #ifdef TARGET_XARCH

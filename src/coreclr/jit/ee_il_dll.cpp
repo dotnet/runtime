@@ -226,9 +226,13 @@ void JitTls::SetCompiler(Compiler* compiler)
 
 #else // !defined(DEBUG)
 
-JitTls::JitTls(ICorJitInfo* jitInfo) {}
+JitTls::JitTls(ICorJitInfo* jitInfo)
+{
+}
 
-JitTls::~JitTls() {}
+JitTls::~JitTls()
+{
+}
 
 Compiler* JitTls::GetCompiler()
 {
@@ -1309,8 +1313,7 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
     param.classNamePtr = classNamePtr;
 
     bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam)
-        {
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
             pParam->fieldOrMethodOrClassNamePtr =
                 pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
         },
@@ -1339,8 +1342,7 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
     param.classNamePtr = classNamePtr;
 
     bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam)
-        {
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
             pParam->fieldOrMethodOrClassNamePtr =
                 pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
         },
@@ -1363,8 +1365,9 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     param.clazz    = clsHnd;
 
     bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam)
-        { pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz); },
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
+        },
         &param);
 
     if (!success)

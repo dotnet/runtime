@@ -149,8 +149,8 @@ protected:
     TreeLifeUpdater<true>* treeLifeUpdater;
 
 public:
-    bool            genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
-    bool            genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assignVal);
+    bool genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
+    bool genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assignVal);
     CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GenTree* tgt, GCInfo::WriteBarrierForm wbf);
 
     // The following property indicates whether the current method sets up
@@ -309,9 +309,9 @@ public:
     bool validImmForMov(target_ssize_t imm);
     bool validImmForBL(ssize_t addr);
 
-    instruction        ins_Load(var_types srcType, bool aligned = false);
-    instruction        ins_Store(var_types dstType, bool aligned = false);
-    instruction        ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned = false);
+    instruction ins_Load(var_types srcType, bool aligned = false);
+    instruction ins_Store(var_types dstType, bool aligned = false);
+    instruction ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned = false);
     static instruction ins_FloatLoad(var_types type = TYP_DOUBLE);
 
     // Methods for spilling - used by RegSet
@@ -432,8 +432,7 @@ public:
     {
         siVarLocType vlType;
 
-        union
-        {
+        union {
             // VLT_REG/VLT_REG_FP -- Any pointer-sized enregistered value (TYP_INT, TYP_REF, etc)
             // eg. EAX
             // VLT_REG_BYREF -- the specified register contains the address of the variable
@@ -747,7 +746,7 @@ public:
 
         LiveRangeList* getLiveRangesForVarForBody(unsigned int varNum) const;
         LiveRangeList* getLiveRangesForVarForProlog(unsigned int varNum) const;
-        size_t         getLiveRangesCount() const;
+        size_t getLiveRangesCount() const;
 
         // For parameters locations on prolog
         void psiStartVariableLiveRange(CodeGenInterface::siVarLoc varLocation, unsigned int varNum);

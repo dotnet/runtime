@@ -441,7 +441,9 @@ void Compiler::gsParamsToShadows()
             DoLclVarsOnly = true
         };
 
-        ReplaceShadowParamsVisitor(Compiler* compiler) : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler) {}
+        ReplaceShadowParamsVisitor(Compiler* compiler) : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler)
+        {
+        }
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {

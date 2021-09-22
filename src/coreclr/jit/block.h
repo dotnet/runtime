@@ -154,7 +154,9 @@ class MemoryKindIterator
     int value;
 
 public:
-    explicit inline MemoryKindIterator(int val) : value(val) {}
+    explicit inline MemoryKindIterator(int val) : value(val)
+    {
+    }
     inline MemoryKindIterator& operator++()
     {
         ++value;
@@ -181,7 +183,9 @@ public:
 // Empty struct that allows enumerating memory kinds via `for(MemoryKind kind : allMemoryKinds())`
 struct allMemoryKinds
 {
-    inline allMemoryKinds() {}
+    inline allMemoryKinds()
+    {
+    }
     inline MemoryKindIterator begin()
     {
         return MemoryKindIterator(0);
@@ -238,7 +242,9 @@ public:
     EHSuccessorIterPosition(Compiler* comp, BasicBlock* block);
 
     // Constructs a position that "points" past the last EH successor of `block` ("end" position).
-    EHSuccessorIterPosition() : m_remainingRegSuccs(0), m_curTry(nullptr) {}
+    EHSuccessorIterPosition() : m_remainingRegSuccs(0), m_curTry(nullptr)
+    {
+    }
 
     // Go on to the next EH successor.
     void Advance(Compiler* comp, BasicBlock* block);
@@ -283,7 +289,9 @@ public:
     inline AllSuccessorIterPosition(Compiler* comp, BasicBlock* block);
 
     // Constructs a position that "points" past the last successor of `block` ("end" position).
-    AllSuccessorIterPosition() : m_remainingNormSucc(0), m_ehIter() {}
+    AllSuccessorIterPosition() : m_remainingNormSucc(0), m_ehIter()
+    {
+    }
 
     // Go on to the next successor.
     inline void Advance(Compiler* comp, BasicBlock* block);
@@ -354,7 +362,9 @@ class PredEdgeList
     };
 
 public:
-    PredEdgeList(flowList* pred) : m_begin(pred) {}
+    PredEdgeList(flowList* pred) : m_begin(pred)
+    {
+    }
 
     iterator begin() const
     {
@@ -404,7 +414,9 @@ class PredBlockList
     };
 
 public:
-    PredBlockList(flowList* pred) : m_begin(pred) {}
+    PredBlockList(flowList* pred) : m_begin(pred)
+    {
+    }
 
     iterator begin() const
     {
@@ -427,7 +439,9 @@ class BBArrayIterator
     BasicBlock* const* m_bbEntry;
 
 public:
-    BBArrayIterator(BasicBlock* const* bbEntry) : m_bbEntry(bbEntry) {}
+    BBArrayIterator(BasicBlock* const* bbEntry) : m_bbEntry(bbEntry)
+    {
+    }
 
     BasicBlock* operator*() const
     {
@@ -644,12 +658,12 @@ struct BasicBlock : private LIR::Range
     }
 
 #ifdef DEBUG
-    void     dspFlags();                   // Print the flags
-    unsigned dspCheapPreds();              // Print the predecessors (bbCheapPreds)
-    unsigned dspPreds();                   // Print the predecessors (bbPreds)
-    void     dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
-                                           // regions are printed: see NumSucc() for details.
-    void dspJumpKind();                    // Print the block jump kind (e.g., BBJ_NONE, BBJ_COND, etc.).
+    void     dspFlags();               // Print the flags
+    unsigned dspCheapPreds();          // Print the predecessors (bbCheapPreds)
+    unsigned dspPreds();               // Print the predecessors (bbPreds)
+    void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
+                                       // regions are printed: see NumSucc() for details.
+    void dspJumpKind();                // Print the block jump kind (e.g., BBJ_NONE, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);
@@ -798,8 +812,7 @@ struct BasicBlock : private LIR::Range
     BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
 
     /* The following union describes the jump target(s) of this block */
-    union
-    {
+    union {
         unsigned    bbJumpOffs; // PC offset (temporary only)
         BasicBlock* bbJumpDest; // basic block
         BBswtDesc*  bbJumpSwt;  // switch descriptor
@@ -872,22 +885,19 @@ struct BasicBlock : private LIR::Range
         m_firstNode = tree;
     }
 
-    union
-    {
+    union {
         EntryState* bbEntryState; // verifier tracked state of all entries in stack.
         flowList*   bbLastPred;   // last pred list entry
     };
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
 
-    union
-    {
+    union {
         unsigned bbStkTempsIn;       // base# for input stack temps
         int      bbCountSchemaIndex; // schema index for count instrumentation
     };
 
-    union
-    {
+    union {
         unsigned bbStkTempsOut;      // base# for output stack temps
         int      bbClassSchemaIndex; // schema index for class instrumentation
     };
@@ -1013,8 +1023,7 @@ struct BasicBlock : private LIR::Range
                              // or else NOT_IN_LOOP if this block is not in a loop.
 
     // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
-    union
-    {
+    union {
         unsigned short bbStkDepth; // stack depth on entry
         unsigned short bbFPinVars; // number of inner enregistered FP vars
     };
@@ -1025,8 +1034,7 @@ struct BasicBlock : private LIR::Range
     // in 'bbPreds', and then maintained throughout compilation. 'fgComputePredsDone' will be 'true' after the
     // full predecessor lists are created. See the comment at fgComputeCheapPreds() to see how those differ from
     // the "full" variant.
-    union
-    {
+    union {
         BasicBlockList* bbCheapPreds; // ptr to list of cheap predecessors (used before normal preds are computed)
         flowList*       bbPreds;      // ptr to list of predecessors
     };
@@ -1055,8 +1063,7 @@ struct BasicBlock : private LIR::Range
 
     BlockSet bbReach; // Set of all blocks that can reach this one
 
-    union
-    {
+    union {
         BasicBlock* bbIDom;      // Represent the closest dominator to this block (called the Immediate
                                  // Dominator) used to compute the dominance tree.
         void* bbSparseProbeList; // Used early on by fgInstrument
@@ -1102,7 +1109,9 @@ struct BasicBlock : private LIR::Range
             return m_ssaNum;
         }
 
-        MemoryPhiArg(unsigned ssaNum, MemoryPhiArg* nextArg = nullptr) : m_ssaNum(ssaNum), m_nextArg(nextArg) {}
+        MemoryPhiArg(unsigned ssaNum, MemoryPhiArg* nextArg = nullptr) : m_ssaNum(ssaNum), m_nextArg(nextArg)
+        {
+        }
 
         void* operator new(size_t sz, class Compiler* comp);
     };
@@ -1126,24 +1135,21 @@ struct BasicBlock : private LIR::Range
      *  thus we can union them since the two operations are completely disjunct.
      */
 
-    union
-    {
+    union {
         EXPSET_TP bbCseGen; // CSEs computed by block
 #if ASSERTION_PROP
         ASSERT_TP bbAssertionGen; // value assignments computed by block
 #endif
     };
 
-    union
-    {
+    union {
         EXPSET_TP bbCseIn; // CSEs available on entry
 #if ASSERTION_PROP
         ASSERT_TP bbAssertionIn; // value assignments available on entry
 #endif
     };
 
-    union
-    {
+    union {
         EXPSET_TP bbCseOut; // CSEs available on exit
 #if ASSERTION_PROP
         ASSERT_TP bbAssertionOut; // value assignments available on exit
@@ -1164,7 +1170,7 @@ struct BasicBlock : private LIR::Range
     verTypeVal* bbTypesOut; // list of variable types on output
 #endif                      // VERIFIER
 
-    //-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
 
 #if MEASURE_BLOCK_SIZE
     static size_t s_Size;
@@ -1201,8 +1207,8 @@ struct BasicBlock : private LIR::Range
 
     ThisInitState bbThisOnEntry() const;
     unsigned      bbStackDepthOnEntry() const;
-    void          bbSetStack(void* stackBuffer);
-    StackEntry*   bbStackOnEntry() const;
+    void bbSetStack(void* stackBuffer);
+    StackEntry* bbStackOnEntry() const;
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
     // zero-based number for use as an array index.
@@ -1251,7 +1257,9 @@ struct BasicBlock : private LIR::Range
     Statement* FirstNonPhiDef() const;
     Statement* FirstNonPhiDefOrCatchArgAsg() const;
 
-    BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal()) {}
+    BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
+    {
+    }
 
     // Iteratable collection of successors of a block.
     template <typename TPosition>
@@ -1261,7 +1269,9 @@ struct BasicBlock : private LIR::Range
         BasicBlock* m_block;
 
     public:
-        Successors(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
+        Successors(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
+        {
+        }
 
         class iterator
         {
@@ -1270,9 +1280,13 @@ struct BasicBlock : private LIR::Range
             TPosition   m_pos;
 
         public:
-            iterator(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block), m_pos(comp, block) {}
+            iterator(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block), m_pos(comp, block)
+            {
+            }
 
-            iterator() : m_pos() {}
+            iterator() : m_pos()
+            {
+            }
 
             void operator++(void)
             {
@@ -1382,7 +1396,9 @@ struct BasicBlock : private LIR::Range
         };
 
     public:
-        BBCompilerSuccList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
+        BBCompilerSuccList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
+        {
+        }
 
         iterator begin() const
         {
@@ -1480,7 +1496,9 @@ class BasicBlockIterator
     BasicBlock* m_block;
 
 public:
-    BasicBlockIterator(BasicBlock* block) : m_block(block) {}
+    BasicBlockIterator(BasicBlock* block) : m_block(block)
+    {
+    }
 
     BasicBlock* operator*() const
     {
@@ -1514,7 +1532,9 @@ class BasicBlockSimpleList
     BasicBlock* m_begin;
 
 public:
-    BasicBlockSimpleList(BasicBlock* begin) : m_begin(begin) {}
+    BasicBlockSimpleList(BasicBlock* begin) : m_begin(begin)
+    {
+    }
 
     BasicBlockIterator begin() const
     {
@@ -1578,7 +1598,9 @@ struct BBswtDesc
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case
 
-    BBswtDesc() : bbsHasDefault(true), bbsHasDominantCase(false) {}
+    BBswtDesc() : bbsHasDefault(true), bbsHasDominantCase(false)
+    {
+    }
 
     BBswtDesc(Compiler* comp, const BBswtDesc* other);
 
@@ -1737,9 +1759,13 @@ struct BasicBlockList
     BasicBlockList* next;  // The next BasicBlock in the list, nullptr for end of list.
     BasicBlock*     block; // The BasicBlock of interest.
 
-    BasicBlockList() : next(nullptr), block(nullptr) {}
+    BasicBlockList() : next(nullptr), block(nullptr)
+    {
+    }
 
-    BasicBlockList(BasicBlock* blk, BasicBlockList* rest) : next(rest), block(blk) {}
+    BasicBlockList(BasicBlock* blk, BasicBlockList* rest) : next(rest), block(blk)
+    {
+    }
 };
 
 // flowList -- control flow edge
@@ -1859,7 +1885,9 @@ struct DfsBlockEntry
     DfsStackState dfsStackState; // The pre/post traversal action for this entry
     BasicBlock*   dfsBlock;      // The corresponding block for the action
 
-    DfsBlockEntry(DfsStackState state, BasicBlock* basicBlock) : dfsStackState(state), dfsBlock(basicBlock) {}
+    DfsBlockEntry(DfsStackState state, BasicBlock* basicBlock) : dfsStackState(state), dfsBlock(basicBlock)
+    {
+    }
 };
 
 /*****************************************************************************
@@ -1933,7 +1961,9 @@ class AllSuccessorEnumerator
 
 public:
     // Constructs an enumerator of all `block`'s successors.
-    AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block), m_pos(comp, block) {}
+    AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block), m_pos(comp, block)
+    {
+    }
 
     // Gets the block whose successors are enumerated.
     BasicBlock* Block()

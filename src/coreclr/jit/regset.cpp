@@ -1125,6 +1125,8 @@ void RegSet::rsSpillChk()
 #else
 
 // inline
-void RegSet::rsSpillChk() {}
+void RegSet::rsSpillChk()
+{
+}
 
 #endif

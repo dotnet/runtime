@@ -73,7 +73,7 @@ public:
         void AssertIsValid() const;
         bool IsDummyUse() const;
 
-        void     ReplaceWith(Compiler* compiler, GenTree* replacement);
+        void ReplaceWith(Compiler* compiler, GenTree* replacement);
         unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** assign = nullptr);
     };
 
@@ -125,10 +125,14 @@ public:
 
             GenTree* m_node;
 
-            Iterator(GenTree* begin) : m_node(begin) {}
+            Iterator(GenTree* begin) : m_node(begin)
+            {
+            }
 
         public:
-            Iterator() : m_node(nullptr) {}
+            Iterator() : m_node(nullptr)
+            {
+            }
 
             inline GenTree* operator*()
             {
@@ -163,10 +167,14 @@ public:
 
             GenTree* m_node;
 
-            ReverseIterator(GenTree* begin) : m_node(begin) {}
+            ReverseIterator(GenTree* begin) : m_node(begin)
+            {
+            }
 
         public:
-            ReverseIterator() : m_node(nullptr) {}
+            ReverseIterator() : m_node(nullptr)
+            {
+            }
 
             inline GenTree* operator*()
             {
@@ -269,7 +277,7 @@ public:
         void InsertAtBeginning(Range&& range);
         void InsertAtEnd(Range&& range);
 
-        void  Remove(GenTree* node, bool markOperandsUnused = false);
+        void Remove(GenTree* node, bool markOperandsUnused = false);
         Range Remove(GenTree* firstNode, GenTree* lastNode);
         Range Remove(ReadOnlyRange&& range);
 
@@ -289,7 +297,7 @@ public:
     };
 
 public:
-    static Range&       AsRange(BasicBlock* block);
+    static Range& AsRange(BasicBlock* block);
     static const Range& AsRange(const BasicBlock* block);
 
     static Range EmptyRange();

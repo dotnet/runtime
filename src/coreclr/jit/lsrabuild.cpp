@@ -883,10 +883,10 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
             killMask |= compiler->virtualStubParamInfo->GetRegMask();
         }
 #else  // !TARGET_ARM
-       // Verify that the special virtual stub call registers are in the kill mask.
-       // We don't just add them unconditionally to the killMask because for most architectures
-       // they are already in the RBM_CALLEE_TRASH set,
-       // and we don't want to introduce extra checks and calls in this hot function.
+        // Verify that the special virtual stub call registers are in the kill mask.
+        // We don't just add them unconditionally to the killMask because for most architectures
+        // they are already in the RBM_CALLEE_TRASH set,
+        // and we don't want to introduce extra checks and calls in this hot function.
         assert(!call->IsVirtualStub() || ((killMask & compiler->virtualStubParamInfo->GetRegMask()) ==
                                           compiler->virtualStubParamInfo->GetRegMask()));
 #endif // !TARGET_ARM
@@ -3887,7 +3887,7 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
         // op1 (addr) goes into REG_WRITE_BARRIER (rdx) and
         // op2 (src) goes into any int register.
         addrCandidates = RBM_WRITE_BARRIER;
-        srcCandidates = RBM_WRITE_BARRIER_SRC;
+        srcCandidates  = RBM_WRITE_BARRIER_SRC;
     }
 
 #endif // defined(TARGET_X86) && NOGC_WRITE_BARRIERS

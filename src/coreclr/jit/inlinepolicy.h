@@ -150,7 +150,7 @@ protected:
     // Helper methods
     virtual double DetermineMultiplier();
     int            DetermineNativeSizeEstimate();
-    int            DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
+    int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
 
     // Data members
     Compiler*               m_RootCompiler; // root compiler instance

@@ -53,7 +53,9 @@ class IteratorPair
     TIterator m_end;
 
 public:
-    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end) {}
+    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end)
+    {
+    }
 
     inline TIterator begin()
     {

@@ -42,7 +42,9 @@ void Compiler::optInit()
     optCSEcount          = 0;
 }
 
-DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler) {}
+DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
+{
+}
 
 //------------------------------------------------------------------------
 // optSetBlockWeights: adjust block weights, as follows:
@@ -3100,7 +3102,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     switch (iterOperType)
     {
-        // For small types, the iteration operator will narrow these values if big
+// For small types, the iteration operator will narrow these values if big
 
 #define INIT_ITER_BY_TYPE(type)                                                                                        \
     constInitX = (type)constInit;                                                                                      \
@@ -3119,7 +3121,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             INIT_ITER_BY_TYPE(unsigned short);
             break;
 
-            // For the big types, 32 bit arithmetic is performed
+        // For the big types, 32 bit arithmetic is performed
 
         case TYP_INT:
         case TYP_UINT:
@@ -4952,8 +4954,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 return true;
 
-                /* Operands that are in memory can usually be narrowed
-                   simply by changing their gtType */
+            /* Operands that are in memory can usually be narrowed
+               simply by changing their gtType */
 
             case GT_LCL_VAR:
                 /* We only allow narrowing long -> int for a GT_LCL_VAR */
@@ -6405,9 +6407,9 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // and the variable must be in SSA ...
                 isInvariant = isInvariant && m_compiler->lvaInSsa(lclNum) && lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
-                isInvariant =
-                    isInvariant && !m_compiler->optLoopTable[m_loopNum].lpContains(
-                                       m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
+                isInvariant = isInvariant &&
+                              !m_compiler->optLoopTable[m_loopNum].lpContains(
+                                  m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
                 // and the VN of the tree is considered invariant as well.
                 //
                 // TODO-CQ: This VN invariance check should not be necessary and in some cases it is conservative - it
@@ -6454,7 +6456,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             // optIsCSEcandidate returns false for constants.
             bool treeIsCctorDependent = ((tree->OperIs(GT_CLS_VAR) && ((tree->gtFlags & GTF_CLS_VAR_INITCLASS) != 0)) ||
                                          (tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)));
-            bool treeIsInvariant      = true;
+            bool treeIsInvariant          = true;
             bool treeHasHoistableChildren = false;
             int  childCount;
 
@@ -7968,9 +7970,9 @@ public:
 
 private:
     Statement* optOptimizeBoolsChkBlkCond();
-    GenTree*   optIsBoolComp(OptTestInfo* pOptTest);
-    bool       optOptimizeBoolsChkTypeCostCond();
-    void       optOptimizeBoolsUpdateTrees();
+    GenTree* optIsBoolComp(OptTestInfo* pOptTest);
+    bool optOptimizeBoolsChkTypeCostCond();
+    void optOptimizeBoolsUpdateTrees();
 };
 
 //-----------------------------------------------------------------------------

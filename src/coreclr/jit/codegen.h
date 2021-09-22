@@ -105,7 +105,7 @@ private:
 
     static bool genShouldRoundFP();
 
-    GenTreeIndir    indirForm(var_types type, GenTree* base);
+    GenTreeIndir indirForm(var_types type, GenTree* base);
     GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
     GenTreeIntCon intForm(var_types type, ssize_t value);
@@ -181,8 +181,8 @@ private:
 
 #ifdef JIT32_GCENCODER
     void* genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr));
-    void* genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
-                                       unsigned            prologSize,
+    void* genCreateAndStoreGCInfoJIT32(unsigned codeSize,
+                                       unsigned prologSize,
                                        unsigned epilogSize DEBUGARG(void* codePtr));
 #else  // !JIT32_GCENCODER
     void genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr));
@@ -208,7 +208,7 @@ protected:
     unsigned genCurDispOffset;
 
     static const char* genInsName(instruction ins);
-    const char*        genInsDisplayName(emitter::instrDesc* id);
+    const char* genInsDisplayName(emitter::instrDesc* id);
 #endif // DEBUG
 
     //-------------------------------------------------------------------------
@@ -313,7 +313,9 @@ protected:
         regNumber reg2;
         bool      useSaveNextPair;
 
-        RegPair(regNumber reg1) : reg1(reg1), reg2(REG_NA), useSaveNextPair(false) {}
+        RegPair(regNumber reg1) : reg1(reg1), reg2(REG_NA), useSaveNextPair(false)
+        {
+        }
 
         RegPair(regNumber reg1, regNumber reg2) : reg1(reg1), reg2(reg2), useSaveNextPair(false)
         {
@@ -348,8 +350,8 @@ protected:
 
     bool genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg);
 
-    void      genPushFltRegs(regMaskTP regMask);
-    void      genPopFltRegs(regMaskTP regMask);
+    void genPushFltRegs(regMaskTP regMask);
+    void genPopFltRegs(regMaskTP regMask);
     regMaskTP genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat);
 
     regMaskTP genJmpCallArgMask();
@@ -552,17 +554,17 @@ protected:
     void      genSinglePush();
     void      genSinglePop();
     regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
-    void      genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
+    void genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
 
-    /*
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XX                                                                           XX
-    XX                           Debugging Support                               XX
-    XX                                                                           XX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    */
+/*
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XX                                                                           XX
+XX                           Debugging Support                               XX
+XX                                                                           XX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+*/
 
 #ifdef DEBUG
     void genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMapping);
@@ -595,28 +597,28 @@ protected:
 #ifdef USING_SCOPE_INFO
     void genSetScopeInfoUsingsiScope();
 
-    /*
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XX                                                                           XX
-    XX                           ScopeInfo                                       XX
-    XX                                                                           XX
-    XX  Keeps track of the scopes during code-generation.                        XX
-    XX  This is used to translate the local-variable debugging information       XX
-    XX  from IL offsets to native code offsets.                                  XX
-    XX                                                                           XX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    */
+/*
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XX                                                                           XX
+XX                           ScopeInfo                                       XX
+XX                                                                           XX
+XX  Keeps track of the scopes during code-generation.                        XX
+XX  This is used to translate the local-variable debugging information       XX
+XX  from IL offsets to native code offsets.                                  XX
+XX                                                                           XX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+*/
 
-    /*****************************************************************************/
-    /*****************************************************************************
-     *                              ScopeInfo
-     *
-     * This class is called during code gen at block-boundaries, and when the
-     * set of live variables changes. It keeps track of the scope of the variables
-     * in terms of the native code PC.
-     */
+/*****************************************************************************/
+/*****************************************************************************
+ *                              ScopeInfo
+ *
+ * This class is called during code gen at block-boundaries, and when the
+ * set of live variables changes. It keeps track of the scope of the variables
+ * in terms of the native code PC.
+ */
 
 #endif // USING_SCOPE_INFO
 public:
@@ -758,8 +760,7 @@ protected:
 
         bool scRegister;
 
-        union
-        {
+        union {
             struct
             {
                 regNumberSmall scRegNum;
@@ -965,8 +966,8 @@ protected:
     insOpts genGetSimdInsOpt(emitAttr size, var_types elementType);
 #endif
     instruction getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival = nullptr);
-    void        genSIMDScalarMove(
-               var_types targetType, var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
+    void genSIMDScalarMove(
+        var_types targetType, var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
     void genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg);
     void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
@@ -1106,12 +1107,12 @@ protected:
     void genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum);
     void genUnspillLocal(
         unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
-    void      genUnspillRegIfNeeded(GenTree* tree);
-    void      genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
+    void genUnspillRegIfNeeded(GenTree* tree);
+    void genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
     regNumber genConsumeReg(GenTree* tree);
     regNumber genConsumeReg(GenTree* tree, unsigned multiRegIndex);
-    void      genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
-    void      genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
+    void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
+    void genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
 
     void genConsumeIfReg(GenTree* tree)
     {
@@ -1121,15 +1122,15 @@ protected:
         }
     }
 
-    void      genRegCopy(GenTree* tree);
+    void genRegCopy(GenTree* tree);
     regNumber genRegCopy(GenTree* tree, unsigned multiRegIndex);
-    void      genTransferRegGCState(regNumber dst, regNumber src);
-    void      genConsumeAddress(GenTree* addr);
-    void      genConsumeAddrMode(GenTreeAddrMode* mode);
-    void      genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
-    void      genConsumeBlockSrc(GenTreeBlk* blkNode);
-    void      genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
-    void      genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
+    void genTransferRegGCState(regNumber dst, regNumber src);
+    void genConsumeAddress(GenTree* addr);
+    void genConsumeAddrMode(GenTreeAddrMode* mode);
+    void genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
+    void genConsumeBlockSrc(GenTreeBlk* blkNode);
+    void genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
+    void genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode,
@@ -1242,30 +1243,30 @@ protected:
     unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
     unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
     unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
-    void     genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
-    void     genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
-    void     genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode);
-    void     genStoreRegToStackArg(var_types type, regNumber reg, int offset);
+    void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
+    void genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
+    void genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode);
+    void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
     void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
 #ifndef TARGET_X86
     void genCodeForInitBlkHelper(GenTreeBlk* initBlkNode);
 #endif
-    void        genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
-    void        genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
-    void        genJumpTable(GenTree* tree);
-    void        genTableBasedSwitch(GenTree* tree);
-    void        genCodeForArrIndex(GenTreeArrIndex* treeNode);
-    void        genCodeForArrOffset(GenTreeArrOffs* treeNode);
+    void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
+    void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
+    void genJumpTable(GenTree* tree);
+    void genTableBasedSwitch(GenTree* tree);
+    void genCodeForArrIndex(GenTreeArrIndex* treeNode);
+    void genCodeForArrOffset(GenTreeArrOffs* treeNode);
     instruction genGetInsForOper(genTreeOps oper, var_types type);
-    bool        genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
-    GenTree*    getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
-    void        genCall(GenTreeCall* call);
-    void        genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
-    void        genJmpMethod(GenTree* jmp);
+    bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
+    GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
+    void genCall(GenTreeCall* call);
+    void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
+    void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
-    void        genCodeForJumpTrue(GenTreeOp* jtrue);
+    void genCodeForJumpTrue(GenTreeOp* jtrue);
 #ifdef TARGET_ARM64
     void genCodeForJumpCompare(GenTreeOp* tree);
 #endif // TARGET_ARM64
@@ -1273,7 +1274,7 @@ protected:
 #if defined(FEATURE_EH_FUNCLETS)
     void genEHCatchRet(BasicBlock* block);
 #else  // !FEATURE_EH_FUNCLETS
-    void        genEHFinallyOrFilterRet(BasicBlock* block);
+    void genEHFinallyOrFilterRet(BasicBlock* block);
 #endif // !FEATURE_EH_FUNCLETS
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
@@ -1300,8 +1301,8 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
-    void           genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
-    void           genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
+    void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
+    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
 
 #if defined(TARGET_XARCH)
@@ -1335,10 +1336,12 @@ protected:
 
 #ifdef DEBUG
     GenTree* lastConsumedNode;
-    void     genNumberOperandUse(GenTree* const operand, int& useNum) const;
-    void     genCheckConsumeNode(GenTree* const node);
+    void genNumberOperandUse(GenTree* const operand, int& useNum) const;
+    void genCheckConsumeNode(GenTree* const node);
 #else  // !DEBUG
-    inline void genCheckConsumeNode(GenTree* treeNode) {}
+    inline void genCheckConsumeNode(GenTree* treeNode)
+    {
+    }
 #endif // DEBUG
 
     /*
@@ -1457,17 +1460,17 @@ public:
     bool ins_Writes_Dest(instruction ins);
 #endif
 
-    bool        isMoveIns(instruction ins);
+    bool isMoveIns(instruction ins);
     instruction ins_Move_Extend(var_types srcType, bool srcInReg);
 
-    instruction        ins_Copy(var_types dstType);
-    instruction        ins_Copy(regNumber srcReg, var_types dstType);
+    instruction ins_Copy(var_types dstType);
+    instruction ins_Copy(regNumber srcReg, var_types dstType);
     static instruction ins_FloatStore(var_types type = TYP_DOUBLE);
     static instruction ins_FloatCopy(var_types type = TYP_DOUBLE);
-    instruction        ins_FloatConv(var_types to, var_types from);
-    instruction        ins_FloatCompare(var_types type);
-    instruction        ins_MathOp(genTreeOps oper, var_types type);
-    instruction        ins_FloatSqrt(var_types type);
+    instruction ins_FloatConv(var_types to, var_types from);
+    instruction ins_FloatCompare(var_types type);
+    instruction ins_MathOp(genTreeOps oper, var_types type);
+    instruction ins_FloatSqrt(var_types type);
 
     void instGen_Return(unsigned stkArgSize);
 

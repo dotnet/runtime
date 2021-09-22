@@ -295,7 +295,7 @@ inline bool isByteReg(regNumber reg)
     return (reg <= REG_EBX);
 }
 #else
-inline bool            isByteReg(regNumber reg)
+inline bool isByteReg(regNumber reg)
 {
     return true;
 }

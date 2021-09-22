@@ -116,7 +116,7 @@ private:
     static bool CheckBlock(Compiler* compiler, BasicBlock* block);
 #endif // DEBUG
 
-    void     LowerBlock(BasicBlock* block);
+    void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
     // ------------------------------
@@ -126,17 +126,17 @@ private:
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
-    GenTree*   OptimizeConstCompare(GenTree* cmp);
-    GenTree*   LowerCompare(GenTree* cmp);
-    GenTree*   LowerJTrue(GenTreeOp* jtrue);
+    GenTree* OptimizeConstCompare(GenTree* cmp);
+    GenTree* LowerCompare(GenTree* cmp);
+    GenTree* LowerJTrue(GenTreeOp* jtrue);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
-    void       LowerJmpMethod(GenTree* jmp);
-    void       LowerRet(GenTreeUnOp* ret);
-    void       LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
-    void       LowerRetStruct(GenTreeUnOp* ret);
-    void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
-    void       LowerCallStruct(GenTreeCall* call);
-    void       LowerStoreSingleRegCallStruct(GenTreeBlk* store);
+    void LowerJmpMethod(GenTree* jmp);
+    void LowerRet(GenTreeUnOp* ret);
+    void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
+    void LowerRetStruct(GenTreeUnOp* ret);
+    void LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
+    void LowerCallStruct(GenTreeCall* call);
+    void LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
@@ -145,27 +145,27 @@ private:
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
-    void     LowerFastTailCall(GenTreeCall* callNode);
-    void     RehomeArgForFastTailCall(unsigned int lclNum,
-                                      GenTree*     insertTempBefore,
-                                      GenTree*     lookForUsesStart,
-                                      GenTreeCall* callNode);
-    void     InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
+    void LowerFastTailCall(GenTreeCall* callNode);
+    void RehomeArgForFastTailCall(unsigned int lclNum,
+                                  GenTree*     insertTempBefore,
+                                  GenTree*     lookForUsesStart,
+                                  GenTreeCall* callNode);
+    void InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
-    void     LowerArgsForCall(GenTreeCall* call);
-    void     ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
+    void LowerArgsForCall(GenTreeCall* call);
+    void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
-    void     LowerArg(GenTreeCall* call, GenTree** ppTree);
+    void LowerArg(GenTreeCall* call, GenTree** ppTree);
 #ifdef TARGET_ARMARCH
     GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
 
-    void     InsertPInvokeCallProlog(GenTreeCall* call);
-    void     InsertPInvokeCallEpilog(GenTreeCall* call);
-    void     InsertPInvokeMethodProlog();
-    void     InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* lastExpr));
+    void InsertPInvokeCallProlog(GenTreeCall* call);
+    void InsertPInvokeCallEpilog(GenTreeCall* call);
+    void InsertPInvokeMethodProlog();
+    void InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* lastExpr));
     GenTree* SetGCState(int cns);
     GenTree* CreateReturnTrapSeq();
     enum FrameLinkAction
@@ -292,25 +292,25 @@ private:
 #endif // defined(TARGET_XARCH)
 
     // Per tree node member functions
-    void     LowerStoreIndirCommon(GenTreeStoreInd* ind);
-    void     LowerIndir(GenTreeIndir* ind);
-    void     LowerStoreIndir(GenTreeStoreInd* node);
+    void LowerStoreIndirCommon(GenTreeStoreInd* ind);
+    void LowerIndir(GenTreeIndir* ind);
+    void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
-    bool     LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
-    void     LowerBlockStore(GenTreeBlk* blkNode);
-    void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
-    void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
-    void     LowerPutArgStk(GenTreePutArgStk* tree);
+    void LowerBlockStore(GenTreeBlk* blkNode);
+    void LowerBlockStoreCommon(GenTreeBlk* blkNode);
+    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
+    void LowerPutArgStk(GenTreePutArgStk* tree);
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
 
     GenTree* LowerSwitch(GenTree* node);
-    bool     TryLowerSwitchToBitTest(
-            BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
+    bool TryLowerSwitchToBitTest(
+        BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
 
     void LowerCast(GenTree* node);
 
@@ -321,12 +321,12 @@ private:
     bool LowerRMWMemOp(GenTreeIndir* storeInd);
 #endif
 
-    void     WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
-    bool     CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc);
-    void     LowerStoreLoc(GenTreeLclVarCommon* tree);
+    void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
+    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc);
+    void LowerStoreLoc(GenTreeLclVarCommon* tree);
     GenTree* LowerArrElem(GenTree* node);
-    void     LowerRotate(GenTree* tree);
-    void     LowerShift(GenTreeOp* shift);
+    void LowerRotate(GenTree* tree);
+    void LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_SIMD
     void LowerSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
@@ -346,8 +346,7 @@ private:
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-    union VectorConstant
-    {
+    union VectorConstant {
         int8_t   i8[32];
         uint8_t  u8[32];
         int16_t  i16[16];

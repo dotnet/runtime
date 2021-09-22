@@ -1711,10 +1711,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction                                ins,
-                          emitAttr                                   attr,
-                          regNumber                                  reg,
-                          target_ssize_t                             imm,
+void emitter::emitIns_R_I(instruction    ins,
+                          emitAttr       attr,
+                          regNumber      reg,
+                          target_ssize_t imm,
                           insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(GenTreeFlags gtFlags))
 
 {
@@ -1741,7 +1741,7 @@ void emitter::emitIns_R_I(instruction                                ins,
                         ins = INS_sub;
                     else // ins == INS_sub
                         ins = INS_add;
-                    imm = -imm;
+                    imm     = -imm;
                 }
                 fmt = IF_T1_J0;
                 sf  = INS_FLAGS_SET;
@@ -2610,7 +2610,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                         ins = INS_sub;
                     else
                         ins = INS_add;
-                    imm = -imm;
+                    imm     = -imm;
                 }
                 fmt = IF_T1_G;
                 sf  = INS_FLAGS_SET;
@@ -2624,7 +2624,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                         ins = INS_sub;
                     else
                         ins = INS_add;
-                    imm = -imm;
+                    imm     = -imm;
                 }
                 // Use Thumb-1 encoding
                 emitIns_R_I(ins, attr, reg1, imm, flags);
@@ -2985,9 +2985,9 @@ void emitter::emitIns_R_R_I(instruction ins,
                     }
                 }
             }
-            //
-            // If we did not find a thumb-1 encoding above
-            //
+        //
+        // If we did not find a thumb-1 encoding above
+        //
 
         COMMON_THUMB2_LDST:
             assert(fmt == IF_NONE);
@@ -5365,7 +5365,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
     if (dstOffs <= srcOffs)
     {
-        /* This is a backward jump - distance is known at this point */
+/* This is a backward jump - distance is known at this point */
 
 #if DEBUG_EMIT
         if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
@@ -6588,9 +6588,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             break;
 
-            /********************************************************************/
-            /*                            oops                                  */
-            /********************************************************************/
+        /********************************************************************/
+        /*                            oops                                  */
+        /********************************************************************/
 
         default:
 
