@@ -38,7 +38,7 @@ The sections below include any additional instructions to configure the experien
 
 #### C#/VB
 
-<!-- Depends on my Omnisharp PRs -->
+There are currently some limitations in OmniSharp that causes issues with the auto-formatting. Once a VSCode C# extension releases with both https://github.com/OmniSharp/omnisharp-roslyn/pull/2227 and https://github.com/OmniSharp/omnisharp-vscode/pull/4738, then format-on-save should be possible to enable in VSCode for C# and Visual Basic sources.
 
 #### C/C++
 
@@ -62,9 +62,19 @@ Visual Studio does not have a "format-on-save" feature but it does have settings
 
 Using these features in combination with the steps specified in the [Git Hooks](#git-hooks) section will enable a seamless formatting experience.
 
+The settings for C#, VB, C, and C++ are all in a dialog under the `Tools > Options` menu item.
+
 #### C#/VB
 
+In the options view, go to `Text Editor > C# > Code Style > Formatting > General` for C# settings. Make sure to check the various options for whenever you want Visual Studio to auto-format your code.
+
+![C# formatting settings in Visual Studio](./vs-csharp-formatting.png)
+
 #### C/C++
+
+In the options view, go to `Text Editor > C/C++ > Code Style > Formatting > General` for C# settings. Make sure to check the various options for whenever you want Visual Studio to auto-format your code.
+
+![C/C++ formatting settings in Visual Studio](./vs-cpp-formatting.png)
 
 ### Git Hooks
 
