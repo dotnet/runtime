@@ -69,10 +69,6 @@ namespace System.IO.Tests
         [InlineData(FileMode.Truncate)]
         public void PreallocationSizeThrowsForFileModesThatOpenExistingFiles(FileMode mode)
         {
-            const int initialSize = 10;
-            string filePath = GetPathToNonExistingFile();
-            File.WriteAllBytes(filePath, new byte[initialSize]);
-
             Assert.Throws<ArgumentException>(
                 () => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 20));
         }
@@ -105,7 +101,7 @@ namespace System.IO.Tests
                 File.WriteAllText(filename, "");
             }
 
-            using (var fs = CreateFileStream(filename, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0))
+            using (FileStream fs = CreateFileStream(filename, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0))
             {
                 Assert.Equal(0, fs.Length);
                 Assert.Equal(0, GetAllocatedSize(fs));

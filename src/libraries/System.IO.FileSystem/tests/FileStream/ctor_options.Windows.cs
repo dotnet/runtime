@@ -40,7 +40,6 @@ namespace System.IO.Tests
         [ConditionalTheory(nameof(IsFat32))]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
-        [InlineData(FileMode.Truncate)]
         public void WhenFileIsTooLargeTheErrorMessageContainsAllDetails(FileMode mode)
         {
             const long tooMuch = uint.MaxValue + 1L; // more than FAT32 max size
