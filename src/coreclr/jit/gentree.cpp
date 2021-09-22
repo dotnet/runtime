@@ -1272,8 +1272,8 @@ bool GenTree::Compare(GenTree* op1, GenTree* op2, bool swapOK)
     genTreeOps oper;
     unsigned   kind;
 
-//  printf("tree1:\n"); gtDispTree(op1);
-//  printf("tree2:\n"); gtDispTree(op2);
+    //  printf("tree1:\n"); gtDispTree(op1);
+    //  printf("tree2:\n"); gtDispTree(op2);
 
 AGAIN:
 
@@ -5892,7 +5892,7 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
     switch (oper)
     {
 
-// clang-format off
+        // clang-format off
 
 #define GTSTRUCT_0(nm, tag)                             /*handle explicitly*/
 #define GTSTRUCT_1(nm, tag)                             \
@@ -5934,10 +5934,10 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
 #define GTSTRUCT_3_SPECIAL(nm, tag, tag2, tag3)         /*handle explicitly*/
 #include "gtstructs.h"
 
-        // clang-format on
+            // clang-format on
 
-        // Handle the special cases.
-        // The following opers are in GTSTRUCT_N but no other place (namely, no subtypes).
+            // Handle the special cases.
+            // The following opers are in GTSTRUCT_N but no other place (namely, no subtypes).
 
         case GT_STORE_BLK:
         case GT_BLK:
@@ -5955,8 +5955,8 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
         }
         break;
 
-        // We don't need to handle GTSTRUCT_N for LclVarCommon, since all those allowed opers are specified
-        // in their proper subtype. Similarly for GenTreeIndir.
+            // We don't need to handle GTSTRUCT_N for LclVarCommon, since all those allowed opers are specified
+            // in their proper subtype. Similarly for GenTreeIndir.
 
         default:
         {
@@ -7204,23 +7204,23 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
     }
 
     /* In the case of CpBlk, we want to avoid generating
-    * nodes where the source and destination are the same
-    * because of two reasons, first, is useless, second
-    * it introduces issues in liveness and also copying
-    * memory from an overlapping memory location is
-    * undefined both as per the ECMA standard and also
-    * the memcpy semantics specify that.
-    *
-    * NOTE: In this case we'll only detect the case for addr of a local
-    * and a local itself, any other complex expressions won't be
-    * caught.
-    *
-    * TODO-Cleanup: though having this logic is goodness (i.e. avoids self-assignment
-    * of struct vars very early), it was added because fgInterBlockLocalVarLiveness()
-    * isn't handling self-assignment of struct variables correctly.  This issue may not
-    * surface if struct promotion is ON (which is the case on x86/arm).  But still the
-    * fundamental issue exists that needs to be addressed.
-    */
+     * nodes where the source and destination are the same
+     * because of two reasons, first, is useless, second
+     * it introduces issues in liveness and also copying
+     * memory from an overlapping memory location is
+     * undefined both as per the ECMA standard and also
+     * the memcpy semantics specify that.
+     *
+     * NOTE: In this case we'll only detect the case for addr of a local
+     * and a local itself, any other complex expressions won't be
+     * caught.
+     *
+     * TODO-Cleanup: though having this logic is goodness (i.e. avoids self-assignment
+     * of struct vars very early), it was added because fgInterBlockLocalVarLiveness()
+     * isn't handling self-assignment of struct variables correctly.  This issue may not
+     * surface if struct promotion is ON (which is the case on x86/arm).  But still the
+     * fundamental issue exists that needs to be addressed.
+     */
     if (result->OperIsCopyBlkOp())
     {
         GenTree* currSrc = srcOrFillVal;
@@ -7793,7 +7793,7 @@ GenTree* Compiler::gtCloneExpr(
 
         switch (oper)
         {
-            /* These nodes sometimes get bashed to "fat" ones */
+                /* These nodes sometimes get bashed to "fat" ones */
 
             case GT_MUL:
             case GT_DIV:
@@ -7830,7 +7830,7 @@ GenTree* Compiler::gtCloneExpr(
                                 tree->AsCast()->gtCastType DEBUGARG(/*largeNode*/ TRUE));
                 break;
 
-            // The nodes below this are not bashed, so they can be allocated at their individual sizes.
+                // The nodes below this are not bashed, so they can be allocated at their individual sizes.
 
             case GT_LIST:
                 assert((tree->AsOp()->gtOp2 == nullptr) || tree->AsOp()->gtOp2->OperIsList());
@@ -8064,9 +8064,9 @@ GenTree* Compiler::gtCloneExpr(
 
             copy = gtNewFieldRef(tree->TypeGet(), tree->AsField()->gtFldHnd, nullptr, tree->AsField()->gtFldOffset);
 
-            copy->AsField()->gtFldObj = tree->AsField()->gtFldObj
-                                            ? gtCloneExpr(tree->AsField()->gtFldObj, addFlags, deepVarNum, deepVarVal)
-                                            : nullptr;
+            copy->AsField()->gtFldObj        = tree->AsField()->gtFldObj
+                                                   ? gtCloneExpr(tree->AsField()->gtFldObj, addFlags, deepVarNum, deepVarVal)
+                                                   : nullptr;
             copy->AsField()->gtFldMayOverlap = tree->AsField()->gtFldMayOverlap;
 #ifdef FEATURE_READYTORUN
             copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
@@ -9683,7 +9683,7 @@ void GenTreeUseEdgeIterator::AdvancePhi()
 // `GTF_REVERSE_OPS` flag.
 //
 template <bool ReverseOperands>
-void           GenTreeUseEdgeIterator::AdvanceBinOp()
+void GenTreeUseEdgeIterator::AdvanceBinOp()
 {
     assert(ReverseOperands == ((m_node->gtFlags & GTF_REVERSE_OPS) != 0));
 
@@ -9767,7 +9767,7 @@ void GenTreeUseEdgeIterator::SetEntryStateForList(GenTreeArgList* list)
 // component operands.
 //
 template <int state>
-void          GenTreeUseEdgeIterator::AdvanceCall()
+void GenTreeUseEdgeIterator::AdvanceCall()
 {
     GenTreeCall* const call = m_node->AsCall();
 
@@ -9970,10 +9970,12 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     printf("%c", (flags & GTF_EXCEPT) ? 'X' : '-');
     printf("%c", (flags & GTF_GLOB_REF) ? 'G' : '-');
     printf("%c", (debugFlags & GTF_DEBUG_NODE_MORPHED) ? '+' : // First print '+' if GTF_DEBUG_NODE_MORPHED is set
-                     (flags & GTF_ORDER_SIDEEFF) ? 'O' : '-'); // otherwise print 'O' or '-'
+                     (flags & GTF_ORDER_SIDEEFF) ? 'O'
+                                                 : '-'); // otherwise print 'O' or '-'
     printf("%c", (flags & GTF_COLON_COND) ? '?' : '-');
-    printf("%c", (flags & GTF_DONT_CSE) ? 'N' :           // N is for No cse
-                     (flags & GTF_MAKE_CSE) ? 'H' : '-'); // H is for Hoist this expr
+    printf("%c", (flags & GTF_DONT_CSE) ? 'N' : // N is for No cse
+                     (flags & GTF_MAKE_CSE) ? 'H'
+                                            : '-'); // H is for Hoist this expr
     printf("%c", (flags & GTF_REVERSE_OPS) ? 'R' : '-');
     printf("%c", (flags & GTF_UNSIGNED) ? 'U' : (flags & GTF_BOOLEAN) ? 'B' : '-');
 #if FEATURE_SET_FLAGS
@@ -10876,8 +10878,8 @@ void Compiler::gtDispRegVal(GenTree* tree)
 {
     switch (tree->GetRegTag())
     {
-        // Don't display anything for the GT_REGTAG_NONE case;
-        // the absence of printed register values will imply this state.
+            // Don't display anything for the GT_REGTAG_NONE case;
+            // the absence of printed register values will imply this state.
 
         case GenTree::GT_REGTAG_REG:
             printf(" REG %s", compRegVarName(tree->GetRegNum()));
@@ -11555,7 +11557,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 #endif // !FEATURE_EH_FUNCLETS
 
-        // Vanilla leaves. No qualifying information available. So do nothing
+            // Vanilla leaves. No qualifying information available. So do nothing
 
         case GT_NO_OP:
         case GT_START_NONGC:
@@ -11628,8 +11630,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 void Compiler::gtDispChild(GenTree*             child,
                            IndentStack*         indentStack,
                            IndentInfo           arcType,
-                           __in_opt const char* msg,     /* = nullptr  */
-                           bool                 topOnly) /* = false */
+                           __in_opt const char* msg, /* = nullptr  */
+                           bool                 topOnly)             /* = false */
 {
     indentStack->Push(arcType);
     gtDispTree(child, indentStack, msg, topOnly);
@@ -11650,7 +11652,7 @@ void Compiler::gtDispTree(GenTree*     tree,
                           IndentStack* indentStack,                 /* = nullptr */
                           __in __in_z __in_opt const char* msg,     /* = nullptr  */
                           bool                             topOnly, /* = false */
-                          bool                             isLIR)   /* = false */
+                          bool                             isLIR)                               /* = false */
 {
     if (tree == nullptr)
     {
@@ -11957,9 +11959,10 @@ void Compiler::gtDispTree(GenTree*     tree,
 #ifdef FEATURE_HW_INTRINSICS
         if (tree->gtOper == GT_HWINTRINSIC)
         {
-            printf(" %s %s", tree->AsHWIntrinsic()->GetSimdBaseType() == TYP_UNKNOWN
-                                 ? ""
-                                 : varTypeName(tree->AsHWIntrinsic()->GetSimdBaseType()),
+            printf(" %s %s",
+                   tree->AsHWIntrinsic()->GetSimdBaseType() == TYP_UNKNOWN
+                       ? ""
+                       : varTypeName(tree->AsHWIntrinsic()->GetSimdBaseType()),
                    HWIntrinsicInfo::lookupName(tree->AsHWIntrinsic()->gtHWIntrinsicId));
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -12538,8 +12541,9 @@ void Compiler::gtDispTreeRange(LIR::Range& containingRange, GenTree* tree)
 //
 void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr */)
 {
-    auto displayOperand = [](GenTree* operand, const char* message, IndentInfo operandArc, IndentStack& indentStack,
-                             size_t prefixIndent) {
+    auto displayOperand =
+        [](GenTree* operand, const char* message, IndentInfo operandArc, IndentStack& indentStack, size_t prefixIndent)
+    {
         assert(operand != nullptr);
         assert(message != nullptr);
 
@@ -13359,7 +13363,8 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     bool opHasSideEffects = (op->gtFlags & GTF_SIDE_EFFECT) != 0;
 
     // Helper function that creates a new IntCon node and morphs it, if required
-    auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
+    auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon*
+    {
         GenTreeIntCon* icon = gtNewIconNode(value);
         if (fgGlobalMorph)
         {
@@ -14589,8 +14594,8 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
     switch (switchType)
     {
-        // Fold constant REF of BYREF binary operator.
-        // These can only be comparisons or null pointers.
+            // Fold constant REF of BYREF binary operator.
+            // These can only be comparisons or null pointers.
 
         case TYP_REF:
 
@@ -14659,7 +14664,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
             return tree;
 
-        // Fold constant INT binary operator.
+            // Fold constant INT binary operator.
 
         case TYP_INT:
 
@@ -14808,8 +14813,8 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     i1 = (i1 << ((32 - i2) & 0x1f)) | (UINT32(i1) >> (i2 & 0x1f));
                     break;
 
-                // DIV and MOD can throw an exception - if the division is by 0
-                // or there is overflow - when dividing MIN by -1.
+                    // DIV and MOD can throw an exception - if the division is by 0
+                    // or there is overflow - when dividing MIN by -1.
 
                 case GT_DIV:
                 case GT_MOD:
@@ -14878,7 +14883,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
             goto DONE;
 
-        // Fold constant LONG binary operator.
+            // Fold constant LONG binary operator.
 
         case TYP_LONG:
 
@@ -15101,7 +15106,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
             goto DONE;
 
-        // Fold constant FLOAT or DOUBLE binary operator
+            // Fold constant FLOAT or DOUBLE binary operator
 
         case TYP_FLOAT:
         case TYP_DOUBLE:
@@ -16321,9 +16326,7 @@ struct ComplexityStruct
 {
     unsigned m_numNodes;
     unsigned m_nodeLimit;
-    ComplexityStruct(unsigned nodeLimit) : m_numNodes(0), m_nodeLimit(nodeLimit)
-    {
-    }
+    ComplexityStruct(unsigned nodeLimit) : m_numNodes(0), m_nodeLimit(nodeLimit) {}
 };
 
 static Compiler::fgWalkResult ComplexityExceedsWalker(GenTree** pTree, Compiler::fgWalkData* data)
@@ -18912,7 +18915,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 
     switch (AsHWIntrinsic()->gtHWIntrinsicId)
     {
-        // TODO-XArch-Cleanup: Move this switch block to be table driven.
+            // TODO-XArch-Cleanup: Move this switch block to be table driven.
 
         case NI_SSE42_Crc32:
         case NI_SSE42_X64_Crc32:

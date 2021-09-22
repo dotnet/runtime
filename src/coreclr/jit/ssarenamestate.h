@@ -12,9 +12,7 @@ class SsaRenameState
         StackNode* m_top;
 
     public:
-        Stack() : m_top(nullptr)
-        {
-        }
+        Stack() : m_top(nullptr) {}
 
         StackNode* Top()
         {

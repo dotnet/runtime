@@ -380,7 +380,7 @@ void InlineContext::Dump(unsigned indent)
 #if defined(DEBUG)
         calleeName = compiler->eeGetMethodFullName(m_Callee);
 #else
-        calleeName         = "callee";
+        calleeName = "callee";
 #endif // defined(DEBUG)
     }
 

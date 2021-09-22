@@ -89,8 +89,8 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
     length += strlen(methodName) + 1;
 
     bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_eeinterface>(
-        [](FilterSuperPMIExceptionsParam_eeinterface* pParam) {
-
+        [](FilterSuperPMIExceptionsParam_eeinterface* pParam)
+        {
             /* figure out the signature */
 
             pParam->pThis->eeGetMethodSig(pParam->hnd, &pParam->sig);

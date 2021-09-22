@@ -989,7 +989,7 @@ void LinearScan::setBlockSequence()
 
     JITDUMP("Final LSRA Block Sequence: \n");
     int i = 1;
-    for (BasicBlock *block = startBlockSequence(); block != nullptr; ++i, block = moveToNextBlock())
+    for (BasicBlock* block = startBlockSequence(); block != nullptr; ++i, block = moveToNextBlock())
     {
         JITDUMP(FMT_BB, block->bbNum);
         JITDUMP("(%6s) ", refCntWtd2str(block->getBBWeight(compiler)));
@@ -1292,7 +1292,7 @@ void LinearScan::doLinearScan()
 #ifdef DEBUG
         || VERBOSE
 #endif
-        )
+    )
     {
         dumpLsraStats(jitstdout);
     }
@@ -2317,7 +2317,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 //                                    the register locations will be "rotated" to stress the resolution and allocation
 //                                    code.
 
-BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
+BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock*           block,
                                                BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated))
 {
     BasicBlock* predBlock = nullptr;
@@ -2760,7 +2760,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 //        no such ref position, no register will be allocated.
 //
 
-regNumber LinearScan::allocateReg(Interval*    currentInterval,
+regNumber LinearScan::allocateReg(Interval*                currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regMaskTP foundRegBit = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
@@ -3058,7 +3058,7 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     refPosition->copyReg = true;
 
     RegisterScore registerScore = NONE;
-    regNumber allocatedReg      = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
+    regNumber     allocatedReg  = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
     assert(allocatedReg != REG_NA);
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
@@ -7056,8 +7056,8 @@ void LinearScan::resolveRegisters()
                 {
                     regMaskTP initialRegMask = interval->firstRefPosition->registerAssignment;
                     regNumber initialReg     = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
-                                               ? REG_STK
-                                               : genRegNumFromMask(initialRegMask);
+                                                   ? REG_STK
+                                                   : genRegNumFromMask(initialRegMask);
 
 #ifdef TARGET_ARM
                     if (varTypeIsMultiReg(varDsc))
@@ -9943,9 +9943,8 @@ void LinearScan::dumpRegRecordHeader()
     //    l is either '*' (if a last use) or ' ' (otherwise)
     //    d is either 'D' (if a delayed use) or ' ' (otherwise)
 
-    maxNodeLocation = (maxNodeLocation == 0)
-                          ? 1
-                          : maxNodeLocation; // corner case of a method with an infinite loop without any gentree nodes
+    maxNodeLocation = (maxNodeLocation == 0) ? 1 : maxNodeLocation; // corner case of a method with an infinite loop
+                                                                    // without any gentree nodes
     assert(maxNodeLocation >= 1);
     assert(refPositions.size() >= 1);
     int nodeLocationWidth         = (int)log10((double)maxNodeLocation) + 1;
@@ -11599,7 +11598,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
 //  Return Values:
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
-regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
+regMaskTP LinearScan::RegisterSelection::select(Interval*                currentInterval,
                                                 RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
 #ifdef DEBUG
@@ -11917,7 +11916,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         }
     }
 #else // RELEASE
-// In release, just invoke the default order
+    // In release, just invoke the default order
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     try_##stat();                                                                                                      \

@@ -112,14 +112,13 @@ inline static bool ShouldThrowOnNoway(
 #ifdef FEATURE_TRACELOGGING
     const char* filename, unsigned line
 #endif
-    )
+)
 {
-    return JitTls::GetCompiler() == nullptr ||
-           JitTls::GetCompiler()->compShouldThrowOnNoway(
+    return JitTls::GetCompiler() == nullptr || JitTls::GetCompiler()->compShouldThrowOnNoway(
 #ifdef FEATURE_TRACELOGGING
-               filename, line
+                                                   filename, line
 #endif
-               );
+                                               );
 }
 
 /*****************************************************************************/
@@ -127,7 +126,7 @@ void noWayAssertBodyConditional(
 #ifdef FEATURE_TRACELOGGING
     const char* filename, unsigned line
 #endif
-    )
+)
 {
 #ifdef FEATURE_TRACELOGGING
     if (ShouldThrowOnNoway(filename, line))
@@ -269,9 +268,7 @@ void debugError(const char* msg, const char* file, unsigned line)
 }
 
 /*****************************************************************************/
-LogEnv::LogEnv(ICorJitInfo* aCompHnd) : compHnd(aCompHnd), compiler(nullptr)
-{
-}
+LogEnv::LogEnv(ICorJitInfo* aCompHnd) : compHnd(aCompHnd), compiler(nullptr) {}
 
 /*****************************************************************************/
 extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line)

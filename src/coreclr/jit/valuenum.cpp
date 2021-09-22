@@ -1731,7 +1731,7 @@ ValueNum ValueNumStore::VNForByrefCon(target_size_t cnsVal)
     return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
 }
 
-ValueNum ValueNumStore::VNForCastOper(var_types castToType,
+ValueNum ValueNumStore::VNForCastOper(var_types                     castToType,
                                       bool srcIsUnsigned /*=false*/ DEBUGARG(bool printResult /*=true*/))
 {
     assert(castToType != TYP_STRUCT);
@@ -3410,7 +3410,8 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // (0 + x) == x
     // (x + 0) == x
     // This identity does not apply for floating point (when x == -0.0).
-    auto identityForAddition = [=]() -> ValueNum {
+    auto identityForAddition = [=]() -> ValueNum
+    {
         if (!varTypeIsFloating(typ))
         {
             ValueNum ZeroVN = VNZeroForType(typ);
@@ -3430,7 +3431,8 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // (x - 0) == x
     // (x - x) == 0
     // This identity does not apply for floating point (when x == -0.0).
-    auto identityForSubtraction = [=]() -> ValueNum {
+    auto identityForSubtraction = [=]() -> ValueNum
+    {
         if (!varTypeIsFloating(typ))
         {
             ValueNum ZeroVN = VNZeroForType(typ);
@@ -3448,7 +3450,8 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     };
 
     // These identities do not apply for floating point.
-    auto identityForMultiplication = [=]() -> ValueNum {
+    auto identityForMultiplication = [=]() -> ValueNum
+    {
         if (!varTypeIsFloating(typ))
         {
             // (0 * x) == 0
@@ -9458,8 +9461,8 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
 ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
                                           var_types    castToType,
                                           var_types    castFromType,
-                                          bool         srcIsUnsigned,    /* = false */
-                                          bool         hasOverflowCheck) /* = false */
+                                          bool         srcIsUnsigned, /* = false */
+                                          bool         hasOverflowCheck)      /* = false */
 {
     // The resulting type after performingthe cast is always widened to a supported IL stack size
     var_types resultType = genActualType(castToType);
@@ -9635,7 +9638,8 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     }
     else
     {
-        auto getCurrentArg = [call, &args, useEntryPointAddrAsArg0](int currentIndex) {
+        auto getCurrentArg = [call, &args, useEntryPointAddrAsArg0](int currentIndex)
+        {
             GenTree* arg = args->GetNode();
             if ((arg->gtFlags & GTF_LATE_ARG) != 0)
             {
@@ -10724,7 +10728,7 @@ void Compiler::JitTestCheckVN()
 
     // First we have to know which nodes in the tree are reachable.
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, int> NodeToIntMap;
-    NodeToIntMap* reachable = FindReachableNodesInNodeTestData();
+    NodeToIntMap*                                                reachable = FindReachableNodesInNodeTestData();
 
     LabelToVNMap* labelToVN = new (getAllocatorDebugOnly()) LabelToVNMap(getAllocatorDebugOnly());
     VNToLabelMap* vnToLabel = new (getAllocatorDebugOnly()) VNToLabelMap(getAllocatorDebugOnly());
@@ -10861,9 +10865,7 @@ void Compiler::vnPrint(ValueNum vn, unsigned level)
 #endif // DEBUG
 
 // Methods of ValueNumPair.
-ValueNumPair::ValueNumPair() : m_liberal(ValueNumStore::NoVN), m_conservative(ValueNumStore::NoVN)
-{
-}
+ValueNumPair::ValueNumPair() : m_liberal(ValueNumStore::NoVN), m_conservative(ValueNumStore::NoVN) {}
 
 bool ValueNumPair::BothDefined() const
 {

@@ -53,9 +53,7 @@ class IteratorPair
     TIterator m_end;
 
 public:
-    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end)
-    {
-    }
+    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end) {}
 
     inline TIterator begin()
     {
@@ -664,8 +662,8 @@ unsigned CountDigits(double num, unsigned base = 10);
 #endif // DEBUG
 
 /*****************************************************************************
-* Floating point utility class
-*/
+ * Floating point utility class
+ */
 class FloatingPointUtils
 {
 public:
@@ -770,7 +768,7 @@ int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
 #ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 #endif
-}
+} // namespace MagicDivide
 
 //
 // Profiling helpers
@@ -871,6 +869,6 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned);
 bool CastFromFloatOverflows(float fromValue, var_types toType);
 bool CastFromDoubleOverflows(double fromValue, var_types toType);
-}
+} // namespace CheckedOps
 
 #endif // _UTILS_H_

@@ -47,9 +47,7 @@ public:
         friend class TinyArray;
 
     protected:
-        TinyArrayRef(storageType* d, int idx) : data(d), index(idx)
-        {
-        }
+        TinyArrayRef(storageType* d, int idx) : data(d), index(idx) {}
 
         storageType* data;
         int          index;

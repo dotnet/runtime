@@ -436,10 +436,10 @@ void Compiler::fgAttachStructInlineeToAsg(GenTree* tree, GenTree* child, CORINFO
     }
 
     GenTree* dstAddr = fgGetStructAsStructPtr(tree->AsOp()->gtOp1);
-    GenTree* srcAddr = fgGetStructAsStructPtr(
-        (child->gtOper == GT_CALL)
-            ? fgAssignStructInlineeToVar(child, retClsHnd) // Assign to a variable if it is a call.
-            : child);                                      // Just get the address, if not a call.
+    GenTree* srcAddr = fgGetStructAsStructPtr((child->gtOper == GT_CALL)
+                                                  ? fgAssignStructInlineeToVar(child, retClsHnd) // Assign to a variable
+                                                                                                 // if it is a call.
+                                                  : child); // Just get the address, if not a call.
 
     tree->ReplaceWith(gtNewCpObjNode(dstAddr, srcAddr, retClsHnd, false), this);
 }
@@ -923,7 +923,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     param.inlineCandidateInfo = inlineCandidateInfo;
     param.inlineInfo          = &inlineInfo;
     bool success              = eeRunWithErrorTrap<Param>(
-        [](Param* pParam) {
+        [](Param* pParam)
+        {
             // Init the local var info of the inlinee
             pParam->pThis->impInlineInitVars(pParam->inlineInfo);
 

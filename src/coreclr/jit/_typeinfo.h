@@ -142,70 +142,70 @@ inline ti_types JITtype2tiType(CorInfoType type)
     return g_ti_types_map[type];
 };
 
-/*****************************************************************************
- * Declares the typeInfo class, which represents the type of an entity on the
- * stack, in a local variable or an argument.
- *
- * Flags: LLLLLLLLLLLLLLLLffffffffffTTTTTT
- *
- * L = local var # or instance field #
- * x = unused
- * f = flags
- * T = type
- *
- * The lower bits are used to store the type component, and may be one of:
- *
- * TI_* (primitive)   - see tyelist.h for enumeration (BYTE, SHORT, INT..)
- * TI_REF             - OBJREF / ARRAY use m_cls for the type
- *                       (including arrays and null objref)
- * TI_STRUCT          - VALUE type, use m_cls for the actual type
- *
- * NOTE carefully that BYREF info is not stored here.  You will never see a
- * TI_BYREF in this component.  For example, the type component
- * of a "byref TI_INT" is TI_FLAG_BYREF | TI_INT.
- *
- * NOTE carefully that Generic Type Variable info is
- * only stored here in part.  Values of type "T" (e.g "!0" in ILASM syntax),
- * i.e. some generic variable type, appear only when verifying generic
- * code.  They come in two flavours: unboxed and boxed.  Unboxed
- * is the norm, e.g. a local, field or argument of type T.  Boxed
- * values arise from an IL instruction such as "box !0".
- * The EE provides type handles for each different type
- * variable and the EE's "canCast" operation decides casting
- * for boxed type variable. Thus:
- *
- *    (TI_REF, <type-variable-type-handle>) == boxed type variable
- *
- *    (TI_REF, <type-variable-type-handle>)
- *          + TI_FLAG_GENERIC_TYPE_VAR      == unboxed type variable
- *
- * Using TI_REF for these may seem odd but using TI_STRUCT means the
- * code-generation parts of the importer get confused when they
- * can't work out the size, GC-ness etc. of the "struct".  So using TI_REF
- * just tricks these backend parts into generating pseudo-trees for
- * the generic code we're verifying.  These trees then get thrown away
- * anyway as we do verification of generic code in import-only mode.
- *
- */
+    /*****************************************************************************
+     * Declares the typeInfo class, which represents the type of an entity on the
+     * stack, in a local variable or an argument.
+     *
+     * Flags: LLLLLLLLLLLLLLLLffffffffffTTTTTT
+     *
+     * L = local var # or instance field #
+     * x = unused
+     * f = flags
+     * T = type
+     *
+     * The lower bits are used to store the type component, and may be one of:
+     *
+     * TI_* (primitive)   - see tyelist.h for enumeration (BYTE, SHORT, INT..)
+     * TI_REF             - OBJREF / ARRAY use m_cls for the type
+     *                       (including arrays and null objref)
+     * TI_STRUCT          - VALUE type, use m_cls for the actual type
+     *
+     * NOTE carefully that BYREF info is not stored here.  You will never see a
+     * TI_BYREF in this component.  For example, the type component
+     * of a "byref TI_INT" is TI_FLAG_BYREF | TI_INT.
+     *
+     * NOTE carefully that Generic Type Variable info is
+     * only stored here in part.  Values of type "T" (e.g "!0" in ILASM syntax),
+     * i.e. some generic variable type, appear only when verifying generic
+     * code.  They come in two flavours: unboxed and boxed.  Unboxed
+     * is the norm, e.g. a local, field or argument of type T.  Boxed
+     * values arise from an IL instruction such as "box !0".
+     * The EE provides type handles for each different type
+     * variable and the EE's "canCast" operation decides casting
+     * for boxed type variable. Thus:
+     *
+     *    (TI_REF, <type-variable-type-handle>) == boxed type variable
+     *
+     *    (TI_REF, <type-variable-type-handle>)
+     *          + TI_FLAG_GENERIC_TYPE_VAR      == unboxed type variable
+     *
+     * Using TI_REF for these may seem odd but using TI_STRUCT means the
+     * code-generation parts of the importer get confused when they
+     * can't work out the size, GC-ness etc. of the "struct".  So using TI_REF
+     * just tricks these backend parts into generating pseudo-trees for
+     * the generic code we're verifying.  These trees then get thrown away
+     * anyway as we do verification of generic code in import-only mode.
+     *
+     */
 
 #define TI_FLAG_DATA_BITS 6
 #define TI_FLAG_DATA_MASK ((1 << TI_FLAG_DATA_BITS) - 1)
 
-// Flag indicating this item is uninitialized
-// Note that if UNINIT and BYREF are both set,
-// it means byref (uninit x) - i.e. we are pointing to an uninit <something>
+    // Flag indicating this item is uninitialized
+    // Note that if UNINIT and BYREF are both set,
+    // it means byref (uninit x) - i.e. we are pointing to an uninit <something>
 
 #define TI_FLAG_UNINIT_OBJREF 0x00000040
 
-// Flag indicating this item is a byref <something>
+    // Flag indicating this item is a byref <something>
 
 #define TI_FLAG_BYREF 0x00000080
 
-// This item is a byref generated using the readonly. prefix
-// to a ldelema or Address function on an array type.  The
-// runtime type check is ignored in these cases, but the
-// resulting byref can only be used in order to perform a
-// constraint call.
+    // This item is a byref generated using the readonly. prefix
+    // to a ldelema or Address function on an array type.  The
+    // runtime type check is ignored in these cases, but the
+    // resulting byref can only be used in order to perform a
+    // constraint call.
 
 #define TI_FLAG_BYREF_READONLY 0x00000100
 
@@ -224,23 +224,23 @@ inline ti_types JITtype2tiType(CorInfoType type)
 // This item contains resolved token. It is used for ctor delegate optimization.
 #define TI_FLAG_TOKEN 0x00000400
 
-// This item contains the 'this' pointer (used for tracking)
+    // This item contains the 'this' pointer (used for tracking)
 
 #define TI_FLAG_THIS_PTR 0x00001000
 
-// This item is a byref to something which has a permanent home
-// (e.g. a static field, or instance field of an object in GC heap, as
-// opposed to the stack or a local variable).  TI_FLAG_BYREF must also be
-// set. This information is useful for tail calls and return byrefs.
-//
-// Instructions that generate a permanent home byref:
-//
-//  ldelema
-//  ldflda of a ref object or another permanent home byref
-//  array element address Get() helper
-//  call or calli to a method that returns a byref and is verifiable or SkipVerify
-//  dup
-//  unbox
+    // This item is a byref to something which has a permanent home
+    // (e.g. a static field, or instance field of an object in GC heap, as
+    // opposed to the stack or a local variable).  TI_FLAG_BYREF must also be
+    // set. This information is useful for tail calls and return byrefs.
+    //
+    // Instructions that generate a permanent home byref:
+    //
+    //  ldelema
+    //  ldflda of a ref object or another permanent home byref
+    //  array element address Get() helper
+    //  call or calli to a method that returns a byref and is verifiable or SkipVerify
+    //  dup
+    //  unbox
 
 #define TI_FLAG_BYREF_PERMANENT_HOME 0x00002000
 
@@ -252,12 +252,12 @@ inline ti_types JITtype2tiType(CorInfoType type)
 // e.g. the result of a "box T" instruction.
 #define TI_FLAG_GENERIC_TYPE_VAR 0x00004000
 
-// Number of bits local var # is shifted
+    // Number of bits local var # is shifted
 
 #define TI_FLAG_LOCAL_VAR_SHIFT 16
 #define TI_FLAG_LOCAL_VAR_MASK 0xFFFF0000
 
-// Field info uses the same space as the local info
+    // Field info uses the same space as the local info
 
 #define TI_FLAG_FIELD_SHIFT TI_FLAG_LOCAL_VAR_SHIFT
 #define TI_FLAG_FIELD_MASK TI_FLAG_LOCAL_VAR_MASK
@@ -283,7 +283,8 @@ class typeInfo
 {
 
 private:
-    union {
+    union
+    {
         struct
         {
             ti_types type : TI_FLAG_DATA_BITS;
@@ -301,7 +302,8 @@ private:
         DWORD m_flags;
     };
 
-    union {
+    union
+    {
         CORINFO_CLASS_HANDLE m_cls;
         // Valid only for type TI_METHOD without IsToken
         CORINFO_METHOD_HANDLE m_method;
@@ -405,8 +407,8 @@ public:
         }
 
         unsigned type = li.m_flags & TI_FLAG_DATA_MASK;
-        assert(TI_ERROR <
-               TI_ONLY_ENUM); // TI_ERROR looks like it needs more than enum.  This optimises the success case a bit
+        assert(TI_ERROR < TI_ONLY_ENUM); // TI_ERROR looks like it needs more than enum.  This optimises the success
+                                         // case a bit
         if (type > TI_ONLY_ENUM)
         {
             return true;
@@ -664,9 +666,9 @@ public:
     // as primitives
     bool IsValueClassWithClsHnd() const
     {
-        if ((GetType() == TI_STRUCT) ||
-            (m_cls && GetType() != TI_REF && GetType() != TI_METHOD &&
-             GetType() != TI_ERROR)) // necessary because if byref bit is set, we return TI_ERROR)
+        if ((GetType() == TI_STRUCT) || (m_cls && GetType() != TI_REF && GetType() != TI_METHOD &&
+                                         GetType() != TI_ERROR)) // necessary because if byref bit is set, we return
+                                                                 // TI_ERROR)
         {
             return true;
         }

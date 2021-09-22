@@ -1500,9 +1500,9 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 }
 
 /*============================================================================
-*           INTERFACE (public) Functions for PrologScopeInfo
-*============================================================================
-*/
+ *           INTERFACE (public) Functions for PrologScopeInfo
+ *============================================================================
+ */
 
 //------------------------------------------------------------------------
 // psiBegProlog: Initializes the PrologScopeInfo creating open psiScopes or

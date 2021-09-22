@@ -843,10 +843,10 @@ void Compiler::fgExtendDbgLifetimes()
 
     fgExtendDbgScopes();
 
-/*-------------------------------------------------------------------------
- * Partly update liveness info so that we handle any funky BBF_INTERNAL
- * blocks inserted out of sequence.
- */
+    /*-------------------------------------------------------------------------
+     * Partly update liveness info so that we handle any funky BBF_INTERNAL
+     * blocks inserted out of sequence.
+     */
 
 #ifdef DEBUG
     if (verbose && 0)
@@ -1052,7 +1052,7 @@ void Compiler::fgExtendDbgLifetimes()
     //   So just ensure that they don't have a 0 ref cnt
 
     unsigned lclNum = 0;
-    for (LclVarDsc *varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    for (LclVarDsc* varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
         if (lclNum >= info.compArgsCount)
         {
@@ -1811,10 +1811,10 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
  * or subtree of a statement moving backward from startNode to endNode
  */
 
-void Compiler::fgComputeLife(VARSET_TP&       life,
-                             GenTree*         startNode,
-                             GenTree*         endNode,
-                             VARSET_VALARG_TP volatileVars,
+void Compiler::fgComputeLife(VARSET_TP&           life,
+                             GenTree*             startNode,
+                             GenTree*             endNode,
+                             VARSET_VALARG_TP     volatileVars,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     // Don't kill vars in scope
@@ -1885,22 +1885,24 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
 
-                    node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-                        if (operand->IsValue())
+                    node->VisitOperands(
+                        [](GenTree* operand) -> GenTree::VisitResult
                         {
-                            operand->SetUnusedValue();
-                        }
+                            if (operand->IsValue())
+                            {
+                                operand->SetUnusedValue();
+                            }
 
-                        // Special-case PUTARG_STK: since this operator is not considered a value, DCE will not remove
-                        // these nodes.
-                        if (operand->OperIs(GT_PUTARG_STK))
-                        {
-                            operand->AsPutArgStk()->gtOp1->SetUnusedValue();
-                            operand->gtBashToNOP();
-                        }
+                            // Special-case PUTARG_STK: since this operator is not considered a value, DCE will not
+                            // remove these nodes.
+                            if (operand->OperIs(GT_PUTARG_STK))
+                            {
+                                operand->AsPutArgStk()->gtOp1->SetUnusedValue();
+                                operand->gtBashToNOP();
+                            }
 
-                        return GenTree::VisitResult::Continue;
-                    });
+                            return GenTree::VisitResult::Continue;
+                        });
 
                     blockRange.Remove(node);
 
@@ -2085,11 +2087,11 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
-                // Never remove these nodes, as they are always side-effecting.
-                //
-                // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags
-                // register.
-                // Properly modeling this would allow these nodes to be removed.
+       // Never remove these nodes, as they are always side-effecting.
+       //
+       // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags
+       // register.
+       // Properly modeling this would allow these nodes to be removed.
                 break;
 
             case GT_NOP:
@@ -2152,10 +2154,12 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);
 
-            node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-                operand->SetUnusedValue();
-                return GenTree::VisitResult::Continue;
-            });
+            node->VisitOperands(
+                [](GenTree* operand) -> GenTree::VisitResult
+                {
+                    operand->SetUnusedValue();
+                    return GenTree::VisitResult::Continue;
+                });
 
             blockRange->Remove(node);
             return true;
@@ -2209,10 +2213,10 @@ void Compiler::fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block)
 //
 // Returns: true if we should skip the rest of the statement, false if we should continue
 
-bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
-                                 LclVarDsc*       varDsc,
-                                 VARSET_VALARG_TP life,
-                                 bool*            doAgain,
+bool Compiler::fgRemoveDeadStore(GenTree**            pTree,
+                                 LclVarDsc*           varDsc,
+                                 VARSET_VALARG_TP     life,
+                                 bool*                doAgain,
                                  bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     assert(!compRationalIRForm);
@@ -2340,7 +2344,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 printf("\n");
             }
 #endif // DEBUG
-            // Extract the side effects
+       // Extract the side effects
             gtExtractSideEffList(rhsNode, &sideEffList);
         }
 
@@ -2372,7 +2376,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #ifdef DEBUG
                 *treeModf = true;
 #endif // DEBUG
-                // Update ordering, costs, FP levels, etc.
+       // Update ordering, costs, FP levels, etc.
                 gtSetStmtInfo(compCurStmt);
 
                 // Re-link the nodes for this statement
@@ -2446,7 +2450,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #ifdef DEBUG
                     *treeModf = true;
 #endif // DEBUG
-                    // Change the node to a GT_COMMA holding the side effect list
+       // Change the node to a GT_COMMA holding the side effect list
                     asgNode->gtBashToNOP();
 
                     asgNode->ChangeOper(GT_COMMA);
@@ -2476,7 +2480,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                     printf("\n");
                 }
 #endif // DEBUG
-                // No side effects - Change the assignment to a GT_NOP node
+       // No side effects - Change the assignment to a GT_NOP node
                 asgNode->gtBashToNOP();
 
 #ifdef DEBUG
