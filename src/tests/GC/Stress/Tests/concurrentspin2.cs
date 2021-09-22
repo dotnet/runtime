@@ -156,10 +156,11 @@ internal class ConcurrentRepro
         ThreadStart startDelegate = new ThreadStart(priorityTest.RunTest);
 
         // create threads
-        Thread[] threads = new Thread[parameters[1]];
+        Thread[] threads = new Thread[parameters[1]];        
         for (int i = 0; i < threads.Length; i++)
         {
             threads[i] = new Thread(startDelegate);
+            threads[i].IsBackground = true;
             threads[i].Name = String.Format("Thread{0}", i);
             //if (i % 2 == 0)
             //{

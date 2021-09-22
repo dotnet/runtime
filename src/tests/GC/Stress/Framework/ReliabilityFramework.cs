@@ -59,6 +59,11 @@ internal class CustomAssemblyResolver : AssemblyLoadContext
         Console.WriteLine("CustomAssemblyLoader: Got request to load {0}", assemblyName.ToString());
 
         string strPath;
+        if (assemblyName.Name.StartsWith("System.Console"))
+        {
+            return null;
+        }
+        else
         if (assemblyName.Name.StartsWith("System."))
         {
             Console.WriteLine("CustomAssemblyLoader: this looks like a framework assembly");
@@ -283,8 +288,7 @@ public class ReliabilityFramework
 
         GC.Collect(2);
         GC.WaitForPendingFinalizers();
-        
-        Environment.Exit(0);
+
         return (retVal);
     }
 
@@ -944,6 +948,7 @@ public class ReliabilityFramework
             }
 
             Thread newThread = new Thread(new ParameterizedThreadStart(this.StartTestWorker));
+            newThread.IsBackground = true;
 
             // check the thread requirements and set appropriately.
             switch ((test.TestAttrs & TestAttributes.RequiresThread))
