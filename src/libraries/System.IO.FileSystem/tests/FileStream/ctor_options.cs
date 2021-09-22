@@ -70,7 +70,7 @@ namespace System.IO.Tests
         public void PreallocationSizeThrowsForFileModesThatOpenExistingFiles(FileMode mode)
         {
             Assert.Throws<ArgumentException>(
-                () => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 20));
+                () => CreateFileStream(GetTestFilePath(), mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 20));
         }
 
         [Theory]
