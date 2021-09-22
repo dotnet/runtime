@@ -3532,7 +3532,7 @@ namespace System
                 RuntimeType valueType;
                 Pointer? pointer = value as Pointer;
                 if (pointer != null)
-                    valueType = (RuntimeType)pointer.GetPointerType();
+                    valueType = pointer.GetPointerType();
                 else
                     valueType = (RuntimeType)value.GetType();
 
@@ -3573,7 +3573,7 @@ namespace System
                     RuntimeType valueType;
                     Pointer? pointer = value as Pointer;
                     if (pointer != null)
-                        valueType = (RuntimeType)pointer.GetPointerType();
+                        valueType = pointer.GetPointerType();
                     else
                         valueType = (RuntimeType)value.GetType();
 
