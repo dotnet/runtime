@@ -28,7 +28,7 @@ namespace System.IO.Tests
         {
             const long preallocationSize = 123;
 
-            string filePath = prefix + Path.GetFullPath(GetPathToNonExistingFile());
+            string filePath = prefix + Path.GetFullPath(GetTestFilePath());
 
             using (var fs = CreateFileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.None, preallocationSize))
             {
@@ -44,7 +44,7 @@ namespace System.IO.Tests
         {
             const long tooMuch = uint.MaxValue + 1L; // more than FAT32 max size
 
-            string filePath = GetPathToNonExistingFile();
+            string filePath = GetTestFilePath();
             Assert.StartsWith(Path.GetTempPath(), filePath); // this is what IsFat32 method relies on
 
             IOException ex = Assert.Throws<IOException>(() => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.None, tooMuch));

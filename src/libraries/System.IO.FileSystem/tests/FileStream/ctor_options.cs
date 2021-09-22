@@ -79,7 +79,7 @@ namespace System.IO.Tests
         public void PreallocationSizeThrowsForReadOnlyAccess(FileMode mode)
         {
             Assert.Throws<ArgumentException>(
-                () => CreateFileStream(GetPathToNonExistingFile(), mode, FileAccess.Read, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 20));
+                () => CreateFileStream(GetTestFilePath(), mode, FileAccess.Read, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 20));
         }
 
         [Theory]
@@ -94,7 +94,7 @@ namespace System.IO.Tests
         [InlineData(FileMode.Truncate, true)]
         public void ZeroPreallocationSizeDoesNotAllocate(FileMode mode, bool createFile)
         {
-            string filename = GetPathToNonExistingFile();
+            string filename = GetTestFilePath();
 
             if (createFile)
             {
@@ -118,7 +118,7 @@ namespace System.IO.Tests
         {
             const long preallocationSize = 123;
 
-            using (var fs = CreateFileStream(GetPathToNonExistingFile(), mode, access, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize))
+            using (var fs = CreateFileStream(GetTestFilePath(), mode, access, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize))
             {
                 Assert.Equal(0, fs.Length);
                 if (SupportsPreallocation)
@@ -145,7 +145,7 @@ namespace System.IO.Tests
         {
             const long tooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
 
-            string filePath = GetPathToNonExistingFile();
+            string filePath = GetTestFilePath();
 
             IOException ex = Assert.Throws<IOException>(() => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, tooMuch));
             Assert.Contains(filePath, ex.Message);
@@ -158,18 +158,6 @@ namespace System.IO.Tests
                 File.Delete(filePath);
             }
             Assert.False(exists);
-        }
-
-        private string GetPathToNonExistingFile()
-        {
-            string filePath = GetTestFilePath();
-
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-
-            return filePath;
         }
     }
 
