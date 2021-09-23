@@ -713,6 +713,14 @@ namespace System
             => Math.Pow(x, y);
 
         [RequiresPreviewFeatures]
+        static double IFloatingPoint<double>.ReciprocalEstimate(double x)
+            => Math.ReciprocalEstimate(x);
+
+        [RequiresPreviewFeatures]
+        static double IFloatingPoint<double>.ReciprocalSqrtEstimate(double x)
+            => Math.ReciprocalSqrtEstimate(x);
+
+        [RequiresPreviewFeatures]
         static double IFloatingPoint<double>.Round(double x)
             => Math.Round(x);
 
@@ -735,6 +743,10 @@ namespace System
         [RequiresPreviewFeatures]
         static double IFloatingPoint<double>.Sin(double x)
             => Math.Sin(x);
+
+        [RequiresPreviewFeatures]
+        static (double, double) IFloatingPoint<double>.SinCos(double x)
+            => Math.SinCos(x);
 
         [RequiresPreviewFeatures]
         static double IFloatingPoint<double>.Sinh(double x)

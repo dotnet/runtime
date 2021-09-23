@@ -1016,6 +1016,14 @@ namespace System
             => (Half)MathF.Pow((float)x, (float)y);
 
         [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.ReciprocalEstimate(Half x)
+            => (Half)MathF.ReciprocalEstimate((float)x);
+
+        [RequiresPreviewFeatures]
+        static Half IFloatingPoint<Half>.ReciprocalSqrtEstimate(Half x)
+            => (Half)MathF.ReciprocalSqrtEstimate((float)x);
+
+        [RequiresPreviewFeatures]
         static Half IFloatingPoint<Half>.Round(Half x)
             => (Half)MathF.Round((float)x);
 
@@ -1038,6 +1046,13 @@ namespace System
         [RequiresPreviewFeatures]
         static Half IFloatingPoint<Half>.Sin(Half x)
             => (Half)MathF.Sin((float)x);
+
+        [RequiresPreviewFeatures]
+        static (Half, Half) IFloatingPoint<Half>.SinCos(Half x)
+        {
+            var (sin, cos) = MathF.SinCos((float)x);
+            return ((Half)sin, (Half)cos);
+        }
 
         [RequiresPreviewFeatures]
         static Half IFloatingPoint<Half>.Sinh(Half x)
