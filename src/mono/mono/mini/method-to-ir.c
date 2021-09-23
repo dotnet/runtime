@@ -12010,6 +12010,52 @@ MONO_DISABLE_WARNING(4065) // switch with default but no case
 MONO_RESTORE_WARNING
 }
 
+gboolean
+mono_op_no_side_effects (int opcode)
+{
+	/* FIXME: Add more instructions */
+	/* INEG sets the condition codes, and the OP_LNEG decomposition depends on this on x86 */
+	switch (opcode) {
+	case OP_MOVE:
+	case OP_FMOVE:
+	case OP_VMOVE:
+	case OP_XMOVE:
+	case OP_RMOVE:
+	case OP_VZERO:
+	case OP_XZERO:
+	case OP_ICONST:
+	case OP_I8CONST:
+	case OP_ADD_IMM:
+	case OP_R8CONST:
+	case OP_LADD_IMM:
+	case OP_ISUB_IMM:
+	case OP_IADD_IMM:
+	case OP_LNEG:
+	case OP_ISUB:
+	case OP_CMOV_IGE:
+	case OP_ISHL_IMM:
+	case OP_ISHR_IMM:
+	case OP_ISHR_UN_IMM:
+	case OP_IAND_IMM:
+	case OP_ICONV_TO_U1:
+	case OP_ICONV_TO_I1:
+	case OP_SEXT_I4:
+	case OP_LCONV_TO_U1:
+	case OP_ICONV_TO_U2:
+	case OP_ICONV_TO_I2:
+	case OP_LCONV_TO_I2:
+	case OP_LDADDR:
+	case OP_PHI:
+	case OP_NOP:
+	case OP_ZEXT_I4:
+	case OP_NOT_NULL:
+	case OP_IL_SEQ_POINT:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 /**
  * mono_handle_global_vregs:
  *
