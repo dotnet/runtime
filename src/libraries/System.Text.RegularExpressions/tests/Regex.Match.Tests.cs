@@ -408,10 +408,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", RegexOptions.None, 0, 20, false, "" };
 
             // Turkish case sensitivity
-            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
-            {
-                yield return new object[] { @"[\u0120-\u0130]", "\u0130", options, 0, 1, true, "\u0130" };
-            }
+            yield return new object[] { @"[\u0120-\u0130]", "\u0130", RegexOptions.None, 0, 1, true, "\u0130" };
 
             // .* : Case insensitive
             yield return new object[] { @".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase, 0, 21, true, "\nfoo" };
@@ -436,14 +433,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
 
             // .* : RTL, case insensitive
-            foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase | RegexOptions.RightToLeft, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft })
-            {
-                yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };
-                yield return new object[] { @".*\dFoo", "This1foo should match", options, 0, 21, true, "This1foo" };
-                yield return new object[] { @".*\dFoo", "This1foo should 2FoO match", options, 0, 26, true, "This1foo should 2FoO" };
-                yield return new object[] { @".*\dFoo", "This1Foo should 2fOo match", options, 0, 26, true, "This1Foo should 2fOo" };
-                yield return new object[] { @".*\dfoo", "1fooThis2FOO should 1foo match", options, 8, 4, true, "2FOO" };
-            }
+            yield return new object[] { @".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 21, true, "\nfoo" };
+            yield return new object[] { @".*\dFoo", "This1foo should match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 21, true, "This1foo" };
+            yield return new object[] { @".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2FoO" };
+            yield return new object[] { @".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1Foo should 2fOo" };
+            yield return new object[] { @".*\dfoo", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 8, 4, true, "2FOO" };
         }
 
         public static IEnumerable<object[]> Match_Basic_TestData_NetCore()
@@ -1196,11 +1190,13 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(expected, r.IsMatch(input));
         }
 
-        [Fact]
-        public void TestCharIsLowerCultureEdgeCasesAroundTurkishCharacters()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task TestCharIsLowerCultureEdgeCasesAroundTurkishCharacters(RegexEngine engine)
         {
-            Assert.Equal(new Regex("[\u012F-\u0130]", RegexOptions.IgnoreCase).IsMatch("\u0130"), new Regex("[\u012F\u0130]", RegexOptions.IgnoreCase).IsMatch("\u0130"));
-            Assert.Equal(new Regex("[\u012F-\u0130]", RegexOptions.IgnoreCase | RegexOptions.Compiled).IsMatch("\u0130"), new Regex("[\u012F\u0130]", RegexOptions.IgnoreCase | RegexOptions.Compiled).IsMatch("\u0130"));
+            Regex r1 = await RegexHelpers.GetRegexAsync(engine, "[\u012F-\u0130]", RegexOptions.IgnoreCase);
+            Regex r2 = await RegexHelpers.GetRegexAsync(engine, "[\u012F\u0130]", RegexOptions.IgnoreCase);
+            Assert.Equal(r1.IsMatch("\u0130"), r2.IsMatch("\u0130"));
         }
 
         [Fact]
