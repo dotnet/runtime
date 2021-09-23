@@ -20,7 +20,7 @@
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
-    <LastReleasedStableAssemblyVersion>6.0.0.0</LastReleasedStableAssemblyVersion>
+    <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
   </PropertyGroup>
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
