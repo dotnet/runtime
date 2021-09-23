@@ -86,7 +86,7 @@ void Phase::PrePhase()
     // derivations from the Phase class.
     static Phases s_allowlist[] = {PHASE_BUILD_SSA, PHASE_OPTIMIZE_VALNUM_CSES, PHASE_RATIONALIZE, PHASE_LOWERING,
                                    PHASE_STACK_LEVEL_SETTER};
-    bool doPrePhase = false;
+    bool          doPrePhase    = false;
 
     for (size_t i = 0; i < sizeof(s_allowlist) / sizeof(Phases); i++)
     {

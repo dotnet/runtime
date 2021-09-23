@@ -1032,8 +1032,8 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     if (callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
-        howToReturnStruct   = SPK_ByReference;
-        useType             = TYP_UNKNOWN;
+        howToReturnStruct = SPK_ByReference;
+        useType = TYP_UNKNOWN;
     }
 #endif
 
@@ -1152,7 +1152,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers
                     howToReturnStruct = SPK_ByValue;
-                    useType           = TYP_STRUCT;
+                    useType = TYP_STRUCT;
                 }
                 else
                 {
@@ -1160,7 +1160,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                     // setup wbPassType and useType indicate that this is returned using a return buffer register
                     //  (reference to a return buffer)
                     howToReturnStruct = SPK_ByReference;
-                    useType           = TYP_UNKNOWN;
+                    useType = TYP_UNKNOWN;
                 }
 #elif defined(TARGET_ARM)
 
@@ -1217,9 +1217,7 @@ struct FileLine
     unsigned m_line;
     char*    m_condStr;
 
-    FileLine() : m_file(nullptr), m_line(0), m_condStr(nullptr)
-    {
-    }
+    FileLine() : m_file(nullptr), m_line(0), m_condStr(nullptr) {}
 
     FileLine(const char* file, unsigned line, const char* condStr) : m_line(line)
     {
@@ -1260,7 +1258,7 @@ struct FileLine
 };
 
 typedef JitHashTable<FileLine, FileLine, size_t, HostAllocator> FileLineToCountMap;
-FileLineToCountMap* NowayAssertMap;
+FileLineToCountMap*                                             NowayAssertMap;
 
 void Compiler::RecordNowayAssert(const char* filename, unsigned line, const char* condStr)
 {
@@ -1293,9 +1291,7 @@ struct NowayAssertCountMap
     size_t   count;
     FileLine fl;
 
-    NowayAssertCountMap() : count(0)
-    {
-    }
+    NowayAssertCountMap() : count(0) {}
 
     struct compare
     {
@@ -2050,12 +2046,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
  *  Destructor
  */
 
-void Compiler::compDone()
-{
-}
+void Compiler::compDone() {}
 
-void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum,        /* IN  */
-                                 void**          ppIndirection) /* OUT */
+void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
+                                 void**          ppIndirection)   /* OUT */
 {
     void* addr;
 
@@ -2324,7 +2318,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2538,7 +2532,7 @@ bool Compiler::compShouldThrowOnNoway(
 #ifdef FEATURE_TRACELOGGING
     const char* filename, unsigned line
 #endif
-    )
+)
 {
 #ifdef FEATURE_TRACELOGGING
     compJitTelemetry.NotifyNowayAssert(filename, line);
@@ -3211,7 +3205,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #endif // DEBUG
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
 #ifdef DEBUG
     assert(!codeGen->isGCTypeFixed());
@@ -3424,11 +3418,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: OSR variant with entry point 0x%x\n", info.compILEntry);
         }
 
-        printf("OPTIONS: compCodeOpt = %s\n",
-               (opts.compCodeOpt == BLENDED_CODE)
-                   ? "BLENDED_CODE"
-                   : (opts.compCodeOpt == SMALL_CODE) ? "SMALL_CODE"
-                                                      : (opts.compCodeOpt == FAST_CODE) ? "FAST_CODE" : "UNKNOWN_CODE");
+        printf("OPTIONS: compCodeOpt = %s\n", (opts.compCodeOpt == BLENDED_CODE) ? "BLENDED_CODE"
+                                              : (opts.compCodeOpt == SMALL_CODE) ? "SMALL_CODE"
+                                              : (opts.compCodeOpt == FAST_CODE)  ? "FAST_CODE"
+                                                                                 : "UNKNOWN_CODE");
 
         printf("OPTIONS: compDbgCode = %s\n", dspBool(opts.compDbgCode));
         printf("OPTIONS: compDbgInfo = %s\n", dspBool(opts.compDbgInfo));
@@ -3934,8 +3927,9 @@ void Compiler::compSetOptimizationLevel()
         }
         if (theMinOptsValue == true)
         {
-            JITLOG((LL_INFO10000, "IL Code Size,Instr %4d,%4d, Basic Block count %3d, Local Variable Num,Ref count "
-                                  "%3d,%3d for method %s\n",
+            JITLOG((LL_INFO10000,
+                    "IL Code Size,Instr %4d,%4d, Basic Block count %3d, Local Variable Num,Ref count "
+                    "%3d,%3d for method %s\n",
                     info.compILCodeSize, opts.instrCount, fgBBcount, lvaCount, opts.lvRefCount, info.compFullName));
             if (JitConfig.JitBreakOnMinOpts() != 0)
             {
@@ -4459,7 +4453,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 {
     // Prepare for importation
     //
-    auto preImportPhase = [this]() {
+    auto preImportPhase = [this]()
+    {
         if (compIsForInlining())
         {
             // Notify root instance that an inline attempt is about to import IL
@@ -4518,7 +4513,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // PostImportPhase: cleanup inlinees
     //
-    auto postImportPhase = [this]() {
+    auto postImportPhase = [this]()
+    {
         // If this is a viable inline candidate
         if (compIsForInlining() && !compDonotInline())
         {
@@ -4601,7 +4597,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // global morph, as well as other phases that massage the trees so
     // that we can generate code out of them.
     //
-    auto morphInitPhase = [this]() {
+    auto morphInitPhase = [this]()
+    {
         // Initialize the BlockSet epoch
         NewBasicBlockEpoch();
 
@@ -4782,7 +4779,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // From this point on the flowgraph information such as bbNum,
     // bbRefs or bbPreds has to be kept updated.
     //
-    auto computePredsPhase = [this]() {
+    auto computePredsPhase = [this]()
+    {
         JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
         fgRenumberBlocks();
         noway_assert(!fgComputePredsDone);
@@ -4800,7 +4798,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Run an early flow graph simplification pass
         //
-        auto earlyUpdateFlowGraphPhase = [this]() {
+        auto earlyUpdateFlowGraphPhase = [this]()
+        {
             const bool doTailDup = false;
             fgUpdateFlowGraph(doTailDup);
         };
@@ -4809,7 +4808,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Promote struct locals
     //
-    auto promoteStructsPhase = [this]() {
+    auto promoteStructsPhase = [this]()
+    {
         // For x64 and ARM64 we need to mark irregular parameters
         lvaRefCountState = RCS_EARLY;
         fgResetImplicitByRefRefCount();
@@ -4835,7 +4835,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
-    auto morphGlobalPhase = [this]() {
+    auto morphGlobalPhase = [this]()
+    {
         unsigned prevBBCount = fgBBcount;
         fgMorphBlocks();
 
@@ -4874,7 +4875,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // GS security checks for unsafe buffers
     //
-    auto gsPhase = [this]() {
+    auto gsPhase = [this]()
+    {
         unsigned prevBBCount = fgBBcount;
         if (getNeedsGSSecurityCookie())
         {
@@ -5057,7 +5059,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doRangeAnalysis)
             {
-                auto rangePhase = [this]() {
+                auto rangePhase = [this]()
+                {
                     RangeCheck rc(this);
                     rc.OptimizeRangeChecks();
                 };
@@ -5072,7 +5075,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             {
                 // update the flowgraph if we modified it during the optimization phase
                 //
-                auto optUpdateFlowGraphPhase = [this]() {
+                auto optUpdateFlowGraphPhase = [this]()
+                {
                     const bool doTailDup = false;
                     fgUpdateFlowGraph(doTailDup);
                 };
@@ -5383,9 +5387,7 @@ void Compiler::RecomputeLoopInfo()
 }
 
 /*****************************************************************************/
-void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo)
-{
-}
+void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo) {}
 
 /*****************************************************************************/
 
@@ -5534,7 +5536,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     {
 #if defined(TARGET_ARM)
 
-// Currently nothing needs to be done. There are no ARM flags that conflict with other flags.
+        // Currently nothing needs to be done. There are no ARM flags that conflict with other flags.
 
 #endif // defined(TARGET_ARM)
 
@@ -7003,111 +7005,105 @@ START:
 #endif
     param.result = result;
 
-    setErrorTrap(compHnd, Param*, pParamOuter, &param)
-    {
-        setErrorTrap(nullptr, Param*, pParam, pParamOuter)
-        {
-            if (pParam->inlineInfo)
-            { // Lazily create the inlinee compiler object
-                if (pParam->inlineInfo->InlinerCompiler->InlineeCompiler == nullptr)
-                {
-                    pParam->inlineInfo->InlinerCompiler->InlineeCompiler =
-                        (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
-                }
+    setErrorTrap(compHnd, Param*, pParamOuter, &param){setErrorTrap(nullptr, Param*, pParam, pParamOuter){
+        if (pParam->inlineInfo){// Lazily create the inlinee compiler object
+                                if (pParam->inlineInfo->InlinerCompiler->InlineeCompiler == nullptr){
+                                    pParam->inlineInfo->InlinerCompiler->InlineeCompiler =
+                                        (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
+}
 
-                // Use the inlinee compiler object
-                pParam->pComp = pParam->inlineInfo->InlinerCompiler->InlineeCompiler;
+// Use the inlinee compiler object
+pParam->pComp = pParam->inlineInfo->InlinerCompiler->InlineeCompiler;
 #ifdef DEBUG
 // memset(pParam->pComp, 0xEE, sizeof(Compiler));
 #endif
-            }
-            else
-            {
-                // Allocate create the inliner compiler object
-                pParam->pComp = (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
-            }
+}
+else
+{
+    // Allocate create the inliner compiler object
+    pParam->pComp = (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
+}
 
 #if MEASURE_CLRAPI_CALLS
-            pParam->wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pParam->pComp, pParam->compHnd);
+pParam->wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pParam->pComp, pParam->compHnd);
 #endif
 
-            // push this compiler on the stack (TLS)
-            pParam->pComp->prevCompiler = JitTls::GetCompiler();
-            JitTls::SetCompiler(pParam->pComp);
+// push this compiler on the stack (TLS)
+pParam->pComp->prevCompiler = JitTls::GetCompiler();
+JitTls::SetCompiler(pParam->pComp);
 
 // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
 #if defined(_PREFAST_) || defined(_PREFIX_)
-            PREFIX_ASSUME(pParam->pComp != NULL);
+PREFIX_ASSUME(pParam->pComp != NULL);
 #else
-            assert(pParam->pComp != nullptr);
+assert(pParam->pComp != nullptr);
 #endif
 
-            pParam->pComp->compInit(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo,
-                                    pParam->inlineInfo);
+pParam->pComp->compInit(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo, pParam->inlineInfo);
 
 #ifdef DEBUG
-            pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
+pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
 #endif
 
-            // Now generate the code
-            pParam->result = pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize,
-                                                        pParam->compileFlags);
-        }
-        finallyErrorTrap()
-        {
-            Compiler* pCompiler = pParamOuter->pComp;
+// Now generate the code
+pParam->result =
+    pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
+}
+finallyErrorTrap()
+{
+    Compiler* pCompiler = pParamOuter->pComp;
 
-            // If OOM is thrown when allocating memory for a pComp, we will end up here.
-            // For this case, pComp and also pCompiler will be a nullptr
-            //
-            if (pCompiler != nullptr)
-            {
-                pCompiler->info.compCode = nullptr;
-
-                // pop the compiler off the TLS stack only if it was linked above
-                assert(JitTls::GetCompiler() == pCompiler);
-                JitTls::SetCompiler(pCompiler->prevCompiler);
-            }
-
-            if (pParamOuter->inlineInfo == nullptr)
-            {
-                // Free up the allocator we were using
-                pParamOuter->pAlloc->destroy();
-            }
-        }
-        endErrorTrap()
-    }
-    impJitErrorTrap()
+    // If OOM is thrown when allocating memory for a pComp, we will end up here.
+    // For this case, pComp and also pCompiler will be a nullptr
+    //
+    if (pCompiler != nullptr)
     {
-        // If we were looking at an inlinee....
-        if (inlineInfo != nullptr)
-        {
-            // Note that we failed to compile the inlinee, and that
-            // there's no point trying to inline it again anywhere else.
-            inlineInfo->inlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
-        }
-        param.result = __errc;
+        pCompiler->info.compCode = nullptr;
+
+        // pop the compiler off the TLS stack only if it was linked above
+        assert(JitTls::GetCompiler() == pCompiler);
+        JitTls::SetCompiler(pCompiler->prevCompiler);
     }
-    endErrorTrap()
 
-        result = param.result;
-
-    if (!inlineInfo &&
-        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
-        !jitFallbackCompile)
+    if (pParamOuter->inlineInfo == nullptr)
     {
-        // If we failed the JIT, reattempt with debuggable code.
-        jitFallbackCompile = true;
-
-        // Update the flags for 'safer' code generation.
-        compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
-
-        goto START;
+        // Free up the allocator we were using
+        pParamOuter->pAlloc->destroy();
     }
+}
+endErrorTrap()
+}
+impJitErrorTrap()
+{
+    // If we were looking at an inlinee....
+    if (inlineInfo != nullptr)
+    {
+        // Note that we failed to compile the inlinee, and that
+        // there's no point trying to inline it again anywhere else.
+        inlineInfo->inlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
+    }
+    param.result = __errc;
+}
+endErrorTrap()
 
-    return result;
+    result = param.result;
+
+if (!inlineInfo &&
+    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+    !jitFallbackCompile)
+{
+    // If we failed the JIT, reattempt with debuggable code.
+    jitFallbackCompile = true;
+
+    // Update the flags for 'safer' code generation.
+    compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
+
+    goto START;
+}
+
+return result;
 }
 
 #if defined(UNIX_AMD64_ABI)
@@ -7389,9 +7385,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 /*****************************************************************************/
-void codeGeneratorCodeSizeBeg()
-{
-}
+void codeGeneratorCodeSizeBeg() {}
 
 /*****************************************************************************
  *
@@ -7399,9 +7393,7 @@ void codeGeneratorCodeSizeBeg()
  */
 
 /*****************************************************************************/
-void codeGeneratorCodeSizeEnd()
-{
-}
+void codeGeneratorCodeSizeEnd() {}
 /*****************************************************************************
  *
  *  Gather statistics - mainly used for the standalone
@@ -7866,8 +7858,9 @@ void CompTimeSummaryInfo::Print(FILE* f)
         double pslop_pct = 100.0 * m_total.m_parentPhaseEndSlop * 1000.0 / countsPerSec / totTime_ms;
         if (pslop_pct >= 1.0)
         {
-            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
-                       "%3.1f%% of total.\n\n",
+            fprintf(f,
+                    "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
+                    "%3.1f%% of total.\n\n",
                     m_total.m_parentPhaseEndSlop / 1000000.0, pslop_pct);
         }
     }
@@ -7907,8 +7900,9 @@ void CompTimeSummaryInfo::Print(FILE* f)
         double fslop_ms = m_filtered.m_parentPhaseEndSlop * 1000.0 / countsPerSec;
         if (fslop_ms > 1.0)
         {
-            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
-                       "%3.1f%% of total.\n\n",
+            fprintf(f,
+                    "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
+                    "%3.1f%% of total.\n\n",
                     m_filtered.m_parentPhaseEndSlop / 1000000.0, fslop_ms);
         }
     }
@@ -8258,7 +8252,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     // for a DEBUG build (presumably not for the time info), just re-use it.
     const char* methName = comp->info.compFullName;
 #else
-    const char*          methName  = comp->eeGetMethodFullName(comp->info.compMethodHnd);
+    const char* methName = comp->eeGetMethodFullName(comp->info.compMethodHnd);
 #endif
 
     // Try and access the SPMI index to report in the data set.

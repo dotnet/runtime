@@ -81,19 +81,19 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
 /************************************************************************/
 
 private:
-bool emitInsIsCompare(instruction ins);
-bool emitInsIsLoad(instruction ins);
-bool emitInsIsStore(instruction ins);
-bool emitInsIsLoadOrStore(instruction ins);
-bool emitInsIsVectorRightShift(instruction ins);
-bool emitInsIsVectorLong(instruction ins);
-bool emitInsIsVectorNarrow(instruction ins);
-bool emitInsIsVectorWide(instruction ins);
+bool     emitInsIsCompare(instruction ins);
+bool     emitInsIsLoad(instruction ins);
+bool     emitInsIsStore(instruction ins);
+bool     emitInsIsLoadOrStore(instruction ins);
+bool     emitInsIsVectorRightShift(instruction ins);
+bool     emitInsIsVectorLong(instruction ins);
+bool     emitInsIsVectorNarrow(instruction ins);
+bool     emitInsIsVectorWide(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
 emitter::insFormat emitInsFormat(instruction ins);
-emitter::code_t emitInsCode(instruction ins, insFormat fmt);
+emitter::code_t    emitInsCode(instruction ins, insFormat fmt);
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + index<<scale +
 // offset]
@@ -117,7 +117,7 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
-bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+bool        IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 /************************************************************************
@@ -126,7 +126,8 @@ bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t i
  * that is listed as imm(N,r,s) and referred to as 'bitmask immediate'
  */
 
-union bitMaskImm {
+union bitMaskImm
+{
     struct
     {
         unsigned immS : 6; // bits 0..5
@@ -152,7 +153,8 @@ static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size
  * that is listed as imm(i16,hw) and referred to as 'halfword immediate'
  */
 
-union halfwordImm {
+union halfwordImm
+{
     struct
     {
         unsigned immVal : 16; // bits  0..15
@@ -177,7 +179,8 @@ static INT64 emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr si
  * that is listed as imm(i16,by) and referred to as 'byteShifted immediate'
  */
 
-union byteShiftedImm {
+union byteShiftedImm
+{
     struct
     {
         unsigned immVal : 8;  // bits  0..7
@@ -203,7 +206,8 @@ static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emit
  * that are use for FMOV immediate and referred to as 'float 8-bit immediate'
  */
 
-union floatImm8 {
+union floatImm8
+{
     struct
     {
         unsigned immMant : 4; // bits 0..3
@@ -228,7 +232,8 @@ static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
  *   instructions that use them in the small constant immediate field
  */
 
-union condFlagsImm {
+union condFlagsImm
+{
     struct
     {
         insCond   cond : 4;  // bits  0..3
@@ -827,9 +832,9 @@ void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int of
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-void emitIns_R_AI(instruction ins,
-                  emitAttr    attr,
-                  regNumber   ireg,
+void emitIns_R_AI(instruction  ins,
+                  emitAttr     attr,
+                  regNumber    ireg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
@@ -881,13 +886,13 @@ void emitIns_Call(EmitCallType          callType,
                   ssize_t          disp     = 0,
                   bool             isJump   = false);
 
-BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
+BYTE*    emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);
-BYTE* emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id);
-BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
-BYTE* emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
-BYTE* emitOutputShortConstant(
-    BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
+BYTE*    emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id);
+BYTE*    emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
+BYTE*    emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
+BYTE*    emitOutputShortConstant(
+       BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
 
 /*****************************************************************************
  *

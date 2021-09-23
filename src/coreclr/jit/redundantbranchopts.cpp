@@ -29,9 +29,7 @@ PhaseStatus Compiler::optRedundantBranches()
         {
         }
 
-        void PreOrderVisit(BasicBlock* block)
-        {
-        }
+        void PreOrderVisit(BasicBlock* block) {}
 
         void PostOrderVisit(BasicBlock* block)
         {

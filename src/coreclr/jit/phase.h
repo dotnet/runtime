@@ -41,7 +41,7 @@ protected:
 
     virtual void        PrePhase();
     virtual PhaseStatus DoPhase() = 0;
-    virtual void PostPhase(PhaseStatus status);
+    virtual void        PostPhase(PhaseStatus status);
 
     Compiler*   comp;
     const char* m_name;
@@ -54,9 +54,7 @@ template <typename A>
 class ActionPhase final : public Phase
 {
 public:
-    ActionPhase(Compiler* _compiler, Phases _phase, A _action) : Phase(_compiler, _phase), action(_action)
-    {
-    }
+    ActionPhase(Compiler* _compiler, Phases _phase, A _action) : Phase(_compiler, _phase), action(_action) {}
 
 protected:
     virtual PhaseStatus DoPhase() override

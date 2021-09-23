@@ -22,8 +22,8 @@ private:
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     unsigned PopArgumentsFromCall(GenTreeCall* call);
-    void AddStackLevel(unsigned value);
-    void SubStackLevel(unsigned value);
+    void     AddStackLevel(unsigned value);
+    void     SubStackLevel(unsigned value);
 
     void CheckArgCnt();
     void CheckAdditionalArgs();

@@ -763,7 +763,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 unsigned int baseTypeSize = genTypeSize(simdNode->GetSimdBaseType());
                 GenTree*     address = new (comp, GT_LEA) GenTreeAddrMode(TYP_BYREF, simdNode->gtOp1, simdNode->gtOp2,
                                                                       baseTypeSize, OFFSETOF__CORINFO_Array__data);
-                GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
+                GenTree*     ind     = comp->gtNewOperNode(GT_IND, simdType, address);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
                 use.ReplaceWith(comp, ind);

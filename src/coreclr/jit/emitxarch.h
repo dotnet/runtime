@@ -72,7 +72,7 @@ unsigned emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code);
 
 unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code);
 unsigned insEncodeReg345(instruction ins, regNumber reg, emitAttr size, code_t* code);
-code_t insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, code_t code);
+code_t   insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, code_t code);
 unsigned insEncodeRegSIB(instruction ins, regNumber reg, code_t* code);
 
 code_t insEncodeMRreg(instruction ins, code_t code);
@@ -83,16 +83,16 @@ code_t insEncodeOpreg(instruction ins, regNumber reg, emitAttr size);
 
 unsigned insSSval(unsigned scale);
 
-static bool IsSSEInstruction(instruction ins);
-static bool IsSSEOrAVXInstruction(instruction ins);
-static bool IsAVXOnlyInstruction(instruction ins);
-static bool IsFMAInstruction(instruction ins);
-static bool IsAVXVNNIInstruction(instruction ins);
-static bool IsBMIInstruction(instruction ins);
+static bool      IsSSEInstruction(instruction ins);
+static bool      IsSSEOrAVXInstruction(instruction ins);
+static bool      IsAVXOnlyInstruction(instruction ins);
+static bool      IsFMAInstruction(instruction ins);
+static bool      IsAVXVNNIInstruction(instruction ins);
+static bool      IsBMIInstruction(instruction ins);
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool IsAVXInstruction(instruction ins) const;
-code_t insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, code_t code);
+bool             IsAVXInstruction(instruction ins) const;
+code_t           insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, code_t code);
 
 code_t AddRexWPrefix(instruction ins, code_t code);
 code_t AddRexRPrefix(instruction ins, code_t code);
@@ -100,11 +100,11 @@ code_t AddRexXPrefix(instruction ins, code_t code);
 code_t AddRexBPrefix(instruction ins, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
 
-bool EncodedBySSE38orSSE3A(instruction ins);
-bool Is4ByteSSEInstruction(instruction ins);
+bool        EncodedBySSE38orSSE3A(instruction ins);
+bool        Is4ByteSSEInstruction(instruction ins);
 static bool IsMovInstruction(instruction ins);
-bool IsRedundantMov(
-    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
+bool        IsRedundantMov(
+           instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
 
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
@@ -127,7 +127,7 @@ bool hasRexPrefix(code_t code)
 #define VEX_PREFIX_MASK_3BYTE 0xFF000000000000ULL
 #define VEX_PREFIX_CODE_3BYTE 0xC4000000000000ULL
 
-bool TakesVexPrefix(instruction ins) const;
+bool        TakesVexPrefix(instruction ins) const;
 static bool TakesRexWPrefix(instruction ins, emitAttr attr);
 
 // Returns true if the instruction encoding already contains VEX prefix
@@ -235,7 +235,7 @@ const char* emitYMMregName(unsigned reg);
 /************************************************************************/
 
 private:
-void emitSetAmdDisp(instrDescAmd* id, ssize_t dsp);
+void       emitSetAmdDisp(instrDescAmd* id, ssize_t dsp);
 instrDesc* emitNewInstrAmd(emitAttr attr, ssize_t dsp);
 instrDesc* emitNewInstrAmdCns(emitAttr attr, ssize_t dsp, int cns);
 
@@ -252,9 +252,9 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
-void emitGetInsCns(instrDesc* id, CnsVal* cv);
+void    emitGetInsCns(instrDesc* id, CnsVal* cv);
 ssize_t emitGetInsAmdCns(instrDesc* id, CnsVal* cv);
-void emitGetInsDcmCns(instrDesc* id, CnsVal* cv);
+void    emitGetInsDcmCns(instrDesc* id, CnsVal* cv);
 ssize_t emitGetInsAmdAny(instrDesc* id);
 
 /************************************************************************/
@@ -269,12 +269,8 @@ bool emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1, regNumb
 bool emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id);
 
 #if FEATURE_FIXED_OUT_ARGS
-void emitAdjustStackDepthPushPop(instruction ins)
-{
-}
-void emitAdjustStackDepth(instruction ins, ssize_t val)
-{
-}
+void emitAdjustStackDepthPushPop(instruction ins) {}
+void emitAdjustStackDepth(instruction ins, ssize_t val) {}
 #else  // !FEATURE_FIXED_OUT_ARGS
 void emitAdjustStackDepthPushPop(instruction ins);
 void emitAdjustStackDepth(instruction ins, ssize_t val);

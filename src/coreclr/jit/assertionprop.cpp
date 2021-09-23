@@ -1597,9 +1597,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
             assert((assertion.op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM) ||
-                   (assertion.op1.vn ==
-                    vnStore->VNConservativeNormalValue(
-                        lvaTable[lclNum].GetPerSsaData(assertion.op1.lcl.ssaNum)->m_vnPair)));
+                   (assertion.op1.vn == vnStore->VNConservativeNormalValue(
+                                            lvaTable[lclNum].GetPerSsaData(assertion.op1.lcl.ssaNum)->m_vnPair)));
 
             ssize_t      cnsValue  = 0;
             GenTreeFlags iconFlags = GTF_EMPTY;
@@ -3087,7 +3086,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 //
 GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                                             GenTreeLclVarCommon* tree,
-                                            Statement* stmt DEBUGARG(AssertionIndex index))
+                                            Statement* stmt      DEBUGARG(AssertionIndex index))
 {
     const unsigned lclNum = tree->GetLclNum();
 
@@ -3304,7 +3303,7 @@ bool Compiler::optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVar
 //
 GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
                                         GenTreeLclVarCommon* tree,
-                                        Statement* stmt DEBUGARG(AssertionIndex index))
+                                        Statement* stmt      DEBUGARG(AssertionIndex index))
 {
     const AssertionDsc::AssertionDscOp1& op1 = curAssertion->op1;
     const AssertionDsc::AssertionDscOp2& op2 = curAssertion->op2;
@@ -3841,8 +3840,9 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         {
             printf("\nVN relop based copy assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
             printf("Assertion index=#%02u: V%02d.%02d %s V%02d.%02d\n", index, op1->AsLclVar()->GetLclNum(),
-                   op1->AsLclVar()->GetSsaNum(), (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=",
-                   op2->AsLclVar()->GetLclNum(), op2->AsLclVar()->GetSsaNum());
+                   op1->AsLclVar()->GetSsaNum(),
+                   (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=", op2->AsLclVar()->GetLclNum(),
+                   op2->AsLclVar()->GetSsaNum());
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
@@ -4168,7 +4168,7 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 //   If both VN and assertion table yield a matching assertion, "pVnBased"
 //   is only set and the return value is "NO_ASSERTION_INDEX."
 //
-bool Compiler::optAssertionIsNonNull(GenTree*         op,
+bool Compiler::optAssertionIsNonNull(GenTree*                    op,
                                      ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
                                          DEBUGARG(AssertionIndex* pIndex))
 {
@@ -4204,7 +4204,7 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
 // Returns:
 //   index of assertion, or NO_ASSERTION_INDEX
 //
-AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
+AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*                    op,
                                                        ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased))
 {
 

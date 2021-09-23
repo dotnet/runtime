@@ -158,9 +158,8 @@ void CodeGen::genCodeForBBlist()
 
     genMarkLabelsForCodegen();
 
-    assert(!compiler->fgFirstBBScratch ||
-           compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch
-                                                               // has to be first.
+    assert(!compiler->fgFirstBBScratch || compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch
+                                                                                              // has to be first.
 
     /* Initialize structures used in the block list iteration */
     genInitialize();
@@ -628,7 +627,7 @@ void CodeGen::genCodeForBBlist()
                     case BBJ_THROW:
                     case BBJ_CALLFINALLY:
                     case BBJ_EHCATCHRET:
-                    // We're going to generate more code below anyway, so no need for the NOP.
+                        // We're going to generate more code below anyway, so no need for the NOP.
 
                     case BBJ_RETURN:
                     case BBJ_EHFINALLYRET:
@@ -652,7 +651,7 @@ void CodeGen::genCodeForBBlist()
 
                     case BBJ_COND:
                     case BBJ_SWITCH:
-                    // These can't have a call as the last instruction!
+                        // These can't have a call as the last instruction!
 
                     default:
                         noway_assert(!"Unexpected bbJumpKind");
@@ -1848,8 +1847,8 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         var_types type            = use.GetType();
         unsigned  thisFieldOffset = argOffset + use.GetOffset();
 
-// Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
-// argument area.
+        // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
+        // argument area.
 
 #if defined(FEATURE_SIMD) && defined(OSX_ARM64_ABI)
         // storing of TYP_SIMD12 (i.e. Vector3) argument.

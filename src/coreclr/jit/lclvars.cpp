@@ -395,7 +395,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
         lvaInitRetBuffArg(varDscInfo, true);
     }
 
-//======================================================================
+    //======================================================================
 
 #if USER_ARGS_COME_LAST
     //@GENERICS: final instantiation-info argument for shared generic methods
@@ -614,9 +614,9 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
 //
 void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs)
 {
-//-------------------------------------------------------------------------
-// Walk the function signature for the explicit arguments
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+    // Walk the function signature for the explicit arguments
+    //-------------------------------------------------------------------------
 
 #if defined(TARGET_X86)
     // Only (some of) the implicit args are enregistered for varargs
@@ -1110,8 +1110,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #if defined(TARGET_X86)
             varDsc->SetStackOffset(compArgSize);
 #else  // !TARGET_X86
-            // TODO-CQ: We shouldn't have to go as far as to declare these
-            // address-exposed -- DoNotEnregister should suffice.
+       // TODO-CQ: We shouldn't have to go as far as to declare these
+       // address-exposed -- DoNotEnregister should suffice.
 
             lvaSetVarAddrExposed(varDscInfo->varNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 #endif // !TARGET_X86
@@ -1748,7 +1748,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     // or 8 Vector<T>/Vector128<T> fields on SSE2.
     const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * YMM_REGSIZE_BYTES;
 #elif defined(TARGET_ARM64)
-    const int MaxOffset      = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
+    const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #else  // !FEATURE_SIMD
     const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
@@ -2351,7 +2351,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
             compiler->compFloatingPointUsed = true;
         }
 
-// Now grab the temp for the field local.
+        // Now grab the temp for the field local.
 
 #ifdef DEBUG
         char buf[200];
@@ -5323,7 +5323,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #endif
                     )
 #endif // !defined(TARGET_AMD64)
-                    )
+            )
             {
                 doAssignStkOffs = false; // Not on frame or an incomming stack arg
             }
@@ -5518,7 +5518,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
             argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
         }
 #else
-        argOffs              = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
 #endif // TARGET_X86
         lclNum++;
         userArgsToSkip++;
@@ -5675,8 +5675,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This is the implementation for UNIX_AMD64 System V platforms.
 //
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
-                                               unsigned argSize,
+int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
+                                               unsigned    argSize,
                                                int argOffs UNIX_AMD64_ABI_ONLY_ARG(int* callerArgOffset))
 {
     noway_assert(lclNum < info.compArgsCount);
@@ -6018,10 +6018,10 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 break;
         }
 #endif // TARGET_ARM
-        const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
+        const bool isFloatHfa = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
         const unsigned argAlignment = eeGetArgAlignment(varDsc->lvType, isFloatHfa);
 #if defined(OSX_ARM64_ABI)
-        argOffs                     = roundUp(argOffs, argAlignment);
+        argOffs = roundUp(argOffs, argAlignment);
 #endif // OSX_ARM64_ABI
 
         assert((argSize % argAlignment) == 0);
@@ -7065,7 +7065,7 @@ void Compiler::lvaAlignFrame()
     // Ensure that the stack is always 16-byte aligned by grabbing an unused QWORD
     // if needed.
     bool regPushedCountAligned = (compCalleeRegsPushed % (16 / REGSIZE_BYTES)) == 0;
-    bool lclFrameSizeAligned   = (compLclFrameSize % 16) == 0;
+    bool lclFrameSizeAligned = (compLclFrameSize % 16) == 0;
 
     // If this isn't the final frame layout, assume we have to push an extra QWORD
     // Just so the offsets are true upper limits.
@@ -7078,7 +7078,7 @@ void Compiler::lvaAlignFrame()
 
     // Ensure that stack offsets will be double-aligned by grabbing an unused DWORD if needed.
     //
-    bool lclFrameSizeAligned   = (compLclFrameSize % sizeof(double)) == 0;
+    bool lclFrameSizeAligned = (compLclFrameSize % sizeof(double)) == 0;
     bool regPushedCountAligned = ((compCalleeRegsPushed + genCountBits(codeGen->regSet.rsMaskPreSpillRegs(true))) %
                                   (sizeof(double) / TARGET_POINTER_SIZE)) == 0;
 
@@ -7159,7 +7159,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
             // Make sure the code below is not executed for these structs and the offset is not changed.
             && !varDsc->lvIsParam
 #endif // !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARM) && !defined(TARGET_X86)
-            )
+        )
         {
             LclVarDsc*       parentvarDsc  = &lvaTable[varDsc->lvParentLcl];
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
@@ -7310,7 +7310,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
 #else
     bool EBPbased;
-    offset  = lvaFrameAddress(lclNum, &EBPbased);
+    offset = lvaFrameAddress(lclNum, &EBPbased);
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 

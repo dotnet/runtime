@@ -788,7 +788,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             emit->emitIns_S_R(storeIns, storeAttr, REG_ZR, varNumOut, argOffsetOut);
 #else  // !TARGET_ARM64
-            // There is no zero register on ARM32
+       // There is no zero register on ARM32
             unreached();
 #endif // !TARGET_ARM64
         }
@@ -1012,9 +1012,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 nextIndex += 2;
             }
 #else  // TARGET_ARM
-            // For a >= 4 byte structSize we will generate a ldr and str instruction each loop
-            //             ldr     r2, [r0]
-            //             str     r2, [sp, #16]
+       // For a >= 4 byte structSize we will generate a ldr and str instruction each loop
+       //             ldr     r2, [r0]
+       //             str     r2, [sp, #16]
             while (remainingSize >= TARGET_POINTER_SIZE)
             {
                 var_types type = layout->GetGCPtrType(nextIndex);
@@ -3224,8 +3224,8 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genCreateAndStoreGCInfo: Create and record GC Info for the function.
 //
-void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
-                                      unsigned prologSize,
+void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
+                                      unsigned            prologSize,
                                       unsigned epilogSize DEBUGARG(void* codePtr))
 {
     IAllocator*    allowZeroAlloc = new (compiler, CMK_GC) CompIAllocator(compiler->getAllocatorGC());
@@ -3814,7 +3814,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
 
     regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
+    regMaskTP maskSaveRegsInt = rsPushRegs & ~maskSaveRegsFloat;
 
 #ifdef DEBUG
     if (verbose)
@@ -4121,8 +4121,8 @@ void CodeGen::genPushCalleeSavedRegisters()
             // If compiler->lvaOutgoingArgSpaceSize is not aligned, we need to align the SP adjustment.
             assert(remainingFrameSz > (int)compiler->lvaOutgoingArgSpaceSize);
             int spAdjustment2Unaligned = remainingFrameSz - compiler->lvaOutgoingArgSpaceSize;
-            int spAdjustment2          = (int)roundUp((unsigned)spAdjustment2Unaligned, STACK_ALIGN);
-            int alignmentAdjustment2   = spAdjustment2 - spAdjustment2Unaligned;
+            int spAdjustment2 = (int)roundUp((unsigned)spAdjustment2Unaligned, STACK_ALIGN);
+            int alignmentAdjustment2 = spAdjustment2 - spAdjustment2Unaligned;
             assert((alignmentAdjustment2 == 0) || (alignmentAdjustment2 == 8));
 
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);

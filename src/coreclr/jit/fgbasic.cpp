@@ -2512,7 +2512,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 codeAddr += sizeof(__int8);
                 goto DECODE_OPCODE;
 
-            /* Check to see if we have a jump/return opcode */
+                /* Check to see if we have a jump/return opcode */
 
             case CEE_BRFALSE:
             case CEE_BRFALSE_S:
@@ -2694,7 +2694,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     // statement in the block.
                     // Otherwise, we will assert at the following line in fgMorphCall()
                     //     noway_assert(fgMorphStmt->GetNextStmt() == NULL);
-                    )
+                )
                 {
                     // Neither .tailcall prefix, no tailcall stress. So move on.
                     break;
@@ -3443,11 +3443,11 @@ void Compiler::fgFindBasicBlocks()
 #endif
         }
 
-/*  Init ebdHandlerNestingLevel of current clause, and bump up value for all
- *  enclosed clauses (which have to be before it in the table).
- *  Innermost try-finally blocks must precede outermost
- *  try-finally blocks.
- */
+        /*  Init ebdHandlerNestingLevel of current clause, and bump up value for all
+         *  enclosed clauses (which have to be before it in the table).
+         *  Innermost try-finally blocks must precede outermost
+         *  try-finally blocks.
+         */
 
 #if !defined(FEATURE_EH_FUNCLETS)
         HBtab->ebdHandlerNestingLevel = 0;

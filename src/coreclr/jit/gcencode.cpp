@@ -350,19 +350,19 @@ void GCInfo::gcInsertVarPtrDscSplit(varPtrDsc* desc, varPtrDsc* begin)
     // since we will search for insertion point from "begin"
     assert(desc->vpdBegOfs >= begin->vpdBegOfs);
 
-    varPtrDsc* varTmp    = begin->vpdNext;
+    varPtrDsc* varTmp = begin->vpdNext;
     varPtrDsc* varInsert = begin;
 
     while (varTmp != nullptr && varTmp->vpdBegOfs < desc->vpdBegOfs)
     {
         varInsert = varTmp;
-        varTmp    = varTmp->vpdNext;
+        varTmp = varTmp->vpdNext;
     }
 
     // Insert point cannot be null
     assert(varInsert != nullptr);
 
-    desc->vpdNext      = varInsert->vpdNext;
+    desc->vpdNext = varInsert->vpdNext;
     varInsert->vpdNext = desc;
 #endif // JIT32_GCENCODER
 }
@@ -473,12 +473,13 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 
     EnterCriticalSection(&logFileLock);
 
-    fprintf(logFile, "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d,"
-                     " %1d, %2d, %2d,"
-                     " %2d, %2d, %2d, %2d, %2d, %2d), \n",
+    fprintf(logFile,
+            "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d,"
+            " %1d, %2d, %2d,"
+            " %2d, %2d, %2d, %2d, %2d, %2d), \n",
             state->prologSize, state->epilogSize, state->epilogCount, state->epilogAtEnd, state->ediSaved,
             state->esiSaved, state->ebxSaved, state->ebpSaved, state->ebpFrame, state->interruptible,
             state->doubleAlign, state->security, state->handlers, state->localloc, state->editNcontinue, state->varargs,
@@ -3324,7 +3325,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     assert(regMask || argMask || callArgCnt || pasStk.pasCurDepth());
 
-// Emit IPtrMask if needed
+                    // Emit IPtrMask if needed
 
 #define CHK_NON_INTRPT_ESP_IPtrMask                                                                                    \
                                                                                                                        \
@@ -4784,7 +4785,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
 
     StackSlotIdKey sskey(genStackPtr->rpdPtrArg, false,
                          GcSlotFlags(genStackPtr->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE));
-    GcSlotId varSlotId;
+    GcSlotId       varSlotId;
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         if (!m_stackSlotMap->Lookup(sskey, &varSlotId))
@@ -4832,8 +4833,8 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
 
         StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, false,
                              genRegPtrTemp->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE);
-        GcSlotId varSlotId;
-        bool     b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+        GcSlotId       varSlotId;
+        bool           b = m_stackSlotMap->Lookup(sskey, &varSlotId);
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(instrOffset, varSlotId, GC_SLOT_DEAD);

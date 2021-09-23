@@ -34,7 +34,7 @@ unsigned BasicBlock::s_nMaxTrees;
 flowList* ShuffleHelper(unsigned hash, flowList* res)
 {
     flowList* head = res;
-    for (flowList *prev = nullptr; res != nullptr; prev = res, res = res->flNext)
+    for (flowList* prev = nullptr; res != nullptr; prev = res, res = res->flNext)
     {
         unsigned blkHash = (hash ^ (res->getBlock()->bbNum << 16) ^ res->getBlock()->bbNum);
         if (((blkHash % 1879) & 1) && prev != nullptr)

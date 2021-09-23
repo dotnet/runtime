@@ -212,9 +212,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         regGSCheck     = REG_EAX;
         regMaskGSCheck = RBM_EAX;
 #else  // !TARGET_X86
-        // Jmp calls: specify method handle using which JIT queries VM for its entry point
-        // address and hence it can neither be a VSD call nor PInvoke calli with cookie
-        // parameter.  Therefore, in case of jmp calls it is safe to use R11.
+       // Jmp calls: specify method handle using which JIT queries VM for its entry point
+       // address and hence it can neither be a VSD call nor PInvoke calli with cookie
+       // parameter.  Therefore, in case of jmp calls it is safe to use R11.
         regGSCheck = REG_R11;
 #endif // !TARGET_X86
     }
@@ -437,9 +437,9 @@ void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
 
 //  Move an immediate value into an integer register
 
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
@@ -7289,7 +7289,7 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTree* treeNode)
 #ifdef UNIX_AMD64_ABI
         assert(!varDsc->lvIsRegArg && varDsc->GetArgReg() == REG_STK);
 #else  // !UNIX_AMD64_ABI
-        // On Windows this assert is always true. The first argument will always be in REG_ARG_0 or REG_FLTARG_0.
+       // On Windows this assert is always true. The first argument will always be in REG_ARG_0 or REG_FLTARG_0.
         assert(varDsc->lvIsRegArg && (varDsc->GetArgReg() == REG_ARG_0 || varDsc->GetArgReg() == REG_FLTARG_0));
 #endif // !UNIX_AMD64_ABI
 #endif // !DEBUG
@@ -7775,7 +7775,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         // Get argument offset on stack.
         // Here we cross check that argument offset hasn't changed from lowering to codegen since
         // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-        unsigned       argOffset      = putArgStk->getArgOffset();
+        unsigned argOffset = putArgStk->getArgOffset();
 
 #ifdef DEBUG
         fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
@@ -8154,8 +8154,8 @@ CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigne
 }
 
 #ifdef JIT32_GCENCODER
-void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
-                                            unsigned prologSize,
+void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
+                                            unsigned            prologSize,
                                             unsigned epilogSize DEBUGARG(void* codePtr))
 {
     BYTE    headerBuf[64];
@@ -8303,8 +8303,8 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
 #else  // !JIT32_GCENCODER
 void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize DEBUGARG(void* codePtr))
 {
-    IAllocator*    allowZeroAlloc = new (compiler, CMK_GC) CompIAllocator(compiler->getAllocatorGC());
-    GcInfoEncoder* gcInfoEncoder  = new (compiler, CMK_GC)
+    IAllocator* allowZeroAlloc = new (compiler, CMK_GC) CompIAllocator(compiler->getAllocatorGC());
+    GcInfoEncoder* gcInfoEncoder = new (compiler, CMK_GC)
         GcInfoEncoder(compiler->info.compCompHnd, compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
     assert(gcInfoEncoder);
 
@@ -8597,8 +8597,8 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     unsigned saveStackLvl2 = genStackLevel;
 
-// Important note: when you change enter probe layout, you must also update SKIP_ENTER_PROF_CALLBACK()
-// for x86 stack unwinding
+    // Important note: when you change enter probe layout, you must also update SKIP_ENTER_PROF_CALLBACK()
+    // for x86 stack unwinding
 
 #if defined(UNIX_X86_ABI)
     // Manually align the stack to be 16-byte aligned. This is similar to CodeGen::genAlignStackBeforeCall()

@@ -301,15 +301,15 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*         comp,
-                                   CORINFO_SIG_INFO* sig,
-                                   const char*       className,
-                                   const char*       methodName,
-                                   const char*       enclosingClassName);
+    static NamedIntrinsic         lookupId(Compiler*         comp,
+                                           CORINFO_SIG_INFO* sig,
+                                           const char*       className,
+                                           const char*       methodName,
+                                           const char*       enclosingClassName);
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
-    static int lookupNumArgs(const GenTreeHWIntrinsic* node);
+    static int      lookupNumArgs(const GenTreeHWIntrinsic* node);
     static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
 
 #if defined(TARGET_XARCH)
@@ -326,7 +326,7 @@ struct HWIntrinsicInfo
     static bool isScalarIsa(CORINFO_InstructionSet isa);
 
 #ifdef TARGET_XARCH
-    static bool isAVX2GatherIntrinsic(NamedIntrinsic id);
+    static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
     static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
 #endif
 

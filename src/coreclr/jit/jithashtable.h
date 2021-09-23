@@ -57,12 +57,8 @@ public:
 class JitPrimeInfo
 {
 public:
-    constexpr JitPrimeInfo() : prime(0), magic(0), shift(0)
-    {
-    }
-    constexpr JitPrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s)
-    {
-    }
+    constexpr JitPrimeInfo() : prime(0), magic(0), shift(0) {}
+    constexpr JitPrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s) {}
     unsigned prime;
     unsigned magic;
     unsigned shift;

@@ -2070,8 +2070,8 @@ inline
             assert(varDsc->lvIsParam);
 #endif // UNIX_AMD64_ABI
 #else  // !TARGET_AMD64
-            // For other targets, a stack parameter that is enregistered or prespilled
-            // for profiling on ARM will have a stack location.
+       // For other targets, a stack parameter that is enregistered or prespilled
+       // for profiling on ARM will have a stack location.
             assert((varDsc->lvIsParam && !varDsc->lvIsRegArg) || isPrespilledArg);
 #endif // !TARGET_AMD64
         }
@@ -2158,7 +2158,7 @@ inline
 #ifdef TARGET_ARM
                 varOffset = codeGen->genCallerSPtoInitialSPdelta() - codeGen->genCallerSPtoFPdelta();
 #else
-                varOffset                = -(codeGen->genTotalFrameSize());
+                varOffset = -(codeGen->genTotalFrameSize());
 #endif
             }
         }
@@ -2212,7 +2212,7 @@ inline
         *pBaseReg = REG_SPBASE;
     }
 #else
-    *pFPbased                            = FPbased;
+    *pFPbased = FPbased;
 #endif
 
     return varOffset;
@@ -2366,7 +2366,7 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
 #if defined(TARGET_WINDOWS)
         || info.compIsVarArgs
 #endif // defined(TARGET_WINDOWS)
-        )
+    )
     {
         switch (type)
         {

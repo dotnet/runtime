@@ -132,7 +132,7 @@ size_t DisAssembler::disCchAddrMember(
 
     switch (terminationType)
     {
-        // int disCallSize;
+            // int disCallSize;
 
         case DISX86::trmtaJmpShort:
         case DISX86::trmtaJmpCcShort:
@@ -221,7 +221,7 @@ size_t DisAssembler::disCchAddrMember(
 
     switch (terminationType)
     {
-        // int disCallSize;
+            // int disCallSize;
 
         case DISARM64::TRMTA::trmtaBra:
         case DISARM64::TRMTA::trmtaBraCase:
@@ -613,7 +613,7 @@ size_t DisAssembler::disCchRegRelMember(
 
         case DISX86::trmtaFallThrough:
 
-        /* some instructions like division have a TRAP termination type - ignore it */
+            /* some instructions like division have a TRAP termination type - ignore it */
 
         case DISX86::trmtaTrap:
         case DISX86::trmtaTrapCc:
@@ -708,7 +708,7 @@ size_t DisAssembler::disCchRegRelMember(
 
         case DISARM64::TRMTA::trmtaFallThrough:
 
-        /* some instructions like division have a TRAP termination type - ignore it */
+            /* some instructions like division have a TRAP termination type - ignore it */
 
         case DISARM64::TRMTA::trmtaTrap:
         case DISARM64::TRMTA::trmtaTrapCc:
@@ -1329,7 +1329,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 #else
                            false // Display code bytes?
 #endif
-                           );
+        );
 
         ibCur += (unsigned)cb;
     }

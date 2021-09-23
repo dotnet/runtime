@@ -23,13 +23,9 @@ struct RegSlotIdKey
     unsigned short m_regNum;
     unsigned short m_flags;
 
-    RegSlotIdKey()
-    {
-    }
+    RegSlotIdKey() {}
 
-    RegSlotIdKey(unsigned short regNum, unsigned short flags) : m_regNum(regNum), m_flags(flags)
-    {
-    }
+    RegSlotIdKey(unsigned short regNum, unsigned short flags) : m_regNum(regNum), m_flags(flags) {}
 
     static unsigned GetHashCode(RegSlotIdKey rsk)
     {
@@ -48,13 +44,9 @@ struct StackSlotIdKey
     bool           m_fpRel;
     unsigned short m_flags;
 
-    StackSlotIdKey()
-    {
-    }
+    StackSlotIdKey() {}
 
-    StackSlotIdKey(int offset, bool fpRel, unsigned short flags) : m_offset(offset), m_fpRel(fpRel), m_flags(flags)
-    {
-    }
+    StackSlotIdKey(int offset, bool fpRel, unsigned short flags) : m_offset(offset), m_fpRel(fpRel), m_flags(flags) {}
 
     static unsigned GetHashCode(StackSlotIdKey ssk)
     {
@@ -258,7 +250,8 @@ public:
 
         unsigned short cdArgCnt;
 
-        union {
+        union
+        {
             struct // used if cdArgCnt == 0
             {
                 unsigned cdArgMask;      // ptr arg bitfield
@@ -275,7 +268,7 @@ public:
     CallDsc* gcCallDescList;
     CallDsc* gcCallDescLast;
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
 #ifdef JIT32_GCENCODER
     void gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED unsigned int* pVarPtrTableSize);
@@ -300,7 +293,7 @@ public:
 
 #ifdef JIT32_GCENCODER
     size_t gcPtrTableSize(const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset);
-    BYTE* gcPtrTableSave(BYTE* destPtr, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset);
+    BYTE*  gcPtrTableSave(BYTE* destPtr, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset);
 #endif
     void gcRegPtrSetInit();
     /*****************************************************************************/
@@ -321,7 +314,7 @@ public:
     };
 
     WriteBarrierForm gcIsWriteBarrierCandidate(GenTree* tgt, GenTree* assignVal);
-    bool gcIsWriteBarrierStoreIndNode(GenTree* op);
+    bool             gcIsWriteBarrierStoreIndNode(GenTree* op);
 
     // Returns a WriteBarrierForm decision based on the form of "tgtAddr", which is assumed to be the
     // argument of a GT_IND LHS.
@@ -378,7 +371,7 @@ private:
 
 #ifdef JIT32_GCENCODER
     size_t gcInfoBlockHdrDump(const BYTE* table,
-                              InfoHdr*    header,      /* OUT */
+                              InfoHdr*    header,    /* OUT */
                               unsigned*   methodSize); /* OUT */
 
     size_t gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize);
