@@ -23,14 +23,6 @@ class DefaultAssemblyBinder;
 class PEAssembly;
 class PEImage;
 
-STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
-                            PEImage            ** ppPEImage,
-                            BundleFileLocation bundleFileLocation);
-
-STDAPI BinderAcquireImport(PEImage* pPEImage,
-                           IMDInternalImport** pIMetaDataAssemblyImport,
-                           DWORD* pdwPAFlags);
-
 namespace BINDER_SPACE
 {
     class AssemblyIdentityUTF8;

@@ -29,6 +29,10 @@ namespace
     const WCHAR* s_neutralCulture = W("neutral");
 }
 
+STDAPI BinderAcquireImport(PEImage* pPEImage,
+    IMDInternalImport** pIMetaDataAssemblyImport,
+    DWORD* pdwPAFlags);
+
 namespace BINDER_SPACE
 {
     AssemblyName::AssemblyName()
@@ -57,6 +61,7 @@ namespace BINDER_SPACE
         DWORD dwPAFlags[2];
         IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags));
         IF_FAIL_GO(AssemblyBinderCommon::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
+        SetArchitecture(PeKind);
 
         _ASSERTE(pIMetaDataAssemblyImport != NULL);
 
@@ -146,8 +151,6 @@ namespace BINDER_SPACE
 
             SetHave(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
         }
-
-        SetArchitecture(PeKind);
 
     Exit:
         return hr;

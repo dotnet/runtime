@@ -38,6 +38,10 @@ extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadCon
 
 #endif // !defined(DACCESS_COMPILE)
 
+STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
+    PEImage** ppPEImage,
+    BundleFileLocation bundleFileLocation);
+
 namespace BINDER_SPACE
 {
     namespace
@@ -1350,7 +1354,7 @@ Retry:
                 }
                 EX_CATCH
                 {
-                    hr = E_FAIL;
+                    hr = GET_EXCEPTION()->GetHR();
                     goto Exit;
                 }
                 EX_END_CATCH(SwallowAllExceptions);

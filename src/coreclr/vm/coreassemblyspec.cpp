@@ -186,7 +186,7 @@ HRESULT BaseAssemblySpec::ParseName()
 
     EX_TRY
     {
-        NewHolder<BINDER_SPACE::AssemblyIdentityUTF8> pAssemblyIdentity;
+        BINDER_SPACE::AssemblyIdentityUTF8* pAssemblyIdentity;
         AppDomain *pDomain = ::GetAppDomain();
         _ASSERTE(pDomain);
 
@@ -221,8 +221,6 @@ HRESULT BaseAssemblySpec::ParseName()
 
         // Copy and own any fields we do not already own
         CloneFields();
-
-        pAssemblyIdentity.SuppressRelease();
     }
     EX_CATCH_HRESULT(hr);
 
