@@ -119,6 +119,35 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
         }
 
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        public void RecursiveDeletingDoesntFollowLinks()
+        {
+            var target = GetTestFilePath();
+            Directory.CreateDirectory(target);
+
+            var fileInTarget = Path.Combine(target, GetTestFileName());
+            File.WriteAllText(fileInTarget, "");
+
+            var linkParent = GetTestFilePath();
+            Directory.CreateDirectory(linkParent);
+
+            var linkPath = Path.Combine(linkParent, GetTestFileName());
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, target, isDirectory: true));
+
+            // Both the symlink and the target exist
+            Assert.True(Directory.Exists(target), "target should exist");
+            Assert.True(Directory.Exists(linkPath), "linkPath should exist");
+            Assert.True(File.Exists(fileInTarget), "fileInTarget should exist");
+
+            // Delete the parent folder of the symlink.
+            Directory.Delete(linkParent, true);
+
+            // Target should still exist
+            Assert.True(Directory.Exists(target), "target should still exist");
+            Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
+            Assert.True(File.Exists(fileInTarget), "fileInTarget should exist");
+        }
+
         [ConditionalFact(nameof(UsingNewNormalization))]
         public void ExtendedDirectoryWithSubdirectories()
         {

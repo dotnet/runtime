@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Enumeration;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -433,69 +434,64 @@ namespace System.IO
 
         public static void RemoveDirectory(string fullPath, bool recursive)
         {
-            var di = new DirectoryInfo(fullPath);
-            if (!di.Exists)
+            if (!TryRemoveDirectory(fullPath, topLevel: true, throwWhenNotEmpty: !recursive))
             {
-                throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
+                RemoveDirectoryRecursive(fullPath);
             }
-            RemoveDirectoryInternal(di, recursive, throwOnTopLevelDirectoryNotFound: true);
         }
 
-        private static void RemoveDirectoryInternal(DirectoryInfo directory, bool recursive, bool throwOnTopLevelDirectoryNotFound)
+        private static void RemoveDirectoryRecursive(string fullPath)
         {
             Exception? firstException = null;
 
-            if ((directory.Attributes & FileAttributes.ReparsePoint) != 0)
+            try
             {
-                DeleteFile(directory.FullName);
-                return;
-            }
+                foreach ((string childPath, bool isDirectory) in
+                            new FileSystemEnumerable<(string, bool)>(
+                                fullPath,
+                                static (ref FileSystemEntry entry) =>
+                                {
+                                    // Don't report symlinks to directories as directories.
+                                    bool isRealDirectory = !entry.IsSymbolicLink && entry.IsDirectory;
 
-            if (recursive)
-            {
-                try
+                                    return (entry.ToFullPath(), isRealDirectory);
+                                },
+                                EnumerationOptions.Compatible))
                 {
-                    foreach (string item in Directory.EnumerateFileSystemEntries(directory.FullName))
+                    try
                     {
-                        if (!ShouldIgnoreDirectory(Path.GetFileName(item)))
+                        if (isDirectory)
                         {
-                            try
-                            {
-                                var childDirectory = new DirectoryInfo(item);
-                                if (childDirectory.Exists)
-                                {
-                                    RemoveDirectoryInternal(childDirectory, recursive, throwOnTopLevelDirectoryNotFound: false);
-                                }
-                                else
-                                {
-                                    DeleteFile(item);
-                                }
-                            }
-                            catch (Exception exc)
-                            {
-                                if (firstException != null)
-                                {
-                                    firstException = exc;
-                                }
-                            }
+                            RemoveDirectoryRecursive(childPath);
+                        }
+                        else
+                        {
+                            DeleteFile(childPath);
                         }
                     }
-                }
-                catch (Exception exc)
-                {
-                    if (firstException != null)
+                    catch (Exception ex)
                     {
-                        firstException = exc;
+                        firstException ??= ex;
                     }
                 }
-
-                if (firstException != null)
-                {
-                    throw firstException;
-                }
+            }
+            catch (Exception exc)
+            {
+                firstException ??= exc;
             }
 
-            if (Interop.Sys.RmDir(directory.FullName) < 0)
+            if (firstException != null)
+            {
+                throw firstException;
+            }
+
+            bool removed = TryRemoveDirectory(fullPath);
+            Debug.Assert(removed);
+        }
+
+        private static bool TryRemoveDirectory(string fullPath, bool topLevel = false, bool throwWhenNotEmpty = true)
+        {
+            if (Interop.Sys.RmDir(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
@@ -504,17 +500,38 @@ namespace System.IO
                     case Interop.Error.EPERM:
                     case Interop.Error.EROFS:
                     case Interop.Error.EISDIR:
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, directory.FullName)); // match Win32 exception
+                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath)); // match Win32 exception
                     case Interop.Error.ENOENT:
-                        if (!throwOnTopLevelDirectoryNotFound)
+                        if (!topLevel)
                         {
-                            return;
+                            return true;
+                        }
+                        goto default;
+                    case Interop.Error.ENOTDIR:
+                        if (topLevel)
+                        {
+                            if (!DirectoryExists(fullPath))
+                            {
+                                throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
+                            }
+
+                            // Path is symbolic link to a directory.
+                            DeleteFile(fullPath);
+                            return true;
+                        }
+                        goto default;
+                    case Interop.Error.ENOTEMPTY:
+                        if (!throwWhenNotEmpty)
+                        {
+                            return false;
                         }
                         goto default;
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, directory.FullName, isDirectory: true);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
                 }
             }
+
+            return true;
         }
 
         /// <summary>Determines whether the specified directory name should be ignored.</summary>
