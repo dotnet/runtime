@@ -25,10 +25,7 @@ namespace System.Text.Json
         private MetadataDb _parsedData;
 
         private byte[]? _extraRentedArrayPoolBytes;
-        private bool _hasExtraRentedArrayPoolBytes;
-
         private PooledByteBufferWriter? _extraPooledByteBufferWriter;
-        private bool _hasExtraPooledByteBufferWriter;
 
         private (int, string?) _lastIndexAndString = (-1, null);
 
@@ -48,27 +45,20 @@ namespace System.Text.Json
         {
             Debug.Assert(!utf8Json.IsEmpty);
 
-            // We never have both rented fields.
-            Debug.Assert(extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null);
+            // Both rented values better be null if we're not disposable.
+            Debug.Assert(isDisposable ||
+                (extraRentedArrayPoolBytes == null && extraPooledByteBufferWriter == null));
+
+            // Exactly one of the rented values better be non-null if we're disposable.
+            Debug.Assert(!isDisposable ||
+                ((extraRentedArrayPoolBytes != null || extraPooledByteBufferWriter != null) &&
+                (extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null)));
 
             _utf8Json = utf8Json;
             _parsedData = parsedData;
-
-            if (_extraRentedArrayPoolBytes != null)
-            {
-                _hasExtraRentedArrayPoolBytes = true;
-                _extraRentedArrayPoolBytes = extraRentedArrayPoolBytes;
-            }
-            else if (extraPooledByteBufferWriter != null)
-            {
-                _hasExtraPooledByteBufferWriter = true;
-                _extraPooledByteBufferWriter = extraPooledByteBufferWriter;
-            }
-
+            _extraRentedArrayPoolBytes = extraRentedArrayPoolBytes;
+            _extraPooledByteBufferWriter = extraPooledByteBufferWriter;
             IsDisposable = isDisposable;
-
-            // Both rented fields better be null if we're not disposable.
-            Debug.Assert(isDisposable || (_extraRentedArrayPoolBytes == null && _extraPooledByteBufferWriter == null));
         }
 
         /// <inheritdoc />
@@ -83,7 +73,7 @@ namespace System.Text.Json
             _parsedData.Dispose();
             _utf8Json = ReadOnlyMemory<byte>.Empty;
 
-            if (_hasExtraRentedArrayPoolBytes)
+            if (_extraRentedArrayPoolBytes != null)
             {
                 byte[]? extraRentedBytes = Interlocked.Exchange(ref _extraRentedArrayPoolBytes, null);
 
@@ -95,7 +85,7 @@ namespace System.Text.Json
                     ArrayPool<byte>.Shared.Return(extraRentedBytes);
                 }
             }
-            else if (_hasExtraPooledByteBufferWriter)
+            else if (_extraPooledByteBufferWriter != null)
             {
                 PooledByteBufferWriter? extraBufferWriter = Interlocked.Exchange(ref _extraPooledByteBufferWriter, null);
                 extraBufferWriter?.Dispose();
