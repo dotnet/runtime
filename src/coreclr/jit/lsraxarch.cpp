@@ -1069,7 +1069,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // The return value will be on the X87 stack, and we will need to move it.
         dstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
-        dstCandidates = RBM_FLOATRET;
+        dstCandidates                     = RBM_FLOATRET;
 #endif // !TARGET_X86
     }
     else if (registerType == TYP_LONG)

@@ -540,7 +540,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #if defined(TARGET_AMD64)
             && !src->IsIntegralConst(0)
 #endif // TARGET_AMD64
-        )
+                )
         {
             MakeSrcContained(putArgStk, src);
         }
@@ -4024,14 +4024,12 @@ bool Lowering::IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd)
                 return false;
             }
 
-            node->VisitOperands(
-                [&markCount](GenTree* nodeOperand) -> GenTree::VisitResult
-                {
-                    assert((nodeOperand->gtLIRFlags & LIR::Flags::Mark) == 0);
-                    nodeOperand->gtLIRFlags |= LIR::Flags::Mark;
-                    markCount++;
-                    return GenTree::VisitResult::Continue;
-                });
+            node->VisitOperands([&markCount](GenTree* nodeOperand) -> GenTree::VisitResult {
+                assert((nodeOperand->gtLIRFlags & LIR::Flags::Mark) == 0);
+                nodeOperand->gtLIRFlags |= LIR::Flags::Mark;
+                markCount++;
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 
