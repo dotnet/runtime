@@ -2022,9 +2022,9 @@ namespace System.Numerics
 
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
 
-                if (smallShift == 0)
+                if (smallShift == 0 && xd[0] == 1)
                 {
-                    bool allZero = xd[0] == 1;
+                    bool allZero = true;
                     foreach (uint b in xd[1..])
                     {
                         if (b != 0)
