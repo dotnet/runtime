@@ -63,9 +63,9 @@ namespace System.Reflection
 
         internal void SetProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm)
         {
-#pragma warning disable 618
+#pragma warning disable SYSLIB0037
             ProcessorArchitecture = CalculateProcArchIndex(pek, ifm, _flags);
-#pragma warning restore 618
+#pragma warning restore SYSLIB0037
         }
 
         internal static ProcessorArchitecture CalculateProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm, AssemblyNameFlags flags)
