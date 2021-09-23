@@ -70,7 +70,7 @@ namespace Mono.Linker.Steps
 				case AssemblyAction.CopyUsed:
 				case AssemblyAction.Link:
 				case AssemblyAction.Save:
-					bool changed = SweepAssemblyReferences (assembly);
+					bool changed = AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
 					if (changed && action == AssemblyAction.CopyUsed)
 						Annotations.SetAction (assembly, AssemblyAction.Save);
 					break;
@@ -188,7 +188,7 @@ namespace Mono.Linker.Steps
 				AssemblyAction assemblyAction = AssemblyAction.Copy;
 				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
 					// Need to sweep references, in case sweeping type forwarders removed any
-					SweepAssemblyReferences (assembly);
+					AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
 					assemblyAction = AssemblyAction.Save;
 				}
 
@@ -205,7 +205,7 @@ namespace Mono.Linker.Steps
 			case AssemblyAction.Save:
 				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
 					// Need to sweep references, in case sweeping type forwarders removed any
-					SweepAssemblyReferences (assembly);
+					AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
 				}
 				break;
 			}
@@ -253,21 +253,7 @@ namespace Mono.Linker.Steps
 			}
 
 			if (SweepTypeForwarders (assembly) || updateScopes)
-				SweepAssemblyReferences (assembly);
-		}
-
-		static bool SweepAssemblyReferences (AssemblyDefinition assembly)
-		{
-			//
-			// We used to run over list returned by GetTypeReferences but
-			// that returns typeref(s) of original assembly and we don't track
-			// which types are needed for which assembly which left us
-			// with dangling assembly references
-			//
-			assembly.MainModule.AssemblyReferences.Clear ();
-
-			var ars = new AssemblyReferencesCorrector (assembly);
-			return ars.Process ();
+				AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
 		}
 
 		bool IsUsedAssembly (AssemblyDefinition assembly)
@@ -564,362 +550,42 @@ namespace Mono.Linker.Steps
 		{
 		}
 
-		struct AssemblyReferencesCorrector
+		class AssemblyReferencesCorrector : TypeReferenceWalker
 		{
-			readonly AssemblyDefinition assembly;
 			readonly DefaultMetadataImporter importer;
 
-			HashSet<TypeReference> updated;
 			bool changedAnyScopes;
 
-			public AssemblyReferencesCorrector (AssemblyDefinition assembly)
+			AssemblyReferencesCorrector (AssemblyDefinition assembly) : base (assembly)
 			{
-				this.assembly = assembly;
 				this.importer = new DefaultMetadataImporter (assembly.MainModule);
-
-				updated = null;
 				changedAnyScopes = false;
 			}
 
-			public bool Process ()
+			public static bool SweepAssemblyReferences (AssemblyDefinition assembly)
 			{
-				updated = new HashSet<TypeReference> ();
+				//
+				// We used to run over list returned by GetTypeReferences but
+				// that returns typeref(s) of original assembly and we don't track
+				// which types are needed for which assembly which left us
+				// with dangling assembly references
+				//
+				assembly.MainModule.AssemblyReferences.Clear ();
 
-				UpdateCustomAttributesTypesScopes (assembly);
-				UpdateSecurityAttributesTypesScopes (assembly);
+				var arc = new AssemblyReferencesCorrector (assembly);
+				return arc.Update ();
+			}
 
-				foreach (var module in assembly.Modules)
-					UpdateCustomAttributesTypesScopes (module);
-
-				var mmodule = assembly.MainModule;
-				if (mmodule.HasTypes) {
-					foreach (var type in mmodule.Types) {
-						UpdateScopes (type);
-					}
-				}
-
-				if (mmodule.HasExportedTypes)
-					UpdateTypeScope (mmodule.ExportedTypes);
-
-				updated = null;
+			bool Update ()
+			{
+				base.Process ();
 				var ret = changedAnyScopes;
 				changedAnyScopes = false;
-
 				return ret;
 			}
 
-			void UpdateScopes (TypeDefinition typeDefinition)
+			protected override void ProcessTypeReference (TypeReference type)
 			{
-				UpdateCustomAttributesTypesScopes (typeDefinition);
-				UpdateSecurityAttributesTypesScopes (typeDefinition);
-
-				if (typeDefinition.BaseType != null)
-					UpdateScopeOfTypeReference (typeDefinition.BaseType);
-
-				if (typeDefinition.HasInterfaces) {
-					foreach (var iface in typeDefinition.Interfaces) {
-						UpdateCustomAttributesTypesScopes (iface);
-						UpdateScopeOfTypeReference (iface.InterfaceType);
-					}
-				}
-
-				if (typeDefinition.HasGenericParameters)
-					UpdateTypeScope (typeDefinition.GenericParameters);
-
-				if (typeDefinition.HasEvents) {
-					foreach (var e in typeDefinition.Events) {
-						UpdateCustomAttributesTypesScopes (e);
-						// e.EventType is not saved
-					}
-				}
-
-				if (typeDefinition.HasFields) {
-					foreach (var f in typeDefinition.Fields) {
-						UpdateCustomAttributesTypesScopes (f);
-						UpdateScopeOfTypeReference (f.FieldType);
-						UpdateMarshalInfoTypeScope (f);
-					}
-				}
-
-				if (typeDefinition.HasMethods) {
-					foreach (var m in typeDefinition.Methods) {
-						UpdateCustomAttributesTypesScopes (m);
-						UpdateSecurityAttributesTypesScopes (m);
-						if (m.HasGenericParameters)
-							UpdateTypeScope (m.GenericParameters);
-
-						UpdateCustomAttributesTypesScopes (m.MethodReturnType);
-						UpdateScopeOfTypeReference (m.MethodReturnType.ReturnType);
-						UpdateMarshalInfoTypeScope (m.MethodReturnType);
-						if (m.HasOverrides) {
-							foreach (var mo in m.Overrides)
-								UpdateMethodReference (mo);
-						}
-
-						if (m.HasParameters)
-							UpdateTypeScope (m.Parameters);
-
-						if (m.HasBody)
-							UpdateTypeScope (m.Body);
-					}
-				}
-
-				if (typeDefinition.HasProperties) {
-					foreach (var p in typeDefinition.Properties) {
-						UpdateCustomAttributesTypesScopes (p);
-						// p.PropertyType is not saved
-					}
-				}
-
-				if (typeDefinition.HasNestedTypes) {
-					foreach (var nestedType in typeDefinition.NestedTypes) {
-						UpdateScopes (nestedType);
-					}
-				}
-			}
-
-			void UpdateTypeScope (Collection<GenericParameter> genericParameters)
-			{
-				foreach (var gp in genericParameters) {
-					UpdateCustomAttributesTypesScopes (gp);
-					if (gp.HasConstraints)
-						UpdateTypeScope (gp.Constraints);
-				}
-			}
-
-			void UpdateTypeScope (Collection<GenericParameterConstraint> constraints)
-			{
-				foreach (var gc in constraints) {
-					UpdateCustomAttributesTypesScopes (gc);
-					UpdateScopeOfTypeReference (gc.ConstraintType);
-				}
-			}
-
-			void UpdateTypeScope (Collection<ParameterDefinition> parameters)
-			{
-				foreach (var p in parameters) {
-					UpdateCustomAttributesTypesScopes (p);
-					UpdateScopeOfTypeReference (p.ParameterType);
-					UpdateMarshalInfoTypeScope (p);
-				}
-			}
-
-			void UpdateTypeScope (Collection<ExportedType> forwarders)
-			{
-				foreach (var f in forwarders) {
-					TypeDefinition td = f.Resolve ();
-					if (td == null) {
-						// Forwarded type cannot be resolved but it was marked
-						// linker is running in --skip-unresolved true mode
-						var anr = (AssemblyNameReference) f.Scope;
-						f.Scope = importer.ImportReference (anr);
-						continue;
-					}
-
-					var tr = assembly.MainModule.ImportReference (td);
-					if (f.Scope == tr.Scope)
-						continue;
-
-					f.Scope = tr.Scope;
-					changedAnyScopes = true;
-				}
-			}
-
-			void UpdateTypeScope (MethodBody body)
-			{
-				if (body.HasVariables) {
-					foreach (var v in body.Variables) {
-						UpdateScopeOfTypeReference (v.VariableType);
-					}
-				}
-
-				if (body.HasExceptionHandlers) {
-					foreach (var eh in body.ExceptionHandlers) {
-						if (eh.CatchType != null)
-							UpdateScopeOfTypeReference (eh.CatchType);
-					}
-				}
-
-				foreach (var instr in body.Instructions) {
-					switch (instr.OpCode.OperandType) {
-
-					case OperandType.InlineMethod: {
-							var mr = (MethodReference) instr.Operand;
-							UpdateMethodReference (mr);
-							break;
-						}
-
-					case OperandType.InlineField: {
-							var fr = (FieldReference) instr.Operand;
-							UpdateFieldReference (fr);
-							break;
-						}
-
-					case OperandType.InlineTok: {
-							switch (instr.Operand) {
-							case TypeReference tr:
-								UpdateScopeOfTypeReference (tr);
-								break;
-							case FieldReference fr:
-								UpdateFieldReference (fr);
-								break;
-							case MethodReference mr:
-								UpdateMethodReference (mr);
-								break;
-							}
-
-							break;
-						}
-
-					case OperandType.InlineType: {
-							var tr = (TypeReference) instr.Operand;
-							UpdateScopeOfTypeReference (tr);
-							break;
-						}
-					}
-				}
-			}
-
-			void UpdateMethodReference (MethodReference mr)
-			{
-				UpdateScopeOfTypeReference (mr.ReturnType);
-				UpdateScopeOfTypeReference (mr.DeclaringType);
-
-				if (mr is GenericInstanceMethod gim) {
-					foreach (var tr in gim.GenericArguments)
-						UpdateScopeOfTypeReference (tr);
-				}
-
-				if (mr.HasParameters) {
-					UpdateTypeScope (mr.Parameters);
-				}
-			}
-
-			void UpdateFieldReference (FieldReference fr)
-			{
-				UpdateScopeOfTypeReference (fr.FieldType);
-				UpdateScopeOfTypeReference (fr.DeclaringType);
-			}
-
-			void UpdateMarshalInfoTypeScope (IMarshalInfoProvider provider)
-			{
-				if (!provider.HasMarshalInfo)
-					return;
-
-				if (provider.MarshalInfo is CustomMarshalInfo cmi)
-					UpdateScopeOfTypeReference (cmi.ManagedType);
-			}
-
-			void UpdateCustomAttributesTypesScopes (ICustomAttributeProvider customAttributeProvider)
-			{
-				if (!customAttributeProvider.HasCustomAttributes)
-					return;
-
-				foreach (var ca in customAttributeProvider.CustomAttributes)
-					UpdateForwardedTypesScope (ca);
-			}
-
-			void UpdateSecurityAttributesTypesScopes (ISecurityDeclarationProvider securityAttributeProvider)
-			{
-				if (!securityAttributeProvider.HasSecurityDeclarations)
-					return;
-
-				foreach (var ca in securityAttributeProvider.SecurityDeclarations) {
-					if (!ca.HasSecurityAttributes)
-						continue;
-
-					foreach (var securityAttribute in ca.SecurityAttributes)
-						UpdateForwardedTypesScope (securityAttribute);
-				}
-			}
-
-			void UpdateForwardedTypesScope (CustomAttribute attribute)
-			{
-				UpdateMethodReference (attribute.Constructor);
-
-				if (attribute.HasConstructorArguments) {
-					foreach (var ca in attribute.ConstructorArguments)
-						UpdateForwardedTypesScope (ca);
-				}
-
-				if (attribute.HasFields) {
-					foreach (var field in attribute.Fields)
-						UpdateForwardedTypesScope (field.Argument);
-				}
-
-				if (attribute.HasProperties) {
-					foreach (var property in attribute.Properties)
-						UpdateForwardedTypesScope (property.Argument);
-				}
-			}
-
-			void UpdateForwardedTypesScope (SecurityAttribute attribute)
-			{
-				if (attribute.HasFields) {
-					foreach (var field in attribute.Fields)
-						UpdateForwardedTypesScope (field.Argument);
-				}
-
-				if (attribute.HasProperties) {
-					foreach (var property in attribute.Properties)
-						UpdateForwardedTypesScope (property.Argument);
-				}
-			}
-
-			void UpdateForwardedTypesScope (CustomAttributeArgument attributeArgument)
-			{
-				UpdateScopeOfTypeReference (attributeArgument.Type);
-
-				switch (attributeArgument.Value) {
-				case TypeReference tr:
-					UpdateScopeOfTypeReference (tr);
-					break;
-				case CustomAttributeArgument caa:
-					UpdateForwardedTypesScope (caa);
-					break;
-				case CustomAttributeArgument[] array:
-					foreach (var item in array)
-						UpdateForwardedTypesScope (item);
-					break;
-				}
-			}
-
-			void UpdateScopeOfTypeReference (TypeReference type)
-			{
-				if (type == null)
-					return;
-
-				if (!updated.Add (type))
-					return;
-
-				// Can't update the scope of windows runtime projections
-				if (type.IsWindowsRuntimeProjection)
-					return;
-
-				switch (type) {
-				case GenericInstanceType git:
-					UpdateScopeOfTypeReference (git.ElementType);
-					foreach (var ga in git.GenericArguments)
-						UpdateScopeOfTypeReference (ga);
-					return;
-				case FunctionPointerType fpt:
-					UpdateScopeOfTypeReference (fpt.ReturnType);
-					if (fpt.HasParameters)
-						UpdateTypeScope (fpt.Parameters);
-					return;
-				case IModifierType imt:
-					UpdateScopeOfTypeReference (imt.ModifierType);
-					UpdateScopeOfTypeReference (imt.ElementType);
-					return;
-				case TypeSpecification ts:
-					UpdateScopeOfTypeReference (ts.ElementType);
-					return;
-				case TypeDefinition:
-				case GenericParameter:
-					// Nothing to update
-					return;
-				}
-
 				//
 				// Resolve to type definition to remove any type forwarding imports
 				//
@@ -948,6 +614,25 @@ namespace Mono.Linker.Steps
 					return;
 
 				type.Scope = tr.Scope;
+				changedAnyScopes = true;
+			}
+
+			protected override void ProcessExportedType (ExportedType exportedType)
+			{
+				TypeDefinition td = exportedType.Resolve ();
+				if (td == null) {
+					// Forwarded type cannot be resolved but it was marked
+					// linker is running in --skip-unresolved true mode
+					var anr = (AssemblyNameReference) exportedType.Scope;
+					exportedType.Scope = importer.ImportReference (anr);
+					return;
+				}
+
+				var tr = assembly.MainModule.ImportReference (td);
+				if (exportedType.Scope == tr.Scope)
+					return;
+
+				exportedType.Scope = tr.Scope;
 				changedAnyScopes = true;
 			}
 		}

@@ -2,30 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 
+#nullable enable
+
 namespace Mono.Linker
 {
-	struct TypeReferenceMarker
+	abstract class TypeReferenceWalker
 	{
-		readonly AssemblyDefinition assembly;
-		readonly MarkingHelpers markingHelpers;
-		HashSet<TypeReference> visited;
+		protected readonly AssemblyDefinition assembly;
 
-		public TypeReferenceMarker (AssemblyDefinition assembly, MarkingHelpers markingHelpers)
+		HashSet<TypeReference>? visited;
+		protected HashSet<TypeReference> Visited => visited ?? throw new InvalidOperationException ();
+
+		public TypeReferenceWalker (AssemblyDefinition assembly)
 		{
 			this.assembly = assembly;
-			this.markingHelpers = markingHelpers;
 			visited = null;
 		}
 
 		// Traverse the assembly and mark the scopes of discovered type references (but not exported types).
 		// This includes scopes referenced by Cecil TypeReference objects that don't represent rows in the typeref table,
 		// such as references to built-in types, or attribute arguments which encode type references as strings.
-		public void Process ()
+		protected virtual void Process ()
 		{
 			visited = new HashSet<TypeReference> ();
 
@@ -42,8 +45,15 @@ namespace Mono.Linker
 				}
 			}
 
+			if (mmodule.HasExportedTypes)
+				WalkTypeScope (mmodule.ExportedTypes);
+
+			ProcessExtra ();
+
 			visited = null;
 		}
+
+		protected virtual void ProcessExtra () { }
 
 		void WalkScopes (TypeDefinition typeDefinition)
 		{
@@ -139,6 +149,12 @@ namespace Mono.Linker
 				WalkScopeOfTypeReference (p.ParameterType);
 				WalkMarshalInfoTypeScope (p);
 			}
+		}
+
+		void WalkTypeScope (Collection<ExportedType> forwarders)
+		{
+			foreach (var f in forwarders)
+				ProcessExportedType (f);
 		}
 
 		void WalkTypeScope (MethodBody body)
@@ -305,7 +321,7 @@ namespace Mono.Linker
 			if (type == null)
 				return;
 
-			if (!visited.Add (type))
+			if (!visited!.Add (type))
 				return;
 
 			// Don't walk the scope of windows runtime projections
@@ -336,8 +352,12 @@ namespace Mono.Linker
 				return;
 			}
 
-			markingHelpers.MarkForwardedScope (type);
+			ProcessTypeReference (type);
 		}
+
+		protected abstract void ProcessTypeReference (TypeReference type);
+
+		protected abstract void ProcessExportedType (ExportedType exportedType);
 	}
 
 }
