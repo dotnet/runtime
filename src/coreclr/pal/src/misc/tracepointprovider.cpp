@@ -23,12 +23,12 @@ Revision History:
 #include "pal/malloc.hpp"
 #include "pal/stackstring.hpp"
 
-#include <clrconfignocache.h>
-
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <dlfcn.h>
+
+#include <clrconfignocache.h>
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
@@ -64,11 +64,11 @@ PAL_InitializeTracing(void)
     // Check if loading the LTTng providers should be disabled.
     // Note: this env var is formally declared in clrconfigvalues.h, but
     // this code is executed too early to use the mechanics that come with that definition.
-    CLRConfigNoCache disableLTTng = CLRConfigNoCache::Get("LTTng");
-    if (disableLTTng.IsSet())
+    CLRConfigNoCache cfgLTTng = CLRConfigNoCache::Get("LTTng");
+    if (cfgLTTng.IsSet())
     {
         DWORD value;
-        if (disableLTTng.TryGetInteger(10, value))
+        if (cfgLTTng.TryAsInteger(10, value))
             fShouldLoad = (int)value;
     }
 

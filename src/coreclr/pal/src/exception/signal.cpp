@@ -153,7 +153,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     if (stackCheck.IsSet())
     {
         DWORD value;
-        if (stackCheck.TryGetInteger(10, value))
+        if (stackCheck.TryAsInteger(10, value))
             g_enable_alternate_stack_check = (value != 0);
     }
 #endif

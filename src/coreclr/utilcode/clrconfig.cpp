@@ -205,7 +205,7 @@ namespace
                 SString valueAsUTF8;
                 temp.ConvertToUTF8(valueAsUTF8);
 
-                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameAsUTF8.GetUTF8NoConvert());
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameAsUTF8.GetUTF8NoConvert(), noPrefix);
                 LPCSTR valueNoCache = nonCache.AsString();
 
                 _ASSERTE(SString::_stricmp(valueNoCache, valueAsUTF8.GetUTF8NoConvert()) == 0);
