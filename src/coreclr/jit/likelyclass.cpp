@@ -46,7 +46,7 @@ struct LikelyClassHistogram
     // Rough guess at count of unknown types
     unsigned m_unknownTypes;
     // Histogram entries, in no particular order.
-    LikelyClassHistogramEntry m_histogram[64];
+    LikelyClassHistogramEntry m_histogram[HISTOGRAM_MAX_SIZE_COUNT];
     UINT32                    countHistogramElements = 0;
 
     LikelyClassHistogramEntry HistogramEntryAt(unsigned index)
@@ -203,7 +203,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                 case 2:
                 {
                     LikelyClassHistogramEntry const hist0 = h.HistogramEntryAt(0);
-                    LikelyClassHistogramEntry const hist1 = h.HistogramEntryAt(0);
+                    LikelyClassHistogramEntry const hist1 = h.HistogramEntryAt(1);
                     // Fast path for two classes
                     if ((hist0.m_count >= hist1.m_count) && !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
                     {
@@ -237,18 +237,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
 
                 default:
                 {
-                    const int                  MAX_ALLOCA_SIZE = 16;
-                    LikelyClassHistogramEntry* sortedEntries;
-                    if (h.countHistogramElements > MAX_ALLOCA_SIZE)
-                    {
-                        sortedEntries = (LikelyClassHistogramEntry*)malloc(sizeof(LikelyClassHistogramEntry) *
-                                                                           h.countHistogramElements);
-                    }
-                    else
-                    {
-                        sortedEntries =
-                            (LikelyClassHistogramEntry*)alloca(sizeof(LikelyClassHistogramEntry) * MAX_ALLOCA_SIZE);
-                    }
+                    LikelyClassHistogramEntry sortedEntries[HISTOGRAM_MAX_SIZE_COUNT];
 
                     // Since this method can be invoked without a jit instance we can't use any existing allocators
                     unsigned knownHandles = 0;
@@ -274,10 +263,6 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                         LikelyClassHistogramEntry const hc = sortedEntries[hIdx];
                         pLikelyClasses[hIdx].clsHandle     = (CORINFO_CLASS_HANDLE)hc.m_mt;
                         pLikelyClasses[hIdx].likelihood    = hc.m_count * 100 / h.m_totalCount;
-                    }
-                    if (h.countHistogramElements > MAX_ALLOCA_SIZE)
-                    {
-                        free(sortedEntries);
                     }
                     return numberOfClasses;
                 }
