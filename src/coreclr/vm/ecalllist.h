@@ -163,8 +163,6 @@ FCFuncEnd()
 FCFuncStart(gSystem_Type)
     FCFuncElement("GetTypeFromHandle", RuntimeTypeHandle::GetTypeFromHandle)
     FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
-    FCFuncElement("op_Equality", RuntimeTypeHandle::TypeEQ)
-    FCFuncElement("op_Inequality", RuntimeTypeHandle::TypeNEQ)
 FCFuncEnd()
 
 FCFuncStart(gSystem_RuntimeType)
