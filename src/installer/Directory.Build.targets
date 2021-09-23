@@ -190,6 +190,13 @@
       <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedFrameworkInstallerFile>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
+      <_CblMarinerVersionSuffix>cm.1</_CblMarinerVersionSuffix>
+      <SharedHostInstallerFileCblMariner>$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(_CblMarinerVersionSuffix)-$(TargetArchitecture)$(InstallerExtension)</SharedHostInstallerFileCblMariner>
+      <HostFxrInstallerFileCblMariner>$(HostFxrInstallerStart)$(HostResolverVersion)-$(_CblMarinerVersionSuffix)-$(TargetArchitecture)$(InstallerExtension)</HostFxrInstallerFileCblMariner>
+      <SharedFrameworkInstallerFileCblMariner>$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(_CblMarinerVersionSuffix)-$(TargetArchitecture)$(InstallerExtension)</SharedFrameworkInstallerFileCblMariner>
+    </PropertyGroup>
+
     <!-- Runtime-deps Deb package is distro version agnostic. -->
     <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
       <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
