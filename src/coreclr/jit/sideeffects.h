@@ -13,8 +13,7 @@
 //
 class LclVarSet final
 {
-    union
-    {
+    union {
         hashBv*  m_bitVector;
         unsigned m_lclNum;
     };

@@ -573,7 +573,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(
 #ifdef TARGET_XARCH
         && !HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic) && !HWIntrinsicInfo::HasFullRangeImm(intrinsic)
 #endif
-    )
+            )
     {
         assert(!immOp->IsCnsIntOrI());
         assert(varTypeIsUnsigned(immOp));
@@ -966,8 +966,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
         if (category == HW_Category_SIMDByIndexedElement)
         {
-            CorInfoType indexedElementBaseJitType;
-            var_types indexedElementBaseType;
+            CorInfoType  indexedElementBaseJitType;
+            var_types    indexedElementBaseType;
             unsigned int indexedElementSimdSize = 0;
 
             if (numArgs == 3)
@@ -989,7 +989,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                            ((simdBaseType == TYP_UINT) && (indexedElementBaseType == TYP_UBYTE)));
                     // The second source operand of sdot, udot instructions is an indexed 32-bit element.
                     indexedElementBaseJitType = simdBaseJitType;
-                    indexedElementBaseType = simdBaseType;
+                    indexedElementBaseType    = simdBaseType;
                 }
             }
 

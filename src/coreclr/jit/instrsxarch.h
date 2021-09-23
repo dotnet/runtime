@@ -17,7 +17,7 @@
  *          rr      -- base encoding for register addressing mode
  *          flags   -- flags, see INS_FLAGS_* enum
  *
- ******************************************************************************/
+******************************************************************************/
 
 // clang-format off
 #if !defined(TARGET_XARCH)

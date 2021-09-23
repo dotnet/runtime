@@ -449,7 +449,9 @@ hashBv* hashBv::CreateFrom(hashBv* other, Compiler* comp)
     return result;
 }
 
-void hashBv::MergeLists(hashBvNode** root1, hashBvNode** root2) {}
+void hashBv::MergeLists(hashBvNode** root1, hashBvNode** root2)
+{
+}
 
 bool hashBv::TooSmall()
 {
@@ -935,8 +937,12 @@ bool hashBv::anySet()
 class AndAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -993,8 +999,12 @@ public:
 class SubtractAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -1045,8 +1055,12 @@ public:
 class XorAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -1114,7 +1128,9 @@ public:
             rhs->Resize(rhs->numNodes);
         }
     }
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -1169,8 +1185,12 @@ public:
 class CompareAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return true;
@@ -1208,8 +1228,12 @@ public:
 class IntersectsAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -1927,7 +1951,7 @@ more_data:
         current_element++;
         // printf("current element is %d\n", current_element);
         // reached the end of this node
-        if (current_element == (indexType)this->currNode->numElements())
+        if (current_element == (indexType) this->currNode->numElements())
         {
             // printf("going to next node\n");
             this->nextNode();
@@ -1935,7 +1959,7 @@ more_data:
         }
         else
         {
-            assert(current_element < (indexType)this->currNode->numElements());
+            assert(current_element < (indexType) this->currNode->numElements());
             // printf("getting more data\n");
             current_data = this->currNode->elements[current_element];
             current_base = this->currNode->baseIndex + current_element * BITS_PER_ELEMENT;

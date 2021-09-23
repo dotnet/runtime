@@ -200,7 +200,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     RegisterType registerType = call->TypeGet();
 
-    // Set destination candidates for return value of the call.
+// Set destination candidates for return value of the call.
 
 #ifdef TARGET_ARM
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))

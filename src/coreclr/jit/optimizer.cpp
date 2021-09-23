@@ -42,7 +42,9 @@ void Compiler::optInit()
     optCSEcount          = 0;
 }
 
-DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler) {}
+DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
+{
+}
 
 //------------------------------------------------------------------------
 // optSetBlockWeights: adjust block weights, as follows:
@@ -1523,8 +1525,8 @@ public:
     bool RecordLoop()
     {
         /* At this point we have a compact loop - record it in the loop table
-         * If we found only one exit, record it in the table too
-         * (otherwise an exit = nullptr in the loop table means multiple exits) */
+        * If we found only one exit, record it in the table too
+        * (otherwise an exit = nullptr in the loop table means multiple exits) */
 
         BasicBlock* onlyExit = (exitCount == 1 ? lastExit : nullptr);
         if (comp->optRecordLoop(head, first, top, entry, bottom, onlyExit, exitCount))
@@ -1572,11 +1574,11 @@ public:
     bool FindLoop(BasicBlock* head, BasicBlock* top, BasicBlock* bottom)
     {
         /* Is this a loop candidate? - We look for "back edges", i.e. an edge from BOTTOM
-         * to TOP (note that this is an abuse of notation since this is not necessarily a back edge
-         * as the definition says, but merely an indication that we have a loop there).
-         * Thus, we have to be very careful and after entry discovery check that it is indeed
-         * the only place we enter the loop (especially for non-reducible flow graphs).
-         */
+        * to TOP (note that this is an abuse of notation since this is not necessarily a back edge
+        * as the definition says, but merely an indication that we have a loop there).
+        * Thus, we have to be very careful and after entry discovery check that it is indeed
+        * the only place we enter the loop (especially for non-reducible flow graphs).
+        */
 
         if (top->bbNum > bottom->bbNum) // is this a backward edge? (from BOTTOM to TOP)
         {
@@ -1596,18 +1598,18 @@ public:
             (bottom->bbJumpKind == BBJ_SWITCH))
         {
             /* BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
-             * BBJ_SWITCH that has a backward jump appears only for labeled break. */
+            * BBJ_SWITCH that has a backward jump appears only for labeled break. */
             return false;
         }
 
         /* The presence of a "back edge" is an indication that a loop might be present here
-         *
-         * LOOP:
-         *        1. A collection of STRONGLY CONNECTED nodes i.e. there is a path from any
-         *           node in the loop to any other node in the loop (wholly within the loop)
-         *        2. The loop has a unique ENTRY, i.e. there is only one way to reach a node
-         *           in the loop from outside the loop, and that is through the ENTRY
-         */
+        *
+        * LOOP:
+        *        1. A collection of STRONGLY CONNECTED nodes i.e. there is a path from any
+        *           node in the loop to any other node in the loop (wholly within the loop)
+        *        2. The loop has a unique ENTRY, i.e. there is only one way to reach a node
+        *           in the loop from outside the loop, and that is through the ENTRY
+        */
 
         /* Let's find the loop ENTRY */
         BasicBlock* entry = FindEntry(head, top, bottom);
@@ -1730,7 +1732,7 @@ private:
                 /* OK - we enter somewhere within the loop */
 
                 /* some useful asserts
-                 * Cannot enter at the top - should have being caught by redundant jumps */
+                * Cannot enter at the top - should have being caught by redundant jumps */
 
                 assert((head->bbJumpDest != top) || (head->bbFlags & BBF_KEEP_BBJ_ALWAYS));
 
@@ -1784,8 +1786,8 @@ private:
             worklist.pop_back();
 
             /* Make sure ENTRY dominates all blocks in the loop
-             * This is necessary to ensure condition 2. above
-             */
+            * This is necessary to ensure condition 2. above
+            */
             if (block->bbNum > oldBlockMaxNum)
             {
                 // This is a new block we added to connect fall-through, so the
@@ -2290,7 +2292,7 @@ private:
             case BBJ_EHFINALLYRET:
             case BBJ_EHFILTERRET:
                 /* The "try" associated with this "finally" must be in the
-                 * same loop, so the finally block will return control inside the loop */
+                * same loop, so the finally block will return control inside the loop */
                 break;
 
             case BBJ_THROW:
@@ -2324,7 +2326,7 @@ private:
         }
     }
 };
-} // namespace
+}
 
 /*****************************************************************************
  * Find the natural loops, using dominators. Note that the test for
@@ -3100,7 +3102,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     switch (iterOperType)
     {
-        // For small types, the iteration operator will narrow these values if big
+// For small types, the iteration operator will narrow these values if big
 
 #define INIT_ITER_BY_TYPE(type)                                                                                        \
     constInitX = (type)constInit;                                                                                      \
@@ -3119,7 +3121,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             INIT_ITER_BY_TYPE(unsigned short);
             break;
 
-            // For the big types, 32 bit arithmetic is performed
+        // For the big types, 32 bit arithmetic is performed
 
         case TYP_INT:
         case TYP_UINT:
@@ -4952,8 +4954,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 return true;
 
-                /* Operands that are in memory can usually be narrowed
-                   simply by changing their gtType */
+            /* Operands that are in memory can usually be narrowed
+               simply by changing their gtType */
 
             case GT_LCL_VAR:
                 /* We only allow narrowing long -> int for a GT_LCL_VAR */
@@ -6405,9 +6407,9 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // and the variable must be in SSA ...
                 isInvariant = isInvariant && m_compiler->lvaInSsa(lclNum) && lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
-                isInvariant =
-                    isInvariant && !m_compiler->optLoopTable[m_loopNum].lpContains(
-                                       m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
+                isInvariant = isInvariant &&
+                              !m_compiler->optLoopTable[m_loopNum].lpContains(
+                                  m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
                 // and the VN of the tree is considered invariant as well.
                 //
                 // TODO-CQ: This VN invariance check should not be necessary and in some cases it is conservative - it
@@ -6454,7 +6456,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             // optIsCSEcandidate returns false for constants.
             bool treeIsCctorDependent = ((tree->OperIs(GT_CLS_VAR) && ((tree->gtFlags & GTF_CLS_VAR_INITCLASS) != 0)) ||
                                          (tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)));
-            bool treeIsInvariant      = true;
+            bool treeIsInvariant          = true;
             bool treeHasHoistableChildren = false;
             int  childCount;
 
@@ -7968,9 +7970,9 @@ public:
 
 private:
     Statement* optOptimizeBoolsChkBlkCond();
-    GenTree*   optIsBoolComp(OptTestInfo* pOptTest);
-    bool       optOptimizeBoolsChkTypeCostCond();
-    void       optOptimizeBoolsUpdateTrees();
+    GenTree* optIsBoolComp(OptTestInfo* pOptTest);
+    bool optOptimizeBoolsChkTypeCostCond();
+    void optOptimizeBoolsUpdateTrees();
 };
 
 //-----------------------------------------------------------------------------

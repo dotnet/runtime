@@ -327,8 +327,9 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
-        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 |
-                                                              BBF_LOOP_PREHEADER | BBF_RETLESS_CALL))) == 0);
+        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST &
+                                       ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
+                                         BBF_RETLESS_CALL))) == 0);
         top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
         bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
                                             BBF_RETLESS_CALL);
@@ -1958,8 +1959,8 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
                                                // try/finally, which must be the last EH region.
 
     EHblkDsc* ehDsc = ehGetDsc(tryIndex);
-    assert(ehDsc->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX); // There are no enclosing regions of the
-                                                                         // BBJ_RETURN block
+    assert(ehDsc->ebdEnclosingTryIndex ==
+           EHblkDsc::NO_ENCLOSING_INDEX); // There are no enclosing regions of the BBJ_RETURN block
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
@@ -2591,12 +2592,12 @@ private:
         return nullptr;
     }
 };
-} // namespace
+}
 
 /*****************************************************************************
- *
- *  Add any internal blocks/trees we may need
- */
+*
+*  Add any internal blocks/trees we may need
+*/
 
 void Compiler::fgAddInternal()
 {
@@ -2635,7 +2636,7 @@ void Compiler::fgAddInternal()
 #ifndef JIT32_GCENCODER
             lva0CopiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-            lva0CopiedForGenericsCtxt = false;
+            lva0CopiedForGenericsCtxt          = false;
 #endif // JIT32_GCENCODER
             noway_assert(lva0CopiedForGenericsCtxt || !lvaTable[info.compThisArg].IsAddressExposed());
             noway_assert(!lvaTable[info.compThisArg].lvHasILStoreOp);
@@ -2652,7 +2653,7 @@ void Compiler::fgAddInternal()
 
             tree = gtNewAssignNode(tree,                                     // dst
                                    gtNewLclvNode(info.compThisArg, thisType) // src
-            );
+                                   );
 
             /* Create a new basic block and stick the assignment in it */
 
@@ -4134,7 +4135,7 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HW_INTRINSIC_CHK:
 #endif // FEATURE_HW_INTRINSICS
-       // Evaluate the trees left to right
+            // Evaluate the trees left to right
             fgSetTreeSeqHelper(tree->AsBoundsChk()->gtIndex, isLIR);
             fgSetTreeSeqHelper(tree->AsBoundsChk()->gtArrLen, isLIR);
             break;

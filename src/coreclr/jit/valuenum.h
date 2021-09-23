@@ -100,7 +100,9 @@ public:
     class VNMap : public JitHashTable<fromType, keyfuncs, ValueNum>
     {
     public:
-        VNMap(CompAllocator alloc) : JitHashTable<fromType, keyfuncs, ValueNum>(alloc) {}
+        VNMap(CompAllocator alloc) : JitHashTable<fromType, keyfuncs, ValueNum>(alloc)
+        {
+        }
         ~VNMap()
         {
             ~VNMap<fromType, keyfuncs>::JitHashTable();
@@ -200,10 +202,10 @@ private:
     static bool IsIntZero(T v);
 
     // Given an constant value number return its value.
-    int    GetConstantInt32(ValueNum argVN);
-    INT64  GetConstantInt64(ValueNum argVN);
+    int GetConstantInt32(ValueNum argVN);
+    INT64 GetConstantInt64(ValueNum argVN);
     double GetConstantDouble(ValueNum argVN);
-    float  GetConstantSingle(ValueNum argVN);
+    float GetConstantSingle(ValueNum argVN);
 
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
@@ -354,7 +356,7 @@ public:
 
     // Create or return the existimg value number representing a singleton exception set
     // for the the exception value "x".
-    ValueNum     VNExcSetSingleton(ValueNum x);
+    ValueNum VNExcSetSingleton(ValueNum x);
     ValueNumPair VNPExcSetSingleton(ValueNumPair x);
 
     // Returns true if the current pair of items are in ascending order and they are not duplicates.
@@ -621,7 +623,9 @@ public:
         ValueNum vnIdx;
         ValueNum vnBound;
 
-        UnsignedCompareCheckedBoundInfo() : cmpOper(GT_NONE), vnIdx(NoVN), vnBound(NoVN) {}
+        UnsignedCompareCheckedBoundInfo() : cmpOper(GT_NONE), vnIdx(NoVN), vnBound(NoVN)
+        {
+        }
     };
 
     struct CompareCheckedBoundArithInfo
@@ -633,7 +637,9 @@ public:
         ValueNum arrOp;
         unsigned cmpOper;
         ValueNum cmpOp;
-        CompareCheckedBoundArithInfo() : vnBound(NoVN), arrOper(GT_NONE), arrOp(NoVN), cmpOper(GT_NONE), cmpOp(NoVN) {}
+        CompareCheckedBoundArithInfo() : vnBound(NoVN), arrOper(GT_NONE), arrOp(NoVN), cmpOper(GT_NONE), cmpOp(NoVN)
+        {
+        }
 #ifdef DEBUG
         void dump(ValueNumStore* vnStore)
         {
@@ -658,7 +664,9 @@ public:
         unsigned cmpOper;
         ValueNum cmpOpVN;
 
-        ConstantBoundInfo() : constVal(0), cmpOper(GT_NONE), cmpOpVN(NoVN) {}
+        ConstantBoundInfo() : constVal(0), cmpOper(GT_NONE), cmpOpVN(NoVN)
+        {
+        }
 
 #ifdef DEBUG
         void dump(ValueNumStore* vnStore)
@@ -1001,9 +1009,13 @@ private:
     struct VNDefFunc0Arg
     {
         VNFunc m_func;
-        VNDefFunc0Arg(VNFunc func) : m_func(func) {}
+        VNDefFunc0Arg(VNFunc func) : m_func(func)
+        {
+        }
 
-        VNDefFunc0Arg() : m_func(VNF_COUNT) {}
+        VNDefFunc0Arg() : m_func(VNF_COUNT)
+        {
+        }
 
         bool operator==(const VNDefFunc0Arg& y) const
         {
@@ -1014,9 +1026,13 @@ private:
     struct VNDefFunc1Arg : public VNDefFunc0Arg
     {
         ValueNum m_arg0;
-        VNDefFunc1Arg(VNFunc func, ValueNum arg0) : VNDefFunc0Arg(func), m_arg0(arg0) {}
+        VNDefFunc1Arg(VNFunc func, ValueNum arg0) : VNDefFunc0Arg(func), m_arg0(arg0)
+        {
+        }
 
-        VNDefFunc1Arg() : VNDefFunc0Arg(), m_arg0(ValueNumStore::NoVN) {}
+        VNDefFunc1Arg() : VNDefFunc0Arg(), m_arg0(ValueNumStore::NoVN)
+        {
+        }
 
         bool operator==(const VNDefFunc1Arg& y) const
         {
@@ -1027,9 +1043,13 @@ private:
     struct VNDefFunc2Arg : public VNDefFunc1Arg
     {
         ValueNum m_arg1;
-        VNDefFunc2Arg(VNFunc func, ValueNum arg0, ValueNum arg1) : VNDefFunc1Arg(func, arg0), m_arg1(arg1) {}
+        VNDefFunc2Arg(VNFunc func, ValueNum arg0, ValueNum arg1) : VNDefFunc1Arg(func, arg0), m_arg1(arg1)
+        {
+        }
 
-        VNDefFunc2Arg() : m_arg1(ValueNumStore::NoVN) {}
+        VNDefFunc2Arg() : m_arg1(ValueNumStore::NoVN)
+        {
+        }
 
         bool operator==(const VNDefFunc2Arg& y) const
         {
@@ -1044,7 +1064,9 @@ private:
             : VNDefFunc2Arg(func, arg0, arg1), m_arg2(arg2)
         {
         }
-        VNDefFunc3Arg() : m_arg2(ValueNumStore::NoVN) {}
+        VNDefFunc3Arg() : m_arg2(ValueNumStore::NoVN)
+        {
+        }
 
         bool operator==(const VNDefFunc3Arg& y) const
         {
@@ -1059,7 +1081,9 @@ private:
             : VNDefFunc3Arg(func, arg0, arg1, arg2), m_arg3(arg3)
         {
         }
-        VNDefFunc4Arg() : m_arg3(ValueNumStore::NoVN) {}
+        VNDefFunc4Arg() : m_arg3(ValueNumStore::NoVN)
+        {
+        }
 
         bool operator==(const VNDefFunc4Arg& y) const
         {
@@ -1108,7 +1132,7 @@ private:
     static const int      SmallIntConstMin = -1;
     static const int      SmallIntConstMax = 10;
     static const unsigned SmallIntConstNum = SmallIntConstMax - SmallIntConstMin + 1;
-    static bool           IsSmallIntConst(int i)
+    static bool IsSmallIntConst(int i)
     {
         return SmallIntConstMin <= i && i <= SmallIntConstMax;
     }
@@ -1118,7 +1142,9 @@ private:
     {
         ValueNum      vn;
         ValueNumList* next;
-        ValueNumList(const ValueNum& v, ValueNumList* n = nullptr) : vn(v), next(n) {}
+        ValueNumList(const ValueNum& v, ValueNumList* n = nullptr) : vn(v), next(n)
+        {
+        }
     };
 
     // Keeps track of value numbers that are integer constants and also handles (GTG_ICON_HDL_MASK.)
@@ -1147,8 +1173,8 @@ private:
     }
 
     typedef VNMap<VNHandle, VNHandle> HandleToValueNumMap;
-    HandleToValueNumMap*              m_handleMap;
-    HandleToValueNumMap*              GetHandleMap()
+    HandleToValueNumMap* m_handleMap;
+    HandleToValueNumMap* GetHandleMap()
     {
         if (m_handleMap == nullptr)
         {
@@ -1166,8 +1192,8 @@ private:
     };
 
     typedef VNMap<float, LargePrimitiveKeyFuncsFloat> FloatToValueNumMap;
-    FloatToValueNumMap*                               m_floatCnsMap;
-    FloatToValueNumMap*                               GetFloatCnsMap()
+    FloatToValueNumMap* m_floatCnsMap;
+    FloatToValueNumMap* GetFloatCnsMap()
     {
         if (m_floatCnsMap == nullptr)
         {
@@ -1186,8 +1212,8 @@ private:
     };
 
     typedef VNMap<double, LargePrimitiveKeyFuncsDouble> DoubleToValueNumMap;
-    DoubleToValueNumMap*                                m_doubleCnsMap;
-    DoubleToValueNumMap*                                GetDoubleCnsMap()
+    DoubleToValueNumMap* m_doubleCnsMap;
+    DoubleToValueNumMap* GetDoubleCnsMap()
     {
         if (m_doubleCnsMap == nullptr)
         {
@@ -1233,8 +1259,8 @@ private:
         }
     };
     typedef VNMap<VNDefFunc1Arg, VNDefFunc1ArgKeyFuncs> VNFunc1ToValueNumMap;
-    VNFunc1ToValueNumMap*                               m_VNFunc1Map;
-    VNFunc1ToValueNumMap*                               GetVNFunc1Map()
+    VNFunc1ToValueNumMap* m_VNFunc1Map;
+    VNFunc1ToValueNumMap* GetVNFunc1Map()
     {
         if (m_VNFunc1Map == nullptr)
         {
@@ -1251,8 +1277,8 @@ private:
         }
     };
     typedef VNMap<VNDefFunc2Arg, VNDefFunc2ArgKeyFuncs> VNFunc2ToValueNumMap;
-    VNFunc2ToValueNumMap*                               m_VNFunc2Map;
-    VNFunc2ToValueNumMap*                               GetVNFunc2Map()
+    VNFunc2ToValueNumMap* m_VNFunc2Map;
+    VNFunc2ToValueNumMap* GetVNFunc2Map()
     {
         if (m_VNFunc2Map == nullptr)
         {
@@ -1269,8 +1295,8 @@ private:
         }
     };
     typedef VNMap<VNDefFunc3Arg, VNDefFunc3ArgKeyFuncs> VNFunc3ToValueNumMap;
-    VNFunc3ToValueNumMap*                               m_VNFunc3Map;
-    VNFunc3ToValueNumMap*                               GetVNFunc3Map()
+    VNFunc3ToValueNumMap* m_VNFunc3Map;
+    VNFunc3ToValueNumMap* GetVNFunc3Map()
     {
         if (m_VNFunc3Map == nullptr)
         {
@@ -1287,8 +1313,8 @@ private:
         }
     };
     typedef VNMap<VNDefFunc4Arg, VNDefFunc4ArgKeyFuncs> VNFunc4ToValueNumMap;
-    VNFunc4ToValueNumMap*                               m_VNFunc4Map;
-    VNFunc4ToValueNumMap*                               GetVNFunc4Map()
+    VNFunc4ToValueNumMap* m_VNFunc4Map;
+    VNFunc4ToValueNumMap* GetVNFunc4Map()
     {
         if (m_VNFunc4Map == nullptr)
         {

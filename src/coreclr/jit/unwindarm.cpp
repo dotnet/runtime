@@ -237,8 +237,9 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
     }
     else
     {
-        assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 |
-                            RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR)) == 0);
+        assert((maskInt &
+                ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
+                  RBM_R11 | RBM_R12 | RBM_LR)) == 0);
 
         bool shortFormat = false;
         BYTE val         = 0;
@@ -314,8 +315,9 @@ void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
 void Compiler::unwindPushMaskInt(regMaskTP maskInt)
 {
     // Only r0-r12 and lr are supported
-    assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 |
-                        RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR)) == 0);
+    assert((maskInt &
+            ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
+              RBM_R11 | RBM_R12 | RBM_LR)) == 0);
 
 #if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
@@ -360,8 +362,9 @@ void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 #endif // TARGET_UNIX
 
     // Only r0-r12 and lr and pc are supported (pc is mapped to lr when encoding)
-    assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 |
-                        RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR | RBM_PC)) == 0);
+    assert((maskInt &
+            ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
+              RBM_R11 | RBM_R12 | RBM_LR | RBM_PC)) == 0);
 
     bool useOpsize16 = ((maskInt & (RBM_LOW_REGS | RBM_PC)) == maskInt); // Can POP use the 16-bit encoding?
 
@@ -690,8 +693,8 @@ unsigned GetOpcodeSizeFromUnwindHeader(BYTE b1)
     };
 
     BYTE opsize = s_UnwindOpsize[b1];
-    assert(opsize == 2 || opsize == 4); // We shouldn't get a code with no opsize (the 0xFF end code is handled
-                                        // specially)
+    assert(opsize == 2 ||
+           opsize == 4); // We shouldn't get a code with no opsize (the 0xFF end code is handled specially)
     return opsize;
 }
 
@@ -856,9 +859,9 @@ void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
 
     int epiSize = pEpi->Size();
     memcpy_s(&upcMem[upcEpilogSlot], upcMemSize - upcEpilogSlot - 3, pEpi->GetCodes(),
-             epiSize);                                            // -3 to avoid writing to the alignment padding
-    assert(pEpi->GetStartIndex() == upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy
-                                                                  // it.
+             epiSize); // -3 to avoid writing to the alignment padding
+    assert(pEpi->GetStartIndex() ==
+           upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy it.
 
     upcEpilogSlot += epiSize;
     assert(upcEpilogSlot <= upcMemSize - 3);
@@ -1424,7 +1427,7 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
     }
 #endif
 
-    // Compute the header
+// Compute the header
 
 #if defined(TARGET_ARM)
     noway_assert((functionLength & 1) == 0);
@@ -1473,8 +1476,8 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
     // Start writing the header
 
-    noway_assert(headerFunctionLength <= 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits,
-                                                    // we have an internal error
+    noway_assert(headerFunctionLength <=
+                 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits, we have an internal error
 
     if ((headerEpilogCount > UW_MAX_EPILOG_COUNT) || (headerCodeWords > UW_MAX_CODE_WORDS_COUNT))
     {
@@ -2150,7 +2153,7 @@ DWORD DumpRegSetRange(const char* const rtype, DWORD start, DWORD end, DWORD lr)
 DWORD DumpOpsize(DWORD padding, DWORD opsize)
 {
     if (padding > 100) // underflow?
-        padding = 4;
+        padding   = 4;
     DWORD printed = padding;
     for (; padding > 0; padding--)
         printf(" ");
@@ -2178,7 +2181,7 @@ void DumpUnwindInfo(Compiler*         comp,
     // pHeader is not guaranteed to be aligned. We put four 0xFF end codes at the end
     // to provide padding, and round down to get a multiple of 4 bytes in size.
     DWORD UNALIGNED* pdw = (DWORD UNALIGNED*)pHeader;
-    DWORD            dw;
+    DWORD dw;
 
     dw = *pdw++;
 

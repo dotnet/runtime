@@ -226,7 +226,7 @@ inline bool varTypeIsIntOrI(T vt)
 #ifdef TARGET_64BIT
             || (TypeGet(vt) == TYP_I_IMPL)
 #endif // TARGET_64BIT
-    );
+                );
 }
 
 template <class T>
@@ -283,7 +283,7 @@ inline bool varTypeIsPromotable(T vt)
 #if !defined(TARGET_64BIT)
             || varTypeIsLong(vt)
 #endif // !defined(TARGET_64BIT)
-    );
+                );
 }
 
 template <class T>

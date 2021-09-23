@@ -285,19 +285,31 @@ protected:
     unsigned  m_instrCount;
 
 protected:
-    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0) {}
+    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0)
+    {
+    }
 
 public:
     virtual bool ShouldProcess(BasicBlock* block)
     {
         return false;
     }
-    virtual void Prepare(bool preImport) {}
-    virtual void BuildSchemaElements(BasicBlock* block, Schema& schema) {}
-    virtual void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory) {}
-    virtual void InstrumentMethodEntry(Schema& schema, BYTE* profileMemory) {}
-    virtual void SuppressProbes() {}
-    unsigned     SchemaCount()
+    virtual void Prepare(bool preImport)
+    {
+    }
+    virtual void BuildSchemaElements(BasicBlock* block, Schema& schema)
+    {
+    }
+    virtual void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
+    {
+    }
+    virtual void InstrumentMethodEntry(Schema& schema, BYTE* profileMemory)
+    {
+    }
+    virtual void SuppressProbes()
+    {
+    }
+    unsigned SchemaCount()
     {
         return m_schemaCount;
     }
@@ -313,7 +325,9 @@ public:
 class NonInstrumentor : public Instrumentor
 {
 public:
-    NonInstrumentor(Compiler* comp) : Instrumentor(comp) {}
+    NonInstrumentor(Compiler* comp) : Instrumentor(comp)
+    {
+    }
 };
 
 //------------------------------------------------------------------------
@@ -326,7 +340,9 @@ private:
     BasicBlock* m_entryBlock;
 
 public:
-    BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp), m_entryBlock(nullptr) {}
+    BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp), m_entryBlock(nullptr)
+    {
+    }
     bool ShouldProcess(BasicBlock* block) override
     {
         return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
@@ -387,8 +403,8 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
                                          : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-    schemaElem.ILOffset            = offset;
-    schemaElem.Offset              = 0;
+    schemaElem.ILOffset = offset;
+    schemaElem.Offset   = 0;
 
     schema.push_back(schemaElem);
 
@@ -541,9 +557,9 @@ public:
         CriticalEdge
     };
 
-    virtual void Badcode()                                                               = 0;
-    virtual void VisitBlock(BasicBlock* block)                                           = 0;
-    virtual void VisitTreeEdge(BasicBlock* source, BasicBlock* target)                   = 0;
+    virtual void Badcode()                     = 0;
+    virtual void VisitBlock(BasicBlock* block) = 0;
+    virtual void VisitTreeEdge(BasicBlock* source, BasicBlock* target) = 0;
     virtual void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, EdgeKind kind) = 0;
 };
 
@@ -979,7 +995,9 @@ public:
         block->bbSparseProbeList = nullptr;
     }
 
-    void VisitTreeEdge(BasicBlock* source, BasicBlock* target) override {}
+    void VisitTreeEdge(BasicBlock* source, BasicBlock* target) override
+    {
+    }
 
     void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, SpanningTreeVisitor::EdgeKind kind) override
     {
@@ -1096,8 +1114,8 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
-        schemaElem.ILOffset            = sourceOffset;
-        schemaElem.Offset              = 0;
+        schemaElem.ILOffset = sourceOffset;
+        schemaElem.Offset   = 0;
 
         schema.push_back(schemaElem);
 
@@ -1248,7 +1266,9 @@ private:
     unsigned& m_schemaCount;
 
 public:
-    BuildClassProbeSchemaGen(Schema& schema, unsigned& schemaCount) : m_schema(schema), m_schemaCount(schemaCount) {}
+    BuildClassProbeSchemaGen(Schema& schema, unsigned& schemaCount) : m_schema(schema), m_schemaCount(schemaCount)
+    {
+    }
 
     void operator()(Compiler* compiler, GenTreeCall* call)
     {
@@ -1267,8 +1287,8 @@ public:
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
                                              ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
-        schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-        schemaElem.Offset              = 0;
+        schemaElem.ILOffset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+        schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
 
@@ -1376,7 +1396,9 @@ private:
     unsigned& m_cleanupCount;
 
 public:
-    SuppressProbesFunctor(unsigned& cleanupCount) : m_cleanupCount(cleanupCount) {}
+    SuppressProbesFunctor(unsigned& cleanupCount) : m_cleanupCount(cleanupCount)
+    {
+    }
 
     void operator()(Compiler* compiler, GenTreeCall* call)
     {
@@ -1395,7 +1417,9 @@ public:
 class ClassProbeInstrumentor : public Instrumentor
 {
 public:
-    ClassProbeInstrumentor(Compiler* comp) : Instrumentor(comp) {}
+    ClassProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
+    {
+    }
     bool ShouldProcess(BasicBlock* block) override
     {
         return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
@@ -1561,9 +1585,8 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     }
     else
     {
-        JITDUMP("Using block profiling, because %s\n", (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled"
-                                                       : prejit                           ? "prejitting"
-                                                                                          : "OSR");
+        JITDUMP("Using block profiling, because %s\n",
+                (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled" : prejit ? "prejitting" : "OSR");
 
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
@@ -1981,7 +2004,7 @@ private:
     // Map correlating block keys to blocks.
     //
     typedef JitHashTable<int32_t, JitSmallPrimitiveKeyFuncs<int32_t>, BasicBlock*> KeyToBlockMap;
-    KeyToBlockMap                                                                  m_keyToBlockMap;
+    KeyToBlockMap m_keyToBlockMap;
 
     // Key for finding an edge based on schema info.
     //
@@ -1990,7 +2013,9 @@ private:
         int32_t const m_sourceKey;
         int32_t const m_targetKey;
 
-        EdgeKey(int32_t sourceKey, int32_t targetKey) : m_sourceKey(sourceKey), m_targetKey(targetKey) {}
+        EdgeKey(int32_t sourceKey, int32_t targetKey) : m_sourceKey(sourceKey), m_targetKey(targetKey)
+        {
+        }
 
         EdgeKey(BasicBlock* sourceBlock, BasicBlock* targetBlock)
             : m_sourceKey(BlockToKey(sourceBlock)), m_targetKey(BlockToKey(targetBlock))
@@ -2033,7 +2058,7 @@ private:
     // Map for correlating EdgeIntCount schema entries with edges
     //
     typedef JitHashTable<EdgeKey, EdgeKey, Edge*> EdgeKeyToEdgeMap;
-    EdgeKeyToEdgeMap                              m_edgeKeyToEdgeMap;
+    EdgeKeyToEdgeMap m_edgeKeyToEdgeMap;
 
     // Per block data
     //
@@ -2128,7 +2153,9 @@ public:
         m_failedToConverge = true;
     }
 
-    void VisitBlock(BasicBlock*) override {}
+    void VisitBlock(BasicBlock*) override
+    {
+    }
 
     void VisitTreeEdge(BasicBlock* source, BasicBlock* target) override
     {
@@ -2360,9 +2387,8 @@ void EfficientEdgeCountReconstructor::Solve()
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
     {
-        JITDUMP("... not solving because of the %s\n", m_badcode          ? "badcode"
-                                                       : m_allWeightsZero ? "zero counts"
-                                                                          : "mismatch");
+        JITDUMP("... not solving because of the %s\n",
+                m_badcode ? "badcode" : m_allWeightsZero ? "zero counts" : "mismatch");
         return;
     }
 
@@ -2621,10 +2647,9 @@ void EfficientEdgeCountReconstructor::Propagate()
     //
     if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
-        JITDUMP("... discarding profile data because of %s\n", m_badcode          ? "badcode"
-                                                               : m_mismatch       ? "mismatch"
-                                                               : m_allWeightsZero ? "zero counts"
-                                                                                  : "failed to converge");
+        JITDUMP("... discarding profile data because of %s\n",
+                m_badcode ? "badcode" : m_mismatch ? "mismatch" : m_allWeightsZero ? "zero counts"
+                                                                                   : "failed to converge");
 
         // Make sure nothing else in the jit looks at the profile data.
         //

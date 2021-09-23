@@ -149,9 +149,9 @@ unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 #endif // 0
 
 /*****************************************************************************
- *
- *  Return true if the given 64-bit value has exactly zero or one bits set.
- */
+*
+*  Return true if the given 64-bit value has exactly zero or one bits set.
+*/
 
 template <typename T>
 inline bool genMaxOneBit(T value)
@@ -160,9 +160,9 @@ inline bool genMaxOneBit(T value)
 }
 
 /*****************************************************************************
- *
- *  Return true if the given 32-bit value has exactly zero or one bits set.
- */
+*
+*  Return true if the given 32-bit value has exactly zero or one bits set.
+*/
 
 inline bool genMaxOneBit(unsigned value)
 {
@@ -170,9 +170,9 @@ inline bool genMaxOneBit(unsigned value)
 }
 
 /*****************************************************************************
- *
- *  Return true if the given 64-bit value has exactly one bit set.
- */
+*
+*  Return true if the given 64-bit value has exactly one bit set.
+*/
 
 template <typename T>
 inline bool genExactlyOneBit(T value)
@@ -181,9 +181,9 @@ inline bool genExactlyOneBit(T value)
 }
 
 /*****************************************************************************
- *
- *  Return true if the given 32-bit value has exactly zero or one bits set.
- */
+*
+*  Return true if the given 32-bit value has exactly zero or one bits set.
+*/
 
 inline bool genExactlyOneBit(unsigned value)
 {
@@ -833,8 +833,8 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, IL_OFFSETX offset)
 inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
-    assert((GenTree::OperKind(oper) & GTK_EXOP) == 0); // Can't use this to construct any types that extend unary/binary
-                                                       // operator.
+    assert((GenTree::OperKind(oper) & GTK_EXOP) ==
+           0); // Can't use this to construct any types that extend unary/binary operator.
     assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
 
     if (doSimplifications)
@@ -2070,8 +2070,8 @@ inline
             assert(varDsc->lvIsParam);
 #endif // UNIX_AMD64_ABI
 #else  // !TARGET_AMD64
-       // For other targets, a stack parameter that is enregistered or prespilled
-       // for profiling on ARM will have a stack location.
+            // For other targets, a stack parameter that is enregistered or prespilled
+            // for profiling on ARM will have a stack location.
             assert((varDsc->lvIsParam && !varDsc->lvIsRegArg) || isPrespilledArg);
 #endif // !TARGET_AMD64
         }
@@ -2158,7 +2158,7 @@ inline
 #ifdef TARGET_ARM
                 varOffset = codeGen->genCallerSPtoInitialSPdelta() - codeGen->genCallerSPtoFPdelta();
 #else
-                varOffset = -(codeGen->genTotalFrameSize());
+                varOffset                = -(codeGen->genTotalFrameSize());
 #endif
             }
         }
@@ -2212,7 +2212,7 @@ inline
         *pBaseReg = REG_SPBASE;
     }
 #else
-    *pFPbased = FPbased;
+    *pFPbased                            = FPbased;
 #endif
 
     return varOffset;
@@ -2366,7 +2366,7 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
 #if defined(TARGET_WINDOWS)
         || info.compIsVarArgs
 #endif // defined(TARGET_WINDOWS)
-    )
+        )
     {
         switch (type)
         {

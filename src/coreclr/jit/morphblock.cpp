@@ -24,8 +24,8 @@ protected:
         return "MorphInitBlock";
     }
 
-    static GenTree*    MorphBlock(Compiler* comp, GenTree* tree, bool isDest);
-    static GenTree*    MorphCommaBlock(Compiler* comp, GenTreeOp* firstComma);
+    static GenTree* MorphBlock(Compiler* comp, GenTree* tree, bool isDest);
+    static GenTree* MorphCommaBlock(Compiler* comp, GenTreeOp* firstComma);
     static GenTreeBlk* MorphDynamicBlock(Compiler* comp, GenTreeDynBlk* dynBlock);
 
 protected:
@@ -640,7 +640,9 @@ GenTree* MorphCopyBlockHelper::MorphCopyBlock(Compiler* comp, GenTree* tree)
 // Notes:
 //    Most class members are initialized via in-class member initializers.
 //
-MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* asg) : MorphInitBlockHelper(comp, asg, false) {}
+MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* asg) : MorphInitBlockHelper(comp, asg, false)
+{
+}
 
 //------------------------------------------------------------------------
 // PrepareSrc: Transform the asg src to an appropriate form and initialize member fields

@@ -85,14 +85,13 @@ void Compiler::fgDebugCheckUpdate()
     {
         /* no unreachable blocks */
 
-        if ((block->countOfInEdges() == 0) &&
-            !(block->bbFlags & BBF_DONT_REMOVE)
+        if ((block->countOfInEdges() == 0) && !(block->bbFlags & BBF_DONT_REMOVE)
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
             // With funclets, we never get rid of the BBJ_ALWAYS part of a BBJ_CALLFINALLY/BBJ_ALWAYS pair,
             // even if we can prove that the finally block never returns.
             && !block->isBBCallAlwaysPairTail()
 #endif // FEATURE_EH_FUNCLETS
-        )
+                )
         {
             noway_assert(!"Unreachable block not removed!");
         }
@@ -2313,7 +2312,9 @@ void Compiler::fgStress64RsltMul()
 class BBPredsChecker
 {
 public:
-    BBPredsChecker(Compiler* compiler) : comp(compiler) {}
+    BBPredsChecker(Compiler* compiler) : comp(compiler)
+    {
+    }
 
     unsigned CheckBBPreds(BasicBlock* block, unsigned curTraversalStamp);
 

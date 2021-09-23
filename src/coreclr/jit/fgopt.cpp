@@ -830,7 +830,7 @@ void Compiler::fgComputeDoms()
 
     BlockSet processedBlks(BlockSetOps::MakeEmpty(this));
 
-    fgBBInvPostOrder = new (this, CMK_DominatorMemory) BasicBlock* [fgBBNumMax + 1] {};
+    fgBBInvPostOrder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
 
     fgDfsInvPostOrder();
     noway_assert(fgBBInvPostOrder[0] == nullptr);
@@ -1093,7 +1093,9 @@ void Compiler::fgNumberDomTree(DomTreeNode* domTree)
         unsigned m_postNum;
 
     public:
-        NumberDomTreeVisitor(Compiler* compiler, DomTreeNode* domTree) : DomTreeVisitor(compiler, domTree) {}
+        NumberDomTreeVisitor(Compiler* compiler, DomTreeNode* domTree) : DomTreeVisitor(compiler, domTree)
+        {
+        }
 
         void Begin()
         {
@@ -2668,8 +2670,8 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         bNewDest = bDest;
 
         // Do we have a JUMP to an empty unconditional JUMP block?
-        if (bDest->isEmpty() && (bDest->bbJumpKind == BBJ_ALWAYS) && (bDest != bDest->bbJumpDest)) // special case for
-                                                                                                   // self jumps
+        if (bDest->isEmpty() && (bDest->bbJumpKind == BBJ_ALWAYS) &&
+            (bDest != bDest->bbJumpDest)) // special case for self jumps
         {
             bool optimizeJump = true;
 
@@ -3888,8 +3890,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
     // Note this is potentially expensive for large flow graphs and blocks
     // with lots of predecessors.
     //
-    auto newRunRarely = [](BasicBlock* block, BasicBlock* bPrev)
-    {
+    auto newRunRarely = [](BasicBlock* block, BasicBlock* bPrev) {
         // Figure out earliest block that might be impacted
         BasicBlock* bPrevPrev = nullptr;
         BasicBlock* tmpbb;
@@ -5444,11 +5445,11 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                 continue;
             }
 
-            /*  We jump to the REPEAT label if we performed a change involving the current block
-             *  This is in case there are other optimizations that can show up
-             *  (e.g. - compact 3 blocks in a row)
-             *  If nothing happens, we then finish the iteration and move to the next block
-             */
+        /*  We jump to the REPEAT label if we performed a change involving the current block
+         *  This is in case there are other optimizations that can show up
+         *  (e.g. - compact 3 blocks in a row)
+         *  If nothing happens, we then finish the iteration and move to the next block
+         */
 
         REPEAT:;
 
@@ -5959,14 +5960,12 @@ unsigned Compiler::fgMeasureIR()
         {
             for (Statement* const stmt : block->Statements())
             {
-                fgWalkTreePre(
-                    stmt->GetRootNodePointer(),
-                    [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult
-                    {
-                        (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
-                        return Compiler::WALK_CONTINUE;
-                    },
-                    &nodeCount);
+                fgWalkTreePre(stmt->GetRootNodePointer(),
+                              [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult {
+                                  (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
+                                  return Compiler::WALK_CONTINUE;
+                              },
+                              &nodeCount);
             }
         }
         else

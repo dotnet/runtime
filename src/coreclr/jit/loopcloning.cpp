@@ -71,9 +71,8 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
         int      rank = GetDimRank();
         for (int i = 0; i < rank; ++i)
         {
-            arr = comp->gtNewIndexRef(TYP_REF, arr,
-                                      comp->gtNewLclvNode(arrIndex->indLcls[i],
-                                                          comp->lvaTable[arrIndex->indLcls[i]].lvType));
+            arr = comp->gtNewIndexRef(TYP_REF, arr, comp->gtNewLclvNode(arrIndex->indLcls[i],
+                                                                        comp->lvaTable[arrIndex->indLcls[i]].lvType));
 
             // Clear the range check flag and mark the index as non-faulting: we guarantee that all necessary range
             // checking has already been done by the time this array index expression is invoked.
@@ -1056,10 +1055,9 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                     // limit <= mdArrLen
                     LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
                     LC_Condition      cond(GT_LE, LC_Expr(ident),
-                                      LC_Expr(
-                                          LC_Ident(LC_Array(LC_Array::MdArray,
-                                                            mdArrInfo->GetArrIndexForDim(getAllocator(CMK_LoopClone)),
-                                                            mdArrInfo->dim, LC_Array::None))));
+                                      LC_Expr(LC_Ident(LC_Array(LC_Array::MdArray, mdArrInfo->GetArrIndexForDim(
+                                                                                       getAllocator(CMK_LoopClone)),
+                                                                mdArrInfo->dim, LC_Array::None))));
                     context->EnsureConditions(loopNum)->Push(cond);
                 }
                 break;
@@ -1883,7 +1881,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         newBlk->scaleBBWeight(slowPathWeightScaleFactor);
         blk->scaleBBWeight(fastPathWeightScaleFactor);
 
-        // TODO: scale the pred edges of `blk`?
+// TODO: scale the pred edges of `blk`?
 
 #if FEATURE_LOOP_ALIGN
         // If the original loop is aligned, do not align the cloned loop because cloned loop will be executed in

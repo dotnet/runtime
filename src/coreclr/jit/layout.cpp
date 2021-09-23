@@ -20,8 +20,7 @@ class ClassLayoutTable
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
 
-    union
-    {
+    union {
         // Up to 3 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
         // Most methods need no more than 2 layouts.
         ClassLayout* m_layoutArray[3];
@@ -39,7 +38,9 @@ class ClassLayoutTable
     unsigned m_layoutLargeCapacity;
 
 public:
-    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0) {}
+    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0)
+    {
+    }
 
     // Get the layout number (FirstLayoutNum-based) of the specified layout.
     unsigned GetLayoutNum(ClassLayout* layout) const

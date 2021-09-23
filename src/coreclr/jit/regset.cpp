@@ -464,9 +464,9 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
 #if defined(TARGET_X86)
 /*****************************************************************************
- *
- *  Spill the top of the FP x87 stack.
- */
+*
+*  Spill the top of the FP x87 stack.
+*/
 void RegSet::rsSpillFPStack(GenTreeCall* call)
 {
     SpillDsc* spill;
@@ -1125,6 +1125,8 @@ void RegSet::rsSpillChk()
 #else
 
 // inline
-void RegSet::rsSpillChk() {}
+void RegSet::rsSpillChk()
+{
+}
 
 #endif

@@ -106,7 +106,9 @@ private:
     Compiler* comp;
 
 public:
-    BitVecTraits(unsigned size, Compiler* comp) : size(size), comp(comp) {}
+    BitVecTraits(unsigned size, Compiler* comp) : size(size), comp(comp)
+    {
+    }
 
     static inline void* Alloc(BitVecTraits* b, size_t byteSize);
 
