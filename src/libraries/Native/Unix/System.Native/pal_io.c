@@ -1027,6 +1027,7 @@ int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
 
     while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
 #else
+    (void)fd; // unused
     (void)offset; // unused
     (void)length; // unused
     result = -1;
