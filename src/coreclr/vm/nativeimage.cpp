@@ -43,7 +43,7 @@ NativeImageIndexTraits::count_t NativeImageIndexTraits::Hash(LPCUTF8 a)
     return SString(SString::Utf8Literal, a).HashCaseInsensitive();
 }
 
-NativeImage::NativeImage(AssemblyLoadContext *pAssemblyLoadContext, PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
+NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
     : m_eagerFixupsLock(CrstNativeImageEagerFixups)
 {
     CONTRACTL
@@ -55,7 +55,7 @@ NativeImage::NativeImage(AssemblyLoadContext *pAssemblyLoadContext, PEImageLayou
     }
     CONTRACTL_END;
 
-    m_pAssemblyLoadContext = pAssemblyLoadContext;
+    m_pAssemblyBinder = pAssemblyBinder;
     m_pImageLayout = pImageLayout;
     m_fileName = imageFileName;
     m_eagerFixupsHaveRun = false;
@@ -113,7 +113,7 @@ NativeImage::~NativeImage()
 NativeImage *NativeImage::Open(
     Module *componentModule,
     LPCUTF8 nativeImageFileName,
-    AssemblyLoadContext *pAssemblyLoadContext,
+    AssemblyBinder *pAssemblyBinder,
     LoaderAllocator *pLoaderAllocator,
     /* out */ bool *isNewNativeImage)
 {
@@ -123,7 +123,7 @@ NativeImage *NativeImage::Open(
     if (pExistingImage != nullptr)
     {
         *isNewNativeImage = false;
-        return pExistingImage->GetAssemblyLoadContext() == pAssemblyLoadContext ? pExistingImage : nullptr;
+        return pExistingImage->GetAssemblyBinder() == pAssemblyBinder ? pExistingImage : nullptr;
     }
 
     SString path = componentModule->GetPath();
@@ -221,7 +221,7 @@ NativeImage *NativeImage::Open(
     {
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
-    NewHolder<NativeImage> image = new NativeImage(pAssemblyLoadContext, peLoadedImage.Extract(), nativeImageFileName);
+    NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, peLoadedImage.Extract(), nativeImageFileName);
     AllocMemTracker amTracker;
     image->Initialize(pHeader, pLoaderAllocator, &amTracker);
     pExistingImage = AppDomain::GetCurrentDomain()->SetNativeImage(nativeImageFileName, image);
@@ -234,7 +234,7 @@ NativeImage *NativeImage::Open(
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
     *isNewNativeImage = false;
-    return (pExistingImage->GetAssemblyLoadContext() == pAssemblyLoadContext ? pExistingImage : nullptr);
+    return (pExistingImage->GetAssemblyBinder() == pAssemblyBinder ? pExistingImage : nullptr);
 }
 #endif
 

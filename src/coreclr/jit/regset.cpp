@@ -625,7 +625,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void RegSet::tmpInit()
 {
     tmpCount = 0;
-    tmpSize  = 0;
+    tmpSize  = UINT_MAX;
 #ifdef DEBUG
     tmpGetCount = 0;
 #endif

@@ -39,16 +39,15 @@ void QCALLTYPE AppDomainNative::CreateDynamicAssembly(QCall::ObjectHandleOnStack
     args.stackMark              = stackMark;
 
     Assembly*       pAssembly = nullptr;
-    AssemblyBinder* pBinderContext = nullptr;
+    AssemblyBinder* pBinder = nullptr;
 
     if (assemblyLoadContext.Get() != NULL)
     {
-        INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyLoadContext();
-
-        pBinderContext = reinterpret_cast<AssemblyBinder*>(nativeAssemblyLoadContext);
+        INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+        pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
     }
 
-    pAssembly = Assembly::CreateDynamic(GetAppDomain(), pBinderContext, &args);
+    pAssembly = Assembly::CreateDynamic(GetAppDomain(), pBinder, &args);
 
     retAssembly.Set(pAssembly->GetExposedObject());
 

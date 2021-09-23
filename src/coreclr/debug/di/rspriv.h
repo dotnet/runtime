@@ -168,12 +168,16 @@ private:
     USHORT m_usPort;
 };
 
+#ifdef DACCESS_COMPILE
+    #error This header cannot be used in the DAC
+#endif
+
 extern forDbiWorker forDbi;
 
 // for dbi we just default to new, but we need to have these defined for both dac and dbi
 inline void * operator new(size_t lenBytes, const forDbiWorker &)
 {
-    void * result = new BYTE[lenBytes];
+    void * result = new (nothrow) BYTE[lenBytes];
     if (result == NULL)
     {
         ThrowOutOfMemory();
@@ -183,7 +187,7 @@ inline void * operator new(size_t lenBytes, const forDbiWorker &)
 
 inline void * operator new[](size_t lenBytes, const forDbiWorker &)
 {
-    void * result = new BYTE[lenBytes];
+    void * result = new (nothrow) BYTE[lenBytes];
     if (result == NULL)
     {
         ThrowOutOfMemory();
@@ -198,6 +202,11 @@ void DeleteDbiMemory(T *p)
     delete p;
 }
 
+template<class T> inline
+void DeleteDbiArrayMemory(T *p, int)
+{
+    delete[] p;
+}
 
 
 //---------------------------------------------------------------------------------------

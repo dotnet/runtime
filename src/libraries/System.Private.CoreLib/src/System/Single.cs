@@ -25,10 +25,10 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Single : IComparable, IConvertible, ISpanFormattable, IComparable<float>, IEquatable<float>
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IBinaryFloatingPoint<float>,
           IMinMaxValue<float>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         private readonly float m_value; // Do not rename (binary serialization)
@@ -748,6 +748,30 @@ namespace System
         static float IFloatingPoint<float>.Truncate(float x)
             => MathF.Truncate(x);
 
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<float>.IsFinite(float x) => IsFinite(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<float>.IsInfinity(float x) => IsInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<float>.IsNaN(float x) => IsNaN(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<float>.IsNegative(float x) => IsNegative(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<float>.IsNegativeInfinity(float x) => IsNegativeInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<float>.IsNormal(float x) => IsNormal(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<float>.IsPositiveInfinity(float x) => IsPositiveInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<float>.IsSubnormal(float x) => IsSubnormal(x);
+
         // static float IFloatingPoint<float>.AcosPi(float x)
         //     => MathF.AcosPi(x);
         //
@@ -1210,7 +1234,7 @@ namespace System
 
         [RequiresPreviewFeatures]
         static bool IParseable<float>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out float result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
         // ISignedNumber
@@ -1225,11 +1249,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static float ISpanParseable<float>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Integer, provider);
+            => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
         [RequiresPreviewFeatures]
         static bool ISpanParseable<float>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out float result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
         // ISubtractionOperators

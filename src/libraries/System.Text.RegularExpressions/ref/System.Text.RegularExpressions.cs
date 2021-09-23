@@ -216,6 +216,16 @@ namespace System.Text.RegularExpressions
         public System.Text.RegularExpressions.RegexOptions Options { get { throw null; } set { } }
         public string Pattern { get { throw null; } set { } }
     }
+    [System.AttributeUsageAttribute(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public sealed partial class RegexGeneratorAttribute : System.Attribute
+    {
+        public RegexGeneratorAttribute(string pattern) { }
+        public RegexGeneratorAttribute(string pattern, System.Text.RegularExpressions.RegexOptions options) { }
+        public RegexGeneratorAttribute(string pattern, System.Text.RegularExpressions.RegexOptions options, int matchTimeoutMilliseconds) { }
+        public string Pattern { get; }
+        public System.Text.RegularExpressions.RegexOptions Options { get; }
+        public int MatchTimeoutMilliseconds { get; }
+    }
     public partial class RegexMatchTimeoutException : System.TimeoutException, System.Runtime.Serialization.ISerializable
     {
         public RegexMatchTimeoutException() { }

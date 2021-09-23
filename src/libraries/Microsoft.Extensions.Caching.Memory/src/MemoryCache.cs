@@ -64,6 +64,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             _lastExpirationScan = _options.Clock.UtcNow;
+            TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime
         }
 
         /// <summary>
@@ -78,6 +79,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         // internal for testing
         internal long Size { get => Interlocked.Read(ref _cacheSize); }
+
+        internal bool TrackLinkedCacheEntries { get; }
 
         private ICollection<KeyValuePair<object, CacheEntry>> EntriesCollection => _entries;
 
@@ -232,7 +235,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.LastAccessed = utcNow;
                     result = entry.Value;
 
-                    if (entry.CanPropagateOptions())
+                    if (TrackLinkedCacheEntries && entry.CanPropagateOptions())
                     {
                         // When this entry is retrieved in the scope of creating another entry,
                         // that entry needs a copy of these expiration tokens.

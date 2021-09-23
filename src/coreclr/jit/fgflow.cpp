@@ -219,7 +219,7 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
             {
                 // Set the max edge weight to be the minimum of block's or blockPred's weight
                 //
-                BasicBlock::weight_t newWeightMax = min(block->bbWeight, blockPred->bbWeight);
+                weight_t newWeightMax = min(block->bbWeight, blockPred->bbWeight);
 
                 // If we are inserting a conditional block the minimum weight is zero,
                 // otherwise it is the same as the edge's max weight.

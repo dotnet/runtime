@@ -173,6 +173,12 @@
   <data name="Argument_InvalidAppendMode" xml:space="preserve">
     <value>Append access can be requested only in write-only mode.</value>
   </data>
+  <data name="Argument_InvalidPreallocateAccess" xml:space="preserve">
+    <value>Preallocation size can be requested only in write mode.</value>
+  </data>
+  <data name="Argument_InvalidPreallocateMode" xml:space="preserve">
+    <value>Preallocation size can be requested only for new files.</value>
+  </data>
   <data name="Argument_InvalidFileModeAndAccessCombo" xml:space="preserve">
     <value>Combining FileMode: {0} with FileAccess: {1} is invalid.</value>
   </data>

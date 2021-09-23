@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Depend
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.DependencyInjection", "..\Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj", "{A64CC82B-B781-4469-B009-49A43A0A2A96}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.csproj", "{F4DE0466-D21E-4CAF-9307-999478A64D5B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{367922CE-A24E-4977-89BE-D1F2F678F8B2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{F63AB9DB-6E62-4FEC-BA06-E146615C08AC}"
@@ -75,10 +73,6 @@ Global
 		{A64CC82B-B781-4469-B009-49A43A0A2A96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A64CC82B-B781-4469-B009-49A43A0A2A96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A64CC82B-B781-4469-B009-49A43A0A2A96}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F4DE0466-D21E-4CAF-9307-999478A64D5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F4DE0466-D21E-4CAF-9307-999478A64D5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F4DE0466-D21E-4CAF-9307-999478A64D5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F4DE0466-D21E-4CAF-9307-999478A64D5B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{367922CE-A24E-4977-89BE-D1F2F678F8B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{367922CE-A24E-4977-89BE-D1F2F678F8B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{367922CE-A24E-4977-89BE-D1F2F678F8B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -153,7 +147,6 @@ Global
 		{1B7B708C-F860-478E-B3D4-1CB70E71A440} = {DFF3B3E7-DC70-46BC-8EDC-DC73CD69F7FC}
 		{A9250A96-9B27-46C5-A043-11F67D63B128} = {DFF3B3E7-DC70-46BC-8EDC-DC73CD69F7FC}
 		{A64CC82B-B781-4469-B009-49A43A0A2A96} = {DFF3B3E7-DC70-46BC-8EDC-DC73CD69F7FC}
-		{F4DE0466-D21E-4CAF-9307-999478A64D5B} = {DFF3B3E7-DC70-46BC-8EDC-DC73CD69F7FC}
 		{F63AB9DB-6E62-4FEC-BA06-E146615C08AC} = {DFF3B3E7-DC70-46BC-8EDC-DC73CD69F7FC}
 		{BC92BF65-8FA0-49C0-911F-426F21090774} = {DFF3B3E7-DC70-46BC-8EDC-DC73CD69F7FC}
 		{C0A5172A-162E-4CD8-B4E4-C8AE137EBC64} = {DFF3B3E7-DC70-46BC-8EDC-DC73CD69F7FC}

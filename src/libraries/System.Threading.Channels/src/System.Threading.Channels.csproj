@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types for passing data between producers and consumers.
@@ -13,17 +13,19 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\VoidResult.cs" />
     <Compile Include="System\Collections\Generic\Deque.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard2.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
     <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
     <Compile Include="System\Threading\Channels\Channel.cs" />
     <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
-    <Compile Include="System\Threading\Channels\ChannelClosedException.netstandard21.cs"
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs"
              Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.cs" />
-    <Compile Include="System\Threading\Channels\ChannelReader.netstandard21.cs"
+    <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs"
              Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
     <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
@@ -31,7 +33,8 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\Channel_2.cs" />
     <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
     <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
-    <Compile Include="System\Threading\Channels\TaskCompletionSource.cs" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))"/>
+    <Compile Include="System\Threading\Channels\TaskCompletionSource.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'"/>
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs"
              Link="Common\Internal\Padding.cs" />

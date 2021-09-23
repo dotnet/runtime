@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <DefaultItemExcludes>$(DefaultItemExcludes);nonentrypointassembly\*</DefaultItemExcludes>
     <!-- Needed for .NET Framework. -->
@@ -17,7 +17,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <ProjectReference Include="..\src\Microsoft.Extensions.DependencyModel.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="nonentrypointassembly\nonentrypointassembly.csproj" />
-
   </ItemGroup>
 
 </Project>

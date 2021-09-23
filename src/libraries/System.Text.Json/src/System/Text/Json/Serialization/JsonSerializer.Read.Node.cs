@@ -14,6 +14,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the <see cref="JsonNode"/> representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="node">The <see cref="JsonNode"/> to convert.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
@@ -60,6 +61,7 @@ namespace System.Text.Json
         /// <summary>
         /// Converts the <see cref="JsonNode"/> representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="node">The <see cref="JsonNode"/> to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
