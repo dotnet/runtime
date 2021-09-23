@@ -10247,8 +10247,13 @@ field_access_end:
 					}
 
 					if (context_used) {
-						ins = mini_emit_get_rgctx_klass (cfg, context_used,
-							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
+						MONO_INST_NEW (cfg, ins, OP_RTTYPE);
+						ins->dreg = alloc_ireg_ref (cfg);
+						ins->inst_p0 = tclass;
+						ins->type = STACK_OBJ;
+						MONO_ADD_INS (cfg->cbb, ins);
+						cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+						cfg->cbb->needs_decompose = TRUE;
 					} else if (cfg->compile_aot) {
 						if (method->wrapper_type) {
 							error_init (error); //got to do it since there are multiple conditionals below
@@ -12050,6 +12055,7 @@ mono_op_no_side_effects (int opcode)
 	case OP_ZEXT_I4:
 	case OP_NOT_NULL:
 	case OP_IL_SEQ_POINT:
+	case OP_RTTYPE:
 		return TRUE;
 	default:
 		return FALSE;

@@ -663,6 +663,68 @@ byref_arg_is_reference (MonoType *t)
 	return mini_type_is_reference (m_class_get_byval_arg (mono_class_from_mono_type_internal (t)));
 }
 
+/*
+ * If INS represents the result of an ldtoken+Type::GetTypeFromHandle IL sequence,
+ * return the type.
+ */
+static MonoClass*
+get_class_from_ldtoken_ins (MonoInst *ins)
+{
+	// FIXME: The JIT case uses PCONST
+
+	if (ins->opcode == OP_AOTCONST) {
+		if (ins->inst_p1 != (gpointer)MONO_PATCH_INFO_TYPE_FROM_HANDLE)
+			return NULL;
+		MonoJumpInfoToken *token = (MonoJumpInfoToken*)ins->inst_p0;
+		MonoClass *handle_class;
+		ERROR_DECL (error);
+		gpointer handle = mono_ldtoken_checked (token->image, token->token, &handle_class, NULL, error);
+		mono_error_assert_ok (error);
+		MonoType *t = (MonoType*)handle;
+		return mono_class_from_mono_type_internal (t);
+	} else if (ins->opcode == OP_RTTYPE) {
+		return (MonoClass*)ins->inst_p0;
+	} else {
+		return NULL;
+	}
+}
+
+/*
+ * Given two instructions representing rttypes, return
+ * their relation (EQ/NE/NONE).
+ */
+static CompRelation
+get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2)
+{
+	MonoClass *k1 = get_class_from_ldtoken_ins (ins1);
+	MonoClass *k2 = get_class_from_ldtoken_ins (ins2);
+
+	CompRelation rel = CMP_UNORD;
+	if (k1 && k2) {
+		MonoType *t1 = m_class_get_byval_arg (k1);
+		MonoType *t2 = m_class_get_byval_arg (k2);
+		MonoType *constraint1 = NULL;
+
+		/* Common case in gshared BCL code: t1 is a gshared type like T_INT, and t2 is a concrete type */
+		if (mono_class_is_gparam (k1)) {
+			MonoGenericParam *gparam = t1->data.generic_param;
+			constraint1 = gparam->gshared_constraint;
+		}
+		if (constraint1) {
+			if (constraint1->type == MONO_TYPE_OBJECT) {
+				if (MONO_TYPE_IS_PRIMITIVE (t2) || MONO_TYPE_ISSTRUCT (t2))
+					rel = CMP_NE;
+			} else if (MONO_TYPE_IS_PRIMITIVE (constraint1)) {
+				if (MONO_TYPE_IS_PRIMITIVE (t2) && constraint1->type != t2->type)
+					rel = CMP_NE;
+				else if (MONO_TYPE_IS_REFERENCE (t2))
+					rel = CMP_NE;
+			}
+		}
+	}
+	return rel;
+}
+
 MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, gboolean *ins_type_initialized)
 {
@@ -1796,19 +1858,41 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
-		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
-		MONO_INST_NEW (cfg, ins, OP_PCEQ);
-		ins->dreg = alloc_preg (cfg);
-		ins->type = STACK_I4;
-		MONO_ADD_INS (cfg->cbb, ins);
+		CompRelation rel = get_rttype_ins_relation (args [0], args [1]);
+		if (rel == CMP_EQ) {
+			if (cfg->verbose_level > 2)
+				printf ("-> true\n");
+			EMIT_NEW_ICONST (cfg, ins, 1);
+		} else if (rel == CMP_NE) {
+			if (cfg->verbose_level > 2)
+				printf ("-> false\n");
+			EMIT_NEW_ICONST (cfg, ins, 0);
+		} else {
+			EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+			MONO_INST_NEW (cfg, ins, OP_PCEQ);
+			ins->dreg = alloc_preg (cfg);
+			ins->type = STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
 		return ins;
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Inequality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
-		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
-		MONO_INST_NEW (cfg, ins, OP_ICNEQ);
-		ins->dreg = alloc_preg (cfg);
-		ins->type = STACK_I4;
-		MONO_ADD_INS (cfg->cbb, ins);
+		CompRelation rel = get_rttype_ins_relation (args [0], args [1]);
+		if (rel == CMP_NE) {
+			if (cfg->verbose_level > 2)
+				printf ("-> true\n");
+			EMIT_NEW_ICONST (cfg, ins, 1);
+		} else if (rel == CMP_EQ) {
+			if (cfg->verbose_level > 2)
+				printf ("-> false\n");
+			EMIT_NEW_ICONST (cfg, ins, 0);
+		} else {
+			EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+			MONO_INST_NEW (cfg, ins, OP_ICNEQ);
+			ins->dreg = alloc_preg (cfg);
+			ins->type = STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
 		return ins;
 	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "MonoMac") ||
 	            !strcmp (cmethod_klass_image->assembly->aname.name, "monotouch")) &&
