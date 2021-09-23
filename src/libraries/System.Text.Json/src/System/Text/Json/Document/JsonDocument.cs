@@ -49,10 +49,8 @@ namespace System.Text.Json
             Debug.Assert(isDisposable ||
                 (extraRentedArrayPoolBytes == null && extraPooledByteBufferWriter == null));
 
-            // Exactly one of the rented values better be non-null if we're disposable.
-            Debug.Assert(!isDisposable ||
-                ((extraRentedArrayPoolBytes != null || extraPooledByteBufferWriter != null) &&
-                (extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null)));
+            // Both rented values can't be specified.
+            Debug.Assert(extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null);
 
             _utf8Json = utf8Json;
             _parsedData = parsedData;
