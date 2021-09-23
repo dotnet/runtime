@@ -11,6 +11,7 @@ schedules:
   branches:
     include:
     - main
+    - release/6.0
 
 variables:
   - template: ../variables.yml
@@ -26,6 +27,8 @@ jobs:
 - job: linux
   displayName: Docker Linux
   timeoutInMinutes: 180
+  variables:
+    DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
   pool:
     name: NetCorePublic-Pool
     queue: BuildPool.Ubuntu.1804.Amd64.Open
@@ -34,16 +37,6 @@ jobs:
   - checkout: self
     clean: true
     fetchDepth: 5
-
-#  - bash: |
-#      touch "$(Build.StagingDirectory)/Hello.txt"
-#    name: CreateYoloArtifact
-#    displayName: Create YOLO artifacts
-#  - task: PublishBuildArtifacts@1
-#    inputs:
-#      pathToPublish: '$(Build.StagingDirectory)/Hello.txt'
-#      PublishLocation: Container
-#      artifactName: YOLOArtifact
 
   - bash: |
       $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
@@ -59,95 +52,101 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
-      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.ArtifactStagingDirectory):/reports"
-      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -reportFile /reports/linux-http30.xml"
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -xops 10"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 3.0
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-#  - bash: |
-#      cd '$(httpStressProject)'
-#      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.StagingDirectory):/logs"
-#      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
-#      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
-#      docker-compose up --abort-on-container-exit --no-color
-#    displayName: Run HttpStress - HTTP 2.0
-#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+  - bash: |
+      cd '$(httpStressProject)'
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 2.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-#  - bash: |
-#      cd '$(httpStressProject)'
-#      export HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING="$(Build.StagingDirectory):/logs"
-#      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1 -reportFile /logs/linux-http11.json"
-#      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
-#      docker-compose up --abort-on-container-exit --no-color
-#    displayName: Run HttpStress - HTTP 1.1
-#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+  - bash: |
+      cd '$(httpStressProject)'
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 1.1
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)/linux-http30.xml'
-      PublishLocation: Container
-      artifactName: Linux-HTTP30
-    displayName: Publish Linux HTTP/3.0 report
-    condition: always()
+  - publish: $(Build.ArtifactStagingDirectory)/dumps
+    artifact: DumpsLinux
+    condition: failed()
 
-# - job: windows
-#   displayName: Docker NanoServer
-#   timeoutInMinutes: 150
-#   pool:
-#     name: NetCorePublic-Pool
-#     queue: BuildPool.Server.Amd64.VS2019.Open
-# 
-#   steps:
-#   - checkout: self
-#     clean: true
-#     fetchDepth: 5
-#     lfs: false
-# 
-#   - powershell: |
-#       $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-#       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-#     name: buildRuntime
-#     displayName: Build CLR and Libraries
-# 
-#   - powershell: |
-#       $(httpStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
-#       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-#     name: buildStress
-#     displayName: Build HttpStress
-# 
-#     # Firewall is disabled for the test runs, since it can lead to unexpected TCP failures on CI machines, which are unrelated to the HTTP logic.
-#     # See: https://github.com/dotnet/runtime/issues/50854
-#   - powershell: |
-#       Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
-#     name: disableFirewall
-#     displayName: Disable Firewall
-# 
-#  - powershell: |
-#      cd '$(httpStressProject)'
-#      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
-#      $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
-#      docker-compose up --abort-on-container-exit --no-color
-#    displayName: Run HttpStress - HTTP 2.0
-#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+- job: windows
+  displayName: Docker NanoServer
+  timeoutInMinutes: 150
+  variables:
+    DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
+  pool:
+    name: NetCorePublic-Pool
+    queue: BuildPool.Server.Amd64.VS2019.Open
 
-#  - powershell: |
-#      cd '$(httpStressProject)'
-#      $env:HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING = "$(Build.StagingDirectory):c:/logs"
-#      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1 -reportFile c:/logs/windows-http11.xml"
-#      $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
-#      docker-compose up --abort-on-container-exit --no-color
-#    displayName: Run HttpStress - HTTP 1.1
-#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
-#
-#  - powershell: |
-#      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
-#    name: enableFirewall
-#    displayName: Enable Firewall
-#
-#  - task: PublishBuildArtifacts@1
-#    inputs:
-#      pathToPublish: '$(Build.StagingDirectory)/windows-http11.json'
-#      PublishLocation: Container
-#      artifactName: Windows-HTTP11
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 5
+    lfs: false
+
+  - powershell: |
+      $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+    name: buildRuntime
+    displayName: Build CLR and Libraries
+
+  - powershell: |
+      $(httpStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+    name: buildStress
+    displayName: Build HttpStress
+
+    # Firewall is disabled for the test runs, since it can lead to unexpected TCP failures on CI machines, which are unrelated to the HTTP logic.
+    # See: https://github.com/dotnet/runtime/issues/50854
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
+    name: disableFirewall
+    displayName: Disable Firewall
+
+  - powershell: |
+      cd '$(httpStressProject)'
+      $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
+      $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
+      New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+      New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
+      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
+      $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 2.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - powershell: |
+      cd '$(httpStressProject)'
+      $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
+      $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
+      New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+      New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
+      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
+      $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 1.1
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - publish: $(Build.ArtifactStagingDirectory)/dumps
+    artifact: DumpsWindows
+    condition: failed()
+
+  - powershell: |
+      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
+    name: enableFirewall
+    displayName: Enable Firewall

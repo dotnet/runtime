@@ -1406,7 +1406,7 @@ namespace System
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
-            if (!(enumType is RuntimeType rtType))
+            if (enumType is not RuntimeType rtType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
             return rtType;
         }

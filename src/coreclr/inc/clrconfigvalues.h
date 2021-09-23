@@ -680,12 +680,14 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputSt
 //
 // Generational Aware Analysis
 //
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "The generation to trigger generational aware analysis")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "The number of bytes to trigger generational aware analysis")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisIndex, W("GCGenAnalysisIndex"), 0, "The gc index to trigger generational aware analysis")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_GCGenAnalysisCmd, W("GCGenAnalysisCmd"), "An optional filter to match with the command line used to spawn the process")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisTrace, W("GCGenAnalysisTrace"), 1, "Enable/Disable capturing a trace")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCGenAnalysisDump, W("GCGenAnalysisDump"), 0, "Enable/Disable capturing a dump")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisGen, W("GCGenAnalysisGen"), 0, "The generation to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisBytes, W("GCGenAnalysisBytes"), 0, "The number of bytes to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisTimeUSec, W("GCGenAnalysisTimeUSec"), 0, "The number of microseconds to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisTimeMSec, W("GCGenAnalysisTimeMSec"), 0, "The number of milliseconds to trigger generational aware analysis")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisIndex, W("GCGenAnalysisIndex"), 0, "The gc index to trigger generational aware analysis")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCGenAnalysisCmd, W("GCGenAnalysisCmd"), "An optional filter to match with the command line used to spawn the process")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisTrace, W("GCGenAnalysisTrace"), 1, "Enable/Disable capturing a trace")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCGenAnalysisDump, W("GCGenAnalysisDump"), 0, "Enable/Disable capturing a dump")
 
 //
 // Diagnostics Ports

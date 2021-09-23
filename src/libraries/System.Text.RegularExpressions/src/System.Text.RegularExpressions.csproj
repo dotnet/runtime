@@ -5,10 +5,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />
-    <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Capture.cs" />
     <Compile Include="System\Text\RegularExpressions\CaptureCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\CollectionDebuggerProxy.cs" />
@@ -25,8 +24,10 @@
     <Compile Include="System\Text\RegularExpressions\RegexAssemblyCompiler.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexBoyerMoore.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexGeneratorAttribute.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexInterpreter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexNode.cs" />
