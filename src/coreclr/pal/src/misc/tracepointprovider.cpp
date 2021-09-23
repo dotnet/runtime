@@ -28,9 +28,11 @@ Revision History:
 #include <pthread.h>
 #include <dlfcn.h>
 
-#include <clrconfignocache.h>
-
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
+
+// clrconfignocache.h uses macro _ASSERTE, which needd to use variable
+// defdbgchan defined by SET_DEFAULT_DEBUG_CHANNEL.
+#include <clrconfignocache.h>
 
 /*++
 
