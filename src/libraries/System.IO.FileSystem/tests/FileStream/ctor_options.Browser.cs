@@ -11,5 +11,7 @@ namespace System.IO.Tests
         }
 
         private static bool SupportsPreallocation => false;
+
+        private static bool IsGetAllocatedSizeImplemented => false;
     }
 }

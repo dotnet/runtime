@@ -20,6 +20,10 @@ namespace System.IO.Tests
             return info.AllocationSize;
         }
 
+        private static bool SupportsPreallocation => true;
+
+        private static bool IsGetAllocatedSizeImplemented => true;
+
         [Theory]
         [InlineData(@"\\?\")]
         [InlineData(@"\??\")]
@@ -91,7 +95,5 @@ namespace System.IO.Tests
            out uint fileSystemFlags,
            StringBuilder fileSystemNameBuffer,
            int fileSystemNameSize);
-
-        private static bool SupportsPreallocation => true;
     }
 }

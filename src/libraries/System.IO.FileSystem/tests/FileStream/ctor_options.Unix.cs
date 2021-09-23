@@ -29,5 +29,8 @@ namespace System.IO.Tests
         private static bool SupportsPreallocation =>
             RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+        // Mobile platforms don't support Process.Start.
+        private static bool IsGetAllocatedSizeImplemented => !PlatformDetection.IsMobile;
     }
 }

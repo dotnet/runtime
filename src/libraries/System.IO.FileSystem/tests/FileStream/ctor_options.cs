@@ -104,7 +104,10 @@ namespace System.IO.Tests
             using (FileStream fs = CreateFileStream(filename, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0))
             {
                 Assert.Equal(0, fs.Length);
-                Assert.Equal(0, GetAllocatedSize(fs));
+                if (IsGetAllocatedSizeImplemented)
+                {
+                    Assert.Equal(0, GetAllocatedSize(fs));
+                }
                 Assert.Equal(0, fs.Position);
             }
         }
@@ -121,13 +124,16 @@ namespace System.IO.Tests
             using (var fs = CreateFileStream(GetTestFilePath(), mode, access, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize))
             {
                 Assert.Equal(0, fs.Length);
-                if (SupportsPreallocation)
+                if (IsGetAllocatedSizeImplemented)
                 {
-                    Assert.True(GetAllocatedSize(fs) >= preallocationSize);
-                }
-                else
-                {
-                    Assert.Equal(0, GetAllocatedSize(fs));
+                    if (SupportsPreallocation)
+                    {
+                        Assert.True(GetAllocatedSize(fs) >= preallocationSize);
+                    }
+                    else
+                    {
+                        Assert.Equal(0, GetAllocatedSize(fs));
+                    }
                 }
                 Assert.Equal(0, fs.Position);
             }
