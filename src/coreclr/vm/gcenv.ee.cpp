@@ -1601,10 +1601,42 @@ uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
     return SystemDomain::System()->GetTotalNumSizedRefHandles();
 }
 
+NormalizedTimer analysisTimer;
+
+bool GenAwareMatchingGeneration(int condemnedGeneration)
+{
+    return (gcGenAnalysisState == GcGenAnalysisState::Enabled) && (condemnedGeneration == gcGenAnalysisGen);
+}
+
+bool GenAwareMatchingCondition(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, uint64_t elapsed)
+{
+    if (!GenAwareMatchingGeneration(condemnedGeneration))
+    {
+        return false;
+    }
+    if (gcIndex < (uint64_t)gcGenAnalysisIndex)
+    {
+        return false;
+    }
+    if ((gcGenAnalysisBytes > 0) && (promoted_bytes <= gcGenAnalysisBytes))
+    {
+        return false;
+    }
+    if ((gcGenAnalysisTime > 0) && (elapsed <= gcGenAnalysisTime))
+    {
+        return false;
+    }
+    return true;
+}
 
 bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (GenAwareMatchingGeneration(condemnedGeneration) && gcGenAnalysisTime > 0)
+    {
+        analysisTimer.Start();
+    }
 
     // Is the list active?
     GcNotifications gn(g_pGcNotificationTable);
@@ -1624,6 +1656,13 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
 {
     LIMITED_METHOD_CONTRACT;
 
+    uint64_t elapsed = 0;
+    if (GenAwareMatchingGeneration(condemnedGeneration) && gcGenAnalysisTime > 0)
+    {
+        analysisTimer.Stop();
+        elapsed = analysisTimer.Elapsed100nsTicks();
+    }
+
     // Is the list active?
     GcNotifications gn(g_pGcNotificationTable);
     if (gn.IsActive())
@@ -1638,7 +1677,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
     {
 #ifndef GEN_ANALYSIS_STRESS
-        if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes) && (gcIndex > (uint64_t)gcGenAnalysisIndex))
+        if (GenAwareMatchingCondition(gcIndex, condemnedGeneration, promoted_bytes, elapsed))
 #endif
         {
             if (gcGenAnalysisTrace)

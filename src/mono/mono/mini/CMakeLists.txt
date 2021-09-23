@@ -311,8 +311,8 @@ addprefix(mini_public_headers ../mini "${mini_public_headers_base}")
 
 set(mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
-if(LLVM_LIBDIR)
-  link_directories(${LLVM_LIBDIR})
+if(LLVM_INCLUDEDIR)
+  include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")
 endif()
 
 if(HOST_WIN32)
