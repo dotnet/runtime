@@ -269,7 +269,7 @@ Abstract:
 void
 InitializeDefaultStackSize()
 {
-    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("DefaultStackSize");
+    CLRConfigNoCache defStackSize = GetCLRConfigNoCache("DefaultStackSize");
     if (defStackSize.IsSet())
     {
         DWORD size;
@@ -403,7 +403,7 @@ Initialize(
 #endif // ENSURE_PRIMARY_STACK_SIZE
 
 #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
-        CLRConfigNoCache useDefaultBaseAddr = CLRConfigNoCache::Get("UseDefaultBaseAddr");
+        CLRConfigNoCache useDefaultBaseAddr = GetCLRConfigNoCache("UseDefaultBaseAddr");
         if (useDefaultBaseAddr.IsSet())
         {
             DWORD flag;
