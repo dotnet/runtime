@@ -2084,7 +2084,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_KEEPALIVE:
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
-#endif // FEATURE_HW_INTRINSICS
+#endif          // FEATURE_HW_INTRINSICS
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags
@@ -2339,7 +2339,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 gtDispTree(asgNode);
                 printf("\n");
             }
-#endif // DEBUG
+#endif      // DEBUG
             // Extract the side effects
             gtExtractSideEffList(rhsNode, &sideEffList);
         }
@@ -2371,7 +2371,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 compCurStmt->SetRootNode(sideEffList);
 #ifdef DEBUG
                 *treeModf = true;
-#endif // DEBUG
+#endif          // DEBUG
                 // Update ordering, costs, FP levels, etc.
                 gtSetStmtInfo(compCurStmt);
 
@@ -2445,7 +2445,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 {
 #ifdef DEBUG
                     *treeModf = true;
-#endif // DEBUG
+#endif              // DEBUG
                     // Change the node to a GT_COMMA holding the side effect list
                     asgNode->gtBashToNOP();
 
@@ -2475,7 +2475,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                     gtDispTree(asgNode);
                     printf("\n");
                 }
-#endif // DEBUG
+#endif          // DEBUG
                 // No side effects - Change the assignment to a GT_NOP node
                 asgNode->gtBashToNOP();
 

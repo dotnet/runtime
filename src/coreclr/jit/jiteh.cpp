@@ -4443,7 +4443,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                     printf("EH#%u: Updating bbJumpDest for filter ret block: " FMT_BB " => " FMT_BB "\n",
                            ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
                 }
-#endif // DEBUG
+#endif          // DEBUG
                 // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
                 bFilterLast->bbJumpDest = bPrev;
             }
