@@ -23,6 +23,8 @@ Revision History:
 #include "pal/malloc.hpp"
 #include "pal/stackstring.hpp"
 
+#include <clrconfignocache.h>
+
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -62,10 +64,12 @@ PAL_InitializeTracing(void)
     // Check if loading the LTTng providers should be disabled.
     // Note: this env var is formally declared in clrconfigvalues.h, but
     // this code is executed too early to use the mechanics that come with that definition.
-    char *disableValue = getenv("COMPlus_LTTng");
-    if (disableValue != NULL)
+    CLRConfigNoCache disableLTTng = CLRConfigNoCache::Get("LTTng");
+    if (disableLTTng.IsSet())
     {
-        fShouldLoad = strtol(disableValue, NULL, 10);
+        DWORD value;
+        if (disableLTTng.TryGetInteger(10, value))
+            fShouldLoad = (int)value;
     }
 
     // Get the path to the currently executing shared object (libcoreclr.so).
