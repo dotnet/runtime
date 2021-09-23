@@ -2021,9 +2021,22 @@ namespace System.Numerics
                 }
 
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
-                if (xd[^1] == 0)
+
+                if (smallShift == 0)
                 {
-                    trackSignBit = true;
+                    bool allZero = xd[0] == 1;
+                    foreach (uint b in xd[1..])
+                    {
+                        if (b != 0)
+                        {
+                            allZero = false;
+                            break;
+                        }
+                    }
+                    if (allZero)
+                    {
+                        trackSignBit = true;
+                    }
                 }
             }
 
