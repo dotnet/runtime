@@ -56,7 +56,7 @@ void PerfMap::Initialize()
         CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
         if (value.IsSet())
         {
-            jitdumpPath = value.AsString()
+            jitdumpPath = value.AsString();
         }
         else
         {
