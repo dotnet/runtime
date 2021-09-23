@@ -2854,7 +2854,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             dstOffset += regSize;
             bytesWritten += regSize;
 
-            if (regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES) {
+            if (regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
+            {
                 regSize = XMM_REGSIZE_BYTES;
             }
         }
@@ -3074,7 +3075,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                ? YMM_REGSIZE_BYTES
                                : XMM_REGSIZE_BYTES;
 
-        while (size >= regSize) {
+        while (size >= regSize)
+        {
             for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
             {
                 if (srcLclNum != BAD_VAR_NUM)
@@ -3098,7 +3100,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                 }
             }
 
-            if (regSize == YMM_REGSIZE_BYTES) {
+            // Size is too large for YMM moves, try stepping down to XMM size to finish SIMD copies.
+            if (regSize == YMM_REGSIZE_BYTES)
+            {
                 regSize = XMM_REGSIZE_BYTES;
             }
         }
