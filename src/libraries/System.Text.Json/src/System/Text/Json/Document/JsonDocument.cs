@@ -75,7 +75,7 @@ namespace System.Text.Json
 
             if (_extraRentedArrayPoolBytes != null)
             {
-                byte[]? extraRentedBytes = Interlocked.Exchange(ref _extraRentedArrayPoolBytes, null);
+                byte[]? extraRentedBytes = Interlocked.Exchange<byte[]?>(ref _extraRentedArrayPoolBytes, null);
 
                 if (extraRentedBytes != null)
                 {
@@ -87,7 +87,7 @@ namespace System.Text.Json
             }
             else if (_extraPooledByteBufferWriter != null)
             {
-                PooledByteBufferWriter? extraBufferWriter = Interlocked.Exchange(ref _extraPooledByteBufferWriter, null);
+                PooledByteBufferWriter? extraBufferWriter = Interlocked.Exchange<PooledByteBufferWriter?>(ref _extraPooledByteBufferWriter, null);
                 extraBufferWriter?.Dispose();
             }
         }
