@@ -16,6 +16,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.Xml.Linq;
+using System.Text;
+using System.Reflection;
 
 namespace HttpStress
 {
@@ -45,6 +47,11 @@ namespace HttpStress
 
         private HttpClient CreateHttpClient()
         {
+            //Type ct = typeof(HttpClient).Assembly!.GetType("System.Net.Http.Http2Connection")!;
+
+            //var f = ct.GetField("s_suicideRate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            //f!.SetValue(null, _config.SuicideRate);
+
             HttpMessageHandler CreateHttpHandler()
             {
                 if (_config.UseWinHttpHandler)
@@ -302,7 +309,7 @@ namespace HttpStress
                     (Type, string, string)[] key = ClassifyFailure(exn);
                     string fingerprint = StressRunReportExporter.GetFailureFingerprint(key);
 
-                    StressFailureType failureType = _failureTypes.GetOrAdd(key, _ => new StressFailureType(exn.ToString(), fingerprint));
+                    StressFailureType failureType = _failureTypes.GetOrAdd(key, _ => new StressFailureType(exn.ToString(), fingerprint, key));
 
                     lock (failureType)
                     {
@@ -321,21 +328,24 @@ namespace HttpStress
 
                         for (Exception? e = exn; e != null; )
                         {
-                            //acc.Add((e.GetType(), e.Message ?? "", new StackTrace(e, true).GetFrame(0)?.ToString() ?? ""));
-                            acc.Add((e.GetType(), e.Message ?? "", GetStackFrameId(e)));
+                            acc.Add((e.GetType(), e.Message ?? "", GetCallSiteIdentifier(e)));
                             e = e.InnerException;
                         }
 
                         return acc.ToArray();
 
-                        static string GetStackFrameId(Exception e)
+                        static string GetCallSiteIdentifier(Exception e)
                         {
                             StackTrace stackTrace = new StackTrace(e, true);
-                            StackFrame? frame = stackTrace.GetFrame(0);
-                            if (frame == null || frame.GetFileName()?.Contains("ClientOperations.cs") == true)
-                                return "";
-                            else
-                                return frame.ToString();
+                            MethodBase? method = stackTrace.GetFrame(0)?.GetMethod();
+                            if (method == null)
+                            {
+                                return "?";
+                            }
+
+                            return method.DeclaringType != null ?
+                                $"{method.DeclaringType.FullName}.{method.Name}" :
+                                method.Name;
                         }
                     }
                 }
@@ -461,6 +471,14 @@ namespace HttpStress
                     Console.WriteLine($"Failure Type {++i}/{_failureTypes.Count} [{failure.Fingerprint}]:");
                     Console.ResetColor();
                     Console.WriteLine(failure.ErrorText);
+                    Console.WriteLine("----------");
+                    foreach (var key in failure.Key)
+                    {
+                        Console.WriteLine(key.exception.FullName);
+                        Console.WriteLine(key.message);
+                        Console.WriteLine(key.callSite);
+                        Console.WriteLine("-------");
+                    }
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     foreach (KeyValuePair<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>> operation in failure.Failures)
@@ -511,10 +529,13 @@ namespace HttpStress
         // Operation id => failure timestamps
         public Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>> Failures { get; }
 
-        public StressFailureType(string errorText, string fingerprint)
+        public (Type exception, string message, string callSite)[] Key { get; }
+
+        public StressFailureType(string errorText, string fingerprint, (Type, string, string)[] key)
         {
             ErrorText = errorText;
             Fingerprint = fingerprint;
+            Key = key;
             Failures = new Dictionary<int, List<(DateTime timestamp, TimeSpan duration, bool isCancelled)>>();
         }
 

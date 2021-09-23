@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.IO;
+using System.Reflection;
 
 namespace HttpStress
 {
@@ -19,32 +20,32 @@ namespace HttpStress
     {
         public static string GetFailureFingerprint((Type, string, string)[] key)
         {
-            StringBuilder sb = new StringBuilder();
-            foreach ((Type ex, string message, string callSite) in key)
-            {
-                AppendFingerprintPart(sb, ex, message, callSite);
-            }
-            return sb.ToString();
-
-            //using BinaryWriter bw = new BinaryWriter(new MemoryStream());
+            //StringBuilder sb = new StringBuilder();
             //foreach ((Type ex, string message, string callSite) in key)
             //{
-            //    if (ex.FullName != null)
-            //    {
-            //        bw.Write(ex.FullName);
-            //    }
-            //    bw.Write(message);
-            //    bw.Write(callSite);
-            //}
-            //bw.Seek(0, SeekOrigin.Begin);
-            //using MD5 md5 = MD5.Create();
-            //byte[] hash = md5.ComputeHash(bw.BaseStream);
-            //StringBuilder sb = new StringBuilder();
-            //foreach (byte x in hash)
-            //{
-            //    sb.Append(x.ToString("X2"));
+            //    AppendFingerprintPart(sb, ex, message, callSite);
             //}
             //return sb.ToString();
+
+            using BinaryWriter bw = new BinaryWriter(new MemoryStream());
+            foreach ((Type ex, string message, string callSite) in key)
+            {
+                if (ex.FullName != null)
+                {
+                    bw.Write(ex.FullName);
+                }
+                bw.Write(message);
+                bw.Write(callSite);
+            }
+            bw.Seek(0, SeekOrigin.Begin);
+            using MD5 md5 = MD5.Create();
+            byte[] hash = md5.ComputeHash(bw.BaseStream);
+            StringBuilder sb = new StringBuilder();
+            foreach (byte x in hash)
+            {
+                sb.Append(x.ToString("X2"));
+            }
+            return sb.ToString();
         }
 
         private static void AppendFingerprintPart(StringBuilder sb, Type ex, string message, string callSite)
@@ -105,7 +106,7 @@ namespace HttpStress
         {
             var key = ClassifyFailure(ex);
             string fingerprint = GetFailureFingerprint(key);
-            return new StressFailureType(ex.ToString(), fingerprint);
+            return new StressFailureType(ex.ToString(), fingerprint, key);
         }
 
         internal static StressFailureType? TestGetFailureFingerpint1(string haha)
@@ -212,27 +213,30 @@ namespace HttpStress
             }
         }
 
-        private static (Type exception, string message, string callSite)[] ClassifyFailure(Exception exn)
+        static (Type exception, string message, string callSite)[] ClassifyFailure(Exception exn)
         {
             var acc = new List<(Type exception, string message, string callSite)>();
 
             for (Exception? e = exn; e != null;)
             {
-                //acc.Add((e.GetType(), e.Message ?? "", new StackTrace(e, true).GetFrame(0)?.ToString() ?? ""));
-                acc.Add((e.GetType(), e.Message ?? "", GetStackFrameId(e)));
+                acc.Add((e.GetType(), e.Message ?? "", GetCallSiteIdentifier(e)));
                 e = e.InnerException;
             }
 
             return acc.ToArray();
 
-            static string GetStackFrameId(Exception e)
+            static string GetCallSiteIdentifier(Exception e)
             {
                 StackTrace stackTrace = new StackTrace(e, true);
-                StackFrame? frame = stackTrace.GetFrame(0);
-                if (frame == null || frame.GetFileName()?.Contains("ClientOperations.cs") == true)
-                    return "";
-                else
-                    return frame.ToString();
+                MethodBase? method = stackTrace.GetFrame(0)?.GetMethod();
+                if (method == null)
+                {
+                    return "?";
+                }
+
+                return method.DeclaringType != null ?
+                    $"{method.DeclaringType.FullName}.{method.Name}" :
+                    method.Name;
             }
         }
     }
