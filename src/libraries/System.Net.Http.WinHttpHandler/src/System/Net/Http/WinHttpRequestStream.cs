@@ -198,7 +198,7 @@ namespace System.Net.Http
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 

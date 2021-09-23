@@ -449,7 +449,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public override void CheckReplicationConsistency()
         {
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             // get the handle
             GetDSHandle();
@@ -465,7 +465,7 @@ namespace System.DirectoryServices.ActiveDirectory
             bool advanced = true;
 
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -485,7 +485,7 @@ namespace System.DirectoryServices.ActiveDirectory
             bool advanced = true;
 
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             // get the handle
             GetDSHandle();
@@ -499,7 +499,7 @@ namespace System.DirectoryServices.ActiveDirectory
             bool advanced = true;
 
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -519,7 +519,7 @@ namespace System.DirectoryServices.ActiveDirectory
             bool advanced = true;
 
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             // get the handle
             GetDSHandle();
@@ -538,7 +538,7 @@ namespace System.DirectoryServices.ActiveDirectory
             bool advanced = true;
 
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (objectPath == null)
                 throw new ArgumentNullException(nameof(objectPath));
@@ -555,7 +555,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public override void SyncReplicaFromServer(string partition, string sourceServer)
         {
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -577,7 +577,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public override void TriggerSyncReplicaFromNeighbors(string partition)
         {
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -593,7 +593,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public override void SyncReplicaFromAllServers(string partition, SyncFromAllServersOptions options)
         {
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -873,7 +873,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 if (_disposed)
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
 
                 return userDelegate;
             }
@@ -881,7 +881,7 @@ namespace System.DirectoryServices.ActiveDirectory
             set
             {
                 if (_disposed)
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
 
                 userDelegate = value;
             }
@@ -1195,7 +1195,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // cannot bind to the domain controller as the object has been
                 // disposed (finalizer has been suppressed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             // this part of the code needs to be synchronized
@@ -1232,7 +1232,7 @@ namespace System.DirectoryServices.ActiveDirectory
             bool advanced = true;
 
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             // get the handle
             GetDSHandle();

@@ -298,7 +298,7 @@ namespace System.Net.Sockets
             {
                 // Socket.EndAccept(iar) throws ObjectDisposedException when the underlying socket gets closed.
                 // TcpClient's documented behavior was to propagate that exception, we need to emulate it for compatibility:
-                throw new ObjectDisposedException(typeof(Socket).FullName);
+                ObjectDisposedException.Throw(typeof(Socket));
             }
         }
     }

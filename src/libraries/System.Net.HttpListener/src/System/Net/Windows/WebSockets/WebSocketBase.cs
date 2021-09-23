@@ -1241,7 +1241,7 @@ namespace System.Net.WebSockets
         {
             if (_isDisposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 
@@ -2196,7 +2196,7 @@ namespace System.Net.WebSockets
             {
                 if (_isDisposed)
                 {
-                    throw new ObjectDisposedException(GetType().FullName);
+                    ObjectDisposedException.Throw(this);
                 }
             }
         }

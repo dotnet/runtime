@@ -31,7 +31,7 @@ namespace System.Net.Mail
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
 
             base.RemoveItem(index);
@@ -41,7 +41,7 @@ namespace System.Net.Mail
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
 
             base.ClearItems();
@@ -52,7 +52,7 @@ namespace System.Net.Mail
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
 
             if (item == null)
@@ -67,7 +67,7 @@ namespace System.Net.Mail
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
 
             if (item == null)

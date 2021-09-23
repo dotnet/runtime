@@ -310,7 +310,7 @@ namespace System.Security
         {
             if (_buffer == null)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
         }
 

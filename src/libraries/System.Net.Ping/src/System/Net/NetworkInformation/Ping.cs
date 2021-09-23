@@ -80,7 +80,7 @@ namespace System.Net.NetworkInformation
         {
             if (_disposeRequested)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 
@@ -106,7 +106,7 @@ namespace System.Net.NetworkInformation
             else
             {
                 Debug.Assert(currentStatus == Disposed, $"Expected currentStatus == Disposed, got {currentStatus}");
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 

@@ -3816,7 +3816,7 @@ namespace System.Net.Sockets
         }
 
         [DoesNotReturn]
-        private void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
+        private void ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;
 

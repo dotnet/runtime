@@ -1047,7 +1047,7 @@ namespace System.Diagnostics
         private void OpenForRead(string currentMachineName)
         {
             if (this.boolFlags[Flag_disposed])
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             string logname = GetLogName(currentMachineName);
 
@@ -1083,7 +1083,7 @@ namespace System.Diagnostics
         {
             //Cannot allocate the writeHandle if the object has been disposed, since finalization has been suppressed.
             if (this.boolFlags[Flag_disposed])
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (sourceName == null || sourceName.Length == 0)
                 throw new ArgumentException(SR.NeedSourceToOpen);

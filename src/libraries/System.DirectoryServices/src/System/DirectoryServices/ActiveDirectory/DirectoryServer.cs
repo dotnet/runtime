@@ -286,7 +286,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
         }
 

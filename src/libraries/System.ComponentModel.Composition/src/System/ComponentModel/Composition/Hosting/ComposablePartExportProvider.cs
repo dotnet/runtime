@@ -410,7 +410,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (_isDisposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
         }
 

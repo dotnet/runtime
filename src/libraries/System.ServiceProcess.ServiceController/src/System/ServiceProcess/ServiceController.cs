@@ -643,7 +643,7 @@ namespace System.ServiceProcess
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             // get a handle to SCM with connect access and store it in serviceManagerHandle field.

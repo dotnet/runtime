@@ -299,7 +299,7 @@ namespace System.Net
         {
             if (Disposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 

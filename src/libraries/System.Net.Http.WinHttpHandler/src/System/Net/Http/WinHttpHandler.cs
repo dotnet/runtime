@@ -1598,7 +1598,7 @@ namespace System.Net.Http
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 

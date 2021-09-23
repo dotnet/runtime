@@ -69,7 +69,7 @@ namespace System.Net.WebSockets
             switch ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connecting, (int)InternalState.Created))
             {
                 case InternalState.Disposed:
-                    throw new ObjectDisposedException(GetType().FullName);
+                    ObjectDisposedException.Throw(this);
 
                 case InternalState.Created:
                     break;
@@ -99,7 +99,7 @@ namespace System.Net.WebSockets
             if ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != InternalState.Connecting)
             {
                 Debug.Assert(_state == (int)InternalState.Disposed);
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 
@@ -127,7 +127,7 @@ namespace System.Net.WebSockets
             {
                 if ((InternalState)_state == InternalState.Disposed)
                 {
-                    throw new ObjectDisposedException(GetType().FullName);
+                    ObjectDisposedException.Throw(this);
                 }
                 else if ((InternalState)_state != InternalState.Connected)
                 {

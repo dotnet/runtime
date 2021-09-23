@@ -551,7 +551,7 @@ namespace System.Net
         {
             if (_isDisposed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 

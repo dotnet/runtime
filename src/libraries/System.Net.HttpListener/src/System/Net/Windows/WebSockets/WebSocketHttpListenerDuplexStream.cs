@@ -947,7 +947,7 @@ namespace System.Net.WebSockets
                     if (_disposeCalled)
                     {
                         // Dispose was called - throw ObjectDisposed.
-                        throw new ObjectDisposedException(GetType().FullName);
+                        ObjectDisposedException.Throw(this);
                     }
 
                     Debug.Fail("Only one outstanding async operation is allowed per HttpListenerAsyncEventArgs instance.");

@@ -1693,7 +1693,7 @@ namespace System.Diagnostics
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
         }
 

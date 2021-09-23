@@ -123,7 +123,7 @@ namespace System.Timers
                         {
                             if (_disposed)
                             {
-                                throw new ObjectDisposedException(GetType().Name);
+                                ObjectDisposedException.Throw(this);
                             }
 
                             int i = (int)Math.Ceiling(_interval);

@@ -41,6 +41,6 @@ namespace System.Net.Http
                 ThrowObjectDisposedException();
         }
 
-        private HttpConnection ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().Name);
+        private HttpConnection ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
     }
 }

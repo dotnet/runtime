@@ -674,7 +674,7 @@ namespace System.Net.Sockets
                 ThrowObjectDisposedException();
             }
 
-            void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
+            void ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
         }
 
         private static IOException WrapException(string resourceFormatString, Exception innerException)

@@ -129,7 +129,7 @@ namespace System.Net.WebSockets
             switch ((InternalState)prevState)
             {
                 case InternalState.Disposed:
-                    throw new ObjectDisposedException(GetType().FullName);
+                    ObjectDisposedException.Throw(this);
 
                 case InternalState.Created:
                     break;
@@ -625,7 +625,7 @@ namespace System.Net.WebSockets
         {
             if (_state == (int)InternalState.Disposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
             else if (State != WebSocketState.Open)
             {
@@ -637,7 +637,7 @@ namespace System.Net.WebSockets
         {
             if (_state == (int)InternalState.Disposed)
             {
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
     }

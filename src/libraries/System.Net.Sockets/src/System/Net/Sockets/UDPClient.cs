@@ -1095,7 +1095,7 @@ namespace System.Net.Sockets
                 ThrowObjectDisposedException();
             }
 
-            void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
+            void ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
         }
     }
 }

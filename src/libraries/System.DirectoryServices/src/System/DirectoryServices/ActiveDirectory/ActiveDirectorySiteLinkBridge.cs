@@ -187,7 +187,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 if (_disposed)
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
 
                 return _name;
             }
@@ -198,7 +198,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 if (_disposed)
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
 
                 if (_existing)
                 {
@@ -223,7 +223,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 if (_disposed)
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
 
                 return _transport;
             }
@@ -232,7 +232,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Save()
         {
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             try
             {
@@ -257,7 +257,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Delete()
         {
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (!_existing)
             {
@@ -279,7 +279,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public override string ToString()
         {
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             return _name;
         }
@@ -287,7 +287,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public DirectoryEntry GetDirectoryEntry()
         {
             if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
 
             if (!_existing)
             {

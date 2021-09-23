@@ -498,7 +498,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 Throw();
             }
 
-            static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+            static void Throw() => ObjectDisposedException.Throw(typeof(MemoryCache));
         }
 
         private static void ValidateCacheKey(object key)

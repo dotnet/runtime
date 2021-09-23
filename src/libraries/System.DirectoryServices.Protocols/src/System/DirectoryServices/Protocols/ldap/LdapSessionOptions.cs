@@ -276,7 +276,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_connection._disposed)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
 
                 var secInfo = new SecurityPackageContextConnectionInformation();
@@ -293,7 +293,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_connection._disposed)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
 
                 SecurityHandle tempHandle = default;
@@ -398,7 +398,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_connection._disposed)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
 
                 return _callbackRoutine;
@@ -407,7 +407,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_connection._disposed)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
 
                 var tempCallback = new ReferralCallback();
@@ -436,7 +436,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_connection._disposed)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
 
                 return _clientCertificateDelegate;
@@ -445,7 +445,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_connection._disposed)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
 
                 if (value != null)
@@ -478,7 +478,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_connection._disposed)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
 
                 return _serverCertificateDelegate;
@@ -487,7 +487,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_connection._disposed)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
 
                 if (value != null)
@@ -518,7 +518,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
 
@@ -545,7 +545,7 @@ namespace System.DirectoryServices.Protocols
 
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             try
@@ -726,7 +726,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             byte result = LdapPal.StopTls(_connection._ldapHandle);
@@ -740,7 +740,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             int outValue = 0;
@@ -754,7 +754,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             int temp = value;
@@ -767,7 +767,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             IntPtr outValue = new IntPtr(0);
@@ -781,7 +781,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             IntPtr temp = value;
@@ -794,7 +794,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             IntPtr outValue = new IntPtr(0);
@@ -819,7 +819,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_connection._disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             IntPtr inValue = IntPtr.Zero;

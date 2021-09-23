@@ -103,7 +103,7 @@ namespace System.Net
         {
             if (_closed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 

@@ -211,7 +211,7 @@ namespace System.Drawing
             {
                 if (_handle == IntPtr.Zero)
                 {
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
                 return _handle;
             }

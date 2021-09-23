@@ -220,7 +220,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             if (request == null)
@@ -293,7 +293,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             if (request == null)
@@ -413,7 +413,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             if (asyncResult == null)
@@ -461,7 +461,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             if (asyncResult == null)
@@ -486,7 +486,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             if (asyncResult == null)
@@ -1030,7 +1030,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
 
             // Throw if user wants to do anonymous bind but specifies credentials.
