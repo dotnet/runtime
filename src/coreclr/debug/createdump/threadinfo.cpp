@@ -141,7 +141,12 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
             m_managed = true;
 
             ReleaseHolder<IXCLRDataExceptionState> pException;
-            if (SUCCEEDED(pTask->GetCurrentExceptionState(&pException)))
+            HRESULT hr = pTask->GetCurrentExceptionState(&pException);
+            if (FAILED(hr))
+            {
+                hr = pTask->GetLastExceptionState(&pException);
+            }
+            if (SUCCEEDED(hr))
             {
                 TRACE("Unwind: found managed exception\n");
 
@@ -270,18 +275,77 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
     AddStackFrame(frame);
 }
 
+// This function deals with two types of frames: duplicate stack frames (SP is equal) and repeated frames (IP is 
+// equal) because of a stack overflow.
+// 
+// The list of constraints:
+// 
+// 1) The StackFrame is immutable i.e. can't add some kind of repeat count to the frame. Making it mutable is big hassle.
+// 2) The native unwinding can repeat the same frame SP/IP. These frames are not counted as repeated stack overflow ones.
+// 3) Only add the repeated stack overflow frames once to frames set. This saves time and memory.
 void
 ThreadInfo::AddStackFrame(const StackFrame& frame)
 {
-    std::pair<std::set<StackFrame>::iterator,bool> result = m_frames.insert(frame);
-    if (result.second)
+    // This filters out the duplicate stack frames that are the result the native
+    // unwinding happening between each managed frame. If the SP matches a frame
+    // already in the set, skip it.
+    const std::set<StackFrame>::iterator& found = m_frames.find(frame);
+    if (found == m_frames.end())
     {
+        // Aggregated the repeated stack frames only for stack overflow exceptions
+        if (m_exceptionHResult == STACK_OVERFLOW_EXCEPTION)
+        {
+            // Check for repeats through all the stack frames so far until we find one
+            if (m_beginRepeat == m_frames.end())
+            {
+                for (auto iterator = m_frames.cbegin(); iterator != m_frames.cend(); ++iterator)
+                {
+                    if (frame.InstructionPointer() == iterator->InstructionPointer())
+                    {
+                        m_repeatedFrames++;
+                        m_beginRepeat = iterator;
+                        TRACE("Unwind: begin repeat sp %p ip %p\n", (void*)frame.StackPointer(), (void*)frame.InstructionPointer());
+                        return;
+                    }
+                }
+            }
+
+            // Check for repeats until we stop find them
+            if (m_endRepeat == m_frames.end())
+            {
+                for (auto iterator = m_beginRepeat; iterator != m_endRepeat; ++iterator)
+                {
+                    if (frame.InstructionPointer() == iterator->InstructionPointer())
+                    {
+                        m_repeatedFrames++;
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Add the non-duplicate and (if stack overflow) non-repeating frames to set 
+        std::pair<std::set<StackFrame>::iterator, bool> result = m_frames.insert(frame);
+        assert(result.second);
+
         TRACE("Unwind: sp %p ip %p off %08x mod %p%c\n",
-            (void*)frame.StackPointer(),
-            (void*)frame.InstructionPointer(),
-            frame.NativeOffset(),
-            (void*)frame.ModuleAddress(),
-            frame.IsManaged() ? '*' : ' ');
+            (void*)frame.StackPointer(), (void*)frame.InstructionPointer(), frame.NativeOffset(), (void*)frame.ModuleAddress(), frame.IsManaged() ? '*' : ' ');
+
+        // Don't start tracking the end of the repeated frames until there is a start
+        if (m_beginRepeat != m_frames.end() && m_endRepeat == m_frames.end())
+        {
+            TRACE("Unwind: end repeat sp %p ip %p\n", (void*)frame.StackPointer(), (void*)frame.InstructionPointer());
+            m_endRepeat = result.first;
+
+            // Count the number of frames in the repeating sequence and calculate how many times the sequence was repeated
+            int framesRepeated = 0;
+            for (auto iterator = m_beginRepeat; iterator != m_endRepeat; ++iterator)
+            {
+                framesRepeated++;
+            }
+            // The total number of individually repeated frames has to be greater than the number of frames in the repeating sequence 
+            m_repeatedFrames = framesRepeated > 0 && m_repeatedFrames >= framesRepeated ? (m_repeatedFrames / framesRepeated) + 1 : 0;
+        }
     }
 }
 

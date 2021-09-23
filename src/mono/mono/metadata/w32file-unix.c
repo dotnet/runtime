@@ -47,7 +47,6 @@
 #include "w32error.h"
 #include "fdhandle.h"
 #include "utils/mono-error-internals.h"
-#include "utils/mono-io-portability.h"
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-os-mutex.h"
 #include "utils/mono-threads.h"
@@ -235,39 +234,10 @@ static gint
 _wapi_open (const gchar *pathname, gint flags, mode_t mode)
 {
 	gint fd;
-	gchar *located_filename;
 
-	if (flags & O_CREAT) {
-		located_filename = mono_portability_find_file (pathname, FALSE);
-		if (located_filename == NULL) {
-			MONO_ENTER_GC_SAFE;
-			fd = open (pathname, flags, mode);
-			MONO_EXIT_GC_SAFE;
-		} else {
-			MONO_ENTER_GC_SAFE;
-			fd = open (located_filename, flags, mode);
-			MONO_EXIT_GC_SAFE;
-			g_free (located_filename);
-		}
-	} else {
-		MONO_ENTER_GC_SAFE;
-		fd = open (pathname, flags, mode);
-		MONO_EXIT_GC_SAFE;
-		if (fd == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
-			gint saved_errno = errno;
-			located_filename = mono_portability_find_file (pathname, TRUE);
-
-			if (located_filename == NULL) {
-				mono_set_errno (saved_errno);
-				return -1;
-			}
-
-			MONO_ENTER_GC_SAFE;
-			fd = open (located_filename, flags, mode);
-			MONO_EXIT_GC_SAFE;
-			g_free (located_filename);
-		}
-	}
+	MONO_ENTER_GC_SAFE;
+	fd = open (pathname, flags, mode);
+	MONO_EXIT_GC_SAFE;
 
 	return(fd);
 }
@@ -280,20 +250,6 @@ _wapi_access (const gchar *pathname, gint mode)
 	MONO_ENTER_GC_SAFE;
 	ret = access (pathname, mode);
 	MONO_EXIT_GC_SAFE;
-	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
-		gint saved_errno = errno;
-		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
-
-		if (located_filename == NULL) {
-			mono_set_errno (saved_errno);
-			return -1;
-		}
-
-		MONO_ENTER_GC_SAFE;
-		ret = access (located_filename, mode);
-		MONO_EXIT_GC_SAFE;
-		g_free (located_filename);
-	}
 
 	return ret;
 }
@@ -306,20 +262,6 @@ _wapi_unlink (const gchar *pathname)
 	MONO_ENTER_GC_SAFE;
 	ret = unlink (pathname);
 	MONO_EXIT_GC_SAFE;
-	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR || errno == EISDIR) && IS_PORTABILITY_SET) {
-		gint saved_errno = errno;
-		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
-
-		if (located_filename == NULL) {
-			mono_set_errno (saved_errno);
-			return -1;
-		}
-
-		MONO_ENTER_GC_SAFE;
-		ret = unlink (located_filename);
-		MONO_EXIT_GC_SAFE;
-		g_free (located_filename);
-	}
 
 	return ret;
 }
@@ -328,16 +270,6 @@ static gchar*
 _wapi_dirname (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
-
-	if (IS_PORTABILITY_SET)
-		g_strdelimit (new_filename, '\\', '/');
-
-	if (IS_PORTABILITY_DRIVE && g_ascii_isalpha (new_filename[0]) && (new_filename[1] == ':')) {
-		gint len = strlen (new_filename);
-
-		g_memmove (new_filename, new_filename + 2, len - 2);
-		new_filename[len - 2] = '\0';
-	}
 
 	ret = g_path_get_dirname (new_filename);
 	g_free (new_filename);

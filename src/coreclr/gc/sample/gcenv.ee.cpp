@@ -354,3 +354,7 @@ uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 {
     return GCToOSInterface::GetTotalProcessorCount();
 }
+
+void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+{
+}

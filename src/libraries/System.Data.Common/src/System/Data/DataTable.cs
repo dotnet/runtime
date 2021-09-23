@@ -192,6 +192,8 @@ namespace System.Data
         }
 
         // Deserialize the table from binary/xml stream.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "CreateInstance's use of GetType uses only the parameterless constructor. Warnings are about serialization related constructors.")]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected DataTable(SerializationInfo info, StreamingContext context) : this()
         {
@@ -2307,8 +2309,6 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Only parameterless constructors are used here. Warning is about serialization related constructors.")]
         protected virtual DataTable CreateInstance() => (DataTable)Activator.CreateInstance(GetType(), true)!;
 
         public virtual DataTable Clone() => Clone(null);

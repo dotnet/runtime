@@ -29,9 +29,22 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadNullByteArray()
         {
-            string json = @"null";
-            byte[] arr = JsonSerializer.Deserialize<byte[]>(json);
+            byte[] arr = JsonSerializer.Deserialize<byte[]>("null");
             Assert.Null(arr);
+
+            PocoWithByteArrayProperty poco = JsonSerializer.Deserialize<PocoWithByteArrayProperty>(@"{""Value"":null}");
+            Assert.Null(poco.Value);
+
+            byte[][] jaggedArr = JsonSerializer.Deserialize<byte[][]>(@"[null]");
+            Assert.Null(jaggedArr[0]);
+
+            Dictionary<string, byte[]> dict = JsonSerializer.Deserialize<Dictionary<string, byte[]>>(@"{""key"":null}");
+            Assert.Null(dict["key"]);
+        }
+
+        public class PocoWithByteArrayProperty
+        {
+            public byte[] Value { get; set; }
         }
 
         [Fact]

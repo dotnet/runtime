@@ -440,9 +440,6 @@ uint32_t GetErrorMessage(
 int FilterException(
           struct _EXCEPTION_POINTERS* pExceptionPointers) override;
 
-void HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
 void ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result) override;
 
@@ -450,6 +447,10 @@ void ThrowExceptionForHelper(
           const CORINFO_HELPER_DESC* throwHelper) override;
 
 bool runWithErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter) override;
+
+bool runWithSPMIErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter) override;
 
@@ -708,6 +709,10 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
+
+bool doesFieldBelongToClass(
+          CORINFO_FIELD_HANDLE fldHnd,
+          CORINFO_CLASS_HANDLE cls) override;
 
 /**********************************************************************************/
 // clang-format on

@@ -463,8 +463,9 @@ namespace System
         internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
         {
 #if FEATURE_COMINTEROP
+            // We need to check the type handle values - not the instances - to determine if the runtime type is a ComObject.
             if (isGenericCOM)
-                return type == typeof(__ComObject);
+                return type.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
 
             return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject));
 #else
@@ -1477,14 +1478,6 @@ namespace System
                                                       IntPtr* methodInstArgs,
                                                       int methodInstCount,
                                                       ObjectHandleOnStack retField);
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Interop.BOOL _ContainsPropertyMatchingHash(QCallModule module, int propertyToken, uint hash);
-
-        internal static bool ContainsPropertyMatchingHash(RuntimeModule module, int propertyToken, uint hash)
-        {
-            return _ContainsPropertyMatchingHash(new QCallModule(ref module), propertyToken, hash) != Interop.BOOL.FALSE;
-        }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void GetModuleType(QCallModule handle, ObjectHandleOnStack type);

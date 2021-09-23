@@ -1417,13 +1417,11 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
             Instantiation genericLoadInst(thisinst, ntypars);
 
-#ifndef FEATURE_PREJIT // PREJIT doesn't support the volatile update semantics in the interface map that this requires
             if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
             {
                 thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
             }
             else
-#endif // FEATURE_PREJIT
             {
                 // Group together the current signature type context and substitution chain, which
                 // we may later use to instantiate constraints of type arguments that turn out to be
@@ -1450,21 +1448,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             mdTypeRef typeToken = 0;
 
             IfFailThrowBF(psig.GetToken(&typeToken), BFA_BAD_SIGNATURE, pOrigModule);
-
-#if defined(FEATURE_NATIVE_IMAGE_GENERATION) && !defined(DACCESS_COMPILE)
-            if ((pOrigModule != pModule) && (pZapSigContext->externalTokens == ZapSig::IbcTokens))
-            {
-                // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-                RID            typeRid  = RidFromToken(typeToken);
-                idExternalType ibcToken = RidToToken(typeRid, ibcExternalType);
-                typeToken = pOrigModule->LookupIbcTypeToken(pModule, ibcToken);
-
-                if (IsNilToken(typeToken))
-                {
-                    COMPlusThrow(kTypeLoadException, IDS_IBC_MISSING_EXTERNAL_TYPE);
-                }
-            }
-#endif
 
             if ((TypeFromToken(typeToken) != mdtTypeRef) && (TypeFromToken(typeToken) != mdtTypeDef))
                 THROW_BAD_FORMAT(BFA_UNEXPECTED_TOKEN_AFTER_CLASSVALTYPE, pOrigModule);
@@ -1745,21 +1728,6 @@ TypeHandle SigPointer::GetGenericInstType(Module *        pModule,
     {
         mdToken typeToken = mdTypeRefNil;
         IfFailThrowBF(GetToken(&typeToken), BFA_BAD_SIGNATURE, pOrigModule);
-
-#if defined(FEATURE_NATIVE_IMAGE_GENERATION) && !defined(DACCESS_COMPILE)
-        if ((pOrigModule != pModule) && (pZapSigContext->externalTokens == ZapSig::IbcTokens))
-        {
-            // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-            RID            typeRid  = RidFromToken(typeToken);
-            idExternalType ibcToken = RidToToken(typeRid, ibcExternalType);
-            typeToken = pOrigModule->LookupIbcTypeToken(pModule, ibcToken);
-
-            if (IsNilToken(typeToken))
-            {
-                COMPlusThrow(kTypeLoadException, IDS_IBC_MISSING_EXTERNAL_TYPE);
-            }
-        }
-#endif
 
         if ((TypeFromToken(typeToken) != mdtTypeRef) && (TypeFromToken(typeToken) != mdtTypeDef))
             THROW_BAD_FORMAT(BFA_UNEXPECTED_TOKEN_AFTER_GENINST, pOrigModule);
@@ -4922,7 +4890,6 @@ void PromoteCarefully(promote_func   fn,
         return;
     }
 
-#ifndef CROSSGEN_COMPILE
     if (sc->promotion)
     {
         LoaderAllocator*pLoaderAllocator = LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(PTR_TO_TADDR(*ppObj));
@@ -4931,7 +4898,6 @@ void PromoteCarefully(promote_func   fn,
             GcReportLoaderAllocator(fn, sc, pLoaderAllocator);
         }
     }
-#endif // CROSSGEN_COMPILE
 #endif // !defined(DACCESS_COMPILE)
 
     (*fn) (ppObj, sc, flags);

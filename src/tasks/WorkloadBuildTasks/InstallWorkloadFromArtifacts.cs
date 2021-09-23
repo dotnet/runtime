@@ -30,12 +30,12 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string?        SdkDir             { get; set; }
 
+        public bool           OnlyUpdateManifests{ get; set; }
+
         public ITaskItem[]    ExtraNuGetSources  { get; set; } = Array.Empty<ITaskItem>();
 
         public override bool Execute()
         {
-            Utils.Logger = Log;
-
             if (!HasMetadata(WorkloadId, nameof(WorkloadId), "Version") ||
                 !HasMetadata(WorkloadId, nameof(WorkloadId), "ManifestName"))
             {
@@ -54,11 +54,15 @@ namespace Microsoft.Workload.Build.Tasks
             if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), nugetConfigContents, stopOnMissing: true))
                 return false;
 
+            if (OnlyUpdateManifests)
+                return !Log.HasLoggedErrors;
+
             string nugetConfigPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
 
             Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** workload install **{Environment.NewLine}");
             (int exitCode, string output) = Utils.TryRunProcess(
+                                                    Log,
                                                     Path.Combine(SdkDir, "dotnet"),
                                                     $"workload install --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {WorkloadId.ItemSpec}",
                                                     workingDir: Path.GetTempPath(),

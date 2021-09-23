@@ -51,8 +51,8 @@ namespace System.Text.Json
 
             int maxLength = checked(source.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
-            Span<byte> bytes = maxLength <= JsonConstants.StackallocThreshold
-                ? stackalloc byte[JsonConstants.StackallocThreshold]
+            Span<byte> bytes = maxLength <= JsonConstants.StackallocByteThreshold
+                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
                 : new byte[maxLength];
 
             int length = JsonReaderHelper.GetUtf8FromText(source, bytes);
@@ -86,8 +86,8 @@ namespace System.Text.Json
 
             int maxLength = checked(source.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
-            Span<byte> bytes = maxLength <= JsonConstants.StackallocThreshold
-                ? stackalloc byte[JsonConstants.StackallocThreshold]
+            Span<byte> bytes = maxLength <= JsonConstants.StackallocByteThreshold
+                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
                 : new byte[maxLength];
 
             int length = JsonReaderHelper.GetUtf8FromText(source, bytes);

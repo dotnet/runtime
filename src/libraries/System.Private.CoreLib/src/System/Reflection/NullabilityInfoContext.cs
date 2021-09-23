@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -16,6 +15,9 @@ namespace System.Reflection
         private const string CompilerServicesNameSpace = "System.Runtime.CompilerServices";
         private readonly Dictionary<Module, NotAnnotatedStatus> _publicOnlyModules = new();
         private readonly Dictionary<MemberInfo, NullabilityState> _context = new();
+
+        internal static bool IsSupported { get; } =
+            AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported) ? isSupported : true;
 
         [Flags]
         private enum NotAnnotatedStatus
@@ -60,13 +62,14 @@ namespace System.Reflection
         /// <param name="parameterInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the parameterInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
             if (parameterInfo is null)
             {
                 throw new ArgumentNullException(nameof(parameterInfo));
             }
+
+            EnsureIsSupported();
 
             if (parameterInfo.Member is MethodInfo method && IsPrivateOrInternalMethodAndAnnotationDisabled(method))
             {
@@ -172,13 +175,14 @@ namespace System.Reflection
         /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
             if (propertyInfo is null)
             {
                 throw new ArgumentNullException(nameof(propertyInfo));
             }
+
+            EnsureIsSupported();
 
             NullabilityInfo nullability = GetNullabilityInfo(propertyInfo, propertyInfo.PropertyType, propertyInfo.GetCustomAttributesData());
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
@@ -234,13 +238,14 @@ namespace System.Reflection
         /// <param name="eventInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the eventInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(EventInfo eventInfo)
         {
             if (eventInfo is null)
             {
                 throw new ArgumentNullException(nameof(eventInfo));
             }
+
+            EnsureIsSupported();
 
             return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, eventInfo.GetCustomAttributesData());
         }
@@ -253,13 +258,14 @@ namespace System.Reflection
         /// <param name="fieldInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the fieldInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
             if (fieldInfo is null)
             {
                 throw new ArgumentNullException(nameof(fieldInfo));
             }
+
+            EnsureIsSupported();
 
             if (IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo))
             {
@@ -270,6 +276,14 @@ namespace System.Reflection
             NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, attributes);
             CheckNullabilityAttributes(nullability, attributes);
             return nullability;
+        }
+
+        private static void EnsureIsSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new InvalidOperationException(SR.NullabilityInfoContext_NotSupported);
+            }
         }
 
         private bool IsPrivateOrInternalFieldAndAnnotationDisabled(FieldInfo fieldInfo)
@@ -333,19 +347,23 @@ namespace System.Reflection
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes, int index)
         {
             NullabilityState state = NullabilityState.Unknown;
+            NullabilityInfo? elementState = null;
+            NullabilityInfo[] genericArgumentsState = Array.Empty<NullabilityInfo>();
+            Type? underlyingType = type;
 
             if (type.IsValueType)
             {
-                if (Nullable.GetUnderlyingType(type) != null)
+                underlyingType = Nullable.GetUnderlyingType(type);
+
+                if (underlyingType != null)
                 {
                     state = NullabilityState.Nullable;
                 }
                 else
                 {
+                    underlyingType = type;
                     state = NullabilityState.NotNull;
                 }
-
-                return new NullabilityInfo(type, state, state, null, Array.Empty<NullabilityInfo>());
             }
             else
             {
@@ -354,32 +372,38 @@ namespace System.Reflection
                     state = GetNullableContext(memberInfo);
                 }
 
-                NullabilityInfo? elementState = null;
-                NullabilityInfo[]? genericArgumentsState = null;
-
                 if (type.IsArray)
                 {
                     elementState = GetNullabilityInfo(memberInfo, type.GetElementType()!, customAttributes, index + 1);
                 }
-                else if (type.IsGenericType)
-                {
-                    Type[] genericArguments = type.GetGenericArguments();
-                    genericArgumentsState = new NullabilityInfo[genericArguments.Length];
-
-                    for (int i = 0; i < genericArguments.Length; i++)
-                    {
-                        genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, i + 1);
-                    }
-                }
-
-                NullabilityInfo nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState ?? Array.Empty<NullabilityInfo>());
-                if (state != NullabilityState.Unknown)
-                {
-                    TryLoadGenericMetaTypeNullability(memberInfo, nullability);
-                }
-
-                return nullability;
             }
+
+            if (underlyingType.IsGenericType)
+            {
+                Type[] genericArguments = underlyingType.GetGenericArguments();
+                genericArgumentsState = new NullabilityInfo[genericArguments.Length];
+
+                for (int i = 0, offset = 0; i < genericArguments.Length; i++)
+                {
+                    Type t = Nullable.GetUnderlyingType(genericArguments[i]) ?? genericArguments[i];
+
+                    if (!t.IsValueType || t.IsGenericType)
+                    {
+                        offset++;
+                    }
+
+                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, index + offset);
+                }
+            }
+
+            NullabilityInfo nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState);
+
+            if (!type.IsValueType && state != NullabilityState.Unknown)
+            {
+                TryLoadGenericMetaTypeNullability(memberInfo, nullability);
+            }
+
+            return nullability;
         }
 
         private static bool ParseNullableState(IList<CustomAttributeData> customAttributes, int index, ref NullabilityState state)
@@ -458,7 +482,7 @@ namespace System.Reflection
             {
                 NullabilityState state = nullability.ReadState;
 
-                if (!ParseNullableState(metaType.GetCustomAttributesData(), 0, ref state))
+                if (state == NullabilityState.NotNull && !ParseNullableState(metaType.GetCustomAttributesData(), 0, ref state))
                 {
                     state = GetNullableContext(metaType);
                 }

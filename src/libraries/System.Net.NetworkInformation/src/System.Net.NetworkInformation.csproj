@@ -187,6 +187,10 @@
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
   </ItemGroup>
   <ItemGroup>
+    <SupportedPlatform Include="illumos"/>
+    <SupportedPlatform Include="Solaris "/>
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Tracing" />

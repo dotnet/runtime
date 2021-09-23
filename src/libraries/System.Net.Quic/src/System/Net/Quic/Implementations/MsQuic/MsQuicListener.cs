@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
@@ -25,29 +26,51 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private readonly IPEndPoint _listenEndPoint;
 
-        private sealed class State
+        internal sealed class State
         {
             // set immediately in ctor, but we need a GCHandle to State in order to create the handle.
             public SafeMsQuicListenerHandle Handle = null!;
             public string TraceId = null!; // set in ctor.
 
-            public readonly SafeMsQuicConfigurationHandle ConnectionConfiguration;
+            public readonly SafeMsQuicConfigurationHandle? ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
+            // Pending connections are held back until they're ready to be used, which includes TLS negotiation.
+            // If the negotiation succeeds, the connection is put into the accept queue; otherwise, it's discarded.
+            public readonly ConcurrentDictionary<IntPtr, MsQuicConnection> PendingConnections;
 
-            public bool RemoteCertificateRequired;
-            public X509RevocationMode RevocationMode = X509RevocationMode.Offline;
-            public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
+            public QuicOptions ConnectionOptions = new QuicOptions();
+            public SslServerAuthenticationOptions AuthenticationOptions = new SslServerAuthenticationOptions();
 
             public State(QuicListenerOptions options)
             {
-                ConnectionConfiguration = SafeMsQuicConfigurationHandle.Create(options);
+                ConnectionOptions.IdleTimeout = options.IdleTimeout;
+                ConnectionOptions.MaxBidirectionalStreams = options.MaxBidirectionalStreams;
+                ConnectionOptions.MaxUnidirectionalStreams = options.MaxUnidirectionalStreams;
+
+                bool delayConfiguration = false;
+
                 if (options.ServerAuthenticationOptions != null)
                 {
-                    RemoteCertificateRequired = options.ServerAuthenticationOptions.ClientCertificateRequired;
-                    RevocationMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
-                    RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
+                    AuthenticationOptions.ClientCertificateRequired = options.ServerAuthenticationOptions.ClientCertificateRequired;
+                    AuthenticationOptions.CertificateRevocationCheckMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
+                    AuthenticationOptions.RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
+                    AuthenticationOptions.ServerCertificateSelectionCallback = options.ServerAuthenticationOptions.ServerCertificateSelectionCallback;
+                    AuthenticationOptions.ApplicationProtocols = options.ServerAuthenticationOptions.ApplicationProtocols;
+
+                    if (options.ServerAuthenticationOptions.ServerCertificate == null && options.ServerAuthenticationOptions.ServerCertificateContext == null &&
+                        options.ServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+                    {
+                        // We don't have any certificate but we have selection callback so we need to wait for SNI.
+                        delayConfiguration = true;
+                    }
                 }
 
+                if (!delayConfiguration)
+                {
+                    ConnectionConfiguration = SafeMsQuicConfigurationHandle.Create(options, options.ServerAuthenticationOptions);
+                }
+
+                PendingConnections = new ConcurrentDictionary<IntPtr, MsQuicConnection>();
                 AcceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
                 {
                     SingleReader = true,
@@ -58,6 +81,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal MsQuicListener(QuicListenerOptions options)
         {
+            if (options.ListenEndPoint == null)
+            {
+                throw new ArgumentNullException(nameof(options.ListenEndPoint));
+            }
+
             _state = new State(options);
             _stateHandle = GCHandle.Alloc(_state);
             try
@@ -200,42 +228,72 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ListenerEvent evt)
         {
+            GCHandle gcHandle = GCHandle.FromIntPtr(context);
+            Debug.Assert(gcHandle.IsAllocated);
+            Debug.Assert(gcHandle.Target is not null);
+            var state = (State)gcHandle.Target;
             if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
             {
                 return MsQuicStatusCodes.InternalError;
             }
 
-            GCHandle gcHandle = GCHandle.FromIntPtr(context);
-            Debug.Assert(gcHandle.IsAllocated);
-            Debug.Assert(gcHandle.Target is not null);
-            var state = (State)gcHandle.Target;
-
             SafeMsQuicConnectionHandle? connectionHandle = null;
-
+            MsQuicConnection? msQuicConnection = null;
             try
             {
                 ref NewConnectionInfo connectionInfo = ref *evt.Data.NewConnection.Info;
 
                 IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.LocalAddress);
                 IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.RemoteAddress);
+                string targetHost = string.Empty;   // compat with SslStream
+                if (connectionInfo.ServerNameLength > 0 && connectionInfo.ServerName != IntPtr.Zero)
+                {
+                    // TBD We should figure out what to do with international names.
+                    targetHost = Marshal.PtrToStringAnsi(connectionInfo.ServerName, connectionInfo.ServerNameLength);
+                }
+
+                SafeMsQuicConfigurationHandle? connectionConfiguration = state.ConnectionConfiguration;
+
+                if (connectionConfiguration == null)
+                {
+                    Debug.Assert(state.AuthenticationOptions.ServerCertificateSelectionCallback != null);
+                    try
+                    {
+                        // ServerCertificateSelectionCallback is synchronous. We will call it as needed when building configuration
+                        connectionConfiguration = SafeMsQuicConfigurationHandle.Create(state.ConnectionOptions, state.AuthenticationOptions, targetHost);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during creating configuration in connection callback: {ex}");
+                        }
+                    }
+
+                    if (connectionConfiguration == null)
+                    {
+                        // We don't have safe handle yet so MsQuic will cleanup new connection.
+                        return MsQuicStatusCodes.InternalError;
+                    }
+                }
 
                 connectionHandle = new SafeMsQuicConnectionHandle(evt.Data.NewConnection.Connection);
 
-                uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, state.ConnectionConfiguration);
-                QuicExceptionHelpers.ThrowIfFailed(status, "ConnectionSetConfiguration failed.");
-
-                var msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, connectionHandle, state.RemoteCertificateRequired, state.RevocationMode, state.RemoteCertificateValidationCallback);
-                msQuicConnection.SetNegotiatedAlpn(connectionInfo.NegotiatedAlpn, connectionInfo.NegotiatedAlpnLength);
-
-                if (!state.AcceptConnectionQueue.Writer.TryWrite(msQuicConnection))
+                uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, connectionConfiguration);
+                if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {
-                    // This handle will be cleaned up by MsQuic.
-                    connectionHandle.SetHandleAsInvalid();
-                    msQuicConnection.Dispose();
-                    return MsQuicStatusCodes.InternalError;
+                    msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, state, connectionHandle, state.AuthenticationOptions.ClientCertificateRequired, state.AuthenticationOptions.CertificateRevocationCheckMode, state.AuthenticationOptions.RemoteCertificateValidationCallback);
+                    msQuicConnection.SetNegotiatedAlpn(connectionInfo.NegotiatedAlpn, connectionInfo.NegotiatedAlpnLength);
+
+                    if (!state.PendingConnections.TryAdd(connectionHandle.DangerousGetHandle(), msQuicConnection))
+                    {
+                        msQuicConnection.Dispose();
+                    }
+
+                    return MsQuicStatusCodes.Success;
                 }
 
-                return MsQuicStatusCodes.Success;
+                // If we fall-through here something wrong happened.
             }
             catch (Exception ex)
             {
@@ -243,14 +301,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
                 }
-
-                Debug.Fail($"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
-
-                // This handle will be cleaned up by MsQuic by returning InternalError.
-                connectionHandle?.SetHandleAsInvalid();
-                state.AcceptConnectionQueue.Writer.TryComplete(ex);
-                return MsQuicStatusCodes.InternalError;
             }
+
+            // This handle will be cleaned up by MsQuic by returning InternalError.
+            connectionHandle?.SetHandleAsInvalid();
+            msQuicConnection?.Dispose();
+            return MsQuicStatusCodes.InternalError;
         }
 
         private void ThrowIfDisposed()

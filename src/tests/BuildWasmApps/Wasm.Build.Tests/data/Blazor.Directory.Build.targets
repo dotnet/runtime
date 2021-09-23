@@ -10,7 +10,8 @@
 
   <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->
   <Target Name="RemoveRuntimePackFromDownloadItem"
-          AfterTargets="ProcessFrameworkReferences">
+          AfterTargets="ProcessFrameworkReferences"
+          Condition="'$(WasmNativeWorkload)' == 'true'">
     <ItemGroup>
       <PackageDownload Remove="@(PackageDownload)"
                        Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
@@ -21,7 +22,8 @@
 
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
-          AfterTargets="ResolveFrameworkReferences">
+          AfterTargets="ResolveFrameworkReferences"
+          Condition="'$(WasmNativeWorkload)' == 'true'">
     <ItemGroup>
       <ResolvedTargetingPack Path="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
                              NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
@@ -36,19 +38,19 @@
                             PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
                             RuntimeIdentifier="browser-wasm" />
 
-       <ResolvedFrameworkReference
-                                    TargetingPackPath="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                                     Include="Microsoft.NETCore.App"
-                                     RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
-                                     RuntimePackVersion="$(RuntimePackInWorkloadVersion)"
-                                     RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
-                                     RuntimeIdentifier="browser-wasm" />
+       <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
+                                   TargetingPackPath="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
+                                   RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+                                   RuntimePackVersion="$(RuntimePackInWorkloadVersion)"
+                                   RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
+                                   RuntimeIdentifier="browser-wasm" />
     </ItemGroup>
   </Target>
 
   <!-- Update the local targeting pack's version as it's written into the runtimeconfig.json file to select the right framework. -->
   <Target Name="UpdateRuntimeFrameworkVersion"
-          AfterTargets="ResolveTargetingPackAssets">
+          AfterTargets="ResolveTargetingPackAssets"
+          Condition="'$(WasmNativeWorkload)' == 'true'">
     <ItemGroup>
       <RuntimeFramework Version="$(RuntimePackInWorkloadVersion)"
                         Condition="'%(RuntimeFramework.FrameworkName)' == 'Microsoft.NETCore.App'" />
@@ -57,7 +59,7 @@
 
   <!-- Filter out conflicting implicit assembly references. -->
   <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(DisableImplicitAssemblyReferences)' != 'true'"
+          Condition="'$(DisableImplicitAssemblyReferences)' != 'true' and '$(WasmNativeWorkload)' == 'true'"
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>

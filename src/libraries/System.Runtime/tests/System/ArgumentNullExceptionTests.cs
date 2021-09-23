@@ -68,7 +68,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/csharplang/issues/287")]
         public static void ThrowIfNull_UsesArgumentExpression()
         {
             object something = null;

@@ -99,6 +99,14 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
             continue;
         }
 
+        // If the finally's block jumps back to itself, then it is not empty.
+        if ((firstBlock->bbJumpKind == BBJ_ALWAYS) && firstBlock->bbJumpDest == firstBlock)
+        {
+            JITDUMP("EH#%u finally has basic block that jumps to itself; skipping.\n", XTnum);
+            XTnum++;
+            continue;
+        }
+
         // Limit for now to finallys that contain only a GT_RETFILT.
         bool isEmpty = true;
 
@@ -790,12 +798,12 @@ PhaseStatus Compiler::fgCloneFinally()
         assert(bbInTryRegions(XTnum, lastTryBlock));
         BasicBlock* const beforeTryBlock = firstTryBlock->bbPrev;
 
-        BasicBlock*          normalCallFinallyBlock   = nullptr;
-        BasicBlock*          normalCallFinallyReturn  = nullptr;
-        BasicBlock*          cloneInsertAfter         = HBtab->ebdTryLast;
-        bool                 tryToRelocateCallFinally = false;
-        const bool           usingProfileWeights      = fgIsUsingProfileWeights();
-        BasicBlock::weight_t currentWeight            = BB_ZERO_WEIGHT;
+        BasicBlock* normalCallFinallyBlock   = nullptr;
+        BasicBlock* normalCallFinallyReturn  = nullptr;
+        BasicBlock* cloneInsertAfter         = HBtab->ebdTryLast;
+        bool        tryToRelocateCallFinally = false;
+        const bool  usingProfileWeights      = fgIsUsingProfileWeights();
+        weight_t    currentWeight            = BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->bbPrev)
         {
@@ -1021,13 +1029,12 @@ PhaseStatus Compiler::fgCloneFinally()
         // Clone the finally body, and splice it into the flow graph
         // within in the parent region of the try.
         //
-        const unsigned             finallyTryIndex = firstBlock->bbTryIndex;
-        BasicBlock*                insertAfter     = nullptr;
-        BlockToBlockMap            blockMap(getAllocator());
-        bool                       clonedOk     = true;
-        unsigned                   cloneBBCount = 0;
-        BasicBlock::weight_t const originalWeight =
-            firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
+        const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
+        BasicBlock*     insertAfter     = nullptr;
+        BlockToBlockMap blockMap(getAllocator());
+        bool            clonedOk       = true;
+        unsigned        cloneBBCount   = 0;
+        weight_t const  originalWeight = firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->bbNext)
         {
@@ -1134,10 +1141,10 @@ PhaseStatus Compiler::fgCloneFinally()
         // Modify the targeting call finallys to branch to the cloned
         // finally. Make a note if we see some calls that can't be
         // retargeted (since they want to return to other places).
-        BasicBlock* const    firstCloneBlock    = blockMap[firstBlock];
-        bool                 retargetedAllCalls = true;
-        BasicBlock*          currentBlock       = firstCallFinallyRangeBlock;
-        BasicBlock::weight_t retargetedWeight   = BB_ZERO_WEIGHT;
+        BasicBlock* const firstCloneBlock    = blockMap[firstBlock];
+        bool              retargetedAllCalls = true;
+        BasicBlock*       currentBlock       = firstCallFinallyRangeBlock;
+        weight_t          retargetedWeight   = BB_ZERO_WEIGHT;
 
         while (currentBlock != endCallFinallyRangeBlock)
         {
@@ -1234,11 +1241,10 @@ PhaseStatus Compiler::fgCloneFinally()
         if (usingProfileWeights && (originalWeight > BB_ZERO_WEIGHT))
         {
             // We can't leave the finally more often than we enter.
-            // So cap cloned scale at 1.0f
+            // So cap cloned scale at 1.0
             //
-            BasicBlock::weight_t const clonedScale =
-                retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0f;
-            BasicBlock::weight_t const originalScale = 1.0f - clonedScale;
+            weight_t const clonedScale = retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0;
+            weight_t const originalScale = 1.0 - clonedScale;
 
             JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",
                     retargetedWeight, originalWeight, clonedScale, originalScale);
@@ -1247,7 +1253,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 if (block->hasProfileWeight())
                 {
-                    BasicBlock::weight_t const blockWeight = block->bbWeight;
+                    weight_t const blockWeight = block->bbWeight;
                     block->setBBProfileWeight(blockWeight * originalScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
 
@@ -1887,17 +1893,17 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     {
         // Add weight to the canonical call finally pair.
         //
-        BasicBlock::weight_t const canonicalWeight =
+        weight_t const canonicalWeight =
             canonicalCallFinally->hasProfileWeight() ? canonicalCallFinally->bbWeight : BB_ZERO_WEIGHT;
-        BasicBlock::weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
+        weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
 
         canonicalCallFinally->setBBProfileWeight(newCanonicalWeight);
 
         BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->bbNext;
 
-        BasicBlock::weight_t const canonicalLeaveWeight =
+        weight_t const canonicalLeaveWeight =
             canonicalLeaveBlock->hasProfileWeight() ? canonicalLeaveBlock->bbWeight : BB_ZERO_WEIGHT;
-        BasicBlock::weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
+        weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
 
         canonicalLeaveBlock->setBBProfileWeight(newLeaveWeight);
 
@@ -1905,14 +1911,14 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
         //
         if (callFinally->hasProfileWeight())
         {
-            BasicBlock::weight_t const newCallFinallyWeight =
+            weight_t const newCallFinallyWeight =
                 callFinally->bbWeight > block->bbWeight ? callFinally->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
             callFinally->setBBProfileWeight(newCallFinallyWeight);
         }
 
         if (leaveBlock->hasProfileWeight())
         {
-            BasicBlock::weight_t const newLeaveWeight =
+            weight_t const newLeaveWeight =
                 leaveBlock->bbWeight > block->bbWeight ? leaveBlock->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
             leaveBlock->setBBProfileWeight(newLeaveWeight);
         }

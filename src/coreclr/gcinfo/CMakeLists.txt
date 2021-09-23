@@ -32,13 +32,6 @@ add_library_clr(gcinfo_obj
 add_library(gcinfo INTERFACE)
 target_sources(gcinfo INTERFACE $<TARGET_OBJECTS:gcinfo_obj>)
 
-add_library_clr(gcinfo_crossgen
-    STATIC
-    ${GCINFO_SOURCES}
-)
-
-set_target_properties(gcinfo_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-
 install (FILES gcinfoencoder.cpp
                DESTINATION gcinfo)
 

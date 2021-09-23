@@ -15,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="MethodBody0.cs" />
     <Compile Include="MethodBody1.cs" />
   </ItemGroup>
 

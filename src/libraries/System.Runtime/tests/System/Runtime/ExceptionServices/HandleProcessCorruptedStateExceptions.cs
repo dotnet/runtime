@@ -10,6 +10,8 @@ using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
+#pragma warning disable SYSLIB0032 // HandleProcessCorruptedStateExceptionsAttribute is obsolete
+
 namespace System.Runtime.ExceptionServices.Tests
 {
     public class HandleProcessCorruptedStateExceptionsTests

@@ -8,6 +8,8 @@
     <ProjectReference Include="..\src\Microsoft.NETCore.Platforms.csproj" />
     <!-- Workaround NuGet promoting this to a ProjectReference -->
     <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Security.AccessControl" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemSecurityAccessControlVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Condition="'$(TargetFramework)' == 'net472'" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
   
   <ItemGroup>

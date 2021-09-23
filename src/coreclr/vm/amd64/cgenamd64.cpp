@@ -286,7 +286,11 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = m_ReturnAddress;
+#ifdef TARGET_WINDOWS
+    pRD->pCurrentContext->Rsp = m_Args->Rsp;
+#else
     pRD->pCurrentContext->Rsp = PTR_TO_MEMBER_TADDR(HijackArgs, m_Args, Rip) + sizeof(void *);
+#endif
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, &(m_Args->Regs));
 
@@ -595,8 +599,8 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
         PRECONDITION(pLoaderAllocator != NULL || pMethod->GetLoaderAllocator() != NULL);
         // If a domain is provided, the MethodDesc mustn't yet be set up to have one, or it must match the MethodDesc's domain,
         // unless we're in a compilation domain (NGen loads assemblies as domain-bound but compiles them as domain neutral).
-        PRECONDITION(!pLoaderAllocator || !pMethod || pMethod->GetMethodDescChunk()->GetMethodTablePtr()->IsNull() ||
-            pLoaderAllocator == pMethod->GetMethodDescChunk()->GetFirstMethodDesc()->GetLoaderAllocator() || IsCompilationProcess());
+        PRECONDITION(!pLoaderAllocator || !pMethod || pMethod->GetMethodDescChunk()->GetMethodTable() == NULL ||
+            pLoaderAllocator == pMethod->GetMethodDescChunk()->GetFirstMethodDesc()->GetLoaderAllocator());
     }
     CONTRACTL_END;
 
@@ -719,13 +723,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
         // Note that call could have been patched to jmp in the meantime
         pCode = rel32Decode(pCode+1);
 
-#ifdef FEATURE_PREJIT
-        // NGEN helper
-        if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-            pCode = (TADDR)rel32Decode(pCode+1);
-        }
-#endif
-
         // JumpStub
         if (isJumpRel64(pCode)) {
             pCode = decodeJump64(pCode);
@@ -742,13 +739,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
         return FALSE;
     }
     pCode = rel32Decode(pCode+12);
-
-#ifdef FEATURE_PREJIT
-    // NGEN helper
-    if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-        pCode = (TADDR)rel32Decode(pCode+1);
-    }
-#endif
 
     // JumpStub
     if (isJumpRel64(pCode)) {
@@ -785,103 +775,6 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
 
     return offsetInFunc;
 }
-
-#ifdef FEATURE_PREJIT
-//==========================================================================================
-// In NGen image, virtual slots inherited from cross-module dependencies point to jump thunks.
-// These jump thunk initially point to VirtualMethodFixupStub which transfers control here.
-// This method 'VirtualMethodFixupWorker' will patch the jump thunk to point to the actual
-// inherited method body after we have execute the precode and a stable entry point.
-//
-EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORCOMPILE_VIRTUAL_IMPORT_THUNK * pThunk)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;    // GC not allowed until we call pEMFrame->SetFunction(pMD);
-
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-    PCODE         pCode   = NULL;
-    MethodDesc *  pMD     = NULL;
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    _ASSERTE(IS_ALIGNED((size_t)pThunk, sizeof(INT64)));
-
-    FrameWithCookie<ExternalMethodFrame> frame(pTransitionBlock);
-    ExternalMethodFrame * pEMFrame = &frame;
-
-    OBJECTREF pThisPtr = pEMFrame->GetThis();
-    _ASSERTE(pThisPtr != NULL);
-    VALIDATEOBJECT(pThisPtr);
-
-    MethodTable * pMT = pThisPtr->GetMethodTable();
-
-    WORD slotNumber = pThunk->slotNum;
-    _ASSERTE(slotNumber != (WORD)-1);
-
-    pCode = pMT->GetRestoredSlot(slotNumber);
-
-    if (!DoesSlotCallPrestub(pCode))
-    {
-        pMD = MethodTable::GetMethodDescForSlotAddress(pCode);
-
-        pEMFrame->SetFunction(pMD);   //  We will use the pMD to enumerate the GC refs in the arguments
-        pEMFrame->Push(CURRENT_THREAD);
-
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
-
-        if (pMD->IsVersionableWithVtableSlotBackpatch())
-        {
-            // The entry point for this method needs to be versionable, so use a FuncPtrStub similarly to what is done in
-            // MethodDesc::GetMultiCallableAddrOfCode()
-            GCX_COOP();
-            pCode = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
-        }
-        else
-        {
-            // Skip fixup precode jump for better perf
-            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(pCode);
-            if (pDirectTarget != NULL)
-                pCode = pDirectTarget;
-        }
-
-        INT64 oldValue = *(INT64*)pThunk;
-        BYTE* pOldValue = (BYTE*)&oldValue;
-
-        if (pOldValue[0] == X86_INSTR_CALL_REL32)
-        {
-            INT64 newValue = oldValue;
-            BYTE* pNewValue = (BYTE*)&newValue;
-            pNewValue[0] = X86_INSTR_JMP_REL32;
-
-            *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
-
-            _ASSERTE(IS_ALIGNED(pThunk, sizeof(INT64)));
-
-            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
-            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
-
-            FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
-        }
-
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        pEMFrame->Pop(CURRENT_THREAD);
-    }
-
-    // Ready to return
-    return pCode;
-}
-#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_READYTORUN
 
@@ -1118,8 +1011,6 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
-
-    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
 
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :

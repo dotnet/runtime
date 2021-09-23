@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 
 public class ApkBuilder
 {
@@ -31,6 +33,13 @@ public class ApkBuilder
     public string? RuntimeComponents { get; set; }
     public string? DiagnosticPorts { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+
+    private TaskLoggingHelper logger;
+
+    public ApkBuilder(TaskLoggingHelper logger)
+    {
+        this.logger = logger;
+    }
 
     public (string apk, string packageId) BuildApk(
         string abi,
@@ -209,7 +218,7 @@ public class ApkBuilder
         string cmake = "cmake";
         string zip = "zip";
 
-        Utils.RunProcess(zip, workingDir: assetsToZipDirectory, args: "-q -r ../assets/assets.zip .");
+        Utils.RunProcess(logger, zip, workingDir: assetsToZipDirectory, args: "-q -r ../assets/assets.zip .");
         Directory.Delete(assetsToZipDirectory, true);
 
         if (!File.Exists(androidJar))
@@ -274,7 +283,7 @@ public class ApkBuilder
                 // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
                 if (!File.Exists(componentLibToLink))
                 {
-                    Utils.LogInfo($"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                    logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
                     componentLibToLink = staticComponentStubLib;
                 }
 
@@ -339,8 +348,8 @@ public class ApkBuilder
             cmakeBuildArgs += " --config Debug";
         }
 
-        Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeGenArgs);
-        Utils.RunProcess(cmake, workingDir: OutputDir, args: cmakeBuildArgs);
+        Utils.RunProcess(logger, cmake, workingDir: OutputDir, args: cmakeGenArgs);
+        Utils.RunProcess(logger, cmake, workingDir: OutputDir, args: cmakeBuildArgs);
 
         // 2. Compile Java files
 
@@ -349,6 +358,10 @@ public class ApkBuilder
 
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
+
+        Regex checkNumerics = new Regex(@"\.(\d)");
+        if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
+            ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
         string packageId = $"net.dot.{ProjectName}";
 
@@ -369,15 +382,15 @@ public class ApkBuilder
                 .Replace("%MinSdkLevel%", MinApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
-        Utils.RunProcess(javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
-        Utils.RunProcess(javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
-        Utils.RunProcess(dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+        Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
+        Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
+        Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
 
         // 3. Generate APK
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
@@ -433,21 +446,21 @@ public class ApkBuilder
             // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
 
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
-            Utils.RunProcess(aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
+            Utils.RunProcess(logger, aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
         }
-        Utils.RunProcess(aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
+        Utils.RunProcess(logger, aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
 
         // 4. Align APK
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
-        Utils.RunProcess(zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: OutputDir);
+        Utils.RunProcess(logger, zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: OutputDir);
         // we don't need the unaligned one any more
         File.Delete(apkFile);
 
         // 5. Generate key (if needed) & sign the apk
         SignApk(alignedApk, apksigner);
 
-        Utils.LogInfo($"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
+        logger.LogMessage(MessageImportance.High, $"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
 
         return (alignedApk, packageId);
     }
@@ -460,7 +473,7 @@ public class ApkBuilder
 
         if (!File.Exists(signingKey))
         {
-            Utils.RunProcess("keytool", "-genkey -v -keystore debug.keystore -storepass android -alias " +
+            Utils.RunProcess(logger, "keytool", "-genkey -v -keystore debug.keystore -storepass android -alias " +
                 "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt " +
                 "-dname \"CN=Android Debug,O=Android,C=US\"", workingDir: OutputDir, silent: true);
         }
@@ -468,7 +481,7 @@ public class ApkBuilder
         {
             File.Copy(signingKey, Path.Combine(OutputDir, "debug.keystore"));
         }
-        Utils.RunProcess(apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " +
+        Utils.RunProcess(logger, apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " +
             $"--ks-pass pass:android --key-pass pass:android {apkPath}", workingDir: OutputDir);
     }
 
@@ -499,8 +512,8 @@ public class ApkBuilder
         if (!File.Exists(apkPath))
             throw new Exception($"{apkPath} was not found");
 
-        Utils.RunProcess(aapt, $"remove -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
-        Utils.RunProcess(aapt, $"add -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
+        Utils.RunProcess(logger, aapt, $"remove -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
+        Utils.RunProcess(logger, aapt, $"add -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
 
         // we need to re-sign the apk
         SignApk(apkPath, apksigner);

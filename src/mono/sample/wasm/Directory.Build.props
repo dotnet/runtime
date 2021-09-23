@@ -11,6 +11,9 @@
     <OutputPath>bin</OutputPath>
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <WasmNativeStrip>false</WasmNativeStrip>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
     <!-- Runtime feature defaults to trim unnecessary code -->

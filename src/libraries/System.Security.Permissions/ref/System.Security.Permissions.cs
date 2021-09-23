@@ -745,6 +745,9 @@ namespace System.Security
         Enterprise = 2,
         AppDomain = 3,
     }
+#if NET6_0_OR_GREATER
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
     public sealed partial class SecurityContext : System.IDisposable
     {
         internal SecurityContext() { }

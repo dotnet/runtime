@@ -194,6 +194,14 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(6, logger.LastEventId.Id);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M7(logger, LogLevel.Trace, "p", "q");
+            Assert.Null(logger.LastException);
+            Assert.Equal("\"p\" -> \"q\"", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(7, logger.LastEventId.Id);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]

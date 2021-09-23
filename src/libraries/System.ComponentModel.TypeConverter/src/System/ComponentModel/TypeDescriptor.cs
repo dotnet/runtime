@@ -2443,7 +2443,7 @@ namespace System.ComponentModel
             return result;
         }
 
-        [Obsolete("This property has been deprecated. Use a type description provider to supply type information for COM types instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("TypeDescriptor.ComNativeDescriptorHandler has been deprecated. Use a type description provider to supply type information for COM types instead.")]
         [DisallowNull]
         public static IComNativeDescriptorHandler? ComNativeDescriptorHandler
         {

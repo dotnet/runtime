@@ -170,10 +170,6 @@ class RegMeta :
     , public IMetaDataEmitHelper
 #endif
 
-#if defined(FEATURE_METADATA_IN_VM) && defined(FEATURE_PREJIT)
-    , public IMetaDataCorProfileData
-    , public IMDInternalMetadataReorderingOptions
-#endif
     , public IMDCommon
 {
     friend class CImportTlb;
@@ -1533,24 +1529,6 @@ public:
         ULONGLONG *   pcbData,          // [out] Size of the mapped memory region..
         DWORD *       pdwMappingType);  // [out] Type of file mapping (code:CorFileMapping).
 
-
-#if defined(FEATURE_METADATA_IN_VM) && defined(FEATURE_PREJIT)
-
-//*****************************************************************************
-// IMetaDataCorProfileData
-//*****************************************************************************
-
-    STDMETHOD(SetCorProfileData)(
-        CorProfileData *pProfileData);         // [IN] Pointer to profile data
-
-//*****************************************************************************
-// IMDInternalMetadataReorderingOptions
-//*****************************************************************************
-
-    STDMETHOD(SetMetaDataReorderingOptions)(
-        MetaDataReorderingOptions options);         // [IN] metadata reordering options
-
-#endif //FEATURE_METADATA_IN_VM && FEATURE_PREJIT
 
 //*****************************************************************************
 // IMDCommon methods

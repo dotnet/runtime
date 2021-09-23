@@ -481,7 +481,7 @@ inline int LateboundMessageBoxA(HWND hWnd,
     return LateboundMessageBoxW(hWnd, wszText, wszCaption, uType);
 }
 
-#if defined(FEATURE_CORESYSTEM) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_CORESYSTEM)
 
 #define MessageBoxW LateboundMessageBoxW
 #define MessageBoxA LateboundMessageBoxA

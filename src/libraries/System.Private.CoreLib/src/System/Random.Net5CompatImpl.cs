@@ -3,102 +3,35 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
     public partial class Random
     {
         /// <summary>
-        /// Provides an implementation used for compatibility with cases where either a) the
-        /// sequence of numbers could be predicted based on the algorithm employed historically and
-        /// thus expected (e.g. a specific seed used in tests) or b) where a derived type may
-        /// reasonably expect its overrides to be called.  The algorithm is based on a modified version
-        /// of Knuth's subtractive random number generator algorithm.  See https://github.com/dotnet/runtime/issues/23198
-        /// for a discussion of some of the modifications / discrepancies.
+        /// Provides an implementation used for compatibility with cases where a seed is specified
+        /// and thus the sequence produced historically could have been relied upon.
         /// </summary>
-        private sealed class Net5CompatImpl : ImplBase
+        private sealed class Net5CompatSeedImpl : ImplBase
         {
-            /// <summary>Thread-static instance used to seed any legacy implementations created with the default ctor.</summary>
-            [ThreadStatic]
-            private static XoshiroImpl? t_seedGenerator;
+            private CompatPrng _prng; // mutable struct; do not make this readonly
 
-            /// <summary>Reference to the <see cref="Random"/> containing this implementation instance.</summary>
-            /// <remarks>Used to ensure that any calls to other virtual members are performed using the Random-derived instance, if one exists.</remarks>
-            private readonly Random _parent;
-            private readonly int[] _seedArray;
-            private int _inext;
-            private int _inextp;
+            public Net5CompatSeedImpl(int seed) =>
+                _prng = new CompatPrng(seed);
 
-            public Net5CompatImpl(Random parent) : this(parent, (t_seedGenerator ??= new()).Next())
-            {
-            }
+            public override double Sample() => _prng.Sample();
 
-            public Net5CompatImpl(Random parent, int Seed)
-            {
-                _parent = parent;
+            public override int Next() => _prng.InternalSample();
 
-                // Initialize seed array.
-                int[] seedArray = _seedArray = new int[56];
-
-                int subtraction = (Seed == int.MinValue) ? int.MaxValue : Math.Abs(Seed);
-                int mj = 161803398 - subtraction; // magic number based on Phi (golden ratio)
-                seedArray[55] = mj;
-                int mk = 1;
-
-                int ii = 0;
-                for (int i = 1; i < 55; i++)
-                {
-                    // The range [1..55] is special (Knuth) and so we're wasting the 0'th position.
-                    if ((ii += 21) >= 55)
-                    {
-                        ii -= 55;
-                    }
-
-                    seedArray[ii] = mk;
-                    mk = mj - mk;
-                    if (mk < 0)
-                    {
-                        mk += int.MaxValue;
-                    }
-
-                    mj = seedArray[ii];
-                }
-
-                for (int k = 1; k < 5; k++)
-                {
-                    for (int i = 1; i < 56; i++)
-                    {
-                        int n = i + 30;
-                        if (n >= 55)
-                        {
-                            n -= 55;
-                        }
-
-                        seedArray[i] -= seedArray[1 + n];
-                        if (seedArray[i] < 0)
-                        {
-                            seedArray[i] += int.MaxValue;
-                        }
-                    }
-                }
-
-                _inextp = 21;
-            }
-
-            public override double Sample() =>
-                // Including the division at the end gives us significantly improved random number distribution.
-                InternalSample() * (1.0 / int.MaxValue);
-
-            public override int Next() => InternalSample();
-
-            public override int Next(int maxValue) => (int)(_parent.Sample() * maxValue);
+            public override int Next(int maxValue) => (int)(_prng.Sample() * maxValue);
 
             public override int Next(int minValue, int maxValue)
             {
                 long range = (long)maxValue - minValue;
                 return range <= int.MaxValue ?
-                    (int)(_parent.Sample() * range) + minValue :
-                    (int)((long)(GetSampleForLargeRange() * range) + minValue);
+                    (int)(_prng.Sample() * range) + minValue :
+                    (int)((long)(_prng.GetSampleForLargeRange() * range) + minValue);
             }
 
             public override long NextInt64()
@@ -142,24 +75,105 @@ namespace System
             }
 
             /// <summary>Produces a value in the range [0, ulong.MaxValue].</summary>
-            private unsafe ulong NextUInt64()
+            private ulong NextUInt64() =>
+                 ((ulong)(uint)Next(1 << 22)) |
+                (((ulong)(uint)Next(1 << 22)) << 22) |
+                (((ulong)(uint)Next(1 << 20)) << 44);
+
+            public override double NextDouble() => _prng.Sample();
+
+            public override float NextSingle() => (float)_prng.Sample();
+
+            public override void NextBytes(byte[] buffer) => _prng.NextBytes(buffer);
+
+            public override void NextBytes(Span<byte> buffer) => _prng.NextBytes(buffer);
+        }
+
+        /// <summary>
+        /// Provides an implementation used for compatibility with cases where a derived type may
+        /// reasonably expect its overrides to be called.
+        /// </summary>
+        private sealed class Net5CompatDerivedImpl : ImplBase
+        {
+            /// <summary>Reference to the <see cref="Random"/> containing this implementation instance.</summary>
+            /// <remarks>Used to ensure that any calls to other virtual members are performed using the Random-derived instance, if one exists.</remarks>
+            private readonly Random _parent;
+            /// <summary>Potentially lazily-initialized algorithm backing this instance.</summary>
+            private CompatPrng _prng; // mutable struct; do not make this readonly
+
+            public Net5CompatDerivedImpl(Random parent) : this(parent, Shared.Next()) { }
+
+            public Net5CompatDerivedImpl(Random parent, int seed)
             {
-                Span<byte> resultBytes = stackalloc byte[8];
-                NextBytes(resultBytes);
-                return BitConverter.ToUInt64(resultBytes);
+                _parent = parent;
+                _prng = new CompatPrng(seed);
             }
+
+            public override double Sample() => _prng.Sample();
+
+            public override int Next() => _prng.InternalSample();
+
+            public override int Next(int maxValue) => (int)(_parent.Sample() * maxValue);
+
+            public override int Next(int minValue, int maxValue)
+            {
+                long range = (long)maxValue - minValue;
+                return range <= int.MaxValue ?
+                    (int)(_parent.Sample() * range) + minValue :
+                    (int)((long)(_prng.GetSampleForLargeRange() * range) + minValue);
+            }
+
+            public override long NextInt64()
+            {
+                while (true)
+                {
+                    // Get top 63 bits to get a value in the range [0, long.MaxValue], but try again
+                    // if the value is actually long.MaxValue, as the method is defined to return a value
+                    // in the range [0, long.MaxValue).
+                    ulong result = NextUInt64() >> 1;
+                    if (result != long.MaxValue)
+                    {
+                        return (long)result;
+                    }
+                }
+            }
+
+            public override long NextInt64(long maxValue) => NextInt64(0, maxValue);
+
+            public override long NextInt64(long minValue, long maxValue)
+            {
+                ulong exclusiveRange = (ulong)(maxValue - minValue);
+
+                if (exclusiveRange > 1)
+                {
+                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue - minValue
+                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
+                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
+                    while (true)
+                    {
+                        ulong result = NextUInt64() >> (sizeof(long) * 8 - bits);
+                        if (result < exclusiveRange)
+                        {
+                            return (long)result + minValue;
+                        }
+                    }
+                }
+
+                Debug.Assert(minValue == maxValue || minValue + 1 == maxValue);
+                return minValue;
+            }
+
+            /// <summary>Produces a value in the range [0, ulong.MaxValue].</summary>
+            private unsafe ulong NextUInt64() =>
+                 ((ulong)(uint)_parent.Next(1 << 22)) |
+                (((ulong)(uint)_parent.Next(1 << 22)) << 22) |
+                (((ulong)(uint)_parent.Next(1 << 20)) << 44);
 
             public override double NextDouble() => _parent.Sample();
 
             public override float NextSingle() => (float)_parent.Sample();
 
-            public override void NextBytes(byte[] buffer)
-            {
-                for (int i = 0; i < buffer.Length; i++)
-                {
-                    buffer[i] = (byte)InternalSample();
-                }
-            }
+            public override void NextBytes(byte[] buffer) => _prng.NextBytes(buffer);
 
             public override void NextBytes(Span<byte> buffer)
             {
@@ -168,8 +182,84 @@ namespace System
                     buffer[i] = (byte)_parent.Next();
                 }
             }
+        }
 
-            private int InternalSample()
+        /// <summary>
+        /// Implementation used for compatibility with previous releases. The algorithm is based on a modified version
+        /// of Knuth's subtractive random number generator algorithm.  See https://github.com/dotnet/runtime/issues/23198
+        /// for a discussion of some of the modifications / discrepancies.
+        /// </summary>
+        private struct CompatPrng
+        {
+            private int[] _seedArray;
+            private int _inext;
+            private int _inextp;
+
+            public CompatPrng(int seed)
+            {
+                // Initialize seed array.
+                int[] seedArray = new int[56];
+
+                int subtraction = (seed == int.MinValue) ? int.MaxValue : Math.Abs(seed);
+                int mj = 161803398 - subtraction; // magic number based on Phi (golden ratio)
+                seedArray[55] = mj;
+                int mk = 1;
+
+                int ii = 0;
+                for (int i = 1; i < 55; i++)
+                {
+                    // The range [1..55] is special (Knuth) and so we're wasting the 0'th position.
+                    if ((ii += 21) >= 55)
+                    {
+                        ii -= 55;
+                    }
+
+                    seedArray[ii] = mk;
+                    mk = mj - mk;
+                    if (mk < 0)
+                    {
+                        mk += int.MaxValue;
+                    }
+
+                    mj = seedArray[ii];
+                }
+
+                for (int k = 1; k < 5; k++)
+                {
+                    for (int i = 1; i < 56; i++)
+                    {
+                        int n = i + 30;
+                        if (n >= 55)
+                        {
+                            n -= 55;
+                        }
+
+                        seedArray[i] -= seedArray[1 + n];
+                        if (seedArray[i] < 0)
+                        {
+                            seedArray[i] += int.MaxValue;
+                        }
+                    }
+                }
+
+                _seedArray = seedArray;
+                _inext = 0;
+                _inextp = 21;
+            }
+
+            internal double Sample() =>
+                // Including the division at the end gives us significantly improved random number distribution.
+                InternalSample() * (1.0 / int.MaxValue);
+
+            internal void NextBytes(Span<byte> buffer)
+            {
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = (byte)InternalSample();
+                }
+            }
+
+            internal int InternalSample()
             {
                 int locINext = _inext;
                 if (++locINext >= 56)
@@ -202,7 +292,7 @@ namespace System
                 return retVal;
             }
 
-            private double GetSampleForLargeRange()
+            internal double GetSampleForLargeRange()
             {
                 // The distribution of the double returned by Sample is not good enough for a large range.
                 // If we use Sample for a range [int.MinValue..int.MaxValue), we will end up getting even numbers only.

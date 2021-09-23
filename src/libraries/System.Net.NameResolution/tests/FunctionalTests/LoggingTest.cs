@@ -17,7 +17,6 @@ namespace System.Net.NameResolution.Tests
     public class LoggingTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50928", TestPlatforms.Android)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Dns).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -30,7 +29,6 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50928", TestPlatforms.Android)]
         public void GetHostEntry_InvalidHost_LogsError()
         {
             using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
@@ -65,7 +63,6 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50928", TestPlatforms.Android)]
         public async Task GetHostEntryAsync_InvalidHost_LogsError()
         {
             using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
@@ -115,7 +112,6 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50928", TestPlatforms.Android)]
         public void GetHostEntry_ValidName_NoErrors()
         {
             using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Verbose))

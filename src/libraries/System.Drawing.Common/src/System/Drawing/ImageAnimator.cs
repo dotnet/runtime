@@ -35,6 +35,12 @@ namespace System.Drawing
     /// </summary>
     public sealed partial class ImageAnimator
     {
+        // We use a timer to apply an animation tick speeds of something a bit shorter than 50ms
+        // such that if the requested frame rate is about 20 frames per second, we will rarely skip
+        // a frame entirely. Sometimes we'll show a few more frames if available, but we will never
+        // show more than 25 frames a second and that's OK.
+        internal const int AnimationDelayMS = 40;
+
         /// <summary>
         ///     A list of images to be animated.
         /// </summary>
@@ -387,7 +393,7 @@ namespace System.Drawing
 
             while (true)
             {
-                Thread.Sleep(40);
+                Thread.Sleep(AnimationDelayMS);
 
                 // Because Thread.Sleep is not accurate, capture how much time has actually elapsed during the animation
                 long timeElapsed = stopwatch.ElapsedMilliseconds;

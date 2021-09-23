@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0091 NEW)
 
 # C Compiler flags
-SET (CMAKE_C_FLAGS_INIT                     "/FC")
+SET (CMAKE_C_FLAGS_INIT                     "/W3 /FC")
 SET (CMAKE_C_FLAGS_DEBUG_INIT               "/Od /Zi")
 SET (CMAKE_C_FLAGS_RELEASE_INIT             "/Ox")
 SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT      "/O2 /Zi")
@@ -65,12 +65,12 @@ endif ()
 add_compile_options(/guard:cf)
 list(APPEND __SharedLinkArgs /guard:cf)
 
-#if (${CLR_CMAKE_HOST_ARCH} STREQUAL "x86_64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "amd64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "x64")
-#    # Enable EH continuation table and CETCOMPAT for native components
-#    add_compile_options(/guard:ehcont)
-#    list(APPEND __SharedLinkArgs /guard:ehcont)
-#    list(APPEND __SharedLinkArgs /CETCOMPAT)
-#endif ()
+if (${CLR_CMAKE_HOST_ARCH} STREQUAL "x86_64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "amd64" OR ${CLR_CMAKE_HOST_ARCH} STREQUAL "x64")
+    # Enable EH continuation table and CETCOMPAT for native components
+    add_compile_options(/guard:ehcont)
+    list(APPEND __SharedLinkArgs /guard:ehcont)
+    list(APPEND __SharedLinkArgs /CETCOMPAT)
+endif ()
 
 # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
 # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.

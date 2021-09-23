@@ -106,12 +106,12 @@ public:
     inline const std::string& Name() const { return m_name; }
     inline const ModuleInfo* MainModule() const { return m_mainModule; }
 
-    inline const std::vector<ThreadInfo*> Threads() const { return m_threads; }
-    inline const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }
-    inline const std::set<MemoryRegion> OtherMappings() const { return m_otherMappings; }
-    inline const std::set<MemoryRegion> MemoryRegions() const { return m_memoryRegions; }
+    inline const std::vector<ThreadInfo*>& Threads() const { return m_threads; }
+    inline const std::set<MemoryRegion>& ModuleMappings() const { return m_moduleMappings; }
+    inline const std::set<MemoryRegion>& OtherMappings() const { return m_otherMappings; }
+    inline const std::set<MemoryRegion>& MemoryRegions() const { return m_memoryRegions; }
 #ifndef __APPLE__
-    inline const std::vector<elf_aux_entry> AuxvEntries() const { return m_auxvEntries; }
+    inline const std::vector<elf_aux_entry>& AuxvEntries() const { return m_auxvEntries; }
     inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
 #endif
 

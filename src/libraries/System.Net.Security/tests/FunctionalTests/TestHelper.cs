@@ -140,57 +140,37 @@ namespace System.Net.Security.Tests
                 PkiOptions.IssuerRevocationViaCrl,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
-                out CertificateAuthority intermediate,
+                out CertificateAuthority[] intermediates,
                 out X509Certificate2 endEntity,
+                intermediateAuthorityCount: longChain ? 3 : 1,
                 subjectName: targetName,
                 testName: testName,
                 keySize: keySize,
                 extensions: extensions);
 
-            if (longChain)
+            // Walk the intermediates backwards so we build the chain collection as
+            // Issuer3
+            // Issuer2
+            // Issuer1
+            // Root
+            for (int i = intermediates.Length - 1; i >= 0; i--)
             {
-                using (RSA intermedKey2 = RSA.Create(keySize))
-                using (RSA intermedKey3 = RSA.Create(keySize))
-                {
-                    X509Certificate2 intermedPub2 = intermediate.CreateSubordinateCA(
-                        $"CN=\"A SSL Test CA 2\", O=\"testName\"",
-                        intermedKey2);
+                CertificateAuthority authority = intermediates[i];
 
-                    X509Certificate2 intermedCert2 = intermedPub2.CopyWithPrivateKey(intermedKey2);
-                    intermedPub2.Dispose();
-                    CertificateAuthority intermediateAuthority2 = new CertificateAuthority(intermedCert2, null, null, null);
-
-                    X509Certificate2 intermedPub3 = intermediateAuthority2.CreateSubordinateCA(
-                        $"CN=\"A SSL Test CA 3\", O=\"testName\"",
-                        intermedKey3);
-
-                    X509Certificate2 intermedCert3 = intermedPub3.CopyWithPrivateKey(intermedKey3);
-                    intermedPub3.Dispose();
-                    CertificateAuthority intermediateAuthority3 = new CertificateAuthority(intermedCert3, null, null, null);
-
-                    RSA eeKey = endEntity.GetRSAPrivateKey();
-                    endEntity = intermediateAuthority3.CreateEndEntity(
-                        $"CN=\"A SSL Test\", O=\"testName\"",
-                        eeKey,
-                        extensions);
-
-                    endEntity = endEntity.CopyWithPrivateKey(eeKey);
-
-                    chain.Add(intermedCert3);
-                    chain.Add(intermedCert2);
-                }
+                chain.Add(authority.CloneIssuerCert());
+                authority.Dispose();
             }
 
-            chain.Add(intermediate.CloneIssuerCert());
             chain.Add(root.CloneIssuerCert());
 
             responder.Dispose();
             root.Dispose();
-            intermediate.Dispose();
 
             if (PlatformDetection.IsWindows)
             {
+                X509Certificate2 ephemeral = endEntity;
                 endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx));
+                ephemeral.Dispose();
             }
 
             return (endEntity, chain);

@@ -1,14 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
-    <PackageDescription>Provides types that can be used to model the structure of a source code document and to output source code for that model in a supported language.
-
-Commonly Used Types:
-System.CodeDom.CodeObject
-System.CodeDom.Compiler.CodeDomProvider
-Microsoft.CSharp.CSharpCodeProvider
-Microsoft.VisualBasic.VBCodeProvider</PackageDescription>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser;ios;tvos;maccatalyst</UnsupportedOSPlatforms>
   </PropertyGroup>

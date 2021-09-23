@@ -135,6 +135,7 @@ interface ICorDebugThread;
 interface ICorDebugThread2;
 interface ICorDebugThread3;
 interface ICorDebugThread4;
+interface ICorDebugThread5;
 interface ICorDebugStackWalk;
 interface ICorDebugChain;
 interface ICorDebugFrame;
@@ -4374,6 +4375,26 @@ interface ICorDebugThread4 : IUnknown
      * custom notifications.
      */
     HRESULT GetCurrentCustomDebuggerNotification([out] ICorDebugValue ** ppNotificationObject);
+};
+
+/*
+ * ICorDebugThread5 is a logical extension to ICorDebugThread.
+ */
+[
+    object,
+    local,
+    uuid(F98421C4-E506-4D24-916F-0237EE853EC6),
+    pointer_default(unique)
+]
+interface ICorDebugThread5 : IUnknown
+{
+    /*
+     * Returns S_OK if it was possible to obtain the allocation information for the thread
+     * and sets the corresponding SOH and UOH allocations.
+     * Returns E_INVALIDARG if any of the pointers for the outputs is null.
+     * Can return E_FAIL if the process is not properly stopped.
+     */
+    HRESULT GetBytesAllocated([out] ULONG64 *pSohAllocatedBytes, [out] ULONG64 *pUohAllocatedBytes);
 };
 
 /*

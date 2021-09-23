@@ -188,6 +188,101 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonCustomKey, json);
         }
 
+        public enum ETestEnum
+        {
+            TestValue1 = 1,
+            TestValue2 = 2,
+        }
+      
+        [Fact]
+        public static void EnumSerialization_DictionaryPolicy_Honored_CamelCase()
+        {
+            var options = new JsonSerializerOptions
+            {
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
+            string value = JsonSerializer.Serialize(dict, options);
+            Assert.Equal("{\"testValue1\":1}", value);
+
+            dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
+            value = JsonSerializer.Serialize(dict, options);
+            Assert.Equal("{\"testValue2\":2}", value);
+
+            dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1, [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
+            value = JsonSerializer.Serialize(dict, options);
+            Assert.Equal("{\"testValue1\":1,\"testValue2\":2}", value);
+        }
+
+        [Fact]
+        public static void EnumSerializationAsDictKey_NoDictionaryKeyPolicy()
+        {
+            Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
+            string value = JsonSerializer.Serialize(dict);
+            Assert.Equal("{\"TestValue1\":1}", value);
+
+            dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
+            value = JsonSerializer.Serialize(dict);
+            Assert.Equal("{\"TestValue2\":2}", value);
+
+            dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1, [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
+            value = JsonSerializer.Serialize(dict);
+            Assert.Equal("{\"TestValue1\":1,\"TestValue2\":2}", value);
+        }
+
+        public class ClassWithEnumProperties
+        {
+            public ETestEnum TestEnumProperty1 { get; } = ETestEnum.TestValue2;
+            public DayOfWeek TestEnumProperty2 { get; } = DayOfWeek.Monday;
+        }
+
+        [Fact]
+        public static void EnumSerialization_DictionaryPolicy_NotApplied_WhenEnumsAreSerialized()
+        {
+            var options = new JsonSerializerOptions
+            {
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            string value = JsonSerializer.Serialize(DayOfWeek.Friday, options);
+
+            Assert.Equal("5", value);
+
+            value = JsonSerializer.Serialize(ETestEnum.TestValue2, options);
+
+            Assert.Equal("2", value);
+
+
+            value = JsonSerializer.Serialize(new ClassWithEnumProperties(), options);
+
+            Assert.Equal("{\"TestEnumProperty1\":2,\"TestEnumProperty2\":1}", value);
+
+            value = JsonSerializer.Serialize(new List<DayOfWeek> { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday}, options);
+
+            Assert.Equal("[0,1,2,3,4,5,6]", value);
+        }
+
+        public class CustomJsonNamingPolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => null;
+        }
+
+        [Fact]
+        public static void EnumSerialization_DictionaryPolicy_ThrowsException_WhenNamingPolicyReturnsNull()
+        {
+            var options = new JsonSerializerOptions
+            {
+                DictionaryKeyPolicy = new CustomJsonNamingPolicy(),
+            };
+
+            Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(dict, options));
+
+            Assert.Contains(typeof(CustomJsonNamingPolicy).ToString(), ex.Message);
+        }
+
         [Fact]
         public async Task NullNamePolicy()
         {

@@ -630,9 +630,6 @@ public:
     void dmpFilterException(DWORD key, DWORD value);
     int repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 
-    void recHandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void dmpHandleException(DWORD key, DWORD value);
-
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
@@ -771,6 +768,10 @@ public:
     void recGetExpectedTargetArchitecture(DWORD result);
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
     DWORD repGetExpectedTargetArchitecture();
+
+    void recDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpDoesFieldBelongToClass(DLDL key, bool value);
+    bool repDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls);
 
     void recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result);
     void dmpIsValidToken(DLD key, DWORD value);
@@ -1042,7 +1043,7 @@ enum mcPackets
     Packet_GetUnmanagedCallConv                          = 94,
     Packet_GetVarArgsHandle                              = 95,
     Packet_GetVars                                       = 96,
-    Packet_HandleException                               = 135,
+    Packet_HandleException                               = 135, // Retired 7/19/2021
     Packet_InitClass                                     = 97,
     Packet_InitConstraintsForVerification                = 98, // Retired 2/18/2020
     Packet_IsCompatibleDelegate                          = 99,
@@ -1066,7 +1067,7 @@ enum mcPackets
     Packet_TryResolveToken                               = 158, // Added 4/26/2016
     Packet_SatisfiesClassConstraints                     = 110,
     Packet_SatisfiesMethodConstraints                    = 111,
-    Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
+    Packet_DoesFieldBelongToClass                        = 112, // Added 8/12/2021
     Packet_SigInstHandleMap                              = 184,
     Packet_AllocPgoInstrumentationBySchema               = 186, // Added 1/4/2021
     Packet_GetPgoInstrumentationResults                  = 187, // Added 1/4/2021

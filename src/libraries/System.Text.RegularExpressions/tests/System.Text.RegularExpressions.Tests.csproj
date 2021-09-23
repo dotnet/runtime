@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
@@ -34,9 +34,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />
+    <Compile Include="RegexAssert.netfx.cs" />
     <Compile Include="RegexParserTests.netfx.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="RegexAssert.netcoreapp.cs" />
     <Compile Include="RegexParserTests.netcoreapp.cs" />
     <Compile Include="RegexValidations.netcoreapp.cs" />
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />

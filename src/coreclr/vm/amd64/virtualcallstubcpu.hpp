@@ -827,7 +827,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 {
     unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
     unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == false /* TODO: NYI */);
 
     VTableCallStub* pStub = stub();
     BYTE* p = (BYTE*)pStub->entryPoint();

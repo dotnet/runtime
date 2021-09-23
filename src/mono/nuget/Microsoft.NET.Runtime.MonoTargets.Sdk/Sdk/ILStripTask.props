@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <ILStripTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\ILStrip.dll</ILStripTasksAssemblyPath>
+    <ILStripTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\net472\ILStrip.dll</ILStripTasksAssemblyPath>
+  </PropertyGroup>
+  <UsingTask TaskName="ILStrip" AssemblyFile="$(ILStripTasksAssemblyPath)" />
+</Project>

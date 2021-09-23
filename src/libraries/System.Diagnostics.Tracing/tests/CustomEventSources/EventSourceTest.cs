@@ -26,8 +26,9 @@ namespace SdtEventSources
     [EventSource(Guid = "69e2aa3e-083b-5014-cad4-3e511a0b94cf", Name = "EventSourceTest")]
     public sealed class EventSourceTest : EventSource
     {
-        public EventSourceTest(bool useSelfDescribingEvents = false)
-            : base(true)
+        public EventSourceTest(bool useSelfDescribingEvents = false, bool throwOnEventWriteErrors = false)
+            : base((useSelfDescribingEvents ? EventSourceSettings.EtwSelfDescribingEventFormat : EventSourceSettings.EtwManifestEventFormat)
+                  | (throwOnEventWriteErrors ? EventSourceSettings.ThrowOnEventWriteErrors : 0))
         { }
 
         protected override void OnEventCommand(EventCommandEventArgs command)

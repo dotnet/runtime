@@ -143,7 +143,6 @@ namespace System.Net.Http.Json.Functional.Tests
             => AssertExtensions.Throws<ArgumentNullException>("inputType", () => JsonContent.Create(null, inputType: null, mediaType: null));
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52650", TestPlatforms.Android)]
         public void JsonContentThrowsOnIncompatibleTypeAsync()
         {
             using (HttpClient client = new HttpClient())

@@ -30,6 +30,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <!-- GenTree -->
+
   <Type Name="GenTree">
     <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
@@ -53,9 +54,19 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
     <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
 
+  <Type Name="Statement">
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>this-&gt;m_treeList</HeadPointer>
+        <NextPointer>this-&gt;gtNext</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
   <Type Name="LclVarDsc">
-    <DisplayString Condition="lvReason==0">[{lvType,en}]</DisplayString>
-    <DisplayString>[{lvType,en}-{lvReason,s}]</DisplayString>
+    <DisplayString Condition="lvReason==0">[V{lvSlotNum,d}: {lvType,en}]</DisplayString>
+    <DisplayString>[V{lvSlotNum,d}: {lvType,en}-{lvReason,s}]</DisplayString>
   </Type>
 
   <Type Name="GenTreeLclVar" Inheritable="false">
@@ -164,8 +175,8 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
 
   <!-- Emitter -->
   <Type Name="insGroup">
-    <DisplayString Condition="igFlags &amp; 0x200">IG{igNum,d} [extend]</DisplayString>
-    <DisplayString>IG{igNum,d}</DisplayString>
+    <DisplayString Condition="igFlags &amp; 0x200">IG{igNum,d}, size={igSize,d}, offset={igOffs,d} [extend]</DisplayString>
+    <DisplayString>IG{igNum,d}, size={igSize,d}, offset={igOffs,d}</DisplayString>
   </Type>
 
   <Type Name="emitter::instrDesc">

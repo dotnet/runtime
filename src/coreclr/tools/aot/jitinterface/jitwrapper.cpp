@@ -43,6 +43,11 @@ DLL_EXPORT int JitCompileMethod(
     return 1;
 }
 
+DLL_EXPORT void JitProcessShutdownWork(ICorJitCompiler * pJit)
+{
+    return pJit->ProcessShutdownWork(nullptr);
+}
+
 DLL_EXPORT unsigned GetMaxIntrinsicSIMDVectorLength(
     ICorJitCompiler * pJit,
     CORJIT_FLAGS * flags)

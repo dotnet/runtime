@@ -31,4 +31,11 @@ namespace ApplyUpdateReferencedAssembly
             return "OLD STRING";
         }
     }
+
+
+
+    public class MethodBody4 {
+        public static void StaticMethod4 () {
+        }
+    }
 }

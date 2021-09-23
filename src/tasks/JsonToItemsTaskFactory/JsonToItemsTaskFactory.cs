@@ -173,6 +173,12 @@ namespace JsonToItemsTaskFactory
                     Log.LogError($"no {nameof(JsonFilePath)} specified");
                     return false;
                 }
+                if (!File.Exists(jsonFilePath))
+                {
+                    Log.LogError($"Could not find {nameof(JsonFilePath)}={jsonFilePath}");
+                    return false;
+                }
+
                 if (!TryGetJson(jsonFilePath, out var json))
                     return false;
 

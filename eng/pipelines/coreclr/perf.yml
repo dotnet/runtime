@@ -93,6 +93,25 @@ jobs:
         logicalmachine: 'perftiger'
         javascriptEngine: 'javascriptcore'
 
+  #run mono wasm aot microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
+      buildconfig: release
+      runtimeflavor: wasm
+      platforms:
+      - linux_x64
+      jobparameters:
+        testgroup: perf
+        livelibrariesbuildconfig: Release
+        runtimetype: wasm
+        codegentype: 'aot'
+        projectfile: microbenchmarks.proj
+        runkind: micro
+        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        javascriptengine: 'javascriptcore'
+
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
   # build coreclr and libraries
@@ -288,7 +307,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
 
-  # run mono wasm microbenchmarks perf job
+  # run mono wasm interpreter (default) microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
@@ -304,6 +323,25 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        javascriptEngine: 'v8'
+
+  #run mono wasm aot microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
+      buildconfig: release
+      runtimeflavor: wasm
+      platforms:
+      - linux_x64
+      jobparameters:
+        testgroup: perf
+        livelibrariesbuildconfig: Release
+        runtimetype: wasm
+        codegentype: 'aot'
+        projectfile: microbenchmarks.proj
+        runkind: micro
+        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
 

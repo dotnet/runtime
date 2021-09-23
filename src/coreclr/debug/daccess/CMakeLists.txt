@@ -19,6 +19,7 @@ set(DACCESS_SOURCES
   dacfn.cpp
   enummem.cpp
   fntableaccess.cpp
+  gcdump_dac.cpp
   inspect.cpp
   reimpl.cpp
   request.cpp

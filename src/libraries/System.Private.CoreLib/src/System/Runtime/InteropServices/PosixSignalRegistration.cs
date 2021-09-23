@@ -33,7 +33,6 @@ namespace System.Runtime.InteropServices
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
         {

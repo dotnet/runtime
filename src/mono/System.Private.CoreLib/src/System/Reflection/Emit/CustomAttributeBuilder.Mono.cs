@@ -123,7 +123,7 @@ namespace System.Reflection.Emit
                 // depends on this
                 Enum.GetUnderlyingType(t);
             }
-            if (t.IsClass && !(t.IsArray || t == typeof(object) || t == typeof(Type) || t == typeof(string) || t.Assembly.GetName().Name == "mscorlib"))
+            if (t.IsClass && !(t.IsArray || t == typeof(object) || typeof(Type).IsAssignableFrom(t) || t == typeof(string) || t.Assembly.GetName().Name == "mscorlib"))
                 return false;
             if (t.IsValueType && !(t.IsPrimitive || t.IsEnum || ((t.Assembly is AssemblyBuilder) && t.Assembly.GetName().Name == "mscorlib")))
                 return false;
@@ -149,7 +149,7 @@ namespace System.Reflection.Emit
         {
             if (type.IsValueType && value == null)
                 return false;
-            if (type.IsArray && type.GetElementType()!.IsValueType)
+            if (type.IsArray && type.GetElementType()!.IsValueType && value != null)
             {
                 foreach (object? v in (Array)value!)
                 {

@@ -1,5 +1,13 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="BinaryOperatorTests.cs" />
+    <TestConsoleAppSourceFiles Include="ConvertOperatorTests.cs" />
+    <TestConsoleAppSourceFiles Include="EqualOperatorTests.cs" />
+    <TestConsoleAppSourceFiles Include="ExpressionPropertyTests.cs" />
+    <TestConsoleAppSourceFiles Include="GetHelperTypeTests.cs" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

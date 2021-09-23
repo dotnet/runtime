@@ -658,10 +658,10 @@ namespace System.Data
         Utc = 4,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
-    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.")]
     public partial class DataSysDescriptionAttribute : System.ComponentModel.DescriptionAttribute
     {
-        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.")]
         public DataSysDescriptionAttribute(string description) { }
         public override string Description { get { throw null; } }
     }
@@ -1758,7 +1758,7 @@ namespace System.Data.Common
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.Common.DataTableMappingCollection TableMappings { get { throw null; } }
         public event System.Data.FillErrorEventHandler? FillError { add { } remove { } }
-        [System.ObsoleteAttribute("CloneInternals() has been deprecated.  Use the DataAdapter(DataAdapter from) constructor.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("CloneInternals() has been deprecated. Use the DataAdapter(DataAdapter from) constructor instead.")]
         protected virtual System.Data.Common.DataAdapter CloneInternals() { throw null; }
         protected virtual System.Data.Common.DataTableMappingCollection CreateTableMappings() { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -1945,10 +1945,10 @@ namespace System.Data.Common
     public abstract class DbBatchCommand
     {
         public abstract string CommandText { get; set; }
-        public abstract CommandType CommandType { get; set; }
+        public abstract System.Data.CommandType CommandType { get; set; }
         public abstract int RecordsAffected { get; }
-        public DbParameterCollection Parameters { get { throw null; } }
-        protected abstract DbParameterCollection DbParameterCollection { get; }
+        public System.Data.Common.DbParameterCollection Parameters { get { throw null; } }
+        protected abstract System.Data.Common.DbParameterCollection DbParameterCollection { get; }
     }
     public abstract class DbBatchCommandCollection : System.Collections.Generic.IList<DbBatchCommand>
     {
@@ -1964,7 +1964,9 @@ namespace System.Data.Common
         public abstract int IndexOf(DbBatchCommand item);
         public abstract void Insert(int index, DbBatchCommand item);
         public abstract void RemoveAt(int index);
-        public abstract DbBatchCommand this[int index] { get; set; }
+        public System.Data.Common.DbBatchCommand this[int index] { get { throw null; } set { throw null; } }
+        protected abstract System.Data.Common.DbBatchCommand GetBatchCommand(int index);
+        protected abstract void SetBatchCommand(int index, System.Data.Common.DbBatchCommand batchCommand);
     }
     public abstract partial class DbColumn
     {
@@ -3711,7 +3713,7 @@ namespace System.Data.SqlTypes
 }
 namespace System.Xml
 {
-    [System.ObsoleteAttribute("XmlDataDocument class will be removed in a future release.")]
+    [System.ObsoleteAttribute("XmlDataDocument has been deprecated and is not supported.")]
     public partial class XmlDataDocument : System.Xml.XmlDocument
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.")]

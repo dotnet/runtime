@@ -12,9 +12,9 @@ namespace System.Text.Json.Serialization.Converters
     /// Implementation of <cref>JsonObjectConverter{T}</cref> that supports the deserialization
     /// of JSON objects using parameterized constructors.
     /// </summary>
-    internal sealed class LargeObjectWithParameterizedConstructorConverter<T> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
+    internal class LargeObjectWithParameterizedConstructorConverter<T> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
-        protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
+        protected sealed override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
             Debug.Assert(jsonParameterInfo.ShouldDeserialize);
             Debug.Assert(jsonParameterInfo.Options != null);
@@ -23,22 +23,23 @@ namespace System.Text.Json.Serialization.Converters
 
             if (success && !(arg == null && jsonParameterInfo.IgnoreDefaultValuesOnRead))
             {
-                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
+                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.ClrInfo.Position] = arg!;
             }
 
             return success;
         }
 
-        protected override object CreateObject(ref ReadStackFrame frame)
+        protected sealed override object CreateObject(ref ReadStackFrame frame)
         {
             object[] arguments = (object[])frame.CtorArgumentState!.Arguments;
+            frame.CtorArgumentState.Arguments = null!;
 
-            var createObject = (JsonTypeInfo.ParameterizedConstructorDelegate<T>?)frame.JsonTypeInfo.CreateObjectWithArgs;
+            var createObject = (Func<object[], T>?)frame.JsonTypeInfo.CreateObjectWithArgs;
 
             if (createObject == null)
             {
                 // This means this constructor has more than 64 parameters.
-                ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo!, TypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(TypeToConvert);
             }
 
             object obj = createObject(arguments);
@@ -47,26 +48,29 @@ namespace System.Text.Json.Serialization.Converters
             return obj;
         }
 
-        protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            if (typeInfo.CreateObjectWithArgs == null)
+            // Ensure property cache has been initialized.
+            Debug.Assert(typeInfo.PropertyCache != null);
+
+            if (typeInfo.ParameterCache == null)
             {
-                typeInfo.CreateObjectWithArgs = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
+                typeInfo.InitializePropCache();
             }
 
             List<KeyValuePair<string, JsonParameterInfo?>> cache = typeInfo.ParameterCache!.List;
-            object[] arguments = ArrayPool<object>.Shared.Rent(cache.Count);
+            object?[] arguments = ArrayPool<object>.Shared.Rent(cache.Count);
+
             for (int i = 0; i < typeInfo.ParameterCount; i++)
             {
                 JsonParameterInfo? parameterInfo = cache[i].Value;
                 Debug.Assert(parameterInfo != null);
 
-                if (parameterInfo.ShouldDeserialize)
-                {
-                    arguments[parameterInfo.Position] = parameterInfo.DefaultValue!;
-                }
+                arguments[parameterInfo.ClrInfo.Position] = parameterInfo.ShouldDeserialize
+                    ? parameterInfo.DefaultValue
+                    : parameterInfo.ClrDefaultValue;
             }
 
             state.Current.CtorArgumentState!.Arguments = arguments;

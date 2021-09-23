@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
@@ -196,72 +197,93 @@ namespace System.Globalization
             ref char charA = ref strA;
             ref char charB = ref strB;
 
-            while (length != 0)
+            int index = 0;
+
+            while (index < length)
             {
-                 // optimize for Ascii cases
-                if (charA <= '\u00FF' || length == 1 || !char.IsHighSurrogate(charA) || !char.IsHighSurrogate(charB))
-                {
-                    if (charA == charB)
-                    {
-                        length--;
-                        charA = ref Unsafe.Add(ref charA, 1);
-                        charB = ref Unsafe.Add(ref charB, 1);
-                        continue;
-                    }
-
-                    char aUpper = OrdinalCasing.ToUpper(charA);
-                    char bUpper = OrdinalCasing.ToUpper(charB);
-
-                    if (aUpper == bUpper)
-                    {
-                        length--;
-                        charA = ref Unsafe.Add(ref charA, 1);
-                        charB = ref Unsafe.Add(ref charB, 1);
-                        continue;
-                    }
-
-                    return aUpper - bUpper;
-                }
-
-                // We come here only of we have valid high surrogates and length > 1
-
                 char a = charA;
                 char b = charB;
+                char lowSurrogateA = '\0';
 
-                length--;
-                charA = ref Unsafe.Add(ref charA, 1);
-                charB = ref Unsafe.Add(ref charB, 1);
-
-                if (!char.IsLowSurrogate(charA) || !char.IsLowSurrogate(charB))
+                if (!char.IsHighSurrogate(a) || index >= lengthA - 1 || !char.IsLowSurrogate(lowSurrogateA = Unsafe.Add(ref charA, 1)))
                 {
-                    // malformed Surrogates - should be rare cases
-                    if (a != b)
+                    if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(Unsafe.Add(ref charB, 1)))
                     {
+                        //
+                        // Neither A or B are surrogates
+                        //
+
+                        if (b == a)
+                        {
+                            index++;
+                            charA = ref Unsafe.Add(ref charA, 1);
+                            charB = ref Unsafe.Add(ref charB, 1);
+                            continue;
+                        }
+
+                        char aUpper = OrdinalCasing.ToUpper(a);
+                        char bUpper = OrdinalCasing.ToUpper(b);
+
+                        if (aUpper == bUpper)
+                        {
+                            index++;
+                            charA = ref Unsafe.Add(ref charA, 1);
+                            charB = ref Unsafe.Add(ref charB, 1);
+                            continue;
+                        }
+
                         return a - b;
                     }
 
-                    // Should be pointing to the right characters in the string to resume at.
-                    // Just in case we could be pointing at high surrogate now.
+                    //
+                    // charA is not surrogate and charB is valid surrogate
+                    //
+
+                    return -1;
+                }
+
+                //
+                // A is Surrogate
+                //
+
+                char lowSurrogateB = '\0';
+
+                if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(lowSurrogateB = Unsafe.Add(ref charB, 1)))
+                {
+                    //
+                    // charB is not surrogate and charA is surrogate
+                    //
+
+                    return 1;
+                }
+
+                //
+                // charA and charB are surrogates
+                //
+
+                Debug.Assert(lowSurrogateA != '\0');
+                Debug.Assert(lowSurrogateB != '\0');
+
+                if (a == b && lowSurrogateA == lowSurrogateB)
+                {
+                    index += 2;
+                    charA = ref Unsafe.Add(ref charA, 2);
+                    charB = ref Unsafe.Add(ref charB, 2);
                     continue;
                 }
 
-                // we come here only if we have valid full surrogates
-                SurrogateCasing.ToUpper(a, charA, out char h1, out char l1);
-                SurrogateCasing.ToUpper(b, charB, out char h2, out char l2);
+                uint upperSurrogateA = CharUnicodeInfo.ToUpper(UnicodeUtility.GetScalarFromUtf16SurrogatePair(a, lowSurrogateA));
+                uint upperSurrogateB = CharUnicodeInfo.ToUpper(UnicodeUtility.GetScalarFromUtf16SurrogatePair(b, lowSurrogateB));
 
-                if (h1 != h2)
+                if (upperSurrogateA == upperSurrogateB)
                 {
-                    return (int)h1 - (int)h2;
+                    index += 2;
+                    charA = ref Unsafe.Add(ref charA, 2);
+                    charB = ref Unsafe.Add(ref charB, 2);
+                    continue;
                 }
 
-                if (l1 != l2)
-                {
-                    return (int)l1 - (int)l2;
-                }
-
-                length--;
-                charA = ref Unsafe.Add(ref charA, 1);
-                charB = ref Unsafe.Add(ref charB, 1);
+                return (int)upperSurrogateA - (int)upperSurrogateB;
             }
 
             return lengthA - lengthB;

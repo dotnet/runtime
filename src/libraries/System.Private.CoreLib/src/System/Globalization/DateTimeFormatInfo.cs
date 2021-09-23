@@ -2054,6 +2054,16 @@ namespace System.Globalization
                     InsertHash(temp, TimeSeparator, TokenType.SEP_Time, 0);
                 }
 
+                if (_name == "fr-CA")
+                {
+                    InsertHash(temp, " h", TokenType.SEP_HourSuff, 0);
+                    InsertHash(temp, " h ", TokenType.SEP_HourSuff, 0);
+                    InsertHash(temp, " min", TokenType.SEP_MinuteSuff, 0);
+                    InsertHash(temp, " min ", TokenType.SEP_MinuteSuff, 0);
+                    InsertHash(temp, " s", TokenType.SEP_SecondSuff, 0);
+                    InsertHash(temp, " s ", TokenType.SEP_SecondSuff, 0);
+                }
+
                 InsertHash(temp, AMDesignator, TokenType.SEP_Am | TokenType.Am, 0);
                 InsertHash(temp, PMDesignator, TokenType.SEP_Pm | TokenType.Pm, 1);
 

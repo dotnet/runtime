@@ -288,7 +288,7 @@ namespace System.Net.Sockets
                 throw;
             }
 
-            SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, fileHandles, cancellationToken, (bytesTransferred, error) =>
+            _ = SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, fileHandles, cancellationToken, (bytesTransferred, error) =>
             {
                 if (error == SocketError.Success)
                 {

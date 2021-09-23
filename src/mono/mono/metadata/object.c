@@ -38,7 +38,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
-#include "mono/metadata/security-manager.h"
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32process.h>
@@ -397,6 +396,7 @@ mono_runtime_run_module_cctor (MonoImage *image, MonoError *error)
 			MonoClass *module_klass;
 			MonoVTable *module_vtable;
 
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Running module .cctor for '%s'", image->name);
 			module_klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | 1, error);
 			if (!module_klass) {
 				return FALSE;
@@ -522,6 +522,11 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	if (do_initialization) {
 		MonoException *exc = NULL;
 
+		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE)) {
+			char* type_name = mono_type_full_name (m_class_get_byval_arg (klass));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Running class .cctor for %s from '%s'", type_name, m_class_get_image (klass)->name);
+			g_free (type_name);
+		}
 		/* We are holding the per-vtable lock, do the actual initialization */
 
 		mono_threads_begin_abort_protected_block ();
@@ -4148,7 +4153,7 @@ mono_unhandled_exception_internal (MonoObject *exc_raw)
 void
 mono_unhandled_exception (MonoObject *exc)
 {
-	MONO_EXTERNAL_ONLY_VOID (mono_unhandled_exception_internal (exc));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_unhandled_exception_internal (exc));
 }
 
 static MonoObjectHandle

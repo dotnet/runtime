@@ -5,14 +5,15 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
+    <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <AppName>HelloiOS</AppName>
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- FIXME: for some reason trimming is throwing errors about something in System.Diagnostics. -->
-    <!-- <PublishTrimmed>true</PublishTrimmed> -->
-    <!-- <TrimMode>Link</TrimMode> -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
@@ -59,6 +60,7 @@
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         OutputDir="$(PublishDir)"
+        IntermediateOutputPath="$(IntermediateOutputPath)"
         UseLLVM="$(UseLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
@@ -67,7 +69,7 @@
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
-        ProjectName="HelloiOS"
+        ProjectName="$(AppName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
@@ -91,15 +93,12 @@
 
   <Target Name="RunAppBundle"
           AfterTargets="BuildAppBundle"
-          Condition="'$(ArchiveTests)' != 'true'">
+          Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
     <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
 
-    <!-- install and run on ios simulator -->
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl boot &quot;$(IosSimulator)&quot;" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="open -a Simulator" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl install &quot;$(IosSimulator)&quot; $(AppBundlePath)" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
+    <!-- install and run on ios simulator or device -->
+    <Exec Condition="'$(TargetOS)' == 'iOSSimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iOS'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
 
     <!-- run on MacCatalyst -->
     <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="open -W $(AppBundlePath)" />
@@ -118,12 +117,13 @@
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
       <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
+      <_AppBundleName>$([System.IO.Path]::GetFileName('$(AppBundlePath)'))</_AppBundleName>
     </PropertyGroup>
     <ItemGroup>
-      <_appFiles Include="$(AppBundlePath)/../**/*" />
+      <_appFiles Include="$(AppBundlePath)/**/*" />
     </ItemGroup>
     <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/%(RecursiveDir)" />
+          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/$(_AppBundleName)/%(RecursiveDir)" />
 
     <Message Importance="High" Text="AppBundlePath: $(AppBundlePath)"/>
     <Message Importance="High" Text="HelixArchiveRunOnlyAppsDir: $(HelixArchiveRunOnlyAppsDir)"/>

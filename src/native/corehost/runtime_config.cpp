@@ -334,9 +334,9 @@ bool runtime_config_t::ensure_dev_config_parsed()
     trace::verbose(_X("Attempting to read dev runtime config: %s"), m_dev_path.c_str());
 
     pal::string_t retval;
-    if (!pal::file_exists(m_dev_path))
+    if (!pal::realpath(&m_dev_path, true))
     {
-        // Not existing is valid.
+        // It is valid for the runtimeconfig.dev.json to not exist.
         return true;
     }
 
@@ -402,7 +402,7 @@ bool runtime_config_t::ensure_parsed()
         trace::verbose(_X("Did not successfully parse the runtimeconfig.dev.json"));
     }
 
-    if (!bundle::info_t::config_t::probe(m_path) && !pal::file_exists(m_path))
+    if (!bundle::info_t::config_t::probe(m_path) && !pal::realpath(&m_path, true))
     {
         // Not existing is not an error.
         return true;

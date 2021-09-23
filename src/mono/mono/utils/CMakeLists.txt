@@ -48,14 +48,8 @@ set(utils_common_sources
     mono-log-android.c
     mono-log-darwin.c
     mono-log-flight-recorder.c
-    mono-merp.c
-    mono-merp.h
-    mono-state.h
-    mono-state.c
     mono-internal-hash.c
     mono-internal-hash.h
-    mono-io-portability.c
-    mono-io-portability.h
     monobitset.c
     mono-filemap.c
     mono-math-c.c

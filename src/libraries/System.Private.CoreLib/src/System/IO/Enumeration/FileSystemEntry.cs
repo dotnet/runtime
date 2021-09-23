@@ -10,11 +10,11 @@ namespace Microsoft.IO.Enumeration
 namespace System.IO.Enumeration
 #endif
 {
+    /// <summary>Provides a lower level view of <see cref="System.IO.FileSystemInfo" /> to help process and filter find results.</summary>
     public ref partial struct FileSystemEntry
     {
-        /// <summary>
-        /// Returns the full path for find results, based on the initially provided path.
-        /// </summary>
+        /// <summary>Returns the full path for the find results, based on the initially provided path.</summary>
+        /// <returns>A string representing the full path.</returns>
         public string ToSpecifiedFullPath()
         {
             // We want to provide the enumerated segment of the path appended to the originally specified path. This is

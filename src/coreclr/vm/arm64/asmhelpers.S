@@ -500,56 +500,6 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-#ifdef FEATURE_PREJIT
-//------------------------------------------------
-// VirtualMethodFixupStub
-//
-// In NGEN images, virtual slots inherited from cross-module dependencies
-// point to a jump thunk that calls into the following function that will
-// call into a VM helper. The VM helper is responsible for patching up
-// thunk, upon executing the precode, so that all subsequent calls go directly
-// to the actual method body.
-//
-// This is done lazily for performance reasons.
-//
-// On entry:
-//
-// x0 = "this" pointer
-// x12 = Address of thunk
-
-NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-
-    // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
-    SAVE_ARGUMENT_REGISTERS sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
-
-    // Refer to ZapImportVirtualThunk::Save
-    // for details on this.
-    //
-    // Move the thunk start address in x1
-    mov x1, x12
-
-    // Call the helper in the VM to perform the actual fixup
-    // and tell us where to tail call. x0 already contains
-    // the this pointer.
-    bl C_FUNC(VirtualMethodFixupWorker)
-    // On return, x0 contains the target to tailcall to
-    mov x12, x0
-
-    // pop the stack and restore original register state
-    RESTORE_ARGUMENT_REGISTERS sp, 16
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 224
-
-    PATCH_LABEL VirtualMethodFixupPatchLabel
-
-    // and tailcall to the actual method
-    EPILOG_BRANCH_REG x12
-
-NESTED_END VirtualMethodFixupStub, _TEXT
-#endif // FEATURE_PREJIT
-
 //------------------------------------------------
 // ExternalMethodFixupStub
 //
@@ -1087,29 +1037,6 @@ NESTED_END DelayLoad_Helper\suffix\()_FakeProlog, _TEXT
 DynamicHelper DynamicHelperFrameFlags_Default
 DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
 DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
-#endif
-
-#ifdef FEATURE_PREJIT
-// ------------------------------------------------------------------
-// void StubDispatchFixupStub(args in regs x0-x7 & stack and possibly retbuff arg in x8, x11:IndirectionCellAndFlags)
-//
-// The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
-    and x1, x11, #-4 // Indirection cell
-    mov x2, #0 // sectionIndex
-    mov x3, #0 // pModule
-    bl C_FUNC(StubDispatchFixupWorker)
-    mov x12, x0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL StubDispatchFixupPatchLabel
-    EPILOG_BRANCH_REG  x12
-
-NESTED_END StubDispatchFixupStub, _TEXT
 #endif
 
 #ifdef FEATURE_COMINTEROP

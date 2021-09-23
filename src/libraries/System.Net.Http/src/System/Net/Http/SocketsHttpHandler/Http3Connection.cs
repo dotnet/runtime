@@ -20,11 +20,6 @@ namespace System.Net.Http
     [SupportedOSPlatform("macos")]
     internal sealed class Http3Connection : HttpConnectionBase
     {
-        // TODO: once HTTP/3 is standardized, create APIs for this.
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol29 = new SslApplicationProtocol("h3-29");
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol30 = new SslApplicationProtocol("h3-30");
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol31 = new SslApplicationProtocol("h3-31");
-
         private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
@@ -118,12 +113,6 @@ namespace System.Net.Http
                 return;
             }
 
-            if (_clientControl != null)
-            {
-                _clientControl.Dispose();
-                _clientControl = null;
-            }
-
             if (_connection != null)
             {
                 // Close the QuicConnection in the background.
@@ -151,6 +140,13 @@ namespace System.Net.Http
                     {
                         Trace($"{nameof(QuicConnection)} failed to dispose: {ex}");
                     }
+
+                    if (_clientControl != null)
+                    {
+                        _clientControl.Dispose();
+                        _clientControl = null;
+                    }
+
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
@@ -283,7 +279,7 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                if (lastProcessedStreamId > _lastProcessedStreamId)
+                if (_lastProcessedStreamId != -1 && lastProcessedStreamId > _lastProcessedStreamId)
                 {
                     // Server can send multiple GOAWAY frames.
                     // Spec says a server MUST NOT increase the stream ID in subsequent GOAWAYs,

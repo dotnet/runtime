@@ -10,10 +10,15 @@
 
 #if HAVE_MALLOC_SIZE
     #include <malloc/malloc.h>
+    #define MALLOC_SIZE(s) malloc_size(s)
 #elif HAVE_MALLOC_USABLE_SIZE
     #include <malloc.h>
+    #define MALLOC_SIZE(s) malloc_usable_size(s)
 #elif HAVE_MALLOC_USABLE_SIZE_NP
     #include <malloc_np.h>
+    #define MALLOC_SIZE(s) malloc_usable_size(s)
+#elif defined(TARGET_SUNOS)
+    #define MALLOC_SIZE(s) (*((size_t*)(s)-1))
 #else
     #error "Platform doesn't support malloc_usable_size or malloc_size"
 #endif
@@ -67,13 +72,7 @@ void SystemNative_Free(void* ptr)
 
 uintptr_t SystemNative_GetUsableSize(void* ptr)
 {
-#if HAVE_MALLOC_SIZE
-    return malloc_size(ptr);
-#elif HAVE_MALLOC_USABLE_SIZE || HAVE_MALLOC_USABLE_SIZE_NP
-    return malloc_usable_size(ptr);
-#else
-    #error "Platform doesn't support malloc_usable_size or malloc_size"
-#endif
+    return MALLOC_SIZE(ptr);
 }
 
 void* SystemNative_Malloc(uintptr_t size)

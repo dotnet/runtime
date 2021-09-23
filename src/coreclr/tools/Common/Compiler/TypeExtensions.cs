@@ -32,7 +32,7 @@ namespace ILCompiler
             {
                 if (!type.IsArrayTypeWithoutGenericInterfaces())
                 {
-                    MetadataType arrayShadowType = type.Context.SystemModule.GetType("System", "Array`1", NotFoundBehavior.ReturnNull);
+                    MetadataType arrayShadowType = type.Context.SystemModule.GetType("System", "Array`1", throwIfNotFound: false);
                     if (arrayShadowType != null)
                     {
                         return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
@@ -566,6 +566,12 @@ namespace ILCompiler
         public static bool IsRawPInvoke(this MethodDesc method)
         {
             return method.IsPInvoke && (method is Internal.IL.Stubs.PInvokeTargetNativeMethod);
+        }
+
+        public static bool IsDynamicInterfaceCastableImplementation(this MetadataType interfaceType)
+        {
+            Debug.Assert(interfaceType.IsInterface);
+            return interfaceType.HasCustomAttribute("System.Runtime.InteropServices", "DynamicInterfaceCastableImplementationAttribute");
         }
     }
 }

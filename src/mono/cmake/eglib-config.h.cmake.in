@@ -33,7 +33,7 @@
 
 #else
 
-#if @HAVE_ALLOCA_H@ == 1
+#ifdef HAVE_ALLOCA_H
 #define G_HAVE_ALLOCA_H
 #endif
 
