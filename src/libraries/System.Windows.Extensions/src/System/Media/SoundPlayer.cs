@@ -481,7 +481,7 @@ namespace System.Media
 
         private async Task CopyStreamAsync(CancellationToken cancellationToken)
         {
-            Exception exception = null;
+            Exception? exception = null;
             try
             {
                 // setup the http stream
