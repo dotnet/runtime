@@ -112,15 +112,13 @@ def main(main_args):
     # copy CORE_ROOT
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, coreroot_dst_directory))
     copy_directory(coreclr_args.core_root_directory, coreroot_dst_directory, match_func=acceptable_copy)
-    access_token = os.environ.get("SYSTEM_ACCESSTOKEN")
-    tool_repo_path = os.environ.get("TOOL_REPO_PATH")
     tool_name = os.environ.get("TOOL_NAME")
 
     try:
         with TempDir() as tool_code_directory:
             # clone the tool
             run_command(
-                ["git", "clone", "--quiet", "--depth", "1", "https://{}@{}".format(access_token, tool_repo_path), tool_code_directory])
+                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/Antigen.git", tool_code_directory])
 
             # build the tool
             with ChangeDir(tool_code_directory):
