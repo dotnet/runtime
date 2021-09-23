@@ -79,6 +79,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/59538")]
         public void Net50Projects_NativeReference(string config)
             => BuildNet50Project(config, aot: false, expectError: true, @"<NativeFileReference Include=""native-lib.o"" />");
 
@@ -92,6 +93,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(Net50TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/59538")]
         public void Net50Projects_AOT(string config, bool aot, bool expectError)
             => BuildNet50Project(config, aot: aot, expectError: expectError);
 
