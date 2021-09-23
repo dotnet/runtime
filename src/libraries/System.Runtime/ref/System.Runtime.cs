@@ -5637,7 +5637,7 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IFloatingPoint<float>.Sin(float x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static float IFloatingPoint<float>.SinCos(float x) { throw null; }
+        static (float, float) IFloatingPoint<float>.SinCos(float x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IFloatingPoint<float>.Sinh(float x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
