@@ -897,7 +897,7 @@ inline const void *PEFile::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
 
     // Right now, we will trigger a LoadLibrary for the caller's sake,
     // even if we are in a scenario where we could normally avoid it.
-    LoadLibrary(FALSE);
+    LoadLibrary();
 
     if (pSize != NULL)
         *pSize = GetLoadedIL()->GetSize();
@@ -940,7 +940,7 @@ inline PTR_PEImageLayout PEFile::GetLoadedIL()
     return GetOpenedILimage()->GetLoadedLayout();
 };
 
-inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/)
+inline BOOL PEFile::IsLoaded()
 {
     CONTRACTL
     {

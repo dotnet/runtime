@@ -117,7 +117,7 @@ private:
     friend class DomainFile;
 
 public:
-    void LoadLibrary(BOOL allowNativeSkip = TRUE);
+    void LoadLibrary();
 
 
 private:
@@ -182,7 +182,7 @@ public:
     // Checks
     // ------------------------------------------------------------
 
-    CHECK CheckLoaded(BOOL allowNativeSkip = TRUE);
+    CHECK CheckLoaded();
     void ValidateForExecution();
     BOOL IsMarkedAsNoPlatform();
 
@@ -312,7 +312,7 @@ public:
     PTR_PEImageLayout GetLoadedIL();
     IStream * GetPdbStream();
     void ClearPdbStream();
-    BOOL IsLoaded(BOOL bAllowNativeSkip=TRUE) ;
+    BOOL IsLoaded() ;
     BOOL IsPtrInILImage(PTR_CVOID data);
 
     // ------------------------------------------------------------

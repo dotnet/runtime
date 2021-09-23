@@ -4339,7 +4339,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
                 // Ensure that the IL image is loaded. Note that this assembly may
                 // have an ngen image, but this type may have failed to load during ngen.
-                GetModule()->GetFile()->LoadLibrary(FALSE);
+                GetModule()->GetFile()->LoadLibrary();
 
                 DWORD fldSize;
                 if (FieldDescElementType == ELEMENT_TYPE_VALUETYPE)

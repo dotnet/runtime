@@ -94,7 +94,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                 if (
                     file->GetPath().IsEmpty() && // is in-memory
                     file->HasMetadata() &&       // skip resource assemblies
-                    file->IsLoaded(FALSE) &&     // skip files not yet loaded
+                    file->IsLoaded() &&     // skip files not yet loaded
                     !file->IsDynamic())          // skip dynamic (GetLoadedIL asserts anyway)
                 {
                     pStartAddr = PTR_TO_TADDR(file->GetLoadedIL()->GetBase());

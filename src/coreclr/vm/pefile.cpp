@@ -178,7 +178,7 @@ static void ValidatePEFileMachineType(PEFile *peFile)
     return;   // If we got here, all is good.
 }
 
-void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==FALSE force IL image load
+void PEFile::LoadLibrary()
 {
     CONTRACT_VOID
     {
@@ -192,7 +192,7 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
     ValidatePEFileMachineType(this);
 
     // See if we've already loaded it.
-    if (CheckLoaded(allowNativeSkip))
+    if (CheckLoaded())
     {
         RETURN;
     }
@@ -429,7 +429,7 @@ void PEFile::GetCodeBaseOrName(SString &result)
 
 
 
-CHECK PEFile::CheckLoaded(BOOL bAllowNativeSkip/*=TRUE*/)
+CHECK PEFile::CheckLoaded()
 {
     CONTRACT_CHECK
     {
@@ -440,7 +440,7 @@ CHECK PEFile::CheckLoaded(BOOL bAllowNativeSkip/*=TRUE*/)
     }
     CONTRACT_CHECK_END;
 
-    CHECK(IsLoaded(bAllowNativeSkip));
+    CHECK(IsLoaded());
 
     CHECK_OK;
 }
