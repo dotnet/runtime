@@ -815,16 +815,6 @@ namespace System.Net.Http
             return (pendingRequestsCts, DisposeTokenSource: false, pendingRequestsCts);
         }
 
-        private static bool IsNativeHandlerEnabled()
-        {
-            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isEnabled))
-            {
-                return false;
-            }
-
-            return isEnabled;
-        }
-
         private Uri? CreateUri(string? uri) =>
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
 

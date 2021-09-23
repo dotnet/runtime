@@ -4,8 +4,6 @@
     <!-- Test unsupported outside of OSX -->
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Disable under GCStress. Tracking: https://github.com/dotnet/runtime/issues/53359 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

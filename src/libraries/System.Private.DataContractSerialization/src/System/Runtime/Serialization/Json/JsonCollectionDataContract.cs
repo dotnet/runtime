@@ -21,12 +21,6 @@ namespace System.Runtime.Serialization.Json
             _helper = (base.Helper as JsonCollectionDataContractCriticalHelper)!;
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private JsonFormatCollectionReaderDelegate CreateJsonFormatReaderDelegate()
-        {
-            return new ReflectionJsonCollectionReader().ReflectionReadCollection;
-        }
-
         internal JsonFormatCollectionReaderDelegate JsonFormatReaderDelegate
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -41,7 +35,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatCollectionReaderDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = CreateJsonFormatReaderDelegate();
+                                tempDelegate = new ReflectionJsonCollectionReader().ReflectionReadCollection;
                             }
                             else
                             {
@@ -55,12 +49,6 @@ namespace System.Runtime.Serialization.Json
                 }
                 return _helper.JsonFormatReaderDelegate;
             }
-        }
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private JsonFormatGetOnlyCollectionReaderDelegate CreateJsonFormatGetOnlyReaderDelegate()
-        {
-            return new ReflectionJsonCollectionReader().ReflectionReadGetOnlyCollection;
         }
 
         internal JsonFormatGetOnlyCollectionReaderDelegate JsonFormatGetOnlyReaderDelegate
@@ -83,7 +71,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatGetOnlyCollectionReaderDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = CreateJsonFormatGetOnlyReaderDelegate();
+                                tempDelegate = new ReflectionJsonCollectionReader().ReflectionReadGetOnlyCollection;
                             }
                             else
                             {
@@ -99,13 +87,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private JsonFormatCollectionWriterDelegate CreateJsonFormatWriterDelegate()
-        {
-            return new ReflectionJsonFormatWriter().ReflectionWriteCollection;
-        }
-
-
         internal JsonFormatCollectionWriterDelegate JsonFormatWriterDelegate
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -120,7 +101,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatCollectionWriterDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = CreateJsonFormatWriterDelegate();
+                                tempDelegate = new ReflectionJsonFormatWriter().ReflectionWriteCollection;
                             }
                             else
                             {

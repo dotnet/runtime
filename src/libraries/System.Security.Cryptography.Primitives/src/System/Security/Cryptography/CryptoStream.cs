@@ -344,7 +344,7 @@ namespace System.Security.Cryptography
                 if (blocksToProcess > 1 && _transform.CanTransformMultipleBlocks)
                 {
                     // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
-                    int numWholeBlocksInBytes = blocksToProcess * _inputBlockSize;
+                    int numWholeBlocksInBytes = checked(blocksToProcess * _inputBlockSize);
                     byte[] tempInputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocksInBytes);
                     try
                     {
@@ -570,7 +570,7 @@ namespace System.Security.Cryptography
                         int numWholeBlocksInBytes = numWholeBlocks * _inputBlockSize;
 
                         // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
-                        byte[]? tempOutputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocks * _outputBlockSize);
+                        byte[]? tempOutputBuffer = ArrayPool<byte>.Shared.Rent(checked(numWholeBlocks * _outputBlockSize));
                         numOutputBytes = 0;
 
                         try
@@ -637,7 +637,7 @@ namespace System.Security.Cryptography
                 else
                 {
                     // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
-                    byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(inputBuffer.Length);
+                    byte[]? rentedBuffer = ArrayPool<byte>.Shared.Rent(inputBuffer.Length);
                     int result = default;
 
                     // Pin the rented buffer for security.
@@ -655,7 +655,7 @@ namespace System.Security.Cryptography
                     }
 
                     ArrayPool<byte>.Shared.Return(rentedBuffer);
-                    rentedBuffer = null!;
+                    rentedBuffer = null;
                     return result;
                 }
             }
@@ -667,7 +667,7 @@ namespace System.Security.Cryptography
             CheckCopyToArguments(destination, bufferSize);
 
             // Use ArrayPool<byte>.Shared instead of CryptoPool because the array is passed out.
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            byte[]? rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             // Pin the array for security.
             fixed (byte* _ = &rentedBuffer[0])
             {
@@ -686,7 +686,7 @@ namespace System.Security.Cryptography
                 }
             }
             ArrayPool<byte>.Shared.Return(rentedBuffer);
-            rentedBuffer = null!;
+            rentedBuffer = null;
         }
 
         /// <inheritdoc/>
@@ -699,7 +699,7 @@ namespace System.Security.Cryptography
         private async Task CopyToAsyncInternal(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // Use ArrayPool<byte>.Shared instead of CryptoPool because the array is passed out.
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            byte[]? rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             // Pin the array for security.
             GCHandle pinHandle = GCHandle.Alloc(rentedBuffer, GCHandleType.Pinned);
             try
@@ -717,7 +717,7 @@ namespace System.Security.Cryptography
                 pinHandle.Free();
             }
             ArrayPool<byte>.Shared.Return(rentedBuffer);
-            rentedBuffer = null!;
+            rentedBuffer = null;
         }
 
         private void CheckCopyToArguments(Stream destination, int bufferSize)

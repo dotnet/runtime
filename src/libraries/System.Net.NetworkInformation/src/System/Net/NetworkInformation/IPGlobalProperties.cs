@@ -12,6 +12,8 @@ namespace System.Net.NetworkInformation
     /// </summary>
     public abstract class IPGlobalProperties
     {
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static IPGlobalProperties GetIPGlobalProperties()
         {
             return IPGlobalPropertiesPal.GetIPGlobalProperties();

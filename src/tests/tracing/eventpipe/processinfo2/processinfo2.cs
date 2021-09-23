@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
@@ -56,10 +57,29 @@ namespace Tracing.Tests.ProcessInfoValidation
                 }
             }
 
-            string normalizedCommandLine = parts
-                .Where(part => !string.IsNullOrWhiteSpace(part))
-                .Select(part => (new FileInfo(part)).FullName)
-                .Aggregate((s1, s2) => string.Join(' ', s1, s2));
+            StringBuilder sb = new();
+            bool isArgument = false;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (string.IsNullOrEmpty(parts[i]))
+                    continue;
+                else if (parts[i].StartsWith('-'))
+                {
+                    // if we see '-', then assume it's a '-option argument' pair and remove
+                    isArgument = true;
+                }
+                else if (isArgument)
+                {
+                    isArgument = false;
+                }
+                else
+                {
+                    // assume anything else is a file/executable so get the full path
+                    sb.Append((new FileInfo(parts[i])).FullName + " ");
+                }
+            }
+
+            string normalizedCommandLine = sb.ToString().Trim();
 
             // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
             // This isn't represented in the output from FileInfo.FullName unfortunately, so we'll fake that completion in that case.

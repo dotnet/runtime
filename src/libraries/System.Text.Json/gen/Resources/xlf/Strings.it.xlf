@@ -12,6 +12,16 @@
         <target state="translated">I tipi derivati 'JsonSerializerContext' e tutti i tipi contenenti devono essere parziali.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidFormat">
+        <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
+        <target state="translated">La proprietà '{0}.{1}' dell'estensione dati non è valida. Deve implementare 'IDictionary&lt;string, JsonElement&gt;' o 'IDictionary&lt;String, Object&gt;' o 'JsonObject '.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidTitle">
+        <source>Data extension property type invalid.</source>
+        <target state="translated">Il tipo di proprietà dell'estensione dati non è valido.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">Sono presenti più tipi denominati {0}. L'origine è stata generata per il primo tipo rilevato. Per risolvere questa collisione, usare 'JsonSerializableAttribute.TypeInfoPropertyName'.</target>
@@ -20,6 +30,46 @@
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">Nome di tipo duplicato.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
+        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
+        <target state="translated">Il membro ' {0}.{1}' è stato annotato con JsonIncludeAttribute ma non è visibile al generatore di origine.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
+        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
+        <target state="translated">Le proprietà inaccessibili annotate con JsonIncludeAttribute non sono supportate nella modalità di generazione di origine.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
+        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
+        <target state="translated">Il tipo '{0}' definisce le proprietà di sola inizializzazione, la cui deserializzazione al momento non è supportata nella modalità di generazione di origine.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
+        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
+        <target state="translated">La deserializzazione delle proprietà di sola inizializzazione al momento non è supportata nella modalità di generazione di origine.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">Il tipo '{0}' contiene più costruttori che presentano l'annotazione 'JsonConstructorAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">Il tipo contiene più costruttori che presentano l'annotazione JsonConstructorAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeFormat">
+        <source>Type '{0}' has multiple members annotated with 'JsonExtensionDataAttribute'.</source>
+        <target state="translated">Nel tipo '{0}' sono presenti più membri annotati con 'JsonExtensionDataAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
+        <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
+        <target state="translated">Nel tipo sono presenti più membri annotati con JsonExtensionDataAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

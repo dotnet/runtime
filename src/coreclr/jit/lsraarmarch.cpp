@@ -176,9 +176,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // computed into a register.
         if (call->IsFastTailCall())
         {
-            // Fast tail call - make sure that call target is always computed in R12(ARM32)/IP0(ARM64)
-            // so that epilog sequence can generate "br xip0/r12" to achieve fast tail call.
-            ctrlExprCandidates = RBM_FASTTAILCALL_TARGET;
+            // Fast tail call - make sure that call target is always computed in volatile registers
+            // that will not be overridden by epilog sequence.
+            ctrlExprCandidates = RBM_INT_CALLEE_TRASH;
         }
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
@@ -460,6 +460,15 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
     {
         assert(!putArgChild->isContained());
         srcCount = BuildOperandUses(putArgChild);
+#if defined(FEATURE_SIMD) && defined(OSX_ARM64_ABI)
+        if (argNode->GetStackByteSize() == 12)
+        {
+            // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
+            // To assemble the vector properly we would need an additional int register.
+            // The other platforms can write it as 16-byte using 1 write.
+            buildInternalIntRegisterDefForNode(argNode);
+        }
+#endif // FEATURE_SIMD && OSX_ARM64_ABI
     }
     buildInternalRegisterUses();
     return srcCount;

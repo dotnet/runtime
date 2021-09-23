@@ -44,18 +44,18 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
         }
 
         public static Encoding InputEncoding
@@ -129,15 +129,6 @@ namespace System
 
             bool previouslyProcessed;
             ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
-
-            // Replace the '\n' char for Enter by '\r' to match Windows behavior.
-            if (keyInfo.Key == ConsoleKey.Enter && keyInfo.KeyChar == '\n')
-            {
-                bool shift   = (keyInfo.Modifiers & ConsoleModifiers.Shift)   != 0;
-                bool alt     = (keyInfo.Modifiers & ConsoleModifiers.Alt)     != 0;
-                bool control = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
-                keyInfo = new ConsoleKeyInfo('\r', keyInfo.Key, shift, alt, control);
-            }
 
             if (!intercept && !previouslyProcessed && keyInfo.KeyChar != '\0')
             {

@@ -719,20 +719,132 @@ struct GenerationDesc
     BYTE *rangeEndReserved;
 };
 
-struct GenerationTable
+class GenerationTable
 {
+public:
+    GenerationTable();
+    void AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved);
+    void AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved);
+    void Refresh();
+    HRESULT GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges);
+private:
+    Crst mutex;
     ULONG count;
     ULONG capacity;
     static const ULONG defaultCapacity = 5; // that's the minimum for Gen0-2 + LOH + POH
-    GenerationTable *prev;
     GenerationDesc *genDescTable;
-#ifdef  _DEBUG
-    ULONG magic;
-#define GENERATION_TABLE_MAGIC 0x34781256
-#define GENERATION_TABLE_BAD_MAGIC 0x55aa55aa
-#endif
 };
 
+GenerationTable::GenerationTable() : mutex(CrstLeafLock, CRST_UNSAFE_ANYMODE)
+{
+    count = 0;
+    capacity = GenerationTable::defaultCapacity;
+    genDescTable = new (nothrow) GenerationDesc[capacity];
+    if (genDescTable == NULL)
+    {
+        capacity = 0;
+    }
+}
+
+void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY; // can be called even on GC threads
+        PRECONDITION(0 <= generation && generation <= 4);
+        PRECONDITION(CheckPointer(rangeStart));
+        PRECONDITION(CheckPointer(rangeEnd));
+        PRECONDITION(CheckPointer(rangeEndReserved));
+    } CONTRACT_END;
+
+    CrstHolder holder(&mutex);
+
+    // Because the segment/region are added to the heap before they are reported to the profiler,
+    // it is possible that the region is added to the heap, a racing GenerationTable refresh happened,
+    // that refresh would contain the new region, and then it get reported again here. 
+    // This check will make sure we never add duplicated record to the table.
+    for (ULONG i = 0; i < count; i++)
+    {
+        if (genDescTable[i].rangeStart == rangeStart)
+        {
+            _ASSERTE (genDescTable[i].generation == generation);
+            _ASSERTE (genDescTable[i].rangeEnd == rangeEnd);
+            _ASSERTE (genDescTable[i].rangeEndReserved == rangeEndReserved);
+            RETURN;
+        }
+    }
+    AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
+    RETURN;
+}
+
+void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY; // can be called even on GC threads
+        PRECONDITION(0 <= generation && generation <= 4);
+        PRECONDITION(CheckPointer(rangeStart));
+        PRECONDITION(CheckPointer(rangeEnd));
+        PRECONDITION(CheckPointer(rangeEndReserved));
+    } CONTRACT_END;
+
+    _ASSERTE (mutex.OwnedByCurrentThread());
+    if (count >= capacity)
+    {
+        ULONG newCapacity = capacity == 0 ? GenerationTable::defaultCapacity : capacity * 2;
+        GenerationDesc *newGenDescTable = new (nothrow) GenerationDesc[newCapacity];
+        if (newGenDescTable == NULL)
+        {
+            count = capacity = 0;
+            delete[] genDescTable;
+            genDescTable = nullptr;
+            RETURN;
+        }
+        memcpy(newGenDescTable, genDescTable, sizeof(genDescTable[0]) * count);
+        delete[] genDescTable;
+        genDescTable = newGenDescTable;
+        capacity = newCapacity;
+    }
+    _ASSERTE(count < capacity);
+
+    genDescTable[count].generation = generation;
+    genDescTable[count].rangeStart = rangeStart;
+    genDescTable[count].rangeEnd = rangeEnd;
+    genDescTable[count].rangeEndReserved = rangeEndReserved;
+
+    count = count + 1;
+    RETURN;
+}
+
+HRESULT GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges)
+{
+    if ((cObjectRanges > 0) && (ranges == nullptr))
+    {
+        return E_INVALIDARG;
+    }
+    CrstHolder holder(&mutex);
+    if (genDescTable == nullptr)
+    {
+        return E_FAIL;
+    }
+    ULONG copy = min(count, cObjectRanges);
+    for (ULONG i = 0; i < copy; i++)
+    {
+        ranges[i].generation          = (COR_PRF_GC_GENERATION)genDescTable[i].generation;
+        ranges[i].rangeStart          = (ObjectID)genDescTable[i].rangeStart;
+        ranges[i].rangeLength         = genDescTable[i].rangeEnd         - genDescTable[i].rangeStart;
+        ranges[i].rangeLengthReserved = genDescTable[i].rangeEndReserved - genDescTable[i].rangeStart;
+    }
+    if (pcObjectRanges != nullptr)
+    {
+        *pcObjectRanges = count;
+    }
+    return S_OK;
+}
 
 //---------------------------------------------------------------------------------------
 //
@@ -769,45 +881,23 @@ static void GenWalkFunc(void * context,
     } CONTRACT_END;
 
     GenerationTable *generationTable = (GenerationTable *)context;
+    generationTable->AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
+    RETURN;
+}
 
-    _ASSERTE(generationTable->magic == GENERATION_TABLE_MAGIC);
-
-    ULONG count = generationTable->count;
-    if (count >= generationTable->capacity)
-    {
-        ULONG newCapacity = generationTable->capacity == 0 ? GenerationTable::defaultCapacity : generationTable->capacity * 2;
-        GenerationDesc *newGenDescTable = new (nothrow) GenerationDesc[newCapacity];
-        if (newGenDescTable == NULL)
-        {
-            // if we can't allocate a bigger table, we'll have to ignore this call
-            RETURN;
-        }
-        memcpy(newGenDescTable, generationTable->genDescTable, sizeof(generationTable->genDescTable[0]) * generationTable->count);
-        delete[] generationTable->genDescTable;
-        generationTable->genDescTable = newGenDescTable;
-        generationTable->capacity = newCapacity;
-    }
-    _ASSERTE(count < generationTable->capacity);
-
-    GenerationDesc *genDescTable = generationTable->genDescTable;
-
-    genDescTable[count].generation = generation;
-    genDescTable[count].rangeStart = rangeStart;
-    genDescTable[count].rangeEnd = rangeEnd;
-    genDescTable[count].rangeEndReserved = rangeEndReserved;
-
-    generationTable->count = count + 1;
+void GenerationTable::Refresh()
+{
+    // fill in the values by calling back into the gc, which will report
+    // the ranges by calling GenWalkFunc for each one
+    CrstHolder holder(&mutex);    
+    IGCHeap *hp = GCHeapUtilities::GetGCHeap();
+    this->count = 0;
+    hp->DiagDescrGenerations(GenWalkFunc, this);
 }
 
 // This is the table of generation bounds updated by the gc
-// and read by the profiler. So this is a single writer,
-// multiple readers scenario.
+// and read by the profiler. 
 static GenerationTable *s_currentGenerationTable;
-
-// The generation table is updated atomically by replacing the
-// pointer to it. The only tricky part is knowing when
-// the old table can be deleted.
-static Volatile<LONG> s_generationTableLock;
 
 // This is just so we can assert there's a single writer
 #ifdef  ENABLE_CONTRACTS
@@ -837,67 +927,41 @@ void __stdcall UpdateGenerationBounds()
     // Notify the profiler of start of the collection
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
-        // generate a new generation table
-        GenerationTable *newGenerationTable = new (nothrow) GenerationTable();
-        if (newGenerationTable == NULL)
-            RETURN;
-        newGenerationTable->count = 0;
-        newGenerationTable->capacity = GenerationTable::defaultCapacity;
-        // if there is already a current table, use its capacity as a guess for the capacity
-        if (s_currentGenerationTable != NULL)
-            newGenerationTable->capacity = s_currentGenerationTable->capacity;
-        newGenerationTable->prev = NULL;
-        newGenerationTable->genDescTable = new (nothrow) GenerationDesc[newGenerationTable->capacity];
-        if (newGenerationTable->genDescTable == NULL)
-            newGenerationTable->capacity = 0;
 
-#ifdef  _DEBUG
-        newGenerationTable->magic = GENERATION_TABLE_MAGIC;
-#endif
-        // fill in the values by calling back into the gc, which will report
-        // the ranges by calling GenWalkFunc for each one
-        IGCHeap *hp = GCHeapUtilities::GetGCHeap();
-        hp->DiagDescrGenerations(GenWalkFunc, newGenerationTable);
-
-        // remember the old table and plug in the new one
-        GenerationTable *oldGenerationTable = s_currentGenerationTable;
-        s_currentGenerationTable = newGenerationTable;
-
-        // WARNING: tricky code!
-        //
-        // We sample the generation table lock *after* plugging in the new table
-        // We do so using an interlocked operation so the cpu can't reorder
-        // the write to the s_currentGenerationTable with the increment.
-        // If the interlocked increment returns 1, we know nobody can be using
-        // the old table (readers increment the lock before using the table,
-        // and decrement it afterwards). Any new readers coming in
-        // will use the new table. So it's safe to delete the old
-        // table.
-        // On the other hand, if the interlocked increment returns
-        // something other than one, we put the old table on a list
-        // dangling off of the new one. Next time around, we'll try again
-        // deleting any old tables.
-        if (FastInterlockIncrement(&s_generationTableLock) == 1)
+        if (s_currentGenerationTable == nullptr)
         {
-            // We know nobody can be using any of the old tables
-            while (oldGenerationTable != NULL)
+            EX_TRY
             {
-                _ASSERTE(oldGenerationTable->magic == GENERATION_TABLE_MAGIC);
-#ifdef  _DEBUG
-                oldGenerationTable->magic = GENERATION_TABLE_BAD_MAGIC;
-#endif
-                GenerationTable *temp = oldGenerationTable;
-                oldGenerationTable = oldGenerationTable->prev;
-                delete[] temp->genDescTable;
-                delete temp;
+                s_currentGenerationTable = new (nothrow) GenerationTable();
             }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(SwallowAllExceptions)
         }
-        else
+
+        if (s_currentGenerationTable == nullptr)
         {
-            // put the old table on a list
-            newGenerationTable->prev = oldGenerationTable;
+            RETURN;
         }
-        FastInterlockDecrement(&s_generationTableLock);
+        s_currentGenerationTable->Refresh();        
+    }
+#endif // PROFILING_SUPPORTED
+    RETURN;
+}
+
+void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY; // can be called even on GC threads
+    } CONTRACT_END;
+#ifdef PROFILING_SUPPORTED
+    if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
+    {
+        s_currentGenerationTable->AddRecord(generation, rangeStart, rangeEnd, rangeEndReserved);
     }
 #endif // PROFILING_SUPPORTED
     RETURN;
@@ -2088,10 +2152,6 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
 
     MethodDesc *pMD = FunctionIdToMethodDesc(functionId);
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMD->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     if (pToken)
     {
         *pToken = pMD->GetMemberDef();
@@ -2135,10 +2195,6 @@ HRESULT ValidateParametersForGetCodeInfo(
     {
         return E_INVALIDARG;
     }
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethodDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
 
     if (pMethodDesc->HasClassOrMethodInstantiation() && pMethodDesc->IsTypicalMethodDefinition())
     {
@@ -3932,38 +3988,25 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     DWORD dwRet = 0;
 
     // First, set the flags that are dependent on which PEImage / layout we look at
-    // inside the Module (disk/ngen/flat)
-
-    if (pModule->HasNativeImage())
-    {
-        // NGEN
-        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-
-        // Intentionally not checking for flat, since NGEN PEImages never have flat
-        // layouts.
-    }
-    else
-    {
+    // inside the Module (disk/flat)
 #ifdef FEATURE_READYTORUN
-        // pModule->HasNativeImage() returns false for ReadyToRun images
-        if (pModule->IsReadyToRun())
-        {
-            // Ready To Run
-            dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
-        }
+    if (pModule->IsReadyToRun())
+    {
+        // Ready To Run
+        dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
+    }
 #endif
-        // Not NGEN or ReadyToRun.
-        if (pPEFile->HasOpenedILimage())
+    // Not NGEN or ReadyToRun.
+    if (pPEFile->HasOpenedILimage())
+    {
+        PEImage * pILImage = pPEFile->GetOpenedILimage();
+        if (pILImage->IsFile())
         {
-            PEImage * pILImage = pPEFile->GetOpenedILimage();
-            if (pILImage->IsFile())
-            {
-                dwRet |= COR_PRF_MODULE_DISK;
-            }
-            if (pPEFile->GetLoadedIL()->IsFlat())
-            {
-                dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
-            }
+            dwRet |= COR_PRF_MODULE_DISK;
+        }
+        if (pPEFile->GetLoadedIL()->IsFlat())
+        {
+            dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
         }
     }
 
@@ -4220,7 +4263,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     IUnknown *pObj = NULL;
     EX_TRY
     {
-        pObj = pModule->GetValidatedEmitter();
+        pObj = pModule->GetEmitter();
     }
     EX_CATCH_HRESULT_NO_ERRORINFO(hr);
 
@@ -4542,12 +4585,6 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
 
 #ifdef DEBUGGING_SUPPORTED
 
-    MethodDesc *pMethodDesc = FunctionIdToMethodDesc(functionId);
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethodDesc ->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     if (g_pDebugInterface == NULL)
     {
         return CORPROF_E_DEBUGGING_DISABLED;
@@ -4560,6 +4597,7 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
 
     memcpy_s(rgNewILMapEntries, sizeof(COR_IL_MAP) * cILMapEntries, rgILMapEntries, sizeof(COR_IL_MAP) * cILMapEntries);
 
+    MethodDesc *pMethodDesc = FunctionIdToMethodDesc(functionId);
     return g_pDebugInterface->SetILInstrumentedCodeMap(pMethodDesc,
                                                        fStartJit,
                                                        cILMapEntries,
@@ -4847,11 +4885,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
     }
 
     MethodDesc *pMDesc = (MethodDesc *) functionId;
-    if (!pMDesc->IsRestored())
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
     MethodTable *pMT = pMDesc->GetMethodTable();
     if (!pMT->IsRestored())
     {
@@ -5464,7 +5497,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
     MethodTable* pMethodTable = typeHandle.GetMethodTable();
 
     if (pMethodTable == NULL || !pMethodTable->IsRestored() ||
-        pMethodDesc == NULL || !pMethodDesc->IsRestored())
+        pMethodDesc == NULL)
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -6065,10 +6098,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
         return E_INVALIDARG;
     }
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc ->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     //
     // Find the exact instantiation of this function.
     //
@@ -6273,10 +6302,6 @@ HRESULT ProfToEEInterfaceImpl::IsFunctionDynamic(FunctionID functionId, BOOL *is
         return E_INVALIDARG;
     }
 
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
     //
     // Fill in the pHasNoMetadata, if desired.
     //
@@ -6431,11 +6456,6 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
     {
         return E_INVALIDARG;
     }
-
-    // it's not safe to examine a methoddesc that has not been restored so do not do so
-    if (!pMethDesc->IsRestored())
-        return CORPROF_E_DATAINCOMPLETE;
-
 
     if (!pMethDesc->IsNoMetadata())
         return E_INVALIDARG;
@@ -7701,16 +7721,6 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    // Types can be pre-restored, but they still aren't expected to handle queries before
-    // eager fixups have run. This is a targetted band-aid for a bug intellitrace was
-    // running into - attempting to get the class layout for all types at module load time.
-    // If we don't detect this the runtime will AV during the field iteration below. Feel
-    // free to eliminate this check when a more complete solution is available.
-    if (MethodTable::IsParentMethodTableTagged(typeHandle.AsMethodTable()))
-    {
-        return CORPROF_E_DATAINCOMPLETE;
-    }
-
     // !IsValueType = IsArray || IsReferenceType   Since IsArry has been ruled out above, it must
     // be a reference type if !IsValueType.
     BOOL fReferenceType = !typeHandle.IsValueType();
@@ -8885,13 +8895,11 @@ HRESULT ProfToEEInterfaceImpl::GetGenerationBounds(ULONG cObjectRanges,
         // Yay!
         EE_THREAD_NOT_REQUIRED;
 
-        // Yay!
-        CANNOT_TAKE_LOCK;
-
+        // Lock is required to ensure this is synchronized with GC's updates.
+        CAN_TAKE_LOCK;
 
         PRECONDITION(CheckPointer(pcObjectRanges));
         PRECONDITION(cObjectRanges <= 0 || ranges != NULL);
-        PRECONDITION(s_generationTableLock >= 0);
     }
     CONTRACTL_END;
 
@@ -8900,31 +8908,12 @@ HRESULT ProfToEEInterfaceImpl::GetGenerationBounds(ULONG cObjectRanges,
         LL_INFO1000,
         "**PROF: GetGenerationBounds.\n"));
 
-    // Announce we are using the generation table now
-    CounterHolder genTableLock(&s_generationTableLock);
-
-    GenerationTable *generationTable = s_currentGenerationTable;
-
-    if (generationTable == NULL)
+    if (s_currentGenerationTable == NULL)
     {
         return E_FAIL;
     }
 
-    _ASSERTE(generationTable->magic == GENERATION_TABLE_MAGIC);
-
-    GenerationDesc *genDescTable = generationTable->genDescTable;
-    ULONG count = min(generationTable->count, cObjectRanges);
-    for (ULONG i = 0; i < count; i++)
-    {
-        ranges[i].generation          = (COR_PRF_GC_GENERATION)genDescTable[i].generation;
-        ranges[i].rangeStart          = (ObjectID)genDescTable[i].rangeStart;
-        ranges[i].rangeLength         = genDescTable[i].rangeEnd         - genDescTable[i].rangeStart;
-        ranges[i].rangeLengthReserved = genDescTable[i].rangeEndReserved - genDescTable[i].rangeStart;
-    }
-
-    *pcObjectRanges = generationTable->count;
-
-    return S_OK;
+    return s_currentGenerationTable->GetGenerationBounds(cObjectRanges, pcObjectRanges, ranges);
 }
 
 
@@ -9020,7 +9009,6 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
 
         PRECONDITION(objectId != NULL);
         PRECONDITION(CheckPointer(range));
-        PRECONDITION(s_generationTableLock >= 0);
     }
     CONTRACTL_END;
 
@@ -9030,38 +9018,24 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        "**PROF: GetObjectGeneration 0x%p.\n",
                                        objectId));
 
-    
+
     _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
-    
 
-    // Announce we are using the generation table now
-    CounterHolder genTableLock(&s_generationTableLock);
+    IGCHeap *hp = GCHeapUtilities::GetGCHeap();
 
-    GenerationTable *generationTable = s_currentGenerationTable;
+    uint8_t* pStart;
+    uint8_t* pAllocated;
+    uint8_t* pReserved;
+    unsigned int generation = hp->GetGenerationWithRange((Object*)objectId, &pStart, &pAllocated, &pReserved);
 
-    if (generationTable == NULL)
-    {
-        return E_FAIL;
-    }
+    UINT_PTR rangeLength = pAllocated - pStart;
+    UINT_PTR rangeLengthReserved = pReserved - pStart;
 
-    _ASSERTE(generationTable->magic == GENERATION_TABLE_MAGIC);
-
-    GenerationDesc *genDescTable = generationTable->genDescTable;
-    ULONG count = generationTable->count;
-    for (ULONG i = 0; i < count; i++)
-    {
-        if (genDescTable[i].rangeStart <= (BYTE *)objectId && (BYTE *)objectId < genDescTable[i].rangeEndReserved)
-        {
-            range->generation          = (COR_PRF_GC_GENERATION)genDescTable[i].generation;
-            range->rangeStart          = (ObjectID)genDescTable[i].rangeStart;
-            range->rangeLength         = genDescTable[i].rangeEnd         - genDescTable[i].rangeStart;
-            range->rangeLengthReserved = genDescTable[i].rangeEndReserved - genDescTable[i].rangeStart;
-
-            return S_OK;
-        }
-    }
-
-    return E_FAIL;
+    range->generation = (COR_PRF_GC_GENERATION)generation;
+    range->rangeStart = (ObjectID)pStart;
+    range->rangeLength = rangeLength;
+    range->rangeLengthReserved = rangeLengthReserved;
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
@@ -9545,14 +9519,16 @@ HRESULT ProfToEEInterfaceImpl::RequestProfilerDetach(DWORD dwExpectedCompletionM
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(
         kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: RequestProfilerDetach.\n"));
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    return ProfilingAPIDetach::RequestProfilerDetach(g_profControlBlock.GetProfilerInfo(this), dwExpectedCompletionMilliseconds);
+    ProfilerInfo *pProfilerInfo = g_profControlBlock.GetProfilerInfo(this);
+    _ASSERTE(pProfilerInfo != NULL);
+    return ProfilingAPIDetach::RequestProfilerDetach(pProfilerInfo, dwExpectedCompletionMilliseconds);
 #else // FEATURE_PROFAPI_ATTACH_DETACH
     return E_NOTIMPL;
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
@@ -10228,7 +10204,7 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
         return CORPROF_E_DATAINCOMPLETE;
     }
 
-    if (!inlinersModule->HasNativeOrReadyToRunInlineTrackingMap())
+    if (!inlinersModule->HasReadyToRunInlineTrackingMap())
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -10241,14 +10217,14 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
     EX_TRY
     {
         // Trying to use static buffer
-        COUNT_T methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
+        COUNT_T methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, staticBufferSize, staticBuffer, incompleteData);
 
         // If static buffer is not enough, allocate an array.
         if (methodsAvailable > staticBufferSize)
         {
             DWORD dynamicBufferSize = methodsAvailable;
             dynamicBuffer = methodsBuffer = new MethodInModule[dynamicBufferSize];
-            methodsAvailable = inlinersModule->GetNativeOrReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
+            methodsAvailable = inlinersModule->GetReadyToRunInliners(inlineeOwnerModule, inlineeMethodId, dynamicBufferSize, dynamicBuffer, incompleteData);
             if (methodsAvailable > dynamicBufferSize)
             {
                 _ASSERTE(!"Ngen image inlining info changed, this shouldn't be possible.");

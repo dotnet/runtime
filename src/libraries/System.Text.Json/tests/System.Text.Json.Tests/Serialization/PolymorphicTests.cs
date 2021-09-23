@@ -39,6 +39,21 @@ namespace System.Text.Json.Serialization.Tests
         public PolymorphicTests_Writer() : base(JsonSerializerWrapperForString.ReaderWriterSerializer) { }
     }
 
+    public class PolymorphicTests_Document : PolymorphicTests
+    {
+        public PolymorphicTests_Document() : base(JsonSerializerWrapperForString.DocumentSerializer) { }
+    }
+
+    public class PolymorphicTests_Element : PolymorphicTests
+    {
+        public PolymorphicTests_Element() : base(JsonSerializerWrapperForString.ElementSerializer) { }
+    }
+
+    public class PolymorphicTests_Node : PolymorphicTests
+    {
+        public PolymorphicTests_Node() : base(JsonSerializerWrapperForString.NodeSerializer) { }
+    }
+
     public abstract class PolymorphicTests
     {
         private JsonSerializerWrapperForString Serializer { get; }

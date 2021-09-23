@@ -18,15 +18,6 @@ namespace System.IO
         // Positive number: the error code returned by the lstat call
         private int _initializedFileCache;
 
-        // The last cached stat information about the file
-        // Refresh only collects this if lstat determines the path is a symbolic link
-        private Interop.Sys.FileStatus _symlinkCache;
-
-        // -1: if the symlink cache isn't initialized - Refresh only changes this value if lstat determines the path is a symbolic link
-        // 0: if the symlink cache was initialized with no errors
-        // Positive number: the error code returned by the stat call
-        private int _initializedSymlinkCache;
-
         // We track intent of creation to know whether or not we want to (1) create a
         // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
         // Set to true during initialization when the DirectoryEntry's INodeType describes a directory
@@ -113,7 +104,6 @@ namespace System.IO
         internal void InvalidateCaches()
         {
             _initializedFileCache = -1;
-            _initializedSymlinkCache = -1;
         }
 
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -242,7 +232,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
-                return DateTimeOffset.FromFileTime(0);
+                return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
 
             if ((_fileCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0)
                 return UnixTimeToDateTimeOffset(_fileCache.BirthTime, _fileCache.BirthTimeNsec);
@@ -273,7 +263,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
-                return DateTimeOffset.FromFileTime(0);
+                return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
             return UnixTimeToDateTimeOffset(_fileCache.ATime, _fileCache.ATimeNsec);
         }
 
@@ -283,7 +273,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
-                return DateTimeOffset.FromFileTime(0);
+                return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
             return UnixTimeToDateTimeOffset(_fileCache.MTime, _fileCache.MTimeNsec);
         }
 
@@ -291,7 +281,7 @@ namespace System.IO
 
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
-            return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
+            return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
@@ -340,7 +330,7 @@ namespace System.IO
             return _fileCache.Size;
         }
 
-        // Tries to refresh the lstat cache (_fileCache) and, if the file is pointing to a symbolic link, then also the stat cache (_symlinkCache)
+        // Tries to refresh the lstat cache (_fileCache).
         // This method should not throw. Instead, we store the results, and we will throw when the user attempts to access any of the properties when there was a failure
         internal void RefreshCaches(ReadOnlySpan<char> path)
         {
@@ -348,9 +338,8 @@ namespace System.IO
             path = Path.TrimEndingDirectorySeparator(path);
 
             // Retrieve the file cache (lstat) to get the details on the object, without following symlinks.
-            // If it is a symlink, then subsequently get details on the target of the symlink,
-            // storing those results separately.  We only report failure if the initial
-            // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
+            // If it is a symlink, then subsequently get details on the target of the symlink.
+            // We only report failure if the initial lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             if (!TryRefreshFileCache(path))
             {
                 _exists = false;
@@ -361,11 +350,11 @@ namespace System.IO
             _isDirectory = CacheHasDirectoryFlag(_fileCache);
 
             // We also need to check if the main path is a symbolic link,
-            // in which case, we retrieve the symbolic link data
-            if (!_isDirectory && HasSymbolicLinkFlag && TryRefreshSymbolicLinkCache(path))
+            // in which case, we retrieve the symbolic link's target data
+            if (!_isDirectory && HasSymbolicLinkFlag && Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0)
             {
                 // and check again if the symlink path is a directory
-                _isDirectory = CacheHasDirectoryFlag(_symlinkCache);
+                _isDirectory = CacheHasDirectoryFlag(target);
             }
 
 #if !TARGET_BROWSER
@@ -376,7 +365,7 @@ namespace System.IO
 
             _exists = true;
 
-            // Checks if the specified cache (lstat=_fileCache, stat=_symlinkCache) has the directory attribute set
+            // Checks if the specified cache has the directory attribute set
             // Only call if Refresh has been successfully called at least once, and you're
             // certain the passed-in cache was successfully retrieved
             static bool CacheHasDirectoryFlag(Interop.Sys.FileStatus cache) =>
@@ -384,8 +373,7 @@ namespace System.IO
         }
 
         // Checks if the file cache is set to -1 and refreshes it's value.
-        // Optionally, if the symlink cache is set to -1 and the file cache determined the path is pointing to a symbolic link, this cache is also refreshed.
-        // If stat or lstat failed, and continueOnError is set to true, this method will throw.
+        // If it failed, and continueOnError is set to true, this method will throw.
         internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             if (_initializedFileCache == -1)
@@ -402,21 +390,10 @@ namespace System.IO
         // Throws if any of the caches has an error number saved in it
         private void ThrowOnCacheInitializationError(ReadOnlySpan<char> path)
         {
-            int errno = 0;
-
             // Lstat should always be initialized by Refresh
             if (_initializedFileCache != 0)
             {
-                errno = _initializedFileCache;
-            }
-            // Stat is optionally initialized when Refresh detects object is a symbolic link
-            else if (_initializedSymlinkCache != 0 && _initializedSymlinkCache != -1)
-            {
-                errno = _initializedSymlinkCache;
-            }
-
-            if (errno != 0)
-            {
+                int errno = _initializedFileCache;
                 InvalidateCaches();
                 throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
             }
@@ -424,9 +401,6 @@ namespace System.IO
 
         private bool TryRefreshFileCache(ReadOnlySpan<char> path) =>
             VerifyStatCall(Interop.Sys.LStat(path, out _fileCache), out _initializedFileCache);
-
-        private bool TryRefreshSymbolicLinkCache(ReadOnlySpan<char> path) =>
-            VerifyStatCall(Interop.Sys.Stat(path, out _symlinkCache), out _initializedSymlinkCache);
 
         // Receives the return value of a stat or lstat call.
         // If the call is unsuccessful, sets the initialized parameter to a positive number representing the last error info.

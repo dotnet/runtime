@@ -751,7 +751,7 @@ namespace System.Xml
             return new XsdDuration(value).ToString();
         }
 
-        [Obsolete("Use XmlConvert.ToString() that takes in XmlDateTimeSerializationMode")]
+        [Obsolete("Use XmlConvert.ToString() that accepts an XmlDateTimeSerializationMode instead.")]
         public static string ToString(DateTime value)
         {
             return ToString(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz");
@@ -1246,7 +1246,7 @@ namespace System.Xml
             }
         }
 
-        [Obsolete("Use XmlConvert.ToDateTime() that takes in XmlDateTimeSerializationMode")]
+        [Obsolete("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
         public static DateTime ToDateTime(string s)
         {
             return ToDateTime(s, AllDateTimeFormats);

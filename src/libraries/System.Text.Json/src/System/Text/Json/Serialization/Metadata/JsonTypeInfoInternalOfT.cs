@@ -12,97 +12,73 @@ namespace System.Text.Json.Serialization.Metadata
     internal sealed class JsonTypeInfoInternal<T> : JsonTypeInfo<T>
     {
         /// <summary>
-        /// Creates serialization metadata given JsonSerializerOptions and a ConverterStrategy.
+        /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
-        public JsonTypeInfoInternal(JsonSerializerOptions options, ConverterStrategy converterStrategy)
-            : base(typeof(T), options, converterStrategy)
+        public JsonTypeInfoInternal(JsonSerializerOptions options)
+            : base(typeof(T), options)
         {
         }
 
         /// <summary>
         /// Creates serialization metadata for an object.
         /// </summary>
-        public JsonTypeInfoInternal(
-            JsonSerializerOptions options,
-            Func<T>? createObjectFunc,
-            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
-            JsonNumberHandling numberHandling,
-            Action<Utf8JsonWriter, T>? serializeFunc
-            ) : base(typeof(T), options, ConverterStrategy.Object)
+        public JsonTypeInfoInternal(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : base(typeof(T), options)
         {
-            if (propInitFunc == null && serializeFunc == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_PropInitAndSerializeFuncsNull();
-            }
-
 #pragma warning disable CS8714
             // The type cannot be used as type parameter in the generic type or method.
             // Nullability of type argument doesn't match 'notnull' constraint.
-            JsonConverter converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object, keyType: null, elementType: null);
+            JsonConverter converter;
+
+            if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
+            {
+                converter = new JsonMetadataServicesConverter<T>(
+                    () => new LargeObjectWithParameterizedConstructorConverter<T>(),
+                    ConverterStrategy.Object);
+                CreateObjectWithArgs = objectInfo.ObjectWithParameterizedConstructorCreator;
+                CtorParamInitFunc = objectInfo.ConstructorParameterMetadataInitializer;
+            }
+            else
+            {
+                converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object);
+                SetCreateObjectFunc(objectInfo.ObjectCreator);
+            }
 #pragma warning restore CS8714
 
+            PropInitFunc = objectInfo.PropertyMetadataInitializer;
+            SerializeHandler = objectInfo.SerializeHandler;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
-            NumberHandling = numberHandling;
-            PropInitFunc = propInitFunc;
-            Serialize = serializeFunc;
-            SetCreateObjectFunc(createObjectFunc);
+            NumberHandling = objectInfo.NumberHandling;
         }
 
         /// <summary>
-        /// Creates serialization metadata for a <see cref="ConverterStrategy.Enumerable"/>.
+        /// Creates serialization metadata for a collection.
         /// </summary>
         public JsonTypeInfoInternal(
             JsonSerializerOptions options,
-            Func<T>? createObjectFunc,
+            JsonCollectionInfoValues<T> collectionInfo,
             Func<JsonConverter<T>> converterCreator,
-            JsonTypeInfo? elementInfo,
-            JsonNumberHandling numberHandling,
-            Action<Utf8JsonWriter, T>? serializeFunc,
-            Type elementType,
             object? createObjectWithArgs = null,
             object? addFunc = null)
-            : base(typeof(T), options, ConverterStrategy.Enumerable)
+            : base(typeof(T), options)
         {
-            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Enumerable, keyType: null, elementType);
+            if (collectionInfo == null)
+            {
+                throw new ArgumentNullException(nameof(collectionInfo));
+            }
 
-            ElementType = converter.ElementType;
-            ElementTypeInfo = elementInfo ?? throw new ArgumentNullException(nameof(elementInfo));
-            NumberHandling = numberHandling;
-            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
-            Serialize = serializeFunc;
-            CreateObjectWithArgs = createObjectWithArgs;
-            AddMethodDelegate = addFunc;
-            SetCreateObjectFunc(createObjectFunc);
-        }
-
-        /// <summary>
-        /// Creates serialization metadata for a <see cref="ConverterStrategy.Dictionary"/>.
-        /// </summary>
-        public JsonTypeInfoInternal(
-            JsonSerializerOptions options,
-            Func<T>? createObjectFunc,
-            Func<JsonConverter<T>> converterCreator,
-            JsonTypeInfo? keyInfo,
-            JsonTypeInfo? valueInfo,
-            JsonNumberHandling numberHandling,
-            Action<Utf8JsonWriter, T>? serializeFunc,
-            Type keyType,
-            Type elementType,
-            object? createObjectWithArgs = null)
-            : base(typeof(T), options, ConverterStrategy.Dictionary)
-        {
-            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Dictionary, keyType, elementType);
+            ConverterStrategy strategy = collectionInfo.KeyInfo == null ? ConverterStrategy.Enumerable : ConverterStrategy.Dictionary;
+            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, strategy);
 
             KeyType = converter.KeyType;
             ElementType = converter.ElementType;
-            KeyTypeInfo = keyInfo ?? throw new ArgumentNullException(nameof(keyInfo));
-            ElementType = converter.ElementType;
-            ElementTypeInfo = valueInfo ?? throw new ArgumentNullException(nameof(valueInfo));
-            NumberHandling = numberHandling;
+            KeyTypeInfo = collectionInfo.KeyInfo;
+            ElementTypeInfo = collectionInfo.ElementInfo ?? throw new ArgumentNullException(nameof(collectionInfo.ElementInfo));
+            NumberHandling = collectionInfo.NumberHandling;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
-            Serialize = serializeFunc;
+            SerializeHandler = collectionInfo.SerializeHandler;
             CreateObjectWithArgs = createObjectWithArgs;
-            SetCreateObjectFunc(createObjectFunc);
+            AddMethodDelegate = addFunc;
+            SetCreateObjectFunc(collectionInfo.ObjectCreator);
         }
 
         private void SetCreateObjectFunc(Func<T>? createObjectFunc)

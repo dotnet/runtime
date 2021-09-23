@@ -23,15 +23,8 @@
 
 #include "exceptmacros.h"
 #include "syncclean.hpp"
-#ifdef FEATURE_PREJIT
-class DataImage;
-#endif
 
 #include "util.hpp"
-
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
 
 class AllocMemTracker;
 class ClassLoader;

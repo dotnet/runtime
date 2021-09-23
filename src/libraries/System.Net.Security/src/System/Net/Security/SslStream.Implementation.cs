@@ -189,93 +189,45 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private Task? ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
+        private Task ProcessAuthenticationAsync(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptional();
 
             if (NetSecurityTelemetry.Log.IsEnabled())
             {
-                return ProcessAuthenticationWithTelemetry(isAsync, isApm, cancellationToken);
+                return ProcessAuthenticationWithTelemetryAsync(isAsync, isApm, cancellationToken);
             }
             else
             {
-                if (isAsync)
-                {
-                    return ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm);
-                }
-                else
-                {
-                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null).GetAwaiter().GetResult();
-                    return null;
-                }
+                return isAsync ?
+                    ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm) :
+                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null);
             }
         }
 
-        private Task? ProcessAuthenticationWithTelemetry(bool isAsync, bool isApm, CancellationToken cancellationToken)
+        private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, bool isApm, CancellationToken cancellationToken)
         {
             NetSecurityTelemetry.Log.HandshakeStart(_context!.IsServer, _sslAuthenticationOptions!.TargetHost);
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
 
             try
             {
-                if (isAsync)
-                {
-                    Task task = ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context.IsServer, null, isApm);
+                Task task = isAsync?
+                    ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm) :
+                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null);
 
-                    return task.ContinueWith((t, s) =>
-                        {
-                            var tuple = ((SslStream, ValueStopwatch))s!;
-                            SslStream thisRef = tuple.Item1;
-                            ValueStopwatch stopwatch = tuple.Item2;
+                await task.ConfigureAwait(false);
 
-                            if (t.IsCompletedSuccessfully)
-                            {
-                                LogSuccess(thisRef, stopwatch);
-                            }
-                            else
-                            {
-                                LogFailure(thisRef._context!.IsServer, stopwatch, t.Exception?.Message ?? "Operation canceled.");
-
-                                // Throw the same exception we would if not using Telemetry
-                                t.GetAwaiter().GetResult();
-                            }
-                        },
-                        state: (this, stopwatch),
-                        cancellationToken: default,
-                        TaskContinuationOptions.ExecuteSynchronously,
-                        TaskScheduler.Current);
-                }
-                else
-                {
-                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context.IsServer, null).GetAwaiter().GetResult();
-                    LogSuccess(this, stopwatch);
-                    return null;
-                }
-            }
-            catch (Exception ex) when (LogFailure(_context.IsServer, stopwatch, ex.Message))
-            {
-                Debug.Fail("LogFailure should return false");
-                throw;
-            }
-
-            static bool LogFailure(bool isServer, ValueStopwatch stopwatch, string exceptionMessage)
-            {
-                NetSecurityTelemetry.Log.HandshakeFailed(isServer, stopwatch, exceptionMessage);
-                return false;
-            }
-
-            static void LogSuccess(SslStream thisRef, ValueStopwatch stopwatch)
-            {
                 // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
                 // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
+                bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
 
-                // Using a field of a marshal-by-reference class as a ref or out value or taking its address may cause a runtime exception
-                // Justification: thisRef is a reference to 'this', not a proxy object
-#pragma warning disable CS0197
-                bool connectionOpen = Interlocked.CompareExchange(ref thisRef._connectionOpenedStatus, 1, 0) == 0;
-#pragma warning restore CS0197
-
-                NetSecurityTelemetry.Log.HandshakeCompleted(thisRef.GetSslProtocolInternal(), stopwatch, connectionOpen);
+                NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), stopwatch, connectionOpen);
+            }
+            catch (Exception ex)
+            {
+                NetSecurityTelemetry.Log.HandshakeFailed(_context.IsServer, stopwatch, ex.Message);
+                throw;
             }
         }
 
@@ -316,16 +268,17 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
             }
 
-            if (_decryptedBytesCount is not 0)
-            {
-                throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
-            }
-
-            _sslAuthenticationOptions!.RemoteCertRequired = true;
-            _isRenego = true;
-
             try
             {
+                if (_decryptedBytesCount is not 0)
+                {
+                    throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
+                }
+
+                _sslAuthenticationOptions!.RemoteCertRequired = true;
+                _isRenego = true;
+
+
                 SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
 
                 if (nextmsg is {} && nextmsg.Length > 0)
@@ -790,8 +743,10 @@ namespace System.Net.Security
                     if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                     {
                         // No need to hold on the buffer any more.
-                        ArrayPool<byte>.Shared.Return(bufferToReturn);
+                        byte[] tmp = bufferToReturn;
                         bufferToReturn = null;
+                        ArrayPool<byte>.Shared.Return(tmp);
+
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
                         await WriteSingleChunk(writeAdapter, buffer).ConfigureAwait(false);
@@ -836,14 +791,12 @@ namespace System.Net.Security
         // actually contains no decrypted or encrypted bytes
         private void ReturnReadBufferIfEmpty()
         {
-            if (_internalBuffer != null && _decryptedBytesCount == 0 && _internalBufferCount == 0)
+            if (_internalBuffer is byte[] internalBuffer && _decryptedBytesCount == 0 && _internalBufferCount == 0)
             {
-                ArrayPool<byte>.Shared.Return(_internalBuffer);
                 _internalBuffer = null;
-                _internalBufferCount = 0;
                 _internalOffset = 0;
-                _decryptedBytesCount = 0;
                 _decryptedBytesOffset = 0;
+                ArrayPool<byte>.Shared.Return(internalBuffer);
             }
             else if (_decryptedBytesCount == 0)
             {

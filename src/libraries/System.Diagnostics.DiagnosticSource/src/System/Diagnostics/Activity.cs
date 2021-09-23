@@ -93,7 +93,7 @@ namespace System.Diagnostics
         public ActivityStatusCode Status => _statusCode;
 
         /// <summary>
-        /// Gets the status descrition of the current activity object.
+        /// Gets the status description of the current activity object.
         /// </summary>
         public string? StatusDescription => _statusDescription;
 
@@ -101,8 +101,8 @@ namespace System.Diagnostics
         /// Sets the status code and description on the current activity object.
         /// </summary>
         /// <param name="code">The status code</param>
-        /// <param name="description">The error status descrition</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <param name="description">The error status description</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <remarks>
         /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
         /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
@@ -399,7 +399,7 @@ namespace System.Diagnostics
         /// This shows up in the <see cref="Tags"/>  enumeration. It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         public Activity AddTag(string key, string? value) => AddTag(key, (object?) value);
@@ -409,7 +409,7 @@ namespace System.Diagnostics
         /// This shows up in the <see cref="TagObjects"/> enumeration. It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
         public Activity AddTag(string key, object? value)
@@ -435,7 +435,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetTag(string key, object? value)
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
@@ -452,7 +452,7 @@ namespace System.Diagnostics
         /// Add <see cref="ActivityEvent" /> object to the <see cref="Events" /> list.
         /// </summary>
         /// <param name="e"> object of <see cref="ActivityEvent"/> to add to the attached events list.</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddEvent(ActivityEvent e)
         {
             if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
@@ -471,7 +471,7 @@ namespace System.Diagnostics
         /// that is simply useful to show up in the log with the activity use <see cref="Tags"/>.
         /// Returns 'this' for convenient chaining.
         /// </summary>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddBaggage(string key, string? value)
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
@@ -495,7 +495,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The baggage key name</param>
         /// <param name="value">The baggage value mapped to the input key</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetBaggage(string key, string? value)
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
@@ -566,7 +566,7 @@ namespace System.Diagnostics
         /// Update the Activity to set start time
         /// </summary>
         /// <param name="startTimeUtc">Activity start time in UTC (Greenwich Mean Time)</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetStartTime(DateTime startTimeUtc)
         {
             if (startTimeUtc.Kind != DateTimeKind.Utc)
@@ -586,7 +586,7 @@ namespace System.Diagnostics
         /// and <paramref name="endTimeUtc"/>.
         /// </summary>
         /// <param name="endTimeUtc">Activity stop time in UTC (Greenwich Mean Time)</param>
-        /// <returns>'this' for convenient chaining</returns>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetEndTime(DateTime endTimeUtc)
         {
             if (endTimeUtc.Kind != DateTimeKind.Utc)

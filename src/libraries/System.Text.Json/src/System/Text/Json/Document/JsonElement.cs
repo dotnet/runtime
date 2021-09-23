@@ -1169,6 +1169,13 @@ namespace System.Text.Json
             return _parent.GetRawValueAsString(_idx);
         }
 
+        internal ReadOnlyMemory<byte> GetRawValue()
+        {
+            CheckValidInstance();
+
+            return _parent.GetRawValue(_idx, includeQuotes: true);
+        }
+
         internal string GetPropertyRawText()
         {
             CheckValidInstance();

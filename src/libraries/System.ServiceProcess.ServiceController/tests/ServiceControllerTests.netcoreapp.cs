@@ -12,8 +12,15 @@ namespace System.ServiceProcess.Tests
         public void Stop_FalseArg_WithDependentServices_ThrowsInvalidOperationException()
         {
             var controller = new ServiceController(_testService.TestServiceName);
-            controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
-            Assert.Throws<InvalidOperationException>(() => controller.Stop(stopDependentServices: false));
+            Assert.Equal(0, controller.DependentServices.Length);
+            Assert.Equal(1, controller.ServicesDependedOn.Length);
+
+            var prerequisiteServiceController = new ServiceController(_testService.TestServiceName + ".Prerequisite");
+            Assert.Equal(1, prerequisiteServiceController.DependentServices.Length);
+            Assert.Equal(0, prerequisiteServiceController.ServicesDependedOn.Length);
+
+            prerequisiteServiceController.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
+            Assert.Throws<InvalidOperationException>(() => prerequisiteServiceController.Stop(stopDependentServices: false));
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
@@ -35,6 +42,7 @@ namespace System.ServiceProcess.Tests
             var controller = new ServiceController(_testService.TestServiceName);
             controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
 
+            // stop the services that depend on this service
             foreach (var dependentService in controller.DependentServices)
             {
                 dependentService.Stop(stopDependentServices: false);

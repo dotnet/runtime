@@ -72,11 +72,6 @@ public:
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
 
-    // Called AFTER LoadModule, and after the module has reached FILE_LOADED. This lets
-    // dbgapi do any processing that needs to wait until the FILE_LOADED stage (e.g.,
-    // binding breakpoints in NGENd generics).
-    virtual void LoadModuleFinished(Module * pModule, AppDomain * pAppDomain) = 0;
-
     // Called for all modules in an AppDomain when the AppDomain is unloaded.
     // This includes domain neutral modules that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass

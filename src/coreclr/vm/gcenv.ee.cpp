@@ -355,9 +355,6 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     if (ObjCMarshalNative::IsTrackedReference((OBJECTREF)pObject, &isReferenced))
         return isReferenced;
 #endif
-#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && defined(FEATURE_OBJCMARSHAL)
-#error COM and Objective-C are not supported at the same time.
-#endif
 
     return false;
 }
@@ -1734,4 +1731,9 @@ void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const Stre
 uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 {
     return ::GetCurrentProcessCpuCount();
+}
+
+void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+{
+    ProfilerAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
 }

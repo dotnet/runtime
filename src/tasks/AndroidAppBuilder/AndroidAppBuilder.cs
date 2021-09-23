@@ -87,11 +87,9 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
-
         string abi = DetermineAbi();
 
-        var apkBuilder = new ApkBuilder();
+        var apkBuilder = new ApkBuilder(Log);
         apkBuilder.ProjectName = ProjectName;
         apkBuilder.AppDir = AppDir;
         apkBuilder.OutputDir = OutputDir;

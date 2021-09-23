@@ -380,7 +380,7 @@ def copy_files(src_path, dst_path, file_names):
         file_names ([string]): List of full path file names to be copied.
     """
 
-    print('### Copying below files to {0}:'.format(dst_path))
+    print('### Copying below files from {0} to {1}:'.format(src_path, dst_path))
     print('')
     print(os.linesep.join(file_names))
     for f in file_names:

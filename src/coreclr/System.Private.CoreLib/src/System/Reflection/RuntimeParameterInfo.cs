@@ -320,8 +320,8 @@ namespace System.Reflection
                 if (raw)
                 {
                     CustomAttributeTypedArgument value =
-                        CustomAttributeData.Filter(
-                            CustomAttributeData.GetCustomAttributes(this), typeof(DateTimeConstantAttribute), 0);
+                        RuntimeCustomAttributeData.Filter(
+                            RuntimeCustomAttributeData.GetCustomAttributes(this), typeof(DateTimeConstantAttribute), 0);
 
                     if (value.ArgumentType != null)
                         return new DateTime((long)value.Value!);
@@ -541,7 +541,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
     }

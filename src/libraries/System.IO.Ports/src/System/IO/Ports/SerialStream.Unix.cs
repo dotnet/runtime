@@ -431,13 +431,30 @@ namespace System.IO.Ports
                 return Task<int>.FromResult(0); // return immediately if no bytes requested; no need for overhead.
 
             Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            SerialStreamIORequest result = new SerialStreamIORequest(cancellationToken, buffer);
+            SerialStreamReadRequest result = new SerialStreamReadRequest(cancellationToken, buffer);
             _readQueue.Enqueue(result);
 
             EnsureIOLoopRunning();
 
             return result.Task;
         }
+
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            CheckHandle();
+
+            if (buffer.IsEmpty)
+                return new ValueTask<int>(0);
+
+            SerialStreamReadRequest result = new SerialStreamReadRequest(cancellationToken, buffer);
+            _readQueue.Enqueue(result);
+
+            EnsureIOLoopRunning();
+
+            return new ValueTask<int>(result.Task);
+        }
+#endif
 
         public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
@@ -446,14 +463,31 @@ namespace System.IO.Ports
             if (count == 0)
                 return Task.CompletedTask; // return immediately if no bytes to write; no need for overhead.
 
-            Memory<byte> buffer = new Memory<byte>(array, offset, count);
-            SerialStreamIORequest result = new SerialStreamIORequest(cancellationToken, buffer);
+            ReadOnlyMemory<byte> buffer = new ReadOnlyMemory<byte>(array, offset, count);
+            SerialStreamWriteRequest result = new SerialStreamWriteRequest(cancellationToken, buffer);
             _writeQueue.Enqueue(result);
 
             EnsureIOLoopRunning();
 
             return result.Task;
         }
+
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            CheckWriteArguments();
+
+            if (buffer.IsEmpty)
+                return ValueTask.CompletedTask; // return immediately if no bytes to write; no need for overhead.
+
+            SerialStreamWriteRequest result = new SerialStreamWriteRequest(cancellationToken, buffer);
+            _writeQueue.Enqueue(result);
+
+            EnsureIOLoopRunning();
+
+            return new ValueTask(result.Task);
+        }
+#endif
 
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
         {
@@ -715,7 +749,8 @@ namespace System.IO.Ports
 
         private unsafe int ProcessRead(SerialStreamIORequest r)
         {
-            Span<byte> buff = r.Buffer.Span;
+            SerialStreamReadRequest readRequest = (SerialStreamReadRequest)r;
+            Span<byte> buff = readRequest.Buffer.Span;
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
@@ -728,12 +763,12 @@ namespace System.IO.Ports
                     // ignore EWOULDBLOCK since we handle timeout elsewhere
                     if (lastError.Error != Interop.Error.EWOULDBLOCK)
                     {
-                        r.Complete(Interop.GetIOException(lastError));
+                        readRequest.Complete(Interop.GetIOException(lastError));
                     }
                 }
                 else if (numBytes > 0)
                 {
-                    r.Complete(numBytes);
+                    readRequest.Complete(numBytes);
                     return numBytes;
                 }
                 else // numBytes == 0
@@ -747,7 +782,8 @@ namespace System.IO.Ports
 
         private unsafe int ProcessWrite(SerialStreamIORequest r)
         {
-            ReadOnlySpan<byte> buff = r.Buffer.Span;
+            SerialStreamWriteRequest writeRequest = (SerialStreamWriteRequest)r;
+            ReadOnlySpan<byte> buff = writeRequest.Buffer.Span;
             fixed (byte* bufPtr = buff)
             {
                 // assumes dequeue-ing happens on a single thread
@@ -766,11 +802,11 @@ namespace System.IO.Ports
                 }
                 else
                 {
-                    r.ProcessBytes(numBytes);
+                    writeRequest.ProcessBytes(numBytes);
 
-                    if (r.Buffer.Length == 0)
+                    if (writeRequest.Buffer.Length == 0)
                     {
-                        r.Complete();
+                        writeRequest.Complete();
                     }
 
                     return numBytes;
@@ -962,35 +998,57 @@ namespace System.IO.Ports
             return Interop.GetIOException(Interop.Sys.GetLastErrorInfo());
         }
 
-        private sealed class SerialStreamIORequest : TaskCompletionSource<int>
+        private abstract class SerialStreamIORequest : TaskCompletionSource<int>
         {
-            public Memory<byte> Buffer { get; private set; }
             public bool IsCompleted => Task.IsCompleted;
             private CancellationToken _cancellationToken;
+            private readonly CancellationTokenRegistration _cancellationTokenRegistration;
 
-            public SerialStreamIORequest(CancellationToken ct, Memory<byte> buffer)
+            protected SerialStreamIORequest(CancellationToken ct)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _cancellationToken = ct;
-                ct.Register(s => ((TaskCompletionSource<int>)s).TrySetCanceled(), this);
+                _cancellationTokenRegistration = ct.Register(s => ((TaskCompletionSource<int>)s).TrySetCanceled(), this);
+            }
 
+            internal void Complete(int numBytes)
+            {
+                TrySetResult(numBytes);
+                _cancellationTokenRegistration.Dispose();
+            }
+
+            internal void Complete(Exception exception)
+            {
+                TrySetException(exception);
+                _cancellationTokenRegistration.Dispose();
+            }
+        }
+
+        private sealed class SerialStreamReadRequest : SerialStreamIORequest
+        {
+            public Memory<byte> Buffer { get; private set; }
+
+            public SerialStreamReadRequest(CancellationToken ct, Memory<byte> buffer)
+                : base(ct)
+            {
+                Buffer = buffer;
+            }
+        }
+
+        private sealed class SerialStreamWriteRequest : SerialStreamIORequest
+        {
+            public ReadOnlyMemory<byte> Buffer { get; private set; }
+
+            public SerialStreamWriteRequest(CancellationToken ct, ReadOnlyMemory<byte> buffer)
+                : base(ct)
+            {
                 Buffer = buffer;
             }
 
             internal void Complete()
             {
                 Debug.Assert(Buffer.Length == 0);
-                TrySetResult(Buffer.Length);
-            }
-
-            internal void Complete(int numBytes)
-            {
-                TrySetResult(numBytes);
-            }
-
-            internal void Complete(Exception exception)
-            {
-                TrySetException(exception);
+                Complete(Buffer.Length);
             }
 
             internal void ProcessBytes(int numBytes)

@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
+#nullable enable
+
 namespace Wasm.Build.Tests
 {
     public class BuildEnvironment
@@ -40,9 +42,14 @@ namespace Wasm.Build.Tests
             }
 
             string? sdkForWorkloadPath = EnvironmentVariables.SdkForWorkloadTestingPath;
-            if (!string.IsNullOrEmpty(sdkForWorkloadPath))
+            if (string.IsNullOrEmpty(sdkForWorkloadPath))
+                throw new Exception($"Environment variable SDK_FOR_WORKLOAD_TESTING_PATH not set");
+            if (!Directory.Exists(sdkForWorkloadPath))
+                throw new Exception($"Could not find SDK_FOR_WORKLOAD_TESTING_PATH={sdkForWorkloadPath}");
+
+            bool workloadInstalled = EnvironmentVariables.SdkHasWorkloadInstalled != null && EnvironmentVariables.SdkHasWorkloadInstalled == "true";
+            if (workloadInstalled)
             {
-                DotNet = Path.Combine(sdkForWorkloadPath, "dotnet");
                 var workloadPacksVersion = EnvironmentVariables.WorkloadPacksVersion;
                 if (string.IsNullOrEmpty(workloadPacksVersion))
                     throw new Exception($"Cannot test with workloads without WORKLOAD_PACKS_VER environment variable being set");
@@ -50,17 +57,7 @@ namespace Wasm.Build.Tests
                 RuntimePackDir = Path.Combine(sdkForWorkloadPath, "packs", "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", workloadPacksVersion);
                 DirectoryBuildPropsContents = s_directoryBuildPropsForWorkloads;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForWorkloads;
-                EnvVars = new Dictionary<string, string>()
-                {
-                    // `runtime` repo's build environment sets these, and they
-                    // mess up the build for the test project, which is using a different
-                    // dotnet
-                    ["DOTNET_INSTALL_DIR"] = sdkForWorkloadPath,
-                    ["DOTNET_MULTILEVEL_LOOKUP"] = "0",
-                    ["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1",
-                    ["MSBuildSDKsPath"] = string.Empty,
-                    ["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}"
-                };
+                EnvVars = new Dictionary<string, string>();
 
                 var appRefDir = EnvironmentVariables.AppRefDir;
                 if (string.IsNullOrEmpty(appRefDir))
@@ -96,7 +93,6 @@ namespace Wasm.Build.Tests
                 }
 
                 IsWorkload = false;
-                DotNet = "dotnet";
                 EnvVars = new Dictionary<string, string>()
                 {
                     ["EMSDK_PATH"] = emsdkPath
@@ -106,7 +102,17 @@ namespace Wasm.Build.Tests
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
 
+            // `runtime` repo's build environment sets these, and they
+            // mess up the build for the test project, which is using a different
+            // dotnet
+            EnvVars["DOTNET_INSTALL_DIR"] = sdkForWorkloadPath;
+            EnvVars["DOTNET_MULTILEVEL_LOOKUP"] = "0";
+            EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+            EnvVars["MSBuildSDKsPath"] = string.Empty;
+            EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
+
             RuntimeNativeDir = Path.Combine(RuntimePackDir, "runtimes", "browser-wasm", "native");
+            DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";
 
@@ -129,5 +135,8 @@ namespace Wasm.Build.Tests
 
         protected static string s_directoryBuildPropsForLocal = File.ReadAllText(Path.Combine(TestDataPath, "Local.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForLocal = File.ReadAllText(Path.Combine(TestDataPath, "Local.Directory.Build.targets"));
+
+        protected static string s_directoryBuildPropsForBlazorLocal = File.ReadAllText(Path.Combine(TestDataPath, "Blazor.Local.Directory.Build.props"));
+        protected static string s_directoryBuildTargetsForBlazorLocal = File.ReadAllText(Path.Combine(TestDataPath, "Blazor.Local.Directory.Build.targets"));
     }
 }

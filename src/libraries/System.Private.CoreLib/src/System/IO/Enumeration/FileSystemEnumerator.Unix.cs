@@ -236,12 +236,17 @@ namespace System.IO.Enumeration
 
                     CloseDirectoryHandle();
 
-                    if (_pathBuffer != null)
-                        ArrayPool<char>.Shared.Return(_pathBuffer);
-                    _pathBuffer = null;
-                    if (_entryBuffer != null)
-                        ArrayPool<byte>.Shared.Return(_entryBuffer);
-                    _entryBuffer = null;
+                    if (_pathBuffer is char[] pathBuffer)
+                    {
+                        _pathBuffer = null;
+                        ArrayPool<char>.Shared.Return(pathBuffer);
+                    }
+
+                    if (_entryBuffer is byte[] entryBuffer)
+                    {
+                        _entryBuffer = null;
+                        ArrayPool<byte>.Shared.Return(entryBuffer);
+                    }
                 }
             }
 

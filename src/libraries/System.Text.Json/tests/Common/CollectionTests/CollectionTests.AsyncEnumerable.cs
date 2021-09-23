@@ -74,16 +74,24 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
 
-        [Fact, OuterLoop]
-        public async Task WriteAsyncEnumerable_LongRunningEnumeration_Cancellation()
+        [Theory, OuterLoop]
+        [InlineData(5000, 1000, true)]
+        [InlineData(5000, 1000, false)]
+        [InlineData(1000, 10_000, true)]
+        [InlineData(1000, 10_000, false)]
+        public async Task WriteAsyncEnumerable_LongRunningEnumeration_Cancellation(
+            int cancellationTokenSourceDelayMilliseconds,
+            int enumeratorDelayMilliseconds,
+            bool passCancellationTokenToDelayTask)
         {
             var longRunningEnumerable = new MockedAsyncEnumerable<int>(
-                source: Enumerable.Range(1, 100),
+                source: Enumerable.Range(1, 1000),
                 delayInterval: 1,
-                delay: TimeSpan.FromMinutes(1));
+                delay: TimeSpan.FromMilliseconds(enumeratorDelayMilliseconds),
+                passCancellationTokenToDelayTask);
 
             using var utf8Stream = new Utf8MemoryStream();
-            using var cts = new CancellationTokenSource(delay: TimeSpan.FromSeconds(5));
+            using var cts = new CancellationTokenSource(delay: TimeSpan.FromMilliseconds(cancellationTokenSourceDelayMilliseconds));
             await Assert.ThrowsAsync<TaskCanceledException>(async () =>
                 await JsonSerializer.SerializeAsync(utf8Stream, longRunningEnumerable, cancellationToken: cts.Token));
 
@@ -225,21 +233,42 @@ namespace System.Text.Json.Serialization.Tests
             static object[] WrapArgs<TSource>(IEnumerable<TSource> source, int delayInterval, int bufferSize) => new object[]{ source, delayInterval, bufferSize };
         }
 
-        private class MockedAsyncEnumerable<TElement> : IAsyncEnumerable<TElement>, IEnumerable<TElement>
+        [Fact]
+        public async Task RegressionTest_DisposingEnumeratorOnPendingMoveNextAsyncOperation()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/57360
+            using var stream = new Utf8MemoryStream();
+            using var cts = new CancellationTokenSource(millisecondsDelay: 1000);
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await JsonSerializer.SerializeAsync(stream, GetNumbersAsync(), cancellationToken: cts.Token));
+
+            static async IAsyncEnumerable<int> GetNumbersAsync()
+            {
+                int i = 0;
+                while (true)
+                {
+                    await Task.Delay(100);
+                    yield return i++;
+                }
+            }
+        }
+
+        public class MockedAsyncEnumerable<TElement> : IAsyncEnumerable<TElement>, IEnumerable<TElement>
         {
             private readonly IEnumerable<TElement> _source;
             private readonly TimeSpan _delay;
             private readonly int _delayInterval;
+            private readonly bool _passCancellationTokenToDelayTask;
 
-            internal int TotalCreatedEnumerators { get; private set; }
-            internal int TotalDisposedEnumerators { get; private set; }
-            internal int TotalEnumeratedElements { get; private set; }
+            public int TotalCreatedEnumerators { get; private set; }
+            public int TotalDisposedEnumerators { get; private set; }
+            public int TotalEnumeratedElements { get; private set; }
 
-            public MockedAsyncEnumerable(IEnumerable<TElement> source, int delayInterval = 0, TimeSpan? delay = null)
+            public MockedAsyncEnumerable(IEnumerable<TElement> source, int delayInterval = 0, TimeSpan? delay = null, bool passCancellationTokenToDelayTask = true)
             {
                 _source = source;
                 _delay = delay ?? TimeSpan.FromMilliseconds(20);
                 _delayInterval = delayInterval;
+                _passCancellationTokenToDelayTask = passCancellationTokenToDelayTask;
             }
 
             public IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken cancellationToken = default)
@@ -277,7 +306,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     if (i > 0 && _delayInterval > 0 && i % _delayInterval == 0)
                     {
-                        await Task.Delay(_delay, cancellationToken);
+                        await Task.Delay(_delay, _passCancellationTokenToDelayTask ? cancellationToken : default);
                     }
 
                     if (cancellationToken.IsCancellationRequested)

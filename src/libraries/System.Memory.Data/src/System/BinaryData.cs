@@ -192,9 +192,16 @@ namespace System
         /// <summary>
         /// Converts the value of this instance to a string using UTF-8.
         /// </summary>
+        /// <remarks>
+        /// No special treatment is given to the contents of the data, it is merely decoded as a UTF-8 string.
+        /// For a JPEG or other binary file format the string will largely be nonsense with many embedded NUL characters,
+        /// and UTF-8 JSON values will look like their file/network representation,
+        /// including starting and stopping quotes on a string.
+        /// </remarks>
         /// <returns>
         /// A string from the value of this instance, using UTF-8 to decode the bytes.
         /// </returns>
+        /// <seealso cref="ToObjectFromJson{String}" />
         public override unsafe string ToString()
         {
             ReadOnlySpan<byte> span = _bytes.Span;

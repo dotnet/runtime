@@ -508,12 +508,6 @@ namespace HttpStress
 
         private static void ValidateStatusCode(HttpResponseMessage m, HttpStatusCode expectedStatus = HttpStatusCode.OK)
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55261")]
-            if (m.StatusCode == HttpStatusCode.InternalServerError)
-            {
-                throw new Exception("IGNORE");
-            }
-
             if (m.StatusCode != expectedStatus)
             {
                 throw new Exception($"Expected status code {expectedStatus}, got {m.StatusCode}");

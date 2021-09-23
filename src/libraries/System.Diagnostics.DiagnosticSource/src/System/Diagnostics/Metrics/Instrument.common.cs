@@ -27,13 +27,13 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listeneing to this instrument.
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         protected void RecordMeasurement(T measurement) => RecordMeasurement(measurement, Instrument.EmptyTags.AsSpan());
 
         /// <summary>
-        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listeneing to this instrument.
+        /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>

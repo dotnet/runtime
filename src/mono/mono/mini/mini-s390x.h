@@ -38,6 +38,7 @@ typedef struct MonoCompileArch {
 	int	    fpSize;		/** Size of floating point save area */
 	MonoInst    *ss_tramp_var;	/** Single-step variable */
 	MonoInst    *bp_tramp_var;	/** Breakpoint variable */
+	CallInfo    *cinfo;		/** Caller information */
 	guint8 	    *thunks;		/** Thunking area */
 	int 	    thunks_size;	/** Size of thunking area */
 } MonoCompileArch;
@@ -57,7 +58,6 @@ struct SeqPointInfo {
 };
 
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK			1
-#define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 		1
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS		1
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS		1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW  		1
@@ -83,6 +83,7 @@ struct SeqPointInfo {
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES			1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX	1
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 		1
+#define MONO_ARCH_FLOAT32_SUPPORTED			1
 
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2

@@ -571,7 +571,7 @@ namespace System.Xml.Serialization
             if (type.IsEnum)
                 return false;
 
-            switch (type.GetTypeCode())
+            switch (Type.GetTypeCode(type))
             {
                 case TypeCode.String: return true;
                 case TypeCode.Int32: return true;
@@ -1436,7 +1436,7 @@ namespace System.Xml.Serialization
             {
                 if (parent.Namespaces != null)
                 {
-                    if (parent.Namespaces.Namespaces.TryGetValue(ns, out string? wsdlNs) && wsdlNs != null)
+                    if (parent.Namespaces.TryLookupNamespace(ns, out string? wsdlNs) && wsdlNs != null)
                     {
                         ns = wsdlNs;
                         break;

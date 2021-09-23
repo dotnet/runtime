@@ -110,7 +110,7 @@ public:
     EventMask eventMask;
 
     //---------------------------------------------------------------
-    // m_dwProfilerEvacuationCounter keeps track of how many profiler
+    // dwProfilerEvacuationCounter keeps track of how many profiler
     // callback calls remain on the stack
     //---------------------------------------------------------------
     // Why volatile?

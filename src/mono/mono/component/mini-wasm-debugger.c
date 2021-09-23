@@ -144,8 +144,10 @@ static void
 mono_wasm_enable_debugging_internal (int debug_level)
 {
 	log_level = debug_level;
-	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
-	debugger_enabled = TRUE;
+	if (debug_level != 0) {
+		PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
+		debugger_enabled = TRUE;
+	}
 }
 
 static void

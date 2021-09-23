@@ -20,8 +20,8 @@ namespace Sample
             const int success = 42;
             const int failure = 1;
 
-            var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
-            var mi = ty.GetMethod("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+            var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
+            var mi = ty.GetMethod("GetCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
 
             if (mi == null)
                 return failure;
@@ -75,7 +75,7 @@ namespace Sample
             byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
             byte[] dpdb_data = null; // TODO also use the dpdb data
 
-            System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
+            System.Reflection.Metadata.MetadataUpdater.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
         }
     }
 }

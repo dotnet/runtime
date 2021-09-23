@@ -213,6 +213,7 @@ namespace System.Net.Http
 
                     // Send a PING
                     _pingCounter--;
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"[FlowControl] Sending RTT PING with payload {_pingCounter}");
                     connection.LogExceptions(connection.SendPingAsync(_pingCounter, isAck: false));
                     _pingSentTimestamp = now;
                     _state = State.PingSent;
@@ -223,6 +224,7 @@ namespace System.Net.Http
             {
                 if (_state != State.PingSent && _state != State.TerminatingMayReceivePingAck)
                 {
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"[FlowControl] Unexpected PING ACK in state {_state}");
                     ThrowProtocolError();
                 }
 
@@ -236,7 +238,10 @@ namespace System.Net.Http
                 Debug.Assert(payload < 0);
 
                 if (_pingCounter != payload)
+                {
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"[FlowControl] Unexpected RTT PING ACK payload {payload}, should be {_pingCounter}.");
                     ThrowProtocolError();
+                }
 
                 RefreshRtt(connection);
                 _state = State.Waiting;

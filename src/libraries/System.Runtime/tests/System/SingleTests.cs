@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public partial class SingleTests
+    public class SingleTests
     {
         // NOTE: Consider duplicating any tests added here in DoubleTests.cs
 
@@ -39,6 +39,10 @@ namespace System.Tests
         [InlineData(float.NegativeInfinity, float.MinValue, -1)]
         [InlineData(-0f, float.NegativeInfinity, 1)]
         [InlineData(float.NegativeInfinity, -0f, -1)]
+        [InlineData(float.NegativeInfinity, float.NegativeInfinity, 0)]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, -1)]
+        [InlineData(float.PositiveInfinity, float.PositiveInfinity, 0)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, 1)]
         public static void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
         {
             if (value is float f2)

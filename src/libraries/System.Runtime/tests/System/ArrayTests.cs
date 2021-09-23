@@ -4746,7 +4746,14 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                return;
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+
+            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            {
+                // On these platforms, occasionally the OOM Killer will terminate the
+                // tests when they're using ~1GB, before they complete.
+                throw new SkipTestException("Prone to OOM killer");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
@@ -4765,7 +4772,14 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                return;
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+
+            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            {
+                // On these platforms, occasionally the OOM Killer will terminate the
+                // tests when they're using ~1GB, before they complete.
+                throw new SkipTestException("Prone to OOM killer");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);

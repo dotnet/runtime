@@ -49,7 +49,7 @@ PVOID DecodeDynamicFunctionTableContext (PVOID pvContext)
 #endif // FEATURE_EH_FUNCLETS
 
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
+#if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE) && !defined(TARGET_UNIX)
 
 // Wrapper for RtlInstallFunctionTableCallback.
 VOID InstallEEFunctionTable(
@@ -67,12 +67,12 @@ VOID DeleteEEFunctionTable(
     RtlDeleteFunctionTable((PT_RUNTIME_FUNCTION)((ULONG64)pvTableID | 3));
 }
 
-#else // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE && !CROSSGEN_COMPILE && !TARGET_UNIX
+#else // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE && !TARGET_UNIX
 
 #define InstallEEFunctionTable(pvTableID, pvStartRange, cbRange, pfnGetRuntimeFunctionCallback, pvContext, TableType) do { } while (0)
 #define DeleteEEFunctionTable(pvTableID) do { } while (0)
 
-#endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE && !CROSSGEN_COMPILE && !TARGET_UNIX
+#endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE && !TARGET_UNIX
 
 
 #endif // !__RTLFUNCTIONS_H__

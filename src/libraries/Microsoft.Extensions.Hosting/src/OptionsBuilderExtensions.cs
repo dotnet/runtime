@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     // This adds an action that resolves the options value to force evaluation
                     // We don't care about the result as duplicates are not important
-                    vo.Validators[typeof(TOptions)] = () => options.Get(optionsBuilder.Name);
+                    vo.Validators[(typeof(TOptions), optionsBuilder.Name)] = () => options.Get(optionsBuilder.Name);
                 });
 
             return optionsBuilder;

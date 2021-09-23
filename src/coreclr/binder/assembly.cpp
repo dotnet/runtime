@@ -24,54 +24,10 @@ namespace BINDER_SPACE
         }
     };
 
-    STDMETHODIMP Assembly::QueryInterface(REFIID   riid,
-                                          void   **ppv)
-    {
-        HRESULT hr = S_OK;
-
-        if (ppv == NULL)
-        {
-            hr = E_POINTER;
-        }
-        else
-        {
-            if (IsEqualIID(riid, IID_IUnknown))
-            {
-                AddRef();
-                *ppv = static_cast<IUnknown *>(this);
-            }
-            else
-            {
-                *ppv = NULL;
-                hr = E_NOINTERFACE;
-            }
-        }
-
-        return hr;
-    }
-
-    STDMETHODIMP_(ULONG) Assembly::AddRef()
-    {
-        return InterlockedIncrement(&m_cRef);
-    }
-
-    STDMETHODIMP_(ULONG) Assembly::Release()
-    {
-        ULONG ulRef = InterlockedDecrement(&m_cRef);
-
-        if (ulRef == 0)
-        {
-            delete this;
-        }
-
-        return ulRef;
-    }
-
     Assembly::Assembly()
     {
         m_cRef = 1;
         m_pPEImage = NULL;
-        m_pNativePEImage = NULL;
         m_pAssemblyName = NULL;
         m_pMDImport = NULL;
         m_dwAssemblyFlags = FLAG_NONE;
@@ -86,14 +42,6 @@ namespace BINDER_SPACE
             m_pPEImage = NULL;
         }
 
-#ifdef  FEATURE_PREJIT
-        if (m_pNativePEImage != NULL)
-        {
-            BinderReleasePEImage(m_pNativePEImage);
-            m_pNativePEImage = NULL;
-        }
-#endif
-
         SAFE_RELEASE(m_pAssemblyName);
         SAFE_RELEASE(m_pMDImport);
     }
@@ -101,9 +49,8 @@ namespace BINDER_SPACE
     HRESULT Assembly::Init(IMDInternalImport       *pIMetaDataAssemblyImport,
                            PEKIND                   PeKind,
                            PEImage                 *pPEImage,
-                           PEImage                 *pNativePEImage,
                            SString                 &assemblyPath,
-                           BOOL                     fIsInGAC)
+                           BOOL                     fIsInTPA)
     {
         HRESULT hr = S_OK;
 
@@ -113,7 +60,7 @@ namespace BINDER_SPACE
         // Get assembly name def from meta data import and store it for later refs access
         IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
         SetMDImport(pIMetaDataAssemblyImport);
-        if (!fIsInGAC)
+        if (!fIsInTPA)
         {
             GetPath().Set(assemblyPath);
         }
@@ -121,9 +68,8 @@ namespace BINDER_SPACE
         // Safe architecture for validation
         PEKIND kAssemblyArchitecture;
         kAssemblyArchitecture = pAssemblyName->GetArchitecture();
-        SetIsInGAC(fIsInGAC);
+        SetIsInTPA(fIsInTPA);
         SetPEImage(pPEImage);
-        SetNativePEImage(pNativePEImage);
         pAssemblyName->SetIsDefinition(TRUE);
 
         // Now take ownership of assembly names
@@ -174,7 +120,7 @@ namespace BINDER_SPACE
     }
 
     // --------------------------------------------------------------------
-    // ICLRPrivAssembly methods
+    // BINDER_SPACE::Assembly methods
     // --------------------------------------------------------------------
     LPCWSTR Assembly::GetSimpleName()
     {
@@ -182,32 +128,9 @@ namespace BINDER_SPACE
         return (pAsmName == nullptr ? nullptr : (LPCWSTR)pAsmName->GetSimpleName());
     }
 
-    HRESULT Assembly::BindAssemblyByName(AssemblyNameData *pAssemblyNameData, ICLRPrivAssembly ** ppAssembly)
+    AssemblyLoaderAllocator* Assembly::GetLoaderAllocator()
     {
-        return (m_pBinder == NULL) ? E_FAIL : m_pBinder->BindAssemblyByName(pAssemblyNameData, ppAssembly);
-    }
-
-    HRESULT Assembly::GetBinderID(UINT_PTR *pBinderId)
-    {
-        return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetBinderID(pBinderId);
-    }
-
-    HRESULT Assembly::GetLoaderAllocator(LPVOID* pLoaderAllocator)
-    {
-        return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetLoaderAllocator(pLoaderAllocator);
-    }
-
-    HRESULT Assembly::GetAvailableImageTypes(
-        LPDWORD pdwImageTypes)
-    {
-        HRESULT hr = E_FAIL;
-
-        if(pdwImageTypes == nullptr)
-            return E_INVALIDARG;
-
-        *pdwImageTypes = ASSEMBLY_IMAGE_TYPE_ASSEMBLY;
-
-        return S_OK;
+        return m_pBinder ? m_pBinder->GetLoaderAllocator() : NULL;
     }
 }
 

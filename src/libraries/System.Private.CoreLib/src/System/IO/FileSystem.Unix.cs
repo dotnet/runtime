@@ -521,7 +521,7 @@ namespace System.IO
 
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).CreationTime;
+            return new FileInfo(fullPath, null).CreationTimeUtc;
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -535,7 +535,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).LastAccessTime;
+            return new FileInfo(fullPath, null).LastAccessTimeUtc;
         }
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -549,7 +549,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).LastWriteTime;
+            return new FileInfo(fullPath, null).LastWriteTimeUtc;
         }
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -571,16 +571,6 @@ namespace System.IO
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
             string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
-
-            // Fail if the target exists but is not consistent with the expected filesystem entry type
-            if (Interop.Sys.Stat(pathToTargetFullPath, out Interop.Sys.FileStatus targetInfo) == 0)
-            {
-                if (isDirectory != ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR))
-                {
-                    throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
-                }
-            }
-
             Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path, isDirectory);
         }
 

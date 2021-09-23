@@ -2,7 +2,6 @@
 # Configure options
 #
 
-option (DISABLE_PORTABILITY "Disables the IO portability layer")
 option (DISABLE_AOT "Disable AOT Compiler")
 option (DISABLE_PROFILER "Disable default profiler support")
 option (DISABLE_DECIMAL "Disable System.Decimal support")
@@ -36,10 +35,8 @@ option (DISABLE_SGEN_BINARY_PROTOCOL "Disable binary protocol logging in SGEN")
 option (DISABLE_PROCESSES "Disable process support")
 option (DISABLE_EVENTPIPE "Disable EventPipe support")
 option (DISABLE_EXECUTABLES "Disable the build of the runtime executables")
-option (DISABLE_CRASH_REPORTING "Disable crash reporting subsystem")
 option (DISABLE_ICALL_TABLES "Enable separate icall table library")
 option (DISABLE_QCALLS "Disable support for QCalls")
-option (DISABLE_PERF_COUNTERS "Disable support for perf counters")
 option (DISABLE_LOG_DEST "Disable MONO_LOG_DEST support")
 option (ENABLE_ICALL_EXPORT "Export icall functions")
 option (ENABLE_ICALL_SYMBOL_MAP "Generate tables which map icall functions to their C symbols")

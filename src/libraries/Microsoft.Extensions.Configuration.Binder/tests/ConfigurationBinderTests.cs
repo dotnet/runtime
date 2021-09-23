@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Binder.Test
@@ -401,6 +402,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         // enum test
         [InlineData("Constructor", typeof(AttributeTargets))]
         [InlineData("CA761232-ED42-11CE-BACD-00AA0057B223", typeof(Guid))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void CanReadAllSupportedTypes(string value, Type type)
         {
             // arrange
@@ -447,6 +449,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         [InlineData(typeof(TimeSpan))]
         [InlineData(typeof(AttributeTargets))]
         [InlineData(typeof(Guid))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void ConsistentExceptionOnFailedBinding(Type type)
         {
             // arrange
@@ -932,6 +935,59 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(
                 SR.Format(SR.Error_FailedBinding, "MyByteArray", typeof(byte[])),
                 exception.Message);
+        }
+
+        [Fact]
+        public void CanBindSingleElementToCollection()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"MyString", "hello world"},
+                {"Nested:Integer", "11"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            IConfiguration config = configurationBuilder.Build();
+
+            var stringArr = config.GetSection("MyString").Get<string[]>();
+            Assert.Equal("hello world", stringArr[0]);
+            Assert.Equal(1, stringArr.Length);
+
+            var stringAsStr = config.GetSection("MyString").Get<string>();
+            Assert.Equal("hello world", stringAsStr);
+
+            var nested = config.GetSection("Nested").Get<NestedOptions>();
+            Assert.Equal(11, nested.Integer);
+
+            var nestedAsArray = config.GetSection("Nested").Get<NestedOptions[]>();
+            Assert.Equal(11, nestedAsArray[0].Integer);
+            Assert.Equal(1, nestedAsArray.Length);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CannotBindSingleElementToCollectionWhenSwitchSet()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppContext.SetSwitch("Microsoft.Extensions.Configuration.BindSingleElementsToArray", false);
+
+                var dic = new Dictionary<string, string>
+                {
+                    {"MyString", "hello world"},
+                    {"Nested:Integer", "11"},
+                };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                IConfiguration config = configurationBuilder.Build();
+
+                var stringArr = config.GetSection("MyString").Get<string[]>();
+                Assert.Null(stringArr);
+
+                var stringAsStr = config.GetSection("MyString").Get<string>();
+                Assert.Equal("hello world", stringAsStr);
+            }).Dispose();
         }
 
         private interface ISomeInterface

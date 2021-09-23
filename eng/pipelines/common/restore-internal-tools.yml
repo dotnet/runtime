@@ -7,6 +7,7 @@ steps:
   - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             -ci
             -restore
+            -configuration $(_BuildConfig)
             -projects $(Build.SourcesDirectory)/eng/common/internal/Tools.csproj
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/RestoreInternal.binlog
             /v:normal

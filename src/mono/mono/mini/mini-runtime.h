@@ -245,7 +245,6 @@ typedef struct MonoDebugOptions {
 	gboolean suspend_on_exception;
 	gboolean suspend_on_unhandled;
 	gboolean dyn_runtime_invoke;
-	gboolean gdb;
 	gboolean lldb;
 
 	/*
@@ -568,12 +567,9 @@ const char*mono_ji_type_to_string           (MonoJumpInfoType type);
 void      mono_print_ji                     (const MonoJumpInfo *ji);
 MONO_API void      mono_print_method_from_ip         (void *ip);
 MONO_API char     *mono_pmip                         (void *ip);
+MONO_API char     *mono_pmip_u                       (void *ip);
 MONO_API int mono_ee_api_version (void);
 gboolean  mono_debug_count                  (void);
-
-#ifdef __linux__
-#define XDEBUG_ENABLED 1
-#endif
 
 #ifdef __linux__
 /* maybe enable also for other systems? */

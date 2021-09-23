@@ -133,7 +133,7 @@ public:
 #endif
 };
 
-#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
 class LoadedImageLayout: public PEImageLayout
 {
     VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
@@ -156,7 +156,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 };
-#endif // !CROSSGEN_COMPILE && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
 class FlatImageLayout: public PEImageLayout
 {

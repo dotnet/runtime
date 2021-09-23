@@ -111,7 +111,7 @@ namespace System.Globalization
         /// Returns the tick count corresponding to the given year, month, and day.
         /// Will check the if the parameters are valid.
         /// </summary>
-        internal virtual long DateToTicks(int year, int month, int day)
+        private static long DateToTicks(int year, int month, int day)
         {
             return GetAbsoluteDate(year, month, day) * TicksPerDay;
         }

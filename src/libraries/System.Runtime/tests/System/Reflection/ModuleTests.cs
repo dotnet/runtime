@@ -232,14 +232,14 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50831")]
         public void GetMethods()
         {
             var methodNames = TestModule.GetMethods().Select(m => m.Name).ToArray();
             AssertExtensions.SequenceEqual(new[]{ "TestMethodFoo", "TestMethodFoo" }, methodNames );
 
             methodNames = TestModule.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Select(m => m.Name).ToArray();
-            AssertExtensions.SequenceEqual(new[]{ "TestMethodFoo", "TestMethodFoo", "TestMethodBar" }, methodNames );
+            Array.Sort<string>(methodNames);
+            AssertExtensions.SequenceEqual(new[]{ "TestMethodBar", "TestMethodFoo", "TestMethodFoo" }, methodNames );
         }
 
         public static IEnumerable<Type> Types => Module.GetTypes();

@@ -21,7 +21,9 @@ namespace System.Text.Json.Reflection
 
         public override Type DeclaringType => _ctor.ContainingType.AsType(_metadataLoadContext);
 
-        public override MethodAttributes Attributes => throw new NotImplementedException();
+        private MethodAttributes? _attributes;
+
+        public override MethodAttributes Attributes => _attributes ??= _ctor.GetMethodAttributes();
 
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException();
 

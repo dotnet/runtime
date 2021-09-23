@@ -551,6 +551,17 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Serializes the HTTP content to a memory stream.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The output memory stream which contains the serialized HTTP content.</returns>
+        /// <remarks>
+        /// Once the operation completes, the returned memory stream represents the HTTP content. The returned stream can then be used to read the content using various stream APIs.
+        /// The <see cref="CreateContentReadStream(CancellationToken)"/> method buffers the content to a memory stream.
+        /// Derived classes can override this behavior if there is a better way to retrieve the content as stream.
+        /// For example, a byte array or a string could use a more efficient method way such as wrapping a read-only MemoryStream around the bytes or string.
+        /// </remarks>
         protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
         {
             LoadIntoBuffer(MaxBufferSize, cancellationToken);

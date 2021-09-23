@@ -16,16 +16,22 @@ namespace Wasm.Build.Tests
         public Dictionary<BuildArgs, BuildProduct> _buildPaths = new();
 
         public void CacheBuild(BuildArgs buildArgs, BuildProduct product)
-            => _buildPaths.Add(buildArgs, product);
-
-        public void RemoveFromCache(string buildPath)
         {
-            KeyValuePair<BuildArgs, BuildProduct>? foundKvp = _buildPaths.Where(kvp => kvp.Value.ProjectDir == buildPath).SingleOrDefault();
-            if (foundKvp == null)
-                throw new Exception($"Could not find build path {buildPath} in cache to remove.");
+            if (product == null)
+                throw new ArgumentNullException(nameof(product));
+            if (buildArgs == null)
+                throw new ArgumentNullException(nameof(buildArgs));
+            _buildPaths.Add(buildArgs, product);
+        }
 
-            _buildPaths.Remove(foundKvp.Value.Key);
-            RemoveDirectory(buildPath);
+        public void RemoveFromCache(string buildPath, bool keepDir=true)
+        {
+            BuildArgs? foundBuildArgs = _buildPaths.Where(kvp => kvp.Value.ProjectDir == buildPath).Select(kvp => kvp.Key).SingleOrDefault();
+            if (foundBuildArgs is not null)
+                _buildPaths.Remove(foundBuildArgs);
+
+            if (!keepDir)
+                RemoveDirectory(buildPath);
         }
 
         public bool TryGetBuildFor(BuildArgs buildArgs, [NotNullWhen(true)] out BuildProduct? product)
@@ -42,9 +48,12 @@ namespace Wasm.Build.Tests
 
         private void RemoveDirectory(string path)
         {
+            if (EnvironmentVariables.SkipProjectCleanup == "1")
+                return;
+
             try
             {
-                 Directory.Delete(path, recursive: true);
+                Directory.Delete(path, recursive: true);
             }
             catch (Exception ex)
             {

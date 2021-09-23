@@ -188,14 +188,17 @@ namespace System.Drawing
             filePath.CopyTo(0, buffer, 0, filePath.Length);
             buffer[filePath.Length] = '\0';
 
+            IntPtr hIcon;
             fixed (char* b = buffer)
             {
-                IntPtr hIcon = Interop.Shell32.ExtractAssociatedIcon(NativeMethods.NullHandleRef, b, ref index);
-                ArrayPool<char>.Shared.Return(buffer);
-                if (hIcon != IntPtr.Zero)
-                {
-                    return new Icon(hIcon, true);
-                }
+                hIcon = Interop.Shell32.ExtractAssociatedIcon(NativeMethods.NullHandleRef, b, ref index);
+            }
+
+            ArrayPool<char>.Shared.Return(buffer);
+
+            if (hIcon != IntPtr.Zero)
+            {
+                return new Icon(hIcon, true);
             }
 
             return null;

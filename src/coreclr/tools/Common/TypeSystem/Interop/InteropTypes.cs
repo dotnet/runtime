@@ -54,6 +54,11 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
         }
 
+        public static MetadataType GetVariant(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Variant");
+        }
+
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)
         {
             return IsOrDerivesFromType(type, GetSafeHandle(context));

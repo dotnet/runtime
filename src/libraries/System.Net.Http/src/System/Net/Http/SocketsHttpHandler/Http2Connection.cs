@@ -915,6 +915,8 @@ namespace System.Net.Http
             ReadOnlySpan<byte> pingContent = _incomingBuffer.ActiveSpan.Slice(0, FrameHeader.PingLength);
             long pingContentLong = BinaryPrimitives.ReadInt64BigEndian(pingContent);
 
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received PING frame, content:{pingContentLong} ack: {frameHeader.AckFlag}");
+
             if (frameHeader.AckFlag)
             {
                 ProcessPingAck(pingContentLong);
@@ -1206,7 +1208,7 @@ namespace System.Net.Http
         private Task SendPingAsync(long pingContent, bool isAck = false) =>
             PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent, isAck), static (state, writeBuffer) =>
             {
-                if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace("Started writing.");
+                if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace($"Started writing. {nameof(pingContent)}={state.pingContent}");
 
                 Debug.Assert(sizeof(long) == FrameHeader.PingLength);
 
@@ -1492,6 +1494,11 @@ namespace System.Net.Http
                     Shutdown();
                 }
 
+                if (_abortException is not null)
+                {
+                    throw GetRequestAbortedException(_abortException);
+                }
+
                 if (_shutdown)
                 {
                     // The connection has shut down. Throw a retryable exception so that this request will be handled on another connection.
@@ -1697,7 +1704,7 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                return _streamsInUse == 0 ? _idleSinceTickCount - nowTicks : 0;
+                return _streamsInUse == 0 ? nowTicks - _idleSinceTickCount : 0;
             }
         }
 

@@ -40,30 +40,33 @@ namespace System
         {
             var sb = new ValueStringBuilder(stackalloc char[128]);
             sb.Append(Name);
+
             if (Culture != null)
             {
-                sb.Append($", culture=\"{Culture}\"");
+                sb.Append(", culture=\"");
+                sb.Append(Culture);
+                sb.Append('"');
             }
-            sb.Append($", version=\"{Version}\"");
+
+            sb.Append(", version=\"");
+            sb.Append(Version.ToString());
+            sb.Append('"');
+
             if (_publicKeyToken != null)
             {
                 sb.Append(", publicKeyToken=\"");
-                EncodeHexString(_publicKeyToken, ref sb);
+                HexConverter.EncodeToUtf16(_publicKeyToken, sb.AppendSpan(2 * _publicKeyToken.Length), HexConverter.Casing.Upper);
                 sb.Append('"');
             }
+
             if (ProcessorArchitecture != null)
             {
-                sb.Append($", processorArchitecture =\"{ProcessorArchitecture}\"");
+                sb.Append(", processorArchitecture =\"");
+                sb.Append(ProcessorArchitecture);
+                sb.Append('"');
             }
-            return sb.ToString();
-        }
 
-        private static void EncodeHexString(byte[] sArray, ref ValueStringBuilder stringBuilder)
-        {
-            for (int i = 0; i < sArray.Length; i++)
-            {
-                HexConverter.ToCharsBuffer(sArray[i], stringBuilder.AppendSpan(2), 0, HexConverter.Casing.Upper);
-            }
+            return sb.ToString();
         }
 
         public override bool Equals([NotNullWhen(true)] object? o)

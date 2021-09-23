@@ -15,7 +15,7 @@
     <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">
     <RuntimeSpecificFrameworkSuffix>Mono</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
   <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
@@ -155,10 +155,10 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(Crossgen2SdkOverridePropsPath)" />
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(Crossgen2SdkOverridePropsPath)' != ''" />
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-  <Import Project="$(Crossgen2SdkOverrideTargetsPath)" />
+  <Import Project="$(Crossgen2SdkOverrideTargetsPath)" Condition="'$(Crossgen2SdkOverrideTargetsPath)' != ''" />
   <PropertyGroup>
     <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>
   </PropertyGroup>

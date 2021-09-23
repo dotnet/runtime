@@ -626,11 +626,11 @@ namespace System.Numerics
             return;
         }
 
-        public static BigInteger Zero { get { return s_bnZeroInt; } }
+        public static BigInteger Zero => s_bnZeroInt;
 
-        public static BigInteger One { get { return s_bnOneInt; } }
+        public static BigInteger One => s_bnOneInt;
 
-        public static BigInteger MinusOne { get { return s_bnMinusOneInt; } }
+        public static BigInteger MinusOne => s_bnMinusOneInt;
 
         public bool IsPowerOfTwo
         {
@@ -1996,6 +1996,7 @@ namespace System.Numerics
             Span<uint> stackallocedXd = stackalloc uint[1];
             Span<uint> xd = stackallocedXd;
             bool negx = GetPartsForBitManipulation(ref value, ref xd);
+            bool trackSignBit = false;
 
             if (negx)
             {
@@ -2020,9 +2021,13 @@ namespace System.Numerics
                 }
 
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
+                if (xd[^1] == 0)
+                {
+                    trackSignBit = true;
+                }
             }
 
-            int zl = xd.Length - digitShift;
+            int zl = xd.Length - digitShift + (trackSignBit ? 1: 0);
             uint[]? zdArray = null;
             Span<uint> zd = stackalloc uint[0];
             if (zl > 0)
@@ -2057,6 +2062,11 @@ namespace System.Numerics
             if (negx)
             {
                 NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
+
+                if (trackSignBit)
+                {
+                    zd[^1] = 1;
+                }
             }
 
             return new BigInteger(zd, zdArray, negx);

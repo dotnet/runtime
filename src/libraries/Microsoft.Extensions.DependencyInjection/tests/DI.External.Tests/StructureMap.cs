@@ -12,6 +12,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         public override string[] SkippedTests => new[]
         {
+            "ServiceProviderIsDisposable",
+            "SelfResolveThenDispose",
+            "DisposingScopeDisposesService",
             "DisposesInReverseOrderOfCreation",
             "ResolvesMixedOpenClosedGenericsAsEnumerable"
         };

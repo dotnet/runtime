@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for JsonNode-derived types. The {T} value must be Object and not JsonNode
     /// since we allow Object-declared members\variables to deserialize as {JsonNode}.
     /// </summary>
-    internal sealed class JsonNodeConverter : JsonConverter<JsonNode?>
+    internal sealed class JsonNodeConverter : JsonConverter<JsonNode>
     {
         private static JsonNodeConverter? s_nodeConverter;
         private static JsonArrayConverter? s_arrayConverter;
@@ -28,6 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             if (value == null)
             {
                 writer.WriteNullValue();
+                // Note JsonSerializer.Deserialize<T>(JsonNode?) also calls WriteNullValue() for a null + root JsonNode.
             }
             else
             {

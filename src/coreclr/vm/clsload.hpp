@@ -909,9 +909,6 @@ private:
                                     BOOL fCheckUnderLock);
 
     static TypeHandle LookupInLoaderModule(TypeKey* pKey, BOOL fCheckUnderLock);
-#ifdef FEATURE_PREJIT
-    static TypeHandle LookupInPreferredZapModule(TypeKey* pKey, BOOL fCheckUnderLock);
-#endif // FEATURE_PREJIT
 
     // Lookup a handle in the appropriate table
     // (declaring module for TypeDef or loader-module for constructed types)

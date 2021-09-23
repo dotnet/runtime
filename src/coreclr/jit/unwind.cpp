@@ -186,8 +186,8 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 {
     regMaskTP regBit = isFloat ? genRegMask(REG_FP_FIRST) : 1;
 
-    for (regNumber regNum = isFloat ? REG_FP_FIRST : REG_FIRST; regNum < REG_COUNT;
-         regNum           = REG_NEXT(regNum), regBit <<= 1)
+    regNumber regNum = isFloat ? REG_FP_FIRST : REG_FIRST;
+    for (; regNum < REG_COUNT;)
     {
         if (regBit > regMask)
         {
@@ -198,6 +198,19 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
         {
             unwindPushPopCFI(regNum);
         }
+
+#if TARGET_ARM
+        // JIT for ARM emit local variables in S0-S31 registers,
+        // which cannot be emitted to DWARF when using LLVM,
+        // because LLVM only know about D0-D31.
+        // As such pairs Sx,Sx+1 are referenced as D0-D15 registers in DWARF
+        // For that we process registers in pairs.
+        regNum = isFloat ? REG_NEXT(REG_NEXT(regNum)) : REG_NEXT(regNum);
+        regBit <<= isFloat ? 2 : 1;
+#else
+        regNum = REG_NEXT(regNum);
+        regBit <<= 1;
+#endif
     }
 }
 

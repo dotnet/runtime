@@ -10,6 +10,8 @@ namespace System.Security.Cryptography
     {
         public RSAOpenSsl(RSAParameters parameters)
         {
+            ThrowIfNotSupported();
+
             // Make _key be non-null before calling ImportParameters
             _key = new Lazy<SafeEvpPKeyHandle>();
             ImportParameters(parameters);
@@ -30,6 +32,7 @@ namespace System.Security.Cryptography
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
+            ThrowIfNotSupported();
             SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPKeyCreateRsa(handle);
             Debug.Assert(!pkey.IsInvalid);
 
@@ -53,6 +56,7 @@ namespace System.Security.Cryptography
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
+            ThrowIfNotSupported();
             SafeEvpPKeyHandle newKey = Interop.Crypto.EvpPKeyDuplicate(
                 pkeyHandle,
                 Interop.Crypto.EvpAlgorithmId.RSA);
@@ -68,6 +72,14 @@ namespace System.Security.Cryptography
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             return Interop.Crypto.EvpPKeyDuplicate(GetKey(), Interop.Crypto.EvpAlgorithmId.RSA);
+        }
+
+        static partial void ThrowIfNotSupported()
+        {
+            if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RSAOpenSsl)));
+            }
         }
     }
 }

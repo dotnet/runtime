@@ -954,7 +954,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                // We want to go over StackallocThreshold=256 to force a pooled allocation, so this property is 200 chars and 400 bytes.
+                // We want to go over StackallocByteThreshold=256 to force a pooled allocation, so this property is 200 chars and 400 bytes.
                 const int charsInProperty = 200;
 
                 string longPropertyName = new string('\u0467', charsInProperty);
@@ -1000,7 +1000,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Baseline
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
-            JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, object>>(json);
 
             await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, string>>(json));
         }

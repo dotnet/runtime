@@ -63,7 +63,7 @@ struct _EventPipeProviderCallbackData {
 #else
 struct _EventPipeProviderCallbackData_Internal {
 #endif
-	const ep_char8_t *filter_data;
+	ep_char8_t *filter_data;
 	EventPipeCallback callback_function;
 	void *callback_data;
 	int64_t keywords;
@@ -97,6 +97,9 @@ EventPipeProviderCallbackData *
 ep_provider_callback_data_alloc_copy (EventPipeProviderCallbackData *provider_callback_data_src);
 
 EventPipeProviderCallbackData *
+ep_provider_callback_data_alloc_move (EventPipeProviderCallbackData *provider_callback_data_src);
+
+EventPipeProviderCallbackData *
 ep_provider_callback_data_init (
 	EventPipeProviderCallbackData *provider_callback_data,
 	const ep_char8_t *filter_data,
@@ -108,6 +111,11 @@ ep_provider_callback_data_init (
 
 EventPipeProviderCallbackData *
 ep_provider_callback_data_init_copy (
+	EventPipeProviderCallbackData *provider_callback_data_dst,
+	EventPipeProviderCallbackData *provider_callback_data_src);
+
+EventPipeProviderCallbackData *
+ep_provider_callback_data_init_move (
 	EventPipeProviderCallbackData *provider_callback_data_dst,
 	EventPipeProviderCallbackData *provider_callback_data_src);
 

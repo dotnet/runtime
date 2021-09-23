@@ -391,6 +391,7 @@ typedef struct MonoAotCompile {
 	GHashTable *objc_selector_to_index;
 	GList *profile_data;
 	GHashTable *profile_methods;
+	GHashTable *blob_hash;
 #ifdef EMIT_WIN32_UNWIND_INFO
 	GList *unwind_info_section_cache;
 #endif
@@ -1149,7 +1150,7 @@ arch_init (MonoAotCompile *acfg)
 
 			if (strstr (acfg->aot_opts.mtriple, "ios")) {
 				g_string_append (acfg->llc_args, " -mattr=+v7");
-				g_string_append (acfg->llc_args, " -exception-model=dwarf -disable-fp-elim");
+				g_string_append (acfg->llc_args, " -exception-model=dwarf -frame-pointer=all");
 			}
 		}
 
@@ -3095,6 +3096,44 @@ add_to_blob (MonoAotCompile *acfg, const guint8 *data, guint32 data_len)
 	return add_stream_data (&acfg->blob, (char*)data, data_len);
 }
 
+typedef struct {
+	guint8 *data;
+	int len, align;
+	guint32 offset;
+} BlobItem;
+
+static guint
+blob_item_hash (gconstpointer key)
+{
+	BlobItem *item = (BlobItem*)key;
+	guint i, a;
+
+	for (i = a = 0; i < item->len; ++i)
+		a ^= (((guint)item->data [i]) << (i & 0xf));
+
+	return a;
+}
+
+static gboolean
+blob_item_equal (gconstpointer a, gconstpointer b)
+{
+	BlobItem *item1 = (BlobItem*)a;
+	BlobItem *item2 = (BlobItem*)b;
+
+	if (item1->len != item2->len || item1->align != item2->align)
+		return FALSE;
+	return memcmp (item1->data, item2->data, item1->len) == 0;
+}
+
+static void
+blob_item_free (gpointer val)
+{
+	BlobItem *item = (BlobItem*)val;
+
+	g_free (item->data);
+	g_free (item);
+}
+
 static guint32
 add_to_blob_aligned (MonoAotCompile *acfg, const guint8 *data, guint32 data_len, guint32 align)
 {
@@ -3106,11 +3145,31 @@ add_to_blob_aligned (MonoAotCompile *acfg, const guint8 *data, guint32 data_len,
 
 	count = acfg->blob.index % align;
 
+	BlobItem tmp;
+	tmp.data = (guint8*)data;
+	tmp.len = data_len;
+	tmp.align = align;
+	if (!acfg->blob_hash)
+		acfg->blob_hash = g_hash_table_new_full (blob_item_hash, blob_item_equal, NULL, blob_item_free);
+	BlobItem *cached = g_hash_table_lookup (acfg->blob_hash, &tmp);
+	if (cached)
+		return cached->offset;
+
 	/* we assume the stream data will be aligned */
 	if (count)
 		add_stream_data (&acfg->blob, buf, 4 - count);
 
-	return add_stream_data (&acfg->blob, (char*)data, data_len);
+	guint32 offset = add_stream_data (&acfg->blob, (char*)data, data_len);
+
+	BlobItem *item = g_new0 (BlobItem, 1);
+	item->data = g_malloc (data_len);
+	memcpy (item->data, data, data_len);
+	item->len = data_len;
+	item->align = align;
+	item->offset = offset;
+	g_hash_table_insert (acfg->blob_hash, item, item);
+
+	return offset;
 }
 
 /* Emit a table of data into the aot image */
@@ -6237,6 +6296,18 @@ get_file_index (MonoAotCompile *acfg, const char *source_file)
 #define INST_LEN 1
 #endif
 
+static gboolean
+never_direct_pinvoke (const char *pinvoke_symbol)
+{
+#if defined(TARGET_IOS) || defined (TARGET_TVOS) || defined (TARGET_OSX) || defined (TARGET_WATCHOS)
+	/* XI must be able to override the functions that start with objc_msgSend.
+	 * (there are a few variants with the same prefix) */
+	return !strncmp (pinvoke_symbol, "objc_msgSend", 12);
+#else
+	return FALSE;
+#endif
+}
+
 /*
  * emit_and_reloc_code:
  *
@@ -6388,7 +6459,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 							direct_pinvoke = lookup_icall_symbol_name_aot (patch_info->data.method);
 						else
 							direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
-						if (direct_pinvoke) {
+						if (direct_pinvoke && !never_direct_pinvoke (direct_pinvoke)) {
 							direct_call = TRUE;
 							g_assert (strlen (direct_pinvoke) < 1000);
 							direct_call_target = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, direct_pinvoke);
@@ -9081,6 +9152,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 			/* These only need in wrappers */
 			add_gsharedvt_wrappers (acfg, sig, TRUE, FALSE, FALSE);
+			if (mono_aot_mode_is_interp (&acfg->aot_opts) && sig->param_count > MAX_INTERP_ENTRY_ARGS)
+				/* See below */
+				add_gsharedvt_wrappers (acfg, sig, FALSE, FALSE, TRUE);
 		}
 
 		for (l = cfg->interp_in_signatures; l; l = l->next) {
@@ -13176,6 +13250,8 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->plt_entry_debug_sym_cache);
 	g_hash_table_destroy (acfg->klass_blob_hash);
 	g_hash_table_destroy (acfg->method_blob_hash);
+	if (acfg->blob_hash)
+		g_hash_table_destroy (acfg->blob_hash);
 	got_info_free (&acfg->got_info);
 	got_info_free (&acfg->llvm_got_info);
 	arch_free_unwind_info_section_cache (acfg);
@@ -14284,7 +14360,7 @@ emit_aot_image (MonoAotCompile *acfg)
 		return 1;
 	}
 	if (acfg->fp)
-		acfg->w = mono_img_writer_create (acfg->fp, FALSE);
+		acfg->w = mono_img_writer_create (acfg->fp);
 
 	/* Compute symbols for methods */
 	for (i = 0; i < acfg->nmethods; ++i) {

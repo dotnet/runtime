@@ -1718,14 +1718,11 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
         return FALSE;
     }
 
-    if (!classMT->IsZapped())
+    // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+    // to detect match reliably
+    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
     {
-        // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
-        // to detect match reliably
-        if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
-        {
-            return FALSE;
-        }
+        return FALSE;
     }
 
     return TRUE;
@@ -2084,13 +2081,10 @@ static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
     if (actual == base)
         return false;
 
-    if (!g_pStreamMT->IsZapped())
-    {
-        // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
-        // to detect match reliably
-        if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
-            return false;
-    }
+    // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+    // to detect match reliably
+    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+        return false;
 
     return true;
 }

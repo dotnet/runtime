@@ -255,10 +255,8 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-#ifndef CROSSGEN_COMPILE
     EECMHelperHashTable                 m_CMHelperHashtable;
     EEPtrHashTable                      m_SharedCMHelperToCMInfoMap;
-#endif // CROSSGEN_COMPILE
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
     CMINFOLIST                          m_pCMInfoList;

@@ -35,13 +35,11 @@
 #include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/object-internals.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/image-internals.h>
 #include <mono/metadata/loaded-images-internals.h>
@@ -107,7 +105,7 @@ mono_images_unlock(void)
 }
 
 static MonoImage *
-mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean load_from_context);
+mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
 /* Maps string keys to MonoImageStorage values.
  *
@@ -1374,18 +1372,8 @@ mono_image_storage_open (const char *fname)
 	
 	MonoFileMap *filed;
 	if ((filed = mono_file_map_open (fname)) == NULL){
-		if (IS_PORTABILITY_SET) {
-			gchar *ffname = mono_portability_find_file (fname, TRUE);
-			if (ffname) {
-				filed = mono_file_map_open (ffname);
-				g_free (ffname);
-			}
-		}
-
-		if (filed == NULL) {
-			g_free (key);
-			return NULL;
-		}
+		g_free (key);
+		return NULL;
 	}
 
 	MonoImageStorage *storage = g_new0 (MonoImageStorage, 1);
@@ -1439,7 +1427,7 @@ mono_image_storage_new_raw_data (char *datac, guint32 data_len, gboolean raw_dat
 
 static MonoImage *
 do_mono_image_open (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status,
-					gboolean care_about_cli, gboolean care_about_pecoff, gboolean metadata_only, gboolean load_from_context)
+					gboolean care_about_cli, gboolean care_about_pecoff, gboolean metadata_only)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -1467,10 +1455,7 @@ do_mono_image_open (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOp
 	image->name = mono_path_resolve_symlinks (fname);
 	image->filename = g_strdup (image->name);
 	image->metadata_only = metadata_only;
-	image->load_from_context = load_from_context;
 	image->ref_count = 1;
-	/* if MONO_SECURITY_MODE_CORE_CLR is set then determine if this image is platform code */
-	image->core_clr_platform_code = mono_security_core_clr_determine_platform_image (image);
 	image->alc = alc;
 	return do_mono_image_load (image, status, care_about_cli, care_about_pecoff);
 }
@@ -1793,11 +1778,11 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 			*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
 	}
-	return mono_image_open_a_lot (mono_alc_get_default (), fname, status, FALSE);
+	return mono_image_open_a_lot (mono_alc_get_default (), fname, status);
 }
 
 static MonoImage *
-mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean load_from_context)
+mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status)
 {
 	MonoImage *image;
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li);
@@ -1898,7 +1883,7 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	mono_images_unlock ();
 
 	// Image not loaded, load it now
-	image = do_mono_image_open (alc, fname, status, TRUE, TRUE, FALSE, load_from_context);
+	image = do_mono_image_open (alc, fname, status, TRUE, TRUE, FALSE);
 	if (image == NULL)
 		return NULL;
 
@@ -1906,10 +1891,10 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 }
 
 MonoImage *
-mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean load_from_context)
+mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status)
 {
 	MonoLoadedImages *li = mono_alc_get_loaded_images (alc);
-	return mono_image_open_a_lot_parameterized (li, alc, fname, status, load_from_context);
+	return mono_image_open_a_lot_parameterized (li, alc, fname, status);
 }
 
 /**
@@ -1924,7 +1909,7 @@ mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImag
 MonoImage *
 mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
-	return mono_image_open_a_lot (mono_alc_get_default (), fname, status, FALSE);
+	return mono_image_open_a_lot (mono_alc_get_default (), fname, status);
 }
 
 /**
@@ -1942,7 +1927,7 @@ mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	return do_mono_image_open (mono_alc_get_default (), fname, status, FALSE, TRUE, FALSE, FALSE);
+	return do_mono_image_open (mono_alc_get_default (), fname, status, FALSE, TRUE, FALSE);
 }
 
 /**
@@ -1957,7 +1942,7 @@ mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname, MonoImageO
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	return do_mono_image_open (alc, fname, status, FALSE, FALSE, FALSE, FALSE);
+	return do_mono_image_open (alc, fname, status, FALSE, FALSE, FALSE);
 }
 
 /*
@@ -1968,7 +1953,7 @@ mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname, MonoImageO
 MonoImage *
 mono_image_open_metadata_only (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status)
 {
-	return do_mono_image_open (alc, fname, status, TRUE, TRUE, TRUE, FALSE);
+	return do_mono_image_open (alc, fname, status, TRUE, TRUE, TRUE);
 }
 
 /**

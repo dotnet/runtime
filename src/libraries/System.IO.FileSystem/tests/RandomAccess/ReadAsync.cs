@@ -58,6 +58,20 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetSyncAsyncOptions))]
+        public async Task ReadFromBeyondEndOfFileReturnsZeroAsync(FileOptions options)
+        {
+            string filePath = GetTestFilePath();
+            File.WriteAllBytes(filePath, new byte[100]);
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: options))
+            {
+                long eof = RandomAccess.GetLength(handle);
+                Assert.Equal(0, await RandomAccess.ReadAsync(handle, new byte[1], fileOffset: eof + 1));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
         public async Task HappyPath(FileOptions options)
         {
             const int fileSize = 4_001;

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Threading;
@@ -52,8 +51,10 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(WindowSize, (int)entry.Value);
         }
 
-        [Fact]
-        public Task InvalidRttPingResponse_RequestShouldFail()
+        [Theory]
+        [InlineData(0)] // Invalid PING payload
+        [InlineData(1)] // Unexpected PING response
+        public Task BadRttPingResponse_RequestShouldFail(int mode)
         {
             return Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -68,12 +69,23 @@ namespace System.Net.Http.Functional.Tests
                 (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync();
                 await connection.SendDefaultResponseHeadersAsync(streamId);
                 PingFrame pingFrame = await connection.ReadPingAsync(); // expect an RTT PING
-                await connection.SendPingAckAsync(-6666); // send an invalid PING response
+
+                if (mode == 0)
+                {
+                    // Invalid PING payload
+                    await connection.SendPingAckAsync(-6666); // send an invalid PING response
+                }
+                else
+                {
+                    // Unexpected PING response
+                    await connection.SendPingAckAsync(pingFrame.Data); // send an valid PING response
+                    await connection.SendPingAckAsync(pingFrame.Data - 1); // send a second unexpected PING response
+                }
+
                 await connection.SendResponseDataAsync(streamId, new byte[] { 1, 2, 3 }, true); // otherwise fine response
             },
             NoAutoPingResponseHttp2Options);
         }
-
 
         [OuterLoop("Runs long")]
         [Fact]
@@ -148,7 +160,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER"] = "1000"; // Extreme value
+            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER"] = "10000"; // Extreme value
 
             RemoteExecutor.Invoke(RunTest, options).Dispose();
         }
@@ -236,7 +248,6 @@ namespace System.Net.Http.Functional.Tests
 
                 int nextRemainingBytes = remainingBytes - bytesToSend;
                 bool endStream = nextRemainingBytes == 0;
-
                 await writeSemaphore.WaitAsync();
                 Interlocked.Add(ref credit, -bytesToSend);
                 await connection.SendResponseDataAsync(streamId, responseData, endStream);
