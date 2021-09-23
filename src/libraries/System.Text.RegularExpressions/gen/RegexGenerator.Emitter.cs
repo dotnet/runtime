@@ -151,6 +151,12 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
             writer.WriteLine($"    private {id}()");
             writer.WriteLine($"    {{");
+#if DEBUG
+            writer.WriteLine("        /*");
+            writer.WriteLine($"{rm.Code.Tree.ToString().Replace("*/", @"* /")}");
+            writer.WriteLine($"{rm.Code.ToString().Replace("*/", @"* /")}");
+            writer.WriteLine("        */");
+#endif
             writer.WriteLine($"        pattern = {patternExpression};");
             writer.WriteLine($"        roptions = {optionsExpression};");
             writer.WriteLine($"        internalMatchTimeout = {timeoutExpression};");
@@ -161,17 +167,17 @@ namespace System.Text.RegularExpressions.Generator
                 AppendHashtableContents(writer, rm.Code.Caps);
                 writer.WriteLine(" };");
             }
-            if (rm.Tree.CapNames is not null)
+            if (rm.Code.Tree.CapNames is not null)
             {
                 writer.Write("        CapNames = new global::System.Collections.Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CapNames);
+                AppendHashtableContents(writer, rm.Code.Tree.CapNames);
                 writer.WriteLine(" };");
             }
-            if (rm.Tree.CapsList is not null)
+            if (rm.Code.Tree.CapsList is not null)
             {
                 writer.Write("        capslist = new string[] {");
                 string separator = "";
-                foreach (string s in rm.Tree.CapsList)
+                foreach (string s in rm.Code.Tree.CapsList)
                 {
                     writer.Write(separator);
                     writer.Write(Literal(s));
@@ -258,8 +264,8 @@ namespace System.Text.RegularExpressions.Generator
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
             // especially since we want the "return false" code regardless.
             writer.WriteLine("// Minimum required length check");
-            int minRequiredLength = rm.Tree.MinRequiredLength;
-            string minRequiredLengthOffset = rm.Tree.MinRequiredLength > 0 ? $" - {rm.Tree.MinRequiredLength}" : "";
+            int minRequiredLength = rm.Code.Tree.MinRequiredLength;
+            string minRequiredLengthOffset = rm.Code.Tree.MinRequiredLength > 0 ? $" - {rm.Code.Tree.MinRequiredLength}" : "";
             Debug.Assert(minRequiredLength >= 0);
             using (EmitBlock(writer, !rtl ?
                 $"if (runtextpos <= runtextend{minRequiredLengthOffset})" :
@@ -695,9 +701,9 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Emits the body of the Go override.</summary>
         private static void EmitGo(IndentedTextWriter writer, RegexMethod rm, string id)
         {
-            Debug.Assert(rm.Tree.Root.Type == RegexNode.Capture);
-            if (RegexNode.NodeSupportsSimplifiedCodeGenerationImplementation(rm.Tree.Root.Child(0), RegexNode.DefaultMaxRecursionDepth) &&
-                (((RegexOptions)rm.Tree.Root.Options) & RegexOptions.RightToLeft) == 0)
+            Debug.Assert(rm.Code.Tree.Root.Type == RegexNode.Capture);
+            if (RegexNode.NodeSupportsSimplifiedCodeGenerationImplementation(rm.Code.Tree.Root.Child(0), RegexNode.DefaultMaxRecursionDepth) &&
+                (((RegexOptions)rm.Code.Tree.Root.Options) & RegexOptions.RightToLeft) == 0)
             {
                 EmitSimplifiedGo(writer, rm, id);
             }
@@ -719,7 +725,7 @@ namespace System.Text.RegularExpressions.Generator
             int nextLocalId = 0;
             string GetNextLocalId() => $"i{nextLocalId++}"; ;
 
-            RegexNode node = rm.Tree.Root;
+            RegexNode node = rm.Code.Tree.Root;
             Debug.Assert(node.Type == RegexNode.Capture, "Every generated tree should begin with a capture node");
             Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
 
@@ -732,6 +738,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("int runtextpos = base.runtextpos;");
             writer.WriteLine("int runtextend = base.runtextend;");
             writer.WriteLine("int originalruntextpos = runtextpos;");
+            writer.WriteLine("ref byte byteStr = ref global::System.Runtime.CompilerServices.Unsafe.NullRef<byte>();");
             writer.WriteLine("char ch;");
             hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
 
@@ -1000,16 +1007,18 @@ namespace System.Text.RegularExpressions.Generator
                 textSpanPos = startingTextSpanPos;
             }
 
+            static string DescribeNode(RegexNode node) => SymbolDisplay.FormatLiteral(node.Description(), quote: false);
+
             // Emits the code for the node.
-            void EmitNode(RegexNode node)
+            void EmitNode(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
-                using var _ = EmitScope(writer, SymbolDisplay.FormatLiteral(node.Description(), quote: false));
+                using var _ = EmitScope(writer, DescribeNode(node));
                 switch (node.Type)
                 {
                     case RegexNode.One:
                     case RegexNode.Notone:
                     case RegexNode.Set:
-                        EmitSingleChar(node);
+                        EmitSingleChar(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Boundary:
@@ -1029,13 +1038,13 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.Multi:
-                        EmitMultiChar(node);
+                        EmitMultiChar(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Oneloopatomic:
                     case RegexNode.Notoneloopatomic:
                     case RegexNode.Setloopatomic:
-                        EmitSingleCharAtomicLoop(node);
+                        EmitSingleCharAtomicLoop(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Loop:
@@ -1067,14 +1076,28 @@ namespace System.Text.RegularExpressions.Generator
                     case RegexNode.Notonelazy:
                     case RegexNode.Setloop:
                     case RegexNode.Setlazy:
-                        EmitSingleCharRepeater(node);
+                        EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Concatenate:
                         int childCount = node.ChildCount();
                         for (int i = 0; i < childCount; i++)
                         {
-                            EmitNode(node.Child(i));
+                            if (emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
+                            {
+                                EmitSpanLengthCheck(requiredLength);
+                                writer.WriteLine();
+
+                                for (; i < exclusiveEnd; i++)
+                                {
+                                    EmitNode(node.Child(i), emitLengthChecksIfRequired: false);
+                                }
+
+                                i--;
+                                continue;
+                            }
+
+                            EmitNode(node.Child(i), emitLengthChecksIfRequired);
                         }
                         break;
 
@@ -1253,7 +1276,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a multiple-character match.
-            void EmitMultiChar(RegexNode node)
+            void EmitMultiChar(RegexNode node, bool emitLengthCheck = true)
             {
                 bool caseInsensitive = IsCaseInsensitive(node);
 
@@ -1276,29 +1299,46 @@ namespace System.Text.RegularExpressions.Generator
                     bool useMultiCharReads = !caseInsensitive && byteStr.Length >= sizeof(uint);
                     if (useMultiCharReads)
                     {
-                        writer.WriteLine($"ref byte byteStr = ref global::System.Runtime.InteropServices.MemoryMarshal.GetReference(global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal}));");
+                        writer.WriteLine($"byteStr = ref global::System.Runtime.InteropServices.MemoryMarshal.GetReference(global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal}));");
                     }
 
-                    writer.Write($"if ((uint){textSpanLocal}.Length < {textSpanPos + str.Length}");
+                    writer.Write("if (");
+
+                    bool emittedFirstCheck = false;
+                    if (emitLengthCheck)
+                    {
+                        writer.Write($"(uint){textSpanLocal}.Length < {textSpanPos + str.Length}");
+                        emittedFirstCheck = true;
+                    }
+
+                    void EmitOr()
+                    {
+                        if (emittedFirstCheck)
+                        {
+                            writer.WriteLine(" ||");
+                            writer.Write("    ");
+                        }
+                        emittedFirstCheck = true;
+                    }
 
                     if (useMultiCharReads)
                     {
                         while (byteStr.Length >= sizeof(ulong))
                         {
-                            writer.WriteLine(" ||");
                             ulong little = BinaryPrimitives.ReadUInt64LittleEndian(byteStr);
                             ulong big = BinaryPrimitives.ReadUInt64BigEndian(byteStr);
-                            writer.Write($"    global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<ulong>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}ul : 0x{big:X}ul)");
+                            EmitOr();
+                            writer.Write($"global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<ulong>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}ul : 0x{big:X}ul)");
                             textSpanPos += sizeof(ulong) / 2;
                             byteStr = byteStr.Slice(sizeof(ulong));
                         }
 
                         while (byteStr.Length >= sizeof(uint))
                         {
-                            writer.WriteLine(" ||");
                             uint little = BinaryPrimitives.ReadUInt32LittleEndian(byteStr);
                             uint big = BinaryPrimitives.ReadUInt32BigEndian(byteStr);
-                            writer.Write($"    global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<uint>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}u : 0x{big:X}u)");
+                            EmitOr();
+                            writer.Write($"global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<uint>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}u : 0x{big:X}u)");
                             textSpanPos += sizeof(uint) / 2;
                             byteStr = byteStr.Slice(sizeof(uint));
                         }
@@ -1307,8 +1347,8 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit remaining comparisons character by character.
                     for (int i = (str.Length * 2 - byteStr.Length) / 2; i < str.Length; i++)
                     {
-                        writer.WriteLine(" ||");
-                        writer.Write($"    {ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos}]", caseInsensitive)} != {Literal(str[i])}");
+                        EmitOr();
+                        writer.Write($"{ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos}]", caseInsensitive)} != {Literal(str[i])}");
                         textSpanPos++;
                     }
 
@@ -1350,7 +1390,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
             // RegexNode.M is used for the number of iterations; RegexNode.N is ignored.
-            void EmitSingleCharRepeater(RegexNode node)
+            void EmitSingleCharRepeater(RegexNode node, bool emitLengthCheck = true)
             {
                 int iterations = node.M;
                 if (iterations == 0)
@@ -1360,7 +1400,10 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length) goto doneLabel;
-                EmitSpanLengthCheck(iterations);
+                if (emitLengthCheck)
+                {
+                    EmitSpanLengthCheck(iterations);
+                }
 
                 // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
                 // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
@@ -1428,7 +1471,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a non-backtracking, variable-length loop around a single character comparison.
-            void EmitSingleCharAtomicLoop(RegexNode node)
+            void EmitSingleCharAtomicLoop(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
                 Debug.Assert(
                     node.Type == RegexNode.Oneloopatomic ||
@@ -1438,7 +1481,7 @@ namespace System.Text.RegularExpressions.Generator
                 // If this is actually a repeater, emit that instead.
                 if (node.M == node.N)
                 {
-                    EmitSingleCharRepeater(node);
+                    EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                     return;
                 }
 

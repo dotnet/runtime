@@ -2140,14 +2140,14 @@ namespace System.Text.RegularExpressions
             }
 
             // Emits the code for the node.
-            void EmitNode(RegexNode node)
+            void EmitNode(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
                 switch (node.Type)
                 {
                     case RegexNode.One:
                     case RegexNode.Notone:
                     case RegexNode.Set:
-                        EmitSingleChar(node);
+                        EmitSingleChar(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Boundary:
@@ -2167,7 +2167,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNode.Multi:
-                        EmitMultiChar(node);
+                        EmitMultiChar(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Oneloopatomic:
@@ -2205,13 +2205,25 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Notonelazy:
                     case RegexNode.Setloop:
                     case RegexNode.Setlazy:
-                        EmitSingleCharRepeater(node);
+                        EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Concatenate:
                         int childCount = node.ChildCount();
                         for (int i = 0; i < childCount; i++)
                         {
+                            if (emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
+                            {
+                                EmitSpanLengthCheck(requiredLength);
+                                for (; i < exclusiveEnd; i++)
+                                {
+                                    EmitNode(node.Child(i), emitLengthChecksIfRequired: false);
+                                }
+
+                                i--;
+                                continue;
+                            }
+
                             EmitNode(node.Child(i));
                         }
                         break;
@@ -2440,7 +2452,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Emits the code to handle a multiple-character match.
-            void EmitMultiChar(RegexNode node)
+            void EmitMultiChar(RegexNode node, bool emitLengthCheck = true)
             {
                 bool caseInsensitive = IsCaseInsensitive(node);
 
@@ -2472,7 +2484,10 @@ namespace System.Text.RegularExpressions
                 // Emit the length check for the whole string.  If the generated code gets past this point,
                 // we know the span is at least textSpanPos + s.Length long.
                 ReadOnlySpan<char> s = node.Str;
-                EmitSpanLengthCheck(s.Length);
+                if (emitLengthCheck)
+                {
+                    EmitSpanLengthCheck(s.Length);
+                }
 
                 // If we're doing a case-insensitive comparison, we need to lower case each character,
                 // so we just go character-by-character.  But if we're not, we try to process multiple
@@ -2533,7 +2548,7 @@ namespace System.Text.RegularExpressions
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
             // RegexNode.M is used for the number of iterations; RegexNode.N is ignored.
-            void EmitSingleCharRepeater(RegexNode node)
+            void EmitSingleCharRepeater(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
                 int iterations = node.M;
 
@@ -2544,7 +2559,10 @@ namespace System.Text.RegularExpressions
                 }
 
                 // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length) goto doneLabel;
-                EmitSpanLengthCheck(iterations);
+                if (emitLengthChecksIfRequired)
+                {
+                    EmitSpanLengthCheck(iterations);
+                }
 
                 // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
                 // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.

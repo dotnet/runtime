@@ -170,8 +170,8 @@ namespace System.Text.RegularExpressions.Generator
             // Parse the input pattern
             try
             {
-                regexMethod.Tree = RegexParser.Parse(regexMethod.Pattern, (RegexOptions)regexMethod.Options, culture);
-                regexMethod.Code = RegexWriter.Write(regexMethod.Tree);
+                RegexTree tree = RegexParser.Parse(regexMethod.Pattern, (RegexOptions)regexMethod.Options, culture);
+                regexMethod.Code = RegexWriter.Write(tree);
             }
             catch (Exception e)
             {
@@ -239,7 +239,6 @@ namespace System.Text.RegularExpressions.Generator
             public int? Options;
             public int? MatchTimeout;
             public string Modifiers = string.Empty;
-            public RegexTree Tree;
             public RegexCode Code;
         }
     }
