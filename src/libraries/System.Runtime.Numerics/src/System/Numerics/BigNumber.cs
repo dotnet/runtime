@@ -494,6 +494,13 @@ namespace System.Numerics
             }
         }
 
+        //
+        // This threshold is for choosing the algorithm to use based on the number of digits.
+        //
+        // Let N be the number of digits. If N is less than or equal to the bound, use a naive
+        // algorithm with a running time of O(N^2). And if it is greater than the threshold, use
+        // a divide-and-conquer algorithm with a running time of O(NlogN).
+        //
         private static int s_naiveThreshold = 20000;
         private static bool NumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
         {
