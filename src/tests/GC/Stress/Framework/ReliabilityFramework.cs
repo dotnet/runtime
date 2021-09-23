@@ -288,7 +288,6 @@ public class ReliabilityFramework
 
         GC.Collect(2);
         GC.WaitForPendingFinalizers();
-
         return (retVal);
     }
 
