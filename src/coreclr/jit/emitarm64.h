@@ -844,7 +844,7 @@ void emitIns_R_ARX(
 enum EmitCallType
 {
     EC_FUNC_TOKEN, // Direct call to a helper/static/nonvirtual/global method
-    EC_INDIR_R, // Indirect call via register
+    EC_INDIR_R,    // Indirect call via register
     EC_COUNT
 };
 
