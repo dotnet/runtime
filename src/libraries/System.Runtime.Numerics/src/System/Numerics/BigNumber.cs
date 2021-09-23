@@ -602,7 +602,6 @@ namespace System.Numerics
                     {
                         result = default;
                         return false;
-
                     }
                     totalDigitCount = Math.Min(number.digits.Length - 1, numberScale);
                     int bufferSize = (totalDigitCount + MaxPartialDigits - 1) / MaxPartialDigits;
@@ -622,7 +621,8 @@ namespace System.Numerics
                         {
                             char digitChar = intDigitsSpan[i];
                             Debug.Assert(char.IsDigit(digitChar));
-                            currentBlock = currentBlock * 10 + digitChar - '0';
+                            currentBlock *= 10;
+                            currentBlock += unchecked((uint)(digitChar - '0'));
                             if (shiftUntil == 0)
                             {
                                 buffer[bufferInd] = currentBlock;
@@ -702,7 +702,6 @@ namespace System.Numerics
                                 }
                             }
 
-                            // swap
                             var tmp = buffer;
                             buffer = newBuffer;
                             newBuffer = tmp;
