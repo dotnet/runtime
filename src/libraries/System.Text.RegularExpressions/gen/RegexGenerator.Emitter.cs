@@ -732,6 +732,25 @@ namespace System.Text.RegularExpressions.Generator
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
 
+            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole thing.
+            // This is the case, in particular, for strings.  We can special case these to do essentially nothing
+            // in Go other than emit the capture.
+            if (!IsCaseInsensitive(node)) // FindFirstChar may not be 100% accurate on casing in all cultures
+            {
+                switch (node.Type)
+                {
+                    case RegexNode.Multi:
+                    case RegexNode.Notone:
+                    case RegexNode.One:
+                    case RegexNode.Set:
+                        writer.WriteLine($"int start = base.runtextpos;");
+                        writer.WriteLine($"int end = start + {(node.Type == RegexNode.Multi ? node.Str!.Length : 1)};");
+                        writer.WriteLine("base.Capture(0, start, end);");
+                        writer.WriteLine("base.runtextpos = end;");
+                        return;
+                }
+            }
+
             // Declare some locals.
             string textSpanLocal = "textSpan";
             writer.WriteLine("string runtext = base.runtext!;");

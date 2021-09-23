@@ -1743,6 +1743,37 @@ namespace System.Text.RegularExpressions
             }
 #endif
 
+            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole thing.
+            // This is the case, in particular, for strings.  We can special case these to do essentially nothing
+            // in Go other than emit the capture.
+            if (!IsCaseInsensitive(node)) // FindFirstChar may not be 100% accurate on casing in all cultures
+            {
+                switch (node.Type)
+                {
+                    case RegexNode.Multi:
+                    case RegexNode.Notone:
+                    case RegexNode.One:
+                    case RegexNode.Set:
+                        // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
+                        // base.runtextpos = base.runtextpos + node.Str.Length;
+                        // return;
+                        Ldthis();
+                        Dup();
+                        Ldc(0);
+                        Ldthisfld(s_runtextposField);
+                        Dup();
+                        Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
+                        Add();
+                        Call(s_captureMethod);
+                        Ldthisfld(s_runtextposField);
+                        Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
+                        Add();
+                        Stfld(s_runtextposField);
+                        Ret();
+                        return true;
+                }
+            }
+
             // Declare some locals.
             LocalBuilder runtextLocal = DeclareString();
             LocalBuilder originalruntextposLocal = DeclareInt32();
