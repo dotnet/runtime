@@ -4970,10 +4970,8 @@ namespace System
         public override string Message { get { throw null; } }
         public string ObjectName { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        [System.Diagnostics.StackTraceHidden]
         public static void Throw(System.Object instance) => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        [System.Diagnostics.StackTraceHidden]
         public static void Throw(System.Type type) => throw null;
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }

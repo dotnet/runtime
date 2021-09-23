@@ -271,10 +271,8 @@ namespace System.Net.WebSockets
         {
             if (_disposed != 0)
             {
-                ThrowObjectDisposedException();
+                ObjectDisposedException.Throw(this);
             }
-
-            void ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
         }
 
         private static IOException WrapException(string resourceFormatString, Exception innerException)
