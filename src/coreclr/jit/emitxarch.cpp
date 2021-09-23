@@ -581,9 +581,7 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
     // of the source, not the dest).
     // A 4-byte movzx is equivalent to an 8 byte movzx, so it is not special
     // cased here.
-    //
-    // Rex_jmp = jmp with rex prefix always requires rex.w prefix.
-    if (ins == INS_movsx || ins == INS_rex_jmp)
+    if (ins == INS_movsx)
     {
         return true;
     }
@@ -2346,8 +2344,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     assert(id->idIns() != INS_invalid);
     instruction ins      = id->idIns();
     emitAttr    attrSize = id->idOpSize();
-    /* The displacement field is in an unusual place for calls */
-    ssize_t        dsp       = (ins == INS_call) ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
+    /* The displacement field is in an unusual place for (tail-)calls */
+    ssize_t        dsp = (ins == INS_call) || (ins == INS_tail_i_jmp) ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
     bool           dspInByte = ((signed char)dsp == (ssize_t)dsp);
     bool           dspIsZero = (dsp == 0);
     UNATIVE_OFFSET size;
@@ -2450,7 +2448,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         // If this is just "call reg", we're done.
         if (id->idIsCallRegPtr())
         {
-            assert(ins == INS_call);
+            assert(ins == INS_call || ins == INS_tail_i_jmp);
             assert(dsp == 0);
             return size;
         }
@@ -4353,11 +4351,7 @@ bool emitter::IsJccInstruction(instruction ins)
 //
 bool emitter::IsJmpInstruction(instruction ins)
 {
-    return
-#ifdef TARGET_AMD64
-        (ins == INS_rex_jmp) ||
-#endif
-        (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp);
+    return (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp) || (ins == INS_tail_i_jmp);
 }
 
 //----------------------------------------------------------------------------------------
@@ -7541,19 +7535,20 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    /* Set the instruction - special case jumping a function */
+    /* Set the instruction - special case jumping a function (tail call) */
     instruction ins = INS_call;
 
     if (isJump)
     {
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR || callType == EC_INDIR_ARD);
+        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR || callType == EC_INDIR_ARD ||
+               callType == EC_INDIR_R);
         if (callType == EC_FUNC_TOKEN)
         {
             ins = INS_l_jmp;
         }
         else
         {
-            ins = INS_i_jmp;
+            ins = INS_tail_i_jmp;
         }
     }
     id->idIns(ins);
@@ -8319,7 +8314,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 
     /* The displacement field is in an unusual place for calls */
 
-    disp = (id->idIns() == INS_call) ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
+    disp = (id->idIns() == INS_call) || (id->idIns() == INS_tail_i_jmp) ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
 
     /* Display a jump table label if this is a switch table jump */
 
@@ -8849,17 +8844,18 @@ void emitter::emitDispIns(
         case IF_AWR:
         case IF_ARW:
 
-            if (ins == INS_call && id->idIsCallRegPtr())
+            if (id->idIsCallRegPtr())
             {
                 printf("%s", emitRegName(id->idAddr()->iiaAddrMode.amBaseReg));
-                break;
+            }
+            else
+            {
+                printf("%s", sstr);
+                emitDispAddrMode(id, isNew);
+                emitDispShift(ins);
             }
 
-            printf("%s", sstr);
-            emitDispAddrMode(id, isNew);
-            emitDispShift(ins);
-
-            if ((ins == INS_call) || (ins == INS_i_jmp))
+            if ((ins == INS_call) || (ins == INS_tail_i_jmp))
             {
                 assert(id->idInsFmt() == IF_ARD);
 
@@ -8871,6 +8867,11 @@ void emitter::emitDispIns(
                 }
 
                 assert(id->idDebugOnlyInfo()->idMemCookie);
+
+                if (id->idIsCallRegPtr())
+                {
+                    printf(" ; ");
+                }
 
                 /* This is a virtual call */
 
@@ -9942,15 +9943,21 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     rgx = id->idAddr()->iiaAddrMode.amIndxReg;
 
     // For INS_call the instruction size is actually the return value size
-    if (ins == INS_call)
+    if ((ins == INS_call) || (ins == INS_tail_i_jmp))
     {
+        if (ins == INS_tail_i_jmp)
+        {
+            // tail call with addressing mode (or through register) needs rex.w
+            // prefix to be recognized by unwinder as part of epilog.
+            code = AddRexWPrefix(ins, code);
+        }
+
         // Special case: call via a register
         if (id->idIsCallRegPtr())
         {
-            code_t opcode = insEncodeMRreg(INS_call, reg, EA_PTRSIZE, insCodeMR(INS_call));
-
-            dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, opcode);
-            dst += emitOutputWord(dst, opcode);
+            code = insEncodeMRreg(ins, reg, EA_PTRSIZE, code);
+            dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputWord(dst, code);
             goto DONE;
         }
 
@@ -13372,12 +13379,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idInsFmt() == IF_METHPTR)
             {
                 // This is call indirect via a method pointer
+                assert((ins == INS_call) || (ins == INS_tail_i_jmp));
 
                 code = insCodeMR(ins);
-                if (ins == INS_i_jmp)
-                {
-                    code |= 1;
-                }
 
                 if (id->idIsDspReloc())
                 {
@@ -15128,9 +15132,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
             break;
 
-#ifdef TARGET_AMD64
-        case INS_rex_jmp:
-#endif // TARGET_AMD64
+        case INS_tail_i_jmp:
         case INS_i_jmp:
             // branch to register
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;

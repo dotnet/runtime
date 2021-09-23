@@ -14,6 +14,11 @@ COPY . .
 ARG CONFIGURATION=Release
 RUN dotnet build -c $env:CONFIGURATION
 
+# Enable dump collection
+ENV COMPlus_DbgEnableMiniDump=1
+ENV COMPlus_DbgMiniDumpType=MiniDumpWithFullMemory
+ENV COMPlus_DbgMiniDumpName="C:/share/coredump.%p"
+
 EXPOSE 5001
 
 ENV CONFIGURATION=$CONFIGURATION

@@ -1134,6 +1134,109 @@ public:
 
 }; // class LclVarDsc
 
+enum class SymbolicIntegerValue : int32_t
+{
+    LongMin,
+    IntMin,
+    ShortMin,
+    ByteMin,
+    Zero,
+    One,
+    ByteMax,
+    UByteMax,
+    ShortMax,
+    UShortMax,
+    IntMax,
+    UIntMax,
+    LongMax,
+};
+
+inline constexpr bool operator>(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) > static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator>=(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) >= static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator<(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) < static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator<=(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) <= static_cast<int32_t>(right);
+}
+
+// Represents an integral range useful for reasoning about integral casts.
+// It uses a symbolic representation for lower and upper bounds so
+// that it can efficiently handle integers of all sizes on all hosts.
+//
+// Note that the ranges represented by this class are **always** in the
+// "signed" domain. This is so that if we know the range a node produces, it
+// can be trivially used to determine if a cast above the node does or does not
+// overflow, which requires that the interpretation of integers be the same both
+// for the "input" and "output". We choose signed interpretation here because it
+// produces nice continuous ranges and because IR uses sign-extension for constants.
+//
+// Some examples of how ranges are computed for casts:
+// 1. CAST_OVF(ubyte <- uint): does not overflow for [0..UBYTE_MAX], produces the
+//    same range - all casts that do not change the representation, i. e. have the same
+//    "actual" input and output type, have the same "input" and "output" range.
+// 2. CAST_OVF(ulong <- uint): never oveflows => the "input" range is [INT_MIN..INT_MAX]
+//    (aka all possible 32 bit integers). Produces [0..UINT_MAX] (aka all possible 32
+//    bit integers zero-extended to 64 bits).
+// 3. CAST_OVF(int <- uint): overflows for inputs larger than INT_MAX <=> less than 0
+//    when interpreting as signed => the "input" range is [0..INT_MAX], the same range
+//    being the produced one as the node does not change the width of the integer.
+//
+class IntegralRange
+{
+private:
+    SymbolicIntegerValue m_lowerBound;
+    SymbolicIntegerValue m_upperBound;
+
+public:
+    IntegralRange() = default;
+
+    IntegralRange(SymbolicIntegerValue lowerBound, SymbolicIntegerValue upperBound)
+        : m_lowerBound(lowerBound), m_upperBound(upperBound)
+    {
+        assert(lowerBound <= upperBound);
+    }
+
+    bool Contains(int64_t value) const;
+
+    bool Contains(IntegralRange other) const
+    {
+        return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
+    }
+
+    bool Equals(IntegralRange other) const
+    {
+        return (m_lowerBound == other.m_lowerBound) && (m_upperBound == other.m_upperBound);
+    }
+
+    static int64_t SymbolicToRealValue(SymbolicIntegerValue value);
+    static SymbolicIntegerValue LowerBoundForType(var_types type);
+    static SymbolicIntegerValue UpperBoundForType(var_types type);
+
+    static IntegralRange ForType(var_types type)
+    {
+        return {LowerBoundForType(type), UpperBoundForType(type)};
+    }
+
+    static IntegralRange ForCastInput(GenTreeCast* cast);
+    static IntegralRange ForCastOutput(GenTreeCast* cast);
+
+#ifdef DEBUG
+    static void Print(IntegralRange range);
+#endif // DEBUG
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2531,8 +2634,6 @@ public:
                                         CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
 #endif // FEATURE_MULTIREG_RET
 
-    GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
-
 #ifdef TARGET_X86
     bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
 #endif // TARGET_X86
@@ -3908,10 +4009,6 @@ public:
         void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
 #endif // DEBUG
 
-#ifdef TARGET_ARM
-        bool GetRequiresScratchVar();
-#endif // TARGET_ARM
-
     private:
         bool CanPromoteStructVar(unsigned lclNum);
         bool ShouldPromoteStructVar(unsigned lclNum);
@@ -3924,10 +4021,6 @@ public:
     private:
         Compiler*              compiler;
         lvaStructPromotionInfo structPromotionInfo;
-
-#ifdef TARGET_ARM
-        bool requiresScratchVar;
-#endif // TARGET_ARM
 
 #ifdef DEBUG
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, var_types>
@@ -5026,7 +5119,7 @@ public:
 
     bool fgFoldConditional(BasicBlock* block);
 
-    void fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw);
+    void fgMorphStmts(BasicBlock* block);
     void fgMorphBlocks();
 
     void fgMergeBlockReturn(BasicBlock* block);
@@ -6169,7 +6262,6 @@ private:
                                                      IL_OFFSETX     callILOffset,
                                                      Statement*     tmpAssignmentInsertionPoint,
                                                      Statement*     paramAssignmentInsertionPoint);
-    static int fgEstimateCallStackSize(GenTreeCall* call);
     GenTree* fgMorphCall(GenTreeCall* call);
     GenTree* fgExpandVirtualVtableCallTarget(GenTreeCall* call);
     void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
@@ -7267,9 +7359,7 @@ public:
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
 
-    bool gtIsVtableRef(GenTree* tree);
     GenTree* getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
-    GenTree* getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
     GenTree* optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree* optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree* optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -7347,6 +7437,7 @@ public:
         O2K_SUBRANGE,
         O2K_COUNT
     };
+
     struct AssertionDsc
     {
         optAssertionKind assertionKind;
@@ -7375,21 +7466,18 @@ public:
             ValueNum   vn;
             struct IntVal
             {
-                ssize_t      iconVal;   // integer
-                unsigned     padding;   // unused; ensures iconFlags does not overlap lconVal
+                ssize_t iconVal; // integer
+#if !defined(HOST_64BIT)
+                unsigned padding; // unused; ensures iconFlags does not overlap lconVal
+#endif
                 GenTreeFlags iconFlags; // gtFlags
             };
-            struct Range // integer subrange
-            {
-                ssize_t loBound;
-                ssize_t hiBound;
-            };
             union {
-                SsaVar  lcl;
-                IntVal  u1;
-                __int64 lconVal;
-                double  dconVal;
-                Range   u2;
+                SsaVar        lcl;
+                IntVal        u1;
+                __int64       lconVal;
+                double        dconVal;
+                IntegralRange u2;
             };
         } op2;
 
@@ -7440,48 +7528,6 @@ public:
             return false;
         }
 
-        static ssize_t GetLowerBoundForIntegralType(var_types type)
-        {
-            switch (type)
-            {
-                case TYP_BYTE:
-                    return SCHAR_MIN;
-                case TYP_SHORT:
-                    return SHRT_MIN;
-                case TYP_INT:
-                    return INT_MIN;
-                case TYP_BOOL:
-                case TYP_UBYTE:
-                case TYP_USHORT:
-                case TYP_UINT:
-                    return 0;
-                default:
-                    unreached();
-            }
-        }
-        static ssize_t GetUpperBoundForIntegralType(var_types type)
-        {
-            switch (type)
-            {
-                case TYP_BOOL:
-                    return 1;
-                case TYP_BYTE:
-                    return SCHAR_MAX;
-                case TYP_SHORT:
-                    return SHRT_MAX;
-                case TYP_INT:
-                    return INT_MAX;
-                case TYP_UBYTE:
-                    return UCHAR_MAX;
-                case TYP_USHORT:
-                    return USHRT_MAX;
-                case TYP_UINT:
-                    return UINT_MAX;
-                default:
-                    unreached();
-            }
-        }
-
         bool HasSameOp1(AssertionDsc* that, bool vnBased)
         {
             if (op1.kind != that->op1.kind)
@@ -7525,7 +7571,7 @@ public:
                            (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum);
 
                 case O2K_SUBRANGE:
-                    return ((op2.u2.loBound == that->op2.u2.loBound) && (op2.u2.hiBound == that->op2.u2.hiBound));
+                    return op2.u2.Equals(that->op2.u2);
 
                 case O2K_INVALID:
                     // we will return false
@@ -7615,6 +7661,7 @@ public:
 
     // Assertion Gen functions.
     void optAssertionGen(GenTree* tree);
+    AssertionIndex optAssertionGenCast(GenTreeCast* cast);
     AssertionIndex optAssertionGenPhiDefn(GenTree* tree);
     AssertionInfo optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo optAssertionGenJtrue(GenTree* tree);
@@ -7630,6 +7677,11 @@ public:
                                       GenTree*         op2,
                                       optAssertionKind assertionKind,
                                       bool             helperCallArgs = false);
+
+    AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
+
+    bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
+
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex,
                                          GenTree*       op1,
                                          GenTree*       op2,
@@ -7644,10 +7696,7 @@ public:
     ASSERT_TP optGetVnMappedAssertions(ValueNum vn);
 
     // Used for respective assertion propagations.
-    AssertionIndex optAssertionIsSubrange(GenTree*         tree,
-                                          var_types        fromType,
-                                          var_types        toType,
-                                          ASSERT_VALARG_TP assertions);
+    AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool optAssertionIsNonNull(GenTree*         op,
@@ -7672,7 +7721,7 @@ public:
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
@@ -8120,7 +8169,6 @@ public:
 
     static fgWalkPreFn CountSharedStaticHelper;
     static bool IsSharedStaticHelper(GenTree* tree);
-    static bool IsTreeAlwaysHoistable(GenTree* tree);
     static bool IsGcSafePoint(GenTree* tree);
 
     static CORINFO_FIELD_HANDLE eeFindJitDataOffs(unsigned jitDataOffs);

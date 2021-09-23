@@ -10,6 +10,8 @@ namespace System.Text.RegularExpressions.Tests
 {
     public class RegexCultureTests
     {
+        // TODO: Validate source generator after figuring out what to do with culture
+
         [Theory]
         [InlineData("^aa$", "aA", "da-DK", RegexOptions.None, false)]
         [InlineData("^aA$", "aA", "da-DK", RegexOptions.None, true)]

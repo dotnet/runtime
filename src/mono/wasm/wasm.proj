@@ -148,7 +148,7 @@
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g;-Os;-s;-DDEBUG=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
       <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot; -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot; -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot; -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot; -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot; -DSYSTEM_NATIVE_DIR=&quot;$(RepoRoot)src/libraries/Native/Unix/System.Native&quot; -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot; -DSOURCE_DIR=&quot;$(MSBuildThisFileDirectory.TrimEnd('\/'))/runtime&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>

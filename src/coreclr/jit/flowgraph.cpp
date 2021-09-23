@@ -4015,22 +4015,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             return;
         }
 
-        /* Is this a unary operator?
-         * Although UNARY GT_IND has a special structure */
+        /* Is this a unary operator? */
 
-        if (oper == GT_IND)
-        {
-            /* Visit the indirection first - op2 may point to the
-             * jump Label for array-index-out-of-range */
-
-            fgSetTreeSeqHelper(op1, isLIR);
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
-
-        /* Now this is REALLY a unary operator */
-
-        if (!op2)
+        if (op2 == nullptr)
         {
             /* Visit the (only) operand and we're done */
 
@@ -4039,39 +4026,8 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             return;
         }
 
-        /*
-           For "real" ?: operators, we make sure the order is
-           as follows:
-
-               condition
-               1st operand
-               GT_COLON
-               2nd operand
-               GT_QMARK
-        */
-
-        if (oper == GT_QMARK)
-        {
-            noway_assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-
-            fgSetTreeSeqHelper(op1, isLIR);
-            // Here, for the colon, the sequence does not actually represent "order of evaluation":
-            // one or the other of the branches is executed, not both.  Still, to make debugging checks
-            // work, we want the sequence to match the order in which we'll generate code, which means
-            // "else" clause then "then" clause.
-            fgSetTreeSeqHelper(op2->AsColon()->ElseNode(), isLIR);
-            fgSetTreeSeqHelper(op2, isLIR);
-            fgSetTreeSeqHelper(op2->AsColon()->ThenNode(), isLIR);
-
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
-
-        if (oper == GT_COLON)
-        {
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
+        // By the time execution order is being set, all QMARKs must have been rationalized.
+        assert(compQmarkRationalized && (oper != GT_QMARK) && (oper != GT_COLON));
 
         /* This is a binary operator */
 
