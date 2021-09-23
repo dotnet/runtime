@@ -2530,6 +2530,10 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IFloatingPoint<double>.Pow(double x, double y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static double IFloatingPoint<double>.ReciprocalEstimate(double x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static double IFloatingPoint<double>.ReciprocalSqrtEstimate(double x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IFloatingPoint<double>.Round(double x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IFloatingPoint<double>.Round<TInteger>(double x, TInteger digits) { throw null; }
@@ -2541,6 +2545,8 @@ namespace System
         static double IFloatingPoint<double>.ScaleB<TInteger>(double x, TInteger n) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IFloatingPoint<double>.Sin(double x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static (double, double) IFloatingPoint<double>.SinCos(double x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static double IFloatingPoint<double>.Sinh(double x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -3264,6 +3270,10 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IFloatingPoint<System.Half>.Pow(System.Half x, System.Half y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.Half IFloatingPoint<System.Half>.ReciprocalEstimate(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static System.Half IFloatingPoint<System.Half>.ReciprocalSqrtEstimate(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IFloatingPoint<System.Half>.Round(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IFloatingPoint<System.Half>.Round<TInteger>(System.Half x, TInteger digits) { throw null; }
@@ -3275,6 +3285,8 @@ namespace System
         static System.Half IFloatingPoint<System.Half>.ScaleB<TInteger>(System.Half x, TInteger n) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IFloatingPoint<System.Half>.Sin(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static (System.Half, System.Half) IFloatingPoint<System.Half>.SinCos(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static System.Half IFloatingPoint<System.Half>.Sinh(System.Half x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -3508,12 +3520,15 @@ namespace System
         static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
         static abstract TSelf MinMagnitude(TSelf x, TSelf y);
         static abstract TSelf Pow(TSelf x, TSelf y);
+        static abstract TSelf ReciprocalEstimate(TSelf x);
+        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
         static abstract TSelf Round(TSelf x);
         static abstract TSelf Round<TInteger>(TSelf x, TInteger digits) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf Round(TSelf x, MidpointRounding mode);
         static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf Sin(TSelf x);
+        static abstract (TSelf, TSelf) SinCos(TSelf x);
         static abstract TSelf Sinh(TSelf x);
         static abstract TSelf Sqrt(TSelf x);
         static abstract TSelf Tan(TSelf x);
@@ -5606,6 +5621,10 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IFloatingPoint<float>.Pow(float x, float y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static float IFloatingPoint<float>.ReciprocalEstimate(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static float IFloatingPoint<float>.ReciprocalSqrtEstimate(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IFloatingPoint<float>.Round(float x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IFloatingPoint<float>.Round<TInteger>(float x, TInteger digits) { throw null; }
@@ -5617,6 +5636,8 @@ namespace System
         static float IFloatingPoint<float>.ScaleB<TInteger>(float x, TInteger n) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IFloatingPoint<float>.Sin(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        static float IFloatingPoint<float>.SinCos(float x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static float IFloatingPoint<float>.Sinh(float x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
