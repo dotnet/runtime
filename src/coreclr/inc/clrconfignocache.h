@@ -7,9 +7,6 @@
 // Logic for resolving configuration names.
 //
 
-#ifndef _CLRCONFIGNOCACHE_H_
-#define _CLRCONFIGNOCACHE_H_
-
 #ifndef StrLen
 #define StrLen(STR) ((sizeof(STR) / sizeof(STR[0])) - 1)
 #endif // !StrLen
@@ -51,57 +48,50 @@ public:
         return fSuccess;
     }
 
-    friend CLRConfigNoCache GetCLRConfigNoCache(LPCSTR cfg, bool noPrefix);
-};
-
-// This function is not a member of CLRConfigNoCache and marked inline so linkage
-// is relative to the compilation unit it is included in. The linkage concerns here
-// are due to usage in the PAL regarding getenv.
-inline CLRConfigNoCache GetCLRConfigNoCache(LPCSTR cfg, bool noPrefix = false)
-{
-    if (cfg == nullptr)
-        return {};
-
-    char nameBuffer[64];
-    const char* fallbackPrefix = NULL;
-    const size_t namelen = strlen(cfg);
-
-    if (noPrefix)
+    static CLRConfigNoCache Get(LPCSTR cfg, bool noPrefix = false)
     {
-        if (namelen >= _countof(nameBuffer))
-        {
-            _ASSERTE(!"Environment variable name too long.");
+        if (cfg == nullptr)
             return {};
+
+        char nameBuffer[64];
+        const char* fallbackPrefix = NULL;
+        const size_t namelen = strlen(cfg);
+
+        if (noPrefix)
+        {
+            if (namelen >= _countof(nameBuffer))
+            {
+                _ASSERTE(!"Environment variable name too long.");
+                return {};
+            }
+
+            *nameBuffer = W('\0');
+        }
+        else
+        {
+            bool dotnetValid = namelen < (size_t)(_countof(nameBuffer) - 1 - LEN_OF_DOTNET_PREFIX);
+            bool complusValid = namelen < (size_t)(_countof(nameBuffer) - 1 - LEN_OF_COMPLUS_PREFIX);
+            if (!dotnetValid || !complusValid)
+            {
+                _ASSERTE(!"Environment variable name too long.");
+                return {};
+            }
+
+            // Priority order is DOTNET_ and then COMPlus_.
+            strcpy_s(nameBuffer, _countof(nameBuffer), DOTNET_PREFIX_A);
+            fallbackPrefix = COMPLUS_PREFIX_A;
         }
 
-        *nameBuffer = W('\0');
-    }
-    else
-    {
-        bool dotnetValid = namelen < (size_t)(_countof(nameBuffer) - 1 - LEN_OF_DOTNET_PREFIX);
-        bool complusValid = namelen < (size_t)(_countof(nameBuffer) - 1 - LEN_OF_COMPLUS_PREFIX);
-        if (!dotnetValid || !complusValid)
-        {
-            _ASSERTE(!"Environment variable name too long.");
-            return {};
-        }
-
-        // Priority order is DOTNET_ and then COMPlus_.
-        strcpy_s(nameBuffer, _countof(nameBuffer), DOTNET_PREFIX_A);
-        fallbackPrefix = COMPLUS_PREFIX_A;
-    }
-
-    strcat_s(nameBuffer, _countof(nameBuffer), cfg);
-
-    LPCSTR val = getenv(nameBuffer);
-    if (val == NULL && fallbackPrefix != NULL)
-    {
-        strcpy_s(nameBuffer, _countof(nameBuffer), fallbackPrefix);
         strcat_s(nameBuffer, _countof(nameBuffer), cfg);
-        val = getenv(nameBuffer);
+
+        LPCSTR val = getenv(nameBuffer);
+        if (val == NULL && fallbackPrefix != NULL)
+        {
+            strcpy_s(nameBuffer, _countof(nameBuffer), fallbackPrefix);
+            strcat_s(nameBuffer, _countof(nameBuffer), cfg);
+            val = getenv(nameBuffer);
+        }
+
+        return { val };
     }
-
-    return { val };
-}
-
-#endif // _CLRCONFIGNOCACHE_H_
+};

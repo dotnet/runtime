@@ -3276,16 +3276,16 @@ Return
 BOOL
 PROCAbortInitialize()
 {
-    CLRConfigNoCache enabledCfg= GetCLRConfigNoCache("DbgEnableMiniDump");
+    CLRConfigNoCache enabledCfg= CLRConfigNoCache::Get("DbgEnableMiniDump");
 
     DWORD enabled = 0;
     if (enabledCfg.IsSet()
         && enabledCfg.TryAsInteger(10, enabled)
         && enabled)
     {
-        CLRConfigNoCache dmpNameCfg = GetCLRConfigNoCache("DbgMiniDumpName");
+        CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName");
 
-        CLRConfigNoCache dmpTypeCfg = GetCLRConfigNoCache("DbgMiniDumpType");
+        CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType");
         DWORD dumpType = UndefinedDumpType;
         if (dmpTypeCfg.IsSet())
         {
@@ -3296,11 +3296,11 @@ PROCAbortInitialize()
             }
         }
 
-        CLRConfigNoCache createDumpCfg = GetCLRConfigNoCache("CreateDumpDiagnostics");
+        CLRConfigNoCache createDumpCfg = CLRConfigNoCache::Get("CreateDumpDiagnostics");
         DWORD val = 0;
         BOOL diag = createDumpCfg.IsSet() && createDumpCfg.TryAsInteger(10, val) && val == 1;
 
-        CLRConfigNoCache enabldReportCfg = GetCLRConfigNoCache("EnableCrashReport");
+        CLRConfigNoCache enabldReportCfg = CLRConfigNoCache::Get("EnableCrashReport");
         val = 0;
         BOOL crashReport = enabldReportCfg.IsSet() && enabldReportCfg.TryAsInteger(10, val) && val == 1;
 

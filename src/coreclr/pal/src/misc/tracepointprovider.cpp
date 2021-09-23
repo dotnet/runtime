@@ -66,7 +66,7 @@ PAL_InitializeTracing(void)
     // Check if loading the LTTng providers should be disabled.
     // Note: this env var is formally declared in clrconfigvalues.h, but
     // this code is executed too early to use the mechanics that come with that definition.
-    CLRConfigNoCache cfgLTTng = GetCLRConfigNoCache("LTTng");
+    CLRConfigNoCache cfgLTTng = CLRConfigNoCache::Get("LTTng");
     if (cfgLTTng.IsSet())
     {
         DWORD value;

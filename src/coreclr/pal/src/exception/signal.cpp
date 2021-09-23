@@ -149,7 +149,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 #if !HAVE_MACH_EXCEPTIONS
     g_enable_alternate_stack_check = false;
 
-    CLRConfigNoCache stackCheck = GetCLRConfigNoCache("EnableAlternateStackCheck");
+    CLRConfigNoCache stackCheck = CLRConfigNoCache::Get("EnableAlternateStackCheck");
     if (stackCheck.IsSet())
     {
         DWORD value;
