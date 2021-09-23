@@ -1974,7 +1974,7 @@ public:
         return m_tpIndex;
     }
 
-    DefaultAssemblyBinder *CreateBinderContext();
+    DefaultAssemblyBinder *CreateDefaultBinder();
 
     void SetIgnoreUnhandledExceptions()
     {

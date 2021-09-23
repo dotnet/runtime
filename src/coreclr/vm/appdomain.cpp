@@ -1041,7 +1041,6 @@ void SystemDomain::Attach()
 
     // Create the one and only app domain
     AppDomain::Create();
-    AppDomain::GetCurrentDomain()->CreateBinderContext();
 
     // Each domain gets its own ReJitManager, and ReJitManager has its own static
     // initialization to run
@@ -1839,6 +1838,8 @@ void AppDomain::Create()
     pDomain->InitVSD();
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
+    pDomain->CreateDefaultBinder();
+
     pDomain.SuppressRelease();
 
     m_pTheAppDomain = pDomain;
@@ -4040,7 +4041,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 }
 
 
-DefaultAssemblyBinder *AppDomain::CreateBinderContext()
+DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
 {
     CONTRACT(DefaultAssemblyBinder *)
     {
