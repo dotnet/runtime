@@ -155,10 +155,7 @@
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
 
-    <!--
-      Not yet
-    <RemoveDir Directories="$(AppBundlePath)" />
-    -->
+    <RemoveDir Condition="'$(NeedsToBuildiOSAppsOnHelixLocal)' != 'true'" Directories="$(AppBundlePath)" />
   </Target>
 
 </Project>
