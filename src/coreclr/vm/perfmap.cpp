@@ -50,7 +50,7 @@ void PerfMap::Initialize()
 
         s_enabled = true;
 
-        char* jitdumpPath;
+        const char* jitdumpPath;
         char jitdumpPathBuffer[4096];
 
         CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
