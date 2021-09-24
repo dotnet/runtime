@@ -464,7 +464,14 @@ namespace System
             return false;
         }
 
-        private static bool GetIsRunningOnMonoInterpreter() => IsMonoRuntime && RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
+        private static bool GetIsRunningOnMonoInterpreter()
+        {
+#if NETCOREAPP
+            return IsMonoRuntime && RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
+#else
+            return false;
+#endif
+        }
 
         private static bool GetIsBrowserDomSupported()
         {
