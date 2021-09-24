@@ -4,6 +4,7 @@
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.IO;
 using System.Text;
 using Test.Cryptography;
@@ -1545,6 +1546,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 ";
 
             Assert.Throws<CryptographicException>(() => cc.ImportFromPem(certContents));
+        }
+
+        [Fact]
+        public static void ExportPkcs7_Empty()
+        {
+            X509Certificate2Collection cc = new X509Certificate2Collection();
+            byte[] exported = cc.Export(X509ContentType.Pkcs7);
+            Assert.NotNull(exported);
+
+            AsnReader reader = new AsnReader(exported, AsnEncodingRules.BER);
+            AsnReader sequenceReader = reader.ReadSequence();
+            string oid = sequenceReader.ReadObjectIdentifier();
+            sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+            reader.ThrowIfNotEmpty();
+            Assert.Equal("1.2.840.113549.1.7.2", oid); //signedData (PKCS #7)
         }
 
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
