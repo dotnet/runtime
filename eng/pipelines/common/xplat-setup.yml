@@ -111,12 +111,12 @@ jobs:
       pool:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Android'), eq(parameters.hostedOs, 'Linux')), eq(variables['System.TeamProject'], 'public')) }}:
-          name:  NetCorePublic-Pool
+          name:  NetCorePublic-Int-Pool
           queue: BuildPool.Ubuntu.1804.Amd64.Open
 
         # Official Build Linux Pool
         ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), eq(parameters.hostedOs, 'Linux')), ne(variables['System.TeamProject'], 'public')) }}:
-          name: NetCoreInternal-Pool
+          name: NetCoreInternal-Int-Pool
           queue: BuildPool.Ubuntu.1804.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool

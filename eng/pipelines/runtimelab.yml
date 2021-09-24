@@ -161,8 +161,6 @@ stages:
         jobParameters:
           testGroup: innerloop
           liveLibrariesBuildConfig: Release
-          dependsOn:
-          - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
 
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -176,7 +174,6 @@ stages:
           testGroup: innerloop
           liveLibrariesBuildConfig: Release
           dependsOn:
-          - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
           - build_windows_x64_Checked_
           - build_windows_x64_Release_
 

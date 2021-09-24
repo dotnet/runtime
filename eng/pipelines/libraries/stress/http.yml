@@ -30,7 +30,7 @@ jobs:
   variables:
     DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
   pool:
-    name: NetCorePublic-Pool
+    name: NetCorePublic-Int-Pool
     queue: BuildPool.Ubuntu.1804.Amd64.Open
 
   steps:
