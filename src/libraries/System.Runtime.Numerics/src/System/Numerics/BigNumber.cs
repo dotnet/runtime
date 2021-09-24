@@ -732,7 +732,7 @@ namespace System.Numerics
                     // = log_{2^32}(10^9)
                     const double digitRatio = 0.934292276687070661;
                     currentBufferSize = Math.Min((int)(bufferSize * digitRatio) + 1, bufferSize);
-                    while (buffer[currentBufferSize - 1] == 0)
+                    while (0 <= currentBufferSize - 1 && buffer[currentBufferSize - 1] == 0)
                     {
                         currentBufferSize--;
                     }
