@@ -186,7 +186,7 @@ def main(main_args):
     core_root = coreclr_args.core_root
     tag_name = "{}-{}".format(coreclr_args.run_configuration, coreclr_args.partition)
     output_directory = coreclr_args.output_directory
-    run_duration = coreclr_args.run_duration
+    run_duration = 10 #coreclr_args.run_duration
 
     path_to_corerun = os.path.join(core_root, "corerun")
     path_to_tool = os.path.join(antigen_directory, "Antigen")
