@@ -405,7 +405,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // FEATURE_ARG_SPLIT
 
         case GT_CALL:
-            genCallInstruction(treeNode->AsCall());
+            genCall(treeNode->AsCall());
             break;
 
         case GT_MEMORYBARRIER:
@@ -2258,17 +2258,10 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 }
 
 //------------------------------------------------------------------------
-// genCallInstruction: Produce code for a GT_CALL node
+// genCall: Produce code for a GT_CALL node
 //
-void CodeGen::genCallInstruction(GenTreeCall* call)
+void CodeGen::genCall(GenTreeCall* call)
 {
-    gtCallTypes callType = (gtCallTypes)call->gtCallType;
-
-    IL_OFFSETX ilOffset = BAD_IL_OFFSET;
-
-    // all virtuals should have been expanded into a control expression
-    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
-
     // Consume all the arg regs
     for (GenTreeCall::Use& use : call->LateArgs())
     {
@@ -2343,46 +2336,20 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // TARGET*
     }
 
-    // Either gtControlExpr != null or gtCallAddr != null or it is a direct non-virtual call to a user or helper
-    // method.
-    CORINFO_METHOD_HANDLE methHnd;
-    GenTree*              target = call->gtControlExpr;
-    if (callType == CT_INDIRECT)
-    {
-        assert(target == nullptr);
-        target  = call->gtCallAddr;
-        methHnd = nullptr;
-    }
-    else
-    {
-        methHnd = call->gtCallMethHnd;
-    }
-
-    CORINFO_SIG_INFO* sigInfo = nullptr;
-#ifdef DEBUG
-    // Pass the call signature information down into the emitter so the emitter can associate
-    // native call sites with the signatures they were generated from.
-    if (callType != CT_HELPER)
-    {
-        sigInfo = call->callSig;
-    }
-#endif // DEBUG
-
-    // If fast tail call, then we are done.  In this case we setup the args (both reg args
-    // and stack args in incoming arg area) and call target.  Epilog sequence would
-    // generate "br <reg>".
+    // If fast tail call, then we are done here, we just have to load the call
+    // target into the right registers. We ensure in RA that target is loaded
+    // into a volatile register that won't be restored by epilog sequence.
     if (call->IsFastTailCall())
     {
         // Don't support fast tail calling JIT helpers
-        assert(callType != CT_HELPER);
+        assert(call->gtCallType != CT_HELPER);
+
+        GenTree* target = getCallTarget(call, nullptr);
 
         if (target != nullptr)
         {
             // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
             genConsumeReg(target);
-
-            // Use IP0 on ARM64 and R12 on ARM32 as the call target register.
-            inst_Mov(TYP_I_IMPL, REG_FASTTAILCALL_TARGET, target->GetRegNum(), /* canSkip */ true);
         }
 
         return;
@@ -2397,144 +2364,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         genDefineTempLabel(genCreateTempLabel());
     }
 
-    // Determine return value size(s).
-    const ReturnTypeDesc* pRetTypeDesc  = call->GetReturnTypeDesc();
-    emitAttr              retSize       = EA_PTRSIZE;
-    emitAttr              secondRetSize = EA_UNKNOWN;
-
-    if (call->HasMultiRegRetVal())
-    {
-        retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
-        secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
-    }
-    else
-    {
-        assert(call->gtType != TYP_STRUCT);
-
-        if (call->gtType == TYP_REF)
-        {
-            retSize = EA_GCREF;
-        }
-        else if (call->gtType == TYP_BYREF)
-        {
-            retSize = EA_BYREF;
-        }
-    }
-
-    // We need to propagate the IL offset information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-    if (compiler->opts.compDbgInfo && compiler->genCallSite2ILOffsetMap != nullptr && !call->IsTailCall())
-    {
-        (void)compiler->genCallSite2ILOffsetMap->Lookup(call, &ilOffset);
-    }
-
-    if (target != nullptr)
-    {
-        // A call target can not be a contained indirection
-        assert(!target->isContainedIndir());
-
-        genConsumeReg(target);
-
-        // We have already generated code for gtControlExpr evaluating it into a register.
-        // We just need to emit "call reg" in this case.
-        //
-        assert(genIsValidIntReg(target->GetRegNum()));
-
-        genEmitCall(emitter::EC_INDIR_R, methHnd,
-                    INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
-                    retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, target->GetRegNum());
-    }
-    else if (call->IsR2ROrVirtualStubRelativeIndir())
-    {
-        // Generate a indirect call to a virtual user defined function or helper method
-        assert(callType == CT_HELPER || callType == CT_USER_FUNC);
-#ifdef FEATURE_READYTORUN
-        assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-               ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
-#endif // FEATURE_READYTORUN
-        assert(call->gtControlExpr == nullptr);
-        assert(!call->IsTailCall());
-
-        regNumber tmpReg = call->GetSingleTempReg();
-        regNumber callAddrReg =
-            call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
-        GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
-
-        // We have now generated code for gtControlExpr evaluating it into `tmpReg`.
-        // We just need to emit "call tmpReg" in this case.
-        //
-        assert(genIsValidIntReg(tmpReg));
-
-        genEmitCall(emitter::EC_INDIR_R, methHnd,
-                    INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
-                    retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, tmpReg);
-    }
-    else
-    {
-        // Generate a direct call to a non-virtual user defined or helper method
-        assert(callType == CT_HELPER || callType == CT_USER_FUNC);
-
-        void* addr = nullptr;
-#ifdef FEATURE_READYTORUN
-        if (call->gtEntryPoint.addr != NULL)
-        {
-            assert(call->gtEntryPoint.accessType == IAT_VALUE);
-            addr = call->gtEntryPoint.addr;
-        }
-        else
-#endif // FEATURE_READYTORUN
-            if (callType == CT_HELPER)
-        {
-            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
-            noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
-            void* pAddr = nullptr;
-            addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-            assert(pAddr == nullptr);
-        }
-        else
-        {
-            // Direct call to a non-virtual user function.
-            addr = call->gtDirectCallAddress;
-        }
-
-        assert(addr != nullptr);
-
-// Non-virtual direct call to known addresses
-#ifdef TARGET_ARM
-        if (!arm_Valid_Imm_For_BL((ssize_t)addr))
-        {
-            regNumber tmpReg = call->GetSingleTempReg();
-            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);
-            genEmitCall(emitter::EC_INDIR_R, methHnd, INDEBUG_LDISASM_COMMA(sigInfo) NULL, retSize, ilOffset, tmpReg);
-        }
-        else
-#endif // TARGET_ARM
-        {
-            genEmitCall(emitter::EC_FUNC_TOKEN, methHnd, INDEBUG_LDISASM_COMMA(sigInfo) addr,
-                        retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
-        }
-#if 0 && defined(TARGET_ARM64)
-        // Use this path if you want to load an absolute call target using
-        //  a sequence of movs followed by an indirect call (blr instruction)
-        // If this path is enabled, we need to ensure that REG_IP0 is assigned during Lowering.
-
-        // Load the call target address in x16
-        instGen_Set_Reg_To_Imm(EA_8BYTE, REG_IP0, (ssize_t) addr);
-
-        // indirect call to constant address in IP0
-        genEmitCall(emitter::EC_INDIR_R,
-                    methHnd,
-                    INDEBUG_LDISASM_COMMA(sigInfo)
-                    nullptr, //addr
-                    retSize,
-                    secondRetSize,
-                    ilOffset,
-                    REG_IP0);
-#endif
-    }
+    genCallInstruction(call);
 
     // if it was a pinvoke we may have needed to get the address of a label
     if (genPendingCallLabel)
@@ -2560,6 +2390,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         if (call->HasMultiRegRetVal())
         {
+            const ReturnTypeDesc* pRetTypeDesc = call->GetReturnTypeDesc();
             assert(pRetTypeDesc != nullptr);
             unsigned regCount = pRetTypeDesc->GetReturnRegCount();
 
@@ -2625,6 +2456,194 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     if ((call->gtNext == nullptr) && !compiler->opts.MinOpts() && !compiler->opts.compDbgCode)
     {
         gcInfo.gcMarkRegSetNpt(RBM_INTRET);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCallInstruction - Generate instructions necessary to transfer control to the call.
+//
+// Arguments:
+//    call - the GT_CALL node
+//
+// Remaks:
+//   For tailcalls this function will generate a jump.
+//
+void CodeGen::genCallInstruction(GenTreeCall* call)
+{
+    // Determine return value size(s).
+    const ReturnTypeDesc* pRetTypeDesc  = call->GetReturnTypeDesc();
+    emitAttr              retSize       = EA_PTRSIZE;
+    emitAttr              secondRetSize = EA_UNKNOWN;
+
+    if (call->HasMultiRegRetVal())
+    {
+        retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
+        secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
+    }
+    else
+    {
+        assert(call->gtType != TYP_STRUCT);
+
+        if (call->gtType == TYP_REF)
+        {
+            retSize = EA_GCREF;
+        }
+        else if (call->gtType == TYP_BYREF)
+        {
+            retSize = EA_BYREF;
+        }
+    }
+
+    // We need to propagate the IL offset information to the call instruction, so we can emit
+    // an IL to native mapping record for the call, to support managed return value debugging.
+    // We don't want tail call helper calls that were converted from normal calls to get a record,
+    // so we skip this hash table lookup logic in that case.
+
+    IL_OFFSETX ilOffset = BAD_IL_OFFSET;
+
+    if (compiler->opts.compDbgInfo && compiler->genCallSite2ILOffsetMap != nullptr && !call->IsTailCall())
+    {
+        (void)compiler->genCallSite2ILOffsetMap->Lookup(call, &ilOffset);
+    }
+
+    CORINFO_SIG_INFO* sigInfo = nullptr;
+#ifdef DEBUG
+    // Pass the call signature information down into the emitter so the emitter can associate
+    // native call sites with the signatures they were generated from.
+    if (call->gtCallType != CT_HELPER)
+    {
+        sigInfo = call->callSig;
+    }
+#endif // DEBUG
+    CORINFO_METHOD_HANDLE methHnd;
+    GenTree*              target = getCallTarget(call, &methHnd);
+
+    if (target != nullptr)
+    {
+        // A call target can not be a contained indirection
+        assert(!target->isContainedIndir());
+
+        // For fast tailcall we have already consumed the target. We ensure in
+        // RA that the target was allocated into a volatile register that will
+        // not be messed up by epilog sequence.
+        if (!call->IsFastTailCall())
+        {
+            genConsumeReg(target);
+        }
+
+        // We have already generated code for gtControlExpr evaluating it into a register.
+        // We just need to emit "call reg" in this case.
+        //
+        assert(genIsValidIntReg(target->GetRegNum()));
+
+        // clang-format off
+        genEmitCall(emitter::EC_INDIR_R,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    nullptr, // addr
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    ilOffset,
+                    target->GetRegNum(),
+                    call->IsFastTailCall());
+        // clang-format on
+    }
+    else if (call->IsR2ROrVirtualStubRelativeIndir())
+    {
+        // Generate a indirect call to a virtual user defined function or helper method
+        assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
+#ifdef FEATURE_READYTORUN
+        assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+               ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+#endif // FEATURE_READYTORUN
+        assert(call->gtControlExpr == nullptr);
+        assert(!call->IsTailCall());
+
+        regNumber tmpReg = call->GetSingleTempReg();
+        regNumber callAddrReg =
+            call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
+        GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
+
+        // We have now generated code for gtControlExpr evaluating it into `tmpReg`.
+        // We just need to emit "call tmpReg" in this case.
+        //
+        assert(genIsValidIntReg(tmpReg));
+
+        // clang-format off
+        genEmitCall(emitter::EC_INDIR_R,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    nullptr, // addr
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    ilOffset,
+                    tmpReg,
+                    call->IsFastTailCall());
+        // clang-format on
+    }
+    else
+    {
+        // Generate a direct call to a non-virtual user defined or helper method
+        assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
+
+        void* addr = nullptr;
+#ifdef FEATURE_READYTORUN
+        if (call->gtEntryPoint.addr != NULL)
+        {
+            assert(call->gtEntryPoint.accessType == IAT_VALUE);
+            addr = call->gtEntryPoint.addr;
+        }
+        else
+#endif // FEATURE_READYTORUN
+            if (call->gtCallType == CT_HELPER)
+        {
+            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+            noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+            void* pAddr = nullptr;
+            addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+            assert(pAddr == nullptr);
+        }
+        else
+        {
+            // Direct call to a non-virtual user function.
+            addr = call->gtDirectCallAddress;
+        }
+
+        assert(addr != nullptr);
+
+// Non-virtual direct call to known addresses
+#ifdef TARGET_ARM
+        if (!arm_Valid_Imm_For_BL((ssize_t)addr))
+        {
+            regNumber tmpReg = call->GetSingleTempReg();
+            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);
+            // clang-format off
+            genEmitCall(emitter::EC_INDIR_R,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        NULL,
+                        retSize,
+                        ilOffset,
+                        tmpReg,
+                        call->IsFastTailCall());
+            // clang-format on
+        }
+        else
+#endif // TARGET_ARM
+        {
+            // clang-format off
+            genEmitCall(emitter::EC_FUNC_TOKEN,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        addr,
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        ilOffset,
+                        REG_NA,
+                        call->IsFastTailCall());
+            // clang-format on
+        }
     }
 }
 

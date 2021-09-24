@@ -1092,6 +1092,12 @@
   <data name="Argument_InvalidAppendMode" xml:space="preserve">
     <value>Append access can be requested only in write-only mode.</value>
   </data>
+  <data name="Argument_InvalidPreallocateAccess" xml:space="preserve">
+    <value>Preallocation size can be requested only in write mode.</value>
+  </data>
+  <data name="Argument_InvalidPreallocateMode" xml:space="preserve">
+    <value>Preallocation size can be requested only for new files.</value>
+  </data>
   <data name="Argument_InvalidArgumentForComparison" xml:space="preserve">
     <value>Type of argument is not compatible with the generic comparer.</value>
   </data>
@@ -2658,9 +2664,6 @@
   </data>
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
-  </data>
-  <data name="IO_InconsistentLinkType" xml:space="preserve">
-    <value>The link's file system entry type is inconsistent with that of its target: {0}</value>
   </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>

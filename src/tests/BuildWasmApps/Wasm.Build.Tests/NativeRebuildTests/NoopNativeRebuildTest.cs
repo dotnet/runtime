@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
 #nullable enable
 
-namespace Wasm.Build.Tests
+namespace Wasm.Build.NativeRebuild.Tests
 {
     public class NoopNativeRebuildTest : NativeRebuildTestsBase
     {

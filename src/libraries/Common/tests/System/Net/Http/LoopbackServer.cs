@@ -866,6 +866,12 @@ namespace System.Net.Test.Common
                 return buffer;
             }
 
+            public void CompleteRequestProcessing()
+            {
+                _contentLength = 0;
+                _bodyRead = false;
+            }
+
             public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
             {
                 MemoryStream headerBytes = new MemoryStream();

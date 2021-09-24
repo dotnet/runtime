@@ -8522,10 +8522,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     /* Sanity check the arguments depending on callType */
 
     assert(callType < EC_COUNT);
-    assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_ADDR) ||
-           (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType < EC_INDIR_R || addr == NULL);
-    assert(callType != EC_INDIR_R || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
+    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
 
     // ARM never uses these
     assert(xreg == REG_NA && xmul == 0 && disp == 0);
@@ -8570,11 +8568,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(argSize % REGSIZE_BYTES == 0);
     int argCnt = (int)(argSize / (int)REGSIZE_BYTES);
 
-    if (callType >= EC_INDIR_R)
+    if (callType == EC_INDIR_R)
     {
         /* Indirect call, virtual calls */
-
-        assert(callType == EC_INDIR_R);
 
         id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
     }
@@ -8583,7 +8579,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         /* Helper/static/nonvirtual/function calls (direct or through handle),
            and calls to an absolute addr. */
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
     }
@@ -8602,43 +8598,33 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Record the address: method, indirection, or funcptr */
 
-    if (callType > EC_FUNC_ADDR)
+    if (callType == EC_INDIR_R)
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        switch (callType)
+        id->idSetIsCallRegPtr();
+
+        if (isJump)
         {
-            case EC_INDIR_R: // the address is in a register
-
-                id->idSetIsCallRegPtr();
-
-                if (isJump)
-                {
-                    ins = INS_br_tail; // INS_br_tail  Reg
-                }
-                else
-                {
-                    ins = INS_blr; // INS_blr Reg
-                }
-                fmt = IF_BR_1B;
-
-                id->idIns(ins);
-                id->idInsFmt(fmt);
-
-                id->idReg3(ireg);
-                assert(xreg == REG_NA);
-                break;
-
-            default:
-                NO_WAY("unexpected instruction");
-                break;
+            ins = INS_br_tail; // INS_br_tail  Reg
         }
+        else
+        {
+            ins = INS_blr; // INS_blr Reg
+        }
+        fmt = IF_BR_1B;
+
+        id->idIns(ins);
+        id->idInsFmt(fmt);
+
+        id->idReg3(ireg);
+        assert(xreg == REG_NA);
     }
     else
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         assert(addr != NULL);
 
@@ -8656,11 +8642,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idInsFmt(fmt);
 
         id->idAddr()->iiaAddr = (BYTE*)addr;
-
-        if (callType == EC_FUNC_ADDR)
-        {
-            id->idSetIsCallAddr();
-        }
 
         if (emitComp->opts.compReloc)
         {
@@ -12179,7 +12160,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
         }
         else
         {
-            assert(sz == 0);
+            assert(id->idCodeSize() == sz);
             printf("              ");
         }
     }
@@ -12252,7 +12233,6 @@ void emitter::emitDispIns(
         unsigned     scale;
         unsigned     immShift;
         bool         hasShift;
-        ssize_t      offs;
         const char*  methodName;
         emitAttr     elemsize;
         emitAttr     datasize;
@@ -12300,27 +12280,8 @@ void emitter::emitDispIns(
         break;
 
         case IF_BI_0C: // BI_0C   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
-            if (id->idIsCallAddr())
-            {
-                offs       = (ssize_t)id->idAddr()->iiaAddr;
-                methodName = "";
-            }
-            else
-            {
-                offs       = 0;
-                methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
-            }
-
-            if (offs)
-            {
-                if (id->idIsDspReloc())
-                    printf("reloc ");
-                printf("%08X", offs);
-            }
-            else
-            {
-                printf("%s", methodName);
-            }
+            methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+            printf("%s", methodName);
             break;
 
         case IF_BI_1A: // BI_1A   ......iiiiiiiiii iiiiiiiiiiittttt      Rt       simm19:00
@@ -13399,7 +13360,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 #endif // DEBUG
 
 // Generate code for a load or store operation with a potentially complex addressing mode
-// This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*sccale + offset]
+// This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*scale + offset]
 // Since Arm64 does not directly support this complex of an addressing mode
 // we may generates up to three instructions for this for Arm64
 //
@@ -13786,6 +13747,9 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
                 {
                     isLocalAccess = true;
                 }
+                break;
+            case IF_LARGELDC:
+                isLocalAccess = false;
                 break;
 
             default:

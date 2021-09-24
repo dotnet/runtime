@@ -212,8 +212,6 @@ bool isPrefetch(instruction ins)
 
 #ifdef DEBUG
 
-const char* emitFPregName(unsigned reg, bool varName = true);
-
 void emitDispReloc(ssize_t value);
 void emitDispAddrMode(instrDesc* id, bool noDetail = false);
 void emitDispShift(instruction ins, int cnt = 0);
@@ -522,15 +520,10 @@ void emitIns_SIMD_R_R_S_R(
 
 enum EmitCallType
 {
-    EC_FUNC_TOKEN,       //   Direct call to a helper/static/nonvirtual/global method
-    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method
-    EC_FUNC_ADDR,        // Direct call to an absolute address
-
-    EC_FUNC_VIRTUAL, // Call to a virtual method (using the vtable)
-    EC_INDIR_R,      // Indirect call via register
-    EC_INDIR_SR,     // Indirect call via stack-reference (local var)
-    EC_INDIR_C,      // Indirect call via static class var
-    EC_INDIR_ARD,    // Indirect call via an addressing mode
+    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call addr with RIP-relative encoding)
+    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
+    EC_INDIR_R,          // Indirect call via register (call rax)
+    EC_INDIR_ARD,        // Indirect call via an addressing mode (call [rax+rdx*8+disp])
 
     EC_COUNT
 };

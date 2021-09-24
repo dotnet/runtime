@@ -335,6 +335,9 @@ typedef unsigned UNATIVE_OFFSET;
 
 typedef ptrdiff_t ssize_t;
 
+// Type used for weights (e.g. block and edge weights)
+typedef double weight_t;
+
 // For the following specially handled FIELD_HANDLES we need
 //   values that are negative and have the low two bits zero
 // See eeFindJitDataOffs and eeGetJitDataOffs in Compiler.hpp
@@ -437,6 +440,7 @@ public:
 #define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
 #define LOOP_HOIST_STATS 1  // Collect loop hoisting stats.
 #define TRACK_LSRA_STATS 1  // Collect LSRA stats
+#define TRACK_ENREG_STATS 1 // Collect enregistration stats
 #else
 #define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
 #define LOOP_HOIST_STATS 0  // You can set this to 1 to get loop hoist stats in retail, as well
@@ -629,9 +633,9 @@ inline size_t unsigned_abs(ssize_t x)
 
 /*****************************************************************************/
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-
 #define HISTOGRAM_MAX_SIZE_COUNT 64
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 class Histogram
 {
@@ -832,12 +836,18 @@ T dspOffset(T o)
 
 #endif // !defined(DEBUG)
 
-extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
-                                                      UINT32                                 countSchemaItems,
-                                                      BYTE*                                  pInstrumentationData,
-                                                      int32_t                                ilOffset,
-                                                      UINT32*                                pLikelihood,
-                                                      UINT32*                                pNumberOfClasses);
+struct LikelyClassRecord
+{
+    CORINFO_CLASS_HANDLE clsHandle;
+    UINT32               likelihood;
+};
+
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
+                                          UINT32                                 maxLikelyClasses,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset);
 
 /*****************************************************************************/
 #endif //_JIT_H_

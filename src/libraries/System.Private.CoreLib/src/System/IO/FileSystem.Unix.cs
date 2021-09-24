@@ -571,16 +571,6 @@ namespace System.IO
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
             string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
-
-            // Fail if the target exists but is not consistent with the expected filesystem entry type
-            if (Interop.Sys.Stat(pathToTargetFullPath, out Interop.Sys.FileStatus targetInfo) == 0)
-            {
-                if (isDirectory != ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR))
-                {
-                    throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
-                }
-            }
-
             Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path, isDirectory);
         }
 

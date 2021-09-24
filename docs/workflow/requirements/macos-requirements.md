@@ -13,6 +13,11 @@ Xcode
 
 Install Apple Xcode developer tools from the Mac App Store ([link](https://apps.apple.com/us/app/xcode/id497799835)).
 
+Configure the Xcode command line tools:
+Run Xcode, open Preferences, and on the Locations tab, change "Command Line Tools" to point to this installation of Xcode.app.
+Alternately, run `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer` in a terminal.
+(Adjust the path if you renamed Xcode.app)
+
 Toolchain Setup
 ---------------
 

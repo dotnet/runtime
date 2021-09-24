@@ -200,7 +200,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         {
             m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
-            if (comp->lvaTable[lclNum].lvAddrExposed)
+            if (comp->lvaTable[lclNum].IsAddressExposed())
             {
                 JITDUMP("   V%02u is address exposed\n", lclNum);
                 MarkLclVarAsEscaping(lclNum);
@@ -480,6 +480,11 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     {
         assert(comp->opts.IsReadyToRun());
         helperCall->AsCall()->setEntryPoint(entryPoint);
+    }
+    else
+    {
+        assert(helper != CORINFO_HELP_READYTORUN_NEW); // If this is true, then we should have collected a non-null
+                                                       // entrypoint above
     }
 #endif
 

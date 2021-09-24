@@ -37,14 +37,16 @@
       };
 
       function yieldBench () {
-        let ret = BINDING.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark", []);
-        document.getElementById("out").innerHTML += ret;
-        if (ret.length > 0) {
-          document.getElementById("out").innerHTML += "<br>";
-          setTimeout (function() { yieldBench(); }, 0);
-        } else {
-          document.getElementById("out").innerHTML += "<br>Finished";
-        }
+        let promise = BINDING.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark", []);
+        promise.then(ret => {
+          document.getElementById("out").innerHTML += ret;
+          if (ret.length > 0) {
+              document.getElementById("out").innerHTML += "<br>";
+              setTimeout(function () { yieldBench(); }, 0);
+          } else {
+              document.getElementById("out").innerHTML += "<br>Finished";
+          }
+        });
       }
 
       var App = {
