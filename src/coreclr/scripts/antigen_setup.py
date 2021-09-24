@@ -32,7 +32,7 @@ parser.add_argument("-core_root_directory",  help="path to CORE_ROOT directory")
 is_windows = platform.system() == "Windows"
 
 def setup_args(args):
-    """ Setup the args for SuperPMI to use.
+    """ Setup the args.
 
     Args:
         args (ArgParse): args parsed by arg parser

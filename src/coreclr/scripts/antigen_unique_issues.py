@@ -28,7 +28,7 @@ assertion_patterns = [re.compile(r"Assertion failed '(.*)' in '.*' during '(.*)'
                       re.compile(r"Assert failure\(PID \d+ \[0x[0-9a-f]+], Thread: \d+ \[0x[0-9a-f]+]\):(.*)")]
 
 def setup_args(args):
-    """ Setup the args for SuperPMI to use.
+    """ Setup the args.
 
     Args:
         args (ArgParse): args parsed by arg parser
