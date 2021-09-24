@@ -14,7 +14,7 @@ parameters:
   codeGenType: 'JIT'
   projetFile: ''
   runKind: ''
-  runJobTemplate: '/eng/pipelines/coreclr/templates/run-exploratory-job.yml'
+  runJobTemplate: '/eng/pipelines/coreclr/templates/jit-run-exploratory-job.yml'
   additionalSetupParameters: ''
   collectionType: ''
   collectionName: ''

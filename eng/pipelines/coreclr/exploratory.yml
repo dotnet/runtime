@@ -31,7 +31,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/exploratory-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/jit-exploratory-job.yml
     buildConfig: checked
     platforms:
     # Linux tests are built on the OSX machines.
