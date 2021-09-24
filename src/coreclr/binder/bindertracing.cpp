@@ -152,9 +152,7 @@ namespace
             peAssembly->GetDisplayName(request.RequestingAssembly);
 
             AppDomain *domain = parentAssembly->GetAppDomain();
-            AssemblyBinder *binder = peAssembly->GetBinder();
-            if (binder == nullptr)
-                binder = domain->GetDefaultBinder(); // System.Private.CoreLib returns null
+            AssemblyBinder *binder = peAssembly->GetAssemblyBinder();
 
             GetAssemblyLoadContextNameFromBinder(binder, domain, request.RequestingAssemblyLoadContext);
         }

@@ -1041,6 +1041,7 @@ void SystemDomain::Attach()
 
     // Create the one and only app domain
     AppDomain::Create();
+    AppDomain::GetCurrentDomain()->CreateBinderContext();
 
     // Each domain gets its own ReJitManager, and ReJitManager has its own static
     // initialization to run
@@ -2774,7 +2775,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
         {
             // Setup the binder reference in AssemblySpec from the PEAssembly if one is not already set.
             AssemblyBinder* pCurrentBinder = pSpec->GetBinder();
-            AssemblyBinder* pBinderFromPEAssembly = pFile->GetBinder();
+            AssemblyBinder* pBinderFromPEAssembly = pFile->GetAssemblyBinder();
 
             if (pCurrentBinder == NULL)
             {
@@ -2841,14 +2842,10 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     {
         LoaderAllocator *pLoaderAllocator = NULL;
 
-        AssemblyBinder *pFileBinder = pFile->GetBinder();
-        if (pFileBinder != NULL)
-        {
-            // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
-            // marked as collectible
-            pLoaderAllocator = pFileBinder->GetLoaderAllocator();
-        }
-
+        AssemblyBinder *pFileBinder = pFile->GetAssemblyBinder();
+        // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
+        // marked as collectible
+        pLoaderAllocator = pFileBinder->GetLoaderAllocator();
         if (pLoaderAllocator == NULL)
         {
             pLoaderAllocator = this->GetLoaderAllocator();
@@ -3713,7 +3710,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
-                    AssemblyBinder* pBinder = result->GetBinder();
+                    AssemblyBinder* pBinder = result->GetAssemblyBinder();
                     _ASSERTE(pBinder != NULL);
                     pSpec->SetBinder(pBinder);
 
@@ -4062,7 +4059,7 @@ DefaultAssemblyBinder *AppDomain::CreateBinderContext()
         GCX_PREEMP();
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
-        IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::DefaultBinderSetupContext(&m_pDefaultBinder));
+        IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::CreateDefaultBinder(&m_pDefaultBinder));
     }
 
     RETURN m_pDefaultBinder;
