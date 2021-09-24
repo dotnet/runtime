@@ -7,7 +7,7 @@ services:
     image: httpstress
     volumes:
       - "${CLIENT_DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
-      - ${HTTPSTRESS_REPORT_VOLUME_MOUNT_STRING}
+      - "${REPORTS_SHARE}:${REPORTS_SHARE_MOUNT_ROOT}"
     cap_add:
       - SYS_PTRACE
     links:

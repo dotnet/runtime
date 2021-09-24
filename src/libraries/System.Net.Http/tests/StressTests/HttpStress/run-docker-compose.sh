@@ -95,10 +95,12 @@ fi
 
 if [[ $buildonly -eq 0 ]]; then
     export DUMPS_SHARE_MOUNT_ROOT="/dumps-share"
+    export REPORTS_SHARE_MOUNT_ROOT="/reports-share"
     export CLIENT_DUMPS_SHARE="${CLIENT_DUMPS_SHARE:-$(mktemp -d)}"
     export SERVER_DUMPS_SHARE="${SERVER_DUMPS_SHARE:-$(mktemp -d)}"
     mkdir -p ${CLIENT_DUMPS_SHARE}
     mkdir -p ${SERVER_DUMPS_SHARE}
+    mkdir -p ${REPORTS_SHARE}
 
     export HTTPSTRESS_CLIENT_ARGS=$clientstressargs
     export HTTPSTRESS_SERVER_ARGS=$serverstressargs

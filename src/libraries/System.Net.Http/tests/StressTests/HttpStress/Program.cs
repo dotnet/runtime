@@ -35,7 +35,10 @@ namespace HttpStress
                 return (int)ExitCode.CliError;
             }
 
-            return (int)await Run(config);
+            File.WriteAllText(config.ReportFile, "<Lol/>");
+
+            return (int)await Task.FromResult(ExitCode.StressError);
+            //return (int)await Run(config);
         }
 
         private static bool TryParseCli(string[] args, [NotNullWhen(true)] out Configuration? config)
