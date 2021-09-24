@@ -48,11 +48,8 @@ public:
         return fSuccess;
     }
 
-    static CLRConfigNoCache Get(LPCSTR cfg, bool noPrefix = false)
+    static CLRConfigNoCache Get(LPCSTR cfg, bool noPrefix = false, char*(*getEnvFptr)(const char*) = nullptr)
     {
-        if (cfg == nullptr)
-            return {};
-
         char nameBuffer[64];
         const char* fallbackPrefix = NULL;
         const size_t namelen = strlen(cfg);
@@ -84,12 +81,12 @@ public:
 
         strcat_s(nameBuffer, _countof(nameBuffer), cfg);
 
-        LPCSTR val = getenv(nameBuffer);
+        LPCSTR val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         if (val == NULL && fallbackPrefix != NULL)
         {
             strcpy_s(nameBuffer, _countof(nameBuffer), fallbackPrefix);
             strcat_s(nameBuffer, _countof(nameBuffer), cfg);
-            val = getenv(nameBuffer);
+            val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         }
 
         return { val };
