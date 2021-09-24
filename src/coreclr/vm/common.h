@@ -417,6 +417,30 @@ extern DummyGlobalContract ___contract;
 
 #endif // defined(_DEBUG)
 
+#define ENUM_PAGE_SIZES \
+    ENUM_PAGE_SIZE(4096)  \
+    ENUM_PAGE_SIZE(8192)  \
+    ENUM_PAGE_SIZE(16384) \
+    ENUM_PAGE_SIZE(32768) \
+    ENUM_PAGE_SIZE(65536)
+
+inline void FillStubCodePage(BYTE* pageBase, const void* code, int codeSize, int pageSize)
+{
+    int totalCodeSize = (pageSize / codeSize) * codeSize;
+
+    memcpy(pageBase, code, codeSize);
+
+    int i;
+    for (i = codeSize; i < pageSize / 2; i *= 2)
+    {
+        memcpy(pageBase + i, pageBase, i);
+    }
+
+    if (i != totalCodeSize)
+    {
+        memcpy(pageBase + i, pageBase, totalCodeSize - i);
+    }
+}
 
 // All files get to see all of these .inl files to make sure all files
 // get the benefit of inlining.

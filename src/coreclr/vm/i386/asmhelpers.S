@@ -534,26 +534,6 @@ LEAF_ENTRY NDirectImportThunk, _TEXT
     jmp     eax     // Jump to DLL target
 LEAF_END NDirectImportThunk, _TEXT
 
-// ==========================================================================
-// The call in fixup precode initally points to this function.
-// The pupose of this function is to load the MethodDesc and forward the call the prestub.
-LEAF_ENTRY PrecodeFixupThunk, _TEXT
-    // Pop the return address. It points right after the call instruction in the precode.
-    pop     eax
-    push    esi
-    push    edi
-
-    // Inline computation done by FixupPrecode::GetMethodDesc()
-    movzx   esi, BYTE PTR [eax + 2]    // m_PrecodeChunkIndex
-    movzx   edi, BYTE PTR [eax + 1]    // m_MethodDescChunkIndex
-    mov     eax, DWORD PTR [eax + esi*8 +3]
-    lea     eax, [eax + edi*4]
-
-    pop     edi
-    pop     esi
-    jmp     C_FUNC(ThePreStub)
-LEAF_END PrecodeFixupThunk, _TEXT
-
 //
 // Used to get the current instruction pointer value
 //

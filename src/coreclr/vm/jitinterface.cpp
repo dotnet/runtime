@@ -9006,7 +9006,15 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     // Resolve methodImpl.
     ftn = ftn->GetMethodTable()->MapMethodDeclToMethodImpl(ftn);
 
-    ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
+    if (!ftn->IsFCall() && ftn->MayHavePrecode() && ftn->GetPrecodeType() == PRECODE_FIXUP)
+    {
+        ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
+        accessType = IAT_PVALUE;
+    }
+    else
+    {
+        ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
+    }
 
     // TryGetMultiCallableAddrOfCode returns NULL if indirect access is desired
     if (ret == NULL)

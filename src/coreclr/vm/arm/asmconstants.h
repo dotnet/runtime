@@ -223,5 +223,62 @@ ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pThread == offsetof(InlinedCallFrame, 
 #define               InlinedCallFrame__m_pSPAfterProlog 0x1C
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pSPAfterProlog == offsetof(InlinedCallFrame, m_pSPAfterProlog))
 
+#define FixupPrecodeData__Target 0x00
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__Target == offsetof(FixupPrecodeData, Target))
+
+#define FixupPrecodeData__MethodDesc 0x04
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__MethodDesc == offsetof(FixupPrecodeData, MethodDesc))
+
+#define FixupPrecodeData__PrecodeFixupThunk 0x08
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPrecodeData, PrecodeFixupThunk))
+
+#define StubPrecodeData__MethodDesc 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc == offsetof(StubPrecodeData, MethodDesc))
+
+#define StubPrecodeData__Target 0x04
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target == offsetof(StubPrecodeData, Target))
+
+#define CallCountingStubData__RemainingCallCountCell 0x00
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
+
+#define CallCountingStubData__TargetForMethod 0x04
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCountingStubData, TargetForMethod))
+
+#define CallCountingStubData__TargetForThresholdReached 0x08
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+
+#define               LookupStubData__DispatchToken 0x00
+ASMCONSTANTS_C_ASSERT(LookupStubData__DispatchToken == offsetof(LookupStubData, DispatchToken))
+
+#define               LookupStubData__ResolveWorkerTarget 0x04
+ASMCONSTANTS_C_ASSERT(LookupStubData__ResolveWorkerTarget == offsetof(LookupStubData, ResolveWorkerTarget))
+
+#define               DispatchStubData__ExpectedMT 0x00
+ASMCONSTANTS_C_ASSERT(DispatchStubData__ExpectedMT == offsetof(DispatchStubData, ExpectedMT))
+
+#define               DispatchStubData__ImplTarget 0x04
+ASMCONSTANTS_C_ASSERT(DispatchStubData__ImplTarget == offsetof(DispatchStubData, ImplTarget))
+
+#define               DispatchStubData__FailTarget 0x08
+ASMCONSTANTS_C_ASSERT(DispatchStubData__FailTarget == offsetof(DispatchStubData, FailTarget))
+
+#define               ResolveStubData__HashedToken 0x04
+ASMCONSTANTS_C_ASSERT(ResolveStubData__HashedToken == offsetof(ResolveStubData, HashedToken))
+
+#define               ResolveStubData__CacheAddress 0x00
+ASMCONSTANTS_C_ASSERT(ResolveStubData__CacheAddress == offsetof(ResolveStubData, CacheAddress))
+
+#define               ResolveStubData__Token 0x0c
+ASMCONSTANTS_C_ASSERT(ResolveStubData__Token == offsetof(ResolveStubData, Token))
+
+#define               ResolveStubData__Counter 0x08
+ASMCONSTANTS_C_ASSERT(ResolveStubData__Counter == offsetof(ResolveStubData, Counter))
+
+#define               ResolveStubData__ResolveWorkerTarget 0x10
+ASMCONSTANTS_C_ASSERT(ResolveStubData__ResolveWorkerTarget == offsetof(ResolveStubData, ResolveWorkerTarget))
+
+#define CALL_STUB_CACHE_MASK_ASM 0xfff
+ASMCONSTANTS_C_ASSERT(CALL_STUB_CACHE_MASK_ASM == CALL_STUB_CACHE_MASK)
+
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 #undef ASMCONSTANTS_C_ASSERT

@@ -3455,11 +3455,13 @@ AdjustContextForVirtualStub(
 
     if (sk == VirtualCallStubManager::SK_DISPATCH)
     {
-        if (*PTR_WORD(f_IP) != X86_INSTR_CMP_IND_ECX_IMM32)
+        if (*PTR_WORD(f_IP) != X86_INSTR_CMP_IND_ECX_EAX)
         {
             _ASSERTE(!"AV in DispatchStub at unknown instruction");
             return FALSE;
         }
+
+        SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // rollback push eax
     }
     else
     if (sk == VirtualCallStubManager::SK_RESOLVE)
@@ -3502,17 +3504,18 @@ AdjustContextForVirtualStub(
     {
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-        DispatchHolder *holder = DispatchHolder::FromDispatchEntry(f_IP);
-        MethodTable *pMT = (MethodTable*)holder->stub()->expectedMT();
-        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, f_IP, sk));
+        PCODE dispatchEntry = f_IP - DispatchStub::offsetOfThisDeref();
+        DispatchStub *pStub = DispatchStub::FromDispatchEntry(dispatchEntry);
+        MethodTable *pMT = (MethodTable*)pStub->expectedMT();
+        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, dispatchEntry, sk));
         MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, pMT);
         stackArgumentsSize = pMD->SizeOfArgStack();
     }
     else
     {
         // Compute the stub entry address from the address of failure (location of dereferencing of "this" pointer)
-        ResolveHolder *holder = ResolveHolder::FromResolveEntry(f_IP - ResolveStub::offsetOfThisDeref());
-        stackArgumentsSize = holder->stub()->stackArgumentsSize();
+        ResolveStub *pResolveStub = ResolveStub::FromResolveEntry(f_IP - ResolveStub::offsetOfThisDeref());
+        stackArgumentsSize = pResolveStub->stackArgumentsSize();
     }
 
     sp += stackArgumentsSize;

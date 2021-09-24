@@ -2133,7 +2133,7 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     // Make sure that the payload of the stub is aligned
     Stub* pStubRX = (Stub*)(pBlock + stubPayloadOffset);
     Stub* pStubRW;
-    ExecutableWriterHolder<Stub> stubWriterHolder;
+    ExecutableWriterHolderNoLog<Stub> stubWriterHolder;
 
     if (pHeap == NULL)
     {
@@ -2141,7 +2141,7 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
     else
     {
-        stubWriterHolder = ExecutableWriterHolder<Stub>(pStubRX, sizeof(Stub));
+        stubWriterHolder.AssignExecutableWriterHolder(pStubRX, sizeof(Stub));
         pStubRW = stubWriterHolder.GetRW();
     }
     pStubRW->SetupStub(
