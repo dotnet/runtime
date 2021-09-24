@@ -7538,10 +7538,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         {
             ins = INS_l_jmp;
         }
-        else if (callType == EC_FUNC_TOKEN_INDIR)
-        {
-            ins = INS_i_jmp;
-        }
         else
         {
             ins = INS_tail_i_jmp;
