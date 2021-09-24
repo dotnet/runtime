@@ -211,10 +211,7 @@ namespace Mono.Linker.Steps
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT && assembly.MainModule.SymbolReader.GetType ().FullName == "Mono.Cecil.Pdb.NativePdbReader")
 				return parameters;
 
-			if (Context.SymbolWriterProvider != null)
-				parameters.SymbolWriterProvider = Context.SymbolWriterProvider;
-			else
-				parameters.WriteSymbols = true;
+			parameters.WriteSymbols = true;
 			return parameters;
 		}
 

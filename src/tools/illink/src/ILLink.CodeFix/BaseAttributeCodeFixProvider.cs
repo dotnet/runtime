@@ -32,55 +32,43 @@ namespace ILLink.CodeFix
 
 		protected async Task BaseRegisterCodeFixesAsync (CodeFixContext context)
 		{
-			var root = await context.Document.GetSyntaxRootAsync (context.CancellationToken).ConfigureAwait (false);
-
+			var document = context.Document;
+			var root = await document.GetSyntaxRootAsync (context.CancellationToken).ConfigureAwait (false);
 			var diagnostic = context.Diagnostics.First ();
-			var diagnosticSpan = diagnostic.Location.SourceSpan;
+			SyntaxNode targetNode = root!.FindNode (diagnostic.Location.SourceSpan);
+			if (FindAttributableParent (targetNode, AttributableParentTargets) is not SyntaxNode attributableNode)
+				return;
 
-			SyntaxNode targetNode = root!.FindNode (diagnosticSpan);
-			CSharpSyntaxNode? declarationSyntax = FindAttributableParent (targetNode, AttributableParentTargets);
-			if (declarationSyntax is not null) {
-				var semanticModel = await context.Document.GetSemanticModelAsync (context.CancellationToken).ConfigureAwait (false);
-				var symbol = semanticModel!.Compilation.GetTypeByMetadataName (FullyQualifiedAttributeName);
-				var document = context.Document;
-				var editor = new SyntaxEditor (root, document.Project.Solution.Workspace);
-				var generator = editor.Generator;
-				var attrArgs = GetAttributeArguments (semanticModel, targetNode, declarationSyntax, generator, diagnostic);
-				var codeFixTitle = CodeFixTitle.ToString ();
+			var model = await document.GetSemanticModelAsync (context.CancellationToken).ConfigureAwait (false);
+			var targetSymbol = model!.GetSymbolInfo (targetNode).Symbol!;
 
-				// Register a code action that will invoke the fix.
-				context.RegisterCodeFix (
-					CodeAction.Create (
-						title: codeFixTitle,
-						createChangedDocument: c => AddAttribute (
-							document, editor, generator, declarationSyntax, attrArgs, symbol!, c),
-						equivalenceKey: codeFixTitle),
-					diagnostic);
-			}
+			var attributableSymbol = model!.GetDeclaredSymbol (attributableNode)!;
+			var attributeSymbol = model!.Compilation.GetTypeByMetadataName (FullyQualifiedAttributeName)!;
+			var attributeArguments = GetAttributeArguments (attributableSymbol, targetSymbol, SyntaxGenerator.GetGenerator (document), diagnostic);
+			var codeFixTitle = CodeFixTitle.ToString ();
+
+			context.RegisterCodeFix (CodeAction.Create (
+				title: codeFixTitle,
+				createChangedDocument: ct => AddAttributeAsync (
+					document, attributableNode, attributeArguments, attributeSymbol, ct),
+				equivalenceKey: codeFixTitle), diagnostic);
 		}
 
-		private static async Task<Document> AddAttribute (
+		private static async Task<Document> AddAttributeAsync (
 			Document document,
-			SyntaxEditor editor,
-			SyntaxGenerator generator,
-			CSharpSyntaxNode containingDecl,
-			SyntaxNode[] attrArgs,
-			ITypeSymbol AttributeSymbol,
+			SyntaxNode targetNode,
+			SyntaxNode[] attributeArguments,
+			ITypeSymbol attributeSymbol,
 			CancellationToken cancellationToken)
 		{
-			var semanticModel = await document.GetSemanticModelAsync (cancellationToken).ConfigureAwait (false);
-			if (semanticModel is null)
-				return document;
+			var editor = await DocumentEditor.CreateAsync (document, cancellationToken).ConfigureAwait (false);
+			var generator = editor.Generator;
+			var attribute = generator.Attribute (
+				generator.TypeExpression (attributeSymbol), attributeArguments)
+				.WithAdditionalAnnotations (Simplifier.Annotation, Simplifier.AddImportsAnnotation);
 
-			var newAttribute = generator
-				.Attribute (generator.TypeExpression (AttributeSymbol), attrArgs)
-				.WithAdditionalAnnotations (
-					Simplifier.Annotation,
-					Simplifier.AddImportsAnnotation);
-
-			editor.AddAttribute (containingDecl, newAttribute);
-
-			return document.WithSyntaxRoot (editor.GetChangedRoot ());
+			editor.AddAttribute (targetNode, attribute);
+			return editor.GetChangedDocument ();
 		}
 
 		[Flags]
@@ -100,20 +88,27 @@ namespace ILLink.CodeFix
 				switch (parentNode) {
 				case LambdaExpressionSyntax:
 					return null;
+
 				case LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.MethodOrConstructor):
 				case PropertyDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Property):
 				case FieldDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Field):
 				case EventDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Event):
 					return (CSharpSyntaxNode) parentNode;
+
 				default:
 					parentNode = parentNode.Parent;
 					break;
 				}
 			}
+
 			return null;
 		}
 
-		protected abstract SyntaxNode[] GetAttributeArguments (SemanticModel semanticModel, SyntaxNode targetNode, CSharpSyntaxNode declarationSyntax, SyntaxGenerator generator, Diagnostic diagnostic);
+		protected abstract SyntaxNode[] GetAttributeArguments (
+			ISymbol attributableSymbol,
+			ISymbol targetSymbol,
+			SyntaxGenerator syntaxGenerator,
+			Diagnostic diagnostic);
 
 		protected static bool HasPublicAccessibility (ISymbol? m)
 		{

@@ -6,11 +6,6 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 namespace Mono.Linker.Tests.Cases.Symbols
 {
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
-#if !NETCOREAPP
-	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
-	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
-#endif
-
 	[Reference ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
 
@@ -22,9 +17,6 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	[SetupLinkerLinkSymbols ("true")]
 
 	[KeptSymbols ("test.exe")]
-#if !NETCOREAPP
-	[KeptSymbols ("LibraryWithMdb.dll")]
-#endif
 #if WIN32
 	[KeptSymbols ("LibraryWithPdb.dll")]
 #else
@@ -33,12 +25,6 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	[KeptSymbols ("LibraryWithCompilerDefaultSymbols.dll")]
 	[KeptSymbols ("LibraryWithEmbeddedPdbSymbols.dll")]
 	[KeptSymbols ("LibraryWithPortablePdbSymbols.dll")]
-
-
-#if !NETCOREAPP
-	[KeptMemberInAssembly ("LibraryWithMdb.dll", typeof (LibraryWithMdb), "SomeMethod()")]
-	[RemovedMemberInAssembly ("LibraryWithMdb.dll", typeof (LibraryWithMdb), "NotUsed()")]
-#endif
 
 	[KeptMemberInAssembly ("LibraryWithPdb.dll", typeof (LibraryWithPdb), "SomeMethod()")]
 	[RemovedMemberInAssembly ("LibraryWithPdb.dll", typeof (LibraryWithPdb), "NotUsed()")]
@@ -59,9 +45,6 @@ namespace Mono.Linker.Tests.Cases.Symbols
 			SomeMethod ();
 			LibraryWithCompilerDefaultSymbols.SomeMethod ();
 			LibraryWithPdb.SomeMethod ();
-#if !NETCOREAPP
-			LibraryWithMdb.SomeMethod ();
-#endif
 			LibraryWithEmbeddedPdbSymbols.SomeMethod ();
 			LibraryWithPortablePdbSymbols.SomeMethod ();
 		}

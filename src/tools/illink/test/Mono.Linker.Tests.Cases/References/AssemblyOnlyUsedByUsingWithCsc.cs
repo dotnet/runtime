@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.References
 
 	// We library should be gone.  The `using` statement leaves no traces in the IL so nothing in `library` will be marked
 	[RemovedAssembly ("library.dll")]
-	[KeptReferencesInAssembly ("copied.dll", new[] { PlatformAssemblies.CoreLib, "library" })]
+	[KeptReferencesInAssembly ("copied.dll", new[] { "System.Runtime", "library" })]
 	public class AssemblyOnlyUsedByUsingWithCsc
 	{
 		public static void Main ()

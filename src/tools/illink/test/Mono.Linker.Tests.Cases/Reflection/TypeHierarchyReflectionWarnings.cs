@@ -267,7 +267,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-			// This should produce a warning: https://github.com/mono/linker/issues/2161
+			// This should produce a warning: https://github.com/dotnet/linker/issues/2161
 			[RequiresUnreferencedCode ("--RUC on AnnotatedInterfaces.UnusedMethod--")]
 			public void RUCMethod () { }
 		}

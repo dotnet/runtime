@@ -67,7 +67,7 @@ namespace Mono.Linker
 				return null;
 
 			// Don't honor the Condition until we have figured out the behavior for DynamicDependencyAttribute:
-			// https://github.com/mono/linker/issues/1231
+			// https://github.com/dotnet/linker/issues/1231
 			// if (!ShouldProcess (context, customAttribute))
 			// 	return null;
 

@@ -7,9 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink
 {
-#if !NETCOREAPP
-	[IgnoreTestCase ("Only for .NET Core for some reason")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.TargetingNetCore, "Only for .NET Core")]
 	/// <summary>
 	/// Delegate and is created from 
 	/// </summary>
