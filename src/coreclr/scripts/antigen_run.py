@@ -196,7 +196,7 @@ def main(main_args):
 
     # Run tool such that issues are placed in a temp folder
     with TempDir() as temp_location:
-        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)])
+        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True)
 
         # Copy issues for upload
         print("Copying issues to " + output_directory)
