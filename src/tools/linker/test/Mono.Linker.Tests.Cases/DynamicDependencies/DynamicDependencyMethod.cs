@@ -170,7 +170,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		[KeptBackingField]
 		internal string Property2 { [Kept] get; set; }
 
-		// For now, Condition has no effect: https://github.com/mono/linker/issues/1231
+		// For now, Condition has no effect: https://github.com/dotnet/linker/issues/1231
 		[Kept]
 		internal void ConditionalTest ()
 		{

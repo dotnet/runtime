@@ -74,7 +74,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public IEnumerable<NPath> ResourceFiles => ResourcesDirectory.Files ();
 
-		public virtual void Populate (TestCaseMetadaProvider metadataProvider)
+		public virtual void Populate (TestCaseCompilationMetadataProvider metadataProvider)
 		{
 			_testCase.SourceFile.Copy (_directory);
 
@@ -107,22 +107,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				res.Source.FileMustExist ().Copy (ResourcesDirectory.Combine (res.DestinationFileName));
 			}
 
-			foreach (var res in metadataProvider.GetResponseFiles ()) {
-				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
-			}
-
-			foreach (var res in metadataProvider.GetDescriptorFiles ()) {
-				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
-			}
-
-			foreach (var res in metadataProvider.GetSubstitutionFiles ()) {
-				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
-			}
-
-			foreach (var res in metadataProvider.GetLinkAttributesFiles ()) {
-				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
-			}
-
 			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesBefore ()) {
 				var destination = BeforeReferenceSourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
 				compileRefInfo.SourceFiles.Copy (destination);
@@ -147,6 +131,30 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				foreach (var res in compileRefInfo.Resources)
 					res.Source.FileMustExist ().Copy (destination.Combine (res.DestinationFileName));
+			}
+		}
+
+		/// <summary>
+		/// Any files that are needed for linking should come from the expectations assembly so that these values
+		/// can be controlled using #ifs regardless of the framework the NUnit test project is compiled against
+		/// </summary>
+		/// <param name="metadataProvider"></param>
+		public virtual void PopulateFromExpectations (TestCaseMetadataProvider metadataProvider)
+		{
+			foreach (var res in metadataProvider.GetResponseFiles ()) {
+				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
+			}
+
+			foreach (var res in metadataProvider.GetDescriptorFiles ()) {
+				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
+			}
+
+			foreach (var res in metadataProvider.GetSubstitutionFiles ()) {
+				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
+			}
+
+			foreach (var res in metadataProvider.GetLinkAttributesFiles ()) {
+				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 		}
 

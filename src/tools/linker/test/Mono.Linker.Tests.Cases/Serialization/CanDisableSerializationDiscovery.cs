@@ -7,8 +7,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Serialization
 {
+	[Reference ("System.Xml.ReaderWriter.dll")]
 	[Reference ("System.Xml.XmlSerializer.dll")]
-	[Reference ("System.Private.Xml.dll")]
 	[SetupLinkerArgument ("--disable-serialization-discovery")]
 	public class CanDisableSerializationDiscovery
 	{

@@ -212,7 +212,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler PublicEvent;
 
 			event EventHandler NonPublicEvent;
@@ -225,7 +225,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			event EventHandler NonPublicEvent;
 
 			public event EventHandler PublicEven;

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,8 @@ using Mono.Cecil;
 using FieldDefinition = Mono.Cecil.FieldDefinition;
 using GenericParameter = Mono.Cecil.GenericParameter;
 using TypeDefinition = Mono.Cecil.TypeDefinition;
+
+#nullable enable
 
 namespace Mono.Linker.Dataflow
 {
@@ -72,7 +75,7 @@ namespace Mono.Linker.Dataflow
 		/// The IL type of the value, represented as closely as possible, but not always exact.  It can be null, for
 		/// example, when the analysis is imprecise or operating on malformed IL.
 		/// </summary>
-		public TypeDefinition StaticType { get; protected set; }
+		public TypeDefinition? StaticType { get; protected set; }
 
 		/// <summary>
 		/// Allows the enumeration of the direct children of this node.  The ChildCollection struct returned here
@@ -122,7 +125,7 @@ namespace Mono.Linker.Dataflow
 		protected abstract int NumChildren { get; }
 		protected abstract ValueNode ChildAt (int index);
 
-		public virtual bool Equals (ValueNode other)
+		public virtual bool Equals (ValueNode? other)
 		{
 			return other != null && this.Kind == other.Kind && this.StaticType == other.StaticType;
 		}
@@ -142,7 +145,7 @@ namespace Mono.Linker.Dataflow
 			return NodeToString ();
 		}
 
-		public override bool Equals (object other)
+		public override bool Equals (object? other)
 		{
 			if (!(other is ValueNode))
 				return false;
@@ -173,7 +176,7 @@ namespace Mono.Linker.Dataflow
 					_index = -1;
 				}
 
-				public ValueNode Current { get { return _parent?.ChildAt (_index); } }
+				public ValueNode Current { get { return _parent.ChildAt (_index); } }
 
 				object System.Collections.IEnumerator.Current { get { return Current; } }
 
@@ -227,8 +230,8 @@ namespace Mono.Linker.Dataflow
 		/// </summary>
 		public struct UniqueValueCollection : IEnumerable<ValueNode>
 		{
-			readonly IEnumerable<ValueNode> _multiValueEnumerable;
-			readonly ValueNode _treeNode;
+			readonly IEnumerable<ValueNode>? _multiValueEnumerable;
+			readonly ValueNode? _treeNode;
 
 			public UniqueValueCollection (ValueNode node)
 			{
@@ -269,14 +272,15 @@ namespace Mono.Linker.Dataflow
 
 			public struct Enumerator : IEnumerator<ValueNode>
 			{
-				readonly IEnumerator<ValueNode> _multiValueEnumerator;
-				readonly ValueNode _singleValueNode;
+				readonly IEnumerator<ValueNode>? _multiValueEnumerator;
+				readonly ValueNode? _singleValueNode;
 				int _index;
 
-				public Enumerator (ValueNode treeNode, IEnumerable<ValueNode> mulitValueEnumerable)
+				public Enumerator (ValueNode? treeNode, IEnumerable<ValueNode>? multiValueEnumerable)
 				{
+					Debug.Assert (treeNode != null || multiValueEnumerable != null);
 					_singleValueNode = treeNode?.GetSingleUniqueValue ();
-					_multiValueEnumerator = mulitValueEnumerable?.GetEnumerator ();
+					_multiValueEnumerator = multiValueEnumerable?.GetEnumerator ();
 					_index = -1;
 				}
 
@@ -305,7 +309,7 @@ namespace Mono.Linker.Dataflow
 							return _multiValueEnumerator.Current;
 
 						if (_index == 0)
-							return _singleValueNode;
+							return _singleValueNode!;
 
 						throw new InvalidOperationException ();
 					}
@@ -359,7 +363,7 @@ namespace Mono.Linker.Dataflow
 		/// and should not be used by the caller after returning</param>
 		/// <param name="allNodesSeen">Optional. The set of all nodes encountered during a walk after DetectCycle returns</param>
 		/// <returns></returns>
-		public static bool DetectCycle (this ValueNode node, HashSet<ValueNode> seenNodes, HashSet<ValueNode> allNodesSeen)
+		public static bool DetectCycle (this ValueNode? node, HashSet<ValueNode> seenNodes, HashSet<ValueNode>? allNodesSeen)
 		{
 			if (node == null)
 				return false;
@@ -427,7 +431,7 @@ namespace Mono.Linker.Dataflow
 			return foundCycle;
 		}
 
-		public static ValueNode.UniqueValueCollection UniqueValues (this ValueNode node)
+		public static ValueNode.UniqueValueCollection UniqueValues (this ValueNode? node)
 		{
 			if (node == null)
 				return new ValueNode.UniqueValueCollection (UnknownValue.Instance);
@@ -435,7 +439,7 @@ namespace Mono.Linker.Dataflow
 			return node.UniqueValuesInternal;
 		}
 
-		public static int? AsConstInt (this ValueNode node)
+		public static int? AsConstInt (this ValueNode? node)
 		{
 			if (node is ConstIntValue constInt)
 				return constInt.Value;
@@ -445,7 +449,7 @@ namespace Mono.Linker.Dataflow
 
 	internal static class ValueNodeDump
 	{
-		internal static string ValueNodeToString (ValueNode node, params object[] args)
+		internal static string ValueNodeToString (ValueNode? node, params object[] args)
 		{
 			if (node == null)
 				return "<null>";
@@ -472,7 +476,7 @@ namespace Mono.Linker.Dataflow
 			return sb.ToString ();
 		}
 
-		public static void DumpTree (this ValueNode node, System.IO.TextWriter writer = null, int indentLevel = 0)
+		public static void DumpTree (this ValueNode node, System.IO.TextWriter? writer = null, int indentLevel = 0)
 		{
 			if (writer == null)
 				writer = Console.Out;
@@ -503,7 +507,7 @@ namespace Mono.Linker.Dataflow
 
 		public static UnknownValue Instance { get; } = new UnknownValue ();
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			return base.Equals (other);
 		}
@@ -529,7 +533,7 @@ namespace Mono.Linker.Dataflow
 			StaticType = null;
 		}
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			return base.Equals (other);
 		}
@@ -566,7 +570,7 @@ namespace Mono.Linker.Dataflow
 
 		public TypeDefinition TypeRepresented { get; private set; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -602,7 +606,7 @@ namespace Mono.Linker.Dataflow
 
 		public TypeDefinition TypeRepresented { get; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -628,6 +632,7 @@ namespace Mono.Linker.Dataflow
 	class SystemTypeForGenericParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
 		public SystemTypeForGenericParameterValue (GenericParameter genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: base (genericParameter)
 		{
 			Kind = ValueNodeKind.SystemTypeForGenericParameter;
 
@@ -636,12 +641,11 @@ namespace Mono.Linker.Dataflow
 
 			GenericParameter = genericParameter;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			SourceContext = genericParameter;
 		}
 
 		public GenericParameter GenericParameter { get; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -678,7 +682,7 @@ namespace Mono.Linker.Dataflow
 
 		public GenericParameter GenericParameter { get; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -714,7 +718,7 @@ namespace Mono.Linker.Dataflow
 
 		public MethodDefinition MethodRepresented { get; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -750,7 +754,7 @@ namespace Mono.Linker.Dataflow
 
 		public MethodDefinition MethodRepresented { get; private set; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -786,7 +790,7 @@ namespace Mono.Linker.Dataflow
 
 		public string Contents { get; private set; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -810,14 +814,19 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	abstract class LeafValueWithDynamicallyAccessedMemberNode : LeafValueNode
 	{
-		public IMetadataTokenProvider SourceContext { get; protected set; }
+		public LeafValueWithDynamicallyAccessedMemberNode (IMetadataTokenProvider sourceContext)
+		{
+			SourceContext = sourceContext;
+		}
+
+		public IMetadataTokenProvider SourceContext { get; private set; }
 
 		/// <summary>
 		/// The bitfield of dynamically accessed member types the node guarantees
 		/// </summary>
 		public DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; protected set; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -833,18 +842,18 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodParameterValue (TypeDefinition staticType, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
+		public MethodParameterValue (TypeDefinition? staticType, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
+			: base (sourceContext)
 		{
 			Kind = ValueNodeKind.MethodParameter;
 			StaticType = staticType;
 			ParameterIndex = parameterIndex;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			SourceContext = sourceContext;
 		}
 
 		public int ParameterIndex { get; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -870,6 +879,7 @@ namespace Mono.Linker.Dataflow
 	class AnnotatedStringValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
 		public AnnotatedStringValue (IMetadataTokenProvider sourceContext, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: base (sourceContext)
 		{
 			Kind = ValueNodeKind.AnnotatedString;
 
@@ -877,10 +887,9 @@ namespace Mono.Linker.Dataflow
 			StaticType = null;
 
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			SourceContext = sourceContext;
 		}
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			return base.Equals (other);
 		}
@@ -901,15 +910,15 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodReturnValue (TypeDefinition staticType, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
+		public MethodReturnValue (TypeDefinition? staticType, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
+			: base (sourceContext)
 		{
 			Kind = ValueNodeKind.MethodReturn;
 			StaticType = staticType;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			SourceContext = sourceContext;
 		}
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			return base.Equals (other);
 		}
@@ -991,7 +1000,7 @@ namespace Mono.Linker.Dataflow
 			throw new InvalidOperationException ();
 		}
 
-		public static ValueNode MergeValues (ValueNode one, ValueNode two)
+		public static ValueNode? MergeValues (ValueNode? one, ValueNode? two)
 		{
 			if (one == null)
 				return two;
@@ -1012,7 +1021,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -1077,7 +1086,7 @@ namespace Mono.Linker.Dataflow
 
 		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
 		{
-			HashSet<string> names = null;
+			HashSet<string>? names = null;
 
 			foreach (ValueNode nameStringValue in NameString.UniqueValuesInternal) {
 				if (nameStringValue.Kind == ValueNodeKind.KnownString) {
@@ -1112,7 +1121,7 @@ namespace Mono.Linker.Dataflow
 				yield return UnknownValue.Instance;
 		}
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -1140,18 +1149,18 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class LoadFieldValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public LoadFieldValue (TypeDefinition staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public LoadFieldValue (TypeDefinition? staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: base (fieldToLoad)
 		{
 			Kind = ValueNodeKind.LoadField;
 			StaticType = staticType;
 			Field = fieldToLoad;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			SourceContext = fieldToLoad;
 		}
 
 		public FieldDefinition Field { get; private set; }
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -1193,7 +1202,7 @@ namespace Mono.Linker.Dataflow
 			return HashCode.Combine (Kind, Value);
 		}
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -1215,7 +1224,7 @@ namespace Mono.Linker.Dataflow
 		/// <summary>
 		/// Constructs an array value of the given size
 		/// </summary>
-		public ArrayValue (ValueNode size, TypeReference elementType)
+		public ArrayValue (ValueNode? size, TypeReference elementType)
 		{
 			Kind = ValueNodeKind.Array;
 
@@ -1242,7 +1251,7 @@ namespace Mono.Linker.Dataflow
 			return HashCode.Combine (Kind, Size);
 		}
 
-		public override bool Equals (ValueNode other)
+		public override bool Equals (ValueNode? other)
 		{
 			if (!base.Equals (other))
 				return false;
@@ -1276,14 +1285,14 @@ namespace Mono.Linker.Dataflow
 		{
 			if (index == 0) return Size;
 			if (index - 1 <= IndexValues.Count)
-				return IndexValues.Values.ElementAt (index - 1).Value;
+				return IndexValues.Values.ElementAt (index - 1).Value!;
 
 			throw new InvalidOperationException ();
 		}
 	}
 
 	#region ValueNode Collections
-	public class ValueNodeList : List<ValueNode>
+	public class ValueNodeList : List<ValueNode?>
 	{
 		public ValueNodeList ()
 		{
@@ -1304,7 +1313,7 @@ namespace Mono.Linker.Dataflow
 			return HashUtils.CalcHashCodeEnumerable (this);
 		}
 
-		public override bool Equals (object other)
+		public override bool Equals (object? other)
 		{
 			if (!(other is ValueNodeList otherList))
 				return false;
@@ -1313,7 +1322,7 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			for (int i = 0; i < Count; i++) {
-				if (!otherList[i].Equals (this[i]))
+				if (!(otherList[i]?.Equals (this[i]) ?? (this[i] is null)))
 					return false;
 			}
 			return true;
@@ -1327,7 +1336,7 @@ namespace Mono.Linker.Dataflow
 			return HashUtils.CalcHashCodeEnumerable (this);
 		}
 
-		public override bool Equals (object other)
+		public override bool Equals (object? other)
 		{
 			if (!(other is ValueNodeHashSet otherSet))
 				return false;
@@ -1351,7 +1360,7 @@ namespace Mono.Linker.Dataflow
 
 	static class HashUtils
 	{
-		public static int CalcHashCodeEnumerable<T> (IEnumerable<T> list) where T : class
+		public static int CalcHashCodeEnumerable<T> (IEnumerable<T> list) where T : class?
 		{
 			HashCode hashCode = new HashCode ();
 			foreach (var item in list)
@@ -1362,7 +1371,7 @@ namespace Mono.Linker.Dataflow
 
 	public struct ValueBasicBlockPair
 	{
-		public ValueNode Value;
+		public ValueNode? Value;
 		public int BasicBlockIndex;
 	}
 }

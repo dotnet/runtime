@@ -229,6 +229,9 @@ namespace Mono.Linker.Steps
 				break;
 			}
 
+			if (rtype == null)
+				return null;
+
 			switch (rtype.MetadataType) {
 			case MetadataType.Boolean:
 				if (value is int bintValue && bintValue == 1)

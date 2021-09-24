@@ -111,17 +111,17 @@ public class C
     [RequiresUnreferencedCodeAttribute(""message"")]
     public int M1() => 0;
 
-    [RequiresUnreferencedCode(""Calls M1"")]
+    [RequiresUnreferencedCode(""Calls C.M1()"")]
     int M2() => M1();
 }
 class D
 {
-    [RequiresUnreferencedCode(""Calls M1"")]
+    [RequiresUnreferencedCode(""Calls C.M1()"")]
     public int M3(C c) => c.M1();
 
     public class E
     {
-        [RequiresUnreferencedCode(""Calls M1"")]
+        [RequiresUnreferencedCode(""Calls C.M1()"")]
         public int M4(C c) => c.M1();
     }
 }
@@ -221,10 +221,10 @@ public class C
     [RequiresUnreferencedCodeAttribute(""message"")]
     public int M1() => 0;
 
-    [RequiresUnreferencedCode(""Calls Wrapper"")]
+    [RequiresUnreferencedCode(""Calls Wrapper()"")]
     Action M2()
     {
-        [global::System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute(""Calls M1"")] void Wrapper () => M1();
+        [global::System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute(""Calls C.M1()"")] void Wrapper () => M1();
         return Wrapper;
     }
 }";
@@ -915,6 +915,54 @@ class C
 	{
 		dynamic dynamicField = ""Some string"";
 		Console.WriteLine (dynamicField);
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+		}
+
+		[Fact]
+		public Task TestMakeGenericMethodUsage ()
+		{
+			var source = @"
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
+class C
+{
+	static void M1 (MethodInfo methodInfo)
+	{
+		methodInfo.MakeGenericMethod (typeof (C));
+	}
+
+	[RequiresUnreferencedCode (""Message from RUC"")]
+	static void M2 (MethodInfo methodInfo)
+	{
+		methodInfo.MakeGenericMethod (typeof (C));
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+		}
+
+		[Fact]
+		public Task TestMakeGenericTypeUsage ()
+		{
+			var source = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+class C
+{
+	static void M1 (Type t)
+	{
+		typeof (Nullable<>).MakeGenericType (typeof (C));
+	}
+
+	[RequiresUnreferencedCode (""Message from RUC"")]
+	static void M2 (Type t)
+	{
+		typeof (Nullable<>).MakeGenericType (typeof (C));
 	}
 }";
 

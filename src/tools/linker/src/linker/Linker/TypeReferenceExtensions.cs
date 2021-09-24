@@ -180,6 +180,8 @@ namespace Mono.Linker
 					return genericParameter;
 
 				var elementType = resolver.TryResolve (genericInstanceProvider.ElementType);
+				if (elementType == null)
+					return null;
 				var parameter = elementType.GenericParameters.Single (p => p == genericParameter);
 				return genericInstanceProvider.GenericArguments[parameter.Position];
 			}

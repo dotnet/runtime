@@ -25,6 +25,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+#nullable enable
 
 using System;
 using System.Collections.Generic;
@@ -411,9 +412,9 @@ namespace Mono.Linker
 			return MemberActions.TryGetFieldUserValue (field, out value);
 		}
 
-		public HashSet<EmbeddedResource> GetResourcesToRemove (AssemblyDefinition assembly)
+		public HashSet<EmbeddedResource>? GetResourcesToRemove (AssemblyDefinition assembly)
 		{
-			if (resources_to_remove.TryGetValue (assembly, out HashSet<EmbeddedResource> resources))
+			if (resources_to_remove.TryGetValue (assembly, out HashSet<EmbeddedResource>? resources))
 				return resources;
 
 			return null;
@@ -421,7 +422,7 @@ namespace Mono.Linker
 
 		public void AddResourceToRemove (AssemblyDefinition assembly, EmbeddedResource resource)
 		{
-			if (!resources_to_remove.TryGetValue (assembly, out HashSet<EmbeddedResource> resources))
+			if (!resources_to_remove.TryGetValue (assembly, out HashSet<EmbeddedResource>? resources))
 				resources = resources_to_remove[assembly] = new HashSet<EmbeddedResource> ();
 
 			resources.Add (resource);
@@ -452,7 +453,7 @@ namespace Mono.Linker
 			return TypeMapInfo.GetBaseMethods (method);
 		}
 
-		public List<MethodDefinition> GetPreservedMethods (TypeDefinition type)
+		public List<MethodDefinition>? GetPreservedMethods (TypeDefinition type)
 		{
 			return GetPreservedMethods (type as IMemberDefinition);
 		}
@@ -467,7 +468,7 @@ namespace Mono.Linker
 			AddPreservedMethod (type as IMemberDefinition, method);
 		}
 
-		public List<MethodDefinition> GetPreservedMethods (MethodDefinition method)
+		public List<MethodDefinition>? GetPreservedMethods (MethodDefinition method)
 		{
 			return GetPreservedMethods (method as IMemberDefinition);
 		}
@@ -482,9 +483,9 @@ namespace Mono.Linker
 			AddPreservedMethod (key as IMemberDefinition, method);
 		}
 
-		List<MethodDefinition> GetPreservedMethods (IMemberDefinition definition)
+		List<MethodDefinition>? GetPreservedMethods (IMemberDefinition definition)
 		{
-			if (preserved_methods.TryGetValue (definition, out List<MethodDefinition> preserved))
+			if (preserved_methods.TryGetValue (definition, out List<MethodDefinition>? preserved))
 				return preserved;
 
 			return null;
@@ -514,19 +515,19 @@ namespace Mono.Linker
 
 		public void CloseSymbolReader (AssemblyDefinition assembly)
 		{
-			if (!symbol_readers.TryGetValue (assembly, out ISymbolReader symbolReader))
+			if (!symbol_readers.TryGetValue (assembly, out ISymbolReader? symbolReader))
 				return;
 
 			symbol_readers.Remove (assembly);
 			symbolReader.Dispose ();
 		}
 
-		public object GetCustomAnnotation (object key, IMetadataTokenProvider item)
+		public object? GetCustomAnnotation (object key, IMetadataTokenProvider item)
 		{
-			if (!custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object> slots))
+			if (!custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object>? slots))
 				return null;
 
-			if (!slots.TryGetValue (item, out object value))
+			if (!slots.TryGetValue (item, out object? value))
 				return null;
 
 			return value;
@@ -534,7 +535,7 @@ namespace Mono.Linker
 
 		public void SetCustomAnnotation (object key, IMetadataTokenProvider item, object value)
 		{
-			if (!custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object> slots)) {
+			if (!custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object>? slots)) {
 				slots = new Dictionary<IMetadataTokenProvider, object> ();
 				custom_annotations.Add (key, slots);
 			}
@@ -580,7 +581,7 @@ namespace Mono.Linker
 			return linkerAttributeInformation.GetAttributes<T> ();
 		}
 
-		public bool TryGetLinkerAttribute<T> (IMemberDefinition member, out T attribute) where T : Attribute
+		public bool TryGetLinkerAttribute<T> (IMemberDefinition member, [NotNullWhen (returnValue: true)] out T? attribute) where T : Attribute
 		{
 			var attributes = GetLinkerAttributes<T> (member);
 			if (attributes.Count () > 1) {
@@ -596,7 +597,7 @@ namespace Mono.Linker
 		/// </summary>
 		/// <remarks>Unlike <see cref="IsMethodInRequiresUnreferencedCodeScope(MethodDefinition)"/> only static methods 
 		/// and .ctors are reported as requiring unreferenced code when the declaring type has RUC on it.</remarks>
-		internal bool DoesMethodRequireUnreferencedCode (MethodDefinition method, out RequiresUnreferencedCodeAttribute attribute)
+		internal bool DoesMethodRequireUnreferencedCode (MethodDefinition method, [NotNullWhen (returnValue: true)] out RequiresUnreferencedCodeAttribute? attribute)
 		{
 			if (method.IsStaticConstructor ()) {
 				attribute = null;
@@ -628,7 +629,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		internal bool DoesFieldRequireUnreferencedCode (FieldDefinition field, out RequiresUnreferencedCodeAttribute attribute)
+		internal bool DoesFieldRequireUnreferencedCode (FieldDefinition field, [NotNullWhen (returnValue: true)] out RequiresUnreferencedCodeAttribute? attribute)
 		{
 			if (!field.IsStatic || field.DeclaringType is null) {
 				attribute = null;
@@ -638,7 +639,7 @@ namespace Mono.Linker
 			return TryGetLinkerAttribute (field.DeclaringType, out attribute);
 		}
 
-		internal bool DoesMemberRequireUnreferencedCode (IMemberDefinition member, out RequiresUnreferencedCodeAttribute attribute)
+		internal bool DoesMemberRequireUnreferencedCode (IMemberDefinition member, [NotNullWhen (returnValue: true)] out RequiresUnreferencedCodeAttribute? attribute)
 		{
 			attribute = null;
 			return member switch {

@@ -780,7 +780,7 @@ namespace Mono.Linker
 				context.LogError ($"{e.Message}", 1040);
 			} catch (Exception) {
 				// Unhandled exceptions are usually linker bugs. Ask the user to report it.
-				context.LogError ($"IL Trimmer has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues", 1012);
+				context.LogError ($"IL Trimmer has encountered an unexpected error. Please report the issue at https://github.com/dotnet/linker/issues", 1012);
 				// Don't swallow the exception and exit code - rethrow it and let the surrounding tooling decide what to do.
 				// The stack trace will go to stderr, and the MSBuild task will surface it with High importance.
 				throw;
@@ -958,7 +958,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		static IStep FindStep (Pipeline pipeline, string name)
+		protected virtual IStep FindStep (Pipeline pipeline, string name)
 		{
 			foreach (IStep step in pipeline.GetSteps ()) {
 				Type t = step.GetType ();
@@ -1208,10 +1208,9 @@ namespace Mono.Linker
 
 		protected virtual LinkContext GetDefaultContext (Pipeline pipeline, ILogger logger)
 		{
-			return new LinkContext (pipeline, logger ?? new ConsoleLogger ()) {
+			return new LinkContext (pipeline, logger ?? new ConsoleLogger (), "output") {
 				TrimAction = AssemblyAction.Link,
 				DefaultAction = AssemblyAction.Link,
-				OutputDirectory = "output",
 			};
 		}
 
@@ -1331,7 +1330,7 @@ namespace Mono.Linker
 		static void About ()
 		{
 			Console.WriteLine ("For more information, visit the project Web site");
-			Console.WriteLine ("   https://github.com/mono/linker");
+			Console.WriteLine ("   https://github.com/dotnet/linker");
 		}
 
 		static Pipeline GetStandardPipeline ()

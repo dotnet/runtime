@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="IL2060" xml:space="preserve">
-    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</value>
-  </data>
   <data name="IL2067" xml:space="preserve">
     <value>'{0}' argument does not satisfy {4} in call to '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
   </data>

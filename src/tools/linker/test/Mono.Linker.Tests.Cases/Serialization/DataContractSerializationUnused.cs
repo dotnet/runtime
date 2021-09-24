@@ -7,10 +7,8 @@ namespace Mono.Linker.Tests.Cases.Serialization
 {
 	[Reference ("System.Runtime.Serialization.dll")]
 	[Reference ("System.Runtime.Serialization.Xml.dll")]
-	[Reference ("System.Private.DataContractSerialization.dll")]
 	[Reference ("System.Runtime.Serialization.Primitives.dll")]
 	[Reference ("System.Xml.XmlSerializer.dll")]
-	[Reference ("System.Private.Xml.dll")]
 	public class DataContractSerializationUnused
 	{
 		public static void Main ()

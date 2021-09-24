@@ -64,8 +64,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 			if (!expectedWarningCode.StartsWith ("IL"))
 				return;
 
-			if (args.TryGetValue ("GlobalAnalysisOnly", out var globalAnalysisOnly) &&
-				globalAnalysisOnly is LiteralExpressionSyntax { Token: { Value: true } })
+			if (args.TryGetValue ("ProducedBy", out var producedBy) &&
+				producedBy is MemberAccessExpressionSyntax memberAccessExpression &&
+				memberAccessExpression.Name is IdentifierNameSyntax identifierNameSyntax &&
+				identifierNameSyntax.Identifier.ValueText == "Trimmer")
 				return;
 
 			List<string> expectedMessages = args

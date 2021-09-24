@@ -20,15 +20,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual LinkedTestCaseResult Run (TestCase testCase)
 		{
 			using (var fullTestCaseAssemblyDefinition = AssemblyDefinition.ReadAssembly (testCase.OriginalTestCaseAssemblyPath.ToString ())) {
-				var metadataProvider = _factory.CreateMetadataProvider (testCase, fullTestCaseAssemblyDefinition);
+				var compilationMetadataProvider = _factory.CreateCompilationMetadataProvider (testCase, fullTestCaseAssemblyDefinition);
 
-				if (metadataProvider.IsIgnored (out string ignoreReason))
+				if (compilationMetadataProvider.IsIgnored (out string ignoreReason))
 					Assert.Ignore (ignoreReason);
 
-				var sandbox = Sandbox (testCase, metadataProvider);
-				var compilationResult = Compile (sandbox, metadataProvider);
-				PrepForLink (sandbox, compilationResult);
-				return Link (testCase, sandbox, compilationResult, metadataProvider);
+				var sandbox = Sandbox (testCase, compilationMetadataProvider);
+				var compilationResult = Compile (sandbox, compilationMetadataProvider);
+				using (var expectationsAssemblyDefinition = AssemblyDefinition.ReadAssembly (compilationResult.ExpectationsAssemblyPath.ToString ())) {
+					var metadataProvider = _factory.CreateMetadataProvider (testCase, expectationsAssemblyDefinition);
+
+					sandbox.PopulateFromExpectations (metadataProvider);
+
+					PrepForLink (sandbox, compilationResult);
+					return Link (testCase, sandbox, compilationResult, metadataProvider);
+				}
 			}
 		}
 
@@ -38,14 +44,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return Link (result.TestCase, result.Sandbox, result.CompilationResult, result.MetadataProvider);
 		}
 
-		private TestCaseSandbox Sandbox (TestCase testCase, TestCaseMetadaProvider metadataProvider)
+		private TestCaseSandbox Sandbox (TestCase testCase, TestCaseCompilationMetadataProvider metadataProvider)
 		{
 			var sandbox = _factory.CreateSandbox (testCase);
 			sandbox.Populate (metadataProvider);
 			return sandbox;
 		}
 
-		private ManagedCompilationResult Compile (TestCaseSandbox sandbox, TestCaseMetadaProvider metadataProvider)
+		private ManagedCompilationResult Compile (TestCaseSandbox sandbox, TestCaseCompilationMetadataProvider metadataProvider)
 		{
 			var inputCompiler = _factory.CreateCompiler (sandbox, metadataProvider);
 			var expectationsCompiler = _factory.CreateCompiler (sandbox, metadataProvider);
@@ -90,7 +96,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 		}
 
-		private LinkedTestCaseResult Link (TestCase testCase, TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TestCaseMetadaProvider metadataProvider)
+		private LinkedTestCaseResult Link (TestCase testCase, TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TestCaseMetadataProvider metadataProvider)
 		{
 			var linker = _factory.CreateLinker ();
 			var linkerCustomizations = CustomizeLinker (linker, metadataProvider);
@@ -105,7 +111,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, logger, linkerCustomizations);
 		}
 
-		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)
+		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, LinkerArgumentBuilder builder, TestCaseMetadataProvider metadataProvider)
 		{
 			var caseDefinedOptions = metadataProvider.GetLinkerOptions (sandbox.InputDirectory);
 
@@ -130,7 +136,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
 
-		protected virtual LinkerCustomizations CustomizeLinker (LinkerDriver linker, TestCaseMetadaProvider metadataProvider)
+		protected virtual LinkerCustomizations CustomizeLinker (LinkerDriver linker, TestCaseMetadataProvider metadataProvider)
 		{
 			LinkerCustomizations customizations = new LinkerCustomizations ();
 

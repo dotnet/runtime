@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Linker.Steps;
 
@@ -237,7 +238,7 @@ namespace Mono.Linker.Dataflow
 			var baseType = _context.TryResolve (type.BaseType);
 			if (baseType != null) {
 				var baseAnnotation = GetCachedInfoForTypeInHierarchy (baseType);
-				var annotationToApplyToBase = ReflectionMethodBodyScanner.GetMissingMemberTypes (annotation, baseAnnotation.annotation);
+				var annotationToApplyToBase = Annotations.GetMissingMemberTypes (annotation, baseAnnotation.annotation);
 
 				// Apply any annotations that didn't exist on the base type to the base type.
 				// This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
