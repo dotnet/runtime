@@ -34,7 +34,7 @@ namespace Microsoft.Win32.SafeHandles
                 // of converting DOS to NT file paths (RtlDosPathNameToRelativeNtPathName_U_WithStatus is not documented)
                 SafeFileHandle fileHandle = CreateFile(fullPath, mode, access, share, options);
 
-                if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode, fileHandle))
+                if (preallocationSize > 0)
                 {
                     Preallocate(fullPath, preallocationSize, fileHandle);
                 }
@@ -108,18 +108,33 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe void Preallocate(string fullPath, long preallocationSize, SafeFileHandle fileHandle)
         {
-            // preallocationSize must be ignored for non-seekable files, unsupported file systems
-            // and other failures other than ERROR_DISK_FULL and ERROR_FILE_TOO_LARGE
-            if (!FileStreamHelpers.TrySetFileLength(fileHandle, preallocationSize, out int errorCode)
-                && errorCode == Interop.Errors.ERROR_DISK_FULL || errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE)
+            var allocationInfo = new Interop.Kernel32.FILE_ALLOCATION_INFO
             {
-                // Windows does not modify the file size if the request can't be satisfied in atomic way.
-                // posix_fallocate (Unix) implementation might consume all available disk space and fail after that.
-                // To ensure that the behaviour is the same for every OS (no incomplete or empty file), we close the handle and delete the file.
-                fileHandle.Dispose();
-                Interop.Kernel32.DeleteFile(fullPath);
+                AllocationSize = preallocationSize
+            };
 
-                throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL ? SR.IO_DiskFull_Path_AllocationSize : SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                fileHandle,
+                Interop.Kernel32.FileAllocationInfo,
+                &allocationInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_ALLOCATION_INFO)))
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                // Only throw for errors that indicate there is not enough space.
+                if (errorCode == Interop.Errors.ERROR_DISK_FULL ||
+                    errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE)
+                {
+                    fileHandle.Dispose();
+
+                    // Delete the file we've created.
+                    Interop.Kernel32.DeleteFile(fullPath);
+
+                    throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL
+                                                        ? SR.IO_DiskFull_Path_AllocationSize
+                                                        : SR.IO_FileTooLarge_Path_AllocationSize,
+                                            fullPath, preallocationSize));
+                }
             }
         }
 
