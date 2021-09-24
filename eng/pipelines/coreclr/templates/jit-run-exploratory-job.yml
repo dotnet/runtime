@@ -92,7 +92,7 @@ jobs:
     - ${{ parameters.steps }}
   
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup)
-      displayName: ${{ format('Antigen setup ({0}-{1})', parameters.osGroup, , parameters.archType) }}
+      displayName: ${{ format('Antigen setup ({0}-{1})', parameters.osGroup, parameters.archType) }}
 
       # Run exploratory tool in helix
     - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
