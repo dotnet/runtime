@@ -6782,7 +6782,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 //
 // Arguments:
 //    callee - The callee to check
-//    failReason - If this method returns false, the reason why.
+//    failReason - If this method returns false, the reason why. Can be nullptr.
 //
 // Return Value:
 //    Returns true or false based on whether the callee can be fastTailCalled
@@ -6922,15 +6922,65 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     }
     calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
 
+    auto reportFastTailCallDecision = [&](const char* thisFailReason) {
+        if (failReason != nullptr)
+        {
+            *failReason = thisFailReason;
+        }
+
+#ifdef DEBUG
+        if ((JitConfig.JitReportFastTailCallDecisions()) == 1)
+        {
+            if (callee->gtCallType != CT_INDIRECT)
+            {
+                const char* methodName;
+
+                methodName = eeGetMethodFullName(callee->gtCallMethHnd);
+
+                printf("[Fast tailcall decision]: Caller: %s\n[Fast tailcall decision]: Callee: %s -- Decision: ",
+                       info.compFullName, methodName);
+            }
+            else
+            {
+                printf("[Fast tailcall decision]: Caller: %s\n[Fast tailcall decision]: Callee: IndirectCall -- "
+                       "Decision: ",
+                       info.compFullName);
+            }
+
+            if (thisFailReason == nullptr)
+            {
+                printf("Will fast tailcall");
+            }
+            else
+            {
+                printf("Will not fast tailcall (%s)", thisFailReason);
+            }
+
+            printf(" (CallerArgStackSize: %d, CalleeArgStackSize: %d)\n\n", callerArgStackSize, calleeArgStackSize);
+        }
+        else
+        {
+            if (thisFailReason == nullptr)
+            {
+                JITDUMP("[Fast tailcall decision]: Will fast tailcall\n");
+            }
+            else
+            {
+                JITDUMP("[Fast tailcall decision]: Will not fast tailcall (%s)\n", thisFailReason);
+            }
+        }
+#endif // DEBUG
+    };
+
     if (!opts.compFastTailCalls)
     {
-        *failReason = "Configuration doesn't allow fast tail calls";
+        reportFastTailCallDecision("Configuration doesn't allow fast tail calls");
         return false;
     }
 
     if (callee->IsStressTailCall())
     {
-        *failReason = "Fast tail calls are not performed under tail call stress";
+        reportFastTailCallDecision("Fast tail calls are not performed under tail call stress");
         return false;
     }
 
@@ -6950,14 +7000,14 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #if (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
     if (info.compIsVarArgs || callee->IsVarargs())
     {
-        *failReason = "Fast tail calls with varargs not supported on Windows ARM/ARM64";
+        reportFastTailCallDecision("Fast tail calls with varargs not supported on Windows ARM/ARM64");
         return false;
     }
 #endif // (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
 
     if (compLocallocUsed)
     {
-        *failReason = "Localloc used";
+        reportFastTailCallDecision("Localloc used");
         return false;
     }
 
@@ -6968,7 +7018,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // tail call.
     if (getNeedsGSSecurityCookie())
     {
-        *failReason = "GS Security cookie check required";
+        reportFastTailCallDecision("GS Security cookie check required");
         return false;
     }
 #endif
@@ -6976,7 +7026,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // If the NextCallReturnAddress intrinsic is used we should do normal calls.
     if (info.compHasNextCallRetAddr)
     {
-        *failReason = "Uses NextCallReturnAddress intrinsic";
+        reportFastTailCallDecision("Uses NextCallReturnAddress intrinsic");
         return false;
     }
 
@@ -6986,7 +7036,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         // Otherwise go the slow route.
         if (info.compRetBuffArg == BAD_VAR_NUM)
         {
-            *failReason = "Callee has RetBuf but caller does not.";
+            reportFastTailCallDecision("Callee has RetBuf but caller does not.");
             return false;
         }
     }
@@ -6998,7 +7048,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // as non-interruptible for fast tail calls.
     if (calleeArgStackSize > callerArgStackSize)
     {
-        *failReason = "Not enough incoming arg space";
+        reportFastTailCallDecision("Not enough incoming arg space");
         return false;
     }
 
@@ -7007,44 +7057,17 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // as we need to keep our frame around.
     if (fgCallHasMustCopyByrefParameter(callee))
     {
-        *failReason = "Callee has a byref parameter";
+        reportFastTailCallDecision("Callee has a byref parameter");
         return false;
     }
 
-    *failReason = nullptr;
+    reportFastTailCallDecision(nullptr);
     return true;
 #else // FEATURE_FASTTAILCALL
-    *failReason = "Fast tailcalls are not supported on this platform";
+    if (failReason)
+        *failReason = "Fast tailcalls are not supported on this platform";
     return false;
 #endif
-}
-
-//------------------------------------------------------------------------
-// fgShouldFastTailCall: Do profitability checks for whether to do a fast tailcall.
-//
-// Arguments:
-//    call - The call to check
-//    failReason - If this method returns false, the reason why. Can be nullptr.
-//
-// Return Value:
-//    Returns true or false based on whether the callee can be fast tailcalled.
-//
-bool Compiler::fgShouldFastTailCall(GenTreeCall* call, const char** failReason)
-{
-#ifdef TARGET_AMD64
-    // Indirected R2R calls on x64 need indirection cell that is normally
-    // retrieved by disassembling caller instructions. If we tailcall, then we
-    // need to pass the indirection cell in a register which makes the call
-    // site larger.
-    if (call->IsR2RRelativeIndir())
-    {
-        *failReason = "Tailcall with R2R indirection cell requires extra argument that increases call site size";
-        return false;
-    }
-#endif
-
-    *failReason = nullptr;
-    return true;
 }
 
 //------------------------------------------------------------------------
@@ -7508,25 +7531,19 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
     const char* failReason      = nullptr;
     bool        canFastTailCall = fgCanFastTailCall(call, &failReason);
-    if (!canFastTailCall && call->IsImplicitTailCall())
-    {
-        // Implicit or opportunistic tail calls are always dispatched via fast tail call
-        // mechanism and never via tail call helper for perf.
-        failTailCall(failReason);
-        return nullptr;
-    }
-
-    if (call->IsImplicitTailCall() && !fgShouldFastTailCall(call, &failReason))
-    {
-        // Implicit tailcall is not profitable
-        failTailCall(failReason);
-        return nullptr;
-    }
 
     CORINFO_TAILCALL_HELPERS tailCallHelpers;
     bool                     tailCallViaJitHelper = false;
     if (!canFastTailCall)
     {
+        if (call->IsImplicitTailCall())
+        {
+            // Implicit or opportunistic tail calls are always dispatched via fast tail call
+            // mechanism and never via tail call helper for perf.
+            failTailCall(failReason);
+            return nullptr;
+        }
+
         assert(call->IsTailPrefixedCall());
         assert(call->tailCallInfo != nullptr);
 

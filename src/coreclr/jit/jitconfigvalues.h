@@ -122,6 +122,7 @@ CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables s
 CONFIG_INTEGER(JitNoUnroll, W("JitNoUnroll"), 0)
 CONFIG_INTEGER(JitOrder, W("JitOrder"), 0)
 CONFIG_INTEGER(JitQueryCurrentStaticFieldClass, W("JitQueryCurrentStaticFieldClass"), 1)
+CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions"), 0)
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
