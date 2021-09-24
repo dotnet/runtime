@@ -573,15 +573,9 @@ namespace Mono.Linker.Steps
 				assembly.MainModule.AssemblyReferences.Clear ();
 
 				var arc = new AssemblyReferencesCorrector (assembly);
-				return arc.Update ();
-			}
+				arc.Process ();
 
-			bool Update ()
-			{
-				base.Process ();
-				var ret = changedAnyScopes;
-				changedAnyScopes = false;
-				return ret;
+				return arc.changedAnyScopes;
 			}
 
 			protected override void ProcessTypeReference (TypeReference type)
