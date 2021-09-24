@@ -21,6 +21,7 @@ target_link_libraries(dotnet
 
 set_target_properties(dotnet PROPERTIES
     CMAKE_EXECUTABLE_SUFFIX ".js"
+    LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${SOURCE_DIR}/library_mono.js;${SOURCE_DIR}/binding_support.js;${SOURCE_DIR}/dotnet_support.js;${SYSTEM_NATIVE_DIR}/pal_random.js"
     LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DENABLE_NETCORE=1 --js-library ${SOURCE_DIR}/library_mono.js --js-library ${SOURCE_DIR}/binding_support.js --js-library ${SOURCE_DIR}/dotnet_support.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
