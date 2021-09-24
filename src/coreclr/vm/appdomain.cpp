@@ -2821,7 +2821,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         THROWS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFile));
-        PRECONDITION(pFile->IsSystem() || ::GetAppDomain()==this);
+        PRECONDITION(::GetAppDomain()==this);
         POSTCONDITION(CheckPointer(RETVAL));
         POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
@@ -2956,26 +2956,6 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
 
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
-
-    // We need to perform the early steps of loading CoreLib without a domain transition.  This is
-    // important for bootstrapping purposes - we need to get CoreLib at least partially loaded
-    // into a domain before we can run serialization code to do the transition.
-    //
-    // Note that we cannot do this in general for all assemblies, because some of the security computations
-    // require the managed exposed object, which must be created in the correct app domain.
-
-    if (this != GetAppDomain()
-        && pFile->GetFile()->IsSystem()
-        && targetLevel > FILE_LOAD_ALLOCATE)
-    {
-        // Re-call the routine with a limited load level. This will cause the first part of the load to
-        // get performed in the current app domain.
-
-        pLock->AddRef();
-        LoadDomainFile(pLock, targetLevel > FILE_LOAD_ALLOCATE ? FILE_LOAD_ALLOCATE : targetLevel);
-
-        // Now continue on to complete the rest of the load, if any.
-    }
 
     // Do a quick out check for the already loaded case.
     if (pLock->GetLoadLevel() >= targetLevel)
@@ -3246,7 +3226,6 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
     {
         PEFile * pManifestFile = pDomainAssembly->GetFile();
         if (pManifestFile &&
-            !pManifestFile->IsResource() &&
             pManifestFile->Equals(pFile))
         {
             // Caller already has PEAssembly, so we can give DomainAssembly away freely without added reference

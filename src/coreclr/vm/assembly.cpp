@@ -817,7 +817,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 
             // Note that we don't want to attempt a LoadModule if a GetModuleIfLoaded will
             // succeed, because it has a stronger contract.
-            Module *pModule = GetManifestModule()->GetModuleIfLoaded(mdLinkRef, TRUE, FALSE);
+            Module *pModule = GetManifestModule()->GetModuleIfLoaded(mdLinkRef);
 #ifdef DACCESS_COMPILE
             return pModule;
 #else
@@ -830,7 +830,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             // We should never get here in the GC case - the above should have succeeded.
             CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
-            DomainFile * pDomainModule = GetManifestModule()->LoadModule(::GetAppDomain(), mdLinkRef, FALSE, loadFlag!=Loader::Load);
+            DomainFile * pDomainModule = GetManifestModule()->LoadModule(::GetAppDomain(), mdLinkRef);
 
             if (pDomainModule == NULL)
                 RETURN NULL;
@@ -953,11 +953,11 @@ Module * Assembly::FindModuleByTypeRef(
                 // Either we're not supposed to load, or we're doing a GC or stackwalk
                 // in which case we shouldn't need to load.  So just look up the module
                 // and return what we find.
-                RETURN(pModule->LookupModule(tkType,FALSE));
+                RETURN(pModule->LookupModule(tkType));
             }
 
 #ifndef DACCESS_COMPILE
-            DomainFile * pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType, FALSE, loadFlag!=Loader::Load);
+            DomainFile * pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType, loadFlag!=Loader::Load);
             if (pActualDomainFile == NULL)
             {
                 RETURN NULL;
@@ -1056,7 +1056,7 @@ Module *Assembly::FindModuleByName(LPCSTR pszModuleName)
         ThrowHR(COR_E_UNAUTHORIZEDACCESS);
 
     if (this == SystemDomain::SystemAssembly())
-        RETURN m_pManifest->GetModuleIfLoaded(kFile, TRUE, TRUE);
+        RETURN m_pManifest->GetModuleIfLoaded(kFile);
     else
         RETURN m_pManifest->LoadModule(::GetAppDomain(), kFile)->GetModule();
 }

@@ -121,7 +121,7 @@ inline void PEFile::ValidateForExecution()
     //
     // Ensure platform is valid for execution
     //
-    if (!IsDynamic() && !IsResource())
+    if (!IsDynamic())
     {
         if (IsMarkedAsNoPlatform())
         {
@@ -249,17 +249,14 @@ inline BOOL PEFile::IsAssembly() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (m_flags & PEFILE_ASSEMBLY) != 0;
+    return true;
 }
 
 inline PTR_PEAssembly PEFile::AsAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (IsAssembly())
-        return dac_cast<PTR_PEAssembly>(this);
-    else
-        return dac_cast<PTR_PEAssembly>(nullptr);
+    return dac_cast<PTR_PEAssembly>(this);
 }
 
 inline BOOL PEFile::IsSystem() const
@@ -267,7 +264,7 @@ inline BOOL PEFile::IsSystem() const
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    return (m_flags & PEFILE_SYSTEM) != 0;
+    return m_isSystem;
 }
 
 inline BOOL PEFile::IsDynamic() const
@@ -276,21 +273,6 @@ inline BOOL PEFile::IsDynamic() const
     SUPPORTS_DAC;
 
     return m_identity == NULL;
-}
-
-inline BOOL PEFile::IsResource() const
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return FALSE;
-}
-
-inline BOOL PEFile::IsIStream() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return FALSE;
 }
 
 inline PEAssembly *PEFile::GetAssembly() const
@@ -316,7 +298,7 @@ inline BOOL PEFile::HasMetadata()
     }
     CONTRACTL_END;
 
-    return !IsResource();
+    return true;
 }
 
 inline IMDInternalImportHolder PEFile::GetMDImport()
@@ -334,7 +316,6 @@ inline IMDInternalImport* PEFile::GetPersistentMDImport()
     CONTRACT(IMDInternalImport *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(!IsResource());
         POSTCONDITION(CheckPointer(RETVAL));
         NOTHROW;
         GC_NOTRIGGER;
@@ -343,10 +324,7 @@ inline IMDInternalImport* PEFile::GetPersistentMDImport()
     CONTRACT_END;
 */
     SUPPORTS_DAC;
-#if !defined(__GNUC__)
 
-    _ASSERTE(!IsResource());
-#endif
 #ifdef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
     return DacGetMDImport(this, true);
@@ -363,7 +341,6 @@ inline IMDInternalImport *PEFile::GetMDImportWithRef()
     CONTRACT(IMDInternalImport *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(!IsResource());
         POSTCONDITION(CheckPointer(RETVAL));
         NOTHROW;
         GC_NOTRIGGER;
@@ -371,9 +348,7 @@ inline IMDInternalImport *PEFile::GetMDImportWithRef()
     }
     CONTRACT_END;
 */
-#if !defined(__GNUC__)
-    _ASSERTE(!IsResource());
-#endif
+
 #ifdef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
     return DacGetMDImport(this, true);
@@ -402,7 +377,6 @@ inline IMetaDataImport2 *PEFile::GetRWImporter()
     CONTRACT(IMetaDataImport2 *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(!IsResource());
         POSTCONDITION(CheckPointer(RETVAL));
         PRECONDITION(m_bHasPersistentMDImport);
         GC_NOTRIGGER;
@@ -424,7 +398,6 @@ inline IMetaDataEmit *PEFile::GetEmitter()
         INSTANCE_CHECK;
         MODE_ANY;
         GC_NOTRIGGER;
-        PRECONDITION(!IsResource());
         POSTCONDITION(CheckPointer(RETVAL));
         PRECONDITION(m_bHasPersistentMDImport);
         THROWS;
@@ -525,7 +498,7 @@ inline WORD PEFile::GetSubsystem()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsResource() || IsDynamic())
+    if (IsDynamic())
         return 0;
 
     return GetLoadedIL()->GetSubsystem();
@@ -539,7 +512,7 @@ inline mdToken PEFile::GetEntryPointToken(
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsResource() || IsDynamic())
+    if (IsDynamic())
         return mdTokenNil;
 
     _ASSERTE (!bAssumeLoaded || HasLoadedIL ());
@@ -553,7 +526,7 @@ inline BOOL PEFile::IsILOnly()
 
     CONTRACT_VIOLATION(ThrowsViolation|GCViolation|FaultViolation);
 
-    if (IsResource() || IsDynamic())
+    if (IsDynamic())
         return FALSE;
 
     return GetOpenedILimage()->IsILOnly();
@@ -563,7 +536,7 @@ inline BOOL PEFile::IsDll()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsResource() || IsDynamic())
+    if (IsDynamic())
         return TRUE;
 
     return GetOpenedILimage()->IsDll();
@@ -575,7 +548,6 @@ inline PTR_VOID PEFile::GetRvaField(RVA field)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckRvaField(field));
         PRECONDITION(CheckLoaded());
         NOTHROW;
@@ -598,7 +570,6 @@ inline CHECK PEFile::CheckRvaField(RVA field)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckLoaded());
         NOTHROW;
         GC_NOTRIGGER;
@@ -619,7 +590,6 @@ inline CHECK PEFile::CheckRvaField(RVA field, COUNT_T size)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckLoaded());
         NOTHROW;
         GC_NOTRIGGER;
@@ -646,11 +616,8 @@ inline BOOL PEFile::HasTls()
     }
     CONTRACTL_END;
 
-    // Resource modules do not contain TLS data.
-    if (IsResource())
-        return FALSE;
     // Dynamic modules do not contain TLS data.
-    else if (IsDynamic())
+    if (IsDynamic())
         return FALSE;
     // ILOnly modules do not contain TLS data.
     else if (IsILOnly())
@@ -723,7 +690,6 @@ inline const void *PEFile::GetInternalPInvokeTarget(RVA target)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckInternalPInvokeTarget(target));
         PRECONDITION(CheckLoaded());
         NOTHROW;
@@ -742,7 +708,6 @@ inline CHECK PEFile::CheckInternalPInvokeTarget(RVA target)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckLoaded());
         NOTHROW;
         GC_NOTRIGGER;
@@ -769,7 +734,7 @@ inline IMAGE_COR_VTABLEFIXUP *PEFile::GetVTableFixups(COUNT_T *pCount/*=NULL*/)
     }
     CONTRACT_END;
 
-    if (IsResource() || IsDynamic() || IsILOnly())
+    if (IsDynamic() || IsILOnly())
     {
         if (pCount != NULL)
             *pCount = 0;
@@ -785,7 +750,6 @@ inline void *PEFile::GetVTable(RVA rva)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckLoaded());
         PRECONDITION(!IsILOnly());
         PRECONDITION(GetLoadedIL()->CheckRva(rva));
@@ -806,7 +770,6 @@ inline HMODULE PEFile::GetIJWBase()
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckLoaded());
         PRECONDITION(!IsILOnly());
         NOTHROW;

@@ -597,8 +597,7 @@ void DomainFile::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!GetCurrentModule()->IsResource())
-        GetCurrentModule()->FixupVTables();
+    GetCurrentModule()->FixupVTables();
 }
 
 void DomainFile::FinishLoad()

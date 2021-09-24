@@ -639,7 +639,7 @@ void QCALLTYPE AssemblyNative::GetModules(QCall::AssemblyHandle pAssembly, BOOL 
     mdFile mdFile;
     while (pAssembly->GetMDImport()->EnumNext(&phEnum, &mdFile))
     {
-        DomainFile *pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile, fGetResourceModules, !fLoadIfNotFound);
+        DomainFile *pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile, !fLoadIfNotFound);
 
         if (pModule) {
             modules.Append(pModule);

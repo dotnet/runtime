@@ -140,12 +140,6 @@ protected:
 
 public:
     // ------------------------------------------------------------
-    // Generic PEFile - can be used to access metadata
-    // ------------------------------------------------------------
-
-    static PEFile *Open(PEImage *image);
-
-    // ------------------------------------------------------------
     // Identity
     // ------------------------------------------------------------
 
@@ -195,9 +189,7 @@ public:
     PTR_PEAssembly AsAssembly();
     BOOL IsSystem() const;
     BOOL IsDynamic() const;
-    BOOL IsResource() const;
-    BOOL IsIStream() const;
-    // Returns self (if assembly) or containing assembly (if module)
+    // Returns self 
     PEAssembly *GetAssembly() const;
 
     // ------------------------------------------------------------
@@ -221,7 +213,6 @@ public:
 
     LPCUTF8 GetSimpleName();
     HRESULT GetScopeName(LPCUTF8 * pszName);
-    BOOL IsStrongNameVerified();
     BOOL IsStrongNamed();
     const void *GetPublicKey(DWORD *pcbPK);
     ULONG GetHashAlgId();
@@ -331,25 +322,11 @@ public:
 
 protected:
     // ------------------------------------------------------------
-    // Internal constants
-    // ------------------------------------------------------------
-
-    enum
-    {
-        PEFILE_SYSTEM                 = 0x01,
-        PEFILE_ASSEMBLY               = 0x02,
-    };
-
-    // ------------------------------------------------------------
     // Internal routines
     // ------------------------------------------------------------
 
-#ifndef DACCESS_COMPILE
-    PEFile(PEImage *image);
-    virtual ~PEFile();
-#else
+    // just to make the DAC happy.
     virtual ~PEFile() {}
-#endif
 
     void OpenMDImport();
     void OpenMDImport_Unsafe();
@@ -395,7 +372,7 @@ protected:
     IMetaDataEmit           *m_pEmitter;
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
-    int                      m_flags;
+    bool                     m_isSystem;
 
 public:
 
@@ -576,7 +553,7 @@ class PEAssembly : public PEFile
         BINDER_SPACE::Assembly* pBindResultInfo,
         IMetaDataEmit *pEmit,
         PEFile *creator,
-        BOOL system,
+        BOOL isSystem,
         PEImage * pPEImageIL = NULL,
         BINDER_SPACE::Assembly * pHostAssembly = NULL
         );

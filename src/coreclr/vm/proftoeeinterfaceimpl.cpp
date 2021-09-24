@@ -4020,11 +4020,6 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
         dwRet |= COR_PRF_MODULE_COLLECTIBLE;
     }
 
-    if (pModule->IsResource())
-    {
-        dwRet |= COR_PRF_MODULE_RESOURCE;
-    }
-
     return dwRet;
 }
 
@@ -4242,14 +4237,6 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     if (pModule->IsBeingUnloaded())
     {
         return CORPROF_E_DATAINCOMPLETE;
-    }
-
-    // Make sure we can get the importer first
-    if (pModule->IsResource())
-    {
-        if (ppOut)
-            *ppOut = NULL;
-        return S_FALSE;
     }
 
     // Decide which type of open mode we are in to see which you require.
@@ -4482,7 +4469,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
         // Yay!
         MODE_ANY;
 
-        // Module::SetDynamicIL & PEFile::CheckLoaded & PEFile::GetEmitter take locks
+        // Module::SetDynamicIL & PEFile::GetEmitter take locks
         CAN_TAKE_LOCK;
 
     }

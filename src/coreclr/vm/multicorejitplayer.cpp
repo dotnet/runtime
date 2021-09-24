@@ -396,11 +396,6 @@ bool MulticoreJitManager::ModuleHasNoCode(Module * pModule)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (pModule->IsResource())
-    {
-        return true;
-    }
-
     IMDInternalImport * pImport = pModule->GetMDImport();
 
     if (pImport != NULL)

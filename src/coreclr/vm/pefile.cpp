@@ -32,107 +32,6 @@
 // PEFile class - this is an abstract base class for PEAssembly
 // ================================================================================
 
-PEFile::PEFile(PEImage *identity) :
-#if _DEBUG
-    m_pDebugName(NULL),
-#endif
-    m_identity(NULL),
-    m_openedILimage(NULL),
-    m_MDImportIsRW_Debugger_Use_Only(FALSE),
-    m_bHasPersistentMDImport(FALSE),
-    m_pMDImport(NULL),
-    m_pImporter(NULL),
-    m_pEmitter(NULL),
-    m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
-    m_refCount(1),
-    m_flags(0),
-    m_pHostAssembly(nullptr),
-    m_pFallbackBinder(nullptr)
-{
-    CONTRACTL
-    {
-        CONSTRUCTOR_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (identity)
-    {
-        identity->AddRef();
-        m_identity = identity;
-
-        if(identity->IsOpened())
-        {
-            //already opened, prepopulate
-            identity->AddRef();
-            m_openedILimage = identity;
-        }
-    }
-
-
-}
-
-
-
-PEFile::~PEFile()
-{
-    CONTRACTL
-    {
-        DESTRUCTOR_CHECK;
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    ReleaseMetadataInterfaces(TRUE);
-
-
-    if (m_openedILimage != NULL)
-        m_openedILimage->Release();
-    if (m_identity != NULL)
-        m_identity->Release();
-    if (m_pMetadataLock)
-        delete m_pMetadataLock;
-
-    if (m_pHostAssembly != NULL)
-    {
-        m_pHostAssembly->Release();
-    }
-}
-
-/* static */
-PEFile *PEFile::Open(PEImage *image)
-{
-    CONTRACT(PEFile *)
-    {
-        PRECONDITION(image != NULL);
-        PRECONDITION(image->CheckFormat());
-        POSTCONDITION(RETVAL != NULL);
-        POSTCONDITION(!RETVAL->IsAssembly());
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    PEFile *pFile = new PEFile(image);
-
-    if (image->HasNTHeaders() && image->HasCorHeader())
-        pFile->OpenMDImport_Unsafe(); //no one else can see the object yet
-
-#if _DEBUG
-    pFile->m_debugName = image->GetPath();
-    pFile->m_debugName.Normalize();
-    pFile->m_pDebugName = pFile->m_debugName;
-#endif
-
-    RETURN pFile;
-}
-
 //-----------------------------------------------------------------------------------------------------
 // Catch attempts to load x64 assemblies on x86, etc.
 //-----------------------------------------------------------------------------------------------------
@@ -142,9 +41,6 @@ static void ValidatePEFileMachineType(PEFile *peFile)
 
     if (peFile->IsDynamic())
         return;    // PEFiles for ReflectionEmit assemblies don't cache the machine type.
-
-    if (peFile->IsResource())
-        return;    // PEFiles for resource assemblies don't cache the machine type.
 
     DWORD peKind;
     DWORD actualMachineType;
@@ -198,13 +94,6 @@ void PEFile::LoadLibrary()
     }
 
     // Note that we may be racing other threads here, in the case of domain neutral files
-
-    // Resource images are always flat.
-    if (IsResource())
-    {
-        GetILimage()->LoadNoMetaData();
-        RETURN;
-    }
 
 #if !defined(TARGET_64BIT)
     if (!GetILimage()->Has32BitNTHeaders())
@@ -514,7 +403,6 @@ TADDR PEFile::GetIL(RVA il)
         INSTANCE_CHECK;
         PRECONDITION(il != 0);
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
 #ifndef DACCESS_COMPILE
         PRECONDITION(CheckLoaded());
 #endif
@@ -930,7 +818,7 @@ void PEFile::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsResource() || IsDynamic())
+    if (IsDynamic())
     {
         if (pdwKind)
             *pdwKind = 0;
@@ -973,13 +861,9 @@ PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
                 PEFile *creator,
-                BOOL system,
+                BOOL isSystem,
                 PEImage * pPEImageIL /*= NULL*/,
                 BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
-
-  : PEFile(pBindResultInfo ? pBindResultInfo->GetPEImage()
-                           : pPEImageIL),
-    m_creator(clr::SafeAddRef(creator))
 {
     CONTRACTL
     {
@@ -991,9 +875,38 @@ PEAssembly::PEAssembly(
     }
     CONTRACTL_END;
 
-    m_flags |= PEFILE_ASSEMBLY;
-    if (system)
-        m_flags |= PEFILE_SYSTEM;
+    m_creator = clr::SafeAddRef(creator);
+#if _DEBUG
+    m_pDebugName = NULL;
+#endif
+    m_identity = NULL;
+    m_openedILimage = NULL;
+    m_MDImportIsRW_Debugger_Use_Only = FALSE;
+    m_bHasPersistentMDImport = FALSE;
+    m_pMDImport = NULL;
+    m_pImporter = NULL;
+    m_pEmitter = NULL;
+    m_pMetadataLock = ::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT);
+    m_refCount = 1;
+    m_isSystem = isSystem;
+    m_pHostAssembly = nullptr;
+    m_pFallbackBinder = nullptr;
+
+    PEImage* identity = pBindResultInfo ? pBindResultInfo->GetPEImage() :
+                                          pPEImageIL;
+
+    if (identity)
+    {
+        identity->AddRef();
+        m_identity = identity;
+
+        if (identity->IsOpened())
+        {
+            //already opened, prepopulate
+            identity->AddRef();
+            m_openedILimage = identity;
+        }
+    }
 
     // We require a mapping for the file.
     EnsureImageOpened();
@@ -1082,6 +995,19 @@ PEAssembly::~PEAssembly()
     if (m_creator != NULL)
         m_creator->Release();
 
+    ReleaseMetadataInterfaces(TRUE);
+
+    if (m_openedILimage != NULL)
+        m_openedILimage->Release();
+
+    if (m_identity != NULL)
+        m_identity->Release();
+
+    if (m_pMetadataLock)
+        delete m_pMetadataLock;
+
+    if (m_pHostAssembly != NULL)
+        m_pHostAssembly->Release();
 }
 
 /* static */

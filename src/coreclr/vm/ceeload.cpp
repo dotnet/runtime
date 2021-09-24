@@ -214,7 +214,7 @@ void Module::UpdateNewlyAddedTypes()
     // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
     // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
     // in memory hashtable as usual.
-    if (!IsResource() && GetAvailableClassHash() == NULL)
+    if (GetAvailableClassHash() == NULL)
     {
         // This call will populate the hash tables with anything that is in metadata already.
         GetClassLoader()->LazyPopulateCaseSensitiveHashTablesDontHaveLock();
@@ -266,12 +266,9 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
     if (SetTransientFlagInterlocked(IS_PROFILER_NOTIFIED))
     {
         // Record how many types are already present
-        if (!IsResource())
-        {
-            m_dwTypeCount = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
-            m_dwExportedTypeCount = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
-            m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
-        }
+        m_dwTypeCount = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
+        m_dwExportedTypeCount = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
+        m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
 
         BOOL profilerCallbackHappened = FALSE;
         // Notify the profiler, this may cause metadata to be updated
@@ -294,7 +291,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
 
         // If there are more types than before, add these new types to the
         // assembly
-        if (profilerCallbackHappened && !IsResource())
+        if (profilerCallbackHappened)
         {
             UpdateNewlyAddedTypes();
         }
@@ -486,62 +483,56 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
-    if (!IsResource())
+    if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
-        if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
+        m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
+        if (m_pNativeImage != NULL)
         {
-            m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
-            if (m_pNativeImage != NULL)
+            m_NativeMetadataAssemblyRefMap = m_pNativeImage->GetManifestMetadataAssemblyRefMap();
+        }
+        else
+        {
+            // For composite images, manifest metadata gets loaded as part of the native image
+            COUNT_T cMeta = 0;
+            if (GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
             {
-                m_NativeMetadataAssemblyRefMap = m_pNativeImage->GetManifestMetadataAssemblyRefMap();
-            }
-            else
-            {
-                // For composite images, manifest metadata gets loaded as part of the native image
-                COUNT_T cMeta = 0;
-                if (GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
-                {
-                    // Load the native assembly import
-                    GetNativeAssemblyImport(TRUE /* loadAllowed */);
-                }
+                // Load the native assembly import
+                GetNativeAssemblyImport(TRUE /* loadAllowed */);
             }
         }
     }
 #endif
 
-    // Initialize the instance fields that we need for all non-Resource Modules
-    if (!IsResource())
+    // Initialize the instance fields that we need for all Modules
+    if (m_pAvailableClasses == NULL && !IsReadyToRun())
     {
-        if (m_pAvailableClasses == NULL && !IsReadyToRun())
+        m_pAvailableClasses = EEClassHashTable::Create(this,
+            GetAssembly()->IsCollectible() ? AVAILABLE_CLASSES_HASH_BUCKETS_COLLECTIBLE : AVAILABLE_CLASSES_HASH_BUCKETS,
+                                                        FALSE /* bCaseInsensitive */, pamTracker);
+    }
+
+    if (m_pAvailableParamTypes == NULL)
+    {
+        m_pAvailableParamTypes = EETypeHashTable::Create(GetLoaderAllocator(), this, PARAMTYPES_HASH_BUCKETS, pamTracker);
+    }
+
+    if (m_pInstMethodHashTable == NULL)
+    {
+        m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
+    }
+
+    if (m_pMemberRefToDescHashTable == NULL)
+    {
+        if (IsReflection())
         {
-            m_pAvailableClasses = EEClassHashTable::Create(this,
-                GetAssembly()->IsCollectible() ? AVAILABLE_CLASSES_HASH_BUCKETS_COLLECTIBLE : AVAILABLE_CLASSES_HASH_BUCKETS,
-                                                           FALSE /* bCaseInsensitive */, pamTracker);
+            m_pMemberRefToDescHashTable = MemberRefToDescHashTable::Create(this, MEMBERREF_MAP_INITIAL_SIZE, pamTracker);
         }
-
-        if (m_pAvailableParamTypes == NULL)
+        else
         {
-            m_pAvailableParamTypes = EETypeHashTable::Create(GetLoaderAllocator(), this, PARAMTYPES_HASH_BUCKETS, pamTracker);
-        }
+            IMDInternalImport* pImport = GetMDImport();
 
-        if (m_pInstMethodHashTable == NULL)
-        {
-            m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
-        }
-
-        if(m_pMemberRefToDescHashTable == NULL)
-        {
-            if (IsReflection())
-            {
-                m_pMemberRefToDescHashTable = MemberRefToDescHashTable::Create(this, MEMBERREF_MAP_INITIAL_SIZE, pamTracker);
-            }
-            else
-            {
-				IMDInternalImport * pImport = GetMDImport();
-
-                // Get #MemberRefs and create memberrefToDesc hash table
-                m_pMemberRefToDescHashTable = MemberRefToDescHashTable::Create(this, pImport->GetCountWithTokenKind(mdtMemberRef)+1, pamTracker);
-            }
+            // Get #MemberRefs and create memberrefToDesc hash table
+            m_pMemberRefToDescHashTable = MemberRefToDescHashTable::Create(this, pImport->GetCountWithTokenKind(mdtMemberRef) + 1, pamTracker);
         }
     }
 
@@ -563,7 +554,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         InitializeForProfiling();
     }
 
-    if (!IsResource() && (m_AssemblyRefByNameTable == NULL))
+    if (m_AssemblyRefByNameTable == NULL)
     {
         Module::CreateAssemblyRefByNameTable(pamTracker);
     }
@@ -802,10 +793,7 @@ void Module::ApplyMetaData()
     ULONG ulCount;
 
 #if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
-    if (!IsResource())
-    {
-        UpdateNewlyAddedTypes();
-    }
+    UpdateNewlyAddedTypes();
 #endif // PROFILING_SUPPORTED || EnC_SUPPORTED
 
     // Ensure for TypeRef
@@ -972,7 +960,7 @@ bool Module::NeedsGlobalMethodTable()
     CONTRACTL_END;
 
     IMDInternalImport * pImport = GetMDImport();
-    if (!IsResource() && pImport->IsValidToken(COR_GLOBAL_PARENT_TOKEN))
+    if (pImport->IsValidToken(COR_GLOBAL_PARENT_TOKEN))
     {
         {
             HENUMInternalHolder funcEnum(pImport);
@@ -1048,7 +1036,6 @@ BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file)
     // Some modules are never EnC-capable
     return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
               file->IsSystem() ||
-              file->IsResource() ||
               file->IsDynamic());
 }
 
@@ -1975,17 +1962,6 @@ void Module::AllocateStatics(AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
 
-    if (IsResource())
-    {
-        m_dwRegularStaticsBlockSize = DomainLocalModule::OffsetOfDataBlob();
-        m_dwThreadStaticsBlockSize = ThreadLocalModule::OffsetOfDataBlob();
-
-        // If it has no code, we don't have to allocate anything
-        LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Resource module %s. No statics needed\n", GetSimpleName()));
-        _ASSERTE(m_maxTypeRidStaticsAllocated == 0);
-        return;
-    }
-
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Allocating statics for module %s\n", GetSimpleName()));
 
     // Build the offset table, which will tell us what the offsets for the statics of each class are (one offset for gc handles, one offset
@@ -2113,9 +2089,6 @@ void Module::AllocateMaps()
     };
 
     PTR_TADDR pTable = NULL;
-
-    if (IsResource())
-        return;
 
     if (IsReflection())
     {
@@ -2529,10 +2502,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     }
     CONTRACT_END;
 
-    // No symbols for resource modules
-    if (IsResource())
-        RETURN NULL;
-
     if (g_fEEShutDown)
         RETURN NULL;
 
@@ -2565,16 +2534,15 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         // There are 4 main cases here:
         //  1. Assembly is on disk and we'll get the symbols from a file next to the assembly
-        //  2. Assembly is provided by the host and we'll get the symbols from the host
-        //  3. Assembly was loaded in-memory (by byte array or ref-emit), and symbols were
+        //  2. Assembly was loaded in-memory (by byte array or ref-emit), and symbols were
         //      provided along with it.
-        //  4. Assembly was loaded in-memory but no symbols were provided.
+        //  3. Assembly was loaded in-memory but no symbols were provided.
 
-        // Determine whether we should be looking in memory for the symbols (cases 2 & 3)
-        bool fInMemorySymbols = ( m_file->IsIStream() || GetInMemorySymbolStream() );
+        // Determine whether we should be looking in memory for the symbols (case 2)
+        bool fInMemorySymbols = GetInMemorySymbolStream();
         if( !fInMemorySymbols && m_file->GetPath().IsEmpty() )
         {
-            // Case 4.  We don't have a module path, an IStream or an in memory symbol stream,
+            // Case 3.  We don't have a module path or an in memory symbol stream,
             // so there is no-where to try and get symbols from.
             RETURN (NULL);
         }
@@ -2856,7 +2824,6 @@ void Module::AddClass(mdTypeDef classdef)
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(!IsResource());
     }
     CONTRACTL_END;
 
@@ -2913,8 +2880,8 @@ void Module::BuildClassForModule()
 // Returns true iff the debugger should be notified about this module
 //
 // Notes:
-//   Debugger doesn't need to be notified about modules that can't be executed,
-//   like inspection and resource only. These are just pure data.
+//   Debugger doesn't need to be notified about modules that can't be executed.
+//   (we do not have such cases at the moment)
 //
 //   This should be immutable for an instance of a module. That ensures that the debugger gets consistent
 //   notifications about it. It this value mutates, than the debugger may miss relevant notifications.
@@ -2922,11 +2889,6 @@ BOOL Module::IsVisibleToDebugger()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-
-    if (IsResource())
-    {
-        return FALSE;
-    }
 
     return TRUE;
 }
@@ -3447,7 +3409,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
 
 #endif // !DACCESS_COMPILE
 
-Module *Module::GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL permitResources)
+Module *Module::GetModuleIfLoaded(mdFile kFile)
 {
     CONTRACT(Module *)
     {
@@ -3479,7 +3441,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL
         if (kFile == mdTokenNil)
             RETURN NULL;
 
-        RETURN GetAssembly()->GetManifestModule()->GetModuleIfLoaded(kFile, onlyLoadedInAppDomain, permitResources);
+        RETURN GetAssembly()->GetManifestModule()->GetModuleIfLoaded(kFile);
     }
 
     Module *pModule = LookupFile(kFile);
@@ -3519,10 +3481,6 @@ Module *Module::GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL
 #endif
     }
 
-    // We may not want to return a resource module
-    if (!permitResources && pModule && pModule->IsResource())
-        pModule = NULL;
-
 #ifndef DACCESS_COMPILE
 #endif // !DACCESS_COMPILE
     RETURN pModule;
@@ -3530,8 +3488,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL
 
 #ifndef DACCESS_COMPILE
 
-DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile,
-                               BOOL permitResources/*=TRUE*/, BOOL bindOnly/*=FALSE*/)
+DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile, BOOL bindOnly/*=FALSE*/)
 {
     CONTRACT(DomainFile *)
     {
@@ -3541,7 +3498,7 @@ DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile,
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
-        POSTCONDITION(CheckPointer(RETVAL, !permitResources || bindOnly ? NULL_OK : NULL_NOT_OK));
+        POSTCONDITION(CheckPointer(RETVAL, bindOnly ? NULL_OK : NULL_NOT_OK));
     }
     CONTRACT_END;
 
@@ -3572,7 +3529,7 @@ DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile,
 }
 #endif // !DACCESS_COMPILE
 
-PTR_Module Module::LookupModule(mdToken kFile,BOOL permitResources/*=TRUE*/)
+PTR_Module Module::LookupModule(mdToken kFile)
 {
     CONTRACT(PTR_Module)
     {
@@ -3598,7 +3555,7 @@ PTR_Module Module::LookupModule(mdToken kFile,BOOL permitResources/*=TRUE*/)
         if (kFileLocal == mdTokenNil)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
-        RETURN GetAssembly()->GetManifestModule()->LookupModule(kFileLocal, permitResources);
+        RETURN GetAssembly()->GetManifestModule()->LookupModule(kFileLocal);
     }
 
     PTR_Module pModule = LookupFile(kFile);
@@ -6401,9 +6358,6 @@ HRESULT Module::WriteMethodProfileDataLogFile(bool cleanup)
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-
-    if (IsResource())
-        return S_OK;
 
     EX_TRY
     {

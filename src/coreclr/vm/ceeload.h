@@ -1153,7 +1153,6 @@ protected:
         return m_moduleRef;
     }
 
-    BOOL IsResource() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetFile()->IsResource(); }
     BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetFile()->IsDynamic(); }
     BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetFile()->IsDynamic(); }
     BOOL IsIbcOptimized() const { WRAPPER_NO_CONTRACT; return GetFile()->IsIbcOptimized(); }
@@ -1169,8 +1168,6 @@ protected:
     }
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
-
-    BOOL IsIStream() { LIMITED_METHOD_CONTRACT; return GetFile()->IsIStream(); }
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_file->IsSystem(); }
 
@@ -1379,54 +1376,26 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
-
-            _ASSERTE(!IsResource());
-        }
 
         return m_pAvailableClasses;
     }
 #ifndef DACCESS_COMPILE
     void SetAvailableClassHash(EEClassHashTable *pAvailableClasses)
     {
-        LIMITED_METHOD_CONTRACT;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         m_pAvailableClasses = pAvailableClasses;
     }
 #endif // !DACCESS_COMPILE
     PTR_EEClassHashTable GetAvailableClassCaseInsHash()
     {
         LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         return m_pAvailableClassesCaseIns;
     }
 #ifndef DACCESS_COMPILE
     void SetAvailableClassCaseInsHash(EEClassHashTable *pAvailableClassesCaseIns)
     {
-        LIMITED_METHOD_CONTRACT;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         m_pAvailableClassesCaseIns = pAvailableClassesCaseIns;
     }
 #endif // !DACCESS_COMPILE
@@ -1436,26 +1405,14 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         return m_pAvailableParamTypes;
     }
 
     InstMethodHashTable *GetInstMethodHashTable()
     {
         LIMITED_METHOD_CONTRACT;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         return m_pInstMethodHashTable;
     }
 
@@ -1484,9 +1441,9 @@ protected:
 public:
 
     DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
-    Module *GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL loadAllowed);
-    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile, BOOL loadResources = TRUE, BOOL bindOnly = FALSE);
-    PTR_Module LookupModule(mdToken kFile, BOOL loadResources = TRUE); //wrapper over GetModuleIfLoaded, takes modulerefs as well
+    Module *GetModuleIfLoaded(mdFile kFile);
+    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile, BOOL bindOnly = FALSE);
+    PTR_Module LookupModule(mdToken kFile); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
     // RID maps
