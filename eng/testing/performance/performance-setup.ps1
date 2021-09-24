@@ -28,6 +28,41 @@ Param(
     [switch] $iOSLlvmBuild
 )
 
+function Verified-Move-Item {
+	[Parameter(Mandatory)]
+	[string]$Path
+	[Parameter(Mandatory)]
+	[string]$Destination
+	
+	Move-Item -Path $Path -Destination $Destination
+	if (!$?) {
+		Write-Output "Failed to move $Source to $Destination"
+		exit 1
+	}
+}
+
+function Verified-Copy-Item {
+	[Parameter(Mandatory)]
+	[string]$path
+	[Parameter(Mandatory)]
+	[string]$Destination
+	
+	Copy-Item -path $path $Destination
+	if (!$?) {
+		Write-Output "Failed to copy $Source to $Destination"
+		exit 1
+	}
+}
+
+function Verify-Robocopy {
+	[Parameter(Mandatory)]
+	[string]$Source
+	if ($LASTEXITCODE -ne 0 -or !$?) {
+		Write-Output "Failed to copy $Source: exit code $LASTEXITCODE"
+		exit $LASTEXITCODE
+	}
+}
+
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
 $UseCoreRun = ($CoreRootDirectory -ne [string]::Empty)
 $UseBaselineCoreRun = ($BaselineCoreRootDirectory -ne [string]::Empty)
@@ -122,10 +157,7 @@ if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
     
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
-	if ($LASTEXITCODE -ne 0) {
-		Write-Output "Failed to copy $SourceDirectory: exit code $LASTEXITCODE"
-		exit 1
-	}
+	Verify-Robocopy $SourceDirectory
 }
 else {
     git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
@@ -139,28 +171,16 @@ if($MonoDotnet -ne "")
 {
     $UsingMono = "true"
     $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
-    Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
-	if (!$?) {
-		Write-Output "Failed to move $MonoDotnet"
-		exit 1
-	}
+    Verified-Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
 }
 
 if ($UseCoreRun) {
     $NewCoreRoot = (Join-Path $PayloadDirectory "Core_Root")
-    Move-Item -Path $CoreRootDirectory -Destination $NewCoreRoot
-	if (!$?) {
-		Write-Output "Failed to move $CoreRootDirectory"
-		exit 1
-	}
+    Verified-Move-Item -Path $CoreRootDirectory -Destination $NewCoreRoot
 }
 if ($UseBaselineCoreRun) {
     $NewBaselineCoreRoot = (Join-Path $PayloadDirectory "Baseline_Core_Root")
-    Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
-	if (!$?) {
-		Write-Output "Failed to move $BaselineCoreRootDirectory"
-		exit 1
-	}
+    Verified-Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
 }
 
 if ($AndroidMono) {
@@ -168,11 +188,7 @@ if ($AndroidMono) {
     {
         mkdir $WorkItemDirectory
     }
-    Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
-	if (!$?) {
-		Write-Output "Failed to copy $SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk"
-		exit 1
-	}
+    Verified-Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -182,17 +198,9 @@ if ($iOSMono) {
         mkdir $WorkItemDirectory
     }
     if($iOSLlvmBuild) {
-        Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
-		if (!$?) {
-			Write-Output "Failed to copy $SourceDirectory\iosHelloWorld\llvm"
-			exit 1
-		}
+        Verified-Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
     } else {
-        Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
-		if (!$?) {
-			Write-Output "Failed to copy $SourceDirectory\iosHelloWorld\nollvm"
-			exit 1
-		}
+        Verified-Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
@@ -200,10 +208,7 @@ if ($iOSMono) {
 
 $DocsDir = (Join-Path $PerformanceDirectory "docs")
 robocopy $DocsDir $WorkItemDirectory
-if (!$LASTEXITCODE -ne 0) {
-	Write-Output "Failed to copy $DocsDir: exit code $LASTEXITCODE"
-	exit 1
-}
+Verify-Robocopy $DocsDir
 
 # Set variables that we will need to have in future steps
 $ci = $true
