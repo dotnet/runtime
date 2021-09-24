@@ -1273,7 +1273,7 @@ namespace System.Text.RegularExpressions.Generator
                     // by comparing 2 or 4 characters at a time.  Because we might be compiling on one endianness and running on another,
                     // both little and big endian values are emitted and which is used is selected at run-time.
                     ReadOnlySpan<byte> byteStr = MemoryMarshal.AsBytes(str.AsSpan());
-                    bool useMultiCharReads = !caseInsensitive && byteStr.Length > sizeof(uint);
+                    bool useMultiCharReads = !caseInsensitive && byteStr.Length >= sizeof(uint);
                     if (useMultiCharReads)
                     {
                         writer.WriteLine($"ref byte byteStr = ref global::System.Runtime.InteropServices.MemoryMarshal.GetReference(global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal}));");
