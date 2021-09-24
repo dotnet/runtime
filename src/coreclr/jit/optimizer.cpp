@@ -5562,6 +5562,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     {
         printf("This hoisted copy placed in PreHeader (" FMT_BB "):\n", preHead->bbNum);
         gtDispTree(hoist);
+        printf("\n");
     }
 #endif
 
@@ -5634,6 +5635,7 @@ void Compiler::optHoistLoopCode()
     // If we don't have any loops in the method then take an early out now.
     if (optLoopCount == 0)
     {
+        JITDUMP("\nNo loops; no hoisting\n");
         return;
     }
 
@@ -5641,6 +5643,7 @@ void Compiler::optHoistLoopCode()
     unsigned jitNoHoist = JitConfig.JitNoHoist();
     if (jitNoHoist > 0)
     {
+        JITDUMP("\nJitNoHoist set; no hoisting\n");
         return;
     }
 #endif
@@ -5688,6 +5691,7 @@ void Compiler::optHoistLoopCode()
     {
         if (optLoopTable[lnum].lpFlags & LPFLG_REMOVED)
         {
+            JITDUMP("\nLoop " FMT_LP " was removed\n", lnum);
             continue;
         }
 
@@ -5746,7 +5750,8 @@ void Compiler::optHoistLoopCode()
 void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     // Do this loop, then recursively do all nested loops.
-    CLANG_FORMAT_COMMENT_ANCHOR;
+    JITDUMP("\n%s " FMT_LP "\n", optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP ? "Loop Nest" : "Nested Loop",
+            lnum);
 
 #if LOOP_HOIST_STATS
     // Record stats
@@ -5801,6 +5806,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
 
     if (pLoopDsc->lpFlags & LPFLG_REMOVED)
     {
+        JITDUMP("   ... not hoisting " FMT_LP ": removed\n", lnum);
         return;
     }
 
@@ -5813,6 +5819,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // We must have a do-while loop
     if ((pLoopDsc->lpFlags & LPFLG_DO_WHILE) == 0)
     {
+        JITDUMP("   ... not hoisting " FMT_LP ": not do-while\n", lnum);
         return;
     }
 
@@ -5820,18 +5827,22 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // TODO-CQ: Couldn't we make this true if it's not?
     if (!fgDominate(head, lbeg))
     {
+        JITDUMP("   ... not hoisting " FMT_LP ": head " FMT_BB " does not dominate beg " FMT_BB "\n", lnum, head->bbNum,
+                lbeg->bbNum);
         return;
     }
 
     // if lbeg is the start of a new try block then we won't be able to hoist
     if (!BasicBlock::sameTryRegion(head, lbeg))
     {
+        JITDUMP("   ... not hoisting in " FMT_LP ", eh region constraint\n", lnum);
         return;
     }
 
     // We don't bother hoisting when inside of a catch block
     if ((lbeg->bbCatchTyp != BBCT_NONE) && (lbeg->bbCatchTyp != BBCT_FINALLY))
     {
+        JITDUMP("   ... not hoisting in " FMT_LP ", within catch\n", lnum);
         return;
     }
 
@@ -5933,10 +5944,23 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
     // Until we have post-dominators, we'll special-case for single-exit blocks.
+    //
+    // Todo: it is not clear if this is a correctness requirement or a profitability heuristic.
+    // It seems like the latter. Ideally have enough safeguards to prevent hoisting exception
+    // or side-effect dependent things.
+    //
+    // We really should consider hoisting from conditionally executed blocks, if they are frequently executed
+    // and it is safe to evaluate the tree early.
+    //
+    // In particular if we have a loop nest, when scanning the outer loop we should consider hoisting from blocks
+    // in enclosed loops. However, this is likely to scale poorly, and we really should instead start
+    // hoisting inner to outer.
+    //
     ArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
     if (pLoopDsc->lpFlags & LPFLG_ONE_EXIT)
     {
         assert(pLoopDsc->lpExit != nullptr);
+        JITDUMP("  Only considering hoisting in blocks that dominate exit block " FMT_BB "\n", pLoopDsc->lpExit->bbNum);
         BasicBlock* cur = pLoopDsc->lpExit;
         // Push dominators, until we reach "entry" or exit the loop.
         while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
@@ -5947,12 +5971,16 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         // If we didn't reach the entry block, give up and *just* push the entry block.
         if (cur != pLoopDsc->lpEntry)
         {
+            JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hoisting in entry "
+                    "block " FMT_BB "\n",
+                    pLoopDsc->lpEntry->bbNum);
             defExec.Reset();
         }
         defExec.Push(pLoopDsc->lpEntry);
     }
     else // More than one exit
     {
+        JITDUMP("  only considering hoisting in entry block " FMT_BB "\n", pLoopDsc->lpEntry->bbNum);
         // We'll assume that only the entry block is definitely executed.
         // We could in the future do better.
         defExec.Push(pLoopDsc->lpEntry);
@@ -6032,6 +6060,8 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that are not heavy: tree->GetCostEx() < (2*IND_COST_EX)
         if (tree->GetCostEx() < (2 * IND_COST_EX))
         {
+            JITDUMP("    tree cost too low: %d < %d (loopVarCount %u >= availableRegCount %u)\n", tree->GetCostEx(),
+                    2 * IND_COST_EX, loopVarCount, availRegCount);
             return false;
         }
     }
@@ -6049,6 +6079,8 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that barely meet CSE cost requirements: tree->GetCostEx() == MIN_CSE_COST
         if (tree->GetCostEx() <= MIN_CSE_COST + 1)
         {
+            JITDUMP("    tree not good CSE: %d <= %d (varInOutCount %u > availableRegCount %u)\n", tree->GetCostEx(),
+                    2 * MIN_CSE_COST + 1, varInOutCount, availRegCount)
             return false;
         }
     }
@@ -6208,8 +6240,15 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             bool m_cctorDependent;
             bool m_invariant;
 
+#ifdef DEBUG
+            const char* m_failReason;
+#endif
+
             Value(GenTree* node) : m_node(node), m_hoistable(false), m_cctorDependent(false), m_invariant(false)
             {
+#ifdef DEBUG
+                m_failReason = "unset";
+#endif
             }
 
             GenTree* Node()
@@ -6325,11 +6364,17 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             for (Statement* const stmt : block->NonPhiStatements())
             {
                 WalkTree(stmt->GetRootNodePointer(), nullptr);
-                assert(m_valueStack.TopRef().Node() == stmt->GetRootNode());
+                Value& top = m_valueStack.TopRef();
+                assert(top.Node() == stmt->GetRootNode());
 
-                if (m_valueStack.TopRef().m_hoistable)
+                if (top.m_hoistable)
                 {
                     m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loopNum, m_hoistContext);
+                }
+                else
+                {
+                    JITDUMP("      [%06u] not %s: %s\n", dspTreeID(top.Node()),
+                            top.m_invariant ? "invariant" : "hoistable", top.m_failReason);
                 }
 
                 m_valueStack.Reset();
@@ -6377,16 +6422,28 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // blocked by the SSA invariance check.
                 isInvariant = isInvariant && IsTreeVNInvariant(tree);
 
+                Value& top = m_valueStack.TopRef();
+                assert(top.Node() == tree);
+
                 if (isInvariant)
                 {
-                    Value& top = m_valueStack.TopRef();
-                    assert(top.Node() == tree);
                     top.m_invariant = true;
                     // In general it doesn't make sense to hoist a local node but there are exceptions, for example
                     // LCL_FLD nodes (because then the variable cannot be enregistered and the node always turns
                     // into a memory access).
                     top.m_hoistable = IsNodeHoistable(tree);
                 }
+
+#ifdef DEBUG
+                if (!isInvariant)
+                {
+                    top.m_failReason = "local, not rvalue / not in SSA / defined within current loop";
+                }
+                else if (!top.m_hoistable)
+                {
+                    top.m_failReason = "not handled by cse";
+                }
+#endif
 
                 return fgWalkResult::WALK_CONTINUE;
             }
@@ -6403,6 +6460,10 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             bool treeHasHoistableChildren = false;
             int  childCount;
 
+#ifdef DEBUG
+            const char* failReason = "unknown";
+#endif
+
             for (childCount = 0; m_valueStack.TopRef(childCount).Node() != tree; childCount++)
             {
                 Value& child = m_valueStack.TopRef(childCount);
@@ -6415,6 +6476,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 if (!child.m_invariant)
                 {
                     treeIsInvariant = false;
+                    INDEBUG(failReason = "variant child";)
                 }
 
                 if (child.m_cctorDependent)
@@ -6449,6 +6511,13 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             // unless it has a static var reference that can't be hoisted past its cctor call.
             bool treeIsHoistable = treeIsInvariant && !treeIsCctorDependent;
 
+#ifdef DEBUG
+            if (treeIsInvariant && !treeIsHoistable)
+            {
+                failReason = "cctor dependent";
+            }
+#endif
+
             // But we must see if anything else prevents "tree" from being hoisted.
             //
             if (treeIsInvariant)
@@ -6456,6 +6525,10 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 if (treeIsHoistable)
                 {
                     treeIsHoistable = IsNodeHoistable(tree);
+                    if (!treeIsHoistable)
+                    {
+                        INDEBUG(failReason = "not handled by cse";)
+                    }
                 }
 
                 // If it's a call, it must be a helper call, and be pure.
@@ -6466,6 +6539,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                     GenTreeCall* call = tree->AsCall();
                     if (call->gtCallType != CT_HELPER)
                     {
+                        INDEBUG(failReason = "non-helper call";)
                         treeIsHoistable = false;
                     }
                     else
@@ -6473,11 +6547,13 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
                         if (!s_helperCallProperties.IsPure(helpFunc))
                         {
+                            INDEBUG(failReason = "impure helper call";)
                             treeIsHoistable = false;
                         }
                         else if (s_helperCallProperties.MayRunCctor(helpFunc) &&
                                  ((call->gtFlags & GTF_CALL_HOISTABLE) == 0))
                         {
+                            INDEBUG(failReason = "non-hoistable helper call";)
                             treeIsHoistable = false;
                         }
                     }
@@ -6494,6 +6570,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         //
                         if ((tree->gtFlags & GTF_EXCEPT) != 0)
                         {
+                            INDEBUG(failReason = "side effect ordering constraint";)
                             treeIsHoistable = false;
                         }
                     }
@@ -6506,6 +6583,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 if (!treeIsInvariant)
                 {
                     // Here we have a tree that is not loop invariant and we thus cannot hoist
+                    INDEBUG(failReason = "tree VN is loop variant";)
                     treeIsHoistable = false;
                 }
             }
@@ -6585,6 +6663,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 {
                     // If this node is a MEMORYBARRIER or an Atomic operation
                     // then don't hoist and stop any further hoisting after this node
+                    INDEBUG(failReason = "atomic op or memory barrier";)
                     treeIsHoistable    = false;
                     m_beforeSideEffect = false;
                 }
@@ -6634,6 +6713,11 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
                         m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
                     }
+                    else if (value.Node() != tree)
+                    {
+                        JITDUMP("      [%06u] not %s: %s\n", dspTreeID(value.Node()),
+                                value.m_invariant ? "invariant" : "hoistable", value.m_failReason);
+                    }
                 }
             }
 
@@ -6644,6 +6728,13 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             top.m_hoistable      = treeIsHoistable;
             top.m_cctorDependent = treeIsCctorDependent;
             top.m_invariant      = treeIsInvariant;
+
+#ifdef DEBUG
+            if (!top.m_invariant || !top.m_hoistable)
+            {
+                top.m_failReason = failReason;
+            }
+#endif
 
             return fgWalkResult::WALK_CONTINUE;
         }
@@ -6659,7 +6750,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         BasicBlock* block       = blocks->Pop();
         weight_t    blockWeight = block->getBBWeight(this);
 
-        JITDUMP("    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB
+        JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB
                 ">, firstBlock is %s\n",
                 block->bbNum, refCntWtd2str(blockWeight), loopNum, loopDsc->lpFirst->bbNum, loopDsc->lpBottom->bbNum,
                 dspBool(block == loopDsc->lpEntry));
@@ -6682,18 +6773,21 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
     // It must pass the hoistable profitablity tests for this loop level
     if (!optIsProfitableToHoistableTree(tree, lnum))
     {
+        JITDUMP("   ... not profitable to hoist\n");
         return;
     }
 
     bool b;
     if (hoistCtxt->m_hoistedInParentLoops.Lookup(tree->gtVNPair.GetLiberal(), &b))
     {
+        JITDUMP("   ... already hoisted same VN in parent\n");
         // already hoisted in a parent loop, so don't hoist this expression.
         return;
     }
 
     if (hoistCtxt->GetHoistedInCurLoop(this)->Lookup(tree->gtVNPair.GetLiberal(), &b))
     {
+        JITDUMP("   ... already hoisted same VN in current\n");
         // already hoisted this expression in the current loop, so don't hoist this expression.
         return;
     }
@@ -9067,7 +9161,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 // the prolog and this explicit intialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
-                                JITDUMP("Marking L%02u as having an explicit init\n", lclNum);
+                                JITDUMP("Marking " FMT_LP " as having an explicit init\n", lclNum);
                             }
                         }
                         break;

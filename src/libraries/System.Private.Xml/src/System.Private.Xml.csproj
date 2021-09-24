@@ -433,7 +433,6 @@
     <Compile Include="System\Xml\Schema\XmlTokenizedType.cs" />
     <Compile Include="System\Xml\Schema\XmlTypeCode.cs" />
     <Compile Include="System\Xml\Schema\XmlValueConverter.cs" />
-    <Compile Include="System\Xml\Schema\XmlUntypedStringConverter.cs" />
     <Compile Include="System\Xml\Schema\XsdBuilder.cs" />
     <Compile Include="System\Xml\Schema\XsdDateTime.cs" />
     <Compile Include="System\Xml\Schema\XsdDuration.cs" />

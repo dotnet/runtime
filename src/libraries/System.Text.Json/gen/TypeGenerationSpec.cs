@@ -19,7 +19,7 @@ namespace System.Text.Json.SourceGeneration
         public string TypeRef { get; private set; }
 
         /// <summary>
-        /// The name of the public JsonTypeInfo<T> property for this type on the generated context class.
+        /// The name of the public <c>JsonTypeInfo&lt;T&gt;</c> property for this type on the generated context class.
         /// For example, if the context class is named MyJsonContext, and the value of this property is JsonMessage;
         /// then users will call MyJsonContext.JsonMessage to access generated metadata for the type.
         /// </summary>
@@ -59,8 +59,8 @@ namespace System.Text.Json.SourceGeneration
         public TypeGenerationSpec? NullableUnderlyingTypeMetadata { get; private set; }
 
         /// <summary>
-        /// Supports deserialization of extension data dictionaries typed as I[ReadOnly]Dictionary<string, object/JsonElement>.
-        /// Specifies a concrete type to instanciate, which would be Dictionary<string, object/JsonElement>.
+        /// Supports deserialization of extension data dictionaries typed as <c>I[ReadOnly]Dictionary&lt;string, object/JsonElement&gt;</c>.
+        /// Specifies a concrete type to instanciate, which would be <c>Dictionary&lt;string, object/JsonElement&gt;</c>.
         /// </summary>
         public string? RuntimeTypeRef { get; private set; }
 
@@ -71,15 +71,6 @@ namespace System.Text.Json.SourceGeneration
         // Only generate certain helper methods if necessary.
         public bool HasPropertyFactoryConverters { get; private set; }
         public bool HasTypeFactoryConverter { get; private set; }
-
-        public string FastPathSerializeMethodName
-        {
-            get
-            {
-                Debug.Assert(GenerateSerializationLogic);
-                return $"{TypeInfoPropertyName}Serialize";
-            }
-        }
 
         public string? ImmutableCollectionBuilderName
         {

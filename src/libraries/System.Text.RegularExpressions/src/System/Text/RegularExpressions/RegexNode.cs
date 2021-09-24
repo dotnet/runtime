@@ -103,7 +103,10 @@ namespace System.Text.RegularExpressions
         public const int Testref = 33;                                //          (?(n) | )  - alternation, reference
         public const int Testgroup = 34;                              //          (?(...) | )- alternation, expression
 
-        private const uint DefaultMaxRecursionDepth = 20; // arbitrary cut-off to avoid unbounded recursion
+        internal const byte DefaultMaxRecursionDepth = 20; // arbitrary cut-off to avoid unbounded recursion
+
+        /// <summary>empty bit from the node's options to store data on whether a node contains captures</summary>
+        internal const RegexOptions HasCapturesFlag = (RegexOptions)(1 << 31);
 
         private object? Children;
         public int Type { get; private set; }
@@ -200,8 +203,10 @@ namespace System.Text.RegularExpressions
         {
             var toExamine = new Stack<RegexNode>();
             toExamine.Push(this);
-            while (toExamine.TryPop(out RegexNode? node))
+            while (toExamine.Count > 0)
             {
+                RegexNode node = toExamine.Pop();
+
                 // Validate that we never see certain node types.
                 Debug.Assert(Type != Group, "All Group nodes should have been removed.");
 
@@ -904,7 +909,7 @@ namespace System.Text.RegularExpressions
 
                 RegexOptions startingNodeOptions = startingNode.Options;
                 string? originalStartingString = startingNode.Str;
-                ReadOnlySpan<char> startingSpan = startingNode.Type == One ? stackalloc char[1] { startingNode.Ch } : (ReadOnlySpan<char>)originalStartingString;
+                ReadOnlySpan<char> startingSpan = startingNode.Type == One ? stackalloc char[1] { startingNode.Ch } : originalStartingString.AsSpan();
                 Debug.Assert(startingSpan.Length > 0);
 
                 // Now compare the rest of the branches against it.
@@ -988,7 +993,7 @@ namespace System.Text.RegularExpressions
                             else if (node.Str.Length - 1 == startingSpan.Length)
                             {
                                 node.Type = One;
-                                node.Ch = node.Str[^1];
+                                node.Ch = node.Str[node.Str.Length - 1];
                                 node.Str = null;
                             }
                             else
@@ -1754,7 +1759,170 @@ namespace System.Text.RegularExpressions
             return 1;
         }
 
+        // Determines whether the node supports an optimized implementation that doesn't allow for backtracking.
+        internal static bool NodeSupportsSimplifiedCodeGenerationImplementation(RegexNode node, int maxDepth)
+        {
+            bool supported = false;
+
+            // We only support the default left-to-right, not right-to-left, which requires more complication in the generated code.
+            // (Right-to-left is only employed when explicitly asked for by the developer or by lookbehind assertions.)
+            // We also limit the recursion involved to prevent stack dives; this limitation can be removed by switching
+            // away from a recursive implementation (done for convenience) to an iterative one that's more complicated
+            // but within the same problems.
+            if ((node.Options & RegexOptions.RightToLeft) == 0 && maxDepth > 0)
+            {
+                int childCount = node.ChildCount();
+                Debug.Assert((node.Options & HasCapturesFlag) == 0);
+
+                switch (node.Type)
+                {
+                    // One/Notone/Set/Multi don't involve any repetition and are easily supported.
+                    case RegexNode.One:
+                    case RegexNode.Notone:
+                    case RegexNode.Set:
+                    case RegexNode.Multi:
+                    // Boundaries are like set checks and don't involve repetition, either.
+                    case RegexNode.Boundary:
+                    case RegexNode.NonBoundary:
+                    case RegexNode.ECMABoundary:
+                    case RegexNode.NonECMABoundary:
+                    // Anchors are also trivial.
+                    case RegexNode.Beginning:
+                    case RegexNode.Start:
+                    case RegexNode.Bol:
+                    case RegexNode.Eol:
+                    case RegexNode.End:
+                    case RegexNode.EndZ:
+                    // {Set/One/Notone}loopatomic are optimized nodes that represent non-backtracking variable-length loops.
+                    // These consume their {Set/One} inputs as long as they match, and don't give up anything they
+                    // matched, which means we can support them without backtracking.
+                    case RegexNode.Oneloopatomic:
+                    case RegexNode.Notoneloopatomic:
+                    case RegexNode.Setloopatomic:
+                    // "Empty" is easy: nothing is emitted for it.
+                    // "Nothing" is also easy: it doesn't match anything.
+                    // "UpdateBumpalong" doesn't match anything, it's just an optional directive to the engine.
+                    case RegexNode.Empty:
+                    case RegexNode.Nothing:
+                    case RegexNode.UpdateBumpalong:
+                        supported = true;
+                        break;
+
+                    // Repeaters don't require backtracking as long as their min and max are equal.
+                    // At that point they're just a shorthand for writing out the One/Notone/Set
+                    // that number of times.
+                    case RegexNode.Oneloop:
+                    case RegexNode.Notoneloop:
+                    case RegexNode.Setloop:
+                        Debug.Assert(node.Next == null || node.Next.Type != RegexNode.Atomic, "Loop should have been transformed into an atomic type.");
+                        goto case RegexNode.Onelazy;
+                    case RegexNode.Onelazy:
+                    case RegexNode.Notonelazy:
+                    case RegexNode.Setlazy:
+                        supported = node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic);
+                        break;
+
+                    // {Lazy}Loop repeaters are the same, except their child also needs to be supported.
+                    // We also support such loops being atomic.
+                    case RegexNode.Loop:
+                    case RegexNode.Lazyloop:
+                        supported =
+                            (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic)) &&
+                            NodeSupportsSimplifiedCodeGenerationImplementation(node.Child(0), maxDepth - 1);
+                        break;
+
+                    // We can handle atomic as long as we can handle making its child atomic, or
+                    // its child doesn't have that concept.
+                    case RegexNode.Atomic:
+                    // Lookahead assertions also only require that the child node be supported.
+                    // The RightToLeft check earlier is important to differentiate lookbehind,
+                    // which is not supported.
+                    case RegexNode.Require:
+                    case RegexNode.Prevent:
+                        supported = NodeSupportsSimplifiedCodeGenerationImplementation(node.Child(0), maxDepth - 1);
+                        break;
+
+                    // We can handle alternates as long as they're atomic (a root / global alternate is
+                    // effectively atomic, as nothing will try to backtrack into it as it's the last thing).
+                    // Its children must all also be supported.
+                    case RegexNode.Alternate:
+                        if (node.Next != null &&
+                            (node.IsAtomicByParent() || // atomic alternate
+                            (node.Next.Type == RegexNode.Capture && node.Next.Next is null))) // root alternate
+                        {
+                            goto case RegexNode.Concatenate;
+                        }
+                        break;
+
+                    // Concatenation doesn't require backtracking as long as its children don't.
+                    case RegexNode.Concatenate:
+                        supported = true;
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            if (supported && !NodeSupportsSimplifiedCodeGenerationImplementation(node.Child(i), maxDepth - 1))
+                            {
+                                supported = false;
+                                break;
+                            }
+                        }
+                        break;
+
+                    case RegexNode.Capture:
+                        // Currently we only support capnums without uncapnums (for balancing groups)
+                        supported = node.N == -1;
+                        if (supported)
+                        {
+                            // And we only support them in certain places in the tree.
+                            RegexNode? parent = node.Next;
+                            while (parent != null)
+                            {
+                                switch (parent.Type)
+                                {
+                                    case RegexNode.Alternate:
+                                    case RegexNode.Atomic:
+                                    case RegexNode.Capture:
+                                    case RegexNode.Concatenate:
+                                    case RegexNode.Require:
+                                        parent = parent.Next;
+                                        break;
+
+                                    default:
+                                        parent = null;
+                                        supported = false;
+                                        break;
+                                }
+                            }
+
+                            if (supported)
+                            {
+                                // And we only support them if their children are supported.
+                                supported = NodeSupportsSimplifiedCodeGenerationImplementation(node.Child(0), maxDepth - 1);
+
+                                // If we've found a supported capture, mark all of the nodes in its parent
+                                // hierarchy as containing a capture.
+                                if (supported)
+                                {
+                                    parent = node;
+                                    while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
+                                    {
+                                        parent.Options |= HasCapturesFlag;
+                                        parent = parent.Next;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
 #if DEBUG
+            if (!supported && (node.Options & RegexOptions.Debug) != 0)
+            {
+                Debug.WriteLine($"Unable to use non-backtracking code gen: node {node.Description()} isn't supported.");
+            }
+#endif
+            return supported;
+        }
+
         private string TypeName =>
             Type switch
             {
@@ -1799,7 +1967,7 @@ namespace System.Text.RegularExpressions
                 _ => $"(unknown {Type})"
             };
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         public string Description()
         {
             var sb = new StringBuilder(TypeName);
@@ -1871,10 +2039,11 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+#if DEBUG
+        [ExcludeFromCodeCoverage]
         public void Dump() => Debug.WriteLine(ToString());
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         public override string ToString()
         {
             RegexNode? curNode = this;

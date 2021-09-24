@@ -65,7 +65,6 @@ jobs:
           - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
             - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
             - RedHat.7.Amd64.Open
-            - Ubuntu.1604.Amd64.Open
             - Ubuntu.1804.Amd64.Open
             - SLES.12.Amd64.Open
             - SLES.15.Amd64.Open
@@ -79,7 +78,6 @@ jobs:
             - RedHat.7.Amd64.Open
             - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
             - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
-            - Ubuntu.1604.Amd64.Open
             - Ubuntu.1804.Amd64.Open
             - SLES.15.Amd64.Open
             - (Fedora.34.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210728124700-4f64125
@@ -94,11 +92,9 @@ jobs:
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
         - OSX.1015.Amd64.Open
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - OSX.1014.Amd64.Open
         - OSX.1015.Amd64.Open
 
     # Android

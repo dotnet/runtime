@@ -25,7 +25,7 @@
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <PublishTrimmed>true</PublishTrimmed>
+    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
     <TrimMode>link</TrimMode>
   </PropertyGroup>
 
@@ -45,7 +45,7 @@
                            Condition="'$(MicrosoftNetCoreAppRuntimePackLocationToUse)' != '' and
                                       '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
-    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory) for $(MSBuildProjectName)" Importance="normal" />
   </Target>
 
   <!-- the actual properties need to get set in the props, so because UsingTasks depend on those. -->
