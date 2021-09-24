@@ -59,7 +59,8 @@
         <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
     </PropertyGroup>
 
-    <MSBuild Projects="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/DllImportGenerator.csproj">
+    <MSBuild Projects="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/DllImportGenerator.csproj"
+             RemoveProperties="TargetFramework">
       <Output TaskParameter="TargetOutputs" PropertyName="DllImportGeneratorOutputPath" />
     </MSBuild>
 
