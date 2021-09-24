@@ -1,21 +1,17 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class FileStream_ctor_options_as : FileStream_ctor_options_as_base
+    public partial class FileStream_ctor_options
     {
-        protected override long PreallocationSize => 10;
-
-        protected override long InitialLength => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
-
-        private long GetExpectedFileLength(long preallocationSize) => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
-
-        private unsafe long GetActualPreallocationSize(FileStream fileStream)
+        private unsafe long GetAllocatedSize(FileStream fileStream)
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
 
@@ -23,6 +19,10 @@ namespace System.IO.Tests
 
             return info.AllocationSize;
         }
+
+        private static bool SupportsPreallocation => true;
+
+        private static bool IsGetAllocatedSizeImplemented => true;
 
         [Theory]
         [InlineData(@"\\?\")]
@@ -32,26 +32,26 @@ namespace System.IO.Tests
         {
             const long preallocationSize = 123;
 
-            string filePath = prefix + Path.GetFullPath(GetPathToNonExistingFile());
+            string filePath = prefix + Path.GetFullPath(GetTestFilePath());
 
-            using (var fs = new FileStream(filePath, GetOptions(FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize)))
+            using (var fs = CreateFileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.None, preallocationSize))
             {
-                Assert.True(GetActualPreallocationSize(fs) >= preallocationSize, $"Provided {preallocationSize}, actual: {GetActualPreallocationSize(fs)}");
+                Assert.Equal(0, fs.Length);
+                Assert.True(GetAllocatedSize(fs) >= preallocationSize);
             }
         }
 
         [ConditionalTheory(nameof(IsFat32))]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
-        [InlineData(FileMode.OpenOrCreate)]
         public void WhenFileIsTooLargeTheErrorMessageContainsAllDetails(FileMode mode)
         {
             const long tooMuch = uint.MaxValue + 1L; // more than FAT32 max size
 
-            string filePath = GetPathToNonExistingFile();
+            string filePath = GetTestFilePath();
             Assert.StartsWith(Path.GetTempPath(), filePath); // this is what IsFat32 method relies on
 
-            IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, GetOptions(mode, FileAccess.Write, FileShare.None, FileOptions.None, tooMuch)));
+            IOException ex = Assert.Throws<IOException>(() => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.None, tooMuch));
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(tooMuch.ToString(), ex.Message);
 
