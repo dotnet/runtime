@@ -608,6 +608,9 @@ namespace System.Numerics
 
                     Span<uint> buffer = new uint[bufferSize];
 
+                    // Separate every MaxPartialDigits digits and store them in the buffer.
+                    // Buffers are treated as little-endian. That means, the array { 234567890, 1 }
+                    // represents the number 1234567890.
                     int bufferInd = buffer.Length - 1;
                     uint currentBlock = 0;
                     int shiftUntil = (totalDigitCount - 1) % MaxPartialDigits;
@@ -633,6 +636,7 @@ namespace System.Numerics
                             shiftUntil--;
                         }
                         remainingIntDigitCount -= intDigitsSpan.Length;
+                        Debug.Assert(0 <= remainingIntDigitCount);
 
                         ReadOnlySpan<char> fracDigitsSpan = digitsChunkSpan.Slice(intDigitsSpan.Length);
                         for (int i = 0; i < fracDigitsSpan.Length; i++)
@@ -649,6 +653,7 @@ namespace System.Numerics
                             }
                         }
                     }
+                    Debug.Assert(currentBlock == 0);
                     Debug.Assert(bufferInd == -1);
 
                     unsafe
@@ -666,6 +671,11 @@ namespace System.Numerics
                             {
                                 uint* curBufPtr = bufPtr;
                                 uint* curNewBufPtr = newBufPtr;
+                                // merge each block pairs.
+                                // When buffer represents:
+                                // |     A     |     B     |     C     |     D     |
+                                // Make newBuffer like:
+                                // |  A + B * multiplier   |  C * multiplier + D   |
                                 for (int i = 0; i < bufferSize; i += blockSize * 2)
                                 {
                                     int len = Math.Min(bufferSize - i, blockSize * 2);
@@ -729,9 +739,13 @@ namespace System.Numerics
                         }
                     }
 
-                    // = log_{2^32}(10^9)
+                    // shrink buffer to the currently used portion.
+                    // First, calculate the rough size of the buffer from the ratio that the number
+                    // of digits follows. Then, shrink the size until there is no more space left.
+                    // The Ratio is calculated as: log_{2^32}(10^9)
                     const double digitRatio = 0.934292276687070661;
                     currentBufferSize = Math.Min((int)(bufferSize * digitRatio) + 1, bufferSize);
+                    Debug.Assert(buffer.Length == currentBufferSize || buffer[currentBufferSize] == 0);
                     while (0 <= currentBufferSize - 1 && buffer[currentBufferSize - 1] == 0)
                     {
                         currentBufferSize--;
