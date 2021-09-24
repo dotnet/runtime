@@ -21338,13 +21338,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         (isExact || objClassIsFinal) && (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
     if (JitConfig.JitCrossCheckDevirtualizationAndPGO() && canSensiblyCheck)
     {
-        unsigned likelihood      = 0;
-        unsigned numberOfClasses = 0;
+        // We only can handle a single likely class for now
+        const int         maxLikelyClasses = 1;
+        LikelyClassRecord likelyClasses[maxLikelyClasses];
 
-        CORINFO_CLASS_HANDLE likelyClass =
-            getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+        UINT32 numberOfClasses =
+            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        UINT32 likelihood = likelyClasses[0].likelihood;
 
-        if (likelyClass != NO_CLASS_HANDLE)
+        CORINFO_CLASS_HANDLE likelyClass = likelyClasses[0].clsHandle;
+
+        if (numberOfClasses > 0)
         {
             // PGO had better agree the class we devirtualized to is plausible.
             //
@@ -21905,6 +21909,9 @@ void Compiler::considerGuardedDevirtualization(
 
     bool doRandomDevirt = false;
 
+    const int         maxLikelyClasses = 32;
+    LikelyClassRecord likelyClasses[maxLikelyClasses];
+
 #ifdef DEBUG
     // Optional stress mode to pick a random known class, rather than
     // the most likely known class.
@@ -21917,24 +21924,40 @@ void Compiler::considerGuardedDevirtualization(
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        likelihood      = 100;
-        numberOfClasses = 1;
-        likelyClass     = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+        likelyClasses[0].clsHandle  = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+        likelyClasses[0].likelihood = 100;
+        if (likelyClasses[0].clsHandle != NO_CLASS_HANDLE)
+        {
+            numberOfClasses = 1;
+        }
     }
     else
 #endif
     {
-        likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+        numberOfClasses =
+            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
     }
 
-    if (likelyClass == NO_CLASS_HANDLE)
+    // For now we only use the most popular type
+
+    likelihood  = likelyClasses[0].likelihood;
+    likelyClass = likelyClasses[0].clsHandle;
+
+    if (numberOfClasses < 1)
     {
         JITDUMP("No likely class, sorry\n");
         return;
     }
 
-    JITDUMP("%s class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", doRandomDevirt ? "Random" : "Likely",
-            dspPtr(objClass), objClassName, likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
+    assert(likelyClass != NO_CLASS_HANDLE);
+
+    // Print all likely classes
+    JITDUMP("%s classes for %p (%s):\n", doRandomDevirt ? "Random" : "Likely", dspPtr(objClass), objClassName)
+    for (UINT32 i = 0; i < numberOfClasses; i++)
+    {
+        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].clsHandle,
+                eeGetClassName(likelyClasses[i].clsHandle), likelyClasses[i].likelihood);
+    }
 
     // Todo: a more advanced heuristic using likelihood, number of
     // classes, and the profile count for this block.
