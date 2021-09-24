@@ -79,15 +79,7 @@ FCFuncStart(gEnumFuncs)
     FCFuncElement("InternalGetCorElementType",  ReflectionEnum::InternalGetCorElementType)
     QCFuncElement("GetEnumValuesAndNames",  ReflectionEnum::GetEnumValuesAndNames)
     FCFuncElement("InternalBoxEnum", ReflectionEnum::InternalBoxEnum)
-    FCFuncElement("Equals", ReflectionEnum::InternalEquals)
-    FCFuncElement("InternalHasFlag", ReflectionEnum::InternalHasFlag)
 FCFuncEnd()
-
-
-FCFuncStart(gSymWrapperCodePunkSafeHandleFuncs)
-    FCFuncElement("nGetDReleaseTarget", COMPunkSafeHandle::nGetDReleaseTarget)
-FCFuncEnd()
-
 
 FCFuncStart(gObjectFuncs)
     FCIntrinsic("GetType", ObjectNative::GetClass, CORINFO_INTRINSIC_Object_GetType)
@@ -1197,7 +1189,6 @@ FCClassElement("ObjectiveCMarshal", "System.Runtime.InteropServices.ObjectiveC",
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 
-FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSafeHandleFuncs)
 FCClassElement("RegisteredWaitHandle", "System.Threading", gRegisteredWaitHandleFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)

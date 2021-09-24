@@ -3613,18 +3613,6 @@ return_null:
 	return MONO_HANDLE_NEW (MonoObject, NULL);
 }
 
-MonoBoolean
-ves_icall_System_Enum_InternalHasFlag (MonoObjectHandle a, MonoObjectHandle b, MonoError *error)
-{
-	int size = mono_class_value_size (mono_handle_class (a), NULL);
-	guint64 a_val = 0, b_val = 0;
-
-	memcpy (&a_val, mono_handle_unbox_unsafe (a), size);
-	memcpy (&b_val, mono_handle_unbox_unsafe (b), size);
-
-	return (a_val & b_val) == b_val;
-}
-
 MonoReflectionTypeHandle
 ves_icall_System_Enum_get_underlying_type (MonoReflectionTypeHandle type, MonoError *error)
 {

@@ -76,7 +76,6 @@ HANDLES(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndN
 HANDLES(ENUM_2, "InternalBoxEnum", ves_icall_System_Enum_ToObject, MonoObject, 2, (MonoReflectionType, guint64))
 HANDLES(ENUM_3, "InternalGetCorElementType", ves_icall_System_Enum_InternalGetCorElementType, int, 1, (MonoObject))
 HANDLES(ENUM_4, "InternalGetUnderlyingType", ves_icall_System_Enum_get_underlying_type, MonoReflectionType, 1, (MonoReflectionType))
-HANDLES(ENUM_5, "InternalHasFlag", ves_icall_System_Enum_InternalHasFlag, MonoBoolean, 2, (MonoObject, MonoObject))
 
 ICALL_TYPE(ENV, "System.Environment", ENV_1)
 NOHANDLES(ICALL(ENV_1, "Exit", ves_icall_System_Environment_Exit))
