@@ -34,8 +34,9 @@ namespace System.IO.Tests
                             int counter = Interlocked.Increment(ref enterCount);
                             if (counter != 1)
                             {
+                                // Test failed.
                                 exclusive = false;
-                                cts.Cancel();
+                                cts.Cancel(); // Stop other Tasks.
                                 return;
                             }
 
@@ -58,6 +59,7 @@ namespace System.IO.Tests
                     }
                     catch (IOException)
                     {
+                        // The file is opened by another Task.
                         await Task.Delay(TimeSpan.FromMilliseconds(1));
                     }
                 }
@@ -70,7 +72,7 @@ namespace System.IO.Tests
             }
 
             // Wait for 1000 locks.
-            cts.CancelAfter(TimeSpan.FromSeconds(100));
+            cts.CancelAfter(TimeSpan.FromSeconds(30)); // Test timeout.
             Volatile.Write(ref locksRemaining, 500);
             await Task.WhenAll(tasks);
 

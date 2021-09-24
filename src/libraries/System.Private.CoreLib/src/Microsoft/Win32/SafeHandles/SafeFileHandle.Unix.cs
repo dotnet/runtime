@@ -157,9 +157,9 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     safeFileHandle = Open(fullPath, openFlags, (int)OpenPermissions);
 
-                    // When TryInit return false, the path has changed to another file entry, and
+                    // When Init return false, the path has changed to another file entry, and
                     // we need to re-open the path to reflect that.
-                    if (safeFileHandle.TryInit(fullPath, mode, access, share, options, preallocationSize))
+                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize))
                     {
                         return safeFileHandle;
                     }
@@ -256,7 +256,7 @@ namespace Microsoft.Win32.SafeHandles
             return flags;
         }
 
-        private bool TryInit(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        private bool Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             Interop.Sys.FileStatus status = default;
             bool statusHasValue = false;
@@ -266,12 +266,8 @@ namespace Microsoft.Win32.SafeHandles
             if ((access & FileAccess.Write) == 0)
             {
                 // Stat the file descriptor to avoid race conditions.
-                if (Interop.Sys.FStat(this, out status) != 0)
-                {
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                    throw Interop.GetExceptionForIoErrno(error, path);
-                }
-                statusHasValue = true;
+                FStatCheckIO(this, path, ref status, ref statusHasValue);
+
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
                 {
                     throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
@@ -288,7 +284,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             IsAsync = (options & FileOptions.Asynchronous) != 0;
-            _path = path;
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
@@ -318,15 +313,8 @@ namespace Microsoft.Win32.SafeHandles
             if (_isLocked && ((options & FileOptions.DeleteOnClose) != 0) && share == FileShare.None &&
                 (mode != FileMode.CreateNew && mode != FileMode.Open && mode != FileMode.Truncate))
             {
-                if (!statusHasValue)
-                {
-                    if (Interop.Sys.FStat(this, out status) != 0)
-                    {
-                        Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                        throw Interop.GetExceptionForIoErrno(error, path);
-                    }
-                    statusHasValue = true;
-                }
+                FStatCheckIO(this, path, ref status, ref statusHasValue);
+
                 Interop.Sys.FileStatus pathStatus;
                 if (Interop.Sys.Stat(path, out pathStatus) < 0)
                 {
@@ -433,6 +421,20 @@ namespace Microsoft.Win32.SafeHandles
                     return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
                 default:
                     return true; // in all other situations it should be OK
+            }
+        }
+
+        private void FStatCheckIO(SafeFileHandle handle, string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)
+        {
+            if (!statusHasValue)
+            {
+                if (Interop.Sys.FStat(this, out status) != 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    throw Interop.GetExceptionForIoErrno(error, path);
+                }
+
+                statusHasValue = true;
             }
         }
 
