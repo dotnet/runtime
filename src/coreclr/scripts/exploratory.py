@@ -32,6 +32,7 @@ parser.add_argument("-output_directory", help="Path to output directory")
 parser.add_argument("-partition", help="Partition name")
 parser.add_argument("-core_root", help="path to CORE_ROOT directory")
 parser.add_argument("-tool_name", help="tool name")
+parser.add_argument("-run_duration", help="Run duration in minutes")
 is_windows = platform.system() == "Windows"
 
 
@@ -72,6 +73,12 @@ def setup_args(args):
                         "tool_name",
                         lambda unused: True,
                         "Unable to set tool_name")
+
+    coreclr_args.verify(args,
+                        "run_duration",
+                        lambda duration: duration > 0,
+                         "Please enter valid positive numeric duration",
+                         modify_arg=lambda duration: int(duration))
 
     coreclr_args.verify(args,
                         "core_root",
@@ -187,13 +194,14 @@ def main(main_args):
     tag_name = "{}-{}".format(coreclr_args.run_configuration, coreclr_args.partition)
     output_directory = coreclr_args.output_directory
     tool_name = coreclr_args.tool_name
+    run_duration = coreclr_args.run_duration
 
     path_to_corerun = os.path.join(core_root, "corerun.exe" if is_windows else "corerun")
     path_to_tool = os.path.join(exploratory_directory, "{}.exe".format(tool_name) if is_windows else tool_name)
 
     # Run tool such that issues are placed in a temp folder
     with TempDir() as temp_location:
-        run_command([path_to_tool, path_to_corerun, temp_location])
+        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)])
 
         # Copy issues for upload
         print("Copying issues to " + output_directory)

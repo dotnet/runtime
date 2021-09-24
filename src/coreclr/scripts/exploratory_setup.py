@@ -120,14 +120,14 @@ def main(main_args):
             run_command(
                 ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/Antigen.git", tool_code_directory])
 
+            exploratory_bin_directory = path.join(tool_code_directory, "bin", "Release", "net5.0")
+
             # build the tool
             with ChangeDir(tool_code_directory):
                 dotnet_cmd = os.path.join(source_directory, "dotnet.cmd")
                 if not is_windows:
                     dotnet_cmd = os.path.join(source_directory, "dotnet.sh")
-                run_command([dotnet_cmd, "publish", "-c", "Release", "--self-contained", "-r", run_configuration], _exit_on_fail=True)
-
-            exploratory_bin_directory = path.join(tool_code_directory, "bin", "Release", "net5.0", run_configuration, "publish")
+                run_command([dotnet_cmd, "publish", "-c", "Release", "--self-contained", "-r", run_configuration, "-o", exploratory_bin_directory], _exit_on_fail=True)
 
             if not os.path.exists(path.join(exploratory_bin_directory, "{}.dll".format(tool_name))):
                 raise FileNotFoundError("{}.dll not present at {}".format(tool_name, exploratory_bin_directory))
@@ -145,6 +145,10 @@ def main(main_args):
     with open(foo_txt, "w") as foo_txt_file:
         foo_txt_file.write("hello world!")
 
+    # For x64/x86, run for 3 hours
+    # For arm/arm64, run for 2 hours
+    run_duration = 180 if arch_name.find("arm") == 0 else 120
+
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
@@ -154,6 +158,7 @@ def main(main_args):
     set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
     set_pipeline_variable("ToolName", tool_name)
+    set_pipeline_variable("RunDuration", run_duration)
 
 if __name__ == "__main__":
     args = parser.parse_args()

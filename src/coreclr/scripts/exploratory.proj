@@ -58,7 +58,7 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
-    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)exploratory.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -exploratory_directory $(ToolPath) -core_root $(CoreRoot) -tool_name $(ToolName)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)exploratory.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -exploratory_directory $(ToolPath) -core_root $(CoreRoot) -tool_name $(ToolName) -run_duration $(RunDuration)</WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>

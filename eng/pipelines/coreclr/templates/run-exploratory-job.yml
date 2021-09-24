@@ -94,8 +94,6 @@ jobs:
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/exploratory_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup)
       displayName: ${{ format('Exploratory setup ({0})', parameters.osGroup) }}
       env:
-        SYSTEM_ACCESSTOKEN: $(System.AccessToken) # secret access token to clone exploratory code
-        TOOL_REPO_PATH: $(ToolRepoPath)           # tool repo path
         TOOL_NAME: $(ToolName)                    # tool name
 
       # Run exploratory tool in helix
@@ -115,6 +113,7 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
         RunConfiguration: '$(RunConfiguration)'
         ToolName: '$(ToolName)'
+        RunDuration: '$(RunDuration)'
         continueOnError: true # Run the future step i.e. merge-mch step even if this step fails.
 
     - template: /eng/pipelines/common/upload-artifact-step.yml
