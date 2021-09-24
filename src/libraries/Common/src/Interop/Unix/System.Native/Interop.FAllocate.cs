@@ -9,9 +9,9 @@ internal static partial class Interop
     internal static partial class Sys
     {
         /// <summary>
-        /// Returns -1 on ENOSPC, -2 on EFBIG. On success or ignorable error, 0 is returned.
+        /// Returns -1 on error, 0 on success.
         /// </summary>
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PosixFAllocate", SetLastError = false)]
-        internal static extern int PosixFAllocate(SafeFileHandle fd, long offset, long length);
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FAllocate", SetLastError = true)]
+        internal static extern int FAllocate(SafeFileHandle fd, long offset, long length);
     }
 }

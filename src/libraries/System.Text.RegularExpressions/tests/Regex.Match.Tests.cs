@@ -407,6 +407,9 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @".*\dfoo", "1fooThis1foo should 1foo match", RegexOptions.None, 4, 9, true, "This1foo" };
             yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", RegexOptions.None, 0, 20, false, "" };
 
+            // Turkish case sensitivity
+            yield return new object[] { @"[\u0120-\u0130]", "\u0130", RegexOptions.None, 0, 1, true, "\u0130" };
+
             // .* : Case insensitive
             yield return new object[] { @".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase, 0, 21, true, "\nfoo" };
             yield return new object[] { @".*\dFoo", "This1foo should match", RegexOptions.IgnoreCase, 0, 21, true, "This1foo" };
@@ -463,6 +466,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36149")]
         [MemberData(nameof(Match_Basic_TestData_NetCore_WithEngine))]
         public async Task Match_NetCore(RegexEngine engine, string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
         {
@@ -1184,6 +1188,15 @@ namespace System.Text.RegularExpressions.Tests
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
             Assert.Equal(expected, r.IsMatch(input));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task TestCharIsLowerCultureEdgeCasesAroundTurkishCharacters(RegexEngine engine)
+        {
+            Regex r1 = await RegexHelpers.GetRegexAsync(engine, "[\u012F-\u0130]", RegexOptions.IgnoreCase);
+            Regex r2 = await RegexHelpers.GetRegexAsync(engine, "[\u012F\u0130]", RegexOptions.IgnoreCase);
+            Assert.Equal(r1.IsMatch("\u0130"), r2.IsMatch("\u0130"));
         }
 
         [Fact]

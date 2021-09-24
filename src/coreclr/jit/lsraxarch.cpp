@@ -1363,7 +1363,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             switch (blkNode->gtBlkOpKind)
             {
                 case GenTreeBlk::BlkOpKindUnroll:
-                    if (size < XMM_REGSIZE_BYTES)
+                    if ((size % XMM_REGSIZE_BYTES) != 0)
                     {
                         regMaskTP regMask = allRegs(TYP_INT);
 #ifdef TARGET_X86

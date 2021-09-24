@@ -1884,6 +1884,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
                              INS_FLAGS_DONT_CARE, REG_STACK_PROBE_HELPER_ARG);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
+        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_CALL_TARGET);
         compiler->unwindPadding();
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, /* canSkip */ false);
 
