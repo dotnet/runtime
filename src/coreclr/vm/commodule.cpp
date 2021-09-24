@@ -902,38 +902,3 @@ FCIMPL1(FC_BOOL_RET, COMModule::IsResource, ReflectModuleBaseObject* pModuleUNSA
     FC_RETURN_BOOL(pModuleUNSAFE->GetModule()->IsResource());
 }
 FCIMPLEND
-
-
-//---------------------------------------------------------------------
-// Helper code for PunkSafeHandle class. This does the Release in the
-// safehandle's critical finalizer.
-//---------------------------------------------------------------------
-static VOID __stdcall DReleaseTarget(IUnknown *punk)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (punk)
-    {
-        punk->Release();
-    }
-}
-
-
-//---------------------------------------------------------------------
-// Helper code for PunkSafeHandle class. This returns the function that performs
-// the Release() for the safehandle's critical finalizer.
-//---------------------------------------------------------------------
-FCIMPL0(void*, COMPunkSafeHandle::nGetDReleaseTarget)
-{
-    FCALL_CONTRACT;
-
-    return (void*)DReleaseTarget;
-}
-FCIMPLEND
-

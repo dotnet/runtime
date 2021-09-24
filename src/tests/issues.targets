@@ -1403,12 +1403,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/347422/b347422/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/529206/vsw529206ModuleCctor/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/asurt150271/test3/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/GitHub_11371/Negative_ByRefLikeType/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1586,9 +1580,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30862/b30862/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54371</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30869/b30869/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1610,9 +1601,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b47093/b47093/**">
             <Issue>https://github.com/dotnet/runtime/issues/54381</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54372</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54381</Issue>
         </ExcludeList>
@@ -1624,9 +1612,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/volatilstind_il_d/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/ceeillegal/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54372</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30892/b30892/**">
             <Issue>needs triage</Issue>
@@ -1640,20 +1625,11 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b27873/b27873/**">
             <Issue>https://github.com/dotnet/runtime/issues/54381</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54371</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b71179/b71179/**">
             <Issue>https://github.com/dotnet/runtime/issues/54381</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b37578/b37578/**">
             <Issue>https://github.com/dotnet/runtime/issues/54381</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/badendfinally/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54371</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54372</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28597/b28597/**">
             <Issue>needs triage</Issue>

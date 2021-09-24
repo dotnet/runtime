@@ -669,6 +669,11 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			}
 		}
 	}
+
+#ifdef TARGET_WASM
+	if (mini_type_is_reference (type))
+		mono_mark_vreg_as_ref (cfg, vreg);
+#endif
 	
 	cfg->varinfo [num] = inst;
 

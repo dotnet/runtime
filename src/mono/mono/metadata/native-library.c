@@ -1098,16 +1098,6 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 
 	g_assert (error_msg_out);
 
-#ifdef HOST_WIN32
-	if (import && import [0] == '#' && isdigit (import [1])) {
-		char *end;
-		long id;
-
-		id = strtol (import + 1, &end, 10);
-		if (id > 0 && *end == '\0')
-			import++;
-	}
-#endif
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 				"Searching for '%s'.", import);
 

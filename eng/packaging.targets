@@ -29,7 +29,7 @@
 
   <PropertyGroup Condition="'$(ServicingVersion)' != ''">
     <!-- Always update the package version in servicing. -->
-    <PackageVersion>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</PackageVersion>
+    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</VersionPrefix>
     <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
     <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
     <_AssemblyInTargetingPack Condition="'$(IsNETCoreAppSrc)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true'">true</_AssemblyInTargetingPack>

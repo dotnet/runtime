@@ -206,7 +206,7 @@ namespace System
             IntPtr[] outHandles = new IntPtr[inHandles.Length];
             for (int i = 0; i < inHandles.Length; i++)
             {
-                outHandles[i] = inHandles[i].GetTypeHandleInternal().Value;
+                outHandles[i] = inHandles[i].TypeHandle.Value;
             }
             length = outHandles.Length;
             return outHandles;
@@ -221,7 +221,7 @@ namespace System
 
             object? instantiatedObject = null;
 
-            IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
+            IntPtr typeHandle = genericParameter.TypeHandle.Value;
             CreateInstanceForAnotherGenericParameter(
                 new QCallTypeHandle(ref type),
                 &typeHandle,
@@ -244,8 +244,8 @@ namespace System
 
             IntPtr* pTypeHandles = stackalloc IntPtr[]
             {
-                genericParameter1.GetTypeHandleInternal().Value,
-                genericParameter2.GetTypeHandleInternal().Value
+                genericParameter1.TypeHandle.Value,
+                genericParameter2.TypeHandle.Value
             };
 
             CreateInstanceForAnotherGenericParameter(
@@ -673,7 +673,7 @@ namespace System
 
             if (HasInstantiation(retType) && !IsGenericTypeDefinition(retType))
             {
-                RuntimeTypeHandle nativeHandle = retType.GetTypeHandleInternal();
+                RuntimeTypeHandle nativeHandle = retType.TypeHandle;
                 GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref retType));
             }
 

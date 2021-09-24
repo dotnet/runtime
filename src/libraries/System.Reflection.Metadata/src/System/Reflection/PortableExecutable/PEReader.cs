@@ -175,11 +175,9 @@ namespace System.Reflection.PortableExecutable
             bool closeStream = true;
             try
             {
-                bool isFileStream = FileStreamReadLightUp.IsFileStream(peStream);
-
                 if ((options & (PEStreamOptions.PrefetchMetadata | PEStreamOptions.PrefetchEntireImage)) == 0)
                 {
-                    _peImage = new StreamMemoryBlockProvider(peStream, start, actualSize, isFileStream, (options & PEStreamOptions.LeaveOpen) != 0);
+                    _peImage = new StreamMemoryBlockProvider(peStream, start, actualSize, (options & PEStreamOptions.LeaveOpen) != 0);
                     closeStream = false;
                 }
                 else
@@ -187,7 +185,7 @@ namespace System.Reflection.PortableExecutable
                     // Read in the entire image or metadata blob:
                     if ((options & PEStreamOptions.PrefetchEntireImage) != 0)
                     {
-                        var imageBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, isFileStream, start, actualSize);
+                        var imageBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, start, actualSize);
                         _lazyImageBlock = imageBlock;
                         _peImage = new ExternalMemoryBlockProvider(imageBlock.Pointer, imageBlock.Size);
 
@@ -201,7 +199,7 @@ namespace System.Reflection.PortableExecutable
                     {
                         // The peImage is left null, but the lazyMetadataBlock is initialized up front.
                         _lazyPEHeaders = new PEHeaders(peStream);
-                        _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, isFileStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
+                        _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
                     }
                     // We read all we need, the stream is going to be closed.
                 }
