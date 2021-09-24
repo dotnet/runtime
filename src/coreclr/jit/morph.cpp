@@ -2828,10 +2828,20 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
     }
 #if defined(FEATURE_READYTORUN)
-#if defined(TARGET_ARMARCH)
-    // For arm, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
+    // For arm/arm64, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
     // for indirection cell address, which ZapIndirectHelperThunk expects.
-    if (call->IsR2RRelativeIndir() && !call->IsDelegateInvoke())
+    // For x64/x86 we use return address to get the indirection cell by disassembling the call site.
+    // That is not possible for fast tailcalls, so we only need this logic for fast tailcalls on xarch.
+    // Note that we call this before we know if something will be a fast tailcall or not.
+    // That's ok; after making something a tailcall, we will invalidate this information
+    // and reconstruct it if necessary. The tailcalling decision does not change since
+    // this is a non-standard arg in a register.
+    bool needsIndirectionCell = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
+#if defined(TARGET_XARCH)
+    needsIndirectionCell &= call->IsFastTailCall();
+#endif
+
+    if (needsIndirectionCell)
     {
         assert(call->gtEntryPoint.addr != nullptr);
 
@@ -2856,33 +2866,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum(),
                             NonStandardArgKind::R2RIndirectionCell);
     }
-#elif defined(TARGET_XARCH)
-    // For xarch fast tailcalls we do the same as ARM, leaving the indirection cell in the
-    // fast tailcall register.
-    // Note that we call this before we know if something will be a fast tailcall or not.
-    // That's ok; after making something a tailcall, we will invalidate this information
-    // and reconstruct it if necessary. The tailcalling decision does not change since
-    // this is a non-standard arg in a register.
-    if (call->IsR2RRelativeIndir() && call->IsFastTailCall() && !call->IsDelegateInvoke())
-    {
-        assert(call->gtEntryPoint.addr != nullptr);
-
-        size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
-        GenTree* indirectCellAddress = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
-#ifdef DEBUG
-        indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
-#endif
-        indirectCellAddress->SetRegNum(REG_FASTTAILCALL_TARGET);
-
-        // Push the stub address onto the list of arguments.
-        call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
-
-        numArgs++;
-        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum(),
-                            NonStandardArgKind::R2RIndirectionCell);
-    }
-
-#endif
 #endif
 
     // Allocate the fgArgInfo for the call node;
@@ -3224,7 +3207,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             eeGetSystemVAmd64PassStructInRegisterDescriptor(objClass, &structDesc);
         }
 #else // !UNIX_AMD64_ABI
-        size = 1; // On AMD64 Windows, all args fit in a single (64-bit) 'slot'
+        size               = 1; // On AMD64 Windows, all args fit in a single (64-bit) 'slot'
         if (!isStructArg)
         {
             byteSize = genTypeSize(argx);
@@ -7718,10 +7701,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
     // For R2R we might need a different entry point for this call if we are doing a tailcall.
     // The reason is that the normal delay load helper uses the return address to find the indirection
-    // cell in x64, but now the JIT is expected to leave the indirection cell in REG_FASTTAILCALL_TARGET.
+    // cell in xarch, but now the JIT is expected to leave the indirection cell in REG_R2R_INDIRECT_PARAM:
     // We optimize delegate invocations manually in the JIT so skip this for those.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef FEATURE_READYTORUN_COMPILER
     if (call->IsR2RRelativeIndir() && canFastTailCall && !fastTailCallToLoop && !call->IsDelegateInvoke())
     {
         info.compCompHnd->updateEntryPointForTailCall(&call->gtEntryPoint);
@@ -7732,7 +7713,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         call->ResetArgInfo();
 #endif
     }
-#endif
 
     // If this block has a flow successor, make suitable updates.
     //

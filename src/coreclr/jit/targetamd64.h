@@ -222,9 +222,9 @@
   #define REG_DEFAULT_HELPER_CALL_TARGET    REG_RAX
   #define RBM_DEFAULT_HELPER_CALL_TARGET    RBM_RAX
 
-  #define REG_FASTTAILCALL_TARGET REG_RAX   // Target register for fast tail call/indirection cell for R2R fast tailcall
-                                            // See ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell in crossgen2.
-  #define RBM_FASTTAILCALL_TARGET RBM_RAX
+  #define REG_R2R_INDIRECT_PARAM REG_RAX // Indirection cell for R2R fast tailcall
+                                         // See ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell in crossgen2.
+  #define RBM_R2R_INDIRECT_PARAM RBM_RAX
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
   #define REG_PINVOKE_COOKIE_PARAM          REG_R11

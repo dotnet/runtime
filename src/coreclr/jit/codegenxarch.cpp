@@ -5701,18 +5701,40 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     {
         emitter::EmitCallType type =
             (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;
-        // clang-format off
-        genEmitCall(type,
-                    methHnd,
-                    INDEBUG_LDISASM_COMMA(sigInfo)
-                    (void*)call->gtEntryPoint.addr
-                    X86_ARG(argSizeForEmitter),
-                    retSize
-                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                    ilOffset,
-                    REG_NA,
-                    call->IsFastTailCall());
-        // clang-format on
+        if (call->IsFastTailCall() && (type == emitter::EC_FUNC_TOKEN_INDIR))
+        {
+            // For fast tailcall with func token indir we already have the indirection cell in REG_R2R_INDIRECT_PARAM,
+            // so get it from there.
+            // clang-format off
+            GetEmitter()->emitIns_Call(
+                emitter::EC_INDIR_ARD,
+                methHnd,
+                INDEBUG_LDISASM_COMMA(sigInfo)
+                nullptr,
+                0,
+                retSize
+                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                gcInfo.gcVarPtrSetCur,
+                gcInfo.gcRegGCrefSetCur,
+                gcInfo.gcRegByrefSetCur,
+                ilOffset, REG_R2R_INDIRECT_PARAM, REG_NA, 0, 0, true);
+            // clang-format on
+        }
+        else
+        {
+            // clang-format off
+            genEmitCall(type,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        (void*)call->gtEntryPoint.addr
+                        X86_ARG(argSizeForEmitter),
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        ilOffset,
+                        REG_NA,
+                        call->IsFastTailCall());
+            // clang-format on
+        }
     }
 #endif
     else

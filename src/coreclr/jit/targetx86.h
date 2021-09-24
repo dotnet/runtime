@@ -163,6 +163,9 @@
   #define REG_JUMP_THUNK_PARAM     REG_EAX
   #define RBM_JUMP_THUNK_PARAM     RBM_EAX
 
+  #define REG_R2R_INDIRECT_PARAM   REG_EAX // Indirection cell for R2R fast tailcall, not currently used in x86.
+  #define RBM_R2R_INDIRECT_PARAM   RBM_EAX
+
 #if NOGC_WRITE_BARRIERS
   #define REG_WRITE_BARRIER        REG_EDX
   #define RBM_WRITE_BARRIER        RBM_EDX
@@ -187,10 +190,6 @@
   // VSD target address register
   #define REG_VIRTUAL_STUB_TARGET  REG_EAX
   #define RBM_VIRTUAL_STUB_TARGET  RBM_EAX
-
-  // Register where tailcall target is left, not currently used.
-  #define REG_FASTTAILCALL_TARGET  REG_EAX
-  #define RBM_FASTTAILCALL_TARGET  RBM_EAX
 
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_EDI      // EDI is p/invoke "Frame" pointer argument to CORINFO_HELP_INIT_PINVOKE_FRAME helper

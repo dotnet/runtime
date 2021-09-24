@@ -178,12 +178,22 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
-            ctrlExprCandidates = RBM_INT_CALLEE_TRASH;
+            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            assert(ctrlExprCandidates != RBM_NONE);
         }
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
-        buildInternalIntRegisterDefForNode(call);
+        // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
+        // and will load call address into the temp register from this register.
+        regMaskTP candidates = RBM_NONE;
+        if (call->IsFastTailCall())
+        {
+            candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            assert(candidates != RBM_NONE);
+        }
+
+        buildInternalIntRegisterDefForNode(call, candidates);
     }
 #ifdef TARGET_ARM
     else

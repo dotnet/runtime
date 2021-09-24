@@ -4817,15 +4817,12 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
         else
         {
-
             bool shouldOptimizeVirtualStubCall = false;
 #if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
             // Skip inserting the indirection node to load the address that is already
             // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
             // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
-            // However, for tail calls, the call target is always computed in RBM_FASTTAILCALL_TARGET
-            // and so do not optimize virtual stub calls for such cases.
-            shouldOptimizeVirtualStubCall = !call->IsTailCall();
+            shouldOptimizeVirtualStubCall = true;
 #endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
             if (!shouldOptimizeVirtualStubCall)
