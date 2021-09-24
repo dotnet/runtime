@@ -99,7 +99,7 @@ namespace System
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
-            if (!target.IsRuntimeImplemented())
+            if (target is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
             this.data = new DelegateData()
@@ -130,7 +130,7 @@ namespace System
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
             if (!(method is RuntimeMethodInfo || method is System.Reflection.Emit.DynamicMethod))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
@@ -166,7 +166,7 @@ namespace System
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
@@ -194,10 +194,10 @@ namespace System
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            if (!target.IsRuntimeImplemented())
+            if (target is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));

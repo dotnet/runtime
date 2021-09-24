@@ -290,8 +290,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>The allocated memory</returns>
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
-            RuntimeType? rt = type as RuntimeType;
-            if (rt == null)
+            if (type is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
             if (size < 0)

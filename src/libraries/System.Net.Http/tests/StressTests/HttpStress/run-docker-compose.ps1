@@ -73,6 +73,16 @@ finally {
 
 if (!$buildOnly)
 {
+    $env:DUMPS_SHARE_MOUNT_ROOT="C:/dumps-share"
+    if (!$env:CLIENT_DUMPS_SHARE) {
+        $env:CLIENT_DUMPS_SHARE=Join-Path $env:Temp $(New-Guid)
+    }
+    if (!$env:SERVER_DUMPS_SHARE) {
+        $env:SERVER_DUMPS_SHARE=Join-Path $env:Temp $(New-Guid)
+    }
+    New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+    New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
+
     $env:HTTPSTRESS_CLIENT_ARGS = $clientStressArgs
     $env:HTTPSTRESS_SERVER_ARGS = $serverStressArgs
     docker-compose --file "$COMPOSE_FILE" up --abort-on-container-exit

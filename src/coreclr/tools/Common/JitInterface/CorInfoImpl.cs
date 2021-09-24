@@ -394,7 +394,7 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
 #if READYTORUN
-            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
+            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray(), _compilation.NodeFactory);
 
             // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
             var baselineSupport = _compilation.InstructionSetSupport;
@@ -1625,7 +1625,7 @@ namespace Internal.JitInterface
                 pResolvedToken.hClass = ObjectToHandle(owningClass);
 
 #if !SUPPORT_JIT
-                _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
+                _compilation.TypeSystemContext.EnsureLoadableMethod(method);
 #endif
 
 #if READYTORUN
@@ -2393,8 +2393,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
-                    TypeDesc typeOfRuntimeType = _compilation.GetTypeOfRuntimeType();
-                    return typeOfRuntimeType != null ? ObjectToHandle(typeOfRuntimeType) : null;
+                    return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType"));
 
                 default:
                     throw new NotImplementedException();

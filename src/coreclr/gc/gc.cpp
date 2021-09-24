@@ -8051,6 +8051,8 @@ void gc_heap::set_brick (size_t index, ptrdiff_t val)
         brick_table [index] = (short)val+1;
     else
         brick_table [index] = (short)val;
+
+    dprintf (3, ("set brick[%Ix] to %d\n", index, (short)val));
 }
 
 inline
@@ -11654,6 +11656,39 @@ void gc_heap::clear_gen0_bricks()
     }
 }
 
+void gc_heap::check_gen0_bricks()
+{
+//#ifdef _DEBUG
+    if (gen0_bricks_cleared)
+    {
+#ifdef USE_REGIONS
+        heap_segment* gen0_region = generation_start_segment (generation_of (0));
+        while (gen0_region)
+        {
+            uint8_t* start = heap_segment_mem (gen0_region);
+#else 
+        heap_segment* gen0_region = ephemeral_heap_segment;
+        uint8_t* start = generation_allocation_start (generation_of (0));
+        {
+#endif //USE_REGIONS
+            size_t end_b = brick_of (heap_segment_allocated (gen0_region));
+            for (size_t b = brick_of (start); b < end_b; b++)
+            {
+                assert (brick_table[b] != 0);
+                if (brick_table[b] == 0)
+                {
+                    GCToOSInterface::DebugBreak();
+                }
+            }
+
+#ifdef USE_REGIONS
+            gen0_region = heap_segment_next (gen0_region);
+#endif //USE_REGIONS
+        }
+    }
+//#endif //_DEBUG
+}
+
 #ifdef BACKGROUND_GC
 void gc_heap::rearrange_small_heap_segments()
 {
@@ -15100,6 +15135,10 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
         clear_start = obj_end;
     }
 
+    // fetch the ephemeral_heap_segment *before* we release the msl
+    // - ephemeral_heap_segment may change due to other threads allocating
+    heap_segment* gen0_segment = ephemeral_heap_segment;
+
     // check if space to clear is all dirty from prior use or only partially
     if ((seg == 0) || (clear_limit <= heap_segment_used (seg)))
     {
@@ -15141,7 +15180,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
 #endif //FEATURE_EVENT_TRACE 
 
     //this portion can be done after we release the lock
-    if (seg == ephemeral_heap_segment ||
+    if (seg == gen0_segment ||
        ((seg == nullptr) && (gen_number == 0) && (limit_size >= CLR_SIZE / 2)))
     {
         if (gen0_must_clear_bricks > 0)
@@ -20275,9 +20314,13 @@ void gc_heap::gc1()
         {
             mark_phase (n, FALSE);
 
+            check_gen0_bricks();
+
             GCScan::GcRuntimeStructuresValid (FALSE);
             plan_phase (n);
             GCScan::GcRuntimeStructuresValid (TRUE);
+
+            check_gen0_bricks();
         }
     }
 
@@ -20703,14 +20746,14 @@ void gc_heap::gc1()
 #endif //FEATURE_LOH_COMPACTION
 
     decommit_ephemeral_segment_pages();
-#ifdef USE_REGIONS
-    distribute_free_regions();
-#endif //USE_REGIONS
-
     fire_pevents();
 
     if (!(settings.concurrent))
     {
+#ifdef USE_REGIONS
+        distribute_free_regions();
+#endif //USE_REGIONS
+
         rearrange_uoh_segments();
         update_end_ngc_time();
         update_end_gc_time_per_heap();
@@ -21588,6 +21631,7 @@ void gc_heap::garbage_collect (int n)
 #ifdef JOIN_STATS
     gc_t_join.start_ts(this);
 #endif //JOIN_STATS
+    check_gen0_bricks();
     clear_gen0_bricks();
 #endif //MULTIPLE_HEAPS
 
@@ -22286,13 +22330,31 @@ BOOL gc_heap::gc_mark1 (uint8_t* o)
     return marked;
 }
 
+#ifdef USE_REGIONS
+inline bool is_in_heap_range (uint8_t* o)
+{
+#ifdef FEATURE_BASICFREEZE
+    // we may have frozen objects in read only segments
+    // outside of the reserved address range of the gc heap
+    assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
+        (o == nullptr) || (ro_segment_lookup (o) != nullptr));
+    return ((g_gc_lowest_address <= o) && (o < g_gc_highest_address));
+#else //FEATURE_BASICFREEZE
+    // without frozen objects, every non-null pointer must be
+    // within the heap
+    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
+    return (o != nullptr);
+#endif //FEATURE_BASICFREEZE
+}
+#endif //USE_REGIONS
+
 inline
 BOOL gc_heap::gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_gen)
 {
 #ifdef USE_REGIONS
     assert (low == 0);
     assert (high == 0);
-    if (o)
+    if (is_in_heap_range (o))
     {
         BOOL already_marked = marked (o);
         if (already_marked)
@@ -23318,7 +23380,7 @@ inline
 void gc_heap::mark_object (uint8_t* o THREAD_NUMBER_DCL)
 {
 #ifdef USE_REGIONS
-    if ((o != nullptr) && is_in_condemned_gc (o))
+    if (is_in_heap_range (o) && is_in_condemned_gc (o))
     {
         mark_object_simple (&o THREAD_NUMBER_ARG);
     }
@@ -30499,7 +30561,7 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 {
     uint8_t* old_address = *pold_address;
 #ifdef USE_REGIONS
-    if (!old_address || !should_check_brick_for_reloc (old_address))
+    if (!is_in_heap_range (old_address) || !should_check_brick_for_reloc (old_address))
     {
         return;
     }
@@ -30639,7 +30701,8 @@ gc_heap::check_demotion_helper (uint8_t** pval, uint8_t* parent_obj)
 {
 #ifdef USE_REGIONS
     uint8_t* child_object = *pval;
-    if (!child_object) return;
+    if (!is_in_heap_range (child_object))
+        return;
     int child_object_plan_gen = get_region_plan_gen_num (child_object);
     bool child_obj_demoted_p = is_region_demoted (child_object);
 
@@ -35875,7 +35938,8 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     assert (nhigh == 0);
     assert (next_boundary == 0);
     uint8_t* child_object = *poo;
-    if (!child_object) return;
+    if (!is_in_heap_range (child_object))
+        return;
     int child_object_gen = get_region_gen_num (child_object);
     int saved_child_object_gen = child_object_gen;
     uint8_t* saved_child_object = child_object;
@@ -43182,7 +43246,7 @@ bool GCHeap::IsPromoted(Object* object)
     else
     {
 #ifdef USE_REGIONS
-        return (o ? (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : true) : true);
+        return (is_in_heap_range (o) ? (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : true) : true);
 #else
         gc_heap* hp = gc_heap::heap_of (o);
         return (!((o < hp->gc_high) && (o >= hp->gc_low))

@@ -68,8 +68,8 @@ namespace System
         internal long _index;
         internal int _generation;
         internal int _pauseTimePercentage;
-        internal bool _compacted;
-        internal bool _concurrent;
+        internal byte _compacted;
+        internal byte _concurrent;
 
         private GCGenerationInfo _generationInfo0;
         private GCGenerationInfo _generationInfo1;
@@ -158,12 +158,12 @@ namespace System
         /// <summary>
         /// Is this a compacting GC or not.
         /// </summary>
-        public bool Compacted => _data._compacted;
+        public bool Compacted => _data._compacted != 0;
 
         /// <summary>
         /// Is this a concurrent GC (BGC) or not.
         /// </summary>
-        public bool Concurrent => _data._concurrent;
+        public bool Concurrent => _data._concurrent != 0;
 
         /// <summary>
         /// Total committed bytes of the managed heap.

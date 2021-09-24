@@ -28,10 +28,10 @@ body:
         ```C#
         namespace System.Collections.Generic
         {
-             public class MyFancyCollection<T> : IEnumerable<T>
-             {
-                  public void Fancy(T item);
-             }
+            public class MyFancyCollection<T> : IEnumerable<T>
+            {
+                public void Fancy(T item);
+            }
         }
         ```     
     validations:

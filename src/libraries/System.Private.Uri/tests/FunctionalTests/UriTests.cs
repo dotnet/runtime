@@ -778,6 +778,13 @@ namespace System.PrivateUri.Tests
             Assert.False(timedOut);
         }
 
+        [Fact]
+        public static void UriWithUnicodeAndEmptyAuthority_ParsedCorrectly()
+        {
+            const string UriString = "custom:///\u00FC";
+            Assert.Equal(UriString, new Uri(UriString, UriKind.Absolute).ToString());
+        }
+
         public static IEnumerable<object[]> FilePathHandlesNonAscii_TestData()
         {
             if (PlatformDetection.IsNotWindows)

@@ -2154,18 +2154,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     ContextOptions remoteOptions = DefaultContextOptions.ADDefaultContextOption;
 
-#if USE_CTX_CACHE
                     PrincipalContext remoteCtx = SDSCache.Domain.GetContext(domainName, this.credentials, remoteOptions);
-#else
-                    PrincipalContext remoteCtx = new PrincipalContext(
-                                    ContextType.Domain,
-                                    domainName,
-                                    null,
-                                    (this.credentials != null ? credentials.UserName : null),
-                                    (this.credentials != null ? credentials.Password : null),
-                                    remoteOptions);
-
-#endif
                     foreignStoreCtx = remoteCtx.QueryCtx;
                 }
 
@@ -2582,5 +2571,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-//#endif  // PAPI_AD

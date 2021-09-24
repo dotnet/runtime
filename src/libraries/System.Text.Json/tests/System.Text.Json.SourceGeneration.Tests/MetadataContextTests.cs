@@ -49,36 +49,36 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override void EnsureFastPathGeneratedAsExpected()
         {
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.Location.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.RepeatedLocation.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.NumberTypes.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ActiveOrUpcomingEvent.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.CampaignSummaryViewModel.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.IndexViewModel.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.WeatherForecastWithPOCOs.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.EmptyPoco.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.HighLowTemps.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyType.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyType2.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyIntermediateType.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.HighLowTempsImmutable.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedClass.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedNestedClass.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.SampleEnum.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverter.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverter.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverterFactory.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterFactory.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverterProperty.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterProperty.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverterPropertyFactory.Serialize);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterPropertyFactory.Serialize);
-            Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.Serialize);
-            Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.Serialize);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.Location.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.RepeatedLocation.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.NumberTypes.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ActiveOrUpcomingEvent.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.CampaignSummaryViewModel.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.IndexViewModel.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.WeatherForecastWithPOCOs.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.EmptyPoco.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.HighLowTemps.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyType.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyType2.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyIntermediateType.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedClass.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedNestedClass.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverter.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverter.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverterFactory.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterFactory.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverterProperty.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterProperty.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
+            Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }
     }
 
@@ -147,38 +147,38 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override void EnsureFastPathGeneratedAsExpected()
         {
-            Assert.Null(MetadataContext.Default.Location.Serialize);
-            Assert.Null(MetadataContext.Default.RepeatedLocation.Serialize);
-            Assert.Null(MetadataContext.Default.NumberTypes.Serialize);
-            Assert.Null(MetadataContext.Default.ActiveOrUpcomingEvent.Serialize);
-            Assert.Null(MetadataContext.Default.CampaignSummaryViewModel.Serialize);
-            Assert.Null(MetadataContext.Default.IndexViewModel.Serialize);
-            Assert.Null(MetadataContext.Default.WeatherForecastWithPOCOs.Serialize);
-            Assert.Null(MetadataContext.Default.EmptyPoco.Serialize);
-            Assert.Null(MetadataContext.Default.HighLowTemps.Serialize);
-            Assert.Null(MetadataContext.Default.MyType.Serialize);
-            Assert.Null(MetadataContext.Default.MyType2.Serialize);
-            Assert.Null(MetadataContext.Default.MyTypeWithCallbacks.Serialize);
-            Assert.Null(MetadataContext.Default.MyTypeWithPropertyOrdering.Serialize);
-            Assert.Null(MetadataContext.Default.MyIntermediateType.Serialize);
-            Assert.Null(MetadataContext.Default.HighLowTempsImmutable.Serialize);
-            Assert.Null(MetadataContext.Default.MyNestedClass.Serialize);
-            Assert.Null(MetadataContext.Default.MyNestedNestedClass.Serialize);
-            Assert.Null(MetadataContext.Default.ObjectArray.Serialize);
-            Assert.Null(MetadataContext.Default.SampleEnum.Serialize);
-            Assert.Null(MetadataContext.Default.String.Serialize);
-            Assert.Null(MetadataContext.Default.ValueTupleStringInt32Boolean.Serialize);
-            Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.Serialize);
-            Assert.Null(MetadataContext.Default.ClassWithCustomConverter.Serialize);
-            Assert.Null(MetadataContext.Default.StructWithCustomConverter.Serialize);
-            Assert.Null(MetadataContext.Default.ClassWithCustomConverterFactory.Serialize);
-            Assert.Null(MetadataContext.Default.StructWithCustomConverterFactory.Serialize);
-            Assert.Null(MetadataContext.Default.ClassWithCustomConverterProperty.Serialize);
-            Assert.Null(MetadataContext.Default.StructWithCustomConverterProperty.Serialize);
-            Assert.Null(MetadataContext.Default.ClassWithCustomConverterPropertyFactory.Serialize);
-            Assert.Null(MetadataContext.Default.StructWithCustomConverterPropertyFactory.Serialize);
-            Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.ClassWithBadCustomConverter.Serialize);
-            Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.Serialize);
+            Assert.Null(MetadataContext.Default.Location.SerializeHandler);
+            Assert.Null(MetadataContext.Default.RepeatedLocation.SerializeHandler);
+            Assert.Null(MetadataContext.Default.NumberTypes.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ActiveOrUpcomingEvent.SerializeHandler);
+            Assert.Null(MetadataContext.Default.CampaignSummaryViewModel.SerializeHandler);
+            Assert.Null(MetadataContext.Default.IndexViewModel.SerializeHandler);
+            Assert.Null(MetadataContext.Default.WeatherForecastWithPOCOs.SerializeHandler);
+            Assert.Null(MetadataContext.Default.EmptyPoco.SerializeHandler);
+            Assert.Null(MetadataContext.Default.HighLowTemps.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyType.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyType2.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyTypeWithCallbacks.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyIntermediateType.SerializeHandler);
+            Assert.Null(MetadataContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyNestedClass.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyNestedNestedClass.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MetadataContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MetadataContext.Default.String.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ClassWithCustomConverter.SerializeHandler);
+            Assert.Null(MetadataContext.Default.StructWithCustomConverter.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ClassWithCustomConverterFactory.SerializeHandler);
+            Assert.Null(MetadataContext.Default.StructWithCustomConverterFactory.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ClassWithCustomConverterProperty.SerializeHandler);
+            Assert.Null(MetadataContext.Default.StructWithCustomConverterProperty.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Null(MetadataContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.ClassWithBadCustomConverter.SerializeHandler);
+            Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }
 
         [Fact]
