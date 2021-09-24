@@ -118,10 +118,23 @@ public class WasmAppBuilder : Task
 
     public override bool Execute ()
     {
+        try
+        {
+            return ExecuteInternal();
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError(laee.Message);
+            return false;
+        }
+    }
+
+    private bool ExecuteInternal ()
+    {
         if (!File.Exists(MainJS))
-            throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
+            throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
-            throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+            throw new LogAsErrorException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
         if (Assemblies?.Length == 0)
         {
@@ -162,8 +175,12 @@ public class WasmAppBuilder : Task
         }
         FileCopyChecked(MainJS!, Path.Combine(AppDir, "runtime.js"), string.Empty);
 
-        var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
-        File.WriteAllText(Path.Combine(AppDir, "index.html"), html);
+        string indexHtmlPath = Path.Combine(AppDir, "index.html");
+        if (!File.Exists(indexHtmlPath))
+        {
+            var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+            File.WriteAllText(indexHtmlPath, html);
+        }
 
         foreach (var assembly in _assemblies)
         {

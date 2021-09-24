@@ -982,7 +982,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = (DWORD)(b2 & 0x3F);
 
             printf("    %02X %02X       save_fregp X#%u Z#%u (0x%02X); stp %s, %s, [sp, #%u]\n", b1, b2, x, z, z,
-                   getRegName(REG_V8 + x, true), getRegName(REG_V8 + x + 1, true), z * 8);
+                   getRegName(REG_V8 + x), getRegName(REG_V8 + x + 1), z * 8);
         }
         else if ((b1 & 0xFE) == 0xDA)
         {
@@ -996,7 +996,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = (DWORD)(b2 & 0x3F);
 
             printf("    %02X %02X       save_fregp_x X#%u Z#%u (0x%02X); stp %s, %s, [sp, #-%u]!\n", b1, b2, x, z, z,
-                   getRegName(REG_V8 + x, true), getRegName(REG_V8 + x + 1, true), (z + 1) * 8);
+                   getRegName(REG_V8 + x), getRegName(REG_V8 + x + 1), (z + 1) * 8);
         }
         else if ((b1 & 0xFE) == 0xDC)
         {
@@ -1009,7 +1009,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = (DWORD)(b2 & 0x3F);
 
             printf("    %02X %02X       save_freg X#%u Z#%u (0x%02X); str %s, [sp, #%u]\n", b1, b2, x, z, z,
-                   getRegName(REG_V8 + x, true), z * 8);
+                   getRegName(REG_V8 + x), z * 8);
         }
         else if (b1 == 0xDE)
         {
@@ -1023,7 +1023,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = (DWORD)(b2 & 0x1F);
 
             printf("    %02X %02X       save_freg_x X#%u Z#%u (0x%02X); str %s, [sp, #-%u]!\n", b1, b2, x, z, z,
-                   getRegName(REG_V8 + x, true), (z + 1) * 8);
+                   getRegName(REG_V8 + x), (z + 1) * 8);
         }
         else if (b1 == 0xE0)
         {

@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections.Immutable;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -256,15 +256,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                         bool isPartial = false;
                                         foreach (SyntaxToken mod in method.Modifiers)
                                         {
-                                            switch (mod.Text)
+                                            if (mod.IsKind(SyntaxKind.PartialKeyword))
                                             {
-                                                case "partial":
-                                                    isPartial = true;
-                                                    break;
-
-                                                case "static":
-                                                    isStatic = true;
-                                                    break;
+                                                isPartial = true;
+                                            }
+                                            else if (mod.IsKind(SyntaxKind.StaticKeyword))
+                                            {
+                                                isStatic = true;
                                             }
                                         }
 
@@ -438,11 +436,21 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             // determine the namespace the class is declared in, if any
                                             SyntaxNode? potentialNamespaceParent = classDec.Parent;
-                                            while (potentialNamespaceParent != null && potentialNamespaceParent is not NamespaceDeclarationSyntax)
+                                            while (potentialNamespaceParent != null &&
+                                                   potentialNamespaceParent is not NamespaceDeclarationSyntax
+#if ROSLYN4_0_OR_GREATER
+                                                   && potentialNamespaceParent is not FileScopedNamespaceDeclarationSyntax
+#endif
+                                                   )
                                             {
                                                 potentialNamespaceParent = potentialNamespaceParent.Parent;
                                             }
+
+#if ROSLYN4_0_OR_GREATER
+                                            if (potentialNamespaceParent is BaseNamespaceDeclarationSyntax namespaceParent)
+#else
                                             if (potentialNamespaceParent is NamespaceDeclarationSyntax namespaceParent)
+#endif
                                             {
                                                 nspace = namespaceParent.Name.ToString();
                                                 while (true)
@@ -666,7 +674,7 @@ namespace Microsoft.Extensions.Logging.Generators
         /// </summary>
         internal class LoggerClass
         {
-            public readonly List<LoggerMethod> Methods = new ();
+            public readonly List<LoggerMethod> Methods = new();
             public string Keyword = string.Empty;
             public string Namespace = string.Empty;
             public string Name = string.Empty;
@@ -679,10 +687,10 @@ namespace Microsoft.Extensions.Logging.Generators
         /// </summary>
         internal class LoggerMethod
         {
-            public readonly List<LoggerParameter> AllParameters = new ();
-            public readonly List<LoggerParameter> TemplateParameters = new ();
-            public readonly Dictionary<string, string> TemplateMap = new (StringComparer.OrdinalIgnoreCase);
-            public readonly List<string> TemplateList = new ();
+            public readonly List<LoggerParameter> AllParameters = new();
+            public readonly List<LoggerParameter> TemplateParameters = new();
+            public readonly Dictionary<string, string> TemplateMap = new(StringComparer.OrdinalIgnoreCase);
+            public readonly List<string> TemplateList = new();
             public string Name = string.Empty;
             public string Message = string.Empty;
             public int? Level;

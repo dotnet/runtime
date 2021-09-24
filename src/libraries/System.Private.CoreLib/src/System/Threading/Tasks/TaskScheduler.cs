@@ -353,7 +353,8 @@ namespace System.Threading.Tasks
         {
             get
             {
-                if (m_taskSchedulerId == 0)
+                int id = m_taskSchedulerId;
+                if (id == 0)
                 {
                     int newId;
 
@@ -365,9 +366,11 @@ namespace System.Threading.Tasks
                     } while (newId == 0);
 
                     Interlocked.CompareExchange(ref m_taskSchedulerId, newId, 0);
+
+                    id = m_taskSchedulerId;
                 }
 
-                return m_taskSchedulerId;
+                return id;
             }
         }
 

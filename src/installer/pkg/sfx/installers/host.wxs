@@ -5,7 +5,7 @@
 
   <Fragment>
 
-    <ComponentGroup Id="InstallSharedHostandDetectionKeys">
+    <ComponentGroup Id="InstallSharedHostandDetectionKeys" Directory="DOTNETHOME">
 
       <!-- When installing the SharedHost; copy all files to the traditional default install location: 'ProgramFiles'\dotnet even when installing into a custom location.
 
@@ -20,17 +20,32 @@
         1. the legacy SDK can be subsequently installed
         2. the user runs 'dotnet' commands directly against 'ProgramFiles'\dotnet\dotnet.exe -->
 
-      <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}" >
+      <Component Id="cmpCoreHost" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}" >
         <File Id="fileCoreHostExe" KeyPath="yes" Source="$(var.HostSrc)\dotnet.exe">
           <CopyFile Id="copyFileCoreHostExe" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>
+      </Component>
+        
+      <Component Id="cmpSharedHostVersionRegistry" Guid="*">
         <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
-          <RegistryValue Action="write" Name="Version" Type="string" Value="$(var.NugetVersion)"/>
+          <RegistryValue KeyPath="yes" Action="write" Name="Version" Type="string" Value="$(var.NugetVersion)"/>
+        </RegistryKey>
+      </Component>
+
+      <Component Id="cmdPath" Guid="*">
+        <?if $(var.Platform)~=x64 ?>
+        <!-- For x64 installer, only add to PATH when actually on native architecture -->
+        <Condition>NOT NON_NATIVE_ARCHITECTURE</Condition>
+        <?endif?>
+
+        <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
+        <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
+          <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
         </RegistryKey>
         <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
       </Component>
 
-      <Component Id="cmpLicenseFiles" Directory="DOTNETHOME" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
+      <Component Id="cmpLicenseFiles" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
         <File Id="fileLicenseTxt" KeyPath="yes" Source="$(var.HostSrc)\LICENSE.txt">
           <CopyFile Id="copyFileLicenseTxt" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>
@@ -47,6 +62,16 @@
     <DirectoryRef Id="$(var.Program_Files)">
       <Directory Id="PROGRAMFILES_DOTNET" Name="dotnet" />
     </DirectoryRef>
+    
+    <?if $(var.Platform)~=x64 ?>
+    <CustomActionRef Id="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" />
+    <?endif?>
   </Fragment>
-
+  
+  <Fragment>
+    <!-- Unlike DOTNETHOME which gives precedence to a user specified value over an x64 suffix, here we always want the suffixed path -->
+    <SetProperty Action="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" Id="PROGRAMFILES_DOTNET" Value="[$(var.Program_Files)]dotnet\x64\" After="Set_NON_NATIVE_ARCHITECTURE">
+      NON_NATIVE_ARCHITECTURE
+    </SetProperty>
+  </Fragment>
 </Wix>

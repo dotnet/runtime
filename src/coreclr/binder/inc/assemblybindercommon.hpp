@@ -56,7 +56,7 @@ namespace BINDER_SPACE
 #if !defined(DACCESS_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
-                                                      /* in */ DefaultAssemblyBinder *pTPABinder,
+                                                      /* in */ DefaultAssemblyBinder *pDefaultBinder,
                                                       /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,
@@ -69,7 +69,7 @@ namespace BINDER_SPACE
 
         static HRESULT TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind);
 
-        static HRESULT DefaultBinderSetupContext(DefaultAssemblyBinder** ppTPABinder);
+        static HRESULT DefaultBinderSetupContext(DefaultAssemblyBinder** ppDefaultBinder);
 
         // TODO: The call indicates that this can come from a case where
         // pDomain->GetFusionContext() is null, hence this is static function

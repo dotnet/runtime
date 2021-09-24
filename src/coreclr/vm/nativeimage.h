@@ -56,7 +56,6 @@ public:
     static bool IsDeleted(const KeyValuePair<LPCUTF8, PTR_NativeImage>& e) { return e.Key() == nullptr; }
 };
 
-class AssemblyLoadContext;
 class ReadyToRunInfo;
 class PEFile;
 class PEImage;
@@ -77,7 +76,7 @@ private:
     // Points to the OwnerCompositeExecutable section content within the component MSIL module
     LPCUTF8 m_fileName;
 
-    AssemblyLoadContext *m_pAssemblyLoadContext;
+    AssemblyBinder *m_pAssemblyBinder;
     ReadyToRunInfo *m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
     PEImageLayout *m_pImageLayout;
@@ -93,7 +92,7 @@ private:
     bool m_eagerFixupsHaveRun;
 
 private:
-    NativeImage(AssemblyLoadContext *pAssemblyLoadContext, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
+    NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
 
 protected:
     void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator, AllocMemTracker *pamTracker);
@@ -104,7 +103,7 @@ public:
     static NativeImage *Open(
         Module *componentModule,
         LPCUTF8 nativeImageFileName,
-        AssemblyLoadContext *pAssemblyLoadContext,
+        AssemblyBinder *pAssemblyBinder,
         LoaderAllocator *pLoaderAllocator,
         /* out */ bool *isNewNativeImage);
 
@@ -118,7 +117,7 @@ public:
     IMDInternalImport *GetManifestMetadata() const { return m_pManifestMetadata; }
     uint32_t GetManifestAssemblyCount() const { return m_manifestAssemblyCount; }
     PTR_Assembly *GetManifestMetadataAssemblyRefMap() { return m_pNativeMetadataAssemblyRefMap; }
-    AssemblyLoadContext *GetAssemblyLoadContext() const { return m_pAssemblyLoadContext; }
+    AssemblyBinder *GetAssemblyBinder() const { return m_pAssemblyBinder; }
 
     Assembly *LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly);
     

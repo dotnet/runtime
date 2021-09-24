@@ -8451,7 +8451,7 @@ bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetOfIndirection,
                                      unsigned * pOffsetAfterIndirection,
-                                     bool * isRelative) 
+                                     bool * isRelative)
 {
     CONTRACTL {
         NOTHROW;
@@ -10783,6 +10783,12 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
+
+#ifdef FEATURE_INTERPRETER
+    // TODO: the InterpterCEEInfo doesn't support features about W^X.
+    // see also #53173
+    if (m_pCodeHeap == nullptr) return;
+#endif
 
     WriteCodeBytes();
 

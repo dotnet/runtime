@@ -927,7 +927,7 @@ namespace System.ServiceProcess
         /// <param name="stopDependentServices">
         /// <c>true</c> to stop all running dependent services together with the service; <c>false</c> to stop only the service.
         /// </param>
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         public
 #else
         private

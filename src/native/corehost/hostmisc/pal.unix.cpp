@@ -341,7 +341,41 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
     // check for the POSIX standard environment variable
     if (pal::getenv(_X("HOME"), &directory))
     {
-        return is_read_write_able_directory(directory);
+        if (is_read_write_able_directory(directory))
+        {
+            return true;
+        }
+        else
+        {
+            trace::error(_X("Default extraction directory [%s] either doesn't exist or is not accessible for read/write."), directory.c_str());
+        }
+    }
+    else
+    {
+        // fallback to the POSIX standard getpwuid() library function
+        struct passwd* pwuid = NULL;
+        errno = 0;
+        do
+        {
+            pwuid = getpwuid(getuid());
+        } while (pwuid == NULL && errno == EINTR);
+
+        if (pwuid != NULL)
+        {
+            directory.assign(pwuid->pw_dir);
+            if (is_read_write_able_directory(directory))
+            {
+                return true;
+            }
+            else
+            {
+                trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and directory reported by getpwuid() [%s] either doesn't exist or is not accessible for read/write."), pwuid->pw_dir);
+            }
+        }
+        else
+        {
+            trace::error(_X("Failed to determine default extraction location. Environment variable '$HOME' is not defined and getpwuid() returned NULL."));
+        }
     }
 
     return false;
@@ -367,6 +401,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
     else if (errno != EEXIST)
     {
+        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno));
         return false;
     }
 
@@ -383,12 +418,12 @@ pal::string_t pal::get_dotnet_self_registered_config_location()
 {
     //  ***Used only for testing***
     pal::string_t environment_install_location_override;
-    if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH"), &environment_install_location_override))
+    if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_PATH"), &environment_install_location_override))
     {
         return environment_install_location_override;
     }
 
-    return _X("/etc/dotnet/install_location");
+    return _X("/etc/dotnet");
 }
 
 namespace
@@ -414,6 +449,42 @@ namespace
     }
 }
 
+bool get_install_location_from_file(const pal::string_t& file_path, bool& file_found, pal::string_t& install_location)
+{
+    file_found = true;
+    bool install_location_found = false;
+    FILE* install_location_file = pal::file_open(file_path, "r");
+    if (install_location_file != nullptr)
+    {
+        if (!get_line_from_file(install_location_file, install_location))
+        {
+            trace::warning(_X("Did not find any install location in '%s'."), file_path.c_str());
+        }
+        else
+        {
+            install_location_found = true;
+        }
+
+        fclose(install_location_file);
+        if (install_location_found)
+            return true;
+    }
+    else
+    {
+        if (errno == ENOENT)
+        {
+            trace::verbose(_X("The install_location file ['%s'] does not exist - skipping."), file_path.c_str());
+            file_found = false;
+        }
+        else
+        {
+            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno));
+        }
+    }
+
+    return false;
+}
+
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
     recv->clear();
@@ -427,71 +498,31 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    pal::string_t install_location_file_path = get_dotnet_self_registered_config_location();
-    trace::verbose(_X("Looking for install_location file in '%s'."), install_location_file_path.c_str());
-    FILE* install_location_file = pal::file_open(install_location_file_path, "r");
-    if (install_location_file == nullptr)
-    {
-        if (errno == ENOENT)
-        {
-            trace::verbose(_X("The install_location file ['%s'] does not exist - skipping."), install_location_file_path.c_str());
-        }
-        else
-        {
-            trace::error(_X("The install_location file ['%s'] failed to open: %s."), install_location_file_path.c_str(), pal::strerror(errno));
-        }
-
-        return false;
-    }
+    pal::string_t install_location_path = get_dotnet_self_registered_config_location();
+    pal::string_t arch_specific_install_location_file_path = install_location_path;
+    append_path(&arch_specific_install_location_file_path, (_X("install_location_") + to_lower(get_arch())).c_str());
+    trace::verbose(_X("Looking for architecture specific install_location file in '%s'."), arch_specific_install_location_file_path.c_str());
 
     pal::string_t install_location;
-    int current_line = 0;
-    bool is_first_line = true, install_location_found = false;
-
-    while (get_line_from_file(install_location_file, install_location))
+    bool file_found = false;
+    if (!get_install_location_from_file(arch_specific_install_location_file_path, file_found, install_location))
     {
-        current_line++;
-        size_t arch_sep = install_location.find(_X('='));
-        if (arch_sep == pal::string_t::npos)
+        if (file_found)
         {
-            if (is_first_line)
-            {
-                recv->assign(install_location);
-                install_location_found = true;
-                trace::verbose(_X("Found install location path '%s'."), install_location.c_str());
-            }
-            else
-            {
-                trace::warning(_X("Found unprefixed install location path '%s' on line %d."), install_location.c_str(), current_line);
-                trace::warning(_X("Only the first line in '%s' may not have an architecture prefix."), install_location_file_path.c_str());
-            }
-
-            is_first_line = false;
-            continue;
+            return false;
         }
 
-        pal::string_t arch_prefix = install_location.substr(0, arch_sep);
-        pal::string_t path_to_location = install_location.substr(arch_sep + 1);
+        pal::string_t legacy_install_location_file_path = install_location_path;
+        append_path(&legacy_install_location_file_path, _X("install_location"));
+        trace::verbose(_X("Looking for install_location file in '%s'."), legacy_install_location_file_path.c_str());
 
-        trace::verbose(_X("Found architecture-specific install location path: '%s' ('%s')."), path_to_location.c_str(), arch_prefix.c_str());
-        if (pal::strcasecmp(arch_prefix.c_str(), get_arch()) == 0)
+        if (!get_install_location_from_file(legacy_install_location_file_path, file_found, install_location))
         {
-            recv->assign(path_to_location);
-            install_location_found = true;
-            trace::verbose(_X("Found architecture-specific install location path matching the current host architecture ('%s'): '%s'."), arch_prefix.c_str(), path_to_location.c_str());
-            break;
+            return false;
         }
-
-        is_first_line = false;
     }
 
-    fclose(install_location_file);
-    if (!install_location_found)
-    {
-        trace::warning(_X("Did not find any install location in '%s'."), install_location_file_path.c_str());
-        return false;
-    }
-
+    recv->assign(install_location);
     trace::verbose(_X("Using install location '%s'."), recv->c_str());
     return true;
 }

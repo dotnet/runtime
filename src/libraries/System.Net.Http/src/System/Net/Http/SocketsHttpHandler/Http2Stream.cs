@@ -85,6 +85,8 @@ namespace System.Net.Http
 
             private int _headerBudgetRemaining;
 
+            private bool _sendRstOnResponseClose;
+
             public Http2Stream(HttpRequestMessage request, Http2Connection connection)
             {
                 _request = request;
@@ -182,9 +184,9 @@ namespace System.Net.Http
                 // either we know we need to do a Expect: 100-continue send or until we know that the copying of our
                 // content completed asynchronously.
                 CancellationTokenRegistration linkedRegistration = default;
+                bool sendRequestContent = true;
                 try
                 {
-                    bool sendRequestContent = true;
                     if (_expect100ContinueWaiter != null)
                     {
                         linkedRegistration = RegisterRequestBodyCancellation(cancellationToken);
@@ -280,6 +282,13 @@ namespace System.Net.Http
                         if (sendReset)
                         {
                             SendReset();
+                        }
+                        else if (!sendRequestContent)
+                        {
+                            // Request body hasn't been sent, so we need to notify the server that it won't
+                            // get the body. However, we cannot do it right here because the server can
+                            // reset the whole stream before we will have a chance to read the response body.
+                            _sendRstOnResponseClose = true;
                         }
                         else
                         {
@@ -412,7 +421,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(Monitor.IsEntered(SyncObject));
 
-                bool sendReset = false;
+                bool sendReset = _sendRstOnResponseClose;
 
                 if (_responseCompletionState == StreamCompletionState.InProgress)
                 {
@@ -1306,6 +1315,13 @@ namespace System.Net.Http
                 if (!fullyConsumed)
                 {
                     Cancel();
+                }
+                else if (_sendRstOnResponseClose)
+                {
+                    // Send RST_STREAM with CANCEL to notify the server that it shouldn't
+                    // expect the request body.
+                    // If this fails, it means that the connection is aborting and we will be reset.
+                    _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
                 }
 
                 lock (SyncObject)

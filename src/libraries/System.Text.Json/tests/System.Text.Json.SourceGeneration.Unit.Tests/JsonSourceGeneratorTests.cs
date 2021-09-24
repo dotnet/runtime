@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
@@ -467,5 +468,68 @@ namespace System.Text.Json.Serialization
         }
 
         // TODO: add test guarding against (de)serializing static classes.
+
+        [Fact]
+        public void TestMultipleDefinitions()
+        {
+            // Adding a dependency to an assembly that has internal definitions of public types
+            // should not result in a collision and break generation.
+            // This verifies the usage of GetBestTypeByMetadataName() instead of GetTypeByMetadataName().
+            var referencedSource = @"
+                namespace System.Text.Json.Serialization
+                {
+                    internal class JsonSerializerContext { }
+                    internal class JsonSerializableAttribute { }
+                    internal class JsonSourceGenerationOptionsAttribute { }
+                }";
+
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateCompilation(referencedSource);
+
+            // Obtain the image of the referenced assembly.
+            byte[] referencedImage;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                var emitResult = referencedCompilation.Emit(ms);
+                if (!emitResult.Success)
+                {
+                    throw new InvalidOperationException();
+                }
+                referencedImage = ms.ToArray();
+            }
+
+            // Generate the code
+            string source = @"
+                using System.Text.Json.Serialization;
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(HelloWorld.MyType))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyType
+                    {
+                        public int MyInt { get; set; }
+                    }
+                }";
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(
+                compilation,
+                out ImmutableArray<Diagnostic> generatorDiags, generator);
+
+            // Make sure compilation was successful.
+            Assert.Empty(generatorDiags.Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+            Assert.Empty(newCompilation.GetDiagnostics().Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+
+            // Should find the generated type.
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+            Assert.Equal(1, types.Count);
+            Assert.Equal("HelloWorld.MyType", types.Keys.First());
+        }
     }
 }

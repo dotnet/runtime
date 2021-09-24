@@ -141,24 +141,22 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         if (node->TypeIs(TYP_FLOAT))
         {
             float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
-            intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
-            type         = TYP_UINT;
+            intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
+            type         = TYP_INT;
         }
 #ifdef TARGET_AMD64
         else
         {
             assert(node->TypeIs(TYP_DOUBLE));
-            intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
-            type   = TYP_ULONG;
+            intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
+            type   = TYP_LONG;
         }
 #endif
 
         if (type != TYP_UNKNOWN)
         {
             data->SetContained();
-            data->ChangeOperConst(GT_CNS_INT);
-            data->AsIntCon()->SetIconValue(intCns);
-            data->ChangeType(type);
+            data->BashToConst(intCns, type);
             node->ChangeType(type);
         }
     }
@@ -227,7 +225,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                     {
                         const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
 #ifdef TARGET_AMD64
-                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % 16 == 0);
+                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % XMM_REGSIZE_BYTES == 0);
 #else
                         const bool willUseOnlySimdMov = (size % 8 == 0);
 #endif
@@ -280,7 +278,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
@@ -4481,29 +4479,12 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         }
         else
 #endif // TARGET_X86
-
             if (ctrlExpr->isIndir())
         {
-            bool canContainIndir = true;
-            if (call->IsFastTailCall())
-            {
-                // Currently we only allow fast tailcalls with indirections
-                // when no registers are required in the indirection. This is
-                // to ensure we won't need a register for the addressing mode
-                // since registers will have been cleaned up by the epilog at
-                // this point.
-                canContainIndir = ctrlExpr->AsIndir()->HasBase() &&
-                                  ctrlExpr->AsIndir()->Base()->isContainedIntOrIImmed() &&
-                                  !ctrlExpr->AsIndir()->HasIndex();
-            }
-
-            if (canContainIndir)
-            {
-                // We may have cases where we have set a register target on the ctrlExpr, but if it
-                // contained we must clear it.
-                ctrlExpr->SetRegNum(REG_NA);
-                MakeSrcContained(call, ctrlExpr);
-            }
+            // We may have cases where we have set a register target on the ctrlExpr, but if it
+            // contained we must clear it.
+            ctrlExpr->SetRegNum(REG_NA);
+            MakeSrcContained(call, ctrlExpr);
         }
     }
 

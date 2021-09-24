@@ -216,31 +216,46 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public virtual async Task HonorJsonPropertyName()
+        public virtual async Task HonorJsonPropertyName_PrivateGetter()
         {
-            string json = @"{""prop1"":1,""prop2"":2}";
+            string json = @"{""prop1"":1}";
 
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName>(json);
-            Assert.Equal(MySmallEnum.AnotherValue, obj.GetMyEnum);
-            Assert.Equal(2, obj.MyInt);
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateGetter>(json);
+            Assert.Equal(MySmallEnum.AnotherValue, obj.GetProxy());
 
             json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Contains(@"""prop1"":1", json);
+        }
+
+        [Fact]
+        public virtual async Task HonorJsonPropertyName_PrivateSetter()
+        {
+            string json = @"{""prop2"":2}";
+
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateSetter>(json);
+            Assert.Equal(2, obj.MyInt);
+
+            json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Contains(@"""prop2"":2", json);
         }
 
-        public struct StructWithPropertiesWithJsonPropertyName
+        public struct StructWithPropertiesWithJsonPropertyName_PrivateGetter
         {
             [JsonInclude]
             [JsonPropertyName("prop1")]
             public MySmallEnum MyEnum { private get; set; }
 
+            // For test validation.
+            internal MySmallEnum GetProxy() => MyEnum;
+        }
+
+        public struct StructWithPropertiesWithJsonPropertyName_PrivateSetter
+        {
             [JsonInclude]
             [JsonPropertyName("prop2")]
             public int MyInt { get; private set; }
 
-            // For test validation.
-            internal MySmallEnum GetMyEnum => MyEnum;
+            internal void SetProxy(int myInt) => MyInt = myInt;
         }
 
         [Fact]

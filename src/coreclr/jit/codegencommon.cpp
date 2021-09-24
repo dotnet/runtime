@@ -486,13 +486,14 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 
     assert(varDsc->lvIsInReg());
 
-    if (varTypeUsesFloatReg(varDsc->TypeGet()))
+    regNumber reg = varDsc->GetRegNum();
+    if (genIsValidFloatReg(reg))
     {
-        regMask = genRegMaskFloat(varDsc->GetRegNum(), varDsc->TypeGet());
+        regMask = genRegMaskFloat(reg, varDsc->GetRegisterType());
     }
     else
     {
-        regMask = genRegMask(varDsc->GetRegNum());
+        regMask = genRegMask(reg);
     }
     return regMask;
 }
@@ -3679,8 +3680,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     // refcnt.  This is in contrast with the non-LSRA case in which all
                     // non-tracked args are assumed live on entry.
                     noway_assert((varDsc->lvRefCnt() == 0) || (varDsc->lvType == TYP_STRUCT) ||
-                                 (varDsc->lvAddrExposed && compiler->info.compIsVarArgs) ||
-                                 (varDsc->lvAddrExposed && compiler->opts.compUseSoftFP));
+                                 (varDsc->IsAddressExposed() && compiler->info.compIsVarArgs) ||
+                                 (varDsc->IsAddressExposed() && compiler->opts.compUseSoftFP));
 #endif // !TARGET_X86
                 }
                 // Mark it as processed and be done with it
@@ -7148,8 +7149,9 @@ void CodeGen::genFnProlog()
 
         if (isInReg)
         {
-            regMaskTP regMask = genRegMask(varDsc->GetRegNum());
-            if (!varDsc->IsFloatRegType())
+            regNumber regForVar = varDsc->GetRegNum();
+            regMaskTP regMask   = genRegMask(regForVar);
+            if (!genIsValidFloatReg(regForVar))
             {
                 initRegs |= regMask;
 
@@ -7756,6 +7758,41 @@ void CodeGen::genFnProlog()
 #pragma warning(pop)
 #endif
 
+//------------------------------------------------------------------------
+// getCallTarget - Get the node that evalutes to the call target
+//
+// Arguments:
+//    call - the GT_CALL node
+//
+// Returns:
+//   The node. Note that for direct calls this may still return non-null if the direct call
+//   requires a 'complex' tree to load the target (e.g. in R2R or because we go through a stub).
+//
+GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd)
+{
+    // all virtuals should have been expanded into a control expression by this point.
+    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
+
+    if (call->gtCallType == CT_INDIRECT)
+    {
+        assert(call->gtControlExpr == nullptr);
+
+        if (methHnd != nullptr)
+        {
+            *methHnd = nullptr;
+        }
+
+        return call->gtCallAddr;
+    }
+
+    if (methHnd != nullptr)
+    {
+        *methHnd = call->gtCallMethHnd;
+    }
+
+    return call->gtControlExpr;
+}
+
 /*****************************************************************************
  *
  *  Generates code for a function epilog.
@@ -8017,48 +8054,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if FEATURE_FASTTAILCALL
         else
         {
-            // Fast tail call.
-            GenTreeCall* call     = jmpNode->AsCall();
-            gtCallTypes  callType = (gtCallTypes)call->gtCallType;
-
-            // Fast tail calls cannot happen to helpers.
-            assert((callType == CT_INDIRECT) || (callType == CT_USER_FUNC));
-
-            // Try to dispatch this as a direct branch; this is possible when the call is
-            // truly direct. In this case, the control expression will be null and the direct
-            // target address will be in gtDirectCallAddress. It is still possible that calls
-            // to user funcs require indirection, in which case the control expression will
-            // be non-null.
-
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr) && !call->IsR2RRelativeIndir())
-            {
-                assert(call->gtCallMethHnd != nullptr);
-                // clang-format off
-                GetEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN,
-                                           call->gtCallMethHnd,
-                                           INDEBUG_LDISASM_COMMA(nullptr)
-                                           call->gtDirectCallAddress,
-                                           0,          // argSize
-                                           EA_UNKNOWN  // retSize
-                                           ARM64_ARG(EA_UNKNOWN), // secondRetSize
-                                           gcInfo.gcVarPtrSetCur,
-                                           gcInfo.gcRegGCrefSetCur,
-                                           gcInfo.gcRegByrefSetCur,
-                                           BAD_IL_OFFSET, // IL offset
-                                           REG_NA,        // ireg
-                                           REG_NA,        // xreg
-                                           0,             // xmul
-                                           0,             // disp
-                                           true);         // isJump
-                // clang-format on
-            }
-            else
-            {
-                // Target requires indirection to obtain. genCallInstruction
-                // will have materialized it into REG_FASTTAILCALL_TARGET
-                // already, so just branch to it.
-                GetEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), REG_FASTTAILCALL_TARGET);
-            }
+            genCallInstruction(jmpNode->AsCall());
         }
 #endif // FEATURE_FASTTAILCALL
     }
@@ -8454,105 +8450,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if FEATURE_FASTTAILCALL
         else
         {
-#ifdef TARGET_AMD64
-            // Fast tail call.
-            GenTreeCall* call     = jmpNode->AsCall();
-            gtCallTypes  callType = (gtCallTypes)call->gtCallType;
-
-            // Fast tail calls cannot happen to helpers.
-            assert((callType == CT_INDIRECT) || (callType == CT_USER_FUNC));
-
-            // Calls to a user func can be dispatched as an RIP-relative jump when they are
-            // truly direct; in this case, the control expression will be null and the direct
-            // target address will be in gtDirectCallAddress. It is still possible that calls
-            // to user funcs require indirection, in which case the control expression will
-            // be non-null.
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr))
-            {
-                assert(call->gtCallMethHnd != nullptr);
-
-                // clang-format off
-                if (call->IsR2RRelativeIndir())
-                {
-                    // Indirection cell is in REG_FASTTAILCALL_TARGET.
-                    GetEmitter()->emitIns_Call(
-                            emitter::EC_INDIR_ARD,
-                            call->gtCallMethHnd,
-                            INDEBUG_LDISASM_COMMA(nullptr)
-                            0,                                              // addr
-                            0,                                              // argSize
-                            EA_UNKNOWN                                      // retSize
-                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),// secondRetSize
-                            gcInfo.gcVarPtrSetCur,
-                            gcInfo.gcRegGCrefSetCur,
-                            gcInfo.gcRegByrefSetCur,
-                            BAD_IL_OFFSET, REG_FASTTAILCALL_TARGET, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
-                            true /* isJump */
-                    );
-                }
-                else
-                {
-                    GetEmitter()->emitIns_Call(
-                            emitter::EC_FUNC_TOKEN,
-                            call->gtCallMethHnd,
-                            INDEBUG_LDISASM_COMMA(nullptr)
-                            call->gtDirectCallAddress,
-                            0,                                              // argSize
-                            EA_UNKNOWN                                      // retSize
-                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),// secondRetSize
-                            gcInfo.gcVarPtrSetCur,
-                            gcInfo.gcRegGCrefSetCur,
-                            gcInfo.gcRegByrefSetCur,
-                            BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
-                            true /* isJump */
-                    );
-                }
-                // clang-format on
-            }
-            else
-            {
-                GenTree* target = callType == CT_INDIRECT ? call->gtCallAddr : call->gtControlExpr;
-                if (target->isContained())
-                {
-                    // We can only tailcall with indirect target if the target
-                    // is an indirs off of an immediate as otherwise we may
-                    // need registers that could have been wiped out by the
-                    // epilog.
-                    noway_assert(target->isIndir());
-                    assert(target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed());
-                    assert(!target->AsIndir()->HasIndex());
-                    assert(target->AsIndir()->Base()->AsIntConCommon()->FitsInAddrBase(compiler));
-
-                    // clang-format off
-                    GetEmitter()->emitIns_Call(
-                        emitter::EC_FUNC_TOKEN_INDIR,
-                        call->gtCallMethHnd,
-                        INDEBUG_LDISASM_COMMA(nullptr)
-                        (void*)target->AsIndir()->Base()->AsIntConCommon()->IconValue(),
-                        0,
-                        EA_UNKNOWN
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),
-                        gcInfo.gcVarPtrSetCur,
-                        gcInfo.gcRegGCrefSetCur,
-                        gcInfo.gcRegByrefSetCur,
-                        BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,
-                        true /* isJump */
-                    );
-                    // clang-format on
-                }
-                else
-                {
-                    // Target requires indirection to obtain. genCallInstruction will have materialized
-                    // it into REG_FASTTAILCALL_TARGET already, so just jump to it. The stack walker requires that a
-                    // register indirect tail call be rex.w prefixed.
-                    GetEmitter()->emitIns_R(INS_rex_jmp, emitTypeSize(TYP_I_IMPL), REG_FASTTAILCALL_TARGET);
-                }
-            }
-
-#else
-            assert(!"Fast tail call as epilog+jmp");
-            unreached();
-#endif // TARGET_AMD64
+            genCallInstruction(jmpNode->AsCall());
         }
 #endif // FEATURE_FASTTAILCALL
     }
@@ -8577,6 +8475,14 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
             noway_assert(compiler->compArgSize < 0x10000); // "ret" only has 2 byte operand
         }
+
+#ifdef UNIX_X86_ABI
+        // The called function must remove hidden address argument from the stack before returning
+        // in case of struct returning according to cdecl calling convention on linux.
+        // Details: http://www.sco.com/developers/devspecs/abi386-4.pdf pages 40-43
+        if (compiler->info.compCallConv == CorInfoCallConvExtension::C && compiler->info.compRetBuffArg != BAD_VAR_NUM)
+            stkArgSize += TARGET_POINTER_SIZE;
+#endif // UNIX_X86_ABI
 #endif // TARGET_X86
 
         /* Return, popping our arguments (if any) */
@@ -10225,42 +10131,77 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
-        if (compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
+        if (compiler->compMap2ILvarNum(varNum) == (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
         {
-            VariableLiveKeeper::LiveRangeList* liveRanges = nullptr;
+            continue;
+        }
 
-            for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
+        auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start,
+                                                                   UNATIVE_OFFSET end) {
+            if (varDsc->lvIsParam && (start == end))
             {
-                if (rangeIndex == 0)
-                {
-                    liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
-                }
-                else
-                {
-                    liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
-                }
-                for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
-                {
-                    UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(GetEmitter());
-                    UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(GetEmitter());
+                // If the length is zero, it means that the prolog is empty. In that case,
+                // CodeGen::genSetScopeInfo will report the liveness of all arguments
+                // as spanning the first instruction in the method, so that they can
+                // at least be inspected on entry to the method.
+                end++;
+            }
 
-                    if (varDsc->lvIsParam && (startOffs == endOffs))
-                    {
-                        // If the length is zero, it means that the prolog is empty. In that case,
-                        // CodeGen::genSetScopeInfo will report the liveness of all arguments
-                        // as spanning the first instruction in the method, so that they can
-                        // at least be inspected on entry to the method.
-                        endOffs++;
-                    }
+            genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
+            liveRangeIndex++;
+        };
 
-                    genSetScopeInfo(liveRangeIndex, startOffs, endOffs - startOffs, varNum,
-                                    varNum /* I dont know what is the which in eeGetLvInfo */, true,
-                                    &liveRange.m_VarLocation);
-                    liveRangeIndex++;
+        siVarLoc*      curLoc   = nullptr;
+        UNATIVE_OFFSET curStart = 0;
+        UNATIVE_OFFSET curEnd   = 0;
+
+        for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
+        {
+            VariableLiveKeeper::LiveRangeList* liveRanges;
+            if (rangeIndex == 0)
+            {
+                liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
+            }
+            else
+            {
+                liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
+            }
+
+            for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
+            {
+                UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(GetEmitter());
+                UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(GetEmitter());
+
+                assert(startOffs <= endOffs);
+                assert(startOffs >= curEnd);
+                if ((curLoc != nullptr) && (startOffs == curEnd) && siVarLoc::Equals(curLoc, &liveRange.m_VarLocation))
+                {
+                    // Extend current range.
+                    curEnd = endOffs;
+                    continue;
                 }
+
+                // Report old range if any.
+                if (curLoc != nullptr)
+                {
+                    reportRange(curLoc, curStart, curEnd);
+                }
+
+                // Start a new range.
+                curLoc   = &liveRange.m_VarLocation;
+                curStart = startOffs;
+                curEnd   = endOffs;
             }
         }
+
+        // Report last range
+        if (curLoc != nullptr)
+        {
+            reportRange(curLoc, curStart, curEnd);
+        }
     }
+
+    compiler->eeVarsCount = liveRangeIndex;
 }
 #endif // USING_VARIABLE_LIVE_RANGE
 
@@ -12605,7 +12546,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
     for (unsigned varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->lvAddrExposed)
+        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->IsAddressExposed())
         {
             continue;
         }

@@ -321,6 +321,23 @@ stages:
         liveRuntimeBuildConfig: release
 
   #
+  # Build Sourcebuild leg
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: Release
+      helixQueueGroup: ci
+      platforms:
+      - SourceBuild_Linux_x64
+      jobParameters:
+        nameSuffix: SourceBuild
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: SourceBuildPackages
+      
+
+  #
   # Installer Build
   #
   - template: /eng/pipelines/installer/installer-matrix.yml

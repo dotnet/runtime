@@ -54,6 +54,8 @@ namespace ILCompiler
                 os = TargetOS.Linux;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 os = TargetOS.OSX;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+                os = TargetOS.FreeBSD;
             else
                 throw new NotImplementedException();
 
@@ -209,6 +211,8 @@ namespace ILCompiler
                     _targetOS = TargetOS.Linux;
                 else if (_commandLineOptions.TargetOS.Equals("osx", StringComparison.OrdinalIgnoreCase))
                     _targetOS = TargetOS.OSX;
+                else if (_commandLineOptions.TargetOS.Equals("freebsd", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.FreeBSD;
                 else
                     throw new CommandLineException(SR.TargetOSUnsupported);
             }
@@ -497,6 +501,8 @@ namespace ILCompiler
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext);
+                        typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
+                        typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
                     }
 
@@ -529,8 +535,21 @@ namespace ILCompiler
             //
             // Initialize output filename
             //
-            var suffixStr = _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble ? ".ni.dll.tmp" : ".ni.dll";
-            var outFile = _commandLineOptions.OutNearInput ? inFilePaths.First().Value.Replace(".dll", suffixStr) : _commandLineOptions.OutputFilePath;
+            string inFilePath = inFilePaths.First().Value;
+            string inputFileExtension = Path.GetExtension(inFilePath);
+            string nearOutFilePath = inputFileExtension switch
+            {
+                ".dll" => Path.ChangeExtension(inFilePath,
+                    _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble
+                        ? ".ni.dll.tmp"
+                        : ".ni.dll"),
+                ".exe" => Path.ChangeExtension(inFilePath,
+                    _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble
+                        ? ".ni.exe.tmp"
+                        : ".ni.exe"),
+                _ => throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension))
+            };
+            string outFile = _commandLineOptions.OutNearInput ? nearOutFilePath : _commandLineOptions.OutputFilePath;
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {

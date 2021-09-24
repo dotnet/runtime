@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.NetworkInformation.Tests
 {
@@ -19,7 +20,7 @@ namespace System.Net.NetworkInformation.Tests
     {
         private const int IcmpHeaderLengthInBytes = 8;
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(0)]
         [InlineData(100)]
         [InlineData(1000)]
@@ -32,10 +33,23 @@ namespace System.Net.NetworkInformation.Tests
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.RedirectStandardOutput = true;
 
+            bool destinationNetUnreachable = false;
+            p.OutputDataReceived += delegate (object sendingProcess, DataReceivedEventArgs outputLine)
+            {
+                if (outputLine.Data?.Contains("Destination Net Unreachable", StringComparison.OrdinalIgnoreCase) == true)
+                    destinationNetUnreachable = true;
+            };
+
             Stopwatch stopWatch = Stopwatch.StartNew();
 
             p.Start();
+            p.BeginOutputReadLine();
             p.WaitForExit();
+
+            if (destinationNetUnreachable)
+            {
+                throw new SkipTestException($"Network doesn't route {TestSettings.UnreachableAddress}, skipping test.");
+            }
 
             //ensure that the process takes longer than or within 10ms of 'timeout', with a 5s maximum
             Assert.InRange(stopWatch.ElapsedMilliseconds, timeout - 10, 5000);

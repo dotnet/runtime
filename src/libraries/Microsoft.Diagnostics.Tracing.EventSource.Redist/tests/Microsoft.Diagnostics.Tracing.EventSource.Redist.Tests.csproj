@@ -2,7 +2,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);USE_MDT_EVENTSOURCE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>net461</TargetFrameworks>
+    <TargetFrameworks>$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <SDTTestDir>..\..\System.Diagnostics.Tracing\tests</SDTTestDir>

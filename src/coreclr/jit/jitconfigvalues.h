@@ -41,7 +41,6 @@ CONFIG_INTEGER(JitBreakMorphTree, W("JitBreakMorphTree"), 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
-CONFIG_INTEGER(JitCanUseSSE2, W("JitCanUseSSE2"), -1)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
 CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
                                                                        // optimizations are performed on the fast path.
@@ -86,7 +85,6 @@ CONFIG_INTEGER(JitExpensiveDebugCheckLevel, W("JitExpensiveDebugCheckLevel"), 0)
                                                                                  // beyond the default to do in debug
                                                                                  // builds (currently 1-2)
 CONFIG_INTEGER(JitForceFallback, W("JitForceFallback"), 0) // Set to non-zero to test NOWAY assert by forcing a retry
-CONFIG_INTEGER(JitForceVer, W("JitForceVer"), 0)
 CONFIG_INTEGER(JitFullyInt, W("JitFullyInt"), 0)           // Forces Fully interruptible code
 CONFIG_INTEGER(JitFunctionTrace, W("JitFunctionTrace"), 0) // If non-zero, print JIT start/end logging
 CONFIG_INTEGER(JitGCChecks, W("JitGCChecks"), 0)
@@ -99,7 +97,6 @@ CONFIG_INTEGER(JitInlinePrintStats, W("JitInlinePrintStats"), 0)
 CONFIG_INTEGER(JitInlineSize, W("JITInlineSize"), DEFAULT_MAX_INLINE_SIZE)
 CONFIG_INTEGER(JitInlineDepth, W("JITInlineDepth"), DEFAULT_MAX_INLINE_DEPTH)
 CONFIG_INTEGER(JitLongAddress, W("JitLongAddress"), 0) // Force using the large pseudo instruction form for long address
-CONFIG_INTEGER(JitMaxTempAssert, W("JITMaxTempAssert"), 1)
 CONFIG_INTEGER(JitMaxUncheckedOffset, W("JitMaxUncheckedOffset"), 8)
 CONFIG_INTEGER(JitMinOpts, W("JITMinOpts"), 0)                                       // Forces MinOpts
 CONFIG_INTEGER(JitMinOptsBbCount, W("JITMinOptsBbCount"), DEFAULT_MIN_OPTS_BB_COUNT) // Internal jit control of MinOpts
@@ -111,7 +108,6 @@ CONFIG_INTEGER(JitMinOptsLvNumCount, W("JITMinOptsLvNumcount"), DEFAULT_MIN_OPTS
                                                                                                // of MinOpts
 CONFIG_INTEGER(JitMinOptsLvRefCount, W("JITMinOptsLvRefcount"), DEFAULT_MIN_OPTS_LV_REF_COUNT) // Internal jit control
                                                                                                // of MinOpts
-CONFIG_INTEGER(JitNoCMOV, W("JitNoCMOV"), 0)
 CONFIG_INTEGER(JitNoCSE, W("JitNoCSE"), 0)
 CONFIG_INTEGER(JitNoCSE2, W("JitNoCSE2"), 0)
 CONFIG_INTEGER(JitNoForceFallback, W("JitNoForceFallback"), 0) // Set to non-zero to prevent NOWAY assert testing.
@@ -151,7 +147,6 @@ CONFIG_INTEGER(JitStressBiasedCSE, W("JitStressBiasedCSE"), 0x101)     // Intern
                                                                        // between (0,100) to perform CSE on a candidate.
                                                                        // 100% = All CSEs. 0% = 0 CSE. (> 100) means no
                                                                        // stress.
-CONFIG_INTEGER(JitStressFP, W("JitStressFP"), 0)                       // Internal Jit stress mode
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
@@ -329,10 +324,6 @@ CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
 CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
 #endif // defined(TARGET_ARM64)
 
-#if defined(CONFIGURABLE_ARM_ABI)
-CONFIG_INTEGER(JitSoftFP, W("JitSoftFP"), 0)
-#endif // defined(CONFIGURABLE_ARM_ABI)
-
 // clang-format on
 
 #ifdef FEATURE_SIMD
@@ -381,6 +372,10 @@ CONFIG_INTEGER(JitMinOptsTrackGCrefs, W("JitMinOptsTrackGCrefs"), JitMinOptsTrac
 // for release in "jit.h" the flag would be missing for some includers).
 // TODO-Cleanup: need to make 'MEASURE_MEM_ALLOC' well-defined here at all times.
 CONFIG_INTEGER(DisplayMemStats, W("JitMemStats"), 0) // Display JIT memory usage statistics
+
+#if defined(DEBUG)
+CONFIG_INTEGER(JitEnregStats, W("JitEnregStats"), 0) // Display JIT enregistration statistics
+#endif                                               // DEBUG
 
 CONFIG_INTEGER(JitAggressiveInlining, W("JitAggressiveInlining"), 0) // Aggressive inlining of all methods
 CONFIG_INTEGER(JitELTHookEnabled, W("JitELTHookEnabled"), 0)         // If 1, emit Enter/Leave/TailCall callbacks

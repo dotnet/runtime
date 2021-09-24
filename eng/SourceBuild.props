@@ -40,7 +40,6 @@
       <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:MicrosoftNetFrameworkReferenceAssembliesVersion=1.0.0</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:PackageRid=$(TargetRid)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:NoPgoOptimize=true</InnerBuildArgs>
