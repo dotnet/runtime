@@ -119,7 +119,7 @@ def main(main_args):
             run_command(
                 ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/Antigen.git", tool_code_directory])
 
-            antigen_bin_directory = path.join(tool_code_directory, "bin", "Release", "net5.0")
+            antigen_bin_directory = path.join(tool_code_directory, "bin", "Release", "net6.0")
 
             # build the tool
             with ChangeDir(tool_code_directory):
