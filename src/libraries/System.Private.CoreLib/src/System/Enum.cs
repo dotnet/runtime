@@ -320,15 +320,7 @@ namespace System
         }
 
         public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
-        {
-            RuntimeType enumType = (RuntimeType)typeof(TEnum);
-            ulong[] ulValues = Enum.InternalGetValues(enumType);
-
-            TEnum[] ret = new TEnum[ulValues.Length];
-            for (int i = 0; i < ulValues.Length; i++)
-                ret[i] = (TEnum)ToObject(enumType, ulValues[i]);
-            return ret;
-        }
+            => (TEnum[])GetValues(typeof(TEnum));
 
         public static Array GetValues(Type enumType)
         {
