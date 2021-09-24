@@ -41,24 +41,69 @@ namespace System.Net.Http.Tests
         [Fact]
         public void ContainsAndRemove_UsesEqualitySemantics()
         {
-            // Use default validator
             ObjectCollection<string> c = new ObjectCollection<string>();
 
+            string val1 = "value1";
+            string val1DifferentReference = "value" + 1;
+            Assert.NotSame(val1, val1DifferentReference);
+            Assert.Equal(val1, val1DifferentReference);
+
+            string val2 = "value2";
+            string val2DifferentReference = "value" + 2;
+            Assert.NotSame(val2, val2DifferentReference);
+            Assert.Equal(val2, val2DifferentReference);
+
+            string val3 = "value3";
+
+            // Start empty
             Assert.Equal(0, c.Count);
-            Assert.False(c.Contains("value" + 1));
+            Assert.False(c.Contains(val1));
 
-            c.Add("value" + 1);
-
+            // Single item
+            c.Add(val1);
             Assert.Equal(1, c.Count);
-            // Force the reference to be different to ensure we are checking for semantic equality
-            // and not reference equality.
-            Assert.True(c.Contains("value" + 1));
-            c.Add("value" + 2);
+            Assert.True(c.Contains(val1));
+            Assert.True(c.Contains(val1DifferentReference));
+            Assert.False(c.Contains(val2));
 
-            Assert.True(c.Remove("value" + 1));
+            // Single item removal
+            Assert.True(c.Remove(val1));
+            Assert.Equal(0, c.Count);
+            Assert.False(c.Contains(val1));
+
+            // Multi-value
+            c.Add(val1);
+            c.Add(val2);
+            Assert.Equal(2, c.Count);
+            Assert.True(c.Contains(val1));
+            Assert.True(c.Contains(val1DifferentReference));
+            Assert.True(c.Contains(val2));
+            Assert.True(c.Contains(val1DifferentReference));
+            Assert.False(c.Contains(val3));
+
+            // Removal when multiple exist, using different reference.
+            Assert.True(c.Remove(val1));
+            Assert.False(c.Contains(val1));
+            Assert.True(c.Contains(val2));
             Assert.Equal(1, c.Count);
 
-            Assert.True(c.Contains("value" + 2));
+            // Removal of non-existent
+            Assert.False(c.Remove(val3));
+            Assert.False(c.Remove(val1DifferentReference));
+            Assert.Equal(1, c.Count);
+            Assert.True(c.Contains(val2DifferentReference));
+
+            // Removal last item
+            Assert.True(c.Remove(val2DifferentReference));
+            Assert.Equal(0, c.Count);
+            Assert.False(c.Contains(val2));
+            Assert.False(c.Contains(val1));
+
+            // Remove from empty
+            Assert.False(c.Remove(val1));
+            Assert.False(c.Remove(val2));
+            Assert.False(c.Remove(val3));
+            Assert.Equal(0, c.Count);
         }
     }
 }
