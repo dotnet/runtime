@@ -15,7 +15,7 @@ internal static partial class Interop
 
 #if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial bool SetConsoleCtrlHandler(delegate* unmanaged<int, BOOL> handler, bool addOrRemove);
+        internal static unsafe partial bool SetConsoleCtrlHandler(delegate* unmanaged<int, BOOL> handler, bool Add);
 #else
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern unsafe bool SetConsoleCtrlHandler(delegate* unmanaged<int, BOOL> HandlerRoutine, bool Add);

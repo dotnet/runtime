@@ -13,7 +13,12 @@ namespace System.Runtime.InteropServices
     /// Indicates that method will be generated at compile time and invoke into an unmanaged library entry point
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    internal sealed class GeneratedDllImportAttribute : Attribute
+#if DLLIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    sealed class GeneratedDllImportAttribute : Attribute
     {
         public bool BestFitMapping { get; set; }
         public CallingConvention CallingConvention { get; set; }
