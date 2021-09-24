@@ -144,10 +144,6 @@ def main(main_args):
     with open(foo_txt, "w") as foo_txt_file:
         foo_txt_file.write("hello world!")
 
-    # For x64/x86, run for 3 hours
-    # For arm/arm64, run for 2 hours
-    run_duration = 120 if arch_name.find("arm") == 0 else 180
-
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
@@ -156,7 +152,6 @@ def main(main_args):
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
-    set_pipeline_variable("RunDuration", run_duration)
 
 if __name__ == "__main__":
     args = parser.parse_args()

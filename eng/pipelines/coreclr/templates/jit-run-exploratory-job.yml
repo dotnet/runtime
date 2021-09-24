@@ -111,7 +111,6 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
         RunConfiguration: '$(RunConfiguration)'
         ToolName: '$(ToolName)'
-        RunDuration: '$(RunDuration)'
         continueOnError: true # Run the future step i.e. merge-mch step even if this step fails.
 
     - template: /eng/pipelines/common/upload-artifact-step.yml

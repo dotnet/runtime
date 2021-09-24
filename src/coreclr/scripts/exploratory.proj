@@ -42,7 +42,7 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
-    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot) -run_duration $(RunDuration)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot)</WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>
