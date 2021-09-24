@@ -206,6 +206,9 @@
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <_EmccLDFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
 
+      <!-- ILLinker should have removed unused imports, so error for Publish -->
+      <_EmccLDFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
+
       <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
       <_DriverCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
 
