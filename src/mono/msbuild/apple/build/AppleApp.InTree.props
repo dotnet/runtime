@@ -3,6 +3,7 @@
 
   <Import Project="$(MSBuildThisFileDirectory)AppleApp.props" />
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
