@@ -78,15 +78,6 @@ jobs:
         artifactName: '$(buildProductArtifactName)'
         displayName: 'Coreclr product build'
 
-    # Download x64 coreclr if running on non-x64 configuration
-    - ${{ if ne(parameters.archType, 'x64') }}:
-      - template: /eng/pipelines/common/download-specific-artifact-step.yml
-        parameters:
-          unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
-          artifactFileName: 'CoreCLRProduct__${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
-          artifactName: 'CoreCLRProduct__${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
-          displayName: 'Coreclr product build (x64)'
-
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
