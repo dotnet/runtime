@@ -18215,7 +18215,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
 //
 bool Compiler::fgCanTailCallViaJitHelper()
 {
-#if !defined(TARGET_X86) || defined(UNIX_X86_ABI)
+#if !defined(TARGET_X86) || defined(UNIX_X86_ABI) || defined(FEATURE_READYTORUN)
     // On anything except windows X86 we have no faster mechanism available.
     return false;
 #else
