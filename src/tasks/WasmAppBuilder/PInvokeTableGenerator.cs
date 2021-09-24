@@ -122,23 +122,39 @@ public class PInvokeTableGenerator : Task
         w.WriteLine();
 
         var decls = new HashSet<string>();
-        // FIXME: handle sigs with different first args
-        foreach (var group in pinvokes.OrderBy(l => l.EntryPoint).GroupBy(l => l.EntryPoint))
+        foreach (var group in pinvokes.GroupBy(l => l.EntryPoint))
         {
-            IEnumerable<string?>? uniqueSigs = group.Select(l => l.Method.ToString()).Distinct();
-            bool treatAsVariadic = uniqueSigs.Count() > 1;
-            if (treatAsVariadic)
+            bool treatAsVariadic = false;
+            PInvoke first = group.First();
+
+            if (!ShouldApplyHackForMethodWithFunctionPointers(first.Method))
             {
-                w.WriteLine($"// Variadic signature created for");
-                foreach (string? method in uniqueSigs)
-                    w.WriteLine($"//   {method}");
+                if (HasFunctionPointerParams(first.Method))
+                {
+                    Log.LogWarning($"DllImports with function pointers are not supported. Calling them will fail. Managed DllImports: {Environment.NewLine}{GroupToString(group)}");
+                    foreach (var pinvoke in group)
+                        pinvoke.Skip = true;
+
+                    continue;
+                }
+
+                int numArgs = first.Method.GetParameters().Length;
+                treatAsVariadic = group.Count() > 1 && group.Any(p => p.Method.GetParameters().Length != numArgs);
+                if (treatAsVariadic)
+                {
+                    w.WriteLine($"// Variadic signature created for");
+                    foreach (PInvoke pinvoke in group)
+                        w.WriteLine($"//   {pinvoke.Method}");
+
+                    Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs, which is not supported. Calling it will fail at runtime. Module: {first.Module}." +
+                                    $" Managed DllImports: {Environment.NewLine}{GroupToString(group)}");
+                }
             }
 
-            PInvoke pinvoke = group.First();
-            if (modules.ContainsKey(pinvoke.Module)) {
+            if (modules.ContainsKey(first.Module)) {
                 try
                 {
-                    var decl = GenPInvokeDecl(pinvoke, treatAsVariadic);
+                    var decl = GenPInvokeDecl(first, treatAsVariadic);
                     if (decls.Contains(decl))
                         continue;
 
@@ -148,8 +164,8 @@ public class PInvokeTableGenerator : Task
                 catch (NotSupportedException)
                 {
                     // See the FIXME in GenPInvokeDecl
-                    Log.LogWarning($"Cannot handle function pointer arguments/return value in pinvoke method '{pinvoke.Method}' in type '{pinvoke.Method.DeclaringType}'.");
-                    pinvoke.Skip = true;
+                    Log.LogWarning($"Cannot handle function pointer arguments/return value in pinvoke method '{first.Method}' in type '{first.Method.DeclaringType}'.");
+                    first.Skip = true;
                 }
             }
         }
@@ -197,6 +213,27 @@ public class PInvokeTableGenerator : Task
 
             return fixedName;
         }
+
+        static bool HasFunctionPointerParams(MethodInfo method)
+        {
+            try
+            {
+                method.GetParameters();
+            }
+            catch (NotSupportedException nse) when (nse.Message.Contains("function pointer types in signatures is not supported"))
+            {
+                return true;
+            }
+            catch
+            {
+                // not concerned with other exceptions
+            }
+
+            return false;
+        }
+
+        static string GroupToString(IGrouping<string, PInvoke> group)
+            => string.Join(Environment.NewLine, group.Select(p => $"   Type: {p.Method.DeclaringType}, Method: {p.Method}"));
     }
 
     private string MapType (Type t)
@@ -216,11 +253,14 @@ public class PInvokeTableGenerator : Task
             return "int";
     }
 
+    private static bool ShouldApplyHackForMethodWithFunctionPointers(MethodInfo method) => method.Name == "EnumCalendarInfo";
+
     private string GenPInvokeDecl(PInvoke pinvoke, bool treatAsVariadic=false)
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
-        if (method.Name == "EnumCalendarInfo") {
+        if (ShouldApplyHackForMethodWithFunctionPointers(method))
+        {
             // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
             // https://github.com/dotnet/runtime/issues/43791
             sb.Append($"int {pinvoke.EntryPoint} (int, int, int, int, int);");
@@ -242,6 +282,7 @@ public class PInvokeTableGenerator : Task
         }
         else
         {
+            // FIXME: handle sigs with different first args
             ParameterInfo firstParam = method.GetParameters()[0];
             sb.Append(MapType(firstParam.ParameterType));
             sb.Append(", ...");
