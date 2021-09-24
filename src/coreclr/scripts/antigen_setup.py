@@ -146,7 +146,7 @@ def main(main_args):
 
     # For x64/x86, run for 3 hours
     # For arm/arm64, run for 2 hours
-    run_duration = 180 if arch_name.find("arm") == 0 else 120
+    run_duration = 120 if arch_name.find("arm") == 0 else 180
 
     # Set variables
     print('Setting pipeline variables:')
