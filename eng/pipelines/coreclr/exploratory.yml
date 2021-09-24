@@ -1,22 +1,10 @@
 # This job definition automates the exploratory tool.
 
-trigger:
-  batch: false
-  branches:
-    include:
-    - main
-  paths:
-    include:
-    - src/coreclr/jit/*
-    - src/coreclr/inc/jiteeversionguid.h
-
-# This pipeline is supposed to be run only on merged changes
-# and should not be triggerable from a PR. 
-pr: none
+trigger: none
 
 schedules:
-- cron: "0 17 * * 0"
-  displayName: Sun at 9:00 AM (UTC-8:00)
+- cron: "0 6 * * *"
+  displayName: Daily at 11:30 PM (UTC-8:00)
   branches:
     include:
     - main
