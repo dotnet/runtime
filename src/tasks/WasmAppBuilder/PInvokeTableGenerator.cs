@@ -122,12 +122,23 @@ public class PInvokeTableGenerator : Task
         w.WriteLine();
 
         var decls = new HashSet<string>();
-        foreach (var pinvoke in pinvokes.OrderBy(l => l.EntryPoint))
+        // FIXME: handle sigs with different first args
+        foreach (var group in pinvokes.OrderBy(l => l.EntryPoint).GroupBy(l => l.EntryPoint))
         {
+            IEnumerable<string?>? uniqueSigs = group.Select(l => l.Method.ToString()).Distinct();
+            bool treatAsVariadic = uniqueSigs.Count() > 1;
+            if (treatAsVariadic)
+            {
+                w.WriteLine($"// Variadic signature created for");
+                foreach (string? method in uniqueSigs)
+                    w.WriteLine($"//   {method}");
+            }
+
+            PInvoke pinvoke = group.First();
             if (modules.ContainsKey(pinvoke.Module)) {
                 try
                 {
-                    var decl = GenPInvokeDecl(pinvoke);
+                    var decl = GenPInvokeDecl(pinvoke, treatAsVariadic);
                     if (decls.Contains(decl))
                         continue;
 
@@ -205,7 +216,7 @@ public class PInvokeTableGenerator : Task
             return "int";
     }
 
-    private string GenPInvokeDecl(PInvoke pinvoke)
+    private string GenPInvokeDecl(PInvoke pinvoke, bool treatAsVariadic=false)
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
@@ -215,15 +226,25 @@ public class PInvokeTableGenerator : Task
             sb.Append($"int {pinvoke.EntryPoint} (int, int, int, int, int);");
             return sb.ToString();
         }
+
         sb.Append(MapType(method.ReturnType));
         sb.Append($" {pinvoke.EntryPoint} (");
-        int pindex = 0;
-        var pars = method.GetParameters();
-        foreach (var p in pars) {
-            if (pindex > 0)
-                sb.Append(',');
-            sb.Append(MapType(pars[pindex].ParameterType));
-            pindex++;
+        if (!treatAsVariadic)
+        {
+            int pindex = 0;
+            var pars = method.GetParameters();
+            foreach (var p in pars) {
+                if (pindex > 0)
+                    sb.Append(',');
+                sb.Append(MapType(pars[pindex].ParameterType));
+                pindex++;
+            }
+        }
+        else
+        {
+            ParameterInfo firstParam = method.GetParameters()[0];
+            sb.Append(MapType(firstParam.ParameterType));
+            sb.Append(", ...");
         }
         sb.Append(");");
         return sb.ToString();
