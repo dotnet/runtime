@@ -8,7 +8,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     // Don't run in parallel as the WhenDiskIsFullTheErrorMessageContainsAllDetails test
-    // consumes entire available free space on the disk (only on Linux, this is how posix_fallocate works)
+    // consumes entire available free space on the disk (only on Linux, this is how fallocate works)
     // and if we try to run other disk-writing test in the meantime we are going to get "No space left on device" exception.
     [Collection("NoParallelTests")]
     public partial class FileStream_ctor_options : FileStream_ctor_str_fm_fa_fs_buffer_fo
@@ -149,13 +149,13 @@ namespace System.IO.Tests
         [InlineData(FileMode.CreateNew)]
         public void WhenDiskIsFullTheErrorMessageContainsAllDetails(FileMode mode)
         {
-            const long tooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
+            const long TooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
 
             string filePath = GetTestFilePath();
 
-            IOException ex = Assert.Throws<IOException>(() => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, tooMuch));
+            IOException ex = Assert.Throws<IOException>(() => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, TooMuch));
             Assert.Contains(filePath, ex.Message);
-            Assert.Contains(tooMuch.ToString(), ex.Message);
+            Assert.Contains(TooMuch.ToString(), ex.Message);
 
             // ensure it was NOT created
             bool exists = File.Exists(filePath);
