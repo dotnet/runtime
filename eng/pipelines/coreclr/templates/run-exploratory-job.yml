@@ -91,10 +91,8 @@ jobs:
     steps:
     - ${{ parameters.steps }}
   
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/exploratory_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup)
-      displayName: ${{ format('Exploratory setup ({0})', parameters.osGroup) }}
-      env:
-        TOOL_NAME: $(ToolName)                    # tool name
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup)
+      displayName: ${{ format('Antigen setup ({0})', parameters.osGroup) }}
 
       # Run exploratory tool in helix
     - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
@@ -123,8 +121,8 @@ jobs:
         archiveType: $(archiveType)
         tarCompression: $(tarCompression)
         archiveExtension: $(archiveExtension)
-        artifactName: 'Exploratory_Issues_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-        displayName: ${{ format('Upload artifacts Exploratory issues for {0}-{1}', parameters.osGroup, parameters.archType ) }}
+        artifactName: 'Antigen_Issues_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        displayName: ${{ format('Upload artifacts Antigen issues for {0}-{1}', parameters.osGroup, parameters.archType ) }}
 
     # Always upload the available issues-summary.txt files
     - task: CopyFiles@2
@@ -140,12 +138,5 @@ jobs:
         targetPath: $(IssuesSummaryLocation)
         artifactName: 'Issues_Summary_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/exploratory_post.py -issues_directory $(IssuesSummaryLocation)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_unique_issues.py -issues_directory $(IssuesSummaryLocation)
       displayName: ${{ format('Print unique issues ({0})', parameters.osGroup) }}
-
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Exploratory build logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Exploratory_BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-      condition: always()

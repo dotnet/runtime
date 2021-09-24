@@ -1,21 +1,5 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
-  <!-- <PropertyGroup>
-     <HelixTargetQueues>Some_Queue</HelixTargetQueues>
-     <Platform>Windows</Platform>
-     <Architecture>x64</Architecture>
-     <RunConfiguration>win-x64</RunConfiguration>
-   </PropertyGroup>
-
-  <Target Name="printItems">
-        <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
-     dir: %(HelixWorkItem.PayloadDirectory)
-     pre: %(HelixWorkItem.PreCommands)
-     command: %(HelixWorkItem.Command)
-     post: %(HelixWorkItem.PostCommands)
-     timeout: %(HelixWorkItem.Timeout)  '"/>
-  </Target> -->
-
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <FileSeparatorChar>\</FileSeparatorChar>
   </PropertyGroup>
@@ -58,7 +42,7 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
-    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)exploratory.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -exploratory_directory $(ToolPath) -core_root $(CoreRoot) -tool_name $(ToolName) -run_duration $(RunDuration)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot) -run_duration $(RunDuration)</WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>

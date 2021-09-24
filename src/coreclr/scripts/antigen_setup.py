@@ -4,11 +4,11 @@
 ## The .NET Foundation licenses this file to you under the MIT license.
 #
 ##
-# Title: exploratory_setup.py
+# Title: antigen_setup.py
 #
 # Notes:
 #
-# Script to setup cloning and building exploratory tool. It copies all the binaries
+# Script to setup cloning and building Antigen tool. It copies all the binaries
 # to the correlation payload.
 #
 ################################################################################
@@ -84,7 +84,7 @@ def main(main_args):
     correlation_payload_directory = path.join(coreclr_args.source_directory, "payload")
     scripts_src_directory = path.join(source_directory, "src", "coreclr", 'scripts')
     coreroot_dst_directory = path.join(correlation_payload_directory, "CoreRoot")
-    exploratory_dst_directory = path.join(correlation_payload_directory, "exploratory")
+    antigen_dst_directory = path.join(correlation_payload_directory, "exploratory")
 
     helix_source_prefix = "official"
     creator = ""
@@ -112,7 +112,6 @@ def main(main_args):
     # copy CORE_ROOT
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, coreroot_dst_directory))
     copy_directory(coreclr_args.core_root_directory, coreroot_dst_directory, match_func=acceptable_copy)
-    tool_name = os.environ.get("TOOL_NAME")
 
     try:
         with TempDir() as tool_code_directory:
@@ -120,21 +119,21 @@ def main(main_args):
             run_command(
                 ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/Antigen.git", tool_code_directory])
 
-            exploratory_bin_directory = path.join(tool_code_directory, "bin", "Release", "net5.0")
+            antigen_bin_directory = path.join(tool_code_directory, "bin", "Release", "net5.0")
 
             # build the tool
             with ChangeDir(tool_code_directory):
                 dotnet_cmd = os.path.join(source_directory, "dotnet.cmd")
                 if not is_windows:
                     dotnet_cmd = os.path.join(source_directory, "dotnet.sh")
-                run_command([dotnet_cmd, "publish", "-c", "Release", "--self-contained", "-r", run_configuration, "-o", exploratory_bin_directory], _exit_on_fail=True)
+                run_command([dotnet_cmd, "publish", "-c", "Release", "--self-contained", "-r", run_configuration, "-o", antigen_bin_directory], _exit_on_fail=True)
 
-            if not os.path.exists(path.join(exploratory_bin_directory, "{}.dll".format(tool_name))):
-                raise FileNotFoundError("{}.dll not present at {}".format(tool_name, exploratory_bin_directory))
+            if not os.path.exists(path.join(antigen_bin_directory, "Antigen.dll")):
+                raise FileNotFoundError("Antigen.dll not present at {}".format(antigen_bin_directory))
 
-            # copy exploratory tool
-            print('Copying {} -> {}'.format(exploratory_bin_directory, exploratory_dst_directory))
-            copy_directory(exploratory_bin_directory, exploratory_dst_directory, match_func=acceptable_copy)
+            # copy antigen tool
+            print('Copying {} -> {}'.format(antigen_bin_directory, antigen_dst_directory))
+            copy_directory(antigen_bin_directory, antigen_dst_directory, match_func=acceptable_copy)
     except PermissionError as pe:
         print("Skipping file. Got error: %s", pe)
 
@@ -157,7 +156,6 @@ def main(main_args):
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
-    set_pipeline_variable("ToolName", tool_name)
     set_pipeline_variable("RunDuration", run_duration)
 
 if __name__ == "__main__":

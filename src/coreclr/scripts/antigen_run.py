@@ -4,11 +4,11 @@
 ## The .NET Foundation licenses this file to you under the MIT license.
 #
 ##
-# Title: exploratory.py
+# Title: antigen_run.py
 #
 # Notes:
 #
-# Script to execute exploratory tool on a platform and return back the repro
+# Script to execute Antigen tool on a platform and return back the repro
 # issues they found.
 #
 ################################################################################
@@ -16,22 +16,20 @@
 
 import shutil
 import argparse
-from os import linesep, listdir, path, walk
-from os.path import isfile, join, getsize
+from os import path, walk
+from os.path import getsize
 import os
-from os import listdir
 from coreclr_arguments import *
-from superpmi_setup import run_command, copy_directory, set_pipeline_variable
+from superpmi_setup import run_command
 from superpmi import TempDir
 
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-run_configuration", help="RunConfiguration")
-parser.add_argument("-exploratory_directory", help="Path to exploratory tool")
+parser.add_argument("-antigen_directory", help="Path to antigen tool")
 parser.add_argument("-output_directory", help="Path to output directory")
 parser.add_argument("-partition", help="Partition name")
 parser.add_argument("-core_root", help="path to CORE_ROOT directory")
-parser.add_argument("-tool_name", help="tool name")
 parser.add_argument("-run_duration", help="Run duration in minutes")
 is_windows = platform.system() == "Windows"
 
@@ -55,9 +53,9 @@ def setup_args(args):
                         "Unable to set run_configuration")
 
     coreclr_args.verify(args,
-                        "exploratory_directory",
-                        lambda exploratory_directory: os.path.isdir(exploratory_directory),
-                        "exploratory_directory doesn't exist")
+                        "antigen_directory",
+                        lambda antigen_directory: os.path.isdir(antigen_directory),
+                        "antigen_directory doesn't exist")
 
     coreclr_args.verify(args,
                         "output_directory",
@@ -68,11 +66,6 @@ def setup_args(args):
                         "partition",
                         lambda unused: True,
                         "Unable to set partition")
-
-    coreclr_args.verify(args,
-                        "tool_name",
-                        lambda unused: True,
-                        "Unable to set tool_name")
 
     coreclr_args.verify(args,
                         "run_duration",
@@ -189,15 +182,17 @@ def main(main_args):
 
     coreclr_args = setup_args(main_args)
 
-    exploratory_directory = coreclr_args.exploratory_directory
+    antigen_directory = coreclr_args.antigen_directory
     core_root = coreclr_args.core_root
     tag_name = "{}-{}".format(coreclr_args.run_configuration, coreclr_args.partition)
     output_directory = coreclr_args.output_directory
-    tool_name = coreclr_args.tool_name
     run_duration = coreclr_args.run_duration
 
-    path_to_corerun = os.path.join(core_root, "corerun.exe" if is_windows else "corerun")
-    path_to_tool = os.path.join(exploratory_directory, "{}.exe".format(tool_name) if is_windows else tool_name)
+    path_to_corerun = os.path.join(core_root, "corerun")
+    path_to_tool = os.path.join(antigen_directory, "Antigen")
+    if is_windows:
+        path_to_corerun += ".exe"
+        path_to_tool += ".exe"
 
     # Run tool such that issues are placed in a temp folder
     with TempDir() as temp_location:
