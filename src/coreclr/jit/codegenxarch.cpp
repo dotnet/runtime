@@ -5611,7 +5611,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             GetEmitter()->emitIns_Nop(3);
 
             // clang-format off
-            GetEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD),
+            GetEmitter()->emitIns_Call(emitter::EC_INDIR_ARD,
                                        methHnd,
                                        INDEBUG_LDISASM_COMMA(sigInfo)
                                        nullptr,
