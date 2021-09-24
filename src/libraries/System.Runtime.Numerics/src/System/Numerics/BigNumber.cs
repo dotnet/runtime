@@ -611,7 +611,7 @@ namespace System.Numerics
                     // Separate every MaxPartialDigits digits and store them in the buffer.
                     // Buffers are treated as little-endian. That means, the array { 234567890, 1 }
                     // represents the number 1234567890.
-                    int bufferInd = buffer.Length - 1;
+                    int bufferIndex = buffer.Length - 1;
                     uint currentBlock = 0;
                     int shiftUntil = (totalDigitCount - 1) % MaxPartialDigits;
                     int remainingIntDigitCount = totalDigitCount;
@@ -628,9 +628,9 @@ namespace System.Numerics
                             currentBlock += unchecked((uint)(digitChar - '0'));
                             if (shiftUntil == 0)
                             {
-                                buffer[bufferInd] = currentBlock;
+                                buffer[bufferIndex] = currentBlock;
                                 currentBlock = 0;
-                                bufferInd--;
+                                bufferIndex--;
                                 shiftUntil = MaxPartialDigits;
                             }
                             shiftUntil--;
@@ -654,7 +654,7 @@ namespace System.Numerics
                         }
                     }
                     Debug.Assert(currentBlock == 0);
-                    Debug.Assert(bufferInd == -1);
+                    Debug.Assert(bufferIndex == -1);
 
                     unsafe
                     {
