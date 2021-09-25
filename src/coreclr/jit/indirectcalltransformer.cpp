@@ -209,8 +209,11 @@ private:
             FixupRetExpr();
             ClearFlag();
             CreateRemainder();
-            CreateCheck();
-            CreateThen();
+            for (UINT8 i = 0; i < GetChecksCount(); i++)
+            {
+                CreateCheck(i);
+                CreateThen(i);
+            }
             CreateElse();
             RemoveOldStatement();
             SetWeights();
@@ -233,7 +236,7 @@ private:
             remainderBlock->bbFlags |= BBF_INTERNAL;
         }
 
-        virtual void CreateCheck() = 0;
+        virtual void CreateCheck(UINT8 checkIdx) = 0;
 
         //------------------------------------------------------------------------
         // CreateAndInsertBasicBlock: ask compiler to create new basic block.
@@ -252,7 +255,7 @@ private:
             return block;
         }
 
-        virtual void CreateThen() = 0;
+        virtual void CreateThen(UINT8 checkIdx) = 0;
         virtual void CreateElse() = 0;
 
         //------------------------------------------------------------------------
@@ -272,6 +275,14 @@ private:
             checkBlock->inheritWeight(currBlock);
             thenBlock->inheritWeightPercentage(currBlock, likelihood);
             elseBlock->inheritWeightPercentage(currBlock, 100 - likelihood);
+        }
+        
+        //------------------------------------------------------------------------
+        // GetChecksCount: Get number of Check-Then nodes
+        //
+        virtual UINT8 GetChecksCount()
+        {
+            return 1;
         }
 
         //------------------------------------------------------------------------
@@ -355,7 +366,7 @@ private:
         //------------------------------------------------------------------------
         // CreateCheck: create check block, that checks fat pointer bit set.
         //
-        virtual void CreateCheck()
+        virtual void CreateCheck(UINT8 checkIdx)
         {
             checkBlock                 = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
             GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
@@ -372,7 +383,7 @@ private:
         // CreateThen: create then block, that is executed if the check succeeds.
         // This simply executes the original call.
         //
-        virtual void CreateThen()
+        virtual void CreateThen(UINT8 checkIdx)
         {
             thenBlock                     = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             Statement* copyOfOriginalStmt = compiler->gtCloneStmt(stmt);
@@ -579,12 +590,22 @@ private:
         //------------------------------------------------------------------------
         // CreateCheck: create check block and check method table
         //
-        virtual void CreateCheck()
+        virtual void CreateCheck(UINT8 checkIdx)
         {
             // There's no need for a new block here. We can just append to currBlock.
             //
-            checkBlock             = currBlock;
-            checkBlock->bbJumpKind = BBJ_COND;
+            if (checkIdx == 0)
+            {
+                checkBlock = currBlock;
+                checkBlock->bbJumpKind = BBJ_COND;
+            }
+            else
+            {
+                BasicBlock* prevCheckBlock = checkBlock;
+                checkBlock                 = CreateAndInsertBasicBlock(BBJ_COND, thenBlock);
+                checkBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
+                prevCheckBlock->bbJumpDest = checkBlock;
+            }
 
             // Fetch method table from object arg to call.
             GenTree* thisTree = compiler->gtCloneExpr(origCall->gtCallThisArg->GetNode());
@@ -615,10 +636,9 @@ private:
 
             // Find target method table
             //
-            GenTree*                              methodTable       = compiler->gtNewMethodTableLookup(thisTree);
-            GuardedDevirtualizationCandidateInfo* guardedInfo       = origCall->gtGuardedDevirtualizationCandidateInfo;
-            CORINFO_CLASS_HANDLE                  clsHnd            = guardedInfo->guardedClassHandle;
-            GenTree*                              targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
+            GenTree*             methodTable       = compiler->gtNewMethodTableLookup(thisTree);
+            CORINFO_CLASS_HANDLE clsHnd            = origCall->gtInlineCandidateInfo[checkIdx].guardedClassHandle;
+            GenTree*             targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
 
             // Compare and jump to else (which does the indirect call) if NOT equal
             //
@@ -720,14 +740,23 @@ private:
         }
 
         //------------------------------------------------------------------------
+        // GetChecksCount: Get number of Check-Then 
+        //
+        virtual UINT8 GetChecksCount() override
+        {
+            return origCall->gtGDVCandidatesCount;
+        }
+
+        //------------------------------------------------------------------------
         // CreateThen: create then block with direct call to method
         //
-        virtual void CreateThen()
+        virtual void CreateThen(UINT8 checkIdx)
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
+            thenBlock->bbJumpDest = remainderBlock;
 
-            InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
+            InlineCandidateInfo* inlineInfo = &origCall->gtInlineCandidateInfo[checkIdx];
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
             // copy 'this' to temp with exact type.
@@ -760,11 +789,30 @@ private:
             //
             assert(!call->IsVirtual());
 
+            if (checkIdx > 0)
+            {
+                call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+                call->gtInlineCandidateInfo = nullptr;
+
+                if (returnTemp != BAD_VAR_NUM)
+                {
+                    GenTree* const assign = compiler->gtNewTempAssign(returnTemp, call);
+                    compiler->fgNewStmtAtEnd(thenBlock, assign);
+                }
+                else
+                {
+                    compiler->fgNewStmtAtEnd(thenBlock, call);
+                }
+                return;
+            }
+
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
             //
+            // Also, give up on inlining secondary guess. TODO: figure out what is missing to be able to inline them.
+            //
             CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
-            if ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd))
+            if ((checkIdx > 0) || ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd)))
             {
                 // Demote this call to a non-inline candidate
                 //
@@ -1024,10 +1072,10 @@ private:
                     GenTreeCall* const call = root->AsCall();
 
                     if (call->IsGuardedDevirtualizationCandidate() &&
-                        (call->gtGuardedDevirtualizationCandidateInfo->likelihood >= gdvChainLikelihood))
+                        (call->gtInlineCandidateInfo->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
-                                compiler->dspTreeID(call), call->gtGuardedDevirtualizationCandidateInfo->likelihood,
+                                compiler->dspTreeID(call), call->gtInlineCandidateInfo->likelihood,
                                 gdvChainLikelihood, chainStatementDup, chainNodeDup);
 
                         call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
@@ -1157,7 +1205,7 @@ private:
         //------------------------------------------------------------------------
         // CreateCheck: create check blocks, that checks dictionary size and does null test.
         //
-        virtual void CreateCheck() override
+        virtual void CreateCheck(UINT8 checkIdx) override
         {
             GenTreeCall::UseIterator argsIter  = origCall->Args().begin();
             GenTree*                 nullCheck = argsIter.GetUse()->GetNode();
@@ -1184,7 +1232,7 @@ private:
         // CreateThen: create then block, that is executed if the checks succeed.
         // This simply returns the handle.
         //
-        virtual void CreateThen() override
+        virtual void CreateThen(UINT8 checkIdx) override
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock2);
 

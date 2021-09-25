@@ -21902,10 +21902,7 @@ void Compiler::considerGuardedDevirtualization(
     // See if there's a likely guess for the class.
     //
     const unsigned likelihoodThreshold = isInterface ? 25 : 30;
-    unsigned       likelihood          = 0;
     unsigned       numberOfClasses     = 0;
-
-    CORINFO_CLASS_HANDLE likelyClass = NO_CLASS_HANDLE;
 
     bool doRandomDevirt = false;
 
@@ -21940,16 +21937,11 @@ void Compiler::considerGuardedDevirtualization(
 
     // For now we only use the most popular type
 
-    likelihood  = likelyClasses[0].likelihood;
-    likelyClass = likelyClasses[0].clsHandle;
-
     if (numberOfClasses < 1)
     {
         JITDUMP("No likely class, sorry\n");
         return;
     }
-
-    assert(likelyClass != NO_CLASS_HANDLE);
 
     // Print all likely classes
     JITDUMP("%s classes for %p (%s):\n", doRandomDevirt ? "Random" : "Likely", dspPtr(objClass), objClassName)
@@ -21959,44 +21951,53 @@ void Compiler::considerGuardedDevirtualization(
                 eeGetClassName(likelyClasses[i].clsHandle), likelyClasses[i].likelihood);
     }
 
-    // Todo: a more advanced heuristic using likelihood, number of
-    // classes, and the profile count for this block.
-    //
-    // For now we will guess if the likelihood is at least 25%/30% (intfc/virt), as studies
-    // have shown this transformation should pay off even if we guess wrong sometimes.
-    //
-    if (likelihood < likelihoodThreshold)
+    assert(call->gtGDVCandidatesCount == 0);
+
+    for (UINT i = 0; i < numberOfClasses; i++)
     {
-        JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n", callKind, likelihoodThreshold);
-        return;
+        if (call->gtGDVCandidatesCount >= (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount())
+        {
+            break;
+        }
+
+        assert(likelyClasses[i].clsHandle != NO_CLASS_HANDLE);
+
+        // Todo: a more advanced heuristic using likelihood, number of
+        // classes, and the profile count for this block.
+        //
+        // For now we will guess if the likelihood is at least 25%/30% (intfc/virt), as studies
+        // have shown this transformation should pay off even if we guess wrong sometimes.
+        //
+        if ((likelyClasses[i].likelihood < likelihoodThreshold / (i + 1)))
+        {
+            JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n", callKind, likelihoodThreshold / (i + 1));
+            break;
+        }
+
+        // Figure out which method will be called.
+        //
+        CORINFO_DEVIRTUALIZATION_INFO dvInfo = {};
+        dvInfo.virtualMethod               = baseMethod;
+        dvInfo.objClass                    = likelyClasses[i].clsHandle;
+        dvInfo.context                     = *pContextHandle;
+        dvInfo.exactContext                = *pContextHandle;
+        dvInfo.pResolvedTokenVirtualMethod = nullptr;
+
+        const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
+
+        if (!canResolve)
+        {
+            JITDUMP("Can't figure out which method would be invoked, sorry\n");
+            continue;
+        }
+
+        CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
+        JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
+
+        // Add this as a potential candidate.
+        //
+        addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClasses[i].clsHandle, likelyClasses[i].likelihood);
     }
-
-    // Figure out which method will be called.
-    //
-    CORINFO_DEVIRTUALIZATION_INFO dvInfo;
-    dvInfo.virtualMethod               = baseMethod;
-    dvInfo.objClass                    = likelyClass;
-    dvInfo.context                     = *pContextHandle;
-    dvInfo.exactContext                = *pContextHandle;
-    dvInfo.pResolvedTokenVirtualMethod = nullptr;
-
-    const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
-
-    if (!canResolve)
-    {
-        JITDUMP("Can't figure out which method would be invoked, sorry\n");
-        return;
-    }
-
-    CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
-    JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
-
-    // Add this as a potential candidate.
-    //
-    uint32_t const likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
-    uint32_t const likelyClassAttribs  = info.compCompHnd->getClassAttribs(likelyClass);
-    addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyMethodAttribs, likelyClassAttribs,
-                                        likelihood);
 }
 
 //------------------------------------------------------------------------
@@ -22016,15 +22017,11 @@ void Compiler::considerGuardedDevirtualization(
 //    call - potential guarded devirtualization candidate
 //    methodHandle - method that will be invoked if the class test succeeds
 //    classHandle - class that will be tested for at runtime
-//    methodAttr - attributes of the method
-//    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
 //
 void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
                                                    CORINFO_METHOD_HANDLE methodHandle,
                                                    CORINFO_CLASS_HANDLE  classHandle,
-                                                   unsigned              methodAttr,
-                                                   unsigned              classAttr,
                                                    unsigned              likelihood)
 {
     // This transformation only makes sense for virtual calls
@@ -22091,17 +22088,17 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     // Gather some information for later. Note we actually allocate InlineCandidateInfo
     // here, as the devirtualized half of this call will likely become an inline candidate.
     //
-    GuardedDevirtualizationCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
+    InlineCandidateInfo pInfo = {};
 
-    pInfo->guardedMethodHandle             = methodHandle;
-    pInfo->guardedMethodUnboxedEntryHandle = nullptr;
-    pInfo->guardedClassHandle              = classHandle;
-    pInfo->likelihood                      = likelihood;
-    pInfo->requiresInstMethodTableArg      = false;
+    pInfo.guardedMethodHandle             = methodHandle;
+    pInfo.guardedMethodUnboxedEntryHandle = nullptr;
+    pInfo.guardedClassHandle              = classHandle;
+    pInfo.likelihood                      = likelihood;
+    pInfo.requiresInstMethodTableArg      = false;
 
     // If the guarded class is a value class, look for an unboxed entry point.
     //
-    if ((classAttr & CORINFO_FLG_VALUECLASS) != 0)
+    if ((info.compCompHnd->getClassAttribs(classHandle) & CORINFO_FLG_VALUECLASS) != 0)
     {
         JITDUMP("    ... class is a value class, looking for unboxed entry\n");
         bool                  requiresInstMethodTableArg = false;
@@ -22111,8 +22108,8 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         if (unboxedEntryMethodHandle != nullptr)
         {
             JITDUMP("    ... updating GDV candidate with unboxed entry info\n");
-            pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
-            pInfo->requiresInstMethodTableArg      = requiresInstMethodTableArg;
+            pInfo.guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
+            pInfo.requiresInstMethodTableArg      = requiresInstMethodTableArg;
         }
     }
 
@@ -22121,14 +22118,32 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     if (call->IsVirtualStub())
     {
         JITDUMP("Saving stub addr %p in candidate info\n", dspPtr(call->gtStubCallStubAddr));
-        pInfo->stubAddr = call->gtStubCallStubAddr;
+        pInfo.stubAddr = call->gtStubCallStubAddr;
     }
     else
     {
-        pInfo->stubAddr = nullptr;
+        pInfo.stubAddr = nullptr;
     }
 
-    call->gtGuardedDevirtualizationCandidateInfo = pInfo;
+    const UINT8 maxCandidates = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
+    const UINT8 candidatesCount = ++call->gtGDVCandidatesCount;
+    assert(maxCandidates >= candidatesCount);
+
+    if (candidatesCount == 1)
+    {
+        // in 90% cases virtual calls are monomorphic so let's avoid allocating too much
+        call->gtInlineCandidateInfo = new (this, CMK_GDVCandidates) InlineCandidateInfo[1] { pInfo };
+    }
+    else if (candidatesCount == 2)
+    {
+        // Ok, re-alloc to store multiple candidates.
+        InlineCandidateInfo firstInfo = call->gtInlineCandidateInfo[0];
+        call->gtInlineCandidateInfo   = new (this, CMK_GDVCandidates) InlineCandidateInfo[maxCandidates]{ firstInfo, pInfo };
+    }
+    else
+    {
+        call->gtInlineCandidateInfo[candidatesCount - 1] = pInfo;
+    }
 }
 
 void Compiler::addExpRuntimeLookupCandidate(GenTreeCall* call)

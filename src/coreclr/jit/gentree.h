@@ -4788,6 +4788,8 @@ struct GenTreeCall final : public GenTree
     IL_OFFSET gtRawILOffset;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
+    UINT8 gtGDVCandidatesCount;
+
     bool IsHelperCall() const
     {
         return gtCallType == CT_HELPER;

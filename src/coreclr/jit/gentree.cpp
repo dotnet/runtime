@@ -6424,8 +6424,9 @@ GenTreeCall* Compiler::gtNewCallNode(
     {
         node->gtInlineCandidateInfo = nullptr;
     }
-    node->gtCallLateArgs = nullptr;
-    node->gtReturnType   = type;
+    node->gtCallLateArgs       = nullptr;
+    node->gtReturnType         = type;
+    node->gtGDVCandidatesCount = 0;
 
 #ifdef FEATURE_READYTORUN
     node->gtEntryPoint.addr       = nullptr;
@@ -8309,6 +8310,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
         copy->gtInlineCandidateInfo = nullptr;
+        copy->gtGDVCandidatesCount  = 0;
     }
 
     if (tree->fgArgInfo)
