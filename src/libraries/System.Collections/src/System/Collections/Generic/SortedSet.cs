@@ -97,7 +97,7 @@ namespace System.Collections.Generic
                 {
                     Debug.Assert(sortedSet.root != null);
                     this.count = sortedSet.count;
-                    root = sortedSet.root.DeepClone(this.count);
+                    root = sortedSet.root.DeepClone();
                 }
                 return;
             }
@@ -1676,50 +1676,13 @@ namespace System.Collections.Generic
 
             public void ColorRed() => Color = NodeColor.Red;
 
-            public Node DeepClone(int count)
+            public Node DeepClone()
             {
-#if DEBUG
-                Debug.Assert(count == GetCount());
-#endif
+                Node newNode = ShallowClone();
+                newNode.Left = Left?.DeepClone();
+                newNode.Right = Right?.DeepClone();
 
-                // Breadth-first traversal to recreate nodes, preorder traversal to replicate nodes.
-
-                var originalNodes = new Stack<Node>(2 * Log2(count) + 2);
-                var newNodes = new Stack<Node>(2 * Log2(count) + 2);
-                Node newRoot = ShallowClone();
-
-                Node? originalCurrent = this;
-                Node newCurrent = newRoot;
-
-                while (originalCurrent != null)
-                {
-                    originalNodes.Push(originalCurrent);
-                    newNodes.Push(newCurrent);
-                    newCurrent.Left = originalCurrent.Left?.ShallowClone();
-                    originalCurrent = originalCurrent.Left;
-                    newCurrent = newCurrent.Left!;
-                }
-
-                while (originalNodes.Count != 0)
-                {
-                    originalCurrent = originalNodes.Pop();
-                    newCurrent = newNodes.Pop();
-
-                    Node? originalRight = originalCurrent.Right;
-                    Node? newRight = originalRight?.ShallowClone();
-                    newCurrent.Right = newRight;
-
-                    while (originalRight != null)
-                    {
-                        originalNodes.Push(originalRight);
-                        newNodes.Push(newRight!);
-                        newRight!.Left = originalRight.Left?.ShallowClone();
-                        originalRight = originalRight.Left;
-                        newRight = newRight.Left;
-                    }
-                }
-
-                return newRoot;
+                return newNode;
             }
 
             /// <summary>
