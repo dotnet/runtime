@@ -4,7 +4,7 @@
 import { Module, MONO } from '../runtime'
 import { toBase64StringImpl, _base64_to_uint8 } from './base64'
 import cwraps from './cwraps'
-import { mono_wasm_load_bytes_into_heap } from './roots'
+import { mono_wasm_load_bytes_into_heap } from './init'
 
 var commands_received: any;
 var _call_function_res_cache: any = {}

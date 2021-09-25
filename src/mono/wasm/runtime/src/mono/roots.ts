@@ -10,15 +10,6 @@ let _scratch_root_free_indices: Int32Array | null = null;
 let _scratch_root_free_indices_count = 0;
 const _scratch_root_free_instances: WasmRoot[] = [];
 
-// @bytes must be a typed array. space is allocated for it in the native heap
-//  and it is copied to that location. returns the address of the allocation.
-export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
-    var memoryOffset = Module._malloc(bytes.length);
-    var heapBytes = new Uint8Array(Module.HEAPU8.buffer, memoryOffset, bytes.length);
-    heapBytes.set(bytes);
-    return memoryOffset;
-}
-
 /**
  * Allocates a block of memory that can safely contain pointers into the managed heap.
  * The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.

@@ -5,7 +5,6 @@ import { Module, MONO } from '../runtime'
 import { AssetEntry, MonoConfig } from './types'
 import cwraps from './cwraps'
 import { mono_wasm_runtime_ready } from './debug';
-import { mono_wasm_load_bytes_into_heap } from './roots'
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from './icu';
 import { toBase64StringImpl } from './base64';
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from './profiler';
@@ -478,6 +477,15 @@ export function mono_wasm_asm_loaded(assembly_name: number, assembly_ptr: number
 		assembly_b64,
 		pdb_b64
 	});
+}
+
+// @bytes must be a typed array. space is allocated for it in the native heap
+//  and it is copied to that location. returns the address of the allocation.
+export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
+	var memoryOffset = Module._malloc(bytes.length);
+	var heapBytes = new Uint8Array(Module.HEAPU8.buffer, memoryOffset, bytes.length);
+	heapBytes.set(bytes);
+	return memoryOffset;
 }
 
 type MonoInitContext = {

@@ -20,14 +20,13 @@ import {
     mono_wasm_raise_debug_event,
     mono_wasm_fire_debugger_agent_message,
 } from './mono/debug'
-import { mono_wasm_load_bytes_into_heap } from './mono/roots'
 import { StringDecoder } from './mono/string-decoder'
 import { MONO, setMONO } from './runtime'
 import { t_MONO, t_MonoSupportLib } from './mono/types'
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
-    mono_wasm_load_data_archive, mono_wasm_asm_loaded
+    mono_wasm_load_data_archive, mono_wasm_asm_loaded, mono_wasm_load_bytes_into_heap
 } from './mono/init'
 import { prevent_timer_throttling, mono_set_timeout, schedule_background_exec } from './mono/scheduling'
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from './mono/icu'
