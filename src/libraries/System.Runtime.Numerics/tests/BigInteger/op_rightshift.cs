@@ -63,11 +63,11 @@ namespace System.Numerics.Tests
                 VerifyRightShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b>>");
             }
 
-            // RightShift Method - Uint 0xffffffff 0x8000000 ... Large BigIntegers - 31 bit Shift
+            // RightShift Method - Uint 0xffffffff 0x8000000 ... Large BigIntegers - 32 bit Shift
             for (int i = 0; i < s_samples; i++)
             {
                 tempByteArray1 = GetRandomLengthFirstUIntMaxSecondUIntMSBMaxArray(s_random);
-                tempByteArray2 = new byte[] { (byte)31 };
+                tempByteArray2 = new byte[] { (byte)32 };
                 VerifyRightShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b>>");
             }
 
