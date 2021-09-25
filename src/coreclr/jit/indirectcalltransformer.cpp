@@ -256,7 +256,7 @@ private:
         }
 
         virtual void CreateThen(UINT8 checkIdx) = 0;
-        virtual void CreateElse() = 0;
+        virtual void CreateElse()               = 0;
 
         //------------------------------------------------------------------------
         // RemoveOldStatement: remove original stmt from current block.
@@ -276,7 +276,7 @@ private:
             thenBlock->inheritWeightPercentage(currBlock, likelihood);
             elseBlock->inheritWeightPercentage(currBlock, 100 - likelihood);
         }
-        
+
         //------------------------------------------------------------------------
         // GetChecksCount: Get number of Check-Then nodes
         //
@@ -596,7 +596,7 @@ private:
             //
             if (checkIdx == 0)
             {
-                checkBlock = currBlock;
+                checkBlock             = currBlock;
                 checkBlock->bbJumpKind = BBJ_COND;
                 checkBlock->inheritWeight(currBlock);
             }
@@ -742,7 +742,7 @@ private:
         }
 
         //------------------------------------------------------------------------
-        // GetChecksCount: Get number of Check-Then 
+        // GetChecksCount: Get number of Check-Then
         //
         virtual UINT8 GetChecksCount() override
         {
@@ -1076,8 +1076,8 @@ private:
                         (call->gtInlineCandidateInfo->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
-                                compiler->dspTreeID(call), call->gtInlineCandidateInfo->likelihood,
-                                gdvChainLikelihood, chainStatementDup, chainNodeDup);
+                                compiler->dspTreeID(call), call->gtInlineCandidateInfo->likelihood, gdvChainLikelihood,
+                                chainStatementDup, chainNodeDup);
 
                         call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
                         break;

@@ -21971,18 +21971,19 @@ void Compiler::considerGuardedDevirtualization(
         //
         if ((likelyClasses[i].likelihood < likelihoodThreshold / (i + 1)))
         {
-            JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n", callKind, likelihoodThreshold / (i + 1));
+            JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n", callKind,
+                    likelihoodThreshold / (i + 1));
             break;
         }
 
         // Figure out which method will be called.
         //
         CORINFO_DEVIRTUALIZATION_INFO dvInfo = {};
-        dvInfo.virtualMethod               = baseMethod;
-        dvInfo.objClass                    = likelyClasses[i].clsHandle;
-        dvInfo.context                     = *pContextHandle;
-        dvInfo.exactContext                = *pContextHandle;
-        dvInfo.pResolvedTokenVirtualMethod = nullptr;
+        dvInfo.virtualMethod                 = baseMethod;
+        dvInfo.objClass                      = likelyClasses[i].clsHandle;
+        dvInfo.context                       = *pContextHandle;
+        dvInfo.exactContext                  = *pContextHandle;
+        dvInfo.pResolvedTokenVirtualMethod   = nullptr;
 
         const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
@@ -21997,7 +21998,8 @@ void Compiler::considerGuardedDevirtualization(
 
         // Add this as a potential candidate.
         //
-        addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClasses[i].clsHandle, likelyClasses[i].likelihood);
+        addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClasses[i].clsHandle,
+                                            likelyClasses[i].likelihood);
     }
 }
 
@@ -22126,20 +22128,21 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         pInfo.stubAddr = nullptr;
     }
 
-    const UINT8 maxCandidates = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
+    const UINT8 maxCandidates   = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
     const UINT8 candidatesCount = ++call->gtGDVCandidatesCount;
     assert(maxCandidates >= candidatesCount);
 
     if (candidatesCount == 1)
     {
         // in 90% cases virtual calls are monomorphic so let's avoid allocating too much
-        call->gtInlineCandidateInfo = new (this, CMK_GDVCandidates) InlineCandidateInfo[1] { pInfo };
+        call->gtInlineCandidateInfo = new (this, CMK_GDVCandidates) InlineCandidateInfo[1]{pInfo};
     }
     else if (candidatesCount == 2)
     {
         // Ok, re-alloc to store multiple candidates.
         InlineCandidateInfo firstInfo = call->gtInlineCandidateInfo[0];
-        call->gtInlineCandidateInfo   = new (this, CMK_GDVCandidates) InlineCandidateInfo[maxCandidates]{ firstInfo, pInfo };
+        call->gtInlineCandidateInfo =
+            new (this, CMK_GDVCandidates) InlineCandidateInfo[maxCandidates]{firstInfo, pInfo};
     }
     else
     {
