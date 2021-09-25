@@ -58,11 +58,6 @@ namespace System.IO.Strategies
             e is NotSupportedException ||
             (e is ArgumentException && !(e is ArgumentNullException));
 
-        internal static bool ShouldPreallocate(long preallocationSize, FileAccess access, FileMode mode)
-            => preallocationSize > 0
-               && (access & FileAccess.Write) != 0
-               && mode != FileMode.Open && mode != FileMode.Append;
-
         internal static void ValidateArguments(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             if (path == null)
@@ -125,7 +120,29 @@ namespace System.IO.Strategies
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
             }
 
+            if (preallocationSize > 0)
+            {
+                ValidateArgumentsForPreallocation(mode, access);
+            }
+
             SerializationGuard(access);
+        }
+
+        internal static void ValidateArgumentsForPreallocation(FileMode mode, FileAccess access)
+        {
+            // The user will be writing into the preallocated space.
+            if ((access & FileAccess.Write) == 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidPreallocateAccess, nameof(access));
+            }
+
+            // Only allow preallocation for newly created/overwritten files.
+            // When we fail to preallocate, we'll remove the file.
+            if (mode != FileMode.Create &&
+                mode != FileMode.CreateNew)
+            {
+                throw new ArgumentException(SR.Argument_InvalidPreallocateMode, nameof(mode));
+            }
         }
 
         internal static void SerializationGuard(FileAccess access)
