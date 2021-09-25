@@ -598,6 +598,7 @@ private:
             {
                 checkBlock = currBlock;
                 checkBlock->bbJumpKind = BBJ_COND;
+                checkBlock->inheritWeight(currBlock);
             }
             else
             {
@@ -605,6 +606,8 @@ private:
                 checkBlock                 = CreateAndInsertBasicBlock(BBJ_COND, thenBlock);
                 checkBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
                 prevCheckBlock->bbJumpDest = checkBlock;
+
+                checkBlock->inheritWeightPercentage(thenBlock, 50); // not sure in this one
             }
 
             // Fetch method table from object arg to call.
@@ -755,6 +758,7 @@ private:
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
             thenBlock->bbJumpDest = remainderBlock;
+            thenBlock->inheritWeightPercentage(currBlock, origCall->gtInlineCandidateInfo[checkIdx].likelihood);
 
             InlineCandidateInfo* inlineInfo = &origCall->gtInlineCandidateInfo[checkIdx];
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
@@ -892,6 +896,13 @@ private:
                 newStmt->SetRootNode(assign);
             }
 
+            UINT32 elseLikelihood = 100;
+            for (UINT8 i = 0; i < origCall->gtGDVCandidatesCount; i++)
+            {
+                elseLikelihood -= origCall->gtInlineCandidateInfo[i].likelihood;
+            }
+            elseBlock->inheritWeightPercentage(currBlock, elseLikelihood > 100 /*overflow*/ ? 0 : elseLikelihood);
+
             // For stub calls, restore the stub address. For everything else,
             // null out the candidate info field.
             if (call->IsVirtualStub())
@@ -909,6 +920,14 @@ private:
             // Set the original statement to a nop.
             //
             stmt->SetRootNode(compiler->gtNewNothingNode());
+        }
+
+        //------------------------------------------------------------------------
+        // SetWeights: set weights for new blocks.
+        //
+        virtual void SetWeights() override
+        {
+            remainderBlock->inheritWeight(currBlock);
         }
 
         // For chained gdv, we modify the expansion as follows:
