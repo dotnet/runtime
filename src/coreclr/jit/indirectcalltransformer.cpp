@@ -606,8 +606,7 @@ private:
                 checkBlock                 = CreateAndInsertBasicBlock(BBJ_COND, thenBlock);
                 checkBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
                 prevCheckBlock->bbJumpDest = checkBlock;
-
-                checkBlock->inheritWeightPercentage(thenBlock, 50); // not sure in this one
+                checkBlock->setBBProfileWeight(prevCheckBlock->bbWeight - thenBlock->bbWeight);
             }
 
             // Fetch method table from object arg to call.
