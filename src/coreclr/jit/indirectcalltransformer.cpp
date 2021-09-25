@@ -518,7 +518,7 @@ private:
         //------------------------------------------------------------------------
         // Run: transform the statement as described above.
         //
-        virtual void Run()
+        virtual void Run() override
         {
             origCall = GetCall(stmt);
 
@@ -558,7 +558,7 @@ private:
         }
 
     protected:
-        virtual const char* Name()
+        virtual const char* Name() override
         {
             return "GuardedDevirtualization";
         }
@@ -571,7 +571,7 @@ private:
         //
         // Return Value:
         //    call tree node pointer.
-        virtual GenTreeCall* GetCall(Statement* callStmt)
+        virtual GenTreeCall* GetCall(Statement* callStmt) override
         {
             GenTree* tree = callStmt->GetRootNode();
             assert(tree->IsCall());
@@ -582,7 +582,7 @@ private:
         //------------------------------------------------------------------------
         // ClearFlag: clear guarded devirtualization candidate flag from the original call.
         //
-        virtual void ClearFlag()
+        virtual void ClearFlag() override
         {
             origCall->ClearGuardedDevirtualizationCandidate();
         }
@@ -590,7 +590,7 @@ private:
         //------------------------------------------------------------------------
         // CreateCheck: create check block and check method table
         //
-        virtual void CreateCheck(UINT8 checkIdx)
+        virtual void CreateCheck(UINT8 checkIdx) override
         {
             // There's no need for a new block here. We can just append to currBlock.
             //
@@ -654,7 +654,7 @@ private:
         //------------------------------------------------------------------------
         // FixupRetExpr: set up to repair return value placeholder from call
         //
-        virtual void FixupRetExpr()
+        virtual void FixupRetExpr() override
         {
             // If call returns a value, we need to copy it to a temp, and
             // bash the associated GT_RET_EXPR to refer to the temp instead
@@ -753,7 +753,7 @@ private:
         //------------------------------------------------------------------------
         // CreateThen: create then block with direct call to method
         //
-        virtual void CreateThen(UINT8 checkIdx)
+        virtual void CreateThen(UINT8 checkIdx) override
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
@@ -861,7 +861,7 @@ private:
         //------------------------------------------------------------------------
         // CreateElse: create else block. This executes the unaltered indirect call.
         //
-        virtual void CreateElse()
+        virtual void CreateElse() override
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
             elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
