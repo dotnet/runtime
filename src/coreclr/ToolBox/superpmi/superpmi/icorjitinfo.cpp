@@ -1559,6 +1559,7 @@ bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bo
 void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
 {
     jitInstance->mc->cr->AddCall("updateEntryPointForTailCall");
+    jitInstance->mc->repUpdateEntryPointForTailCall(entryPoint);
 }
 
 // Stuff directly on ICorJitInfo
