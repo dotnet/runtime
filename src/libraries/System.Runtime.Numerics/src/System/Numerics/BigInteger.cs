@@ -2022,6 +2022,11 @@ namespace System.Numerics
 
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
 
+                // For a shift of N x 32 bit,
+                // We check for a special sequence where its sign bit would be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
                 if (smallShift == 0 && xd[0] == 1)
                 {
                     bool allZero = true;
