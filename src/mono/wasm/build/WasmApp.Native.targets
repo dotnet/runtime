@@ -217,7 +217,8 @@
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
+      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" Exclude="$(_WasmRuntimePackSrcDir)\*.iffe.js"/>
+      <_DotnetJSPreFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js"/>
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 
@@ -337,7 +338,9 @@
 
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
       <_EmccLinkStepArgs Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
+      <_EmccLinkStepArgs Include="--pre-js &quot;%(_DotnetJSPreFile.Identity)&quot;" />
       <_WasmLinkDependencies Include="@(_DotnetJSSrcFile)" />
+      <_WasmLinkDependencies Include="@(_DotnetJSPreFile)" />
 
       <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
       <_EmccLinkStepArgs Include="--pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
