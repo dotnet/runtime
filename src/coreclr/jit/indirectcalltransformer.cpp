@@ -534,7 +534,7 @@ private:
                 return;
             }
 
-            likelihood = origCall->gtGuardedDevirtualizationCandidateInfo->likelihood;
+            likelihood = origCall->gtInlineCandidateInfo->likelihood;
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
@@ -790,7 +790,13 @@ private:
             // We know this call can devirtualize or we would not have set up GDV here.
             // So impDevirtualizeCall should succeed in devirtualizing.
             //
-            assert(!call->IsVirtual());
+            if (call->IsVirtual())
+            {
+                // TODO: fix
+                assert(checkIdx > 0);
+                call                     = compiler->gtCloneCandidateCall(origCall);
+                call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
+            }
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
@@ -806,7 +812,9 @@ private:
                         "inlineable\n");
 
                 call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-                call->gtInlineCandidateInfo = nullptr;
+
+                if (!call->IsVirtualStub())
+                    call->gtInlineCandidateInfo = nullptr;
 
                 if (returnTemp != BAD_VAR_NUM)
                 {
@@ -1072,7 +1080,7 @@ private:
                 {
                     GenTreeCall* const call = root->AsCall();
 
-                    if (call->IsGuardedDevirtualizationCandidate() &&
+                    if (call->IsGuardedDevirtualizationCandidate() && (call->gtGDVCandidatesCount == 1) &&
                         (call->gtInlineCandidateInfo->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",

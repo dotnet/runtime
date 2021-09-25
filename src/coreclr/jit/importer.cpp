@@ -6902,8 +6902,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                     if (call->IsVirtualStub())
                     {
                         JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                                dspPtr(call->gtGuardedDevirtualizationCandidateInfo->stubAddr));
-                        call->gtStubCallStubAddr = call->gtGuardedDevirtualizationCandidateInfo->stubAddr;
+                                dspPtr(call->gtInlineCandidateInfo->stubAddr));
+                        call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
                     }
                 }
             }
@@ -20531,8 +20531,8 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     if (call->IsVirtualStub())
     {
         JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                dspPtr(call->gtGuardedDevirtualizationCandidateInfo->stubAddr));
-        call->gtStubCallStubAddr = call->gtGuardedDevirtualizationCandidateInfo->stubAddr;
+                dspPtr(call->gtInlineCandidateInfo->stubAddr));
+        call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
     }
 }
 
@@ -20662,13 +20662,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->IsGuardedDevirtualizationCandidate())
     {
         // TODO: there can be multiple candidates
-        if (call->gtGuardedDevirtualizationCandidateInfo->guardedMethodUnboxedEntryHandle != nullptr)
+        if (call->gtInlineCandidateInfo->guardedMethodUnboxedEntryHandle != nullptr)
         {
-            fncHandle = call->gtGuardedDevirtualizationCandidateInfo->guardedMethodUnboxedEntryHandle;
+            fncHandle = call->gtInlineCandidateInfo->guardedMethodUnboxedEntryHandle;
         }
         else
         {
-            fncHandle = call->gtGuardedDevirtualizationCandidateInfo->guardedMethodHandle;
+            fncHandle = call->gtInlineCandidateInfo->guardedMethodHandle;
         }
         methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
     }
@@ -21995,6 +21995,22 @@ void Compiler::considerGuardedDevirtualization(
 
         CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
         JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
+
+        if (i > 0)
+        {
+            // TODO: skip valuetypes and generics for secondary guesses for now
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(likelyMethod, &sig);
+            if ((sig.sigInst.methInstCount != 0) || (sig.sigInst.classInstCount != 0))
+            {
+                break;
+            }
+
+            if ((info.compCompHnd->getClassAttribs(likelyClasses[i].clsHandle) & CORINFO_FLG_VALUECLASS) != 0)
+            {
+                break;
+            }
+        }
 
         // Add this as a potential candidate.
         //
