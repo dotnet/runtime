@@ -94,10 +94,11 @@ public class Test
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(host: RunHost.V8, aot:false)]
         public void NativeLibraryWithVariadicFunctions(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"variadic_{id}";
+            id = $"variadic_{buildArgs.Config}";
+            string projectName = $"variadic_{buildArgs.Config}_{id}";
             string code = @"
 using System;
 using System.Runtime.InteropServices;
@@ -122,7 +123,9 @@ public class Test
 }";
             string filename = "variadic.o";
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraItems: $"<NativeFileReference Include=\"{filename}\" />");
+            buildArgs = ExpandBuildArgs(buildArgs,
+                                        extraItems: $"<NativeFileReference Include=\"{filename}\" />",
+                                        extraProperties: "<_WasmDevel>true</_WasmDevel>");
 
             BuildProject(buildArgs,
                         initProject: () =>
@@ -140,10 +143,55 @@ public class Test
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(host: RunHost.V8)]
+        [BuildAndRun(host: RunHost.V8, aot:false)]
         public void DllImportWithFunctionPointersCompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"variadic_{id}";
+            id= $"fnptr_{buildArgs.Config}";
+            string projectName = id;
+            string code = @"
+using System;
+using System.Runtime.InteropServices;
+public class Test
+{
+    public static int Main()
+    {
+        Console.WriteLine($""Main running"");
+        return 42;
+    }
+
+    [DllImport(""variadic"", EntryPoint=""sum"")] public unsafe static extern int using_sum_one(delegate* unmanaged<char*, IntPtr, void> callback);
+    [DllImport(""variadic"", EntryPoint=""sum"")] public static extern int sum_one(int a, int b);
+}";
+            string filename = "variadic.o";
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs,
+                                        extraItems: $"<NativeFileReference Include=\"{filename}\" />",
+                                        extraProperties: "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>");
+
+            (_, string output) = BuildProject(buildArgs,
+                                        initProject: () =>
+                                        {
+                                            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+                                            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", filename),
+                                                        Path.Combine(_projectDir!, filename));
+                                        },
+                                        publish: false,
+                                        id: id,
+                                        dotnetWasmFromRuntimePack: false);
+
+            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
+            Assert.Matches("warning.*using_sum_one", output);
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running", output);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [BuildAndRun(host: RunHost.V8, aot:false)]
+        public void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
+        {
+            id= $"fnptr_variadic_{buildArgs.Config}";
+            string projectName = id;
             string code = @"
 using System;
 using System.Runtime.InteropServices;
@@ -159,9 +207,9 @@ public class Test
 }";
             string filename = "variadic.o";
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraItems: $"<NativeFileReference Include=\"{filename}\" />", extraProperties: "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
-
-            Console.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
+            buildArgs = ExpandBuildArgs(buildArgs,
+                                        extraItems: $"<NativeFileReference Include=\"{filename}\" />",
+                                        extraProperties: "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>");
 
             (_, string output) = BuildProject(buildArgs,
                                         initProject: () =>
@@ -174,7 +222,7 @@ public class Test
                                         id: id,
                                         dotnetWasmFromRuntimePack: false);
 
-            Assert.Matches("warning.*function pointers", output);
+            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
             Assert.Matches("warning.*using_sum_one", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);

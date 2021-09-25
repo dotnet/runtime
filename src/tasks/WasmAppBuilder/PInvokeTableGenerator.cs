@@ -3,13 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -121,52 +118,42 @@ public class PInvokeTableGenerator : Task
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
         w.WriteLine();
 
-        var decls = new HashSet<string>();
-        foreach (var group in pinvokes.GroupBy(l => l.EntryPoint))
+        var pinvokesGroupedByEntryPoint = pinvokes.Where(l => modules.ContainsKey(l.Module))
+                             .OrderBy(l => l.EntryPoint)
+                             .GroupBy(l => l.EntryPoint);
+
+        var comparer = new PInvokeComparer();
+        foreach (IGrouping<string, PInvoke> group in pinvokesGroupedByEntryPoint)
         {
-            bool treatAsVariadic = false;
-            PInvoke first = group.First();
-
-            if (!ShouldApplyHackForMethodWithFunctionPointers(first.Method))
+            var candidates = group.Distinct(comparer).ToArray();
+            PInvoke first = candidates[0];
+            if (ShouldTreatAsVariadic(candidates))
             {
-                if (HasFunctionPointerParams(first.Method))
-                {
-                    Log.LogWarning($"DllImports with function pointers are not supported. Calling them will fail. Managed DllImports: {Environment.NewLine}{GroupToString(group)}");
-                    foreach (var pinvoke in group)
-                        pinvoke.Skip = true;
+                Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs, which is not supported. Calling it will fail at runtime. Module: {first.Module}." +
+                                $" Managed DllImports: {Environment.NewLine}{CandidatesToString(candidates)}");
 
-                    continue;
-                }
-
-                int numArgs = first.Method.GetParameters().Length;
-                treatAsVariadic = group.Count() > 1 && group.Any(p => p.Method.GetParameters().Length != numArgs);
-                if (treatAsVariadic)
+                string? decl = GenPInvokeDecl(first, treatAsVariadic: true);
+                if (decl != null)
                 {
                     w.WriteLine($"// Variadic signature created for");
-                    foreach (PInvoke pinvoke in group)
+                    foreach (PInvoke pinvoke in candidates)
                         w.WriteLine($"//   {pinvoke.Method}");
 
-                    Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs, which is not supported. Calling it will fail at runtime. Module: {first.Module}." +
-                                    $" Managed DllImports: {Environment.NewLine}{GroupToString(group)}");
+                    w.WriteLine(decl);
                 }
+
+                continue;
             }
 
-            if (modules.ContainsKey(first.Module)) {
-                try
-                {
-                    var decl = GenPInvokeDecl(first, treatAsVariadic);
-                    if (decls.Contains(decl))
-                        continue;
+            var decls = new HashSet<string>();
+            foreach (var candidate in candidates)
+            {
+                var decl = GenPInvokeDecl(candidate, treatAsVariadic: false);
+                if (decl == null || decls.Contains(decl))
+                    continue;
 
-                    w.WriteLine(decl);
-                    decls.Add(decl);
-                }
-                catch (NotSupportedException)
-                {
-                    // See the FIXME in GenPInvokeDecl
-                    Log.LogWarning($"Cannot handle function pointer arguments/return value in pinvoke method '{first.Method}' in type '{first.Method.DeclaringType}'.");
-                    first.Skip = true;
-                }
+                w.WriteLine(decl);
+                decls.Add(decl);
             }
         }
 
@@ -214,26 +201,24 @@ public class PInvokeTableGenerator : Task
             return fixedName;
         }
 
-        static bool HasFunctionPointerParams(MethodInfo method)
+        static bool ShouldTreatAsVariadic(PInvoke[] candidates)
         {
-            try
-            {
-                method.GetParameters();
-            }
-            catch (NotSupportedException nse) when (nse.Message.Contains("function pointer types in signatures is not supported"))
-            {
-                return true;
-            }
-            catch
-            {
-                // not concerned with other exceptions
-            }
+            if (candidates.Length < 2)
+                return false;
 
-            return false;
+            PInvoke first = candidates[0];
+            if (TryIsMethodGetParametersUnsupported(first.Method, out _))
+                return false;
+
+            int firstNumArgs = first.Method.GetParameters().Length;
+            return candidates
+                        .Skip(1)
+                        .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
+                                    c.Method.GetParameters().Length != firstNumArgs);
         }
 
-        static string GroupToString(IGrouping<string, PInvoke> group)
-            => string.Join(Environment.NewLine, group.Select(p => $"   Type: {p.Method.DeclaringType}, Method: {p.Method}"));
+        static string CandidatesToString(IEnumerable<PInvoke> group)
+            => string.Join(Environment.NewLine, group);
     }
 
     private string MapType (Type t)
@@ -253,18 +238,44 @@ public class PInvokeTableGenerator : Task
             return "int";
     }
 
-    private static bool ShouldApplyHackForMethodWithFunctionPointers(MethodInfo method) => method.Name == "EnumCalendarInfo";
+    // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
+    // https://github.com/dotnet/runtime/issues/43791
+    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
+    {
+        try
+        {
+            method.GetParameters();
+        }
+        catch (NotSupportedException nse)
+        {
+            reason = nse.Message;
+            return true;
+        }
+        catch
+        {
+            // not concerned with other exceptions
+        }
 
-    private string GenPInvokeDecl(PInvoke pinvoke, bool treatAsVariadic=false)
+        reason = null;
+        return false;
+    }
+
+    private string? GenPInvokeDecl(PInvoke pinvoke, bool treatAsVariadic)
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
-        if (ShouldApplyHackForMethodWithFunctionPointers(method))
-        {
+        if (method.Name == "EnumCalendarInfo") {
             // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
             // https://github.com/dotnet/runtime/issues/43791
             sb.Append($"int {pinvoke.EntryPoint} (int, int, int, int, int);");
             return sb.ToString();
+        }
+
+        if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
+        {
+            Log.LogWarning($"Skipping the following DllImport because '{reason}'. {Environment.NewLine}  {pinvoke.Method}");
+            pinvoke.Skip = true;
+            return null;
         }
 
         sb.Append(MapType(method.ReturnType));
@@ -428,7 +439,7 @@ public class PInvokeTableGenerator : Task
     private static void Error (string msg) => throw new LogAsErrorException(msg);
 }
 
-internal class PInvoke
+internal class PInvoke : IEquatable<PInvoke>
 {
     public PInvoke(string entryPoint, string module, MethodInfo method)
     {
@@ -441,6 +452,30 @@ internal class PInvoke
     public string Module;
     public MethodInfo Method;
     public bool Skip;
+
+    public bool Equals(PInvoke? other)
+        => other != null &&
+            string.Equals(EntryPoint, other.EntryPoint, StringComparison.Ordinal) &&
+            string.Equals(Module, other.Module, StringComparison.Ordinal) &&
+            string.Equals(Method.ToString(), other.Method.ToString(), StringComparison.Ordinal);
+
+    public override string ToString() => $"{{ EntryPoint: {EntryPoint}, Module: {Module}, Method: {Method}, Skip: {Skip} }}";
+}
+
+internal class PInvokeComparer : IEqualityComparer<PInvoke>
+{
+    public bool Equals(PInvoke? x, PInvoke? y)
+    {
+        if (x == null && y == null)
+            return true;
+        if (x == null || y == null)
+            return false;
+
+        return x.Equals(y);
+    }
+
+    public int GetHashCode(PInvoke pinvoke)
+        => $"{pinvoke.EntryPoint}{pinvoke.Module}{pinvoke.Method}".GetHashCode();
 }
 
 internal class PInvokeCallback
