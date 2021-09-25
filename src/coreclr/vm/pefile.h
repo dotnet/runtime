@@ -325,8 +325,9 @@ protected:
     // Internal routines
     // ------------------------------------------------------------
 
-    // just to make the DAC happy.
+    // just to make the DAC and GCC happy.
     virtual ~PEFile() {}
+    PEFile() {}
 
     void OpenMDImport();
     void OpenMDImport_Unsafe();

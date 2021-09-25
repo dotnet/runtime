@@ -863,7 +863,8 @@ PEAssembly::PEAssembly(
                 PEFile *creator,
                 BOOL isSystem,
                 PEImage * pPEImageIL /*= NULL*/,
-                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
+                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/) :
+    PEFile()
 {
     CONTRACTL
     {
