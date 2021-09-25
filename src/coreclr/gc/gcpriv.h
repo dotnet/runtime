@@ -3440,6 +3440,9 @@ protected:
     PER_HEAP
     void decommit_mark_array_by_seg (heap_segment* seg);
 
+    PER_HEAP_ISOLATED
+    bool should_update_end_mark_size();
+
     PER_HEAP
     void background_mark_phase();
 
@@ -4267,6 +4270,9 @@ protected:
     size_t     bgc_loh_size_increased;
     PER_HEAP
     size_t     bgc_poh_size_increased;
+
+    PER_HEAP
+    size_t     background_soh_size_end_mark;
 
     PER_HEAP
     size_t     background_soh_alloc_count;
