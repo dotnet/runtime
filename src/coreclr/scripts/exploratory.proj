@@ -28,7 +28,7 @@
   <PropertyGroup>
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
-    <WorkItemTimeout>5:00</WorkItemTimeout>
+    <WorkItemTimeout>2:30</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">

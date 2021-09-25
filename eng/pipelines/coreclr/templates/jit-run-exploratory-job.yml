@@ -103,7 +103,7 @@ jobs:
         HelixTargetQueues: $(Queue)
         HelixPreCommands: $(HelixPreCommand)
         Creator: $(Creator)
-        WorkItemTimeout: 4:00 # 4 hours
+        WorkItemTimeout: 2:30 # 2.5 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         ProjectFile: 'exploratory.proj'

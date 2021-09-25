@@ -179,7 +179,7 @@ def main(main_args):
     core_root = coreclr_args.core_root
     tag_name = "{}-{}".format(coreclr_args.run_configuration, coreclr_args.partition)
     output_directory = coreclr_args.output_directory
-    run_duration = 180 # Run for 3 hours
+    run_duration = 120 # Run for 2 hours
 
     path_to_corerun = os.path.join(core_root, "corerun")
     path_to_tool = os.path.join(antigen_directory, "Antigen")
@@ -189,7 +189,7 @@ def main(main_args):
 
     # Run tool such that issues are placed in a temp folder
     with TempDir() as temp_location:
-        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True)
+        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _long_running= True)
 
         # Copy issues for upload
         print("Copying issues to " + output_directory)

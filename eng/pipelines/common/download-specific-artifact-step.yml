@@ -15,7 +15,7 @@ steps:
       pipeline: 'Antigen'
       buildVersionToDownload: specific
       branchName: 'kpathak/antigen-ci'
-      buildId: '1357308'
+      buildId: '1385069'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
