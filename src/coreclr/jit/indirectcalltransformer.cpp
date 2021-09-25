@@ -793,23 +793,6 @@ private:
             //
             assert(!call->IsVirtual());
 
-            if (checkIdx > 0)
-            {
-                call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-                call->gtInlineCandidateInfo = nullptr;
-
-                if (returnTemp != BAD_VAR_NUM)
-                {
-                    GenTree* const assign = compiler->gtNewTempAssign(returnTemp, call);
-                    compiler->fgNewStmtAtEnd(thenBlock, assign);
-                }
-                else
-                {
-                    compiler->fgNewStmtAtEnd(thenBlock, call);
-                }
-                return;
-            }
-
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
             //
