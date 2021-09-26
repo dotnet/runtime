@@ -20,7 +20,7 @@ namespace Test.IO.Streams
         {
             if (_remaining < 0)
             {
-                ObjectDisposedException.Throw(typeof(PositionValueStream));
+                ObjectDisposedException.Throw(this);
             }
 
             if (_remaining == 0)

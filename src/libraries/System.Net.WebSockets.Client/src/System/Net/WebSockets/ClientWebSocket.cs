@@ -69,7 +69,7 @@ namespace System.Net.WebSockets
             switch ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connecting, (int)InternalState.Created))
             {
                 case InternalState.Disposed:
-                    ObjectDisposedException.Throw(this);
+                    throw new ObjectDisposedException(GetType().FullName);
 
                 case InternalState.Created:
                     break;

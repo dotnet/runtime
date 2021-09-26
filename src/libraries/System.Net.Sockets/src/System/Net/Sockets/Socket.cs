@@ -3811,12 +3811,9 @@ namespace System.Net.Sockets
         {
             if (Disposed)
             {
-                ThrowObjectDisposedException();
+                ObjectDisposedException.Throw(this);
             }
         }
-
-        [DoesNotReturn]
-        private void ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;
 

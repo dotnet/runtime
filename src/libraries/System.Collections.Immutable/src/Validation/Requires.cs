@@ -140,7 +140,7 @@ namespace System.Collections.Immutable
         {
             // separating out this throwing helps with inlining of the caller, especially
             // due to the retrieval of the type's name
-            ObjectDisposedException.Throw(disposed!);
+            throw new ObjectDisposedException(disposed!.GetType().FullName);
         }
     }
 }

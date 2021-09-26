@@ -1092,10 +1092,8 @@ namespace System.Net.Sockets
         {
             if (_disposed)
             {
-                ThrowObjectDisposedException();
+                ObjectDisposedException.Throw(this);
             }
-
-            void ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
         }
     }
 }

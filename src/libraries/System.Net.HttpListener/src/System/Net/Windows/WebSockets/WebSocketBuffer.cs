@@ -540,7 +540,7 @@ namespace System.Net.WebSockets
                     throw new WebSocketException(WebSocketError.InvalidState,
                         SR.Format(SR.net_WebSockets_InvalidState_ClosedOrAborted, typeof(WebSocketBase), _stateWhenDisposing));
                 default:
-                    ObjectDisposedException.Throw(this);
+                    throw new ObjectDisposedException(GetType().FullName);
             }
         }
 
