@@ -852,7 +852,7 @@ namespace System.Collections.Generic
             return Array.LastIndexOf(_items, item, index, count);
         }
 
-        // Removes the first occurrence of a specific object. The size 
+        // Removes the first occurrence of a specific object. The size
         // of the list is decreased by one.
         public bool Remove(T item)
         {
