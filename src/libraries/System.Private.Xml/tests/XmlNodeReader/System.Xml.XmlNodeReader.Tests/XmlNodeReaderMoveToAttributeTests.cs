@@ -121,5 +121,23 @@ namespace System.Xml.Tests
             nodeReader.ReadContentAsBase64(new byte[33], 10, 10);
             Assert.True(nodeReader.MoveToElement());
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34443")]
+        public void XmlNodeReaderMoveToUnexistedAttribute()
+        {
+            string xml = "<root><child attr1='value1'><other /></child></root>";
+
+            var doc = new XmlDocument();
+            doc.LoadXml(xml);
+            using (var nodeReader = new XmlNodeReader(doc.DocumentElement.FirstChild))
+            {
+                Assert.True(nodeReader.IsStartElement("child"));
+                Assert.True(nodeReader.MoveToAttribute("attr1"));
+                Assert.False(nodeReader.MoveToAttribute("attr2"));
+                Exception exception = Record.Exception(() => nodeReader.ReadStartElement("child"));
+                Assert.Null(exception);
+            }
+        }
     }
 }
