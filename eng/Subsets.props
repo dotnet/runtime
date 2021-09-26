@@ -204,6 +204,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <SubsetName Include="ILTrim" Description="ILTrim hackathon" />
+
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The full CoreCLR runtime. Equivalent to: $(DefaultCoreClrSubsets)" />
     <SubsetName Include="Clr.NativePrereqs" Description="Managed tools that support building the native components of the runtime (such as DacTableGen)." />
@@ -568,6 +570,11 @@
   <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(NativeAotSupported)' == 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\**\src\*.csproj" Category="clr" />
   </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+iltrim+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILTrim\ILTrim.csproj" Category="clr" />
+  </ItemGroup>
+
 
   <!-- Mono sets -->
   <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TargetsLinuxBionic)' == 'true'">
