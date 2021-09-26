@@ -3734,10 +3734,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     *pIntrinsicID = intrinsicID;
 
-#ifndef TARGET_ARM
-    genTreeOps interlockedOperator;
-#endif
-
     if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_GetStubContext)
     {
         // must be done regardless of DbgCode and MinOpts
@@ -3784,96 +3780,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     switch (intrinsicID)
     {
         GenTree* op1;
-
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        // TODO-ARM-CQ: reenable treating Interlocked operation as intrinsic
-
-        // Note that CORINFO_INTRINSIC_InterlockedAdd32/64 are not actually used.
-        // Anyway, we can import them as XADD and leave it to lowering/codegen to perform
-        // whatever optimizations may arise from the fact that result value is not used.
-        case CORINFO_INTRINSIC_InterlockedAdd32:
-        case CORINFO_INTRINSIC_InterlockedXAdd32:
-            interlockedOperator = GT_XADD;
-            goto InterlockedBinOpCommon;
-        case CORINFO_INTRINSIC_InterlockedXchg32:
-            interlockedOperator = GT_XCHG;
-            goto InterlockedBinOpCommon;
-
-#ifdef TARGET_64BIT
-        case CORINFO_INTRINSIC_InterlockedAdd64:
-        case CORINFO_INTRINSIC_InterlockedXAdd64:
-            interlockedOperator = GT_XADD;
-            goto InterlockedBinOpCommon;
-        case CORINFO_INTRINSIC_InterlockedXchg64:
-            interlockedOperator = GT_XCHG;
-            goto InterlockedBinOpCommon;
-#endif // TARGET_AMD64
-
-        InterlockedBinOpCommon:
-            assert(callType != TYP_STRUCT);
-            assert(sig->numArgs == 2);
-
-            GenTree* op2;
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-
-            // This creates:
-            //   val
-            // XAdd
-            //   addr
-            //     field (for example)
-            //
-            // In the case where the first argument is the address of a local, we might
-            // want to make this *not* make the var address-taken -- but atomic instructions
-            // on a local are probably pretty useless anyway, so we probably don't care.
-
-            op1 = gtNewOperNode(interlockedOperator, genActualType(callType), op1, op2);
-            op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-            retNode = op1;
-            break;
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
-
-        case CORINFO_INTRINSIC_MemoryBarrier:
-        case CORINFO_INTRINSIC_MemoryBarrierLoad:
-
-            assert(sig->numArgs == 0);
-
-            op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
-            op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-
-            // On XARCH `CORINFO_INTRINSIC_MemoryBarrierLoad` fences need not be emitted.
-            // However, we still need to capture the effect on reordering.
-            if (intrinsicID == CORINFO_INTRINSIC_MemoryBarrierLoad)
-            {
-                op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
-            }
-
-            retNode = op1;
-            break;
-
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
-        case CORINFO_INTRINSIC_InterlockedCmpXchg32:
-#ifdef TARGET_64BIT
-        case CORINFO_INTRINSIC_InterlockedCmpXchg64:
-#endif
-        {
-            assert(callType != TYP_STRUCT);
-            assert(sig->numArgs == 3);
-            GenTree* op2;
-            GenTree* op3;
-
-            op3 = impPopStack().val; // comparand
-            op2 = impPopStack().val; // value
-            op1 = impPopStack().val; // location
-
-            GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
-
-            node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
-            retNode = node;
-            break;
-        }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
         case CORINFO_INTRINSIC_InitializeArray:
             retNode = impInitializeArrayIntrinsic(sig);
@@ -4371,6 +4277,90 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 #endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+            // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
+            case NI_System_Threading_Interlocked_CompareExchange:
+            {
+                var_types retType = JITtype2varType(sig->retType);
+                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                {
+                    break;
+                }
+                if ((retType != TYP_INT) && (retType != TYP_LONG))
+                {
+                    break;
+                }
+
+                assert(callType != TYP_STRUCT);
+                assert(sig->numArgs == 3);
+
+                GenTree* op3 = impPopStack().val; // comparand
+                GenTree* op2 = impPopStack().val; // value
+                GenTree* op1 = impPopStack().val; // location
+
+                GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
+
+                node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
+                retNode = node;
+                break;
+            }
+
+            case NI_System_Threading_Interlocked_Exchange:
+            case NI_System_Threading_Interlocked_ExchangeAdd:
+            {
+                assert(callType != TYP_STRUCT);
+                assert(sig->numArgs == 2);
+
+                var_types retType = JITtype2varType(sig->retType);
+                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                {
+                    break;
+                }
+                if ((retType != TYP_INT) && (retType != TYP_LONG))
+                {
+                    break;
+                }
+
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+
+                // This creates:
+                //   val
+                // XAdd
+                //   addr
+                //     field (for example)
+                //
+                // In the case where the first argument is the address of a local, we might
+                // want to make this *not* make the var address-taken -- but atomic instructions
+                // on a local are probably pretty useless anyway, so we probably don't care.
+
+                op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
+                                    genActualType(callType), op1, op2);
+                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+                retNode = op1;
+                break;
+            }
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+
+            case NI_System_Threading_Interlocked_MemoryBarrier:
+            case NI_System_Threading_Interlocked_ReadMemoryBarrier:
+            {
+                assert(sig->numArgs == 0);
+
+                GenTree* op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
+                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+
+                // On XARCH `NI_System_Threading_Interlocked_ReadMemoryBarrier` fences need not be emitted.
+                // However, we still need to capture the effect on reordering.
+                if (ni == NI_System_Threading_Interlocked_ReadMemoryBarrier)
+                {
+                    op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
+                }
+
+                retNode = op1;
+                break;
+            }
 
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
@@ -4962,10 +4952,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_Threading_Thread_get_ManagedThreadId;
             }
         }
-#ifndef TARGET_ARM64
-        // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
         else if (strcmp(className, "Interlocked") == 0)
         {
+#ifndef TARGET_ARM64
+            // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
             if (strcmp(methodName, "And") == 0)
             {
                 result = NI_System_Threading_Interlocked_And;
@@ -4974,8 +4964,28 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Threading_Interlocked_Or;
             }
-        }
 #endif
+            if (strcmp(methodName, "CompareExchange") == 0)
+            {
+                result = NI_System_Threading_Interlocked_CompareExchange;
+            }
+            else if (strcmp(methodName, "Exchange") == 0)
+            {
+                result = NI_System_Threading_Interlocked_Exchange;
+            }
+            else if (strcmp(methodName, "ExchangeAdd") == 0)
+            {
+                result = NI_System_Threading_Interlocked_ExchangeAdd;
+            }
+            else if (strcmp(methodName, "MemoryBarrier") == 0)
+            {
+                result = NI_System_Threading_Interlocked_MemoryBarrier;
+            }
+            else if (strcmp(methodName, "ReadMemoryBarrier") == 0)
+            {
+                result = NI_System_Threading_Interlocked_ReadMemoryBarrier;
+            }
+        }
     }
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
