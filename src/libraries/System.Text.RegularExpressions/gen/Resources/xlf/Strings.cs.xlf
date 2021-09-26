@@ -4,12 +4,12 @@
     <body>
       <trans-unit id="AlternationHasComment">
         <source>Alternation conditions cannot be comments.</source>
-        <target state="new">Alternation conditions cannot be comments.</target>
+        <target state="translated">Podmínky alternativního výrazu nemohou být komentáře.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasMalformedCondition">
         <source>Illegal conditional (?(...)) expression.</source>
-        <target state="new">Illegal conditional (?(...)) expression.</target>
+        <target state="translated">Podmíněný výraz (?(...)) je neplatný.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
@@ -24,17 +24,17 @@
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
         <source>Alternation conditions do not capture and cannot be named.</source>
-        <target state="new">Alternation conditions do not capture and cannot be named.</target>
+        <target state="translated">Podmínky alternativního výrazu nezachytávají a nelze je pojmenovat.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasTooManyConditions">
         <source>Too many | in (?()|).</source>
-        <target state="new">Too many | in (?()|).</target>
+        <target state="translated">Příliš mnoho znaků | v řetězci (?()|).</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReference">
         <source>(?({0}) ) reference to undefined group.</source>
-        <target state="new">(?({0}) ) reference to undefined group.</target>
+        <target state="translated">Odkaz na nedefinovanou skupinu (?({0}) ).</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReferenceNoPlaceholder">
@@ -44,42 +44,42 @@
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
         <source>Destination array is not long enough to copy all the items in the collection. Check array index and length.</source>
-        <target state="new">Destination array is not long enough to copy all the items in the collection. Check array index and length.</target>
+        <target state="translated">Cílové pole není dostatečně dlouhé, aby bylo možné zkopírovat všechny položky v kolekci. Zkontrolujte index a délku pole.</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentNull_ArrayWithNullElements">
         <source>The array cannot contain null elements.</source>
-        <target state="new">The array cannot contain null elements.</target>
+        <target state="translated">Pole nemůže obsahovat elementy null.</target>
         <note />
       </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
-        <target state="new">Start index cannot be less than 0 or greater than input length.</target>
+        <target state="translated">Počáteční index nemůže být menší než nula nebo větší než délka vstupu.</target>
         <note />
       </trans-unit>
       <trans-unit id="CaptureGroupNameInvalid">
         <source>Invalid group name: Group names must begin with a word character.</source>
-        <target state="new">Invalid group name: Group names must begin with a word character.</target>
+        <target state="translated">Neplatný název skupiny. Názvy skupin musí začínat písmenem.</target>
         <note />
       </trans-unit>
       <trans-unit id="CaptureGroupOfZero">
         <source>Capture number cannot be zero.</source>
-        <target state="new">Capture number cannot be zero.</target>
+        <target state="translated">Počet zachytávání nemůže být nulový.</target>
         <note />
       </trans-unit>
       <trans-unit id="CountTooSmall">
         <source>Count cannot be less than -1.</source>
-        <target state="new">Count cannot be less than -1.</target>
+        <target state="translated">Počet nemůže být menší než hodnota -1.</target>
         <note />
       </trans-unit>
       <trans-unit id="EnumNotStarted">
         <source>Enumeration has either not started or has already finished.</source>
-        <target state="new">Enumeration has either not started or has already finished.</target>
+        <target state="translated">Výčet buď nebyl spuštěn, nebo již byl dokončen.</target>
         <note />
       </trans-unit>
       <trans-unit id="ExclusionGroupNotLast">
         <source>A subtraction must be the last element in a character class.</source>
-        <target state="new">A subtraction must be the last element in a character class.</target>
+        <target state="translated">Odčítání musí být posledním prvkem ve třídě znaků.</target>
         <note />
       </trans-unit>
       <trans-unit id="Generic">
@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
-        <target state="new">Internal error in ScanRegex.</target>
+        <target state="translated">Vnitřní chyba v modulu ScanRegex.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
@@ -149,7 +149,7 @@
       </trans-unit>
       <trans-unit id="LengthNotNegative">
         <source>Length cannot be less than 0 or exceed input length.</source>
-        <target state="new">Length cannot be less than 0 or exceed input length.</target>
+        <target state="translated">Délka nemůže být menší než 0 nebo přesáhnout délku vstupu.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -189,17 +189,17 @@
       </trans-unit>
       <trans-unit id="NoResultOnFailed">
         <source>Result cannot be called on a failed Match.</source>
-        <target state="new">Result cannot be called on a failed Match.</target>
+        <target state="translated">Výsledek nelze volat pro shodu, která se nezdařila.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
-        <target state="new">Collection is read-only.</target>
+        <target state="translated">Kolekce je jen pro čtení.</target>
         <note />
       </trans-unit>
       <trans-unit id="OnlyAllowedOnce">
         <source>This operation is only allowed once per object.</source>
-        <target state="new">This operation is only allowed once per object.</target>
+        <target state="translated">Tuto operaci lze na objektu provést pouze jednou.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
@@ -209,17 +209,17 @@
       </trans-unit>
       <trans-unit id="QuantifierAfterNothing">
         <source>Quantifier {x,y} following nothing.</source>
-        <target state="new">Quantifier {x,y} following nothing.</target>
+        <target state="translated">Před kvantifikátorem {x,y} není nic uvedeno.</target>
         <note />
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="new">Capture group numbers must be less than or equal to Int32.MaxValue.</target>
+        <target state="translated">Počty skupin digitalizace musí být menší nebo rovny hodnotě Int32.MaxValue.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="new">The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</target>
+        <target state="translated">Vypršel časový limit modulu RegEx při pokusu o porovnání vzoru se vstupním řetězcem. K tomu může dojít z celé řady důvodů, mezi které patří velká velikost vstupních dat nebo nadměrné zpětné navracení způsobené vloženými kvantifikátory, zpětnými odkazy a dalšími faktory.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -234,12 +234,12 @@
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
-        <target state="new">[x-y] range in reverse order.</target>
+        <target state="translated">Rozsah [x-y] je v obráceném pořadí.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedQuantifierRange">
         <source>Illegal {x,y} with x &gt; y.</source>
-        <target state="new">Illegal {x,y} with x &gt; y.</target>
+        <target state="translated">Rozsah {x,y}, kde x &gt; y, je neplatný.</target>
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
@@ -264,7 +264,7 @@
       </trans-unit>
       <trans-unit id="UndefinedNumberedReference">
         <source>Reference to undefined group number {0}.</source>
-        <target state="new">Reference to undefined group number {0}.</target>
+        <target state="translated">Odkaz na nedefinované číslo skupiny. Číslo skupiny: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNumberedReferenceNoPlaceholder">
@@ -279,7 +279,7 @@
       </trans-unit>
       <trans-unit id="UnexpectedOpcode">
         <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="new">Unexpected opcode in regular expression generation: {0}.</target>
+        <target state="translated">Při generování regulárního výrazu byl nalezen neočekávaný operační kód: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -309,7 +309,7 @@
       </trans-unit>
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
-        <target state="new">Unterminated (?#...) comment.</target>
+        <target state="translated">Neukončený komentář (?#...).</target>
         <note />
       </trans-unit>
     </body>
