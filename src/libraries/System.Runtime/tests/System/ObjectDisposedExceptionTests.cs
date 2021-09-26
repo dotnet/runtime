@@ -47,14 +47,20 @@ namespace System.Tests
         public static void Throw_Object()
         {
             var obj = new object();
-            AssertExtensions.Throws<ObjectDisposedException>(() => ObjectDisposedException.Throw(obj));
+            ObjectDisposedException ex = AssertExtensions.Throws<ObjectDisposedException>(
+                () => ObjectDisposedException.Throw(obj));
+            
+            Assert.Equals("System.Object", ex.ObjectName);
         }
 
         [Fact]
         public static void Throw_Type()
         {
-            var type = new object().GetType();
-            AssertExtensions.Throws<ObjectDisposedException>(() => ObjectDisposedException.Throw(type));
+            Type type = new object().GetType();
+            ObjectDisposedException ex = AssertExtensions.Throws<ObjectDisposedException>(
+                () => ObjectDisposedException.Throw(type));
+            
+            Assert.Equals("System.Object", ex.ObjectName);
         }
     }
 }
