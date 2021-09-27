@@ -1132,20 +1132,22 @@ namespace System.Xml
             }
 
             StringWriter sw = new(CultureInfo.InvariantCulture);
-            using XmlTextWriter xtw = CreateWriterForInnerOuterXml(sw);
 
-            if (NodeType == XmlNodeType.Attribute)
+            using (XmlTextWriter xtw = CreateWriterForInnerOuterXml(sw))
             {
-                xtw.QuoteChar = QuoteChar;
-                WriteAttributeValue(xtw);
-            }
+                if (NodeType == XmlNodeType.Attribute)
+                {
+                    xtw.QuoteChar = QuoteChar;
+                    WriteAttributeValue(xtw);
+                }
 
-            if (NodeType == XmlNodeType.Element)
-            {
-                WriteNode(xtw, false);
-            }
+                if (NodeType == XmlNodeType.Element)
+                {
+                    WriteNode(xtw, false);
+                }
 
-            return sw.ToString();
+                return sw.ToString();
+            }
         }
 
         // Writes the content (inner XML) of the current node into the provided XmlTextWriter.
