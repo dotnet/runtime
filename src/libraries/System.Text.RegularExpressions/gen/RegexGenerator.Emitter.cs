@@ -298,7 +298,6 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
                             else
                             {
@@ -307,9 +306,8 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("base.runtextpos = runtextbeg;");
                                 }
-                                writer.WriteLine("return true;");
                             }
-                            writer.WriteLine();
+                            writer.WriteLine("return true;");
                             return;
 
                         case RegexPrefixAnalyzer.Start:
@@ -320,7 +318,6 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
                             else
                             {
@@ -329,9 +326,8 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
-                            writer.WriteLine();
+                            writer.WriteLine("return true;");
                             return;
 
                         case RegexPrefixAnalyzer.EndZ:
@@ -343,7 +339,6 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("base.runtextpos = runtextend - 1;");
                                 }
-                                writer.WriteLine("return true;");
                             }
                             else
                             {
@@ -352,9 +347,8 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
-                            writer.WriteLine();
+                            writer.WriteLine("return true;");
                             return;
 
                         case RegexPrefixAnalyzer.End when minRequiredLength == 0: // if it's > 0, we already output a more stringent check
@@ -365,7 +359,6 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("base.runtextpos = runtextend;");
                                 }
-                                writer.WriteLine("return true;");
                             }
                             else
                             {
@@ -373,9 +366,8 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
-                            writer.WriteLine();
+                            writer.WriteLine("return true;");
                             return;
 
                         case RegexPrefixAnalyzer.Bol when !rtl: // Don't bother optimizing for the niche case of RegexOptions.RightToLeft | RegexOptions.Multiline
@@ -423,124 +415,105 @@ namespace System.Text.RegularExpressions.Generator
 
                     int chLast = rbm.Pattern[last];
 
-                    writer.WriteLine(!rtl ?
-                        $"runtextpos += {rbm.Pattern.Length - 1};" :
-                        $"runtextpos -= {rbm.Pattern.Length};");
-                    writer.WriteLine("int offset = 0;");
+                    EmitAdd(writer, "runtextpos", !rtl ? rbm.Pattern.Length - 1 : -rbm.Pattern.Length);
 
-                    writer.WriteLine("goto Start;");
-                    writer.WriteLine();
-                    writer.WriteLine("DefaultAdvance:");
-                    writer.WriteLine($"offset = {(!rtl ? rbm.Pattern.Length : -rbm.Pattern.Length)};");
-                    writer.WriteLine();
-                    writer.WriteLine("Advance:");
-                    writer.WriteLine("runtextpos += offset;");
-                    writer.WriteLine();
-                    writer.WriteLine("Start:");
-                    using (EmitBlock(writer, !rtl ? "if (runtextpos >= runtextend)" : "if (runtextpos < runtextbeg)"))
+                    using (EmitBlock(writer, $"while ({(!rtl ? "runtextpos < runtextend" : "runtextpos >= runtextbeg")})"))
                     {
-                        writer.WriteLine("goto ReturnFalse;");
-                    }
-                    writer.WriteLine();
-                    writer.WriteLine($"ch = {ToLowerIfNeeded(hasTextInfo, options, "runtext[runtextpos]", rbm.CaseInsensitive)};");
+                        writer.WriteLine($"ch = {ToLowerIfNeeded(hasTextInfo, options, "runtext[runtextpos]", rbm.CaseInsensitive)};");
 
-                    using (EmitBlock(writer, $"if (ch == {Literal((char)chLast)})"))
-                    {
-                        writer.WriteLine("goto PartialMatch;");
-                    }
-                    writer.WriteLine($"ch -= {rbm.LowASCII};");
-                    using (EmitBlock(writer, $"if ((uint)ch > {rbm.HighASCII - rbm.LowASCII})"))
-                    {
-                        writer.WriteLine("goto DefaultAdvance;");
-                    }
-
-                    writer.Write("offset = ");
-                    int negativeRange = rbm.HighASCII - rbm.LowASCII + 1;
-                    if (negativeRange > 1)
-                    {
-                        // Create a string to store the lookup table we use to find the offset.
-                        // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
-                        // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
-                        Debug.Assert(rbm.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
-                        Span<char> span = new char[negativeRange];
-                        for (int i = 0; i < span.Length; i++)
+                        using (EmitBlock(writer, $"if (ch != {Literal((char)chLast)})"))
                         {
-                            int offset = rbm.NegativeASCII[i + rbm.LowASCII];
-                            if (offset == beforefirst)
+                            writer.WriteLine($"ch -= {Literal((char)rbm.LowASCII)};");
+                            using (EmitBlock(writer, $"if ((uint)ch > ({Literal((char)rbm.HighASCII)} - {Literal((char)rbm.LowASCII)}))"))
                             {
-                                offset = rbm.Pattern.Length;
+                                EmitAdd(writer, "runtextpos", (!rtl ? rbm.Pattern.Length : -rbm.Pattern.Length));
+                                writer.WriteLine("continue;");
                             }
-                            else if (rtl)
+
+                            int negativeRange = rbm.HighASCII - rbm.LowASCII + 1;
+                            if (negativeRange > 1) // High > Low
                             {
-                                offset = -offset;
+                                // Create a string to store the lookup table we use to find the offset.
+                                // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
+                                // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
+                                Debug.Assert(rbm.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
+                                Span<char> span = new char[negativeRange];
+                                for (int i = 0; i < span.Length; i++)
+                                {
+                                    int offset = rbm.NegativeASCII[i + rbm.LowASCII];
+                                    if (offset == beforefirst)
+                                    {
+                                        offset = rbm.Pattern.Length;
+                                    }
+                                    else if (rtl)
+                                    {
+                                        offset = -offset;
+                                    }
+                                    Debug.Assert(offset >= 0 && offset <= char.MaxValue);
+                                    span[i] = (char)offset;
+                                }
+
+                                writer.WriteLine($"runtextpos {(rtl ? "-=" : "+=")} {Literal(span.ToString())}[ch];");
                             }
-                            Debug.Assert(offset >= 0 && offset <= char.MaxValue);
-                            span[i] = (char)offset;
-                        }
-
-                        if (rtl)
-                        {
-                            writer.Write('-');
-                        }
-                        writer.WriteLine($"{Literal(span.ToString())}[ch];");
-                    }
-                    else
-                    {
-                        Debug.Assert(negativeRange == 1);
-                        int offset = rbm.NegativeASCII[rbm.LowASCII];
-                        if (offset == beforefirst)
-                        {
-                            offset = rtl ? -rbm.Pattern.Length : rbm.Pattern.Length;
-                        }
-                        writer.WriteLine($"{offset.ToString(CultureInfo.InvariantCulture)};");
-                    }
-                    writer.WriteLine("goto Advance;");
-                    writer.WriteLine();
-
-                    writer.WriteLine("PartialMatch:");
-                    writer.WriteLine("int test = runtextpos;");
-
-                    int nextAvailableLabelId = 0;
-                    int prevLabelOffset = int.MaxValue;
-                    int prevLabel = 0;
-                    for (int i = rbm.Pattern.Length - 2; i >= 0; i--)
-                    {
-                        int charIndex = !rtl ? i : rbm.Pattern.Length - 1 - i;
-
-                        string nextCharExpr = ToLowerIfNeeded(hasTextInfo, options, (!rtl ? "runtext[--test]" : "runtext[++test]"), rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[charIndex]));
-                        string matchExpr = Literal(rbm.Pattern[charIndex]);
-                        if (prevLabelOffset == rbm.Positive[charIndex])
-                        {
-                            using (EmitBlock(writer, $"if ({nextCharExpr} != {matchExpr})"))
+                            else
                             {
-                                writer.WriteLine($"goto L{prevLabel};");
+                                Debug.Assert(negativeRange == 1); // High == Low
+                                int offset = rbm.NegativeASCII[rbm.LowASCII];
+                                if (offset == beforefirst)
+                                {
+                                    offset = rtl ? -rbm.Pattern.Length : rbm.Pattern.Length;
+                                }
+                                EmitAdd(writer, "runtextpos", offset);
                             }
+                            writer.WriteLine("continue;");
                         }
-                        else
+                        writer.WriteLine();
+                        writer.WriteLine("int test = runtextpos;");
+                        writer.WriteLine();
+
+                        for (int i = rbm.Pattern.Length - 2; i >= 0; i--)
                         {
-                            int lNext = nextAvailableLabelId++;
-                            using (EmitBlock(writer, $"if ({nextCharExpr} == {matchExpr})"))
+                            int charIndex = !rtl ? i : rbm.Pattern.Length - 1 - i;
+                            bool sameAsPrev = i < rbm.Pattern.Length - 2 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i + 1 : rbm.Pattern.Length - 1 - (i + 1)];
+                            bool sameAsNext = i > 0 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i - 1 : rbm.Pattern.Length - 1 - (i - 1)];
+
+                            string condition = $"{ToLowerIfNeeded(hasTextInfo, options, (!rtl ? "runtext[--test]" : "runtext[++test]"), rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[charIndex]))} != {Literal(rbm.Pattern[charIndex])}";
+                            switch ((sameAsPrev, sameAsNext))
                             {
-                                writer.WriteLine($"goto L{lNext};");
+                                case (true, true):
+                                    writer.WriteLine($"    {condition} ||");
+                                    break;
+
+                                case (false, true):
+                                    writer.WriteLine($"if ({condition} ||");
+                                    break;
+
+                                case (true, false):
+                                    writer.WriteLine($"    {condition})");
+                                    using (EmitBlock(writer, null))
+                                    {
+                                        EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
+                                        writer.WriteLine("continue;");
+                                    }
+                                    writer.WriteLine();
+                                    break;
+
+                                case (false, false):
+                                    using (EmitBlock(writer, $"if ({condition})"))
+                                    {
+                                        EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
+                                        writer.WriteLine("continue;");
+                                    }
+                                    writer.WriteLine();
+                                    break;
                             }
-                            prevLabel = nextAvailableLabelId++;
-                            prevLabelOffset = rbm.Positive[charIndex];
-                            writer.WriteLine();
-
-                            writer.WriteLine($"L{prevLabel}:");
-                            writer.WriteLine($"offset = {prevLabelOffset.ToString(CultureInfo.InvariantCulture)};");
-                            writer.WriteLine("goto Advance;");
-                            writer.WriteLine();
-
-                            writer.WriteLine($"L{lNext}:");
                         }
-                    }
 
-                    writer.WriteLine();
-                    writer.WriteLine(!rtl ?
-                        "base.runtextpos = test;" :
-                        "base.runtextpos = test + 1;");
-                    writer.WriteLine("return true;");
+                        writer.WriteLine(!rtl ?
+                            "base.runtextpos = test;" :
+                            "base.runtextpos = test + 1;");
+                        writer.WriteLine("return true;");
+                    }
                 }
                 else if (code.LeadingCharClasses is null)
                 {
@@ -790,7 +763,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("// Match");
             if (textSpanPos > 0)
             {
-                writer.WriteLine($"runtextpos += {textSpanPos};");
+                EmitAdd(writer, "runtextpos", textSpanPos);
             }
             writer.WriteLine("base.runtextpos = runtextpos;");
             writer.WriteLine("base.Capture(0, originalruntextpos, runtextpos);");
@@ -849,7 +822,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 if (textSpanPos > 0)
                 {
-                    writer.WriteLine($"runtextpos += {textSpanPos};");
+                    EmitAdd(writer, "runtextpos", textSpanPos);
                     writer.WriteLine($"{textSpanLocal} = {textSpanLocal}.Slice({textSpanPos});");
                     textSpanPos = 0;
                 }
@@ -2335,7 +2308,7 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 writer.WriteLine($"goto {Backtrack};");
                             }
-                            writer.WriteLine($"runtextpos += {str.Length};");
+                            EmitAdd(writer, "runtextpos", str.Length);
                             break;
                         }
 
@@ -2443,7 +2416,7 @@ namespace System.Text.RegularExpressions.Generator
                                         writer.WriteLine($"goto {Backtrack};");
                                     }
                                 }
-                                writer.WriteLine($"runtextpos += {c};");
+                                EmitAdd(writer, "runtextpos", c);
                             }
                         }
                         break;
@@ -2922,7 +2895,7 @@ namespace System.Text.RegularExpressions.Generator
             string PopStack() => "runstack[runstackpos++]";
 
             /// <summary>Pops i elements off the grouping stack and discards them.</summary>
-            void PopDiscardStack(int i = 1) => writer.WriteLine(i == 1 ? "runstackpos++;" : $"runstackpos += {i};");
+            void PopDiscardStack(int i = 1) => EmitAdd(writer, "runstackpos", i);
 
             /// <summary>Prologue to code that will replace the ith element on the grouping stack.</summary>
             string ReadyReplaceStack(int i) => i == 0 ? "runstack[runstackpos]" : $"runstack[runstackpos + {i}]";
@@ -3218,6 +3191,21 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("{");
             writer.Indent++;
             return new FinishEmitScope(writer, appendBlankLine);
+        }
+
+        private static void EmitAdd(IndentedTextWriter writer, string variable, int value)
+        {
+            if (value == 0)
+            {
+                return;
+            }
+
+            writer.WriteLine(
+                value == 1 ? $"{variable}++;" :
+                value == -1 ? $"{variable}--;" :
+                value > 0 ? $"{variable} += {value};" :
+                value < 0 && value > int.MinValue ? $"{variable} -= {-value};" :
+                $"{variable} += {value.ToString(CultureInfo.InvariantCulture)};");
         }
 
         private readonly struct FinishEmitScope : IDisposable
