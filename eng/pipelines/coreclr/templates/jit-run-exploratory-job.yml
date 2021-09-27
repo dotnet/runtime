@@ -102,7 +102,7 @@ jobs:
         HelixType: 'build/tests/'
         HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
         HelixPreCommands: $(HelixPreCommand)
-        Creator: $(Creator)
+        creator: $(Build.DefinitionName)
         WorkItemTimeout: 2:30 # 2.5 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
