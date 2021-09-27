@@ -88,6 +88,10 @@ int CacheLineSize;
 #endif
 #endif
 
+#ifdef __FreeBSD__
+#include <sys/user.h>
+#endif
+
 #include <algorithm>
 #include <clrconfignocache.h>
 
@@ -847,14 +851,18 @@ PAL_IsDebuggerPresent()
     close(status_fd);
 
     return debugger_present;
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(__FreeBSD__)
     struct kinfo_proc info = {};
     size_t size = sizeof(info);
     int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
     int ret = sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, NULL, 0);
 
     if (ret == 0)
+#if defined(__APPLE__)
         return ((info.kp_proc.p_flag & P_TRACED) != 0);
+#else // __FreeBSD__
+        return ((info.ki_flag & P_TRACED) != 0);
+#endif
 
     return FALSE;
 #elif defined(__NetBSD__)
