@@ -3,7 +3,7 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace Microsoft.CodeAnalysis.Shared.Extensions
+namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 {
     internal static class RoslynExtensions
     {
