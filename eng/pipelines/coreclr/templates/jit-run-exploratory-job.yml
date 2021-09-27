@@ -96,6 +96,7 @@ jobs:
       # Run exploratory tool in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
+        displayName: 'Send job to Helix'
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
         helixType: 'build/tests/'
