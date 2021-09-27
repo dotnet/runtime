@@ -128,16 +128,16 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    yield return GenerateConditionalAllocationFreeSyntax(info ,context);
+                    yield return GenerateConditionalAllocationFreeSyntax(info, context);
 
                     break;
             }
         }
 
         public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
-        
+
         public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
-        
+
         protected override ExpressionSyntax GenerateAllocationExpression(
             TypePositionInfo info,
             StubCodeContext context,
@@ -155,7 +155,7 @@ namespace Microsoft.Interop
             // +1 for null terminator
             // *2 for number of bytes per char
             // int <byteLen> = (<managed>.Length + 1) * 2;
-            return 
+            return
                 BinaryExpression(
                     SyntaxKind.MultiplyExpression,
                     ParenthesizedExpression(
@@ -176,7 +176,7 @@ namespace Microsoft.Interop
             SyntaxToken stackAllocPtrIdentifier)
         {
             // ((ReadOnlySpan<char>)<managed>).CopyTo(new Span<char>(<stackAllocPtr>, <managed>.Length + 1));
-            return                                 
+            return
                 ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(
@@ -189,14 +189,14 @@ namespace Microsoft.Interop
                                 IdentifierName(context.GetIdentifiers(info).managed))),
                             IdentifierName("CopyTo")),
                         ArgumentList(
-                            SeparatedList(new [] {
+                            SeparatedList(new[] {
                                 Argument(
                                     ObjectCreationExpression(
                                         GenericName(Identifier(TypeNames.System_Span),
                                             TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                                 PredefinedType(Token(SyntaxKind.CharKeyword))))),
                                         ArgumentList(
-                                            SeparatedList(new []{
+                                            SeparatedList(new[]{
                                                 Argument(IdentifierName(stackAllocPtrIdentifier)),
                                                 Argument(IdentifierName(byteLengthIdentifier))})),
                                         initializer: null))}))));

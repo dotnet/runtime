@@ -45,12 +45,12 @@ namespace Microsoft.Interop
         }
 
         protected IEnumerable<StatementSyntax> GenerateConditionalAllocationSyntax(
-            TypePositionInfo info, 
+            TypePositionInfo info,
             StubCodeContext context,
             int stackallocMaxSize)
         {
             (_, string nativeIdentifier) = context.GetIdentifiers(info);
-            
+
             string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(info, context);
             string byteLenIdentifier = GetByteLengthIdentifier(info, context);
             string stackAllocPtrIdentifier = GetStackAllocIdentifier(info, context);
@@ -210,7 +210,7 @@ namespace Microsoft.Interop
         protected abstract ExpressionSyntax GenerateFreeExpression(
             TypePositionInfo info,
             StubCodeContext context);
-        
+
         /// <summary>
         /// Generate code to check if the managed value is not null.
         /// </summary>

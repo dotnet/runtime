@@ -35,7 +35,6 @@ namespace Microsoft.Interop
             else if (context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition)
             {
                 return Argument(IdentifierName(context.GetIdentifiers(info).native));
-                
             }
             return Argument(
                     PrefixUnaryExpression(
@@ -102,7 +101,7 @@ namespace Microsoft.Interop
         {
             return info.IsByRef && !info.IsManagedReturnPosition && !context.SingleFrameSpansNativeContext;
         }
-        
+
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
     }
 
