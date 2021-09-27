@@ -191,12 +191,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task GetStreamIdWithoutStartWorks()
         {
-            using QuicListener listener = CreateQuicListener();
-            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
-
-            ValueTask clientTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await clientTask;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
             using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
             Assert.Equal(0, clientStream.StreamId);
@@ -257,28 +252,22 @@ namespace System.Net.Quic.Tests
         public async Task TestStreams()
         {
             using QuicListener listener = CreateQuicListener();
-            IPEndPoint listenEndPoint = listener.ListenEndPoint;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
+            using (clientConnection)
+            using (serverConnection)
+            {
+                Assert.True(clientConnection.Connected);
+                Assert.True(serverConnection.Connected);
+                Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
+                Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+                Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
 
-            using QuicConnection clientConnection = CreateQuicConnection(listenEndPoint);
-
-            Assert.False(clientConnection.Connected);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-
-            ValueTask connectTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await connectTask;
-
-            Assert.True(clientConnection.Connected);
-            Assert.True(serverConnection.Connected);
-            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
-
-            await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
-            await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
-            await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
-            await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
-            await clientConnection.CloseAsync(errorCode: 0);
+                await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
+                await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
+                await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
+                await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
+                await clientConnection.CloseAsync(errorCode: 0);
+            }
         }
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
