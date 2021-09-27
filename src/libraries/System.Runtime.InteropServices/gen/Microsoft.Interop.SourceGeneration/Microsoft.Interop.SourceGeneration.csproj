@@ -5,6 +5,7 @@
     <Packable>false</Packable>
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
