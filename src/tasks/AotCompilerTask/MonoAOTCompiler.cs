@@ -418,8 +418,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             // compare original assembly vs it's outputs.. all it's outputs!
             string assemblyPath = args.AOTAssembly.GetMetadata("FullPath");
-            if (args.ProxyFiles.Any(pf => IsNewerThanOutput(assemblyPath, pf.TargetFile)))
+            string assemblyHash = Utils.ComputeHash(assemblyPath);
+
+            if (args.ProxyFiles.Any(pf => IsNewerThanOutput(assemblyPath, pf.TargetFile) &&
+                                            Utils.ComputeHash(pf.TargetFile) != assemblyHash))
+            {
                 return false;
+            }
         }
 
         return true;
