@@ -1145,9 +1145,9 @@ namespace System.Xml
                 {
                     WriteNode(xtw, false);
                 }
-
-                return sw.ToString();
             }
+
+            return sw.ToString();
         }
 
         // Writes the content (inner XML) of the current node into the provided XmlTextWriter.
@@ -1248,9 +1248,9 @@ namespace System.Xml
                 {
                     xtw.WriteNode(this, false);
                 }
-
-                return sw.ToString();
             }
+
+            return sw.ToString();
         }
 
         private XmlTextWriter CreateWriterForInnerOuterXml(StringWriter sw)
