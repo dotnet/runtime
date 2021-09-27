@@ -7785,8 +7785,8 @@ public:
     bool optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext* context);
     BasicBlock* optInsertLoopChoiceConditions(LoopCloneContext* context,
                                               unsigned          loopNum,
-                                              BasicBlock*       head,
-                                              BasicBlock*       slow);
+                                              BasicBlock*       slowHead,
+                                              BasicBlock*       insertAfter);
 
 protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
