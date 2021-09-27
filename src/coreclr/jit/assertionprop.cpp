@@ -2150,12 +2150,6 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
         return NO_ASSERTION_INDEX;
     }
 
-    // This condition also exists to preverve previous behavior.
-    if (varDsc->lvIsStructField && varDsc->lvNormalizeOnLoad())
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
     AssertionDsc assertion   = {OAK_SUBRANGE};
     assertion.op1.kind       = O1K_LCLVAR;
     assertion.op1.vn         = vnStore->VNConservativeNormalValue(lclVar->gtVNPair);
