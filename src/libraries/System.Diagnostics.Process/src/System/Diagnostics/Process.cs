@@ -31,6 +31,7 @@ namespace System.Diagnostics
         private bool _isRemoteMachine;
         private string _machineName;
         private ProcessInfo? _processInfo;
+        private string? _processName;
 
         private ProcessThreadCollection? _threads;
         private ProcessModuleCollection? _modules;
@@ -513,8 +514,9 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.ProcessName;
+                EnsureState(State.HaveProcessName);
+                return _processName!;
+                //return _processInfo!.ProcessName;
             }
         }
 
@@ -961,6 +963,24 @@ namespace System.Diagnostics
                     }
                     _processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
                     if (_processInfo == null)
+                    {
+                        throw new InvalidOperationException(SR.NoProcessInfo);
+                    }
+                }
+            }
+
+            if ((state & State.HaveProcessName) != (State)0)
+            {
+                if (_processName == null)
+                {
+                    if ((state & State.HaveNonExitedId) != State.HaveNonExitedId)
+                    {
+                        EnsureState(State.HaveNonExitedId);
+                    }
+
+                    _processName = ProcessManager.GetProcessName(_processId, _machineName);
+
+                    if (_processName == null)
                     {
                         throw new InvalidOperationException(SR.NoProcessInfo);
                     }
@@ -1724,6 +1744,8 @@ namespace System.Diagnostics
             HaveProcessInfo = 0x8,
             Exited = 0x10,
             Associated = 0x20,
+            // Shortcut to quickly get the process name.
+            HaveProcessName = 0x40,
         }
     }
 }

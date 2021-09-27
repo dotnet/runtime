@@ -41,6 +41,16 @@ namespace System.Diagnostics
             return CreateProcessInfo(processId);
         }
 
+        /// <summary>Gets the process name for the specified process ID on the specified machine.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>The process name for the process if it could be found; otherwise, null.</returns>
+        public static string? GetProcessName(int processId, string machineName)
+        {
+            ThrowIfRemoteMachine(machineName);
+            return CreateProcessInfo(processId)?.ProcessName;
+        }
+
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>
         /// <returns>An array of process IDs from the specified machine.</returns>
