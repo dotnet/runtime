@@ -6338,6 +6338,13 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     {
         // We are jitting the root method, or inlining.
         fgFindBasicBlocks();
+
+        // If we are doing OSR, update flow to initially reach the appropriate IL offset.
+        //
+        if (opts.IsOSR())
+        {
+            fgFixEntryFlowForOSR();
+        }
     }
 
     // If we're inlining and the candidate is bad, bail out.
