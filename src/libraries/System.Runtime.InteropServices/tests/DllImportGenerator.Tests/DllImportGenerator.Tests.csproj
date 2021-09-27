@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <LangVersion>Preview</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
