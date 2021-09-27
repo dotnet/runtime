@@ -1231,6 +1231,13 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         LclVarDsc* varDsc = varDscInfo->varDsc;
         varDsc->lvType    = TYP_I_IMPL;
         varDsc->lvIsParam = 1;
+#if defined(TARGET_X86)
+        // Codegen will need it for x86 scope info.
+        varDsc->lvImplicitlyReferenced = 1;
+#endif // TARGET_X86
+
+        lvaSetVarDoNotEnregister(lvaVarargsHandleArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+
         assert(mostRecentlyActivePhase == PHASE_PRE_IMPORT);
 
         // TODO-Cleanup: this is preImportation phase, why do we try to work with regs here?
@@ -7385,7 +7392,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
 
         // The register or stack location field is 11 characters wide.
-        if (varDsc->lvRefCnt() == 0)
+        if ((varDsc->lvRefCnt() == 0) && !varDsc->lvImplicitlyReferenced)
         {
             printf("zero-ref   ");
         }
