@@ -1549,6 +1549,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 export is not available")]
         public static void ExportPkcs7_Empty()
         {
             X509Certificate2Collection cc = new X509Certificate2Collection();
