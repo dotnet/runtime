@@ -27,7 +27,7 @@ namespace Microsoft.Interop
 
         private const string Category = "SourceGeneration";
 
-        public readonly static DiagnosticDescriptor ParameterTypeNotSupported =
+        public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
@@ -37,7 +37,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor ReturnTypeNotSupported =
+        public static readonly DiagnosticDescriptor ReturnTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
@@ -47,7 +47,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor ParameterTypeNotSupportedWithDetails =
+        public static readonly DiagnosticDescriptor ParameterTypeNotSupportedWithDetails =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
@@ -57,7 +57,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor ReturnTypeNotSupportedWithDetails =
+        public static readonly DiagnosticDescriptor ReturnTypeNotSupportedWithDetails =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
@@ -67,7 +67,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor ParameterConfigurationNotSupported =
+        public static readonly DiagnosticDescriptor ParameterConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
@@ -77,7 +77,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor ReturnConfigurationNotSupported =
+        public static readonly DiagnosticDescriptor ReturnConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
@@ -87,7 +87,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor ConfigurationNotSupported =
+        public static readonly DiagnosticDescriptor ConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
@@ -97,7 +97,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor ConfigurationValueNotSupported =
+        public static readonly DiagnosticDescriptor ConfigurationValueNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
@@ -107,7 +107,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor MarshallingAttributeConfigurationNotSupported =
+        public static readonly DiagnosticDescriptor MarshallingAttributeConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
@@ -117,7 +117,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
-        public readonly static DiagnosticDescriptor TargetFrameworkNotSupported =
+        public static readonly DiagnosticDescriptor TargetFrameworkNotSupported =
             new DiagnosticDescriptor(
                 Ids.TargetFrameworkNotSupported,
                 GetResourceString(nameof(Resources.TargetFrameworkNotSupportedTitle)),

@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
-    record DllImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType, bool UseInternalUnsafeType)
+    internal record DllImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType, bool UseInternalUnsafeType)
     {
         public DllImportGeneratorOptions(AnalyzerConfigOptions options)
             : this(options.GenerateForwarders(), options.UseMarshalType(), options.UseInternalUnsafeType())

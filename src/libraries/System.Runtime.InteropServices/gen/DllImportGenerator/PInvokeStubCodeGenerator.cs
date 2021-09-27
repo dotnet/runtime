@@ -165,7 +165,7 @@ namespace Microsoft.Interop
                 }
                 return info.ManagedIndex;
             }
-            
+
             BoundGenerator CreateGenerator(TypePositionInfo p)
             {
                 try

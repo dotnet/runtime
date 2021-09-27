@@ -276,7 +276,7 @@ namespace Microsoft.Interop.Analyzers
                 generator.AttributeArgument("CallConvs",
                     generator.ArrayCreationExpression(
                         generator.TypeExpression(editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.System_Type)),
-                        new [] { generator.TypeOfExpression(generator.TypeExpression(callingConventionType)) })));
+                        new[] { generator.TypeOfExpression(generator.TypeExpression(callingConventionType)) })));
 
             return true;
         }
