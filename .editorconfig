@@ -191,4 +191,3 @@ end_of_line = lf
 [*.{cmd,bat}]
 end_of_line = crlf
 
-dotnet_diagnostic.CA1850.severity = warning
