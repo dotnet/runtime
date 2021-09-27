@@ -42,10 +42,10 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     helixQueues: ${{ parameters.helixQueues }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
-    # Test job depends on the corresponding build job
-    dependsOn:
-    - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+    # # Test job depends on the corresponding build job
+    # dependsOn:
+    # - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    # - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     variables: ${{ parameters.variables }}
 
@@ -55,7 +55,7 @@ jobs:
     # Extra steps that will be passed to the exploratory template and run before sending the job to helix (all of which is done in the template)
 
     # Optionally download live-built libraries
-    - template: /eng/pipelines/common/download-artifact-step.yml
+    - template: /eng/pipelines/common/download-specific-artifact-step.yml
       parameters:
         unpackFolder: $(librariesDownloadDir)
         cleanUnpackFolder: false
@@ -64,7 +64,7 @@ jobs:
         displayName: 'live-built libraries'
 
     # Download coreclr
-    - template: /eng/pipelines/common/download-artifact-step.yml
+    - template: /eng/pipelines/common/download-specific-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
