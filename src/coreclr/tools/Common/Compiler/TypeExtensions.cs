@@ -443,15 +443,19 @@ namespace ILCompiler
                 return null;
             }
 
-            // Non-virtual methods called through constraints simply resolve to the specified method without constraint resolution.
-            if (!interfaceMethod.IsVirtual)
-            {
-                return null;
-            }
+            // Interface method may or may not be fully canonicalized here.
+            // It would be canonical on the CoreCLR side so canonicalize here to keep the algorithms similar.
+            Instantiation methodInstantiation = interfaceMethod.Instantiation;
+            interfaceMethod = interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            MethodDesc method;
+            // 1. Find the (possibly generic) method that would implement the
+            // constraint if we were making a call on a boxed value type.
+
+            TypeDesc canonType = constrainedType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            TypeSystemContext context = constrainedType.Context;
 
             MethodDesc genInterfaceMethod = interfaceMethod.GetMethodDefinition();
+            MethodDesc method = null;
             if (genInterfaceMethod.OwningType.IsInterface)
             {
                 // Sometimes (when compiling shared generic code)
@@ -463,15 +467,85 @@ namespace ILCompiler
                 // at least one of them will be)
 
                 // Enumerate all potential interface instantiations
+                int potentialMatchingInterfaces = 0;
+                foreach (DefType potentialInterfaceType in canonType.RuntimeInterfaces)
+                {
+                    if (potentialInterfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) ==
+                        interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific))
+                    {
+                        potentialMatchingInterfaces++;
+                        MethodDesc potentialInterfaceMethod = genInterfaceMethod;
+                        if (potentialInterfaceMethod.OwningType != potentialInterfaceType)
+                        {
+                            potentialInterfaceMethod = context.GetMethodForInstantiatedType(
+                                potentialInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)potentialInterfaceType);
+                        }
 
-                // TODO: this code assumes no shared generics
-                Debug.Assert(interfaceType == interfaceMethod.OwningType);
+                        method = canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod);
 
-                method = constrainedType.ResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod);
+                        // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
+                        if (method != null && !method.OwningType.IsValueType)
+                        {
+                            // We explicitly wouldn't want to abort if we found a default implementation.
+                            // The above resolution doesn't consider the default methods.
+                            Debug.Assert(!method.OwningType.IsInterface);
+                            return null;
+                        }
+                    }
+                }
+
+                Debug.Assert(potentialMatchingInterfaces != 0);
+
+                if (potentialMatchingInterfaces > 1)
+                {
+                    // We have more potentially matching interfaces
+                    Debug.Assert(interfaceType.HasInstantiation);
+
+                    bool isExactMethodResolved = false;
+
+                    if (!interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any) &&
+                        !interfaceType.IsGenericDefinition &&
+                        !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any) &&
+                        !constrainedType.IsGenericDefinition)
+                    {
+                        // We have exact interface and type instantiations (no generic variables and __Canon used
+                        // anywhere)
+                        if (constrainedType.CanCastTo(interfaceType))
+                        {
+                            // We can resolve to exact method
+                            MethodDesc exactInterfaceMethod = context.GetMethodForInstantiatedType(
+                                genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+                            method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                            isExactMethodResolved = method != null;
+                        }
+                    }
+
+                    if (!isExactMethodResolved)
+                    {
+                        // We couldn't resolve the interface statically
+                        // Notify the caller that it should use runtime lookup
+                        // Note that we can leave pMD incorrect, because we will use runtime lookup
+                        forceRuntimeLookup = true;
+                    }
+                }
+                else
+                {
+                    // If we can resolve the interface exactly then do so (e.g. when doing the exact
+                    // lookup at runtime, or when not sharing generic code).
+                    if (constrainedType.CanCastTo(interfaceType))
+                    {
+                        MethodDesc exactInterfaceMethod = genInterfaceMethod;
+                        if (genInterfaceMethod.OwningType != interfaceType)
+                            exactInterfaceMethod = context.GetMethodForInstantiatedType(
+                                genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+                        method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                    }
+                }
             }
             else if (genInterfaceMethod.IsVirtual)
             {
-                method = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod);
+                MethodDesc targetMethod = interfaceType.FindMethodOnTypeWithMatchingTypicalMethod(genInterfaceMethod);
+                method = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(targetMethod);
             }
             else
             {
@@ -497,13 +571,12 @@ namespace ILCompiler
 
             // We've resolved the method, ignoring its generic method arguments
             // If the method is a generic method then go and get the instantiated descriptor
-            if (interfaceMethod.HasInstantiation)
+            if (methodInstantiation.Length != 0)
             {
-                method = method.MakeInstantiatedMethod(interfaceMethod.Instantiation);
+                method = method.MakeInstantiatedMethod(methodInstantiation);
             }
 
             Debug.Assert(method != null);
-            //assert(!pMD->IsUnboxingStub());
 
             return method;
         }
