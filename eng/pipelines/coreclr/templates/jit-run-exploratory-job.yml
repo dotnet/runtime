@@ -137,3 +137,10 @@ jobs:
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_unique_issues.py -issues_directory $(IssuesSummaryLocation)
       displayName: ${{ format('Print unique issues ({0})', parameters.osGroup) }}
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Antigen build logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'Antigen_BuildLogs__$(archType)_$(buildConfig)'
+      condition: always()
