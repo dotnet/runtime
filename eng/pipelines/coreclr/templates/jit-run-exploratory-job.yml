@@ -96,10 +96,9 @@ jobs:
       # Run exploratory tool in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
-        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'build/tests/'
-        HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
-        HelixPreCommands: $(HelixPreCommand)
+        helixSource: $(_HelixSource)
+        helixType: 'build/tests/'
+        helixQueues: ${{ join(',', parameters.helixQueues) }}
         creator: dotnet-bot
         WorkItemTimeout: 2:30 # 2.5 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
