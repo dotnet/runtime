@@ -129,18 +129,12 @@ public class PInvokeTableGenerator : Task
             PInvoke first = candidates[0];
             if (ShouldTreatAsVariadic(candidates))
             {
-                Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs, which is not supported. Calling it will fail at runtime. Module: {first.Module}." +
-                                $" Managed DllImports: {Environment.NewLine}{CandidatesToString(candidates)}");
+                string imports = string.Join(Environment.NewLine, candidates.Select(p => $"    {p.Method}"));
+                Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs, which is not supported. Calling it will fail at runtime. Native library: {first.Module}." +
+                                $" Managed DllImports: {Environment.NewLine}{imports}");
 
-                string? decl = GenPInvokeDecl(first, treatAsVariadic: true);
-                if (decl != null)
-                {
-                    w.WriteLine($"// Variadic signature created for");
-                    foreach (PInvoke pinvoke in candidates)
-                        w.WriteLine($"//   {pinvoke.Method}");
-
-                    w.WriteLine(decl);
-                }
+                foreach (var c in candidates)
+                    c.Skip = true;
 
                 continue;
             }
@@ -148,7 +142,7 @@ public class PInvokeTableGenerator : Task
             var decls = new HashSet<string>();
             foreach (var candidate in candidates)
             {
-                var decl = GenPInvokeDecl(candidate, treatAsVariadic: false);
+                var decl = GenPInvokeDecl(candidate);
                 if (decl == null || decls.Contains(decl))
                     continue;
 
@@ -216,9 +210,6 @@ public class PInvokeTableGenerator : Task
                         .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
                                     c.Method.GetParameters().Length != firstNumArgs);
         }
-
-        static string CandidatesToString(IEnumerable<PInvoke> group)
-            => string.Join(Environment.NewLine, group);
     }
 
     private string MapType (Type t)
@@ -260,7 +251,7 @@ public class PInvokeTableGenerator : Task
         return false;
     }
 
-    private string? GenPInvokeDecl(PInvoke pinvoke, bool treatAsVariadic)
+    private string? GenPInvokeDecl(PInvoke pinvoke)
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
@@ -280,23 +271,13 @@ public class PInvokeTableGenerator : Task
 
         sb.Append(MapType(method.ReturnType));
         sb.Append($" {pinvoke.EntryPoint} (");
-        if (!treatAsVariadic)
-        {
-            int pindex = 0;
-            var pars = method.GetParameters();
-            foreach (var p in pars) {
-                if (pindex > 0)
-                    sb.Append(',');
-                sb.Append(MapType(pars[pindex].ParameterType));
-                pindex++;
-            }
-        }
-        else
-        {
-            // FIXME: handle sigs with different first args
-            ParameterInfo firstParam = method.GetParameters()[0];
-            sb.Append(MapType(firstParam.ParameterType));
-            sb.Append(", ...");
+        int pindex = 0;
+        var pars = method.GetParameters();
+        foreach (var p in pars) {
+            if (pindex > 0)
+                sb.Append(',');
+            sb.Append(MapType(pars[pindex].ParameterType));
+            pindex++;
         }
         sb.Append(");");
         return sb.ToString();
