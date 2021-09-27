@@ -84,7 +84,7 @@ inline ULONG PEFile::Release()
 // Identity
 // ------------------------------------------------------------
 
-inline ULONG PEAssembly::HashIdentity()
+inline ULONG PEFile::HashIdentity()
 {
     CONTRACTL
     {
@@ -412,36 +412,6 @@ inline IMetaDataEmit *PEFile::GetEmitter()
 
 
 #endif // DACCESS_COMPILE
-
-// The simple name is not actually very simple. The name returned comes from one of
-// various metadata tables, depending on whether this is a manifest module,
-// non-manifest module, or something else
-inline LPCUTF8 PEFile::GetSimpleName()
-{
-    CONTRACT(LPCUTF8)
-    {
-        INSTANCE_CHECK;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        SUPPORTS_DAC;
-        WRAPPER(GC_TRIGGERS);
-    }
-    CONTRACT_END;
-
-    if (IsAssembly())
-        RETURN dac_cast<PTR_PEAssembly>(this)->GetSimpleName();
-    else
-    {
-        LPCUTF8 szScopeName;
-        if (FAILED(GetScopeName(&szScopeName)))
-        {
-            szScopeName = "";
-        }
-        RETURN szScopeName;
-    }
-}
-
 
 // Same as the managed Module.ScopeName property, this unconditionally looks in the
 // metadata Module table to get the name.  Useful for profilers and others who don't
@@ -929,7 +899,7 @@ inline PTR_PEImageLayout PEFile::GetLoaded()
 // ------------------------------------------------------------
 // Descriptive strings
 // ------------------------------------------------------------
-inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
+inline void PEFile::GetDisplayName(SString &result, DWORD flags)
 {
     CONTRACTL
     {
@@ -942,7 +912,7 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
 
 #ifndef DACCESS_COMPILE
     AssemblySpec spec;
-    spec.InitializeSpec(this);
+    spec.InitializeSpec((PEAssembly*)this);
     spec.GetFileOrDisplayName(flags, result);
 #else
     DacNotImpl();
@@ -953,7 +923,7 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
 // Metadata access
 // ------------------------------------------------------------
 
-inline LPCSTR PEAssembly::GetSimpleName()
+inline LPCSTR PEFile::GetSimpleName()
 {
     CONTRACTL
     {

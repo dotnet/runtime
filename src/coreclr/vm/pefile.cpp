@@ -851,7 +851,7 @@ ULONG PEFile::GetILImageTimeDateStamp()
 
 // Statics initialization.
 /* static */
-void PEAssembly::Attach()
+void PEFile::Attach()
 {
     STANDARD_VM_CONTRACT;
 }
@@ -962,7 +962,7 @@ PEAssembly::PEAssembly(
 #endif // !DACCESS_COMPILE
 
 
-PEAssembly *PEAssembly::Open(
+PEAssembly *PEFile::Open(
     PEAssembly *       pParent,
     PEImage *          pPEImageIL,
     BINDER_SPACE::Assembly * pHostAssembly)
@@ -981,7 +981,7 @@ PEAssembly *PEAssembly::Open(
 }
 
 
-PEAssembly::~PEAssembly()
+PEFile::~PEFile()
 {
     CONTRACTL
     {
@@ -1012,7 +1012,7 @@ PEAssembly::~PEAssembly()
 }
 
 /* static */
-PEAssembly *PEAssembly::OpenSystem()
+PEAssembly *PEFile::OpenSystem()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1037,7 +1037,7 @@ PEAssembly *PEAssembly::OpenSystem()
 }
 
 /* static */
-PEAssembly *PEAssembly::DoOpenSystem()
+PEAssembly *PEFile::DoOpenSystem()
 {
     CONTRACT(PEAssembly *)
     {
@@ -1053,7 +1053,7 @@ PEAssembly *PEAssembly::DoOpenSystem()
     RETURN new PEAssembly(pBoundAssembly, NULL, NULL, TRUE);
 }
 
-PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult,
+PEAssembly* PEFile::Open(BINDER_SPACE::Assembly* pBindResult,
                                    BOOL isSystem)
 {
 
@@ -1062,7 +1062,7 @@ PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult,
 };
 
 /* static */
-PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
+PEAssembly *PEFile::Create(PEAssembly *pParentAssembly,
                                IMetaDataAssemblyEmit *pAssemblyEmit)
 {
     CONTRACT(PEAssembly *)
@@ -1095,7 +1095,7 @@ PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
 
 // Effective path is the path of nearest parent (creator) assembly which has a nonempty path.
 
-const SString &PEAssembly::GetEffectivePath()
+const SString &PEFile::GetEffectivePath()
 {
     CONTRACTL
     {
@@ -1106,7 +1106,7 @@ const SString &PEAssembly::GetEffectivePath()
     }
     CONTRACTL_END;
 
-    PEAssembly *pAssembly = this;
+    PEAssembly *pAssembly = (PEAssembly*)this;
 
     while (pAssembly->m_identity == NULL
            || pAssembly->m_identity->GetPath().IsEmpty())
@@ -1125,7 +1125,7 @@ const SString &PEAssembly::GetEffectivePath()
 // Note this may be obtained from the parent PEFile if we don't have a path or fusion
 // assembly.
 // Returns false if the assembly was loaded from a bundle, true otherwise
-BOOL PEAssembly::GetCodeBase(SString &result)
+BOOL PEFile::GetCodeBase(SString &result)
 {
     CONTRACTL
     {
@@ -1154,7 +1154,7 @@ BOOL PEAssembly::GetCodeBase(SString &result)
 }
 
 /* static */
-void PEAssembly::PathToUrl(SString &string)
+void PEFile::PathToUrl(SString &string)
 {
     CONTRACTL
     {
@@ -1195,7 +1195,7 @@ void PEAssembly::PathToUrl(SString &string)
     }
 }
 
-void PEAssembly::UrlToPath(SString &string)
+void PEFile::UrlToPath(SString &string)
 {
     CONTRACT_VOID
     {
@@ -1224,7 +1224,7 @@ void PEAssembly::UrlToPath(SString &string)
     RETURN;
 }
 
-BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
+BOOL PEFile::FindLastPathSeparator(const SString &path, SString::Iterator &i)
 {
 #ifdef TARGET_UNIX
     SString::Iterator slash = i;
@@ -1305,8 +1305,7 @@ void PEFile::EnsureImageOpened()
 
 #ifdef DACCESS_COMPILE
 
-void
-PEFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+void PEFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -1328,14 +1327,6 @@ PEFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         GetILimage()->EnumMemoryRegions(flags);
     }
-}
-
-void
-PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PEFile::EnumMemoryRegions(flags);
 
     if (m_creator.IsValid())
     {

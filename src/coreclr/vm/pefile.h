@@ -211,7 +211,6 @@ public:
     TADDR GetMDInternalRWAddress();
 #endif // DACCESS_COMPILE
 
-    LPCUTF8 GetSimpleName();
     HRESULT GetScopeName(LPCUTF8 * pszName);
     BOOL IsStrongNamed();
     const void *GetPublicKey(DWORD *pcbPK);
@@ -325,8 +324,13 @@ protected:
     // Internal routines
     // ------------------------------------------------------------
 
+#ifdef DACCESS_COMPILE
+    virtual ~PEFile() {};
+#else
+    virtual ~PEFile();
+#endif
+
     // just to make the DAC and GCC happy.
-    virtual ~PEFile() {}
     PEFile() {}
 
     void OpenMDImport();
@@ -369,9 +373,12 @@ protected:
 #else
     IMDInternalImport       *m_pMDImport_UseAccessor;
 #endif
+
     IMetaDataImport2        *m_pImporter;
     IMetaDataEmit           *m_pEmitter;
     SimpleRWLock            *m_pMetadataLock;
+    PTR_PEFile               m_creator;
+
     Volatile<LONG>           m_refCount;
     bool                     m_isSystem;
 
@@ -467,6 +474,76 @@ public:
 
         return m_pFallbackBinder;
     }
+
+      public:
+          // ------------------------------------------------------------
+          // Statics initialization.
+          // ------------------------------------------------------------
+          static void Attach();
+
+          // ------------------------------------------------------------
+          // Public API
+          // ------------------------------------------------------------
+
+          // CoreCLR's PrivBinder PEAssembly creation entrypoint
+          static PEAssembly* Open(
+              PEAssembly* pParent,
+              PEImage* pPEImageIL,
+              BINDER_SPACE::Assembly* pHostAssembly);
+
+          // This opens the canonical System.Private.CoreLib.dll
+          static PEAssembly* OpenSystem();
+
+          static PEAssembly* Open(
+              BINDER_SPACE::Assembly* pBindResult,
+              BOOL isSystem);
+
+          static PEAssembly* Create(
+              PEAssembly* pParentAssembly,
+              IMetaDataAssemblyEmit* pEmit);
+
+  private:
+      // Private helpers for crufty exception handling reasons
+      static PEAssembly* DoOpenSystem();
+
+  public:
+
+      // ------------------------------------------------------------
+      // binding & source
+      // ------------------------------------------------------------
+
+      ULONG HashIdentity();
+
+      // ------------------------------------------------------------
+      // Descriptive strings
+      // ------------------------------------------------------------
+
+      // This returns a non-empty path representing the source of the assembly; it may
+      // be the parent assembly for dynamic or memory assemblies
+      const SString& GetEffectivePath();
+
+      // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
+      // Note this may be obtained from the parent PEFile if we don't have a path or fusion
+      // assembly.
+      BOOL GetCodeBase(SString& result);
+
+      // Display name is the fusion binding name for an assembly
+      void GetDisplayName(SString& result, DWORD flags = 0);
+
+      // ------------------------------------------------------------
+      // Metadata access
+      // ------------------------------------------------------------
+
+      LPCUTF8 GetSimpleName();
+
+      // ------------------------------------------------------------
+      // Utility functions
+      // ------------------------------------------------------------
+
+      static void PathToUrl(SString& string);
+      static void UrlToPath(SString& string);
+      static BOOL FindLastPathSeparator(const SString& path, SString::Iterator& i);
+
 };  // class PEFile
 
 
@@ -475,79 +552,6 @@ class PEAssembly : public PEFile
     VPTR_VTABLE_CLASS(PEAssembly, PEFile)
 
   public:
-    // ------------------------------------------------------------
-    // Statics initialization.
-    // ------------------------------------------------------------
-    static
-    void Attach();
-
-    // ------------------------------------------------------------
-    // Public API
-    // ------------------------------------------------------------
-
-    // CoreCLR's PrivBinder PEAssembly creation entrypoint
-    static PEAssembly * Open(
-        PEAssembly *       pParent,
-        PEImage *          pPEImageIL,
-        BINDER_SPACE::Assembly * pHostAssembly);
-
-    // This opens the canonical System.Private.CoreLib.dll
-    static PEAssembly *OpenSystem();
-#ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-    static PEAssembly *Open(
-        BINDER_SPACE::Assembly* pBindResult,
-        BOOL isSystem);
-
-    static PEAssembly *Create(
-        PEAssembly *pParentAssembly,
-        IMetaDataAssemblyEmit *pEmit);
-
-  private:
-    // Private helpers for crufty exception handling reasons
-    static PEAssembly *DoOpenSystem();
-
-  public:
-
-    // ------------------------------------------------------------
-    // binding & source
-    // ------------------------------------------------------------
-
-    ULONG HashIdentity();
-
-    // ------------------------------------------------------------
-    // Descriptive strings
-    // ------------------------------------------------------------
-
-    // This returns a non-empty path representing the source of the assembly; it may
-    // be the parent assembly for dynamic or memory assemblies
-    const SString &GetEffectivePath();
-
-    // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
-    // Note this may be obtained from the parent PEFile if we don't have a path or fusion
-    // assembly.
-    BOOL GetCodeBase(SString &result);
-
-    // Display name is the fusion binding name for an assembly
-    void GetDisplayName(SString &result, DWORD flags = 0);
-
-    // ------------------------------------------------------------
-    // Metadata access
-    // ------------------------------------------------------------
-
-    LPCUTF8 GetSimpleName();
-
-    // ------------------------------------------------------------
-    // Utility functions
-    // ------------------------------------------------------------
-
-    static void PathToUrl(SString &string);
-    static void UrlToPath(SString &string);
-    static BOOL FindLastPathSeparator(const SString &path, SString::Iterator &i);
-
-  protected:
 
 #ifndef DACCESS_COMPILE
     PEAssembly(
@@ -558,15 +562,8 @@ class PEAssembly : public PEFile
         PEImage * pPEImageIL = NULL,
         BINDER_SPACE::Assembly * pHostAssembly = NULL
         );
-    virtual ~PEAssembly();
 #endif
 
-  private:
-    // ------------------------------------------------------------
-    // Instance fields
-    // ------------------------------------------------------------
-
-    PTR_PEFile               m_creator;
 };
 
 
