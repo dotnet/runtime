@@ -19,6 +19,7 @@ parameters:
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   runKind: ''                     # required -- test category
+  helixQueues: ''                 # required -- Helix queue
   collectionType: ''
   collectionName: ''
   dependOnEvaluatePaths: false
@@ -98,9 +99,8 @@ jobs:
     - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'test/superpmi/$(CollectionName)/$(CollectionType)/$(_Framework)/$(Architecture)'
-        HelixAccessToken: $(HelixApiAccessToken)
-        HelixTargetQueues: $(Queue)
+        HelixType: 'build/tests/'
+        HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
         HelixPreCommands: $(HelixPreCommand)
         Creator: $(Creator)
         WorkItemTimeout: 2:30 # 2.5 hours

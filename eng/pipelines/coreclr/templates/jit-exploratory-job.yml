@@ -9,6 +9,7 @@ parameters:
   framework: net6.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
   liveLibrariesBuildConfig: ''
   variables: {}
+  helixQueues: ''
   runtimeType: 'coreclr'
   pool: ''
   codeGenType: 'JIT'
@@ -43,6 +44,7 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     collectionType: ${{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
+    helixQueues: ${{ parameters.helixQueues }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     # Test job depends on the corresponding build job
     dependsOn:
