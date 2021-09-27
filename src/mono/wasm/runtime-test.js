@@ -274,6 +274,7 @@ var Module = {
 					try {
 						bytes = read (asset, 'binary');
 					} catch (exc) {
+						console.log('v8 file read failed ' + asset + ' ' + exc)
 						error = exc;
 					}
 					var response = { ok: (bytes && !error), url: asset,

@@ -425,7 +425,7 @@ def download_progress_hook(count, block_size, total_size):
         block_size (int)          : size of a block
         total_size (int)          : total size of a payload
     """
-    sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
+    sys.stdout.write("\rDownloading {0:.1f}/{1:.1f} MB...".format(count * block_size / 1024 / 1024, total_size / 1024 / 1024))
     sys.stdout.flush()
 
 

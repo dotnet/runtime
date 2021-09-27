@@ -88,13 +88,5 @@ namespace System
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern Type? GetTypeFromHandle(RuntimeTypeHandle handle);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool operator ==(Type? left, Type? right);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool operator !=(Type? left, Type? right);
     }
 }

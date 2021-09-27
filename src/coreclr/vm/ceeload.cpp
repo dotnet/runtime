@@ -3421,7 +3421,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
-        AssemblyBinder *pBinder = pFile->GetBinder();
+        AssemblyBinder *pBinder = pFile->GetAssemblyBinder();
         if (pBinder != NULL)
         {
             spec.SetBinder(pBinder);

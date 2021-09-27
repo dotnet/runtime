@@ -7,6 +7,7 @@
 #include "common.h"
 
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
+#include <clrconfignocache.h>
 #include "perfmap.h"
 #include "perfinfo.h"
 #include "pal.h"
@@ -49,16 +50,18 @@ void PerfMap::Initialize()
 
         s_enabled = true;
 
-        char jitdumpPath[4096];
+        const char* jitdumpPath;
+        char jitdumpPathBuffer[4096];
 
-        // CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapJitDumpPath) returns a LPWSTR
-        // Use GetEnvironmentVariableA because it is simpler.
-        // Keep comment here to make it searchable.
-        DWORD len = GetEnvironmentVariableA("COMPlus_PerfMapJitDumpPath", jitdumpPath, sizeof(jitdumpPath) - 1);
-
-        if (len == 0)
+        CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
+        if (value.IsSet())
         {
-            GetTempPathA(sizeof(jitdumpPath) - 1, jitdumpPath);
+            jitdumpPath = value.AsString();
+        }
+        else
+        {
+            GetTempPathA(sizeof(jitdumpPathBuffer) - 1, jitdumpPathBuffer);
+            jitdumpPath = jitdumpPathBuffer;
         }
 
         PAL_PerfJitDump_Start(jitdumpPath);

@@ -4688,10 +4688,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     /* Sanity check the arguments depending on callType */
 
     assert(callType < EC_COUNT);
-    assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_ADDR) ||
-           (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType < EC_INDIR_R || addr == NULL);
-    assert(callType != EC_INDIR_R || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
+    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
 
     // ARM never uses these
     assert(xreg == REG_NA && xmul == 0 && disp == 0);
@@ -4744,11 +4742,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(argSize % REGSIZE_BYTES == 0);
     int argCnt = argSize / REGSIZE_BYTES;
 
-    if (callType >= EC_INDIR_R)
+    if (callType == EC_INDIR_R)
     {
         /* Indirect call, virtual calls */
-
-        assert(callType == EC_INDIR_R);
 
         id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
@@ -4757,7 +4753,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         /* Helper/static/nonvirtual/function calls (direct or through handle),
            and calls to an absolute addr. */
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
@@ -4776,43 +4772,33 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Record the address: method, indirection, or funcptr */
 
-    if (callType > EC_FUNC_ADDR)
+    if (callType == EC_INDIR_R)
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        switch (callType)
+        id->idSetIsCallRegPtr();
+
+        if (isJump)
         {
-            case EC_INDIR_R: // the address is in a register
-
-                id->idSetIsCallRegPtr();
-
-                if (isJump)
-                {
-                    ins = INS_bx; // INS_bx  Reg
-                }
-                else
-                {
-                    ins = INS_blx; // INS_blx Reg
-                }
-                fmt = IF_T1_D2;
-
-                id->idIns(ins);
-                id->idInsFmt(fmt);
-                id->idInsSize(emitInsSize(fmt));
-                id->idReg3(ireg);
-                assert(xreg == REG_NA);
-                break;
-
-            default:
-                NO_WAY("unexpected instruction");
-                break;
+            ins = INS_bx; // INS_bx  Reg
         }
+        else
+        {
+            ins = INS_blx; // INS_blx Reg
+        }
+        fmt = IF_T1_D2;
+
+        id->idIns(ins);
+        id->idInsFmt(fmt);
+        id->idInsSize(emitInsSize(fmt));
+        id->idReg3(ireg);
+        assert(xreg == REG_NA);
     }
     else
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         // if addr is nullptr then this call is treated as a recursive call.
         assert(addr == nullptr || codeGen->arm_Valid_Imm_For_BL((ssize_t)addr));
@@ -4833,11 +4819,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idInsSize(emitInsSize(fmt));
 
         id->idAddr()->iiaAddr = (BYTE*)addr;
-
-        if (callType == EC_FUNC_ADDR)
-        {
-            id->idSetIsCallAddr();
-        }
 
         if (emitComp->opts.compReloc)
         {
@@ -7668,28 +7649,8 @@ void emitter::emitDispInsHelp(
 
         case IF_T2_J3:
         {
-            BYTE* addr;
-            if (id->idIsCallAddr())
-            {
-                addr       = id->idAddr()->iiaAddr;
-                methodName = "";
-            }
-            else
-            {
-                addr       = nullptr;
-                methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
-            }
-
-            if (addr)
-            {
-                if (id->idIsDspReloc())
-                    printf("reloc ");
-                printf("%p", dspPtr(addr));
-            }
-            else
-            {
-                printf("%s", methodName);
-            }
+            methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+            printf("%s", methodName);
         }
         break;
 
