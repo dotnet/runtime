@@ -810,6 +810,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var service = provider.GetService<IFakeMultipleService>();
 
             Assert.NotNull(service);
+            Assert.IsType<StructFakeMultipleService>(service);
         }
 
         [Theory]
@@ -825,6 +826,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var service = provider.GetService<IFakeService>();
 
             Assert.NotNull(service);
+            Assert.IsType<StructServiceWithNoDependencies>(service);
         }
 
         [Theory]
@@ -842,6 +844,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var service = provider.GetService<IFakeMultipleService>();
 
             Assert.NotNull(service);
+            Assert.IsType<StructFakeMultipleService>(service);
         }
 
         [Theory]
@@ -851,16 +854,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void WorksWithIEnumerableStructServices(ServiceLifetime lifetime)
         {
             IServiceCollection serviceCollection = new ServiceCollection();
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 10; i++)
             {
                 serviceCollection.Add(new ServiceDescriptor(typeof(IFakeService), typeof(StructServiceWithNoDependencies), lifetime));
-                serviceCollection.Add(new ServiceDescriptor(typeof(IFakeService), _ => new StructServiceWithNoDependencies(), lifetime));
             }
 
             var provider = CreateServiceProvider(serviceCollection);
-            var service = provider.GetService<IEnumerable<IFakeService>>();
+            var services = provider.GetService<IEnumerable<IFakeService>>();
 
-            Assert.Equal(10, service.Count());
+            Assert.Equal(10, services.Count());
+            Assert.All(services, service => Assert.IsType<StructServiceWithNoDependencies>(service));
         }
 
         [Fact]
@@ -875,9 +878,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
             var serviceProvider = CreateServiceProvider(serviceCollection);
 
-            var service = serviceProvider.GetService<IEnumerable<IFakeOuterService>>();
+            var services = serviceProvider.GetService<IEnumerable<IFakeOuterService>>();
 
-            Assert.NotEmpty(service);
+            Assert.Equal(20, services.Count());
         }
 
         [Fact]
