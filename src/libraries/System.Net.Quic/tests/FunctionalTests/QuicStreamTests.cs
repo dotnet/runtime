@@ -193,13 +193,17 @@ namespace System.Net.Quic.Tests
         {
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
-            Assert.Equal(0, clientStream.StreamId);
+            using (clientConnection)
+            using (serverConnection)
+            {
+                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                Assert.Equal(0, clientStream.StreamId);
 
-            // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
-            // explicitly closing the connections seems to help, but the problem should still be investigated, we should have a meaningful
-            // exception instead of AccessViolationException
-            await clientConnection.CloseAsync(0);
+                // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
+                // explicitly closing the connections seems to help, but the problem should still be investigated, we should have a meaningful
+                // exception instead of AccessViolationException
+                await clientConnection.CloseAsync(0);
+            }
         }
 
         [Fact]

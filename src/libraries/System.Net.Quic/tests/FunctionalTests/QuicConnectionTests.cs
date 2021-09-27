@@ -19,18 +19,25 @@ namespace System.Net.Quic.Tests
         public async Task TestConnect()
         {
             using QuicListener listener = CreateQuicListener();
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
-            using (clientConnection)
-            using (serverConnection)
-            {
-                Assert.True(clientConnection.Connected);
-                Assert.True(serverConnection.Connected);
-                Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
-                Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
-                Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
-                Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
-                Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
-            }
+
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+            Assert.False(clientConnection.Connected);
+            Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+
+            ValueTask connectTask = clientConnection.ConnectAsync();
+            ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
+
+            await new Task[] { connectTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            QuicConnection serverConnection = acceptTask.Result;
+
+            Assert.True(clientConnection.Connected);
+            Assert.True(serverConnection.Connected);
+            Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
+            Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
+            Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
         }
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
