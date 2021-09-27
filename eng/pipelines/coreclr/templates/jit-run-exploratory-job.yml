@@ -20,8 +20,6 @@ parameters:
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   runKind: ''                     # required -- test category
   helixQueues: ''                 # required -- Helix queue
-  collectionType: ''
-  collectionName: ''
   dependOnEvaluatePaths: false
 
 jobs:
