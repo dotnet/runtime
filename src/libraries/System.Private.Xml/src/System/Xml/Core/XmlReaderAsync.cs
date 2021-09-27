@@ -270,20 +270,22 @@ namespace System.Xml
             }
 
             StringWriter sw = new(CultureInfo.InvariantCulture);
-            using XmlTextWriter xtw = CreateWriterForInnerOuterXml(sw);
 
-            if (NodeType == XmlNodeType.Attribute)
+            using (XmlTextWriter xtw = CreateWriterForInnerOuterXml(sw))
             {
-                xtw.WriteStartAttribute(Prefix, LocalName, NamespaceURI);
-                WriteAttributeValue(xtw);
-                xtw.WriteEndAttribute();
-            }
-            else
-            {
-                xtw.WriteNode(this, false);
-            }
+                if (NodeType == XmlNodeType.Attribute)
+                {
+                    xtw.WriteStartAttribute(Prefix, LocalName, NamespaceURI);
+                    WriteAttributeValue(xtw);
+                    xtw.WriteEndAttribute();
+                }
+                else
+                {
+                    xtw.WriteNode(this, false);
+                }
 
-            return sw.ToString();
+                return sw.ToString();
+            }
         }
 
         //
