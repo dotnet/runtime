@@ -217,7 +217,8 @@
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
+      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" Exclude="$(_WasmRuntimePackSrcDir)\*.iffe.js"/>
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js" Kind="pre-js" />
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 
