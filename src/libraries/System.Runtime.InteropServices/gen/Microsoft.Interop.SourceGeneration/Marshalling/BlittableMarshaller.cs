@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -32,7 +35,6 @@ namespace Microsoft.Interop
             else if (context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition)
             {
                 return Argument(IdentifierName(context.GetIdentifiers(info).native));
-                
             }
             return Argument(
                     PrefixUnaryExpression(
@@ -99,7 +101,7 @@ namespace Microsoft.Interop
         {
             return info.IsByRef && !info.IsManagedReturnPosition && !context.SingleFrameSpansNativeContext;
         }
-        
+
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
     }
 

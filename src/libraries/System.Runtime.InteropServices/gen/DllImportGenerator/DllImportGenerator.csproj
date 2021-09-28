@@ -11,6 +11,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <IsRoslynComponent>true</IsRoslynComponent>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup>

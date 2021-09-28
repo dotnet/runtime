@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -80,7 +83,7 @@ namespace Microsoft.Interop
             TypeSyntax arrayElementType = elementType;
             if (context.CurrentStage == StubCodeContext.Stage.Marshal)
             {
-                // [COMPAT] We use explicit byref calculations here instead of just using a fixed statement 
+                // [COMPAT] We use explicit byref calculations here instead of just using a fixed statement
                 // since a fixed statement converts a zero-length array to a null pointer.
                 // Many native APIs, such as GDI+, ICU, etc. validate that an array parameter is non-null
                 // even when the passed in array length is zero. To avoid breaking customers that want to move

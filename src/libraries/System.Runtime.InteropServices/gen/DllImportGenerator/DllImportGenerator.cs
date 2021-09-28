@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -11,6 +14,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+
+[assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
 namespace Microsoft.Interop
 {
@@ -70,7 +75,7 @@ namespace Microsoft.Interop
                 .CreateSyntaxProvider(
                     static (node, ct) => ShouldVisitNode(node),
                     static (context, ct) =>
-                        new 
+                        new
                         {
                             Syntax = (MethodDeclarationSyntax)context.Node,
                             Symbol = (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node, ct)!
@@ -181,7 +186,7 @@ namespace Microsoft.Interop
                     context.AddSource("GeneratedDllImports.g.cs", data.Item1);
                 });
         }
-        
+
         private static List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
         {
             const string CallConvsField = "CallConvs";
@@ -409,7 +414,7 @@ namespace Microsoft.Interop
             }
 
             Debug.Assert(generatedDllImportAttr is not null);
-            
+
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the GeneratedDllImport attribute
@@ -424,7 +429,7 @@ namespace Microsoft.Interop
             {
                 generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, nameof(GeneratedDllImportData.ThrowOnUnmappableChar));
             }
-            
+
             if (stubDllImportData.IsUserDefined.HasFlag(DllImportMember.CallingConvention))
             {
                 generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, nameof(GeneratedDllImportData.CallingConvention));
@@ -637,7 +642,7 @@ namespace Microsoft.Interop
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)
-        { 
+        {
             // We only support C# method declarations.
             if (syntaxNode.Language != LanguageNames.CSharp
                 || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))

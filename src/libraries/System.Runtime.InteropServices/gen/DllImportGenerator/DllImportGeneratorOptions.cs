@@ -1,8 +1,11 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
-    record DllImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType, bool UseInternalUnsafeType)
+    internal record DllImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType, bool UseInternalUnsafeType)
     {
         public DllImportGeneratorOptions(AnalyzerConfigOptions options)
             : this(options.GenerateForwarders(), options.UseMarshalType(), options.UseInternalUnsafeType())

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,7 +15,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// The base interface for implementing various different aspects of the custom native type and collection marshalling specs.
     /// </summary>
-    interface ICustomNativeTypeMarshallingStrategy
+    internal interface ICustomNativeTypeMarshallingStrategy
     {
         TypeSyntax AsNativeType(TypePositionInfo info);
 
@@ -627,7 +630,7 @@ namespace Microsoft.Interop
             {
                 foreach (var statement in GenerateUnmarshallerCollectionInitialization(info, context))
                 {
-                    yield return statement;    
+                    yield return statement;
                 }
             }
 
@@ -683,7 +686,7 @@ namespace Microsoft.Interop
             // and NativeValueStorage spans when the actual collection value is unmarshalled from native to the marshaller.
             foreach (var statement in GenerateUnmarshallerCollectionInitialization(info, context))
             {
-                yield return statement;    
+                yield return statement;
             }
 
             foreach (var statement in innerMarshaller.GenerateUnmarshalStatements(info, context))
@@ -971,7 +974,7 @@ namespace Microsoft.Interop
             {
                 yield return statement;
             }
-            
+
             if (!info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.

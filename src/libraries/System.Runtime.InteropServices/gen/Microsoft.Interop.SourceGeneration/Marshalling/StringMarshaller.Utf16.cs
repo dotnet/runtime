@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -125,16 +128,16 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    yield return GenerateConditionalAllocationFreeSyntax(info ,context);
+                    yield return GenerateConditionalAllocationFreeSyntax(info, context);
 
                     break;
             }
         }
 
         public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
-        
+
         public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
-        
+
         protected override ExpressionSyntax GenerateAllocationExpression(
             TypePositionInfo info,
             StubCodeContext context,
@@ -152,7 +155,7 @@ namespace Microsoft.Interop
             // +1 for null terminator
             // *2 for number of bytes per char
             // int <byteLen> = (<managed>.Length + 1) * 2;
-            return 
+            return
                 BinaryExpression(
                     SyntaxKind.MultiplyExpression,
                     ParenthesizedExpression(
@@ -172,8 +175,9 @@ namespace Microsoft.Interop
             SyntaxToken byteLengthIdentifier,
             SyntaxToken stackAllocPtrIdentifier)
         {
-            // ((ReadOnlySpan<char>)<managed>).CopyTo(new Span<char>(<stackAllocPtr>, <managed>.Length + 1));
-            return                                 
+            string managedIdentifier = context.GetIdentifiers(info).managed;
+            return Block(
+                // ((ReadOnlySpan<char>)<managed>).CopyTo(new Span<char>(<stackAllocPtr>, <managed>.Length));
                 ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(
@@ -183,20 +187,43 @@ namespace Microsoft.Interop
                                 GenericName(Identifier("System.ReadOnlySpan"),
                                     TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                         PredefinedType(Token(SyntaxKind.CharKeyword))))),
-                                IdentifierName(context.GetIdentifiers(info).managed))),
+                                IdentifierName(managedIdentifier))),
                             IdentifierName("CopyTo")),
                         ArgumentList(
-                            SeparatedList(new [] {
+                            SeparatedList(new[] {
                                 Argument(
                                     ObjectCreationExpression(
                                         GenericName(Identifier(TypeNames.System_Span),
                                             TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                                 PredefinedType(Token(SyntaxKind.CharKeyword))))),
                                         ArgumentList(
-                                            SeparatedList(new []{
+                                            SeparatedList(new[]{
                                                 Argument(IdentifierName(stackAllocPtrIdentifier)),
-                                                Argument(IdentifierName(byteLengthIdentifier))})),
-                                        initializer: null))}))));
+                                                Argument(
+                                                    MemberAccessExpression(
+                                                        SyntaxKind.SimpleMemberAccessExpression,
+                                                        IdentifierName(managedIdentifier),
+                                                        IdentifierName("Length")))})),
+                                        initializer: null))})))),
+                // ((char*)<stackAllocPtr>)[<managed>.Length] = '\0';
+                ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        ElementAccessExpression(
+                            ParenthesizedExpression(
+                                CastExpression(
+                                    PointerType(PredefinedType(Token(SyntaxKind.CharKeyword))),
+                                    IdentifierName(stackAllocPtrIdentifier))),
+                            BracketedArgumentList(
+                                SingletonSeparatedList<ArgumentSyntax>(
+                                    Argument(
+                                        MemberAccessExpression(
+                                            SyntaxKind.SimpleMemberAccessExpression,
+                                            IdentifierName(managedIdentifier),
+                                            IdentifierName("Length")))))),
+                        LiteralExpression(
+                            SyntaxKind.CharacterLiteralExpression,
+                            Literal('\0')))));
         }
 
         protected override ExpressionSyntax GenerateFreeExpression(

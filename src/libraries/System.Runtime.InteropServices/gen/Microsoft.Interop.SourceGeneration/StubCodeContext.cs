@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Interop
@@ -48,7 +51,7 @@ namespace Microsoft.Interop
             /// Perform any cleanup required
             /// </summary>
             Cleanup,
-            
+
             /// <summary>
             /// Keep alive any managed objects that need to stay alive across the call.
             /// </summary>
