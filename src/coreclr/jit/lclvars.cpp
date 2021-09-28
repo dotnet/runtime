@@ -339,8 +339,11 @@ void Compiler::lvaInitTypeRef()
     {
         // Ensure that there will be at least one stack variable since
         // we require that the GSCookie does not have a 0 stack offset.
-        unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy"));
-        lvaTable[dummy].lvType = TYP_INT;
+        unsigned   dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy"));
+        LclVarDsc* gsCookieDummy = lvaGetDesc(dummy);
+        gsCookieDummy->lvType    = TYP_INT;
+        gsCookieDummy->lvIsTemp  = true; // It is not alive at all, set the flag to prevent zero-init.
+        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
     }
 
     // Allocate the lvaOutgoingArgSpaceVar now because we can run into problems in the
@@ -1228,14 +1231,17 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         LclVarDsc* varDsc = varDscInfo->varDsc;
         varDsc->lvType    = TYP_I_IMPL;
         varDsc->lvIsParam = 1;
-        // Make sure this lives in the stack -- address may be reported to the VM.
-        // TODO-CQ: This should probably be:
-        //   lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUGARG(VMNeedsStackAddr));
-        // But that causes problems, so, for expedience, I switched back to this heavyweight
-        // hammer.  But I think it should be possible to switch; it may just work now
-        // that other problems are fixed.
-        lvaSetVarAddrExposed(varDscInfo->varNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
+#if defined(TARGET_X86)
+        // Codegen will need it for x86 scope info.
+        varDsc->lvImplicitlyReferenced = 1;
+#endif // TARGET_X86
 
+        lvaSetVarDoNotEnregister(lvaVarargsHandleArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+
+        assert(mostRecentlyActivePhase == PHASE_PRE_IMPORT);
+
+        // TODO-Cleanup: this is preImportation phase, why do we try to work with regs here?
+        // Should it be just deleted?
         if (varDscInfo->canEnreg(TYP_I_IMPL))
         {
             /* Another register argument */
@@ -4323,6 +4329,7 @@ void Compiler::lvaMarkLocalVars()
             lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
             LclVarDsc* lclPSPSym = &lvaTable[lvaPSPSym];
             lclPSPSym->lvType    = TYP_I_IMPL;
+            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -7360,7 +7367,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
 
         // The register or stack location field is 11 characters wide.
-        if (varDsc->lvRefCnt() == 0)
+        if ((varDsc->lvRefCnt() == 0) && !varDsc->lvImplicitlyReferenced)
         {
             printf("zero-ref   ");
         }

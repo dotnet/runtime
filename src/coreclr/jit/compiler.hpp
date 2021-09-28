@@ -1758,11 +1758,6 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
 
     LclVarDsc* varDsc = &lvaTable[lclNum];
 
-    // This will prevent it from being optimized away
-    // TODO-CQ: We shouldn't have to go as far as to declare these
-    // address-exposed -- DoNotEnregister should suffice?
-    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-
     // Note the implicit use
     varDsc->lvImplicitlyReferenced = 1;
 
