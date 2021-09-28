@@ -297,6 +297,10 @@ void Compiler::fgComputeEnterBlocksSet()
 
     fgEnterBlks = BlockSetOps::MakeEmpty(this);
 
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    fgAlwaysBlks = BlockSetOps::MakeEmpty(this);
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
     /* Now set the entry basic block */
     BlockSetOps::AddElemD(this, fgEnterBlks, fgFirstBB->bbNum);
     assert(fgFirstBB->bbNum == 1);
@@ -315,19 +319,15 @@ void Compiler::fgComputeEnterBlocksSet()
     }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // TODO-ARM-Cleanup: The ARM code here to prevent creating retless calls by adding the BBJ_ALWAYS
-    // to the enter blocks is a bit of a compromise, because sometimes the blocks are already reachable,
-    // and it messes up DFS ordering to have them marked as enter block. We should prevent the
-    // creation of retless calls some other way.
+    // For ARM code, prevent creating retless calls by adding the BBJ_ALWAYS to the "fgAlwaysBlks" list.
     for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_CALLFINALLY)
         {
             assert(block->isBBCallAlwaysPair());
-
-            // Don't remove the BBJ_ALWAYS block that is only here for the unwinder. It might be dead
-            // if the finally is no-return, so mark it as an entry point.
-            BlockSetOps::AddElemD(this, fgEnterBlks, block->bbNext->bbNum);
+            
+            // Don't remove the BBJ_ALWAYS block that is only here for the unwinder.
+            BlockSetOps::AddElemD(this, fgAlwaysBlks, block->bbNext->bbNum);
         }
     }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -401,6 +401,13 @@ bool Compiler::fgRemoveUnreachableBlocks()
             {
                 goto SKIP_BLOCK;
             }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+            if (!BlockSetOps::IsEmptyIntersection(this, fgAlwaysBlks, block->bbReach))
+            {
+                goto SKIP_BLOCK;
+            }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
 
         // Remove all the code for the block
@@ -637,7 +644,6 @@ void Compiler::fgDfsInvPostOrder()
     assert(fgEnterBlksSetValid);
 
     BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
-
     assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
 
     // Call the flowgraph DFS traversal helper.
