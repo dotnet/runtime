@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -105,15 +106,16 @@ namespace System.Text.Json.Serialization.Converters
 
             Type keyType = type.GetGenericArguments()[0];
             Type valueType = type.GetGenericArguments()[1];
+            Type keyValuePairType = typeof(KeyValuePair).MakeGenericType(new Type[] { keyType, valueType });
 
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(KeyValuePairConverter<,>).MakeGenericType(new Type[] { keyType, valueType }),
+                typeof(SmallObjectWithParameterizedConstructorConverter<,,,,>).MakeGenericType(new Type[] { keyValuePairType, keyType, valueType }),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: null,
                 culture: null)!;
 
-            converter.Initialize(options);
+            converter.ConstructorInfo = keyValuePairType.GetConstructor(new[] { keyType, valueType })!;
 
             return converter;
         }
