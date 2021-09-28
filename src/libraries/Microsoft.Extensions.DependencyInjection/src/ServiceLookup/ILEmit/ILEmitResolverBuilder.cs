@@ -151,6 +151,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
 
             argument.Generator.Emit(OpCodes.Newobj, constructorCallSite.ConstructorInfo);
+            if (constructorCallSite.ImplementationType.IsValueType)
+            {
+                argument.Generator.Emit(OpCodes.Box, constructorCallSite.ImplementationType);
+            }
+
             return null;
         }
 
