@@ -7773,7 +7773,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                             }
 
                             assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
-                            lcl = rhs->AsLclVarCommon()->GetLclNum();
+                            lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
                         }
                         nextNextBlock = nextNextBlock->GetUniqueSucc();
                     }
