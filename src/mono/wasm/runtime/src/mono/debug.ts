@@ -11,7 +11,7 @@ var _call_function_res_cache: any = {}
 var _next_call_function_res_id = 0;
 var _debugger_buffer_len = -1;
 var _debugger_buffer: any;
-var _debugger_heap_bytes : any;
+var _debugger_heap_bytes : Uint8Array;
 
 export function mono_wasm_runtime_ready() {
     MONO.mono_wasm_runtime_is_ready = true;
@@ -45,7 +45,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
     }
     commands_received = buffer_obj;
 }
-export function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
+function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
     if (command_parameters.length > _debugger_buffer_len) {
         if (_debugger_buffer)
             Module._free(_debugger_buffer);
