@@ -17,42 +17,41 @@ parameters:
   archiveType: ''
   tarCompression: ''
 
-jobs:
-  - job: BuildMaiu
-    steps:
-    # Download latest MAUI
-    # Update the manifests based on the gated source
-    # Install the MAUI workload install maui (with proper feeds in the nuget.config)
-    # Create MAUI Sample app (Do we want this here or lower?)
-    - script: |
-        curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
-        ./dotnet.sh workload update --from-rollback-file ./rollback.json
-        ./dotnet.sh workload install maui --skip-manifest-update
-        ./dotnet.sh new maui -n MauiTesting
-        cd MauiTesting
-        ../dotnet.sh build -bl:MauiTestingBin.binlog -v d
-      displayName: Install MAUI
-      workingDirectory: $(Build.SourcesDirectory)
 
-    - script: ls -Ra #
-      workingDirectory: $(Build.SourcesDirectory) #
-      displayName: List All Files
+steps:
+  # Download latest MAUI
+  # Update the manifests based on the gated source
+  # Install the MAUI workload install maui (with proper feeds in the nuget.config)
+  # Create MAUI Sample app (Do we want this here or lower?)
+  - script: |
+      curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
+      ./dotnet.sh workload update --from-rollback-file ./rollback.json
+      ./dotnet.sh workload install maui --skip-manifest-update
+      ./dotnet.sh new maui -n MauiTesting
+      cd MauiTesting
+      ../dotnet.sh build -bl:MauiTestingBin.binlog -v d
+    displayName: Install MAUI
+    workingDirectory: $(Build.SourcesDirectory)
 
-    - task: PublishBuildArtifacts@1 #
-      condition: succeededOrFailed() #
-      displayName: 'Publish binlog' #
-      inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
-        artifactName:  ${{ parameters.artifactName }} #
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-          rootFolder: $(Build.SourcesDirectory)/MauiTesting #
-          includeRootFolder: true #
-          displayName: Maui Build #
-          artifactName: MauiBuildBinLog #
-          archiveExtension: '.tar.gz' #
-          archiveType: tar #
-          tarCompression: gz #
+  - script: ls -Ra #
+    workingDirectory: $(Build.SourcesDirectory) #
+    displayName: List All Files
+
+  - task: PublishBuildArtifacts@1 #
+    condition: succeededOrFailed() #
+    displayName: 'Publish binlog' #
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
+      artifactName:  ${{ parameters.artifactName }} #
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting #
+        includeRootFolder: true #
+        displayName: Maui Build #
+        artifactName: MauiBuildBinLog #
+        archiveExtension: '.tar.gz' #
+        archiveType: tar #
+        tarCompression: gz #
 
 
 # # Build MAUI Android sample app
