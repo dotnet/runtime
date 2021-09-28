@@ -325,7 +325,7 @@ void Compiler::fgComputeEnterBlocksSet()
         if (block->bbJumpKind == BBJ_CALLFINALLY)
         {
             assert(block->isBBCallAlwaysPair());
-            
+
             // Don't remove the BBJ_ALWAYS block that is only here for the unwinder.
             BlockSetOps::AddElemD(this, fgAlwaysBlks, block->bbNext->bbNum);
         }
