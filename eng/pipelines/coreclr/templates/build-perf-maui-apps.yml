@@ -33,7 +33,7 @@ steps:
     displayName: Install MAUI
     workingDirectory: $(Build.SourcesDirectory)
 
-  - script: ls -Ra #
+  - script: ls -RA #
     condition: succeededOrFailed() #
     workingDirectory: $(Build.SourcesDirectory)/.dotnet #
     displayName: List All Files
