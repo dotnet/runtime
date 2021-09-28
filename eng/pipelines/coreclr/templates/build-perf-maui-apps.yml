@@ -35,7 +35,7 @@ steps:
 
   - script: ls -Ra #
     condition: succeededOrFailed() #
-    workingDirectory: $(Build.SourcesDirectory) #
+    workingDirectory: $(Build.SourcesDirectory)/.dotnet #
     displayName: List All Files
 
   - task: PublishBuildArtifacts@1 #
