@@ -37,6 +37,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ConcreteDerivedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -79,6 +80,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ConcreteDerivedClass.SerializeHandler);
         }
     }
 
@@ -114,6 +116,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
+    [JsonSerializable(typeof(ConcreteDerivedClass))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -179,6 +182,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ConcreteDerivedClass.SerializeHandler);
         }
 
         [Fact]
