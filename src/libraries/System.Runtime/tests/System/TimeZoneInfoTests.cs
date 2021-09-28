@@ -2545,13 +2545,10 @@ namespace System.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void TimeZoneInfo_LocalZoneWithInvariantMode()
         {
-            bool runningInInvariantMode = false;
-            try { CultureInfo.GetCultureInfo("en-US"); } catch { runningInInvariantMode = true; }
-
             string hostTZId = TimeZoneInfo.Local.Id;
 
             ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
-            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", runningInInvariantMode ? "0" : "1");
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", PlatformDetection.IsInvariantGlobalization ? "0" : "1");
 
             RemoteExecutor.Invoke((tzId, hostIsRunningInInvariantMode) =>
             {
@@ -2564,7 +2561,7 @@ namespace System.Tests
 
                 Assert.Equal(tzId, TimeZoneInfo.Local.Id);
 
-            }, hostTZId, runningInInvariantMode.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+            }, hostTZId, PlatformDetection.IsInvariantGlobalization.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
         }
 
         [Fact]
