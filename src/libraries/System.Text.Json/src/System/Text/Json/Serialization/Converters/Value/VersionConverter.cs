@@ -68,8 +68,10 @@ namespace System.Text.Json.Serialization.Converters
             byte lastChar = source[source.Length - 1];
             if (!JsonHelpers.IsDigit(firstChar) || !JsonHelpers.IsDigit(lastChar))
             {
-                // Disallow leading and trailing whitespaces
-                // since Version.Parse allows them
+                // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
+                // we need to make sure that our input doesn't have them,
+                // and if it has - we need to throw, to match behaviour of other converters
+                // since Version.TryParse allows them and silently parses input to Version
                 throw ThrowHelper.GetFormatException(DataType.Version);
             }
 
@@ -83,6 +85,10 @@ namespace System.Text.Json.Serialization.Converters
             string? versionString = reader.GetString();
             if (!string.IsNullOrEmpty(versionString) && (!char.IsDigit(versionString[0]) || !char.IsDigit(versionString[versionString.Length - 1])))
             {
+                // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
+                // we need to make sure that our input doesn't have them,
+                // and if it has - we need to throw, to match behaviour of other converters
+                // since Version.TryParse allows them and silently parses input to Version
                 throw ThrowHelper.GetFormatException(DataType.Version);
             }
             if (Version.TryParse(versionString, out Version? result))
