@@ -309,9 +309,9 @@ namespace Microsoft.Win32.SafeHandles
             // When the delete is performed by another .NET Handle, it holds the lock during the delete.
             // Since we've just obtained the lock, the file will already be removed/replaced.
             // We limit performing this check to cases where our file was opened with DeleteOnClose with
-            // a mode that opens existing files, or creates them when they don't exist.
-            if (_isLocked && ((options & FileOptions.DeleteOnClose) != 0) && share == FileShare.None &&
-                (mode != FileMode.CreateNew && mode != FileMode.Open && mode != FileMode.Truncate))
+            // a mode of OpenOrCreate.
+            if (_isLocked && ((options & FileOptions.DeleteOnClose) != 0) &&
+                share == FileShare.None && mode == FileMode.OpenOrCreate)
             {
                 FStatCheckIO(this, path, ref status, ref statusHasValue);
 
