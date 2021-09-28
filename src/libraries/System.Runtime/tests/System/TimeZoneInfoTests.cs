@@ -2541,6 +2541,32 @@ namespace System.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void TimeZoneInfo_LocalZoneWithInvariantMode()
+        {
+            bool runningInInvariantMode = false;
+            try { CultureInfo.GetCultureInfo("en-US"); } catch { runningInInvariantMode = true; }
+
+            string hostTZId = TimeZoneInfo.Local.Id;
+
+            ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", runningInInvariantMode ? "0" : "1");
+
+            RemoteExecutor.Invoke((tzId, hostIsRunningInInvariantMode) =>
+            {
+                bool hostInvariantMode = bool.Parse(hostIsRunningInInvariantMode);
+
+                if (!hostInvariantMode)
+                {
+                    Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("en-US"));
+                }
+
+                Assert.Equal(tzId, TimeZoneInfo.Local.Id);
+
+            }, hostTZId, runningInInvariantMode.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+        }
+
         [Fact]
         public static void TimeZoneInfo_DaylightDeltaIsNoMoreThan12Hours()
         {
