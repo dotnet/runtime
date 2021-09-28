@@ -35,7 +35,10 @@
   <Target Name="_AppleResolveReferences">
     <ItemGroup>
       <_AppleAssembliesInternal Remove="@(_AppleAssembliesInternal)" />
-      <_AppleAssembliesInternal Include="@(AppleAssembliesToBundle->Distinct())" />
+      <_AppleAssembliesInternal Include="@(AppleAssembliesToBundle)">
+        <_InternalForceInterpret>%(AppleAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
+        <_IsNative>%(AppleAssembliesToBundle._IsNative)</_IsNative>
+      </_AppleAssembliesInternal>
     </ItemGroup>
   </Target>
 
@@ -45,6 +48,9 @@
     <PropertyGroup>
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
+
+      <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+      <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
     </PropertyGroup>
 
     <ItemGroup>
@@ -72,9 +78,15 @@
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
     
-      <_AotInputAssemblies Include="@(_AppleAssembliesInternal)" Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      <DebugTestItem Include="@(_AppleAssembliesInternal)">
+        <_InternalForceInterpret>%(_AppleAssembliesInternal._InternalForceInterpret)</_InternalForceInterpret>
+        <_IsNative>%(_AppleAssembliesInternal._IsNative)</_IsNative>
+      </DebugTestItem>
+
+      <_AotInputAssemblies Include="@(_AppleAssembliesInternal)" 
+                           Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
+        <AotArguments>$(AotArguments)</AotArguments>
+        <ProcessArguments>$(ProcessArguments)</ProcessArguments>
       </_AotInputAssemblies>
 
       <_AOT_InternalForceInterpretAssemblies Include="@(_AppleAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />

@@ -132,9 +132,10 @@
         <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AppleAssembliesToBundle>
-      <AppleAssembliesToBundle Include="$(PublishDir)\**\*.dll" />
-      <AppleAssembliesToBundle Include="@(AppleAssembliesToBundle)">
-        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)' != 'System.Private.CoreLib' and '%(Extension)' != '.dll'">true</_InternalForceInterpret>
+      <_PublishAssemblies Include="$(PublishDir)\**\*.dll" />
+      <AppleAssembliesToBundle Include="@(_PublishAssemblies)">
+        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
+        <_IsNative>false</_IsNative>
       </AppleAssembliesToBundle>
 
       <AppleNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="$(PublishDir)\*.dll" />
