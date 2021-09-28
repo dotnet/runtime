@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using System.Xml;
@@ -1965,11 +1966,11 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     {
         WeakReference weakRef;
 
-#if !XMLSERIALIZERGENERATORTESTS
-        ExecuteAndUnload("System.Collections.Specialized", "System.Collections.Specialized.StringCollection", out weakRef);
-#else
-        ExecuteAndUnload("SerializableAssembly", "SerializationTypes.SimpleType", out weakRef);
-#endif
+//#if !XMLSERIALIZERGENERATORTESTS
+//        ExecuteAndUnload("System.Collections.Specialized", "System.Collections.Specialized.StringCollection", out weakRef);
+//#else
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out weakRef);
+//#endif
 
         for (int i = 0; weakRef.IsAlive && i < 10; i++)
         {
@@ -1979,13 +1980,15 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(!weakRef.IsAlive);
     }
 
-        private static void ExecuteAndUnload(string assemblyname, string typename, out WeakReference wref)
+    private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
     {
-        var alc = new System.Runtime.Loader.AssemblyLoadContext("XmlSerializerTests", true);
+        var alc = new AssemblyLoadContext("XmlSerializerTests", true);
         wref = new WeakReference(alc);
-        var asm = alc.LoadFromAssemblyName(new AssemblyName(assemblyname));
+        var asm = alc.LoadFromAssemblyPath(Path.GetFullPath(assemblyfile));
         var type = asm.GetType(typename);
         var obj = Activator.CreateInstance(type);
+
+        Assert.NotEqual(AssemblyLoadContext.GetLoadContext(type.Assembly), AssemblyLoadContext.Default);
 
         XmlSerializer serializer = new XmlSerializer(type);
         var rto = SerializeAndDeserialize(obj, null, () => serializer, true);
