@@ -54,7 +54,7 @@ jobs:
           archiveType: tar
           tarCompression: gz
 
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+#- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
   
 #   # build mono
 #   - template: /eng/pipelines/common/platform-matrix.yml
