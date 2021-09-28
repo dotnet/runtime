@@ -75,7 +75,7 @@ namespace DllImportGenerator.IntegrationTests
 
             result = initial;
             NativeExportsNE.ReturnUIntAsUnicode_In(value, in result);
-            Assert.Equal(initial, result); // Should not be updated when using 'in'
+            Assert.Equal(expected, result); // Value is updated even when passed with 'in' keyword (matches built-in system)
         }
 
         [Theory]

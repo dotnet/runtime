@@ -125,7 +125,7 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            return info.IsManagedReturnPosition || info.RefKind == RefKind.In || (info.IsByRef && !context.SingleFrameSpansNativeContext);
+            return info.IsManagedReturnPosition || (info.IsByRef && !context.SingleFrameSpansNativeContext);
         }
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
@@ -134,7 +134,7 @@ namespace Microsoft.Interop
         {
             return context.SingleFrameSpansNativeContext
                 && !info.IsManagedReturnPosition
-                && (info.IsByRef && info.RefKind != RefKind.In);
+                && info.IsByRef;
         }
 
         private static string PinnedIdentifier(string identifier) => $"{identifier}__pinned";
