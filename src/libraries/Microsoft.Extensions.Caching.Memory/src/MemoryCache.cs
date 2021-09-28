@@ -108,22 +108,13 @@ namespace Microsoft.Extensions.Caching.Memory
 
             DateTimeOffset utcNow = _options.Clock.UtcNow;
 
-            DateTimeOffset? absoluteExpiration = null;
-            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
-            {
-                absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
-            }
-            else if (entry.AbsoluteExpiration.HasValue)
-            {
-                absoluteExpiration = entry.AbsoluteExpiration;
-            }
-
             // Applying the option's absolute expiration only if it's not already smaller.
             // This can be the case if a dependent cache entry has a smaller value, and
             // it was set by cascading it to its parent.
-            if (absoluteExpiration.HasValue)
+            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
             {
-                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration.Value < entry.AbsoluteExpiration.Value)
+                var absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow.Value;
+                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration < entry.AbsoluteExpiration.Value)
                 {
                     entry.AbsoluteExpiration = absoluteExpiration;
                 }
