@@ -2542,7 +2542,6 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void TimeZoneInfo_LocalZoneWithInvariantMode()
         {
             string hostTZId = TimeZoneInfo.Local.Id;
