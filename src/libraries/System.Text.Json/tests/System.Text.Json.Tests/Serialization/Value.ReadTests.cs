@@ -354,6 +354,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("-2147483648.-2147483648.-2147483648")]
         [InlineData("-2147483648.-2147483648.-2147483648.-2147483648")]
         [InlineData("1.-1")]
+        [InlineData("1")]
         [InlineData("   1.2.3.4")] //Valid but has leading whitespace
         [InlineData("1.2.3.4    ")] //Valid but has trailing whitespace
         [InlineData("  1.2.3.4  ")] //Valid but has trailing and leading whitespaces
