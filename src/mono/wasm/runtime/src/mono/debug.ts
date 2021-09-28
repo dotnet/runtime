@@ -145,7 +145,7 @@ export function mono_wasm_call_function_on(request: CallRequest) {
 
     const objId = request.objectId;
     const details = request.details;
-    let proxy;
+    let proxy: any = {};
 
     if (objId.startsWith('dotnet:cfo_res:')) {
         if (objId in _call_function_res_cache)
@@ -159,8 +159,7 @@ export function mono_wasm_call_function_on(request: CallRequest) {
     const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
     const fn_eval_str = `var fn = ${request.functionDeclaration}; fn.call (proxy, ...[${fn_args}]);`;
 
-    const local_eval = eval; // https://rollupjs.org/guide/en/#avoiding-eval
-    const fn_res = local_eval(fn_eval_str);
+    const fn_res = eval(fn_eval_str);
     if (fn_res === undefined)
         return { type: "undefined" };
 
