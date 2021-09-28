@@ -1107,10 +1107,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///    <para>
-        ///       Gets
-        ///       the friendly name of the process.
-        ///    </para>
+        ///    <para>Gets the friendly name of the process.</para>
         /// </devdoc>
         public string ProcessName
         {
