@@ -7,8 +7,8 @@
 // --------------------------------------------------------------------------------
 
 
-#ifndef PEFILE_H_
-#define PEFILE_H_
+#ifndef PEASSEMBLY_H_
+#define PEASSEMBLY_H_
 
 // --------------------------------------------------------------------------------
 // Required headers
@@ -550,4 +550,4 @@ public:
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
 
-#endif  // PEFILE_H_
+#endif  // PEASSEMBLY_H_

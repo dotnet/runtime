@@ -19,7 +19,7 @@
 #include "corsym.h"
 #include "typehandle.h"
 #include "arraylist.h"
-#include "pefile.h"
+#include "peassembly.h"
 #include "typehash.h"
 #include "contractimpl.h"
 #include "bitmask.h"

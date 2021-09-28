@@ -6,8 +6,8 @@
 
 // --------------------------------------------------------------------------------
 
-#ifndef PEFILE_INL_
-#define PEFILE_INL_
+#ifndef PEASSEMBLY_INL_
+#define PEASSEMBLY_INL_
 
 #include "check.h"
 #include "simplerwlock.hpp"
@@ -1060,4 +1060,4 @@ inline void PEAssembly::OpenMDImport()
     OpenMDImport_Unsafe();
 }
 
-#endif  // PEFILE_INL_
+#endif  // PEASSEMBLY_INL_

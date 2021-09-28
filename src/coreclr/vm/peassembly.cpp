@@ -8,7 +8,7 @@
 
 
 #include "common.h"
-#include "pefile.h"
+#include "peassembly.h"
 #include "eecontract.h"
 #include "eeconfig.h"
 #include "eventtrace.h"
