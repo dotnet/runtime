@@ -34,6 +34,7 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
 
   - script: ls -Ra #
+    condition: succeededOrFailed() #
     workingDirectory: $(Build.SourcesDirectory) #
     displayName: List All Files
 
