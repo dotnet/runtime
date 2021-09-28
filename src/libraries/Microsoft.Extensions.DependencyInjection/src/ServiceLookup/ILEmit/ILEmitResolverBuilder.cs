@@ -98,11 +98,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
 #if SAVE_ASSEMBLIES
             var assemblyName = "Test" + DateTime.Now.Ticks;
+            var fileName = assemblyName + ".dll";
 
-            var fileName = "Test" + DateTime.Now.Ticks;
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.RunAndSave);
-            var module = assembly.DefineDynamicModule(assemblyName, assemblyName+".dll");
-            var type = module.DefineType("Resolver");
+            var module = assembly.DefineDynamicModule(assemblyName, fileName);
+            var type = module.DefineType(callSite.ServiceType.Name + "Resolver");
 
             var method = type.DefineMethod(
                 "ResolveService", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(object),
@@ -110,7 +110,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             GenerateMethodBody(callSite, method.GetILGenerator());
             type.CreateTypeInfo();
-            assembly.Save(assemblyName + ".dll");
+            // Assembly.Save is only available in .NET Framework (https://github.com/dotnet/runtime/issues/15704)
+            assembly.Save(fileName);
 #endif
             DependencyInjectionEventSource.Log.DynamicMethodBuilt(_rootScope.RootProvider, callSite.ServiceType, ilGenerator.ILOffset);
 
