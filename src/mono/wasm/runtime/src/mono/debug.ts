@@ -10,7 +10,7 @@ var commands_received: any;
 var _call_function_res_cache: any = {}
 var _next_call_function_res_id = 0;
 var _debugger_buffer_len = -1;
-var _debugger_buffer: any;
+var _debugger_buffer: number;
 var _debugger_heap_bytes : Uint8Array;
 
 export function mono_wasm_runtime_ready() {
