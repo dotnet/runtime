@@ -28,7 +28,6 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
                                             NULL,  // szCodeBase
-                                            NULL,  // pParentAssembly
                                             false, //excludeAppPaths,
                                             ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
@@ -111,23 +110,13 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
         ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;
-        ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
-
-        PEKIND PeKind = peNone;
-
-        // Get the Metadata interface
-        DWORD dwPAFlags[2];
-        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags));
-        IF_FAIL_GO(AssemblyBinderCommon::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
-
-        _ASSERTE(pIMetaDataAssemblyImport != NULL);
 
         // Using the information we just got, initialize the assemblyname
         SAFE_NEW(pAssemblyName, BINDER_SPACE::AssemblyName);
-        IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
+        IF_FAIL_GO(pAssemblyName->Init(pPEImage));
 
         // Validate architecture
-        if (!BINDER_SPACE::Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
+        if (!AssemblyBinderCommon::IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
@@ -139,7 +128,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);

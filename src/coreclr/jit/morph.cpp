@@ -2098,7 +2098,8 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         {
             var_types addrType = TYP_BYREF;
             arg                = gtNewOperNode(GT_ADDR, addrType, arg);
-            addrNode           = arg;
+            lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+            addrNode = arg;
 
 #if FEATURE_MULTIREG_ARGS
 #ifdef TARGET_ARM64
@@ -2137,10 +2138,6 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
     if (addrNode != nullptr)
     {
         assert(addrNode->gtOper == GT_ADDR);
-
-        // This will prevent this LclVar from being optimized away
-        lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-
         // the child of a GT_ADDR is required to have this flag set
         addrNode->AsOp()->gtOp1->gtFlags |= GTF_DONT_CSE;
     }

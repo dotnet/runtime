@@ -199,7 +199,7 @@ namespace System.Reflection
 
         internal object GetConstantValue(bool raw)
         {
-            object? defaultValue = MdConstant.GetValue(GetRuntimeModule().MetadataImport, m_token, PropertyType.GetTypeHandleInternal(), raw);
+            object? defaultValue = MdConstant.GetValue(GetRuntimeModule().MetadataImport, m_token, PropertyType.TypeHandle, raw);
 
             if (defaultValue == DBNull.Value)
                 // Arg_EnumLitValueNotFound -> "Literal value was not found."

@@ -26,7 +26,6 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
                                             NULL, // szCodeBase
-                                            NULL, // pParentAssembly
                                             excludeAppPaths,
                                             ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
@@ -121,23 +120,13 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
         ReleaseHolder<BINDER_SPACE::AssemblyName> pAssemblyName;
-        ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
-
-        PEKIND PeKind = peNone;
-
-        // Get the Metadata interface
-        DWORD dwPAFlags[2];
-        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags));
-        IF_FAIL_GO(AssemblyBinderCommon::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
-
-        _ASSERTE(pIMetaDataAssemblyImport != NULL);
 
         // Using the information we just got, initialize the assemblyname
         SAFE_NEW(pAssemblyName, AssemblyName);
-        IF_FAIL_GO(pAssemblyName->Init(pIMetaDataAssemblyImport, PeKind));
+        IF_FAIL_GO(pAssemblyName->Init(pPEImage));
 
         // Validate architecture
-        if (!BINDER_SPACE::Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
+        if (!AssemblyBinderCommon::IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
@@ -169,7 +158,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, PeKind, pIMetaDataAssemblyImport, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, &pCoreCLRFoundAssembly);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
@@ -199,7 +188,6 @@ HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssem
 }
 
 HRESULT DefaultAssemblyBinder::Bind(LPCWSTR                  wszCodeBase,
-                                    PEAssembly              *pParentAssembly,
                                     BINDER_SPACE::Assembly **ppAssembly)
 {
     HRESULT hr = S_OK;
@@ -211,7 +199,6 @@ HRESULT DefaultAssemblyBinder::Bind(LPCWSTR                  wszCodeBase,
         hr = AssemblyBinderCommon::BindAssembly(this,
                                                 NULL, // pAssemblyName
                                                 wszCodeBase,
-                                                pParentAssembly,
                                                 false, // excludeAppPaths
                                                 &pAsm);
         if(SUCCEEDED(hr))
@@ -225,3 +212,27 @@ HRESULT DefaultAssemblyBinder::Bind(LPCWSTR                  wszCodeBase,
 
     return hr;
 }
+
+HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly)
+{
+    HRESULT hr = S_OK;
+    _ASSERTE(ppSystemAssembly != NULL);
+
+    EX_TRY
+    {
+        ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
+        StackSString systemPath(SystemDomain::System()->SystemDirectory());
+        hr = AssemblyBinderCommon::BindToSystem(systemPath, &pAsm);
+        if (SUCCEEDED(hr))
+        {
+            _ASSERTE(pAsm != NULL);
+            *ppSystemAssembly = pAsm.Extract();
+        }
+
+        (*ppSystemAssembly)->SetBinder(this);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+

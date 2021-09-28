@@ -12,11 +12,6 @@
 #include <errno.h>
 #include <netdb.h>
 
-// ENODATA is not defined in FreeBSD 10.3 but is defined in 11.0
-#if defined(__FreeBSD__) & !defined(ENODATA)
-#define ENODATA ENOATTR
-#endif
-
 /**
  * Error codes returned via ConvertErrno.
  *
@@ -320,8 +315,10 @@ inline static int32_t ConvertErrorPlatformToPal(int32_t platformErrno)
             return Error_ESHUTDOWN;
         case EHOSTDOWN:
             return Error_EHOSTDOWN;
+#ifdef ENODATA // not available in FreeBSD
         case ENODATA:
             return Error_ENODATA;
+#endif
 
 // #if because these will trigger duplicate case label warnings when
 // they have the same value, which is permitted by POSIX and common.
@@ -508,8 +505,10 @@ inline static int32_t ConvertErrorPalToPlatform(int32_t error)
             return ESHUTDOWN;
         case Error_EHOSTDOWN:
             return EHOSTDOWN;
+#ifdef ENODATA // not available in FreeBSD
         case Error_ENODATA:
             return ENODATA;
+#endif
         case Error_EHOSTNOTFOUND:
             return EHOSTNOTFOUND;
         case Error_ESOCKETERROR:

@@ -1134,26 +1134,15 @@
         "unix-x64"
       ]
     },
-    "freebsd.11": {
-      "#import": [
-        "freebsd"
-      ]
-    },
-    "freebsd.11-x64": {
-      "#import": [
-        "freebsd.11",
-        "freebsd-x64"
-      ]
-    },
     "freebsd.12": {
       "#import": [
-        "freebsd.11"
+        "freebsd"
       ]
     },
     "freebsd.12-x64": {
       "#import": [
         "freebsd.12",
-        "freebsd.11-x64"
+        "freebsd-x64"
       ]
     },
     "freebsd.13": {

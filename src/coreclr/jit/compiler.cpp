@@ -4476,6 +4476,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             assert(lvaStubArgumentVar == BAD_VAR_NUM);
             lvaStubArgumentVar                  = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
             lvaTable[lvaStubArgumentVar].lvType = TYP_I_IMPL;
+            // TODO-CQ: there is no need to mark it as doNotEnreg. There are no stores for this local
+            // before codegen so liveness and LSRA mark it as "liveIn" and always allocate a stack slot for it.
+            // However, it would be better to process it like other argument locals and keep it in
+            // a reg for the whole method without spilling to the stack when possible.
+            lvaSetVarDoNotEnregister(lvaStubArgumentVar DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);

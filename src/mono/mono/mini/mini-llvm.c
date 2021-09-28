@@ -48,7 +48,7 @@
 #define TARGET_WIN32_MSVC
 #endif
 
-#if LLVM_API_VERSION < 610
+#if LLVM_API_VERSION < 900
 #error "The version of the mono llvm repository is too old."
 #endif
 
@@ -1393,9 +1393,6 @@ emit_memset (EmitContext *ctx, LLVMBuilderRef builder, LLVMValueRef v, LLVMValue
 	args [aindex ++] = v;
 	args [aindex ++] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
 	args [aindex ++] = size;
-#if LLVM_API_VERSION < 900
-	args [aindex ++] = LLVMConstInt (LLVMInt32Type (), alignment, FALSE);
-#endif
 	args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
 	LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMSET), args, aindex, "");
 }
@@ -6678,9 +6675,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [argn++] = convert (ctx, values [ins->sreg1], LLVMPointerType (LLVMInt8Type (), 0));
 			args [argn++] = convert (ctx, values [ins->sreg2], LLVMPointerType (LLVMInt8Type (), 0));
 			args [argn++] = convert (ctx, values [ins->sreg3], LLVMInt64Type ());
-#if LLVM_API_VERSION < 900
-			args [argn++] = LLVMConstInt (LLVMInt32Type (), 1, FALSE); // alignment
-#endif
 			args [argn++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);  // is_volatile
 
 			call_intrins (ctx, INTRINS_MEMMOVE, args, "");
@@ -7355,11 +7349,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [aindex ++] = dst;
 			args [aindex ++] = src;
 			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
-
-#if LLVM_API_VERSION < 900
-			// FIXME: Alignment
-			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-#endif
 			args [aindex ++] = LLVMConstInt (LLVMInt1Type (), is_volatile ? 1 : 0, FALSE);
 			call_intrins (ctx, INTRINS_MEMCPY, args, "");
 			break;
@@ -8622,41 +8611,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_SSE2_PMULUDQ: {
-#if LLVM_API_VERSION < 700
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PMULUDQ, args, dname);
-#else
 			LLVMValueRef i32_max = LLVMConstInt (LLVMInt64Type (), UINT32_MAX, FALSE);
 			LLVMValueRef maskvals [] = { i32_max, i32_max };
 			LLVMValueRef mask = LLVMConstVector (maskvals, 2);
 			LLVMValueRef l = LLVMBuildAnd (builder, convert (ctx, lhs, sse_i8_t), mask, "");
 			LLVMValueRef r = LLVMBuildAnd (builder, convert (ctx, rhs, sse_i8_t), mask, "");
 			values [ins->dreg] = LLVMBuildNUWMul (builder, l, r, dname);
-#endif
 			break;
 		}
 		case OP_SSE_SQRTSS:
 		case OP_SSE2_SQRTSD: {
-#if LLVM_API_VERSION < 700
-			LLVMValueRef result = call_intrins (ctx, simd_ins_to_intrins (ins->opcode), &rhs, dname);
-			const int maskf32[] = { 0, 5, 6, 7 };
-			const int maskf64[] = { 0, 1 };
-			const int *mask = NULL;
-			int mask_len = 0;
-			switch (ins->opcode) {
-			case OP_SSE_SQRTSS: mask = maskf32; mask_len = 4; break;
-			case OP_SSE2_SQRTSD: mask = maskf64; mask_len = 2; break;
-			default: g_assert_not_reached (); break;
-			}
-			LLVMValueRef shufmask = create_const_vector_i32 (mask, mask_len);
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, result, lhs, shufmask, "");
-#else
 			LLVMValueRef upper = values [ins->sreg1];
 			LLVMValueRef lower = values [ins->sreg2];
 			LLVMValueRef scalar = LLVMBuildExtractElement (builder, lower, const_int32 (0), "");
 			LLVMValueRef result = call_intrins (ctx, simd_ins_to_intrins (ins->opcode), &scalar, dname);
 			values [ins->dreg] = LLVMBuildInsertElement (builder, upper, result, const_int32 (0), "");
-#endif
 			break;
 		}
 		case OP_SSE_RCPSS:
@@ -9245,10 +9214,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		case OP_SSE41_MUL: {
-#if LLVM_API_VERSION < 700
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PMULDQ, args, dname);
-#else
 			const int shift_vals [] = { 32, 32 };
 			const LLVMValueRef args [] = {
 				convert (ctx, lhs, sse_i8_t),
@@ -9261,7 +9226,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				mul_args[i] = mono_llvm_build_exact_ashr (builder, padded, shift_vec);
 			}
 			values [ins->dreg] = LLVMBuildNSWMul (builder, mul_args [0], mul_args [1], dname);
-#endif
 			break;	
 		}
 
@@ -9345,7 +9309,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef cmp, mask [MAX_VECTOR_ELEMS], shuffle;
 			int nelems;
 
-#if defined(TARGET_WASM) && LLVM_API_VERSION >= 800
+#if defined(TARGET_WASM)
 			/* The wasm code generator doesn't understand the shuffle/and code sequence below */
 			LLVMValueRef val;
 			if (LLVMIsNull (lhs) || LLVMIsNull (rhs)) {

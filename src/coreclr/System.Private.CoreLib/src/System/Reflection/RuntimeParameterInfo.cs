@@ -338,7 +338,7 @@ namespace System.Reflection
             if (!MdToken.IsNullToken(m_tkParamDef))
             {
                 // This will return DBNull.Value if no constant value is defined on m_tkParamDef in the metadata.
-                defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.GetTypeHandleInternal(), raw);
+                defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.TypeHandle, raw);
             }
             #endregion
 

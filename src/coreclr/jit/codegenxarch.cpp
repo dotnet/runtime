@@ -2837,21 +2837,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
             if (bytesWritten + regSize > size)
             {
-#ifdef TARGET_AMD64
-                if (size - bytesWritten <= XMM_REGSIZE_BYTES)
-                {
-                    regSize = XMM_REGSIZE_BYTES;
-                }
-
-                // Shift dstOffset back to use full SIMD move
-                unsigned shiftBack = regSize - (size - bytesWritten);
-                assert(shiftBack <= regSize);
-                bytesWritten -= shiftBack;
-                dstOffset -= shiftBack;
-#else
                 assert(srcIntReg != REG_NA);
                 break;
-#endif
             }
 
             if (dstLclNum != BAD_VAR_NUM)
@@ -2866,6 +2853,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
             dstOffset += regSize;
             bytesWritten += regSize;
+
+            if (regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
+            {
+                regSize = XMM_REGSIZE_BYTES;
+            }
         }
 
         size -= bytesWritten;
@@ -3083,65 +3075,37 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                ? YMM_REGSIZE_BYTES
                                : XMM_REGSIZE_BYTES;
 
-        for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        while (size >= regSize)
         {
-            if (srcLclNum != BAD_VAR_NUM)
+            for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
             {
-                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-            }
-            else
-            {
-                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                    srcAddrIndexScale, srcOffset);
+                if (srcLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+                }
+                else
+                {
+                    emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                        srcAddrIndexScale, srcOffset);
+                }
+
+                if (dstLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+                }
+                else
+                {
+                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                        dstAddrIndexScale, dstOffset);
+                }
             }
 
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
-        }
-
-        if (size > 0)
-        {
-            if (size <= XMM_REGSIZE_BYTES)
+            // Size is too large for YMM moves, try stepping down to XMM size to finish SIMD copies.
+            if (regSize == YMM_REGSIZE_BYTES)
             {
                 regSize = XMM_REGSIZE_BYTES;
             }
-
-            // Copy the remainder by moving the last regSize bytes of the buffer
-            unsigned shiftBack = regSize - size;
-            assert(shiftBack <= regSize);
-
-            srcOffset -= shiftBack;
-            dstOffset -= shiftBack;
-
-            if (srcLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-            }
-            else
-            {
-                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                    srcAddrIndexScale, srcOffset);
-            }
-
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
         }
-
-        return;
     }
 
     // Fill the remainder with normal loads/stores
@@ -5647,7 +5611,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             GetEmitter()->emitIns_Nop(3);
 
             // clang-format off
-            GetEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD),
+            GetEmitter()->emitIns_Call(emitter::EC_INDIR_ARD,
                                        methHnd,
                                        INDEBUG_LDISASM_COMMA(sigInfo)
                                        nullptr,
