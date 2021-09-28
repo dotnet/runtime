@@ -110,7 +110,7 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
         RunConfiguration: '$(RunConfiguration)'
         ToolName: '$(ToolName)'
-        continueOnError: true # Run the future step i.e. merge-mch step even if this step fails.
+        continueOnError: true
 
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
@@ -138,6 +138,7 @@ jobs:
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_unique_issues.py -issues_directory $(IssuesSummaryLocation)
       displayName: ${{ format('Print unique issues ({0})', parameters.osGroup) }}
+      continueOnError: true
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Antigen build logs
