@@ -35,24 +35,42 @@ jobs:
   # build mono iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      jobTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
       buildConfig: release
       runtimeFlavor: mono
       platforms:
       - iOS_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-        nameSuffix: iOSAndroidMaui
-        isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
-        extraStepsParameters:
-          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-          includeRootFolder: true
-          displayName: iOS and Android Maui Artifacts
-          artifactName: iOSAndroidMauiArm
-          archiveExtension: '.tar.gz'
-          archiveType: tar
-          tarCompression: gz
+        nameSuffix: isOSAndroidMaui
+        rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+        includeRootFolder: true
+        displayName: iOS and Android Maui Artifacts
+        artifactName: iOSAndroidMauiArm
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+        
+
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: mono
+  #     platforms:
+  #     - iOS_arm64
+  #     jobParameters:
+  #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+  #       nameSuffix: iOSAndroidMaui
+  #       isOfficialBuild: false
+  #       extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
+  #       extraStepsParameters:
+  #         rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+  #         includeRootFolder: true
+  #         displayName: iOS and Android Maui Artifacts
+  #         artifactName: iOSAndroidMauiArm
+  #         archiveExtension: '.tar.gz'
+  #         archiveType: tar
+  #         tarCompression: gz
 
 #- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
   
