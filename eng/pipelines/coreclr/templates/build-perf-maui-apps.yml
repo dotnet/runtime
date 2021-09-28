@@ -17,7 +17,6 @@ parameters:
   archiveType: ''
   tarCompression: ''
 
-
 steps:
 # Download latest MAUI
 # Update the manifests based on the gated source
