@@ -175,8 +175,9 @@ namespace Microsoft.Interop
             SyntaxToken byteLengthIdentifier,
             SyntaxToken stackAllocPtrIdentifier)
         {
-            // ((ReadOnlySpan<char>)<managed>).CopyTo(new Span<char>(<stackAllocPtr>, <managed>.Length + 1));
-            return
+            string managedIdentifier = context.GetIdentifiers(info).managed;
+            return Block(
+                // ((ReadOnlySpan<char>)<managed>).CopyTo(new Span<char>(<stackAllocPtr>, <managed>.Length));
                 ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(
@@ -186,7 +187,7 @@ namespace Microsoft.Interop
                                 GenericName(Identifier("System.ReadOnlySpan"),
                                     TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
                                         PredefinedType(Token(SyntaxKind.CharKeyword))))),
-                                IdentifierName(context.GetIdentifiers(info).managed))),
+                                IdentifierName(managedIdentifier))),
                             IdentifierName("CopyTo")),
                         ArgumentList(
                             SeparatedList(new[] {
@@ -198,8 +199,31 @@ namespace Microsoft.Interop
                                         ArgumentList(
                                             SeparatedList(new[]{
                                                 Argument(IdentifierName(stackAllocPtrIdentifier)),
-                                                Argument(IdentifierName(byteLengthIdentifier))})),
-                                        initializer: null))}))));
+                                                Argument(
+                                                    MemberAccessExpression(
+                                                        SyntaxKind.SimpleMemberAccessExpression,
+                                                        IdentifierName(managedIdentifier),
+                                                        IdentifierName("Length")))})),
+                                        initializer: null))})))),
+                // ((char*)<stackAllocPtr>)[<managed>.Length] = '\0';
+                ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        ElementAccessExpression(
+                            ParenthesizedExpression(
+                                CastExpression(
+                                    PointerType(PredefinedType(Token(SyntaxKind.CharKeyword))),
+                                    IdentifierName(stackAllocPtrIdentifier))),
+                            BracketedArgumentList(
+                                SingletonSeparatedList<ArgumentSyntax>(
+                                    Argument(
+                                        MemberAccessExpression(
+                                            SyntaxKind.SimpleMemberAccessExpression,
+                                            IdentifierName(managedIdentifier),
+                                            IdentifierName("Length")))))),
+                        LiteralExpression(
+                            SyntaxKind.CharacterLiteralExpression,
+                            Literal('\0')))));
         }
 
         protected override ExpressionSyntax GenerateFreeExpression(
