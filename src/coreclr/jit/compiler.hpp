@@ -2357,11 +2357,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 inline var_types Compiler::mangleVarArgsType(var_types type)
 {
 #if defined(TARGET_ARMARCH)
-    if (opts.compUseSoftFP
-#if defined(TARGET_WINDOWS)
-        || info.compIsVarArgs
-#endif // defined(TARGET_WINDOWS)
-        )
+    if (opts.compUseSoftFP || (TargetOS::IsWindows && info.compIsVarArgs))
     {
         switch (type)
         {
@@ -2378,9 +2374,9 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
 }
 
 // For CORECLR there is no vararg on System V systems.
-#if FEATURE_VARARG
 inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 {
+    assert(compFeatureVarArg());
 #ifdef TARGET_AMD64
     switch (floatReg)
     {
@@ -2404,6 +2400,7 @@ inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 
 inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
 {
+    assert(compFeatureVarArg());
 #ifdef TARGET_AMD64
     switch (intReg)
     {
@@ -2424,7 +2421,6 @@ inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
     return REG_NA;
 #endif // !TARGET_AMD64
 }
-#endif // FEATURE_VARARG
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

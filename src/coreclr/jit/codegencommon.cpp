@@ -2181,11 +2181,18 @@ void CodeGen::genGenerateMachineCode()
             printf("unknown architecture");
         }
 
-#if defined(TARGET_WINDOWS)
-        printf(" - Windows");
-#elif defined(TARGET_UNIX)
-        printf(" - Unix");
-#endif
+        if (TargetOS::IsWindows)
+        {
+            printf(" - Windows");
+        }
+        else if (TargetOS::IsMacOS)
+        {
+            printf(" - MacOS");
+        }
+        else if (TargetOS::IsUnix)
+        {
+            printf(" - Unix");
+        }
 
         printf("\n");
 
@@ -3393,11 +3400,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             // Check if this is an HFA register arg and return the HFA type
             if (varDsc.lvIsHfaRegArg())
             {
-#if defined(TARGET_WINDOWS)
                 // Cannot have hfa types on windows arm targets
                 // in vararg methods.
-                assert(!compiler->info.compIsVarArgs);
-#endif // defined(TARGET_WINDOWS)
+                assert(!TargetOS::IsWindows || !compiler->info.compIsVarArgs);
                 return varDsc.GetHfaType();
             }
             return compiler->mangleVarArgsType(varDsc.lvType);
@@ -3464,12 +3469,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // Change regType to the HFA type when we have a HFA argument
         if (varDsc->lvIsHfaRegArg())
         {
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            if (compiler->info.compIsVarArgs)
+#if defined(TARGET_ARM64)
+            if (TargetOS::IsWindows && compiler->info.compIsVarArgs)
             {
                 assert(!"Illegal incoming HFA arg encountered in Vararg method.");
             }
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64)
             regType = varDsc->GetHfaType();
         }
 
