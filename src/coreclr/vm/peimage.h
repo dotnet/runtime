@@ -58,7 +58,6 @@ typedef DPTR(class PEImage)                PTR_PEImage;
 
 class PEImage
 {
-    friend class PEModule;
 public:
     // ------------------------------------------------------------
     // Public constants

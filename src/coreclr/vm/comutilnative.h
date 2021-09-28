@@ -101,7 +101,9 @@ public:
     UINT32 pauseTimePercent;
     UINT8 isCompaction;
     UINT8 isConcurrent;
+#ifndef UNIX_X86_ABI
     UINT8 padding[6];
+#endif
     GCGenerationInfo generationInfo0;
     GCGenerationInfo generationInfo1;
     GCGenerationInfo generationInfo2;

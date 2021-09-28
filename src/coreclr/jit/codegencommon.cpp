@@ -7758,6 +7758,41 @@ void CodeGen::genFnProlog()
 #pragma warning(pop)
 #endif
 
+//------------------------------------------------------------------------
+// getCallTarget - Get the node that evalutes to the call target
+//
+// Arguments:
+//    call - the GT_CALL node
+//
+// Returns:
+//   The node. Note that for direct calls this may still return non-null if the direct call
+//   requires a 'complex' tree to load the target (e.g. in R2R or because we go through a stub).
+//
+GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd)
+{
+    // all virtuals should have been expanded into a control expression by this point.
+    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
+
+    if (call->gtCallType == CT_INDIRECT)
+    {
+        assert(call->gtControlExpr == nullptr);
+
+        if (methHnd != nullptr)
+        {
+            *methHnd = nullptr;
+        }
+
+        return call->gtCallAddr;
+    }
+
+    if (methHnd != nullptr)
+    {
+        *methHnd = call->gtCallMethHnd;
+    }
+
+    return call->gtControlExpr;
+}
+
 /*****************************************************************************
  *
  *  Generates code for a function epilog.
@@ -8019,46 +8054,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if FEATURE_FASTTAILCALL
         else
         {
-            // Fast tail call.
-            GenTreeCall* call     = jmpNode->AsCall();
-            gtCallTypes  callType = (gtCallTypes)call->gtCallType;
-
-            // Fast tail calls cannot happen to helpers.
-            assert((callType == CT_INDIRECT) || (callType == CT_USER_FUNC));
-
-            // Try to dispatch this as a direct branch; this is possible when the call is
-            // truly direct. In this case, the control expression will be null and the direct
-            // target address will be in gtDirectCallAddress. It is still possible that calls
-            // to user funcs require indirection, in which case the control expression will
-            // be non-null.
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr))
-            {
-                assert(call->gtCallMethHnd != nullptr);
-                // clang-format off
-                GetEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN,
-                                           call->gtCallMethHnd,
-                                           INDEBUG_LDISASM_COMMA(nullptr)
-                                           call->gtDirectCallAddress,
-                                           0,          // argSize
-                                           EA_UNKNOWN  // retSize
-                                           ARM64_ARG(EA_UNKNOWN), // secondRetSize
-                                           gcInfo.gcVarPtrSetCur,
-                                           gcInfo.gcRegGCrefSetCur,
-                                           gcInfo.gcRegByrefSetCur,
-                                           BAD_IL_OFFSET, // IL offset
-                                           REG_NA,        // ireg
-                                           REG_NA,        // xreg
-                                           0,             // xmul
-                                           0,             // disp
-                                           true);         // isJump
-                // clang-format on
-            }
-            else
-            {
-                // Target requires indirection to obtain. genCallInstruction will have materialized
-                // it into REG_FASTTAILCALL_TARGET already, so just branch to it.
-                GetEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), REG_FASTTAILCALL_TARGET);
-            }
+            genCallInstruction(jmpNode->AsCall());
         }
 #endif // FEATURE_FASTTAILCALL
     }
@@ -8454,51 +8450,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if FEATURE_FASTTAILCALL
         else
         {
-#ifdef TARGET_AMD64
-            // Fast tail call.
-            GenTreeCall* call     = jmpNode->AsCall();
-            gtCallTypes  callType = (gtCallTypes)call->gtCallType;
-
-            // Fast tail calls cannot happen to helpers.
-            assert((callType == CT_INDIRECT) || (callType == CT_USER_FUNC));
-
-            // Calls to a user func can be dispatched as an RIP-relative jump when they are
-            // truly direct; in this case, the control expression will be null and the direct
-            // target address will be in gtDirectCallAddress. It is still possible that calls
-            // to user funcs require indirection, in which case the control expression will
-            // be non-null.
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr))
-            {
-                assert(call->gtCallMethHnd != nullptr);
-                // clang-format off
-                GetEmitter()->emitIns_Call(
-                        emitter::EC_FUNC_TOKEN,
-                        call->gtCallMethHnd,
-                        INDEBUG_LDISASM_COMMA(nullptr)
-                        call->gtDirectCallAddress,
-                        0,                                              // argSize
-                        EA_UNKNOWN                                      // retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),// secondRetSize
-                        gcInfo.gcVarPtrSetCur,
-                        gcInfo.gcRegGCrefSetCur,
-                        gcInfo.gcRegByrefSetCur,
-                        BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
-                        true /* isJump */
-                );
-                // clang-format on
-            }
-            else
-            {
-                // Target requires indirection to obtain. genCallInstruction will have materialized
-                // it into RAX already, so just jump to it. The stack walker requires that a register
-                // indirect tail call be rex.w prefixed.
-                GetEmitter()->emitIns_R(INS_rex_jmp, emitTypeSize(TYP_I_IMPL), REG_RAX);
-            }
-
-#else
-            assert(!"Fast tail call as epilog+jmp");
-            unreached();
-#endif // TARGET_AMD64
+            genCallInstruction(jmpNode->AsCall());
         }
 #endif // FEATURE_FASTTAILCALL
     }

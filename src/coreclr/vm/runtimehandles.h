@@ -154,9 +154,6 @@ public:
 
     static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
 
-    static FCDECL2(FC_BOOL_RET, TypeEQ, Object* left, Object* right);
-    static FCDECL2(FC_BOOL_RET, TypeNEQ, Object* left, Object* right);
-
     static
     void QCALLTYPE PrepareMemberInfoCache(QCall::TypeHandle pMemberInfoCache);
 

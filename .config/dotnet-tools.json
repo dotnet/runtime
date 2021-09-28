@@ -25,6 +25,12 @@
       "commands": [
         "slngen"
       ]
+    },
+    "dotnet-format": {
+      "version": "6.0.240501",
+      "commands": [
+        "dotnet-format"
+      ]
     }
   }
 }

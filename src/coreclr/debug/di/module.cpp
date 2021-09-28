@@ -2755,6 +2755,7 @@ HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
     FAIL_IF_NEUTERED(this);
 
     HRESULT hr = S_OK;
+    *isMapped = FALSE;
     CordbProcess *pProcess = GetProcess();
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);

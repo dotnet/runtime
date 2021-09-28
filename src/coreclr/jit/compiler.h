@@ -4009,10 +4009,6 @@ public:
         void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
 #endif // DEBUG
 
-#ifdef TARGET_ARM
-        bool GetRequiresScratchVar();
-#endif // TARGET_ARM
-
     private:
         bool CanPromoteStructVar(unsigned lclNum);
         bool ShouldPromoteStructVar(unsigned lclNum);
@@ -4025,10 +4021,6 @@ public:
     private:
         Compiler*              compiler;
         lvaStructPromotionInfo structPromotionInfo;
-
-#ifdef TARGET_ARM
-        bool requiresScratchVar;
-#endif // TARGET_ARM
 
 #ifdef DEBUG
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, var_types>
@@ -7793,8 +7785,8 @@ public:
     bool optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext* context);
     BasicBlock* optInsertLoopChoiceConditions(LoopCloneContext* context,
                                               unsigned          loopNum,
-                                              BasicBlock*       head,
-                                              BasicBlock*       slow);
+                                              BasicBlock*       slowHead,
+                                              BasicBlock*       insertAfter);
 
 protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));

@@ -306,7 +306,7 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None, _exit_on_fail=False):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _long_running=False):
     """ Runs the command.
 
     Args:
@@ -314,20 +314,33 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False):
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
     Returns:
-        (string, string, int): Returns a tuple of stdout, stderr, and command return code
+        (string, string, int): Returns a tuple of stdout, stderr, and command return code if _long_running= False
+        Otherwise stdout, stderr are empty.
     """
     print("Running: " + " ".join(command_to_run))
     command_stdout = ""
     command_stderr = ""
     return_code = 1
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
-        command_stdout, command_stderr = proc.communicate()
-        return_code = proc.returncode
 
-        if len(command_stdout) > 0:
-            print(command_stdout.decode("utf-8"))
-        if len(command_stderr) > 0:
-            print(command_stderr.decode("utf-8"))
+    output_type = subprocess.STDOUT if _long_running else subprocess.PIPE
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
+
+        # For long running command, continuosly print the output
+        if _long_running:
+            while True:
+                output = proc.stdout.readline()
+                if proc.poll() is not None:
+                    break
+                if output:
+                    print(output.strip().decode("utf-8"))
+        else:
+            command_stdout, command_stderr = proc.communicate()
+            if len(command_stdout) > 0:
+                print(command_stdout.decode("utf-8"))
+            if len(command_stderr) > 0:
+                print(command_stderr.decode("utf-8"))
+
+        return_code = proc.returncode
         if _exit_on_fail and return_code != 0:
             print("Command failed. Exiting.")
             sys.exit(1)
