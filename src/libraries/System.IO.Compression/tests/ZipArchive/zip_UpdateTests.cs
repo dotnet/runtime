@@ -443,8 +443,6 @@ namespace System.IO.Compression.Tests
         // General purpose bit flag must get the appropriate bit set if a file comment is unicode
         public static void Update_ZipArchive_And_ZipArchiveEntry_UnicodeComment()
         {
-            UTF8Encoding utf8Encoding = new(encoderShouldEmitUTF8Identifier: true);
-
             string comment = "This Unicode string has 2 characters outside the " + "ASCII range:\n" + "Pi (\u03a0), and Sigma (\u03a3).";
             string updatedComment = "Updated comment " + comment;
 
@@ -452,7 +450,7 @@ namespace System.IO.Compression.Tests
             var testStream = new WrappedStream(stream, true, true, true, null);
 
             // Create with UTF8 encoding
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true, utf8Encoding))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true, Encoding.UTF8))
             {
                 zip.Comment = comment;
                 ZipArchiveEntry entry = zip.CreateEntry("testfile.txt", CompressionLevel.NoCompression);
@@ -462,7 +460,7 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(comment, entry.Comment);
             }
             // Read with UTF8 encoding (verify creation)
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true, utf8Encoding))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true, Encoding.UTF8))
             {
                 Assert.Equal(comment, zip.Comment);
                 foreach (ZipArchiveEntry entry in zip.Entries)
@@ -471,7 +469,7 @@ namespace System.IO.Compression.Tests
                 }
             }
             // Update with UTF8 encoding
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true, utf8Encoding))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true, Encoding.UTF8))
             {
                 zip.Comment = updatedComment;
                 Assert.Equal(updatedComment, zip.Comment);
@@ -483,7 +481,7 @@ namespace System.IO.Compression.Tests
                 }
             }
             // Read with UTF8 encoding (verify update)
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false, utf8Encoding))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false, Encoding.UTF8))
             {
                 Assert.Equal(updatedComment, zip.Comment);
                 foreach (ZipArchiveEntry entry in zip.Entries)
