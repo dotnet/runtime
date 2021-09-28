@@ -388,7 +388,7 @@ namespace System.IO.Compression
                             }
                             else
                             {
-                                if (symbol < 0 || symbol >= ExtraLengthBits.Length)
+                                if ((uint)symbol >= ExtraLengthBits.Length)
                                 {
                                     throw new InvalidDataException(SR.GenericInvalidData);
                                 }

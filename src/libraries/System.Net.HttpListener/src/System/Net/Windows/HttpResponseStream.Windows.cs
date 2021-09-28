@@ -303,7 +303,7 @@ namespace System.Net
                 {
                     flags |= Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_DISCONNECT;
                 }
-                fixed (void* pBuffer = &ChunkTerminator[0])
+                fixed (void* pBuffer = &MemoryMarshal.GetReference(ChunkTerminator))
                 {
                     Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk = null;
                     if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)
