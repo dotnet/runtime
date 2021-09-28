@@ -24,7 +24,7 @@
     <Compile Include="FileInfo\IsReadOnly.cs" />
     <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileInfo\SymbolicLinks.cs" />
-    <Compile Include="FileStream\ctor_options_as.cs" />
+    <Compile Include="FileStream\ctor_options.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />
@@ -70,15 +70,14 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Unix.cs" />
-    <Compile Include="FileStream\ctor_options_as.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Interop\Unix\System.Native\Interop.Stat.cs" />
+    <Compile Include="FileStream\ctor_options.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Windows.cs" />
     <Compile Include="Directory\Delete.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
-    <Compile Include="FileStream\ctor_options_as.Windows.cs" />
+    <Compile Include="FileStream\ctor_options.Windows.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />
     <Compile Include="Junctions.Windows.cs" />
     <Compile Include="RandomAccess\Mixed.Windows.cs" />
@@ -103,7 +102,7 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Browser.cs" />
-    <Compile Include="FileStream\ctor_options_as.Browser.cs" />
+    <Compile Include="FileStream\ctor_options.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
