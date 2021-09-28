@@ -101,10 +101,8 @@ namespace System.Text.Json.Serialization.Converters
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
             writer.WriteStringValue(span.Slice(0, charsWritten));
-            return;
 #else
             writer.WriteStringValue(value.ToString());
-            return;
 #endif
         }
     }
