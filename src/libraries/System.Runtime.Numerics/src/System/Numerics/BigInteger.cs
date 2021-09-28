@@ -2071,7 +2071,6 @@ namespace System.Numerics
                     zd[^1] = 0xFFFFFFFF;
                 }
                 NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
-
             }
 
             return new BigInteger(zd, zdArray, negx);
