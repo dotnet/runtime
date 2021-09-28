@@ -304,6 +304,61 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void RoundTripConcreteDerivedClass()
+        {
+            ConcreteDerivedClass obj = new()
+            {
+                Abstract_Ignored_Property = -1,
+                Virtual_Ignored_Property = -1,
+                Abstract_IgnoredOnConcrete_Property = -1,
+                Virtual_IgnoredOnConcrete_Property = -1,
+                Abstract_IgnoredOnBase_Property = 1,
+                Virtual_IgnoredOnBase_Property = 2,
+                Abstract_Property = 3,
+                Virtual_Property = 4,
+            };
+
+            // Verify properties work as expected.
+            Assert.Equal(-1, obj.Abstract_Ignored_Property);
+            Assert.Equal(-1, obj.Virtual_Ignored_Property);
+            Assert.Equal(-1, obj.Abstract_IgnoredOnConcrete_Property);
+            Assert.Equal(-1, obj.Virtual_IgnoredOnConcrete_Property);
+            Assert.Equal(1, obj.Abstract_IgnoredOnBase_Property);
+            Assert.Equal(2, obj.Virtual_IgnoredOnBase_Property);
+            Assert.Equal(3, obj.Abstract_Property);
+            Assert.Equal(4, obj.Virtual_Property);
+
+            const string ExpectedJson = "{" +
+                "\"Abstract_IgnoredOnBase_Property\":1," +
+                "\"Virtual_IgnoredOnBase_Property\":2," +
+                "\"Abstract_Property\":3," +
+                "\"Virtual_Property\":4}";
+
+            string json = JsonSerializer.Serialize(obj, DefaultContext.ConcreteDerivedClass);
+            Assert.Equal(ExpectedJson, json);
+
+            const string Json = "{" +
+                "\"Abstract_Ignored_Property\":-1," +
+                "\"Virtual_Ignored_Property\":-1," +
+                "\"Abstract_IgnoredOnConcrete_Property\":-1," +
+                "\"Virtual_IgnoredOnConcrete_Property\":-1," +
+                "\"Abstract_IgnoredOnBase_Property\":1," +
+                "\"Virtual_IgnoredOnBase_Property\":2," +
+                "\"Abstract_Property\":3," +
+                "\"Virtual_Property\":4}";
+
+            obj = JsonSerializer.Deserialize<ConcreteDerivedClass>(Json);
+            Assert.Equal(0, obj.Abstract_Ignored_Property);
+            Assert.Equal(0, obj.Virtual_Ignored_Property);
+            Assert.Equal(0, obj.Abstract_IgnoredOnConcrete_Property);
+            Assert.Equal(0, obj.Virtual_IgnoredOnConcrete_Property);
+            Assert.Equal(1, obj.Abstract_IgnoredOnBase_Property);
+            Assert.Equal(2, obj.Virtual_IgnoredOnBase_Property);
+            Assert.Equal(3, obj.Abstract_Property);
+            Assert.Equal(4, obj.Virtual_Property);
+        }
+
+        [Fact]
         public virtual void BadCustomConverter_Class()
         {
             const string Json = "{\"MyInt\":142}";
