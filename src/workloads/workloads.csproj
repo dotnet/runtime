@@ -69,7 +69,7 @@
       <ComponentResources Include="runtimes-ios" Title=".NET iOS Runtimes"
                           Description=".NET runtime components for iOS execution."/>
       <ComponentResources Include="runtimes-tvos" Title=".NET tvOS Build Tools"
-                          Description=".NET runtime components for tvOS execution.."/>
+                          Description=".NET runtime components for tvOS execution."/>
       <ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
                           Description=".NET runtime components for Mac Catalyst execution."/>
 
