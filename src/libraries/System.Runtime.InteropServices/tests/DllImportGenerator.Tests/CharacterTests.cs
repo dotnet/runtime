@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 using Xunit;
@@ -32,6 +34,9 @@ namespace DllImportGenerator.IntegrationTests
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.I2)]
         public static partial char ReturnI2AsI2IgnoreCharSet([MarshalAs(UnmanagedType.I2)] char input);
+
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_reverse_buffer_ref", CharSet = CharSet.Unicode)]
+        public static partial void ReverseBuffer(ref char buffer, int len);
     }
 
     public class CharacterTests
@@ -70,7 +75,7 @@ namespace DllImportGenerator.IntegrationTests
 
             result = initial;
             NativeExportsNE.ReturnUIntAsUnicode_In(value, in result);
-            Assert.Equal(initial, result); // Should not be updated when using 'in'
+            Assert.Equal(expected, result); // Value is updated even when passed with 'in' keyword (matches built-in system)
         }
 
         [Theory]
@@ -80,6 +85,18 @@ namespace DllImportGenerator.IntegrationTests
             char expected = (char)expectedUInt;
             Assert.Equal(expected, NativeExportsNE.ReturnU2AsU2IgnoreCharSet(value));
             Assert.Equal(expected, NativeExportsNE.ReturnI2AsI2IgnoreCharSet(value));
+        }
+
+        [Fact]
+        public void ValidateRefCharAsBuffer()
+        {
+            char[] chars = CharacterMappings().Select(o => (char)o[0]).ToArray();
+            char[] expected = new char[chars.Length];
+            Array.Copy(chars, expected, chars.Length);
+            Array.Reverse(expected);
+
+            NativeExportsNE.ReverseBuffer(ref MemoryMarshal.GetArrayDataReference(chars), chars.Length);
+            Assert.Equal(expected, chars);
         }
     }
 }

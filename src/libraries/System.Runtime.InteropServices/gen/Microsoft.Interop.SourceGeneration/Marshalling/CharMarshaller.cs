@@ -22,16 +22,29 @@ namespace Microsoft.Interop
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
-            string identifier = context.GetIdentifiers(info).native;
-            if (info.IsByRef)
+            (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+            if (!info.IsByRef)
             {
+                // (ushort)<managedIdentifier>
                 return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(identifier)));
+                    CastExpression(
+                        AsNativeType(info),
+                        IdentifierName(managedIdentifier)));
+            }
+            else if (IsPinningPathSupported(info, context))
+            {
+                // (ushort*)<pinned>
+                return Argument(
+                    CastExpression(
+                        PointerType(AsNativeType(info)),
+                        IdentifierName(PinnedIdentifier(info.InstanceIdentifier))));
             }
 
-            return Argument(IdentifierName(identifier));
+            // &<nativeIdentifier>
+            return Argument(
+                PrefixUnaryExpression(
+                    SyntaxKind.AddressOfExpression,
+                    IdentifierName(nativeIdentifier)));
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -52,12 +65,36 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+
+            if (IsPinningPathSupported(info, context))
+            {
+                if (context.CurrentStage == StubCodeContext.Stage.Pin)
+                {
+                    // fixed (char* <pinned> = &<managed>)
+                    yield return FixedStatement(
+                        VariableDeclaration(
+                            PointerType(PredefinedType(Token(SyntaxKind.CharKeyword))),
+                            SingletonSeparatedList(
+                                VariableDeclarator(Identifier(PinnedIdentifier(info.InstanceIdentifier)))
+                                    .WithInitializer(EqualsValueClause(
+                                        PrefixUnaryExpression(
+                                            SyntaxKind.AddressOfExpression,
+                                            IdentifierName(Identifier(managedIdentifier)))
+                                    ))
+                            )
+                        ),
+                        EmptyStatement()
+                    );
+                }
+                yield break;
+            }
+
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.RefKind != RefKind.Out)
+                    if (info.IsByRef && info.RefKind != RefKind.Out)
                     {
                         yield return ExpressionStatement(
                             AssignmentExpression(
@@ -86,8 +123,20 @@ namespace Microsoft.Interop
             }
         }
 
-        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
+        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return info.IsManagedReturnPosition || (info.IsByRef && !context.SingleFrameSpansNativeContext);
+        }
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+
+        private bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext
+                && !info.IsManagedReturnPosition
+                && info.IsByRef;
+        }
+
+        private static string PinnedIdentifier(string identifier) => $"{identifier}__pinned";
     }
 }
