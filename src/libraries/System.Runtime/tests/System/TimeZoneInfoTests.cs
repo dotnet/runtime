@@ -2555,6 +2555,8 @@ namespace System.Tests
 
                 if (!hostInvariantMode)
                 {
+                    // If hostInvariantMode is false, means the child process should enable the globalization invariant mode.
+                    // We validate here that by trying to create a culture which should throws in such mode.
                     Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("en-US"));
                 }
 
