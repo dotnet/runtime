@@ -158,9 +158,9 @@ export function mono_wasm_call_function_on(request: CallRequest) {
 
     const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
 
-    const fn_body_template = `var fn = ${request.functionDeclaration}; return fn.apply (proxy, [${fn_args}]);`;
-    const fn_defn = new Function ('proxy', fn_body_template);
-    const fn_res = fn_defn (proxy);
+    const fn_body_template = `var fn = ${request.functionDeclaration}; return fn.apply(proxy, [${fn_args}]);`;
+    const fn_defn = new Function('proxy', fn_body_template);
+    const fn_res = fn_defn(proxy);
 
     if (fn_res === undefined)
         return { type: "undefined" };
