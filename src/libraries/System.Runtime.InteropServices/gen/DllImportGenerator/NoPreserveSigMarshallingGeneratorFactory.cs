@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Microsoft.Interop
 {
-    class NoPreserveSigMarshallingGeneratorFactory : IMarshallingGeneratorFactory
+    internal class NoPreserveSigMarshallingGeneratorFactory : IMarshallingGeneratorFactory
     {
         private static readonly HResultExceptionMarshaller HResultException = new HResultExceptionMarshaller();
         private readonly IMarshallingGeneratorFactory inner;

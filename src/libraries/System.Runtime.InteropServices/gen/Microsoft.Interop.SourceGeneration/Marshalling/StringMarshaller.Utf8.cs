@@ -103,9 +103,9 @@ namespace Microsoft.Interop
         }
 
         public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
-        
+
         public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
-        
+
         protected override ExpressionSyntax GenerateAllocationExpression(
             TypePositionInfo info,
             StubCodeContext context,

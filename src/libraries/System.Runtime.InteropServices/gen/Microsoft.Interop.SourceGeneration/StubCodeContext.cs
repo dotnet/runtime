@@ -51,7 +51,7 @@ namespace Microsoft.Interop
             /// Perform any cleanup required
             /// </summary>
             Cleanup,
-            
+
             /// <summary>
             /// Keep alive any managed objects that need to stay alive across the call.
             /// </summary>

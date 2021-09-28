@@ -17,8 +17,8 @@ namespace Microsoft.Interop.Analyzers
     public class GeneratedDllImportAnalyzer : DiagnosticAnalyzer
     {
         private const string Category = "Usage";
-        
-        public readonly static DiagnosticDescriptor GeneratedDllImportMissingModifiers =
+
+        public static readonly DiagnosticDescriptor GeneratedDllImportMissingModifiers =
             new DiagnosticDescriptor(
                 Ids.GeneratedDllImportMissingRequiredModifiers,
                 GetResourceString(nameof(Resources.GeneratedDllImportMissingModifiersTitle)),
@@ -28,7 +28,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.GeneratedDllImportMissingModifiersDescription)));
 
-        public readonly static DiagnosticDescriptor GeneratedDllImportContainingTypeMissingModifiers =
+        public static readonly DiagnosticDescriptor GeneratedDllImportContainingTypeMissingModifiers =
             new DiagnosticDescriptor(
                 Ids.GeneratedDllImportContaiingTypeMissingRequiredModifiers,
                 GetResourceString(nameof(Resources.GeneratedDllImportContainingTypeMissingModifiersTitle)),

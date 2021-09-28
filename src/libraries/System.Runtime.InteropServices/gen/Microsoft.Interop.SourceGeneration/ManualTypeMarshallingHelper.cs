@@ -139,7 +139,7 @@ namespace Microsoft.Interop
             return type
                 .GetMembers(NativeValueStoragePropertyName)
                 .OfType<IPropertySymbol>()
-                .Any(p => p is {IsStatic: false, GetMethod: not null, ReturnsByRef: false, ReturnsByRefReadonly: false } 
+                .Any(p => p is {IsStatic: false, GetMethod: not null, ReturnsByRef: false, ReturnsByRefReadonly: false }
                     && SymbolEqualityComparer.Default.Equals(p.Type, spanOfByte));
         }
     }

@@ -322,7 +322,7 @@ namespace Microsoft.Interop
             return NoMarshallingInfo.Instance;
         }
 
-        CountInfo CreateCountInfo(AttributeData marshalUsingData, ImmutableHashSet<string> inspectedElements)
+        private CountInfo CreateCountInfo(AttributeData marshalUsingData, ImmutableHashSet<string> inspectedElements)
         {
             int? constSize = null;
             string? elementName = null;
@@ -442,7 +442,7 @@ namespace Microsoft.Interop
             return null;
         }
 
-        MarshallingInfo CreateInfoFromMarshalAs(
+        private MarshallingInfo CreateInfoFromMarshalAs(
             ITypeSymbol type,
             AttributeData attrData,
             ImmutableHashSet<string> inspectedElements,
@@ -559,7 +559,7 @@ namespace Microsoft.Interop
                 ElementMarshallingInfo: elementMarshallingInfo);
         }
 
-        MarshallingInfo CreateNativeMarshallingInfo(
+        private MarshallingInfo CreateNativeMarshallingInfo(
             ITypeSymbol type,
             AttributeData attrData,
             bool isMarshalUsingAttribute,
@@ -695,7 +695,7 @@ namespace Microsoft.Interop
                 UseDefaultMarshalling: !isMarshalUsingAttribute);
         }
 
-        bool TryCreateTypeBasedMarshallingInfo(
+        private bool TryCreateTypeBasedMarshallingInfo(
             ITypeSymbol type,
             CountInfo parsedCountInfo,
             int indirectionLevel,

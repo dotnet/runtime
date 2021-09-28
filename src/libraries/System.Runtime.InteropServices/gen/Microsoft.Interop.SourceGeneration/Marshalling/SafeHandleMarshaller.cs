@@ -90,7 +90,7 @@ namespace Microsoft.Interop
                             .WithArgumentList(
                                 ArgumentList(
                                     SeparatedList(
-                                        new []{
+                                        new[]{
                                             Argument(
                                                 TypeOfExpression(
                                                     info.ManagedType.Syntax)),
@@ -151,7 +151,7 @@ namespace Microsoft.Interop
                                         .WithRefKindKeyword(Token(SyntaxKind.RefKeyword))))));
 
 
-                        ExpressionSyntax assignHandleToNativeExpression = 
+                        ExpressionSyntax assignHandleToNativeExpression =
                             AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                                 IdentifierName(nativeIdentifier),
                                 InvocationExpression(
@@ -179,7 +179,7 @@ namespace Microsoft.Interop
                                 ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal),
                                 IdentifierName("InitHandle")),
                             ArgumentList(SeparatedList(
-                                new []
+                                new[]
                                 {
                                     Argument(IdentifierName(newHandleObjectIdentifier)),
                                     Argument(IdentifierName(nativeIdentifier))
@@ -208,7 +208,7 @@ namespace Microsoft.Interop
                                         IdentifierName(managedIdentifier),
                                         IdentifierName(nameof(SafeHandle.DangerousRelease))),
                                     ArgumentList())));
-                                
+
                         // Do not unmarshal the handle if the value didn't change.
                         yield return IfStatement(
                             BinaryExpression(SyntaxKind.NotEqualsExpression,
@@ -241,7 +241,7 @@ namespace Microsoft.Interop
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
-        
+
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
     }
 }

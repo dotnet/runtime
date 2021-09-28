@@ -17,7 +17,7 @@ namespace Microsoft.Interop.Analyzers
     {
         private const string Category = "Interoperability";
 
-        public readonly static DiagnosticDescriptor ConvertToGeneratedDllImport =
+        public static readonly DiagnosticDescriptor ConvertToGeneratedDllImport =
             new DiagnosticDescriptor(
                 Ids.ConvertToGeneratedDllImport,
                 GetResourceString(nameof(Resources.ConvertToGeneratedDllImportTitle)),

@@ -35,7 +35,7 @@ namespace Microsoft.Interop
             if (windowsExpr.IsEquivalentTo(nonWindowsExpr))
                 return Argument(windowsExpr);
 
-            // OperatingSystem.IsWindows() ? << Windows code >> : << non-Windows code >> 
+            // OperatingSystem.IsWindows() ? << Windows code >> : << non-Windows code >>
             return Argument(
                 ConditionalExpression(
                     IsWindows,
@@ -88,10 +88,10 @@ namespace Microsoft.Interop
                     // any platform, it is done on every platform.
                     foreach (var s in this.windowsMarshaller.Generate(info, context))
                         yield return s;
-                    
+
                     foreach (var s in this.nonWindowsMarshaller.Generate(info, context))
                         yield return s;
-                    
+
                     break;
                 case StubCodeContext.Stage.Unmarshal:
                     if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
@@ -112,7 +112,7 @@ namespace Microsoft.Interop
         }
 
         public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
-        
+
         public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
 
         // This marshaller only uses the conditional allocaction base for setup and cleanup.

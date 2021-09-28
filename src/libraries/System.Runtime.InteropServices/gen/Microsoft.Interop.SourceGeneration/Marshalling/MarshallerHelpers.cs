@@ -139,7 +139,7 @@ namespace Microsoft.Interop
 
             // Now that we have initialized our map of edges and we have our list of nodes,
             // we'll use Khan's algorithm to calculate a topological sort of the elements.
-            // Algorithm adapted from A. B. Kahn. 1962. Topological sorting of large networks. Commun. ACM 5, 11 (Nov. 1962), 558–562. DOI:https://doi.org/10.1145/368996.369025
+            // Algorithm adapted from A. B. Kahn. 1962. Topological sorting of large networks. Commun. ACM 5, 11 (Nov. 1962), 558-562. DOI:https://doi.org/10.1145/368996.369025
 
             // L is the sorted list
             List<T> L = new(elements.Count);
@@ -245,7 +245,7 @@ namespace Microsoft.Interop
             {
                 string methodName = encoding switch
                 {
-                    CharEncoding.Utf8 => "StringToCoTaskMemUTF8", // Not in .NET Standard 2.0, so we use the hard-coded name 
+                    CharEncoding.Utf8 => "StringToCoTaskMemUTF8", // Not in .NET Standard 2.0, so we use the hard-coded name
                     CharEncoding.Utf16 => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemUni),
                     CharEncoding.Ansi => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemAnsi),
                     _ => throw new System.ArgumentOutOfRangeException(nameof(encoding))

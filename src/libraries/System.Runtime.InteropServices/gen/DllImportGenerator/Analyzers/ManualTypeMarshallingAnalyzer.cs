@@ -17,7 +17,7 @@ namespace Microsoft.Interop.Analyzers
     {
         private const string Category = "Usage";
 
-        public readonly static DiagnosticDescriptor BlittableTypeMustBeBlittableRule =
+        public static readonly DiagnosticDescriptor BlittableTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
                 Ids.BlittableTypeMustBeBlittable,
                 "BlittableTypeMustBeBlittable",
@@ -27,7 +27,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.BlittableTypeMustBeBlittableDescription)));
 
-        public readonly static DiagnosticDescriptor CannotHaveMultipleMarshallingAttributesRule =
+        public static readonly DiagnosticDescriptor CannotHaveMultipleMarshallingAttributesRule =
             new DiagnosticDescriptor(
                 Ids.CannotHaveMultipleMarshallingAttributes,
                 "CannotHaveMultipleMarshallingAttributes",
@@ -37,7 +37,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.CannotHaveMultipleMarshallingAttributesDescription)));
 
-        public readonly static DiagnosticDescriptor NativeTypeMustBeNonNullRule =
+        public static readonly DiagnosticDescriptor NativeTypeMustBeNonNullRule =
             new DiagnosticDescriptor(
                 Ids.NativeTypeMustBeNonNull,
                 "NativeTypeMustBeNonNull",
@@ -47,7 +47,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.NativeTypeMustBeNonNullDescription)));
 
-        public readonly static DiagnosticDescriptor NativeTypeMustBeBlittableRule =
+        public static readonly DiagnosticDescriptor NativeTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
                 Ids.NativeTypeMustBeBlittable,
                 "NativeTypeMustBeBlittable",
@@ -57,7 +57,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.BlittableTypeMustBeBlittableDescription)));
 
-        public readonly static DiagnosticDescriptor GetPinnableReferenceReturnTypeBlittableRule =
+        public static readonly DiagnosticDescriptor GetPinnableReferenceReturnTypeBlittableRule =
             new DiagnosticDescriptor(
                 Ids.GetPinnableReferenceReturnTypeBlittable,
                 "GetPinnableReferenceReturnTypeBlittable",
@@ -66,8 +66,8 @@ namespace Microsoft.Interop.Analyzers
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.GetPinnableReferenceReturnTypeBlittableDescription)));
-    
-        public readonly static DiagnosticDescriptor NativeTypeMustBePointerSizedRule =
+
+        public static readonly DiagnosticDescriptor NativeTypeMustBePointerSizedRule =
             new DiagnosticDescriptor(
                 Ids.NativeTypeMustBePointerSized,
                 "NativeTypeMustBePointerSized",
@@ -77,7 +77,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.NativeTypeMustBePointerSizedDescription)));
 
-        public readonly static DiagnosticDescriptor NativeTypeMustHaveRequiredShapeRule =
+        public static readonly DiagnosticDescriptor NativeTypeMustHaveRequiredShapeRule =
             new DiagnosticDescriptor(
                 Ids.NativeTypeMustHaveRequiredShape,
                 "NativeTypeMustHaveRequiredShape",
@@ -87,7 +87,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.NativeTypeMustHaveRequiredShapeDescription)));
 
-        public readonly static DiagnosticDescriptor CollectionNativeTypeMustHaveRequiredShapeRule =
+        public static readonly DiagnosticDescriptor CollectionNativeTypeMustHaveRequiredShapeRule =
             new DiagnosticDescriptor(
                 Ids.NativeTypeMustHaveRequiredShape,
                 "NativeTypeMustHaveRequiredShape",
@@ -97,7 +97,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeDescription)));
 
-        public readonly static DiagnosticDescriptor ValuePropertyMustHaveSetterRule =
+        public static readonly DiagnosticDescriptor ValuePropertyMustHaveSetterRule =
             new DiagnosticDescriptor(
                 Ids.ValuePropertyMustHaveSetter,
                 "ValuePropertyMustHaveSetter",
@@ -107,7 +107,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ValuePropertyMustHaveSetterDescription)));
 
-        public readonly static DiagnosticDescriptor ValuePropertyMustHaveGetterRule =
+        public static readonly DiagnosticDescriptor ValuePropertyMustHaveGetterRule =
             new DiagnosticDescriptor(
                 Ids.ValuePropertyMustHaveGetter,
                 "ValuePropertyMustHaveGetter",
@@ -117,7 +117,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ValuePropertyMustHaveGetterDescription)));
 
-        public readonly static DiagnosticDescriptor GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule =
+        public static readonly DiagnosticDescriptor GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
                 Ids.GetPinnableReferenceShouldSupportAllocatingMarshallingFallback,
                 "GetPinnableReferenceShouldSupportAllocatingMarshallingFallback",
@@ -127,7 +127,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription)));
 
-        public readonly static DiagnosticDescriptor StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule =
+        public static readonly DiagnosticDescriptor StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
                 Ids.StackallocMarshallingShouldSupportAllocatingMarshallingFallback,
                 "StackallocMarshallingShouldSupportAllocatingMarshallingFallback",
@@ -137,7 +137,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription)));
 
-        public readonly static DiagnosticDescriptor StackallocConstructorMustHaveStackBufferSizeConstantRule =
+        public static readonly DiagnosticDescriptor StackallocConstructorMustHaveStackBufferSizeConstantRule =
             new DiagnosticDescriptor(
                 Ids.StackallocConstructorMustHaveStackBufferSizeConstant,
                 "StackallocConstructorMustHaveStackBufferSizeConstant",
@@ -147,7 +147,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantDescription)));
 
-        public readonly static DiagnosticDescriptor RefValuePropertyUnsupportedRule =
+        public static readonly DiagnosticDescriptor RefValuePropertyUnsupportedRule =
             new DiagnosticDescriptor(
                 Ids.RefValuePropertyUnsupported,
                 "RefValuePropertyUnsupported",
@@ -157,7 +157,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.RefValuePropertyUnsupportedDescription)));
 
-        public readonly static DiagnosticDescriptor NativeGenericTypeMustBeClosedOrMatchArityRule =
+        public static readonly DiagnosticDescriptor NativeGenericTypeMustBeClosedOrMatchArityRule =
             new DiagnosticDescriptor(
                 Ids.NativeGenericTypeMustBeClosedOrMatchArity,
                 "NativeGenericTypeMustBeClosedOrMatchArity",
@@ -167,7 +167,7 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityDescription)));
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => 
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(
                 BlittableTypeMustBeBlittableRule,
                 CannotHaveMultipleMarshallingAttributesRule,
@@ -223,7 +223,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        class PerCompilationAnalyzer
+        private class PerCompilationAnalyzer
         {
             private readonly INamedTypeSymbol GeneratedMarshallingAttribute;
             private readonly INamedTypeSymbol BlittableTypeAttribute;
