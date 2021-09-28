@@ -334,11 +334,6 @@ inline BOOL PEImage::IsDll()
     }
 }
 
-inline BOOL PEImage::IsIbcOptimized()
-{
-    return false;
-}
-
 inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize)
 {
     WRAPPER_NO_CONTRACT;

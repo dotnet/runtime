@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // --------------------------------------------------------------------------------
-// PEFile.cpp
+// PEAssembly.cpp
 //
 
 // --------------------------------------------------------------------------------
@@ -28,23 +28,19 @@
 
 #ifndef DACCESS_COMPILE
 
-// ================================================================================
-// PEFile class - this is an abstract base class for PEAssembly
-// ================================================================================
-
 //-----------------------------------------------------------------------------------------------------
 // Catch attempts to load x64 assemblies on x86, etc.
 //-----------------------------------------------------------------------------------------------------
-static void ValidatePEFileMachineType(PEFile *peFile)
+static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    if (peFile->IsDynamic())
+    if (pPEAssembly->IsDynamic())
         return;    // PEFiles for ReflectionEmit assemblies don't cache the machine type.
 
     DWORD peKind;
     DWORD actualMachineType;
-    peFile->GetPEKindAndMachine(&peKind, &actualMachineType);
+    pPEAssembly->GetPEKindAndMachine(&peKind, &actualMachineType);
 
     if (actualMachineType == IMAGE_FILE_MACHINE_I386 && ((peKind & (peILonly | pe32BitRequired)) == peILonly))
         return;    // Image is marked CPU-agnostic.
@@ -63,10 +59,7 @@ static void ValidatePEFileMachineType(PEFile *peFile)
 
         // Image has required machine that doesn't match the CLR.
         StackSString name;
-        if (peFile->IsAssembly())
-            ((PEAssembly*)peFile)->GetDisplayName(name);
-        else
-            name = StackSString(SString::Utf8, peFile->GetSimpleName());
+        pPEAssembly->GetDisplayName(name);
 
         COMPlusThrow(kBadImageFormatException, IDS_CLASSLOAD_WRONGCPU, name.GetUnicode());
     }
@@ -74,7 +67,7 @@ static void ValidatePEFileMachineType(PEFile *peFile)
     return;   // If we got here, all is good.
 }
 
-void PEFile::LoadLibrary()
+void PEAssembly::LoadLibrary()
 {
     CONTRACT_VOID
     {
@@ -138,7 +131,7 @@ void PEFile::LoadLibrary()
     RETURN;
 }
 
-void PEFile::SetLoadedHMODULE(HMODULE hMod)
+void PEAssembly::SetLoadedHMODULE(HMODULE hMod)
 {
     CONTRACT_VOID
     {
@@ -159,7 +152,7 @@ void PEFile::SetLoadedHMODULE(HMODULE hMod)
 }
 
 /* static */
-void PEFile::DefineEmitScope(
+void PEAssembly::DefineEmitScope(
     GUID   iid,
     void **ppEmit)
 {
@@ -204,18 +197,18 @@ void PEFile::DefineEmitScope(
     IfFailThrow(pDispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, iid, (IUnknown **)ppEmit));
 
     RETURN;
-} // PEFile::DefineEmitScope
+} // PEAssembly::DefineEmitScope
 
 // ------------------------------------------------------------
 // Identity
 // ------------------------------------------------------------
 
-BOOL PEFile::Equals(PEFile *pFile)
+BOOL PEAssembly::Equals(PEAssembly *pPEAssembly)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pFile));
+        PRECONDITION(CheckPointer(pPEAssembly));
         GC_NOTRIGGER;
         NOTHROW;
         CANNOT_TAKE_LOCK;
@@ -224,36 +217,36 @@ BOOL PEFile::Equals(PEFile *pFile)
     CONTRACTL_END;
 
     // Same object is equal
-    if (pFile == this)
+    if (pPEAssembly == this)
         return TRUE;
 
     // Different host assemblies cannot be equal unless they are associated with the same host binder
     // It's ok if only one has a host binder because multiple threads can race to load the same assembly
     // and that may cause temporary candidate PEAssembly objects that never get bound to a host assembly
     // because another thread beats it; the losing thread will pick up the PEAssembly in the cache.
-    if (pFile->HasHostAssembly() && this->HasHostAssembly())
+    if (pPEAssembly->HasHostAssembly() && this->HasHostAssembly())
     {
-        AssemblyBinder* fileBinder = pFile->GetHostAssembly()->GetBinder();
+        AssemblyBinder* otherBinder = pPEAssembly->GetHostAssembly()->GetBinder();
         AssemblyBinder* thisBinder = this->GetHostAssembly()->GetBinder();
 
-        if (fileBinder != thisBinder || fileBinder == NULL)
+        if (otherBinder != thisBinder || otherBinder == NULL)
             return FALSE;
     }
 
     // Same identity is equal
-    if (m_identity != NULL && pFile->m_identity != NULL
-        && m_identity->Equals(pFile->m_identity))
+    if (m_identity != NULL && pPEAssembly->m_identity != NULL
+        && m_identity->Equals(pPEAssembly->m_identity))
         return TRUE;
 
     // Same image is equal
-    if (m_openedILimage != NULL && pFile->m_openedILimage != NULL
-        && m_openedILimage->Equals(pFile->m_openedILimage))
+    if (m_openedILimage != NULL && pPEAssembly->m_openedILimage != NULL
+        && m_openedILimage->Equals(pPEAssembly->m_openedILimage))
         return TRUE;
 
     return FALSE;
 }
 
-BOOL PEFile::Equals(PEImage *pImage)
+BOOL PEAssembly::Equals(PEImage *pImage)
 {
     CONTRACTL
     {
@@ -287,7 +280,7 @@ BOOL PEFile::Equals(PEImage *pImage)
 // Descriptive strings
 // ------------------------------------------------------------
 
-void PEFile::GetCodeBaseOrName(SString &result)
+void PEAssembly::GetCodeBaseOrName(SString &result)
 {
     CONTRACTL
     {
@@ -318,7 +311,7 @@ void PEFile::GetCodeBaseOrName(SString &result)
 
 
 
-CHECK PEFile::CheckLoaded()
+CHECK PEAssembly::CheckLoaded()
 {
     CONTRACT_CHECK
     {
@@ -339,7 +332,7 @@ CHECK PEFile::CheckLoaded()
 // Metadata access
 // ------------------------------------------------------------
 
-PTR_CVOID PEFile::GetMetadata(COUNT_T *pSize)
+PTR_CVOID PEAssembly::GetMetadata(COUNT_T *pSize)
 {
     CONTRACT(PTR_CVOID)
     {
@@ -368,7 +361,7 @@ PTR_CVOID PEFile::GetMetadata(COUNT_T *pSize)
 }
 #endif // #ifndef DACCESS_COMPILE
 
-PTR_CVOID PEFile::GetLoadedMetadata(COUNT_T *pSize)
+PTR_CVOID PEAssembly::GetLoadedMetadata(COUNT_T *pSize)
 {
     CONTRACT(PTR_CVOID)
     {
@@ -396,7 +389,7 @@ PTR_CVOID PEFile::GetLoadedMetadata(COUNT_T *pSize)
     }
 }
 
-TADDR PEFile::GetIL(RVA il)
+TADDR PEAssembly::GetIL(RVA il)
 {
     CONTRACT(TADDR)
     {
@@ -429,7 +422,7 @@ TADDR PEFile::GetIL(RVA il)
 
 #ifndef DACCESS_COMPILE
 
-void PEFile::OpenImporter()
+void PEAssembly::OpenImporter()
 {
     CONTRACTL
     {
@@ -454,7 +447,7 @@ void PEFile::OpenImporter()
         pIMDImport->Release();
 }
 
-void PEFile::ConvertMDInternalToReadWrite()
+void PEAssembly::ConvertMDInternalToReadWrite()
 {
     CONTRACTL
     {
@@ -522,7 +515,7 @@ void PEFile::ConvertMDInternalToReadWrite()
     }
 }
 
-void PEFile::OpenMDImport_Unsafe()
+void PEAssembly::OpenMDImport_Unsafe()
 {
     CONTRACTL
     {
@@ -553,7 +546,7 @@ void PEFile::OpenMDImport_Unsafe()
     m_pMDImport->AddRef();
 }
 
-void PEFile::OpenEmitter()
+void PEAssembly::OpenEmitter()
 {
     CONTRACTL
     {
@@ -579,7 +572,7 @@ void PEFile::OpenEmitter()
 }
 
 
-void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor)
+void PEAssembly::ReleaseMetadataInterfaces(BOOL bDestructor)
 {
     CONTRACTL
     {
@@ -628,7 +621,7 @@ void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor)
 // Resource access
 // ------------------------------------------------------------
 
-void PEFile::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *pbInMemoryResource)
+void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *pbInMemoryResource)
 {
     CONTRACTL
     {
@@ -663,7 +656,7 @@ void PEFile::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *pbInM
 // ------------------------------------------------------------
 
 PEAssembly *
-PEFile::LoadAssembly(
+PEAssembly::LoadAssembly(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pImport)
 {
@@ -696,10 +689,10 @@ PEFile::LoadAssembly(
 }
 
 
-BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
-                                 PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
-                                 LPCSTR *szFileName, DWORD *dwLocation,
-                                 BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly, AppDomain* pAppDomain)
+BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
+                             PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
+                             LPCSTR *szFileName, DWORD *dwLocation,
+                             BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly, AppDomain* pAppDomain)
 {
     CONTRACTL
     {
@@ -717,11 +710,11 @@ BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
     DWORD              dwOffset;
     mdManifestResource mdResource;
     Assembly*          pAssembly = NULL;
-    PEFile*            pPEFile = NULL;
+    PEAssembly*        pPEAssembly = NULL;
     ReleaseHolder<IMDInternalImport> pImport (GetMDImportWithRef());
     if (SUCCEEDED(pImport->FindManifestResourceByName(szName, &mdResource)))
     {
-        pPEFile = this;
+        pPEAssembly = this;
         IfFailThrow(pImport->GetManifestResourceProps(
             mdResource,
             NULL,           //&szName,
@@ -740,7 +733,7 @@ BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
             return FALSE;
 
         pDomainAssembly = pAssembly->GetDomainAssembly();
-        pPEFile = pDomainAssembly->GetFile();
+        pPEAssembly = pDomainAssembly->GetPEAssembly();
 
         if (FAILED(pAssembly->GetManifestImport()->FindManifestResourceByName(
             szName,
@@ -756,7 +749,7 @@ BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
 
             *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
         }
-        IfFailThrow(pPEFile->GetPersistentMDImport()->GetManifestResourceProps(
+        IfFailThrow(pPEAssembly->GetPersistentMDImport()->GetManifestResourceProps(
             mdResource,
             NULL,           //&szName,
             &mdLinkRef,
@@ -803,7 +796,7 @@ BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
                 return TRUE;
             }
 
-            pPEFile->GetEmbeddedResource(dwOffset, cbResource, pbInMemoryResource);
+            pPEAssembly->GetEmbeddedResource(dwOffset, cbResource, pbInMemoryResource);
 
             return TRUE;
         }
@@ -814,7 +807,7 @@ BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
     }
 }
 
-void PEFile::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
+void PEAssembly::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -831,7 +824,7 @@ void PEFile::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
     return;
 }
 
-ULONG PEFile::GetILImageTimeDateStamp()
+ULONG PEAssembly::GetILImageTimeDateStamp()
 {
     CONTRACTL
     {
@@ -846,12 +839,12 @@ ULONG PEFile::GetILImageTimeDateStamp()
 
 
 // ================================================================================
-// PEAssembly class - a PEFile which represents an assembly
+// PEAssembly class - a PEAssembly which represents an assembly
 // ================================================================================
 
 // Statics initialization.
 /* static */
-void PEFile::Attach()
+void PEAssembly::Attach()
 {
     STANDARD_VM_CONTRACT;
 }
@@ -860,11 +853,10 @@ void PEFile::Attach()
 PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
-                PEFile *creator,
+                PEAssembly *creator,
                 BOOL isSystem,
                 PEImage * pPEImageIL /*= NULL*/,
-                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/) :
-    PEFile()
+                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 {
     CONTRACTL
     {
@@ -962,7 +954,7 @@ PEAssembly::PEAssembly(
 #endif // !DACCESS_COMPILE
 
 
-PEAssembly *PEFile::Open(
+PEAssembly *PEAssembly::Open(
     PEAssembly *       pParent,
     PEImage *          pPEImageIL,
     BINDER_SPACE::Assembly * pHostAssembly)
@@ -972,7 +964,7 @@ PEAssembly *PEFile::Open(
     PEAssembly * pPEAssembly = new PEAssembly(
         nullptr,        // BindResult
         nullptr,        // IMetaDataEmit
-        pParent,        // PEFile creator
+        pParent,        // PEAssembly creator
         FALSE,          // isSystem
         pPEImageIL,
         pHostAssembly);
@@ -981,7 +973,7 @@ PEAssembly *PEFile::Open(
 }
 
 
-PEFile::~PEFile()
+PEAssembly::~PEAssembly()
 {
     CONTRACTL
     {
@@ -1012,7 +1004,7 @@ PEFile::~PEFile()
 }
 
 /* static */
-PEAssembly *PEFile::OpenSystem()
+PEAssembly *PEAssembly::OpenSystem()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1037,7 +1029,7 @@ PEAssembly *PEFile::OpenSystem()
 }
 
 /* static */
-PEAssembly *PEFile::DoOpenSystem()
+PEAssembly *PEAssembly::DoOpenSystem()
 {
     CONTRACT(PEAssembly *)
     {
@@ -1053,8 +1045,7 @@ PEAssembly *PEFile::DoOpenSystem()
     RETURN new PEAssembly(pBoundAssembly, NULL, NULL, TRUE);
 }
 
-PEAssembly* PEFile::Open(BINDER_SPACE::Assembly* pBindResult,
-                                   BOOL isSystem)
+PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult, BOOL isSystem)
 {
 
     return new PEAssembly(pBindResult,NULL,NULL,isSystem);
@@ -1062,7 +1053,7 @@ PEAssembly* PEFile::Open(BINDER_SPACE::Assembly* pBindResult,
 };
 
 /* static */
-PEAssembly *PEFile::Create(PEAssembly *pParentAssembly,
+PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
                                IMetaDataAssemblyEmit *pAssemblyEmit)
 {
     CONTRACT(PEAssembly *)
@@ -1078,8 +1069,7 @@ PEAssembly *PEFile::Create(PEAssembly *pParentAssembly,
     // we have.)
     SafeComHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    PEAssemblyHolder pFile(new PEAssembly(NULL, pEmit, pParentAssembly, FALSE));
-    RETURN pFile.Extract();
+    RETURN new PEAssembly(NULL, pEmit, pParentAssembly, FALSE);
 }
 
 
@@ -1095,7 +1085,7 @@ PEAssembly *PEFile::Create(PEAssembly *pParentAssembly,
 
 // Effective path is the path of nearest parent (creator) assembly which has a nonempty path.
 
-const SString &PEFile::GetEffectivePath()
+const SString &PEAssembly::GetEffectivePath()
 {
     CONTRACTL
     {
@@ -1106,26 +1096,26 @@ const SString &PEFile::GetEffectivePath()
     }
     CONTRACTL_END;
 
-    PEAssembly *pAssembly = (PEAssembly*)this;
+    PEAssembly* pPEAssembly = this;
 
-    while (pAssembly->m_identity == NULL
-           || pAssembly->m_identity->GetPath().IsEmpty())
+    while (pPEAssembly->m_identity == NULL
+           || pPEAssembly->m_identity->GetPath().IsEmpty())
     {
-        if (pAssembly->m_creator)
-            pAssembly = pAssembly->m_creator->GetAssembly();
+        if (pPEAssembly->m_creator)
+            pPEAssembly = pPEAssembly->m_creator->GetAssembly();
         else // Unmanaged exe which loads byte[]/IStream assemblies
             return SString::Empty();
     }
 
-    return pAssembly->m_identity->GetPath();
+    return pPEAssembly->m_identity->GetPath();
 }
 
 
 // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
-// Note this may be obtained from the parent PEFile if we don't have a path or fusion
+// Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
 // assembly.
 // Returns false if the assembly was loaded from a bundle, true otherwise
-BOOL PEFile::GetCodeBase(SString &result)
+BOOL PEAssembly::GetCodeBase(SString &result)
 {
     CONTRACTL
     {
@@ -1154,7 +1144,7 @@ BOOL PEFile::GetCodeBase(SString &result)
 }
 
 /* static */
-void PEFile::PathToUrl(SString &string)
+void PEAssembly::PathToUrl(SString &string)
 {
     CONTRACTL
     {
@@ -1195,7 +1185,7 @@ void PEFile::PathToUrl(SString &string)
     }
 }
 
-void PEFile::UrlToPath(SString &string)
+void PEAssembly::UrlToPath(SString &string)
 {
     CONTRACT_VOID
     {
@@ -1224,7 +1214,7 @@ void PEFile::UrlToPath(SString &string)
     RETURN;
 }
 
-BOOL PEFile::FindLastPathSeparator(const SString &path, SString::Iterator &i)
+BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
 {
 #ifdef TARGET_UNIX
     SString::Iterator slash = i;
@@ -1249,7 +1239,7 @@ BOOL PEFile::FindLastPathSeparator(const SString &path, SString::Iterator &i)
 // Metadata access
 // ------------------------------------------------------------
 
-HRESULT PEFile::GetVersion(USHORT *pMajor, USHORT *pMinor, USHORT *pBuild, USHORT *pRevision)
+HRESULT PEAssembly::GetVersion(USHORT *pMajor, USHORT *pMinor, USHORT *pBuild, USHORT *pRevision)
 {
     CONTRACTL
     {
@@ -1292,7 +1282,7 @@ HRESULT PEFile::GetVersion(USHORT *pMajor, USHORT *pMinor, USHORT *pBuild, USHOR
 
 
 
-void PEFile::EnsureImageOpened()
+void PEAssembly::EnsureImageOpened()
 {
     WRAPPER_NO_CONTRACT;
     if (IsDynamic())
@@ -1305,14 +1295,14 @@ void PEFile::EnsureImageOpened()
 
 #ifdef DACCESS_COMPILE
 
-void PEFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    // sizeof(PEFile) == 0xb8
+    // sizeof(PEAssembly) == 0xb8
     DAC_ENUM_VTHIS();
-    EMEM_OUT(("MEM: %p PEFile\n", dac_cast<TADDR>(this)));
+    EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
 
 #ifdef _DEBUG
     // Not a big deal if it's NULL or fails.
@@ -1344,7 +1334,7 @@ void PEFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 // It can return an empty if the name isn't available or the object isn't initialized
 // enough to get a name, but it mustn't crash.
 //-------------------------------------------------------------------------------
-LPCWSTR PEFile::GetPathForErrorMessages()
+LPCWSTR PEAssembly::GetPathForErrorMessages()
 {
     CONTRACTL
     {
@@ -1367,7 +1357,7 @@ LPCWSTR PEFile::GetPathForErrorMessages()
 
 
 #ifdef DACCESS_COMPILE
-TADDR PEFile::GetMDInternalRWAddress()
+TADDR PEAssembly::GetMDInternalRWAddress()
 {
     if (!m_MDImportIsRW_Debugger_Use_Only)
         return 0;
@@ -1390,8 +1380,8 @@ TADDR PEFile::GetMDInternalRWAddress()
 }
 #endif
 
-// Returns the AssemblyBinder* instance associated with the PEFile
-PTR_AssemblyBinder PEFile::GetAssemblyBinder()
+// Returns the AssemblyBinder* instance associated with the PEAssembly
+PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
 {
     LIMITED_METHOD_CONTRACT;
 

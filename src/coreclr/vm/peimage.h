@@ -198,7 +198,6 @@ public:
     WORD GetSubsystem();
     BOOL  IsFileLocked();
 
-    BOOL IsIbcOptimized();
     BOOL Has32BitNTHeaders();
 
     void VerifyIsAssembly();

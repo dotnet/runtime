@@ -2131,7 +2131,7 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
         // Yay!
         EE_THREAD_NOT_REQUIRED;
 
-        // PEFile::GetRWImporter and GetReadablePublicMetaDataInterface take locks
+        // PEAssembly::GetRWImporter and GetReadablePublicMetaDataInterface take locks
         CAN_TAKE_LOCK;
 
     }
@@ -3977,11 +3977,11 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     }
     CONTRACTL_END;
 
-    PEFile * pPEFile = pModule->GetFile();
-    if (pPEFile == NULL)
+    PEAssembly * pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly == NULL)
     {
         // Hopefully this should never happen; but just in case, don't try to determine the
-        // flags without a PEFile.
+        // flags without a PEAssembly.
         return 0;
     }
 
@@ -3997,14 +3997,14 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     }
 #endif
     // Not NGEN or ReadyToRun.
-    if (pPEFile->HasOpenedILimage())
+    if (pPEAssembly->HasOpenedILimage())
     {
-        PEImage * pILImage = pPEFile->GetOpenedILimage();
+        PEImage * pILImage = pPEAssembly->GetOpenedILimage();
         if (pILImage->IsFile())
         {
             dwRet |= COR_PRF_MODULE_DISK;
         }
-        if (pPEFile->GetLoadedIL()->IsFlat())
+        if (pPEAssembly->GetLoadedIL()->IsFlat())
         {
             dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
         }
@@ -4081,7 +4081,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
     EX_TRY
     {
 
-        PEFile * pFile = pModule->GetFile();
+        PEAssembly * pFile = pModule->GetPEAssembly();
 
         // Pick some safe defaults to begin with.
         if (ppBaseLoadAddress != NULL)
@@ -4204,7 +4204,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
         // but we might be able to lift that restriction and make this be
         // EE_THREAD_NOT_REQUIRED.
 
-        // PEFile::GetRWImporter & PEFile::GetEmitter &
+        // PEAssembly::GetRWImporter & PEAssembly::GetEmitter &
         // GetReadablePublicMetaDataInterface take locks
         CAN_TAKE_LOCK;
 
@@ -4286,7 +4286,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         // Yay!
         MODE_ANY;
 
-        // PEFile::CheckLoaded & Module::GetDynamicIL both take a lock
+        // PEAssembly::CheckLoaded & Module::GetDynamicIL both take a lock
         CAN_TAKE_LOCK;
 
     }
@@ -4324,9 +4324,9 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     IMDInternalImport *pImport = pModule->GetMDImport();
     _ASSERTE(pImport);
 
-    PEFile *pFile = pModule->GetFile();
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    if (!pFile->CheckLoaded())
+    if (!pPEAssembly->CheckLoaded())
         return (CORPROF_E_DATAINCOMPLETE);
 
     LPCBYTE pbMethod = NULL;
@@ -4341,7 +4341,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         IfFailRet(pImport->GetMethodImplProps(methodId, &RVA, &dwImplFlags));
 
         // Check to see if the method has associated IL
-        if ((RVA == 0 && !pFile->IsDynamic()) || !(IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || IsMiInternalCall(dwImplFlags)))
+        if ((RVA == 0 && !pPEAssembly->IsDynamic()) || !(IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || IsMiInternalCall(dwImplFlags)))
         {
             return (CORPROF_E_FUNCTION_NOT_IL);
         }
@@ -4436,7 +4436,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
     Module * pModule = (Module *) moduleId;
 
     if (pModule->IsBeingUnloaded() ||
-        !pModule->GetFile()->CheckLoaded())
+        !pModule->GetPEAssembly()->CheckLoaded())
     {
         return (CORPROF_E_DATAINCOMPLETE);
     }
@@ -4459,7 +4459,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
 {
     CONTRACTL
     {
-        // PEFile::GetEmitter, Module::SetDynamicIL all throw
+        // PEAssembly::GetEmitter, Module::SetDynamicIL all throw
         THROWS;
 
         // Locks are taken (see CAN_TAKE_LOCK below), which may cause mode switch to
@@ -4469,7 +4469,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
         // Yay!
         MODE_ANY;
 
-        // Module::SetDynamicIL & PEFile::GetEmitter take locks
+        // Module::SetDynamicIL & PEAssembly::GetEmitter take locks
         CAN_TAKE_LOCK;
 
     }

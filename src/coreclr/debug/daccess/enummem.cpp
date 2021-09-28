@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// The .NET Foundation licenses this assembly to you under the MIT license.
 //*****************************************************************************
 // File: enummem.cpp
 //
@@ -67,7 +67,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
     ProcessModIter modIter;
     Module* modDef = NULL;
     HRESULT status = S_OK;
-    PEFile  *file;
+    PEAssembly  *assembly;
     TADDR pStartAddr = 0;
     ULONG32 ulSize = 0;
     ULONG32 ulSizeBlock;
@@ -84,7 +84,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
             EX_TRY
             {
                 ulSize = 0;
-                file = modDef->GetFile();
+                assembly = modDef->GetPEAssembly();
 
                 // We want to save any in-memory images.  These show up like mapped files
                 // and so would not be in a heap dump by default.  Technically it's not clear we
@@ -92,13 +92,13 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                 // after-the-fact. But in-memory modules may be harder to track down at debug time
                 // and people may have come to rely on this - so we'll include them for now.
                 if (
-                    file->GetPath().IsEmpty() && // is in-memory
-                    file->HasMetadata() &&       // skip resource assemblies
-                    file->IsLoaded() &&     // skip files not yet loaded
-                    !file->IsDynamic())          // skip dynamic (GetLoadedIL asserts anyway)
+                    assembly->GetPath().IsEmpty() && // is in-memory
+                    assembly->HasMetadata() &&       // skip resource assemblies
+                    assembly->IsLoaded() &&     // skip files not yet loaded
+                    !assembly->IsDynamic())          // skip dynamic (GetLoadedIL asserts anyway)
                 {
-                    pStartAddr = PTR_TO_TADDR(file->GetLoadedIL()->GetBase());
-                    ulSize = file->GetLoadedIL()->GetSize();
+                    pStartAddr = PTR_TO_TADDR(assembly->GetLoadedIL()->GetBase());
+                    ulSize = assembly->GetLoadedIL()->GetSize();
                 }
 
                 // memory are mapped in in GetOsPageSize() size.
@@ -609,7 +609,7 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
     Module*         modDef;
     TADDR           base;
     ULONG32         length;
-    PEFile          *file;
+    PEAssembly*     assembly;
     TSIZE_T         cbMemoryReported = m_cbMemoryReported;
 
     //
@@ -635,8 +635,8 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
                 // To enable a debugger to check on whether a module is an NI or IL image, they need
                 // the DOS header, PE headers, and IMAGE_COR20_HEADER for the Flags member.
                 // We expose no API today to find this out.
-                PTR_PEFile pPEFile = modDef->GetFile();
-                PEImage * pILImage = pPEFile->GetILimage();
+                PTR_PEAssembly pPEAssembly = modDef->GetPEAssembly();
+                PEImage * pILImage = pPEAssembly->GetILimage();
 
                 // Implicitly gets the COR header.
                 if ((pILImage) && (pILImage->HasLoadedLayout()))
@@ -649,9 +649,9 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
 
             EX_TRY
             {
-                file = modDef->GetFile();
-                base = PTR_TO_TADDR(file->GetLoadedImageContents(&length));
-                file->EnumMemoryRegions(flags);
+                assembly = modDef->GetPEAssembly();
+                base = PTR_TO_TADDR(assembly->GetLoadedImageContents(&length));
+                assembly->EnumMemoryRegions(flags);
             }
             EX_CATCH
             {

@@ -334,7 +334,7 @@ void Module::NotifyEtwLoadFinished(HRESULT hr)
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-Module::Module(Assembly *pAssembly, mdFile moduleRef, PEFile *file)
+Module::Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly)
 {
     CONTRACTL
     {
@@ -348,13 +348,13 @@ Module::Module(Assembly *pAssembly, mdFile moduleRef, PEFile *file)
 
     m_pAssembly = pAssembly;
     m_moduleRef = moduleRef;
-    m_file      = file;
+    m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
 
     // Memory allocated on LoaderHeap is zero-filled. Spot-check it here.
     _ASSERTE(m_pBinder == NULL);
 
-    file->AddRef();
+    pPEAssembly->AddRef();
 }
 
 void Module::InitializeForProfiling()
@@ -454,7 +454,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
     CONTRACTL_END;
 
-    m_pSimpleName = m_file->GetSimpleName();
+    m_pSimpleName = m_pPEAssembly->GetSimpleName();
 
     m_Crst.Init(CrstModule);
     m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -494,7 +494,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         {
             // For composite images, manifest metadata gets loaded as part of the native image
             COUNT_T cMeta = 0;
-            if (GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
+            if (GetPEAssembly()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
             {
                 // Load the native assembly import
                 GetNativeAssemblyImport(TRUE /* loadAllowed */);
@@ -735,16 +735,16 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 
 #ifndef DACCESS_COMPILE
 /* static */
-Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEFile *file, AllocMemTracker *pamTracker)
+Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker)
 {
     CONTRACT(Module *)
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
-        PRECONDITION(CheckPointer(file));
-        PRECONDITION(!IsNilToken(moduleRef) || file->IsAssembly());
+        PRECONDITION(CheckPointer(pPEAssembly));
+        PRECONDITION(!IsNilToken(moduleRef) || pPEAssembly->IsAssembly());
         POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->GetFile() == file);
+        POSTCONDITION(RETVAL->GetPEAssembly() == pPEAssembly);
     }
     CONTRACT_END;
 
@@ -755,19 +755,19 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEFile *file, Allo
     // Create the module
 
 #ifdef EnC_SUPPORTED
-    if (IsEditAndContinueCapable(pAssembly, file))
+    if (IsEditAndContinueCapable(pAssembly, pPEAssembly))
     {
         // if file is EnCCapable, always create an EnC-module, but EnC won't necessarily be enabled.
         // Debugger enables this by calling SetJITCompilerFlags on LoadModule callback.
 
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(EditAndContinueModule))));
-        pModule = new (pMemory) EditAndContinueModule(pAssembly, moduleRef, file);
+        pModule = new (pMemory) EditAndContinueModule(pAssembly, moduleRef, pPEAssembly);
     }
     else
 #endif // EnC_SUPPORTED
     {
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(Module))));
-        pModule = new (pMemory) Module(pAssembly, moduleRef, file);
+        pModule = new (pMemory) Module(pAssembly, moduleRef, pPEAssembly);
     }
 
     PREFIX_ASSUME(pModule != NULL);
@@ -941,7 +941,7 @@ void Module::Destruct()
         delete m_debuggerSpecificData.m_pILOffsetMappingTable;
     }
 
-    m_file->Release();
+    m_pPEAssembly->Release();
 
     // If this module was loaded as domain-specific, then
     // we must free its ModuleIndex so that it can be reused
@@ -1020,7 +1020,7 @@ MethodTable *Module::GetGlobalMethodTable()
 #endif // !DACCESS_COMPILE
 
 /*static*/
-BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file)
+BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembly)
 {
     CONTRACTL
         {
@@ -1031,12 +1031,12 @@ BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file)
         }
     CONTRACTL_END;
 
-    _ASSERTE(pAssembly != NULL && file != NULL);
+    _ASSERTE(pAssembly != NULL && pPEAssembly != NULL);
 
     // Some modules are never EnC-capable
     return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
-              file->IsSystem() ||
-              file->IsDynamic());
+              pPEAssembly->IsSystem() ||
+              pPEAssembly->IsDynamic());
 }
 
 BOOL Module::IsManifest()
@@ -2375,7 +2375,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
     {
         // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
         COUNT_T cMeta=0;
-        const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
+        const void* pMeta = GetPEAssembly()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
         if (pMeta == NULL)
         {
             return FALSE;
@@ -2540,7 +2540,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         // Determine whether we should be looking in memory for the symbols (case 2)
         bool fInMemorySymbols = GetInMemorySymbolStream();
-        if( !fInMemorySymbols && m_file->GetPath().IsEmpty() )
+        if( !fInMemorySymbols && m_pPEAssembly->GetPath().IsEmpty() )
         {
             // Case 3.  We don't have a module path or an in memory symbol stream,
             // so there is no-where to try and get symbols from.
@@ -2625,7 +2625,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         else
         {
             // The assembly is on disk, so try and load symbols based on the path to the assembly (case 1)
-            const SString &path = m_file->GetPath();
+            const SString &path = m_pPEAssembly->GetPath();
 
             // Call Fusion to ensure that any PDB's are shadow copied before
             // trying to get a symbol reader. This has to be done once per
@@ -2949,7 +2949,7 @@ TADDR Module::GetIL(DWORD target)
     if (target == 0)
         return NULL;
 
-    return m_file->GetIL(target);
+    return m_pPEAssembly->GetIL(target);
 }
 
 PTR_VOID Module::GetRvaField(DWORD rva)
@@ -2957,7 +2957,7 @@ PTR_VOID Module::GetRvaField(DWORD rva)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return m_file->GetRvaField(rva);
+    return m_pPEAssembly->GetRvaField(rva);
 }
 
 #ifndef DACCESS_COMPILE
@@ -2966,7 +2966,7 @@ CHECK Module::CheckRvaField(RVA field)
 {
     WRAPPER_NO_CONTRACT;
     if (!IsReflection())
-        CHECK(m_file->CheckRvaField(field));
+        CHECK(m_pPEAssembly->CheckRvaField(field));
     CHECK_OK;
 }
 
@@ -2980,7 +2980,7 @@ CHECK Module::CheckRvaField(RVA field, COUNT_T size)
     CONTRACTL_END;
 
     if (!IsReflection())
-        CHECK(m_file->CheckRvaField(field, size));
+        CHECK(m_pPEAssembly->CheckRvaField(field, size));
     CHECK_OK;
 }
 
@@ -2990,28 +2990,28 @@ BOOL Module::HasTls()
 {
     WRAPPER_NO_CONTRACT;
 
-    return m_file->HasTls();
+    return m_pPEAssembly->HasTls();
 }
 
 BOOL Module::IsRvaFieldTls(DWORD rva)
 {
     WRAPPER_NO_CONTRACT;
 
-    return m_file->IsRvaFieldTls(rva);
+    return m_pPEAssembly->IsRvaFieldTls(rva);
 }
 
 UINT32 Module::GetFieldTlsOffset(DWORD rva)
 {
     WRAPPER_NO_CONTRACT;
 
-    return m_file->GetFieldTlsOffset(rva);
+    return m_pPEAssembly->GetFieldTlsOffset(rva);
 }
 
 UINT32 Module::GetTlsIndex()
 {
     WRAPPER_NO_CONTRACT;
 
-    return m_file->GetTlsIndex();
+    return m_pPEAssembly->GetTlsIndex();
 }
 
 
@@ -3039,7 +3039,7 @@ BOOL Module::IsSigInIL(PCCOR_SIGNATURE signature)
     }
     CONTRACTL_END;
 
-    return m_file->IsPtrInILImage(signature);
+    return m_pPEAssembly->IsPtrInILImage(signature);
 }
 
 void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb)
@@ -3144,7 +3144,7 @@ mdToken Module::GetEntryPointToken()
 {
     WRAPPER_NO_CONTRACT;
 
-    return m_file->GetEntryPointToken();
+    return m_pPEAssembly->GetEntryPointToken();
 }
 
 BYTE *Module::GetProfilerBase()
@@ -3157,13 +3157,13 @@ BYTE *Module::GetProfilerBase()
     }
     CONTRACT_END;
 
-    if (m_file == NULL)  // I'd rather assert this is not the case...
+    if (m_pPEAssembly == NULL)  // I'd rather assert this is not the case...
     {
         RETURN NULL;
     }
-    else if (m_file->IsLoaded())
+    else if (m_pPEAssembly->IsLoaded())
     {
-        RETURN  (BYTE*)(m_file->GetLoadedIL()->GetBase());
+        RETURN  (BYTE*)(m_pPEAssembly->GetLoadedIL()->GetBase());
     }
     else
     {
@@ -3375,7 +3375,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
     }
 
     {
-        PEAssemblyHolder pFile = GetDomainAssembly()->GetFile()->LoadAssembly(
+        PEAssemblyHolder pPEAssembly = GetDomainAssembly()->GetPEAssembly()->LoadAssembly(
                 kAssemblyRef,
                 NULL);
         AssemblySpec spec;
@@ -3383,12 +3383,12 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
-        AssemblyBinder *pBinder = pFile->GetAssemblyBinder();
+        AssemblyBinder *pBinder = pPEAssembly->GetAssemblyBinder();
         if (pBinder != NULL)
         {
             spec.SetBinder(pBinder);
         }
-        pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pFile, FILE_LOADED);
+        pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
     }
 
     if (pDomainAssembly != NULL)
@@ -3396,7 +3396,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
         _ASSERTE(
             pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
         if (pDomainAssembly->GetCurrentAssembly() != NULL)
         {
@@ -4068,8 +4068,8 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, in
     if (flags & ATTACH_MODULE_LOAD)
     {
         g_pDebugInterface->LoadModule(this,
-                                      m_file->GetPath(),
-                                      m_file->GetPath().GetCount(),
+                                      m_pPEAssembly->GetPath(),
+                                      m_pPEAssembly->GetPath().GetCount(),
                                       GetAssembly(),
                                       pDomain,
                                       pDomainFile,
@@ -4125,9 +4125,9 @@ using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYT
 static HMODULE GetIJWHostForModule(Module* module)
 {
 #if !defined(TARGET_UNIX)
-    PEDecoder* pe = module->GetFile()->GetLoadedIL();
+    PEDecoder* pe = module->GetPEAssembly()->GetLoadedIL();
 
-    BYTE* baseAddress = (BYTE*)module->GetFile()->GetIJWBase();
+    BYTE* baseAddress = (BYTE*)module->GetPEAssembly()->GetIJWBase();
 
     IMAGE_IMPORT_DESCRIPTOR* importDescriptor = (IMAGE_IMPORT_DESCRIPTOR*)pe->GetDirectoryData(pe->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT));
 
@@ -4243,7 +4243,7 @@ void Module::FixupVTables()
     // If we've already fixed up, or this is not an IJW module, just return.
     // NOTE: This relies on ILOnly files not having fixups. If this changes,
     //       we need to change this conditional.
-    if (IsIJWFixedUp() || m_file->IsILOnly()) {
+    if (IsIJWFixedUp() || m_pPEAssembly->IsILOnly()) {
         return;
     }
 
@@ -4259,11 +4259,11 @@ void Module::FixupVTables()
         GetTokenForVTableEntryCallback = GetTokenForVTableEntry;
     }
 
-    HINSTANCE hInstThis = GetFile()->GetIJWBase();
+    HINSTANCE hInstThis = GetPEAssembly()->GetIJWBase();
 
     // Get vtable fixup data
     COUNT_T cFixupRecords;
-    IMAGE_COR_VTABLEFIXUP *pFixupTable = m_file->GetVTableFixups(&cFixupRecords);
+    IMAGE_COR_VTABLEFIXUP *pFixupTable = m_pPEAssembly->GetVTableFixups(&cFixupRecords);
 
     // No records then return
     if (cFixupRecords == 0) {
@@ -4271,7 +4271,7 @@ void Module::FixupVTables()
     }
 
     // Now, we need to take a lock to serialize fixup.
-    PEImage::IJWFixupData *pData = PEImage::GetIJWData(m_file->GetIJWBase());
+    PEImage::IJWFixupData *pData = PEImage::GetIJWData(m_pPEAssembly->GetIJWBase());
 
     // If it's already been fixed (in some other appdomain), record the fact and return
     if (pData->IsFixedUp()) {
@@ -4338,7 +4338,7 @@ void Module::FixupVTables()
                     (pFixupTable[iFixup].Type == (COR_VTABLE_PTRSIZED | COR_VTABLE_FROM_UNMANAGED)) ||
                     (pFixupTable[iFixup].Type == (COR_VTABLE_PTRSIZED | COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN)))
                 {
-                    const BYTE** pPointers = (const BYTE **)m_file->GetVTable(pFixupTable[iFixup].RVA);
+                    const BYTE** pPointers = (const BYTE **)m_pPEAssembly->GetVTable(pFixupTable[iFixup].RVA);
                     for (int iMethod = 0; iMethod < pFixupTable[iFixup].Count; iMethod++)
                     {
                         if (pData->IsMethodFixedUp(iFixup, iMethod))
@@ -4422,7 +4422,7 @@ void Module::FixupVTables()
                 continue;
 
             const BYTE** pPointers = (const BYTE **)
-                m_file->GetVTable(pFixupTable[iFixup].RVA);
+                m_pPEAssembly->GetVTable(pFixupTable[iFixup].RVA);
 
             // Vtables can be 32 or 64 bit.
             if (pFixupTable[iFixup].Type == COR_VTABLE_PTRSIZED)
@@ -4513,7 +4513,7 @@ LoaderHeap *Module::GetDllThunkHeap()
         MODE_ANY;
     }
     CONTRACTL_END;
-    return PEImage::GetDllThunkHeap(GetFile()->GetIJWBase());
+    return PEImage::GetDllThunkHeap(GetPEAssembly()->GetIJWBase());
 
 }
 
@@ -4618,7 +4618,7 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
     }
     CONTRACT_END;
 
-    RETURN GetFile()->GetOpenedILimage()->GetNativeMDImport(loadAllowed);
+    RETURN GetPEAssembly()->GetOpenedILimage()->GetNativeMDImport(loadAllowed);
 }
 
 BYTE* Module::GetNativeFixupBlobData(RVA rva)
@@ -4887,7 +4887,7 @@ HANDLE Module::OpenMethodProfileDataLogFile(GUID mvid)
     HANDLE profileDataFile = INVALID_HANDLE_VALUE;
 
     SString path;
-    LPCWSTR assemblyPath = m_file->GetPath();
+    LPCWSTR assemblyPath = m_pPEAssembly->GetPath();
     LPCWSTR ibcDir = g_pConfig->GetZapBBInstrDir();     // should we put the ibc data into a particular directory?
     if (ibcDir == 0) {
         path.Set(assemblyPath);                         // no, then put it beside the IL dll
@@ -6944,14 +6944,14 @@ idMethodSpec Module::LogInstantiatedMethod(const MethodDesc * md, ULONG flagNum)
 // ===========================================================================
 
 /* static */
-ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName)
+ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACT(ReflectionModule *)
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
-        PRECONDITION(CheckPointer(pFile));
-        PRECONDITION(pFile->IsDynamic());
+        PRECONDITION(CheckPointer(pPEAssembly));
+        PRECONDITION(pPEAssembly->IsDynamic());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -6959,14 +6959,14 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, A
     // Hoist CONTRACT into separate routine because of EX incompatibility
 
     mdFile token;
-    _ASSERTE(pFile->IsAssembly());
+    _ASSERTE(pPEAssembly->IsAssembly());
     token = mdFileNil;
 
     // Initial memory block for Modules must be zero-initialized (to make it harder
     // to introduce Destruct crashes arising from OOM's during initialization.)
 
     void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ReflectionModule))));
-    ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, token, pFile));
+    ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, token, pPEAssembly));
 
     pModule->DoInit(pamTracker, szName);
 
@@ -6979,8 +6979,8 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, A
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pFile)
-  : Module(pAssembly, token, pFile)
+ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly)
+  : Module(pAssembly, token, pPEAssembly)
 {
     CONTRACTL
     {
@@ -7523,9 +7523,9 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         m_ModuleID->EnumMemoryRegions(flags);
     }
 
-    if (m_file.IsValid())
+    if (m_pPEAssembly.IsValid())
     {
-        m_file->EnumMemoryRegions(flags);
+        m_pPEAssembly->EnumMemoryRegions(flags);
     }
     if (m_pAssembly.IsValid())
     {
@@ -7678,11 +7678,11 @@ LPCWSTR Module::GetPathForErrorMessages()
     }
     CONTRACTL_END
 
-    PEFile *pFile = GetFile();
+    PEAssembly *pPEAssembly = GetPEAssembly();
 
-    if (pFile)
+    if (pPEAssembly)
     {
-        return pFile->GetPathForErrorMessages();
+        return pPEAssembly->GetPathForErrorMessages();
     }
     else
     {

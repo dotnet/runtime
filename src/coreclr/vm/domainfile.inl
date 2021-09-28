@@ -59,19 +59,19 @@ inline Assembly* DomainAssembly::GetAssembly()
 }
 
 #ifndef DACCESS_COMPILE
-inline void DomainFile::UpdatePEFileWorker(PTR_PEFile pFile)
+inline void DomainFile::UpdatePEFileWorker(PTR_PEAssembly pFile)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(CheckPointer(pFile));
-    if (pFile==m_pFile)
+    if (pFile==m_pPEAssembly)
         return;
-    _ASSERTE(m_pOriginalFile==NULL);
-    m_pOriginalFile=m_pFile;
+    _ASSERTE(m_pOriginalPEAssembly==NULL);
+    m_pOriginalPEAssembly=m_pPEAssembly;
     pFile->AddRef();
-    m_pFile=pFile;
+    m_pPEAssembly=pFile;
 }
 
-inline void DomainAssembly::UpdatePEFile(PTR_PEFile pFile)
+inline void DomainAssembly::UpdatePEFile(PTR_PEAssembly pFile)
 {
     CONTRACTL
     {
@@ -90,7 +90,7 @@ inline void DomainAssembly::UpdatePEFile(PTR_PEFile pFile)
 inline ULONG DomainAssembly::HashIdentity()
 {
     WRAPPER_NO_CONTRACT;
-    return GetFile()->HashIdentity();
+    return GetPEAssebmly()->HashIdentity();
 }
 
 inline BOOL DomainAssembly::IsCollectible()

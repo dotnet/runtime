@@ -255,11 +255,11 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
     // GetMVID can throw exception
     EX_TRY
     {
-        PEFile * pFile = pModule->GetFile();
+        PEAssembly * pPEAssembly = pModule->GetPEAssembly();
 
-        if (pFile != NULL)
+        if (pPEAssembly != NULL)
         {
-            PEAssembly * pAsm = pFile->GetAssembly();
+            PEAssembly * pAsm = pPEAssembly->GetAssembly();
 
             if (pAsm != NULL)
             {

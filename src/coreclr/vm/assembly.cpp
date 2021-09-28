@@ -75,12 +75,12 @@ void Assembly::Initialize()
 // It cannot do any allocations or operations that might fail. Those operations should be done
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
-Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
+Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
     m_pDomain(pDomain),
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
     m_pManifest(NULL),
-    m_pManifestFile(clr::SafeAddRef(pFile)),
+    m_pManifestFile(clr::SafeAddRef(pPEAssembly)),
     m_pFriendAssemblyDescriptor(NULL),
     m_isDynamic(false),
 #ifdef FEATURE_COLLECTIBLE_TYPES
@@ -164,7 +164,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     if (IsCollectible())
     {
         COUNT_T size;
-        BYTE *start = (BYTE*)m_pManifest->GetFile()->GetLoadedImageContents(&size);
+        BYTE *start = (BYTE*)m_pManifest->GetPEAssembly()->GetLoadedImageContents(&size);
         if (start != NULL)
         {
             GCX_COOP();
@@ -381,14 +381,14 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
     // Set up the assembly manifest metadata
     // When we create dynamic assembly, we always use a working copy of IMetaDataAssemblyEmit
     // to store temporary runtime assembly information. This is to preserve the invariant that
-    // an assembly must have a PEFile with proper metadata.
+    // an assembly must have a PEAssembly with proper metadata.
     // This working copy of IMetaDataAssemblyEmit will store every AssemblyRef as a simple name
     // reference as we must have an instance of Assembly(can be dynamic assembly) before we can
     // add such a reference. Also because the referenced assembly if dynamic strong name, it may
     // not be ready to be hashed!
 
     SafeComHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
-    PEFile::DefineEmitScope(
+    PEAssembly::DefineEmitScope(
         IID_IMetaDataAssemblyEmit,
         &pAssemblyEmit);
 
@@ -477,7 +477,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
             // and will have a fallback load context binder associated with it.
 
             // There is always a manifest file - wehther working with static or dynamic assemblies.
-            PEFile* pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
+            PEAssembly* pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
             _ASSERTE(pCallerAssemblyManifestFile != NULL);
 
             if (!pCallerAssemblyManifestFile->IsDynamic())
@@ -1124,7 +1124,7 @@ void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTrac
     module->SetDebuggerInfoBits(GetDebuggerInfoBits());
 
     LOG((LF_CORDB, LL_INFO10, "Module %s: bits=0x%x\n",
-         module->GetFile()->GetSimpleName(),
+         module->GetPEAssembly()->GetSimpleName(),
          module->GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
 

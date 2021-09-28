@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // --------------------------------------------------------------------------------
-// PEFile.h
+// PEAssembly.h
 //
 
 // --------------------------------------------------------------------------------
@@ -41,7 +41,6 @@
 class Module;
 class EditAndContinueModule;
 
-class PEFile;
 class PEAssembly;
 class SimpleRWLock;
 
@@ -52,16 +51,16 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 // --------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------
-// A PEFile is an input to the CLR loader.  It is produced as a result of
+// A PEAssembly is an input to the CLR loader.  It is produced as a result of
 // binding, usually through fusion (although there are a few less common methods to
 // obtain one which do not go through fusion, e.g. IJW loads)
 //
-// Although a PEFile is usually a disk based PE file (hence the name), it is not
+// Although a PEAssembly is usually a disk based PE file, it is not
 // always the case. Thus it is a conscious decision to not export access to the PE
 // file directly; rather the specific information required should be provided via
 // individual query API.
 //
-// There are multiple "flavors" of PEFiles:
+// There are multiple "flavors" of PEAssemblies:
 //
 // 1. HMODULE - these PE Files are loaded in response to "spontaneous" OS callbacks.
 //    These should only occur for .exe main modules and IJW dlls loaded via LoadLibrary
@@ -78,19 +77,16 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 //    for reflection-based modules.
 //
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
-// See code:Module for more on modules
 // --------------------------------------------------------------------------------
-
-typedef VPTR(class PEFile) PTR_PEFile;
 
 typedef ReleaseHolder<IMDInternalImport> IMDInternalImportHolder;
 
-class PEFile
+class PEAssembly
 {
     // ------------------------------------------------------------
     // SOS support
     // ------------------------------------------------------------
-    VPTR_BASE_CONCRETE_VTABLE_CLASS(PEFile)
+    VPTR_BASE_CONCRETE_VTABLE_CLASS(PEAssembly)
 
 public:
 
@@ -144,7 +140,7 @@ public:
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    BOOL Equals(PEFile *pFile);
+    BOOL Equals(PEAssembly *pPEAssembly);
     BOOL Equals(PEImage *pImage);
 #endif // DACCESS_COMPILE
 
@@ -223,7 +219,6 @@ public:
     // PE file access
     // ------------------------------------------------------------
 
-    BOOL IsIbcOptimized();
     BOOL IsReadyToRun();
     WORD GetSubsystem();
     mdToken GetEntryPointToken(
@@ -325,13 +320,21 @@ protected:
     // ------------------------------------------------------------
 
 #ifdef DACCESS_COMPILE
-    virtual ~PEFile() {};
-#else
-    virtual ~PEFile();
-#endif
-
     // just to make the DAC and GCC happy.
-    PEFile() {}
+    virtual ~PEAssembly() {};
+    PEAssembly() {}
+#else
+    PEAssembly(
+        BINDER_SPACE::Assembly* pBindResultInfo,
+        IMetaDataEmit* pEmit,
+        PEAssembly* creator,
+        BOOL isSystem,
+        PEImage* pPEImageIL = NULL,
+        BINDER_SPACE::Assembly* pHostAssembly = NULL
+    );
+
+    virtual ~PEAssembly();
+#endif
 
     void OpenMDImport();
     void OpenMDImport_Unsafe();
@@ -362,6 +365,8 @@ protected:
     PTR_PEImage              m_identity;
     // IL image, NULL if we didn't need to open the file
     PTR_PEImage              m_openedILimage;
+
+    PTR_PEAssembly           m_creator;
     // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
     // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
     // IID_IMDInternalImportENC
@@ -377,7 +382,6 @@ protected:
     IMetaDataImport2        *m_pImporter;
     IMetaDataEmit           *m_pEmitter;
     SimpleRWLock            *m_pMetadataLock;
-    PTR_PEFile               m_creator;
 
     Volatile<LONG>           m_refCount;
     bool                     m_isSystem;
@@ -428,8 +432,6 @@ public:
 
     LPCWSTR GetPathForErrorMessages();
 
-    static PEFile* Dummy();
-
     void ConvertMDInternalToReadWrite();
 
 protected:
@@ -452,8 +454,8 @@ public:
         return m_pHostAssembly;
     }
 
-    // Returns the AssemblyBinder* instance associated with the PEFile
-    // which owns the context into which the current PEFile was loaded.
+    // Returns the AssemblyBinder* instance associated with the PEAssembly
+    // which owns the context into which the current PEAssembly was loaded.
     PTR_AssemblyBinder GetAssemblyBinder();
 
 #ifndef DACCESS_COMPILE
@@ -523,7 +525,7 @@ public:
       const SString& GetEffectivePath();
 
       // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
-      // Note this may be obtained from the parent PEFile if we don't have a path or fusion
+      // Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
       // assembly.
       BOOL GetCodeBase(SString& result);
 
@@ -544,30 +546,7 @@ public:
       static void UrlToPath(SString& string);
       static BOOL FindLastPathSeparator(const SString& path, SString::Iterator& i);
 
-};  // class PEFile
-
-
-class PEAssembly : public PEFile
-{
-    VPTR_VTABLE_CLASS(PEAssembly, PEFile)
-
-  public:
-
-#ifndef DACCESS_COMPILE
-    PEAssembly(
-        BINDER_SPACE::Assembly* pBindResultInfo,
-        IMetaDataEmit *pEmit,
-        PEFile *creator,
-        BOOL isSystem,
-        PEImage * pPEImageIL = NULL,
-        BINDER_SPACE::Assembly * pHostAssembly = NULL
-        );
-#endif
-
-};
-
-
-typedef ReleaseHolder<PEFile> PEFileHolder;
+};  // class PEAssembly
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
 

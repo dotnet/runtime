@@ -2728,7 +2728,7 @@ void QCALLTYPE ModuleHandle::GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPE
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    pModule->GetFile()->GetPEKindAndMachine(pdwPEKind, pdwMachine);
+    pModule->GetPEAssembly()->GetPEKindAndMachine(pdwPEKind, pdwMachine);
     END_QCALL;
 }
 

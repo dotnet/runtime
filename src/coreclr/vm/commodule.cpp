@@ -721,10 +721,10 @@ HINSTANCE QCALLTYPE COMModule::GetHINSTANCE(QCall::ModuleHandle pModule)
 
     // This returns the base address
     // Other modules should have zero base
-    PEFile *pPEFile = pModule->GetFile();
-    if (!pPEFile->IsDynamic())
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
+    if (!pPEAssembly->IsDynamic())
     {
-        hMod = (HMODULE) pModule->GetFile()->GetManagedFileContents();
+        hMod = (HMODULE) pModule->GetPEAssembly()->GetManagedFileContents();
     }
 
     //If we don't have an hMod, set it to -1 so that they know that there's none

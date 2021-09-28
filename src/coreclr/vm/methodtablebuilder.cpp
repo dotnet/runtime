@@ -4339,7 +4339,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
                 // Ensure that the IL image is loaded. Note that this assembly may
                 // have an ngen image, but this type may have failed to load during ngen.
-                GetModule()->GetFile()->LoadLibrary();
+                GetModule()->GetPEAssembly()->LoadLibrary();
 
                 DWORD fldSize;
                 if (FieldDescElementType == ELEMENT_TYPE_VALUETYPE)
@@ -11216,7 +11216,7 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     // Always use the ReadyToRun field layout algorithm if the source IL image was ReadyToRun, independent on
     // whether ReadyToRun is actually enabled for the module. It is required to allow mixing and matching
     // ReadyToRun images with and without input bubble enabled.
-    if (!GetModule()->GetFile()->IsReadyToRun())
+    if (!GetModule()->GetPEAssembly()->IsReadyToRun())
     {
         // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
         return FALSE;

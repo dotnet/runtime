@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// The .NET Foundation licenses this assembly to you under the MIT license.
 //*****************************************************************************
 // File: task.cpp
 //
@@ -2414,12 +2414,12 @@ ClrDataModule::GetFileName(
     {
         COUNT_T _nameLen;
 
-        // Try to get the file name through GetPath.
-        // If the returned name is empty, then try to get the guessed module file name.
-        // The guessed file name is propogated from metadata's module name.
+        // Try to get the assembly name through GetPath.
+        // If the returned name is empty, then try to get the guessed module assembly name.
+        // The guessed assembly name is propogated from metadata's module name.
         //
-        if ((m_module->GetFile()->GetPath().DacGetUnicode(bufLen, name, &_nameLen) && name[0])||
-            (m_module->GetFile()->GetModuleFileNameHint().DacGetUnicode(bufLen, name, &_nameLen) && name[0]))
+        if ((m_module->GetPEAssembly()->GetPath().DacGetUnicode(bufLen, name, &_nameLen) && name[0])||
+            (m_module->GetPEAssembly()->GetModuleFileNameHint().DacGetUnicode(bufLen, name, &_nameLen) && name[0]))
         {
             if (nameLen)
             {
@@ -2455,7 +2455,7 @@ ClrDataModule::GetVersionId(
 
     EX_TRY
     {
-        if (!m_module->GetFile()->HasMetadata())
+        if (!m_module->GetPEAssembly()->HasMetadata())
         {
             status = E_NOINTERFACE;
         }
@@ -2565,8 +2565,8 @@ ClrDataModule::StartEnumExtents(
     {
         if (!m_setExtents)
         {
-            PEFile* file = m_module->GetFile();
-            if (!file)
+            PEAssembly* assembly = m_module->GetPEAssembly();
+            if (!assembly)
             {
                 *handle = 0;
                 status = E_INVALIDARG;
@@ -2575,10 +2575,10 @@ ClrDataModule::StartEnumExtents(
 
             CLRDATA_MODULE_EXTENT* extent = m_extents;
 
-            if (file->GetLoadedImageContents() != NULL)
+            if (assembly->GetLoadedImageContents() != NULL)
             {
                 extent->base =
-                    TO_CDADDR( PTR_TO_TADDR(file->GetLoadedImageContents(&extent->length)) );
+                    TO_CDADDR( PTR_TO_TADDR(assembly->GetLoadedImageContents(&extent->length)) );
                 extent->type = CLRDATA_MODULE_PE_FILE;
                 extent++;
             }
@@ -2720,23 +2720,23 @@ ClrDataModule::RequestGetModuleData(
     ZeroMemory(outGMD, sizeof(DacpGetModuleData));
 
     Module* pModule = GetModule();
-    PEFile *pPEFile = pModule->GetFile();
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    outGMD->PEFile = TO_CDADDR(PTR_HOST_TO_TADDR(pPEFile));
+    outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pPEAssembly));
     outGMD->IsDynamic = pModule->IsReflection();
 
-    if (pPEFile != NULL)
+    if (pPEAssembly != NULL)
     {
-        outGMD->IsInMemory = pPEFile->GetPath().IsEmpty();
+        outGMD->IsInMemory = pPEAssembly->GetPath().IsEmpty();
 
         COUNT_T peSize;
-        outGMD->LoadedPEAddress = TO_CDADDR(PTR_TO_TADDR(pPEFile->GetLoadedImageContents(&peSize)));
+        outGMD->LoadedPEAddress = TO_CDADDR(PTR_TO_TADDR(pPEAssembly->GetLoadedImageContents(&peSize)));
         outGMD->LoadedPESize = (ULONG64)peSize;
 
-        // Can not get the file layout for a dynamic module
+        // Can not get the assembly layout for a dynamic module
         if (!outGMD->IsDynamic)
         {
-            outGMD->IsFileLayout = pPEFile->GetLoaded()->IsFlat();
+            outGMD->IsFileLayout = pPEAssembly->GetLoaded()->IsFlat();
         }
     }
 
@@ -2873,7 +2873,7 @@ ClrDataModule::GetMdInterface(PVOID* retIface)
     {
         if (m_mdImport == NULL)
         {
-            if (!m_module->GetFile()->HasMetadata())
+            if (!m_module->GetPEAssembly()->HasMetadata())
             {
                 status = E_NOINTERFACE;
                 goto Exit;
