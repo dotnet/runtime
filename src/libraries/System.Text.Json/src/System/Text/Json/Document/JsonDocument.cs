@@ -54,7 +54,7 @@ namespace System.Text.Json
             _utf8Json = utf8Json;
             _parsedData = parsedData;
 
-            if (_extraRentedArrayPoolBytes != null)
+            if (extraRentedArrayPoolBytes != null)
             {
                 _hasExtraRentedArrayPoolBytes = true;
                 _extraRentedArrayPoolBytes = extraRentedArrayPoolBytes;

@@ -174,37 +174,11 @@ namespace HostActivation.Tests
 
                 if (!OperatingSystem.IsWindows())
                 {
-                    result.Should().HaveFoundDefaultInstallLocationInConfigFile(path1)
-                        .And.HaveFoundArchSpecificInstallLocationInConfigFile(path1, arch1)
-                        .And.HaveFoundArchSpecificInstallLocationInConfigFile(path2, arch2);
+                    result.Should()
+                        .HaveLookedForArchitectureSpecificInstallLocation(registeredInstallLocationOverride.PathValueOverride, arch2);
                 }
 
                 result.Should().HaveUsedGlobalInstallLocation(path2);
-            }
-        }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
-        public void InstallLocationFile_OnlyFirstLineMayNotSpecifyArchitecture()
-        {
-            var fixture = sharedTestState.PortableAppFixture
-                .Copy();
-
-            var appExe = fixture.TestProject.AppExe;
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
-            {
-                registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] {
-                    (string.Empty, "a/b/c"),
-                    (string.Empty, "x/y/z"),
-                });
-                Command.Create(appExe)
-                    .EnableTracingAndCaptureOutputs()
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .DotNetRoot(null)
-                    .Execute()
-                    .Should().HaveFoundDefaultInstallLocationInConfigFile("a/b/c")
-                    .And.HaveStdErrContaining($"Only the first line in '{registeredInstallLocationOverride.PathValueOverride}' may not have an architecture prefix.")
-                    .And.HaveUsedConfigFileInstallLocation("a/b/c");
             }
         }
 
@@ -229,7 +203,7 @@ namespace HostActivation.Tests
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .DotNetRoot(null)
                     .Execute()
-                    .Should().HaveFoundDefaultInstallLocationInConfigFile(reallyLongPath)
+                    .Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride)
                     .And.HaveUsedConfigFileInstallLocation(reallyLongPath);
             }
         }
@@ -247,16 +221,15 @@ namespace HostActivation.Tests
             {
                 Directory.CreateDirectory(testArtifactsPath);
 
-                string directory = Path.Combine(testArtifactsPath, "installLocationOverride");
-                Directory.CreateDirectory(directory);
-                string nonExistentLocationFile = Path.Combine(directory, "install_location");
+                string installLocationDirectory = Path.Combine(testArtifactsPath, "installLocationOverride");
+                Directory.CreateDirectory(installLocationDirectory);
                 string defaultInstallLocation = Path.Combine(testArtifactsPath, "defaultInstallLocation");
 
                 Command.Create(appExe)
                     .CaptureStdErr()
                     .EnvironmentVariable(
-                        Constants.TestOnlyEnvironmentVariables.InstallLocationFilePath,
-                        nonExistentLocationFile)
+                        Constants.TestOnlyEnvironmentVariables.InstallLocationPath,
+                        installLocationDirectory)
                     .EnvironmentVariable(
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         defaultInstallLocation)

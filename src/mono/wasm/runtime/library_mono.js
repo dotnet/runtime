@@ -581,11 +581,23 @@ var MonoSupportLib = {
 			MONO.commands_received = buffer_obj;
 		},
 
+		mono_wasm_malloc_and_set_debug_buffer: function (command_parameters)
+		{
+			if (command_parameters.length > this._debugger_buffer_len)
+			{
+				if (this._debugger_buffer)
+					Module._free (this._debugger_buffer);
+				this._debugger_buffer_len = Math.max(command_parameters.length, this._debugger_buffer_len, 256);
+				this._debugger_buffer = Module._malloc (this._debugger_buffer_len);
+				this._debugger_heap_bytes = new Uint8Array (Module.HEAPU8.buffer, this._debugger_buffer, this._debugger_buffer_len);
+			}
+			this._debugger_heap_bytes.set(this._base64_to_uint8 (command_parameters));
+		},
+
 		mono_wasm_send_dbg_command_with_parms: function (id, command_set, command, command_parameters, length, valtype, newvalue)
 		{
-			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
-			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
-			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, dataHeap.byteOffset, length, valtype, newvalue.toString());
+			this.mono_wasm_malloc_and_set_debug_buffer(command_parameters);
+			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, this._debugger_buffer, length, valtype, newvalue.toString());
 			let { res_ok, res } = MONO.commands_received;
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_invoke_method_debugger_agent_with_parms`);
@@ -594,11 +606,8 @@ var MonoSupportLib = {
 
 		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
 		{
-			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
-			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
-
-			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
-
+			this.mono_wasm_malloc_and_set_debug_buffer(command_parameters);
+			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, this._debugger_buffer, command_parameters.length);
 			let { res_ok, res } = MONO.commands_received;
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_send_dbg_command`);
@@ -833,7 +842,7 @@ var MonoSupportLib = {
 			this._c_fn_table = {};
 			this._register_c_fn     ('mono_wasm_send_dbg_command',							'bool', [ 'number', 'number', 'number', 'number', 'number' ]);
 			this._register_c_fn     ('mono_wasm_send_dbg_command_with_parms', 				'bool', [ 'number', 'number', 'number', 'number', 'number', 'number', 'string' ]);
-
+			this._debugger_buffer_len = -1;
 			// DO NOT REMOVE - magic debugger init function
 			if (globalThis.dotnetDebugger)
 				debugger;
