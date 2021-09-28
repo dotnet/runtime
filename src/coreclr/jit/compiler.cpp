@@ -2673,9 +2673,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.dspOrder = false;
+
+    // Optionally suppress inliner compiler instance dumping.
+    //
     if (compIsForInlining())
     {
-        verbose = impInlineInfo->InlinerCompiler->verbose;
+        if (JitConfig.JitDumpInlinePhases() > 0)
+        {
+            verbose = impInlineInfo->InlinerCompiler->verbose;
+        }
+        else
+        {
+            verbose = false;
+        }
     }
     else
     {
@@ -2832,6 +2842,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 }
             }
         }
+    }
+
+    // Optionally suppress dumping Tier0 jit requests.
+    //
+    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+    {
+        verboseDump = (JitConfig.JitDumpTier0() > 0);
     }
 
     if (verboseDump)
