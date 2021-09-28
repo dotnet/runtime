@@ -3,7 +3,9 @@
 
   <Import Project="$(MSBuildThisFileDirectory)AppleApp.props" />
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>

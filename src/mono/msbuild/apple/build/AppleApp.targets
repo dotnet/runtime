@@ -71,7 +71,6 @@
 
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
-      <!--<_AotExcludeAssemblies Include="@(NativeLibraries->'$(PublishDir)%(Identity)')" />-->
     
       <_AotInputAssemblies Include="@(_AppleAssembliesInternal)" Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
@@ -98,7 +97,7 @@
         <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
     </MonoAOTCompiler>
 
-    <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'" Assemblies="@(_AppleAssembliesInternal)" />
+    <ILStrip Condition="'$(ShouldILStrip)' == 'true'" Assemblies="@(_AppleAssembliesInternal)" />
 
     <ItemGroup>
       <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
