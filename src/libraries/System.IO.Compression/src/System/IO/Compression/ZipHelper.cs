@@ -203,7 +203,7 @@ namespace System.IO.Compression
             if (encoding == null)
                 encoding = RequiresUnicode(text) ? Encoding.UTF8 : Encoding.ASCII;
 
-            isUTF8 = encoding.Equals(Encoding.UTF8);
+            isUTF8 = encoding.CodePage == 65001;
             return encoding.GetBytes(text);
         }
     }
