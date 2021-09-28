@@ -19,17 +19,20 @@ parameters:
 
 
 steps:
+  # Download and CI install dotnet
   # Download latest MAUI
   # Update the manifests based on the gated source
   # Install the MAUI workload install maui (with proper feeds in the nuget.config)
   # Create MAUI Sample app (Do we want this here or lower?)
   - script: |
+      curl -o ./dotnet-install.sh 'https://dot.net/v1/dotnet-install.sh'
+      ./dotnet-install.sh -Channel 6.0.1xx -Quality daily
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
-      ./dotnet.sh workload update --from-rollback-file ./rollback.json
-      ./dotnet.sh workload install maui --skip-manifest-update
-      ./dotnet.sh new maui -n MauiTesting
+      dotnet workload update --from-rollback-file ./rollback.json
+      dotnet workload install maui --skip-manifest-update
+      dotnet new maui -n MauiTesting
       cd MauiTesting
-      ../dotnet.sh build -bl:MauiTestingBin.binlog -v d
+      dotnet build -bl:MauiTestingBin.binlog -v d
     displayName: Install MAUI
     workingDirectory: $(Build.SourcesDirectory)
 
