@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Binder.Test
@@ -965,29 +964,28 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(1, nestedAsArray.Length);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact]
         public void CannotBindSingleElementToCollectionWhenSwitchSet()
         {
-            RemoteExecutor.Invoke(() =>
+            AppContext.SetSwitch("Microsoft.Extensions.Configuration.BindSingleElementsToArray", false);
+
+            var dic = new Dictionary<string, string>
             {
-                AppContext.SetSwitch("Microsoft.Extensions.Configuration.BindSingleElementsToArray", false);
+                {"MyString", "hello world"},
+                {"Nested:Integer", "11"},
+            };
 
-                var dic = new Dictionary<string, string>
-                {
-                    {"MyString", "hello world"},
-                    {"Nested:Integer", "11"},
-                };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            IConfiguration config = configurationBuilder.Build();
 
-                var configurationBuilder = new ConfigurationBuilder();
-                configurationBuilder.AddInMemoryCollection(dic);
-                IConfiguration config = configurationBuilder.Build();
+            var stringArr = config.GetSection("MyString").Get<string[]>();
+            Assert.Null(stringArr);
 
-                var stringArr = config.GetSection("MyString").Get<string[]>();
-                Assert.Null(stringArr);
+            var stringAsStr = config.GetSection("MyString").Get<string>();
+            Assert.Equal("hello world", stringAsStr);
 
-                var stringAsStr = config.GetSection("MyString").Get<string>();
-                Assert.Equal("hello world", stringAsStr);
-            }).Dispose();
+            AppContext.SetSwitch("Microsoft.Extensions.Configuration.BindSingleElementsToArray", true);
         }
 
         private interface ISomeInterface
