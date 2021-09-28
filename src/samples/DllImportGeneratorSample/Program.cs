@@ -1,9 +1,12 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Runtime.InteropServices;
 
 namespace Demo
 {
-    partial class NativeExportsNE
+    internal static partial class NativeExportsNE
     {
         public const string NativeExportsNE_Binary = "Microsoft.Interop.Tests." + nameof(NativeExportsNE);
 
@@ -17,9 +20,9 @@ namespace Demo
         public static partial void Sum(int a, ref int b);
     }
 
-    class Program
+    internal static class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             int a = 12;
             int b = 13;
