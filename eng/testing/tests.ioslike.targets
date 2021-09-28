@@ -128,16 +128,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <AppleAssembliesToBundle Include="$(PublishDir)\**\*.dll" />
-      <AppleAssembliesToBundle Include="@(AppleAssembliesToBundle)">
-        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)' != 'System.Private.CoreLib' and '%(Extension)' != '.dll'">true</_InternalForceInterpret>
-      </AppleAssembliesToBundle>
       <AppleAssembliesToBundle Include="@(NativeLibraries->'$(PublishDir)%(Identity)')">
         <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AppleAssembliesToBundle>
+      <AppleAssembliesToBundle Include="$(PublishDir)\**\*.dll" />
+      <AppleAssembliesToBundle Include="@(AppleAssembliesToBundle)">
+        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)' != 'System.Private.CoreLib' and '%(Extension)' != '.dll'">true</_InternalForceInterpret>
+      </AppleAssembliesToBundle>
 
-      <AppleNativeFilesToBundle Include="$(PublishDir)\*.*" Exclude="$(PublishDir)\*.dll" />
+      <AppleNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="$(PublishDir)\*.dll" />
     </ItemGroup>
   </Target>
 
