@@ -33,7 +33,7 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
             public static partial int SetError(int error, byte shouldSetError);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error_return_string", SetLastError = true)]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
             [return: MarshalUsing(typeof(SetLastErrorMarshaller))]
             public static partial int SetError_CustomMarshallingSetsError(int error, byte shouldSetError);
 
