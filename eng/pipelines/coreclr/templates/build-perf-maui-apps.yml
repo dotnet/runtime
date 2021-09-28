@@ -30,9 +30,8 @@ steps:
       ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
       ../dotnet.sh build -bl:MauiTestingBin.binlog -v d
-  
-    workingDirectory: $(Build.SourcesDirectory)
     displayName: Install MAUI
+    workingDirectory: $(Build.SourcesDirectory)
 
   - script: ls -Ra #
     workingDirectory: $(Build.SourcesDirectory) #
