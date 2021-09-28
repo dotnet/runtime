@@ -1105,5 +1105,20 @@ namespace System.Diagnostics
                 s_processStartLock.ExitWriteLock();
             }
         }
+
+        /// <devdoc>
+        ///    <para>
+        ///       Gets
+        ///       the friendly name of the process.
+        ///    </para>
+        /// </devdoc>
+        public string ProcessName
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return _processInfo!.ProcessName;
+            }
+        }
     }
 }
