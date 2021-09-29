@@ -241,7 +241,7 @@ namespace System
         public static Half Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
+            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -266,7 +266,7 @@ namespace System
         public static Half Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -1554,7 +1554,7 @@ namespace System
 
         [RequiresPreviewFeatures]
         static bool IParseable<Half>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, DefaultParseStyle, provider, out result);
 
         //
         // ISignedNumber
@@ -1569,11 +1569,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static Half ISpanParseable<Half>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Integer, provider);
+            => Parse(s, DefaultParseStyle, provider);
 
         [RequiresPreviewFeatures]
         static bool ISpanParseable<Half>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Half result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, DefaultParseStyle, provider, out result);
 
         //
         // ISubtractionOperators

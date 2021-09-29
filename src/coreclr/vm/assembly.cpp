@@ -485,19 +485,11 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
                 // Static assemblies with do not have fallback load context
                 _ASSERTE(pCallerAssemblyManifestFile->GetFallbackBinder() == nullptr);
 
-                if (pCallerAssemblyManifestFile->IsSystem())
-                {
-                    // CoreLibrary is always bound with default binder
-                    pFallbackBinder = pDomain->GetDefaultBinder();
-                }
-                else
-                {
-                    // Fetch the binder from the host assembly
-                    PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
-                    _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
+                // Fetch the binder from the host assembly
+                PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
+                _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
 
-                    pFallbackBinder = pCallerAssemblyHostAssembly->GetBinder();
-                }
+                pFallbackBinder = pCallerAssemblyHostAssembly->GetBinder();
             }
             else
             {

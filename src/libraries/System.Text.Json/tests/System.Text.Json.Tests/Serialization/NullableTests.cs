@@ -11,7 +11,6 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class NullableTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58204", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void DictionaryWithNullableValue()
         {
             Dictionary<string, float?> dictWithFloatValue = new Dictionary<string, float?> { { "key", 42.0f } };
@@ -171,7 +170,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58204", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void ClassWithDictionariesWithNullableValues()
         {
             string json =

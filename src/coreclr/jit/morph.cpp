@@ -1198,7 +1198,10 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+    if (!compMacOsArm64Abi())
+    {
+        nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+    }
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, byteAlignment);
@@ -1297,9 +1300,12 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
-    assert(curArgTabEntry->slotNum == nextSlotNum);
-    nextSlotNum += curArgTabEntry->numSlots;
+    if (!compMacOsArm64Abi())
+    {
+        nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
+        assert(curArgTabEntry->slotNum == nextSlotNum);
+        nextSlotNum += curArgTabEntry->numSlots;
+    }
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->GetByteAlignment());
@@ -1520,7 +1526,7 @@ void fgArgInfo::ArgsComplete()
                 {
                     prevArgTabEntry->needPlace = true;
                 }
-#endif // TARGET_ARM
+#endif // FEATURE_ARG_SPLIT
 #endif
             }
         }
@@ -2098,7 +2104,8 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         {
             var_types addrType = TYP_BYREF;
             arg                = gtNewOperNode(GT_ADDR, addrType, arg);
-            addrNode           = arg;
+            lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+            addrNode = arg;
 
 #if FEATURE_MULTIREG_ARGS
 #ifdef TARGET_ARM64
@@ -2137,10 +2144,6 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
     if (addrNode != nullptr)
     {
         assert(addrNode->gtOper == GT_ADDR);
-
-        // This will prevent this LclVar from being optimized away
-        lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-
         // the child of a GT_ADDR is required to have this flag set
         addrNode->AsOp()->gtOp1->gtFlags |= GTF_DONT_CSE;
     }
@@ -2430,29 +2433,6 @@ void fgArgInfo::EvalArgsToTemps()
 #endif
 }
 
-// Return a conservative estimate of the stack size in bytes.
-// It will be used only on the intercepted-for-host code path to copy the arguments.
-int Compiler::fgEstimateCallStackSize(GenTreeCall* call)
-{
-    int numArgs = 0;
-    for (GenTreeCall::Use& use : call->Args())
-    {
-        numArgs++;
-    }
-
-    int numStkArgs;
-    if (numArgs > MAX_REG_ARG)
-    {
-        numStkArgs = numArgs - MAX_REG_ARG;
-    }
-    else
-    {
-        numStkArgs = 0;
-    }
-
-    return numStkArgs * REGSIZE_BYTES;
-}
-
 //------------------------------------------------------------------------------
 // fgMakeMultiUse : If the node is a local, clone it, otherwise insert a comma form temp
 //
@@ -2568,8 +2548,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // At this point, we should never have gtCallLateArgs, as this needs to be done before those are determined.
     assert(call->gtCallLateArgs == nullptr);
 
-#ifdef TARGET_UNIX
-    if (callIsVararg)
+    if (TargetOS::IsUnix && callIsVararg)
     {
         // Currently native varargs is not implemented on non windows targets.
         //
@@ -2578,7 +2557,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // such as amd64 Unix, which just expects RAX to pass numFPArguments.
         NYI("Morphing Vararg call not yet implemented on non Windows targets.");
     }
-#endif // TARGET_UNIX
 
     // Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
     // following the normal calling convention or in the normal argument registers. We either mark existing
@@ -2833,17 +2811,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         noway_assert(arg != nullptr);
         call->gtCallCookie = nullptr;
 
-#if defined(TARGET_X86)
-        // x86 passes the cookie on the stack as the final argument to the call.
-        GenTreeCall::Use** insertionPoint = &call->gtCallArgs;
-        for (; *insertionPoint != nullptr; insertionPoint = &((*insertionPoint)->NextRef()))
-        {
-        }
-        *insertionPoint = gtNewCallArgs(arg);
-#else  // !defined(TARGET_X86)
-        // All other architectures pass the cookie in a register.
+        // All architectures pass the cookie in a register.
         call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
-#endif // defined(TARGET_X86)
 
         nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM, NonStandardArgKind::PInvokeCookie);
         numArgs++;
@@ -2960,7 +2929,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
 #ifdef UNIX_X86_ABI
         // Add in the ret buff arg
-        if (callHasRetBuffArg)
+        if (callHasRetBuffArg &&
+            call->unmgdCallConv != CorInfoCallConvExtension::C &&     // C and Stdcall calling conventions do not
+            call->unmgdCallConv != CorInfoCallConvExtension::Stdcall) // use registers to pass arguments.
             maxRegArgs++;
 #endif
     }
@@ -3082,22 +3053,23 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         var_types hfaType  = TYP_UNDEF;
         unsigned  hfaSlots = 0;
 
-        bool passUsingFloatRegs;
-#if !defined(OSX_ARM64_ABI)
+        bool     passUsingFloatRegs;
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
-#endif
-        unsigned size     = 0;
-        unsigned byteSize = 0;
+        unsigned size          = 0;
+        unsigned byteSize      = 0;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
             hfaType  = GetHfaType(argx);
             isHfaArg = varTypeIsValidHfaType(hfaType);
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            // Make sure for vararg methods isHfaArg is not true.
-            isHfaArg = callIsVararg ? false : isHfaArg;
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
+            if (TargetOS::IsWindows)
+            {
+                // Make sure for vararg methods isHfaArg is not true.
+                isHfaArg = callIsVararg ? false : isHfaArg;
+            }
+#endif // defined(TARGET_ARM64)
 
             if (isHfaArg)
             {
@@ -3332,12 +3304,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(size != 0);
         assert(byteSize != 0);
 
-#if defined(OSX_ARM64_ABI)
-        // Arm64 Apple has a special ABI for passing small size arguments on stack,
-        // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
-        // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-        unsigned argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
-#endif
+        if (compMacOsArm64Abi())
+        {
+            // Arm64 Apple has a special ABI for passing small size arguments on stack,
+            // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
+            // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
+            argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
+        }
 
         //
         // Figure out if the argument will be passed in a register.
@@ -3417,16 +3390,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 //
                 if (!isRegArg && (size > 1))
                 {
-#if defined(TARGET_WINDOWS)
                     // Arm64 windows native varargs allows splitting a 16 byte struct between stack
                     // and the last general purpose register.
-                    if (callIsVararg)
+                    if (TargetOS::IsWindows && callIsVararg)
                     {
                         // Override the decision and force a split.
                         isRegArg = (intArgRegNum + (size - 1)) <= maxRegArgs;
                     }
                     else
-#endif // defined(TARGET_WINDOWS)
                     {
                         // We also must update intArgRegNum so that we no longer try to
                         // allocate any new general purpose registers for args
@@ -3435,7 +3406,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     }
                 }
             }
-#else  // not TARGET_ARM or TARGET_ARM64
+#else // not TARGET_ARM or TARGET_ARM64
 
 #if defined(UNIX_AMD64_ABI)
 
@@ -3610,7 +3581,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     {
 #if FEATURE_ARG_SPLIT
                         // Check for a split (partially enregistered) struct
-                        if (!passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
+                        if (compFeatureArgSplit() && !passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
                         {
                             // This indicates a partial enregistration of a struct type
                             assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||
@@ -3814,11 +3785,14 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
+        if (!compMacOsArm64Abi())
         {
-            if (argSlots % 2 == 1)
+            if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
             {
-                argSlots++;
+                if (argSlots % 2 == 1)
+                {
+                    argSlots++;
+                }
             }
         }
 #endif // DEBUG
@@ -4270,8 +4244,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         const unsigned outgoingArgSpaceSize = GetOutgoingArgByteSize(call->fgArgInfo->GetNextSlotByteOffset());
 
 #if defined(DEBUG_ARG_SLOTS)
-        unsigned preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
-        assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+        unsigned preallocatedArgCount = 0;
+        if (!compMacOsArm64Abi())
+        {
+            preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
+            assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+        }
 #endif
         call->fgArgInfo->SetOutArgSize(max(outgoingArgSpaceSize, MIN_ARG_AREA_FOR_CALL));
 
@@ -4280,10 +4258,18 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         {
             const fgArgInfo* argInfo = call->fgArgInfo;
 #if defined(DEBUG_ARG_SLOTS)
-            printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
-                   "outgoingArgSpaceSize=%d\n",
-                   argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
-                   outgoingArgSpaceSize);
+            if (!compMacOsArm64Abi())
+            {
+                printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
+                       "outgoingArgSpaceSize=%d\n",
+                       argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
+                       outgoingArgSpaceSize);
+            }
+            else
+            {
+                printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
+                       outgoingArgSpaceSize);
+            }
 #else
             printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
                    outgoingArgSpaceSize);
@@ -6018,11 +6004,21 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
 
     noway_assert(!(tree->gtFlags & GTF_VAR_DEF) || varAddr); // GTF_VAR_DEF should always imply varAddr
 
-    if (!varAddr && varTypeIsSmall(varDsc->TypeGet()) && varDsc->lvNormalizeOnLoad())
+    if (!varAddr && varDsc->lvNormalizeOnLoad())
     {
 #if LOCAL_ASSERTION_PROP
-        // Assertion prop can tell us to omit adding a cast here
-        if (optLocalAssertionProp && optAssertionIsSubrange(tree, TYP_INT, varType, apFull) != NO_ASSERTION_INDEX)
+        // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
+        // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
+        // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
+        // here with local assertions, and "expanded", i. e. CAST(small type <- LCL_VAR(int V00)).
+        // This is a pretty fundamental problem with how normalize-on-load locals appear to the optimizer.
+        // This quirk preserves the previous behavior.
+        // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
+        bool isBoolQuirk = varType == TYP_BOOL;
+
+        // Assertion prop can tell us to omit adding a cast here.
+        if (optLocalAssertionProp && !isBoolQuirk &&
+            optAssertionIsSubrange(tree, IntegralRange::ForType(varType), apFull) != NO_ASSERTION_INDEX)
         {
             // The previous assertion can guarantee us that if this node gets
             // assigned a register, it will be normalized already. It is still
@@ -7007,13 +7003,11 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // work required to shuffle arguments to the correct locations.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
-    if (info.compIsVarArgs || callee->IsVarargs())
+    if (TargetOS::IsWindows && TargetArchitecture::IsArmArch && (info.compIsVarArgs || callee->IsVarargs()))
     {
         reportFastTailCallDecision("Fast tail calls with varargs not supported on Windows ARM/ARM64");
         return false;
     }
-#endif // (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
 
     if (compLocallocUsed)
     {
@@ -11032,13 +11026,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
 
     cns1->SetIconValue(foldedCns->IconValue());
     cns1->SetVNsFromNode(foldedCns);
-
-    if (oper == GT_ADD)
-    {
-        // Note that gtFoldExprConst doesn't maintain fieldSeq when folding constant
-        // trees of TYP_LONG.
-        cns1->gtFieldSeq = GetFieldSeqStore()->Append(cns1->gtFieldSeq, cns2->gtFieldSeq);
-    }
+    cns1->gtFieldSeq = foldedCns->gtFieldSeq;
 
     op1 = tree->gtGetOp1();
     op1->SetVNsFromNode(tree);
@@ -15713,11 +15701,9 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
  *  for reentrant calls.
  */
 
-void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
+void Compiler::fgMorphStmts(BasicBlock* block)
 {
     fgRemoveRestOfBlock = false;
-
-    *lnot = *loadw = false;
 
     fgCurrentlyInUseArgTemps = hashBv::Create(this);
 
@@ -15975,12 +15961,6 @@ void Compiler::fgMorphBlocks()
 
     do
     {
-#if OPT_BOOL_OPS
-        bool lnot = false;
-#endif
-
-        bool loadw = false;
-
 #ifdef DEBUG
         if (verbose)
         {
@@ -16003,7 +15983,7 @@ void Compiler::fgMorphBlocks()
         compCurBB = block;
 
         // Process all statement trees in the basic block.
-        fgMorphStmts(block, &lnot, &loadw);
+        fgMorphStmts(block);
 
         // Do we need to merge the result of this block into a single return block?
         if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
@@ -17018,20 +16998,6 @@ void Compiler::fgPromoteStructs()
             varDsc->lvRegStruct = true;
         }
     }
-
-#ifdef TARGET_ARM
-    if (structPromotionHelper->GetRequiresScratchVar())
-    {
-        // Ensure that the scratch variable is allocated, in case we
-        // pass a promoted struct as an argument.
-        if (lvaPromotedStructAssemblyScratchVar == BAD_VAR_NUM)
-        {
-            lvaPromotedStructAssemblyScratchVar =
-                lvaGrabTempWithImplicitUse(false DEBUGARG("promoted struct assembly scratch var."));
-            lvaTable[lvaPromotedStructAssemblyScratchVar].lvType = TYP_I_IMPL;
-        }
-    }
-#endif // TARGET_ARM
 
 #ifdef DEBUG
     if (verbose)
@@ -18207,8 +18173,8 @@ bool Compiler::fgCheckStmtAfterTailCall()
 //
 bool Compiler::fgCanTailCallViaJitHelper()
 {
-#ifndef TARGET_X86
-    // On anything except X86 we have no faster mechanism available.
+#if !defined(TARGET_X86) || defined(UNIX_X86_ABI)
+    // On anything except windows X86 we have no faster mechanism available.
     return false;
 #else
     // The JIT helper does not properly handle the case where localloc was used.

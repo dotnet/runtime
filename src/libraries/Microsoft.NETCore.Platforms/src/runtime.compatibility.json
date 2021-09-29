@@ -2929,26 +2929,8 @@
     "any",
     "base"
   ],
-  "freebsd.11": [
-    "freebsd.11",
-    "freebsd",
-    "unix",
-    "any",
-    "base"
-  ],
-  "freebsd.11-x64": [
-    "freebsd.11-x64",
-    "freebsd.11",
-    "freebsd-x64",
-    "freebsd",
-    "unix-x64",
-    "unix",
-    "any",
-    "base"
-  ],
   "freebsd.12": [
     "freebsd.12",
-    "freebsd.11",
     "freebsd",
     "unix",
     "any",
@@ -2957,8 +2939,6 @@
   "freebsd.12-x64": [
     "freebsd.12-x64",
     "freebsd.12",
-    "freebsd.11-x64",
-    "freebsd.11",
     "freebsd-x64",
     "freebsd",
     "unix-x64",
@@ -2969,7 +2949,6 @@
   "freebsd.13": [
     "freebsd.13",
     "freebsd.12",
-    "freebsd.11",
     "freebsd",
     "unix",
     "any",
@@ -2980,8 +2959,6 @@
     "freebsd.13",
     "freebsd.12-x64",
     "freebsd.12",
-    "freebsd.11-x64",
-    "freebsd.11",
     "freebsd-x64",
     "freebsd",
     "unix-x64",

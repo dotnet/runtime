@@ -11079,36 +11079,54 @@ namespace System.Numerics
         public static bool IsPow2(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool IsPow2(ulong value) { throw null; }
+        public static bool IsPow2(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static int LeadingZeroCount(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static int Log2(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Log2(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Log2(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int PopCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int PopCount(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static int PopCount(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint RotateLeft(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateLeft(ulong value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint RotateLeft(nuint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint RotateRight(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateRight(ulong value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static nuint RotateRight(nuint value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint RoundUpToPowerOf2(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RoundUpToPowerOf2(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint RoundUpToPowerOf2(nuint value) { throw null; }
         public static int TrailingZeroCount(int value) { throw null; }
         public static int TrailingZeroCount(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(ulong value) { throw null; }
+        public static int TrailingZeroCount(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int TrailingZeroCount(nuint value) { throw null; }
     }
 }
 namespace System.Reflection

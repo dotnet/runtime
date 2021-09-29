@@ -194,7 +194,10 @@ namespace System.Xml.Serialization
             if (xmlTypeMapping == null)
                 throw new ArgumentNullException(nameof(xmlTypeMapping));
 
-            _tempAssembly = GenerateTempAssembly(xmlTypeMapping);
+            if (Mode != SerializationMode.ReflectionOnly)
+            {
+                _tempAssembly = GenerateTempAssembly(xmlTypeMapping);
+            }
             _mapping = xmlTypeMapping;
         }
 
@@ -218,6 +221,12 @@ namespace System.Xml.Serialization
                 _primitiveType = type;
                 return;
             }
+
+            if (Mode == SerializationMode.ReflectionOnly)
+            {
+                return;
+            }
+
             _tempAssembly = s_cache[defaultNamespace, type];
             if (_tempAssembly == null)
             {
@@ -270,7 +279,10 @@ namespace System.Xml.Serialization
             DefaultNamespace = defaultNamespace;
             _rootType = type;
             _mapping = GenerateXmlTypeMapping(type, overrides, extraTypes, root, defaultNamespace);
-            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
+            if (Mode != SerializationMode.ReflectionOnly)
+            {
+                _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
+            }
         }
 
         [RequiresUnreferencedCode("calls ImportTypeMapping")]
@@ -529,6 +541,14 @@ namespace System.Xml.Serialization
             {
                 TypeDesc typeDesc = (TypeDesc)TypeScope.PrimtiveTypes[_primitiveType]!;
                 return xmlReader.IsStartElement(typeDesc.DataType!.Name!, string.Empty);
+            }
+            else if (ShouldUseReflectionBasedSerialization(_mapping) || _isReflectionBasedSerializer)
+            {
+                // If we should use reflection, we will try to do reflection-based deserialization, without fallback.
+                // Don't check xmlReader.IsStartElement to avoid having to duplicate SOAP deserialization logic here.
+                // It is better to return an incorrect 'true', which will throw during Deserialize than to return an
+                // incorrect 'false', and the caller won't even try to Deserialize when it would succeed.
+                return true;
             }
             else if (_tempAssembly != null)
             {

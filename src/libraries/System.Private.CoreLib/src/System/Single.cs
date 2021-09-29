@@ -1234,7 +1234,7 @@ namespace System
 
         [RequiresPreviewFeatures]
         static bool IParseable<float>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out float result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
         // ISignedNumber
@@ -1249,11 +1249,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static float ISpanParseable<float>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Integer, provider);
+            => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
         [RequiresPreviewFeatures]
         static bool ISpanParseable<float>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out float result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
         // ISubtractionOperators
