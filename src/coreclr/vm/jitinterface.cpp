@@ -8550,8 +8550,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // safely devirtualize.
         if (info->context != nullptr)
         {
-            TypeHandle OwnerClsHnd = GetTypeFromContext(info->context);
-            MethodTable* pOwnerMT = OwnerClsHnd.GetMethodTable();
+            MethodTable* pOwnerMT = pBaseMT;
 
             // If the derived class is a shared class, make sure the
             // owner class is too.
@@ -8578,7 +8577,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 }
             }
 
-            pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD, FALSE /* throwOnConflict */);
+            pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pBaseMT), pBaseMD, FALSE /* throwOnConflict */);
         }
         else if (!pBaseMD->HasClassOrMethodInstantiation())
         {
