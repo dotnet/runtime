@@ -532,7 +532,7 @@
     </PropertyGroup>
 
     <Exec Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
-          Command="ls -la &quot;$(_TestPath)&quot;"
+          Command="du -sh &quot;$(_TestPath)&quot;"
           ContinueOnError="true"
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />

@@ -85,8 +85,8 @@
     <ItemGroup Condition="'$(UsePortableRuntimePack)' == 'true'">
       <_PublishBundleFiles Include="@(BundleFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />
 
-      <!--<_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)**\*.*" />-->
-      <_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*" Exclude="$(MicrosoftNetCoreAppRuntimePackNativeDir)System.Private.CoreLib.*" />
+      <_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)**\*.*" />
+      <_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*" />
       
       <_UnusedRuntimePackFiles Include="@(_PublishBundleFiles)" Exclude="@(_RuntimePackFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />
       <_UsedRuntimePackFiles Include="@(_PublishBundleFiles)" Exclude="@(_UnusedRuntimePackFiles)" />
