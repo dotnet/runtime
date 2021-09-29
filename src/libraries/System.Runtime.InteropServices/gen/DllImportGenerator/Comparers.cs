@@ -47,7 +47,7 @@ namespace Microsoft.Interop
         /// <param name="elementComparer">The comparer instance for the collection elements.</param>
         public ImmutableArraySequenceEqualComparer(IEqualityComparer<T> elementComparer)
         {
-            this._elementComparer = elementComparer;
+            _elementComparer = elementComparer;
         }
 
         public bool Equals(ImmutableArray<T> x, ImmutableArray<T> y)
@@ -81,8 +81,8 @@ namespace Microsoft.Interop
 
         public CustomValueTupleElementComparer(IEqualityComparer<T> item1Comparer, IEqualityComparer<U> item2Comparer)
         {
-            this._item1Comparer = item1Comparer;
-            this._item2Comparer = item2Comparer;
+            _item1Comparer = item1Comparer;
+            _item2Comparer = item2Comparer;
         }
 
         public bool Equals((T, U) x, (T, U) y)

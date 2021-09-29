@@ -45,7 +45,7 @@ namespace Microsoft.Interop
 
         public SimpleCustomNativeTypeMarshalling(TypeSyntax nativeTypeSyntax)
         {
-            this._nativeTypeSyntax = nativeTypeSyntax;
+            _nativeTypeSyntax = nativeTypeSyntax;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -156,8 +156,8 @@ namespace Microsoft.Interop
 
         public CustomNativeTypeWithValuePropertyMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax valuePropertyType)
         {
-            this._innerMarshaller = innerMarshaller;
-            this._valuePropertyType = valuePropertyType;
+            _innerMarshaller = innerMarshaller;
+            _valuePropertyType = valuePropertyType;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -282,7 +282,7 @@ namespace Microsoft.Interop
 
         public StackallocOptimizationMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller)
         {
-            this._innerMarshaller = innerMarshaller;
+            _innerMarshaller = innerMarshaller;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -391,7 +391,7 @@ namespace Microsoft.Interop
 
         public FreeNativeCleanupStrategy(ICustomNativeTypeMarshallingStrategy innerMarshaller)
         {
-            this._innerMarshaller = innerMarshaller;
+            _innerMarshaller = innerMarshaller;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -460,8 +460,8 @@ namespace Microsoft.Interop
 
         public PinnableMarshallerTypeMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax valuePropertyType)
         {
-            this._innerMarshaller = innerMarshaller;
-            this._valuePropertyType = valuePropertyType;
+            _innerMarshaller = innerMarshaller;
+            _valuePropertyType = valuePropertyType;
         }
 
         private bool CanPinMarshaller(TypePositionInfo info, StubCodeContext context)
@@ -606,9 +606,9 @@ namespace Microsoft.Interop
 
         public NumElementsExpressionMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, ExpressionSyntax numElementsExpression, ExpressionSyntax sizeOfElementExpression)
         {
-            this._innerMarshaller = innerMarshaller;
-            this._numElementsExpression = numElementsExpression;
-            this._sizeOfElementExpression = sizeOfElementExpression;
+            _innerMarshaller = innerMarshaller;
+            _numElementsExpression = numElementsExpression;
+            _sizeOfElementExpression = sizeOfElementExpression;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -720,8 +720,8 @@ namespace Microsoft.Interop
 
         public ContiguousBlittableElementCollectionMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax elementType)
         {
-            this._innerMarshaller = innerMarshaller;
-            this._elementType = elementType;
+            _innerMarshaller = innerMarshaller;
+            _elementType = elementType;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -863,9 +863,9 @@ namespace Microsoft.Interop
             IMarshallingGenerator elementMarshaller,
             TypePositionInfo elementInfo)
         {
-            this._innerMarshaller = innerMarshaller;
-            this._elementMarshaller = elementMarshaller;
-            this._elementInfo = elementInfo;
+            _innerMarshaller = innerMarshaller;
+            _elementMarshaller = elementMarshaller;
+            _elementInfo = elementInfo;
         }
 
         private LocalDeclarationStatementSyntax GenerateNativeSpanDeclaration(TypePositionInfo info, StubCodeContext context)
@@ -1025,8 +1025,8 @@ namespace Microsoft.Interop
 
             public PointerNativeTypeAssignmentRewriter(string nativeIdentifier, PointerTypeSyntax nativeType)
             {
-                this._nativeIdentifier = nativeIdentifier;
-                this._nativeType = nativeType;
+                _nativeIdentifier = nativeIdentifier;
+                _nativeType = nativeType;
             }
 
             public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)

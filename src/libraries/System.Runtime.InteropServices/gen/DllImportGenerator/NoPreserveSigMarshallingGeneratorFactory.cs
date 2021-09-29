@@ -16,7 +16,7 @@ namespace Microsoft.Interop
 
         public NoPreserveSigMarshallingGeneratorFactory(IMarshallingGeneratorFactory inner)
         {
-            this._inner = inner;
+            _inner = inner;
         }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)

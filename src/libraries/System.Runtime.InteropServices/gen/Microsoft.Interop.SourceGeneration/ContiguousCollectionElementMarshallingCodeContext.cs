@@ -37,7 +37,7 @@ namespace Microsoft.Interop
         {
             CurrentStage = currentStage;
             IndexerIdentifier = CalculateIndexerIdentifierBasedOnParentContext(parentContext);
-            this._nativeSpanIdentifier = nativeSpanIdentifier;
+            _nativeSpanIdentifier = nativeSpanIdentifier;
             ParentContext = parentContext;
         }
 

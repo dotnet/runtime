@@ -18,10 +18,10 @@ namespace Microsoft.Interop
 
         public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning, InteropGenerationOptions options)
         {
-            this._manualMarshallingGenerator = manualMarshallingGenerator;
-            this._elementType = elementType;
-            this._enablePinning = enablePinning;
-            this._options = options;
+            _manualMarshallingGenerator = manualMarshallingGenerator;
+            _elementType = elementType;
+            _enablePinning = enablePinning;
+            _options = options;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)

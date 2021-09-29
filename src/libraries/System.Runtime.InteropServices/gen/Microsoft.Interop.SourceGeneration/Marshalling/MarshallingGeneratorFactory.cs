@@ -45,7 +45,7 @@ namespace Microsoft.Interop
 
         public DefaultMarshallingGeneratorFactory(InteropGenerationOptions options)
         {
-            this.Options = options;
+            Options = options;
         }
 
         /// <summary>

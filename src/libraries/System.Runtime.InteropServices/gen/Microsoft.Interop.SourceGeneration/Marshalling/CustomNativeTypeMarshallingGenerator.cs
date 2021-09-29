@@ -19,8 +19,8 @@ namespace Microsoft.Interop
 
         public CustomNativeTypeMarshallingGenerator(ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
         {
-            this._nativeTypeMarshaller = nativeTypeMarshaller;
-            this._enableByValueContentsMarshalling = enableByValueContentsMarshalling;
+            _nativeTypeMarshaller = nativeTypeMarshaller;
+            _enableByValueContentsMarshalling = enableByValueContentsMarshalling;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)

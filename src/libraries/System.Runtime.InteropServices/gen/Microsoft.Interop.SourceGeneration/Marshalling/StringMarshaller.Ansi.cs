@@ -20,7 +20,7 @@ namespace Microsoft.Interop
 
         public AnsiStringMarshaller(Utf8StringMarshaller utf8StringMarshaller)
         {
-            this._utf8StringMarshaller = utf8StringMarshaller;
+            _utf8StringMarshaller = utf8StringMarshaller;
         }
 
         public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -105,7 +105,7 @@ namespace Microsoft.Interop
                         yield return IfStatement(IsWindows,
                             windowsBlock,
                             ElseClause(
-                                Block(this._utf8StringMarshaller.Generate(info, context))));
+                                Block(_utf8StringMarshaller.Generate(info, context))));
                     }
                     break;
                 case StubCodeContext.Stage.Unmarshal:
@@ -140,7 +140,7 @@ namespace Microsoft.Interop
                                                             IdentifierName(nativeIdentifier))))),
                                                 initializer: null))))),
                             ElseClause(
-                                Block(this._utf8StringMarshaller.Generate(info, context))));
+                                Block(_utf8StringMarshaller.Generate(info, context))));
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:

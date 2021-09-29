@@ -22,7 +22,7 @@ namespace Microsoft.Interop
         public AttributedMarshallingModelGeneratorFactory(IMarshallingGeneratorFactory innerMarshallingGenerator, InteropGenerationOptions options)
         {
             Options = options;
-            this._innerMarshallingGenerator = innerMarshallingGenerator;
+            _innerMarshallingGenerator = innerMarshallingGenerator;
             ElementMarshallingGeneratorFactory = this;
         }
 

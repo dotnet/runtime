@@ -14,7 +14,7 @@ namespace Microsoft.Interop
 
         public PinnableManagedValueMarshaller(IMarshallingGenerator manualMarshallingGenerator)
         {
-            this._manualMarshallingGenerator = manualMarshallingGenerator;
+            _manualMarshallingGenerator = manualMarshallingGenerator;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)

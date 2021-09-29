@@ -67,7 +67,7 @@ namespace Microsoft.Interop
             Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
             IMarshallingGeneratorFactory generatorFactory)
         {
-            this._setLastError = setLastError;
+            _setLastError = setLastError;
 
             List<BoundGenerator> allMarshallers = new();
             List<BoundGenerator> paramMarshallers = new();
@@ -98,17 +98,17 @@ namespace Microsoft.Interop
                 }
             }
 
-            this._stubReturnsVoid = managedRetMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
+            _stubReturnsVoid = managedRetMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
 
-            if (!managedRetMarshaller.TypeInfo.IsNativeReturnPosition && !this._stubReturnsVoid)
+            if (!managedRetMarshaller.TypeInfo.IsNativeReturnPosition && !_stubReturnsVoid)
             {
                 // If the managed ret marshaller isn't the native ret marshaller, then the managed ret marshaller
                 // is a parameter.
                 paramMarshallers.Add(managedRetMarshaller);
             }
 
-            this._retMarshaller = nativeRetMarshaller;
-            this._paramMarshallers = paramMarshallers;
+            _retMarshaller = nativeRetMarshaller;
+            _paramMarshallers = paramMarshallers;
 
             // We are doing a topological sort of our marshallers to ensure that each parameter/return value's
             // dependencies are unmarshalled before their dependents. This comes up in the case of contiguous
@@ -132,7 +132,7 @@ namespace Microsoft.Interop
             // the return value has dependencies on numRows and numColumns and numRows has a dependency on numColumns,
             // we want to unmarshal numColumns, then numRows, then the return value.
             // A topological sort ensures we get this order correct.
-            this._sortedMarshallers = MarshallerHelpers.GetTopologicallySortedElements(
+            _sortedMarshallers = MarshallerHelpers.GetTopologicallySortedElements(
                 allMarshallers,
                 static m => GetInfoIndex(m.TypeInfo),
                 static m => GetInfoDependencies(m.TypeInfo))
@@ -141,7 +141,7 @@ namespace Microsoft.Interop
             if (managedRetMarshaller.Generator.UsesNativeIdentifier(managedRetMarshaller.TypeInfo, this))
             {
                 // Update the native identifier for the return value
-                this.ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
+                ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
             }
 
             static IEnumerable<int> GetInfoDependencies(TypePositionInfo info)
@@ -258,7 +258,7 @@ namespace Microsoft.Interop
 
             // Do not manually handle SetLastError when generating forwarders.
             // We want the runtime to handle everything.
-            if (this._setLastError)
+            if (_setLastError)
             {
                 // Declare variable for last error
                 setupStatements.Add(MarshallerHelpers.DeclareWithDefault(
@@ -304,7 +304,7 @@ namespace Microsoft.Interop
                 allStatements.AddRange(tryStatements);
             }
 
-            if (this._setLastError)
+            if (_setLastError)
             {
                 // Marshal.SetLastPInvokeError(<lastError>);
                 allStatements.Add(ExpressionStatement(
@@ -327,7 +327,7 @@ namespace Microsoft.Interop
             void GenerateStatementsForStage(Stage stage, List<StatementSyntax> statementsToUpdate)
             {
                 int initialCount = statementsToUpdate.Count;
-                this.CurrentStage = stage;
+                CurrentStage = stage;
 
                 if (!invokeReturnsVoid && (stage is Stage.Setup or Stage.Cleanup))
                 {
@@ -371,7 +371,7 @@ namespace Microsoft.Interop
             void GenerateStatementsForInvoke(List<StatementSyntax> statementsToUpdate, InvocationExpressionSyntax invoke)
             {
                 var fixedStatements = new List<FixedStatementSyntax>();
-                this.CurrentStage = Stage.Pin;
+                CurrentStage = Stage.Pin;
                 // Generate code for each parameter for the current stage
                 foreach (var marshaller in _paramMarshallers)
                 {
@@ -386,7 +386,7 @@ namespace Microsoft.Interop
                     }
                 }
 
-                this.CurrentStage = Stage.Invoke;
+                CurrentStage = Stage.Invoke;
                 // Generate code for each parameter for the current stage
                 foreach (var marshaller in _paramMarshallers)
                 {
@@ -406,7 +406,7 @@ namespace Microsoft.Interop
                     invokeStatement = ExpressionStatement(
                         AssignmentExpression(
                             SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(this.GetIdentifiers(_retMarshaller.TypeInfo).native),
+                            IdentifierName(GetIdentifiers(_retMarshaller.TypeInfo).native),
                             invoke));
                 }
 
@@ -474,7 +474,7 @@ namespace Microsoft.Interop
 
         private void AppendVariableDeclations(List<StatementSyntax> statementsToUpdate, TypePositionInfo info, IMarshallingGenerator generator)
         {
-            var (managed, native) = this.GetIdentifiers(info);
+            var (managed, native) = GetIdentifiers(info);
 
             // Declare variable for return value
             if (info.IsManagedReturnPosition || info.IsNativeReturnPosition)
