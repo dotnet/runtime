@@ -2361,7 +2361,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         // op1 = (op1 * op2) + [op3]
                         srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
                         srcCount += BuildDelayFreeUses(op2, op1);
-
                     }
                 }
                 else if (overwrittenOpNum == 2)
@@ -2399,7 +2398,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op3);
                         srcCount += BuildDelayFreeUses(op1, op3);
                     }
-
                 }
                 else
                 {
@@ -2430,9 +2428,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                             srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
                         }
                     }
-
                 }
-                
+
                 buildUses = false;
                 break;
             }
