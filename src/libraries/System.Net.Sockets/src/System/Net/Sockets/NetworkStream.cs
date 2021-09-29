@@ -669,10 +669,7 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (_disposed != 0)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed != 0, this);
         }
 
         private static IOException WrapException(string resourceFormatString, Exception innerException)

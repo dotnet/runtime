@@ -1099,10 +1099,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void CheckIfDisposed()
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private TrustRelationshipInformationCollection GetTrustsHelper(string? targetForestName)

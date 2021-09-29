@@ -196,10 +196,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private Task InternalWriteAsync(byte[] buffer, int offset, int count, CancellationToken token)

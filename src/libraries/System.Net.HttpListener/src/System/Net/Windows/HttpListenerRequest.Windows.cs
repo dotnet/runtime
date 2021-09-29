@@ -549,10 +549,7 @@ namespace System.Net
 
         internal void CheckDisposed()
         {
-            if (_isDisposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;

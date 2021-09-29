@@ -308,10 +308,7 @@ namespace System.Security
 
         private void EnsureNotDisposed()
         {
-            if (_buffer == null)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_buffer == null, this);
         }
 
         internal unsafe IntPtr MarshalToBSTR()

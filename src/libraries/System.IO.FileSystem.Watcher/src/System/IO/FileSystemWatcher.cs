@@ -635,8 +635,7 @@ namespace System.IO
         private void StartRaisingEventsIfNotDisposed()
         {
             //Cannot allocate the directoryHandle and the readBuffer if the object has been disposed; finalization has been suppressed.
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             StartRaisingEvents();
         }
 

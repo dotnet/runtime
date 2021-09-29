@@ -72,10 +72,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal void CheckIfDisposed()
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         #endregion private methods

@@ -101,10 +101,7 @@ namespace System.Net
 
         private void CheckDisposed()
         {
-            if (_closed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_closed, this);
         }
 
         public override void Close()

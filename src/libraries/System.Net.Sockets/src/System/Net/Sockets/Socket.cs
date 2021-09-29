@@ -3809,10 +3809,7 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (Disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
         }
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;

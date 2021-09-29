@@ -453,12 +453,7 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (Disposed)
-            {
-                ThrowObjectDisposedException();
-            }
-
-            void ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(Disposed, this);
         }
     }
 }

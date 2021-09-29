@@ -78,10 +78,7 @@ namespace System.Net.NetworkInformation
 
         private void CheckDisposed()
         {
-            if (_disposeRequested)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposeRequested, this);
         }
 
         private void CheckStart()
@@ -106,7 +103,7 @@ namespace System.Net.NetworkInformation
             else
             {
                 Debug.Assert(currentStatus == Disposed, $"Expected currentStatus == Disposed, got {currentStatus}");
-                ObjectDisposedException.Throw(this);
+                throw new ObjectDisposedException(GetType().FullName);
             }
         }
 
