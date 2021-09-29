@@ -97,6 +97,8 @@
     <SystemNetPrimitivesVersion>4.3.1</SystemNetPrimitivesVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
     <SystemReflectionMetadataVersion>5.0.0</SystemReflectionMetadataVersion>
+    <!-- Static version does not get updated with the latest version during source-builds. -->
+    <SystemReflectionMetadataStaticVersion>5.0.0</SystemReflectionMetadataStaticVersion>
     <SystemReflectionEmitVersion>4.7.0</SystemReflectionEmitVersion>
     <SystemReflectionEmitILGenerationVersion>4.7.0</SystemReflectionEmitILGenerationVersion>
     <SystemReflectionEmitLightweightVersion>4.7.0</SystemReflectionEmitLightweightVersion>
