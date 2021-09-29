@@ -48,9 +48,6 @@
     <PropertyGroup>
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
-
-      <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-      <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
     </PropertyGroup>
 
     <ItemGroup>
@@ -74,6 +71,11 @@
 
       <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
     </ItemGroup>
+
+    <PropertyGroup>
+      <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+      <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+    </PropertyGroup>
 
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
