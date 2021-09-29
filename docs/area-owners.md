@@ -158,3 +158,11 @@ Note: Editing this file doesn't update the mapping used by the `@msftbot` issue 
 |------------------|---------------|-----------------------------------------------------|--------------|
 | arch-wasm        | @lewing       | @lewing @BrzVlad                                    |              |
 
+## Community Triagers
+
+The repo has a number of community members carrying the triager role. While not necessarily associated with a specific area, they may assist with labeling issues and pull requests. Currently, the following community members are triagers:
+
+* @huoyaoyuan
+* @SingleAccretion
+* @tmds
+* @vcsjones
