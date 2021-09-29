@@ -209,7 +209,10 @@ namespace System.Drawing
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_handle == IntPtr.Zero, this);
+                if (_handle == IntPtr.Zero)
+                {
+                    ObjectDisposedException.Throw(this);
+                }
                 return _handle;
             }
         }

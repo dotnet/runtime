@@ -132,7 +132,7 @@ namespace System.Net.Sockets
         public void Connect(string hostname, int port)
         {
 
-            ObjectDisposedException.ThrowIf(Disposed, this);
+            ThrowIfDisposed();
 
             if (hostname == null)
             {
@@ -229,7 +229,7 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(IPAddress address, int port)
         {
-            ObjectDisposedException.ThrowIf(Disposed, this);
+            ThrowIfDisposed();
 
             if (address == null)
             {
@@ -247,7 +247,7 @@ namespace System.Net.Sockets
         // Connect the Client to the specified end point.
         public void Connect(IPEndPoint remoteEP)
         {
-            ObjectDisposedException.ThrowIf(Disposed, this);
+            ThrowIfDisposed();
 
             if (remoteEP == null)
             {
@@ -332,7 +332,7 @@ namespace System.Net.Sockets
         // Returns the stream used to read and write data to the remote host.
         public NetworkStream GetStream()
         {
-            ObjectDisposedException.ThrowIf(Disposed, this);
+            ThrowIfDisposed();
 
             if (!Connected)
             {
@@ -449,6 +449,16 @@ namespace System.Net.Sockets
             {
                 _clientSocket = new Socket(_family, SocketType.Stream, ProtocolType.Tcp);
             }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (Disposed)
+            {
+                ThrowObjectDisposedException();
+            }
+
+            void ThrowObjectDisposedException() => ObjectDisposedException.Throw(this);
         }
     }
 }

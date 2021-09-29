@@ -62,10 +62,22 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 return partitionName;
             }
         }
         #endregion public properties
+
+        #region private methods
+
+        internal void CheckIfDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
+        }
+
+        #endregion private methods
     }
 }

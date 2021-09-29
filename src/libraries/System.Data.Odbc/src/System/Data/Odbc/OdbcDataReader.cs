@@ -73,7 +73,7 @@ namespace System.Data.Odbc
                 if (null == value)
                 {
                     Debug.Fail("object is disposed");
-                    throw new ObjectDisposedException(GetType().Name);
+                    ObjectDisposedException.Throw(this);
                 }
                 return value;
             }

@@ -75,7 +75,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void MoveToAnotherSite(string siteName)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             // validate siteName
             if (siteName == null)
@@ -148,7 +148,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
             string serverName = (this is DomainController) ? ((DomainController)this).ServerObjectName : ((AdamInstance)this).ServerObjectName;
             return DirectoryEntryManager.GetDirectoryEntry(context, serverName);
         }
@@ -185,7 +185,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 return replicaName;
             }
         }
@@ -194,7 +194,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 if (cachedPartitions == null)
                 {
                     cachedPartitions = new ReadOnlyStringCollection(GetPartitions());
@@ -280,6 +280,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
             return partitionList;
+        }
+
+        internal void CheckIfDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
         }
 
         internal DirectoryContext Context => context;

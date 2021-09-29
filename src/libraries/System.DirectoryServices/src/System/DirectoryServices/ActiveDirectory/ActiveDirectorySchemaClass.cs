@@ -267,7 +267,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ReadOnlyActiveDirectorySchemaPropertyCollection GetAllProperties()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             ArrayList properties = new ArrayList();
 
@@ -281,7 +281,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Save()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             if (!isBound)
             {
@@ -442,7 +442,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             if (!isBound)
             {
@@ -461,7 +461,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 return _ldapDisplayName;
             }
         }
@@ -470,7 +470,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -484,7 +484,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -499,7 +499,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -528,7 +528,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -543,7 +543,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -558,7 +558,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -573,13 +573,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 // this is initialized for bound classes in the constructor
                 return _isDefunct;
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -594,7 +594,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (_possibleSuperiors == null)
                 {
@@ -671,7 +671,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (_possibleInferiors == null)
                 {
@@ -693,7 +693,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (_mandatoryProperties == null)
                 {
@@ -769,7 +769,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (_optionalProperties == null)
                 {
@@ -854,7 +854,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (_auxiliaryClasses == null)
                 {
@@ -930,7 +930,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -944,7 +944,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -959,7 +959,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -974,7 +974,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 // validate the value that is being set
                 if (value < SchemaClassType.Type88 || value > SchemaClassType.Auxiliary)
@@ -995,7 +995,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -1011,7 +1011,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -1026,7 +1026,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 ActiveDirectorySecurity? defaultObjectSecurityDescriptor = null;
 
@@ -1051,7 +1051,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
 
                 if (isBound)
                 {
@@ -1065,6 +1065,14 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion public properties
 
         #region private methods
+
+        private void CheckIfDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
+        }
 
         //
         // This method retrieves the value of a property (single valued) from the values

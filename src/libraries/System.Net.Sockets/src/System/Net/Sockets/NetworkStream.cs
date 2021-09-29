@@ -165,7 +165,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed != 0, this);
+                ThrowIfDisposed();
 
                 // Ask the socket how many bytes are available. If it's
                 // not zero, return true.
@@ -220,7 +220,7 @@ namespace System.Net.Sockets
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
@@ -246,7 +246,7 @@ namespace System.Net.Sockets
                 return base.Read(buffer);
             }
 
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanRead) throw new InvalidOperationException(SR.net_writeonlystream);
 
             try
@@ -284,7 +284,7 @@ namespace System.Net.Sockets
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
@@ -313,7 +313,7 @@ namespace System.Net.Sockets
                 return;
             }
 
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanWrite) throw new InvalidOperationException(SR.net_readonlystream);
 
             try
@@ -389,7 +389,7 @@ namespace System.Net.Sockets
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
@@ -421,7 +421,7 @@ namespace System.Net.Sockets
         //     The number of bytes read. May throw an exception.
         public override int EndRead(IAsyncResult asyncResult)
         {
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -456,7 +456,7 @@ namespace System.Net.Sockets
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
@@ -485,7 +485,7 @@ namespace System.Net.Sockets
         // Returns:  The number of bytes read. May throw an exception.
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (asyncResult == null)
@@ -521,7 +521,7 @@ namespace System.Net.Sockets
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
@@ -544,7 +544,7 @@ namespace System.Net.Sockets
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             bool canRead = CanRead; // Prevent race with Dispose.
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!canRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
@@ -582,7 +582,7 @@ namespace System.Net.Sockets
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
@@ -604,7 +604,7 @@ namespace System.Net.Sockets
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             bool canWrite = CanWrite; // Prevent race with Dispose.
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!canWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
@@ -664,6 +664,14 @@ namespace System.Net.Sockets
                     _streamSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout, silent);
                     _currentReadTimeout = timeout;
                 }
+            }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed != 0)
+            {
+                ObjectDisposedException.Throw(this);
             }
         }
 

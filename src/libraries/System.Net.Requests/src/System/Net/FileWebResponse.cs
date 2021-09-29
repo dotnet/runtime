@@ -65,7 +65,7 @@ namespace System.Net
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_closed, this);
+                CheckDisposed();
                 return _contentLength;
             }
         }
@@ -74,7 +74,7 @@ namespace System.Net
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_closed, this);
+                CheckDisposed();
                 return DefaultFileContentType;
             }
         }
@@ -83,7 +83,7 @@ namespace System.Net
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_closed, this);
+                CheckDisposed();
                 return _headers;
             }
         }
@@ -94,8 +94,16 @@ namespace System.Net
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_closed, this);
+                CheckDisposed();
                 return _uri;
+            }
+        }
+
+        private void CheckDisposed()
+        {
+            if (_closed)
+            {
+                ObjectDisposedException.Throw(this);
             }
         }
 
@@ -116,7 +124,7 @@ namespace System.Net
 
         public override Stream GetResponseStream()
         {
-            ObjectDisposedException.ThrowIf(_closed, this);
+            CheckDisposed();
             return _stream;
         }
     }

@@ -44,7 +44,7 @@ namespace System.Net.WebSockets
 
         internal Task ConnectAsync(Uri uri, List<string>? requestedSubProtocols, CancellationToken cancellationToken)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
             if (_state != WebSocketState.None)
             {
                 throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
@@ -57,7 +57,7 @@ namespace System.Net.WebSockets
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             // fast check of previous _state instead of GetReadyState(), the readyState would be validated on JS side
             if (_state != WebSocketState.Open)
@@ -87,7 +87,7 @@ namespace System.Net.WebSockets
             {
                 return Task.FromException<WebSocketReceiveResult>(new OperationCanceledException(cancellationToken));
             }
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
             // fast check of previous _state instead of GetReadyState(), the readyState would be validated on JS side
             if (_state != WebSocketState.Open && _state != WebSocketState.CloseSent)
             {
@@ -102,7 +102,7 @@ namespace System.Net.WebSockets
         public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
@@ -120,7 +120,7 @@ namespace System.Net.WebSockets
         public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
@@ -342,6 +342,14 @@ namespace System.Net.WebSockets
                     throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, ex);
                 }
                 throw new WebSocketException(WebSocketError.NativeError, ex);
+            }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
             }
         }
 

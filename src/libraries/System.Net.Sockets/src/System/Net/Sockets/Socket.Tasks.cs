@@ -159,7 +159,7 @@ namespace System.Net.Sockets
         /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
         {
-            ObjectDisposedException.ThrowIf(Disposed, this);
+            ThrowIfDisposed();
 
             if (addresses == null)
             {

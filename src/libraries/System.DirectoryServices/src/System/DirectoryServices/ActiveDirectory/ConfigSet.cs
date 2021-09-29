@@ -153,13 +153,13 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public AdamInstance FindAdamInstance()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
             return FindOneAdamInstance(Name, _context, null, null);
         }
 
         public AdamInstance FindAdamInstance(string partitionName)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             if (partitionName == null)
             {
@@ -171,7 +171,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public AdamInstance FindAdamInstance(string? partitionName, string siteName)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             //
             // null partitionName would signify that we don't care about the partition
@@ -187,14 +187,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public AdamInstanceCollection FindAllAdamInstances()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             return FindAdamInstances(_context, null, null);
         }
 
         public AdamInstanceCollection FindAllAdamInstances(string partitionName)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             if (partitionName == null)
             {
@@ -206,7 +206,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public AdamInstanceCollection FindAllAdamInstances(string? partitionName, string siteName)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
 
             //
             // null partitionName would signify that we don't care about the partition
@@ -222,13 +222,13 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
             return DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.ConfigurationNamingContext);
         }
 
         public ReplicationSecurityLevel GetSecurityLevel()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
             if (_cachedSecurityLevel == (ReplicationSecurityLevel)(-1))
             {
                 DirectoryEntry configEntry = _directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.ConfigurationNamingContext);
@@ -239,7 +239,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void SetSecurityLevel(ReplicationSecurityLevel securityLevel)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckIfDisposed();
             if (securityLevel < ReplicationSecurityLevel.NegotiatePassThrough || securityLevel > ReplicationSecurityLevel.MutualAuthentication)
             {
                 throw new InvalidEnumArgumentException(nameof(securityLevel), (int)securityLevel, typeof(ReplicationSecurityLevel));
@@ -270,7 +270,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 return _configSetName;
             }
         }
@@ -279,7 +279,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 if (_cachedSites == null)
                 {
                     _cachedSites = new ReadOnlySiteCollection(GetSites());
@@ -292,7 +292,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 if (_cachedADAMInstances == null)
                 {
                     _cachedADAMInstances = FindAllAdamInstances();
@@ -305,7 +305,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 if (_cachedApplicationPartitions == null)
                 {
                     _cachedApplicationPartitions = new ApplicationPartitionCollection(GetApplicationPartitions());
@@ -318,7 +318,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 if (_cachedSchema == null)
                 {
                     try
@@ -338,7 +338,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 if (_cachedSchemaRoleOwner == null)
                 {
                     _cachedSchemaRoleOwner = GetRoleOwner(AdamRole.SchemaRole);
@@ -351,7 +351,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckIfDisposed();
                 if (_cachedNamingRoleOwner == null)
                 {
                     _cachedNamingRoleOwner = GetRoleOwner(AdamRole.NamingRole);
@@ -766,6 +766,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
             return appNCs;
+        }
+
+        private void CheckIfDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
         }
         #endregion private methods
     }

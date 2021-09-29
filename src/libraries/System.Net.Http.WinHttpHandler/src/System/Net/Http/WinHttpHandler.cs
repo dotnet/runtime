@@ -604,7 +604,7 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
             }
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
 
             SetOperationStarted();
 
@@ -1594,9 +1594,17 @@ namespace System.Net.Http
             }
         }
 
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
+        }
+
         private void CheckDisposedOrStarted()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
             if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);

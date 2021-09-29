@@ -519,7 +519,8 @@ namespace System.DirectoryServices
         {
             //Cannot rebind after the object has been disposed, since finalization has been suppressed.
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                ObjectDisposedException.Throw(this);
 
             if (_adsObject == null)
             {

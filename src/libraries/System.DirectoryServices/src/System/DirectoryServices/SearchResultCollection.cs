@@ -85,7 +85,8 @@ namespace System.DirectoryServices
             get
             {
                 //The handle is no longer valid since the object has been disposed.
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    ObjectDisposedException.Throw(this);
 
                 return _handle;
             }
@@ -103,7 +104,8 @@ namespace System.DirectoryServices
 
         private unsafe byte[] RetrieveDirectorySynchronizationCookie()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                ObjectDisposedException.Throw(this);
 
             // get the dirsync cookie back
             AdsSearchColumn column = default;
@@ -130,7 +132,8 @@ namespace System.DirectoryServices
 
         private unsafe DirectoryVirtualListView RetrieveVLVResponse()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                ObjectDisposedException.Throw(this);
 
             // get the vlv response back
             AdsSearchColumn column = default;

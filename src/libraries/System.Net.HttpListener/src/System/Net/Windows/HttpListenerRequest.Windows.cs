@@ -111,7 +111,7 @@ namespace System.Net
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_isDisposed, this);
+                CheckDisposed();
                 return _memoryBlob!.RequestBuffer;
             }
         }
@@ -120,7 +120,7 @@ namespace System.Net
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_isDisposed, this);
+                CheckDisposed();
                 return _memoryBlob!.OriginalBlobAddress;
             }
         }
@@ -545,6 +545,14 @@ namespace System.Net
         internal ChannelBinding? GetChannelBinding()
         {
             return HttpListener.GetChannelBindingFromTls(HttpListenerContext.ListenerSession, _connectionId);
+        }
+
+        internal void CheckDisposed()
+        {
+            if (_isDisposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
         }
 
         private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;

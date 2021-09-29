@@ -237,7 +237,7 @@ namespace System.Data.OleDb
             if (null == irowset)
             {
                 Debug.Assert(false, "object is disposed");
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
             return irowset;
         }
@@ -248,7 +248,7 @@ namespace System.Data.OleDb
             if (null == irow)
             {
                 Debug.Assert(false, "object is disposed");
-                throw new ObjectDisposedException(GetType().Name);
+                ObjectDisposedException.Throw(this);
             }
             return irow;
         }

@@ -29,21 +29,30 @@ namespace System.Net.Mail
 
         protected override void RemoveItem(int index)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
 
             base.RemoveItem(index);
         }
 
         protected override void ClearItems()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
 
             base.ClearItems();
         }
 
         protected override void SetItem(int index, LinkedResource item)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
 
             if (item == null)
             {
@@ -55,7 +64,10 @@ namespace System.Net.Mail
 
         protected override void InsertItem(int index, LinkedResource item)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
 
             if (item == null)
             {

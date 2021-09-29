@@ -51,7 +51,7 @@ namespace System.Net
             get => _nativeResponse.StatusCode;
             set
             {
-                ObjectDisposedException.ThrowIf(Disposed, this);
+                CheckDisposed();
                 if (value < 100 || value > 999)
                 {
                     throw new ProtocolViolationException(SR.net_invalidstatus);
@@ -81,7 +81,7 @@ namespace System.Net
             get => new Version(_nativeResponse.Version.MajorVersion, _nativeResponse.Version.MinorVersion);
             set
             {
-                ObjectDisposedException.ThrowIf(Disposed, this);
+                CheckDisposed();
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(value));
@@ -120,7 +120,7 @@ namespace System.Net
 
         public void Close(byte[] responseEntity, bool willBlock)
         {
-            ObjectDisposedException.ThrowIf(Disposed, this);
+            CheckDisposed();
             if (responseEntity == null)
             {
                 throw new ArgumentNullException(nameof(responseEntity));

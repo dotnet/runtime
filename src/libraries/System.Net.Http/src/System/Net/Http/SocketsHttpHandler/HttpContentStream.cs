@@ -35,11 +35,13 @@ namespace System.Net.Http
         protected HttpConnection GetConnectionOrThrow()
         {
             HttpConnection? c = _connection;
-            // This should only ever happen if the user-code that was handed this instance disposed of
-            // it, which is misuse, or held onto it and tried to use it later after we've disposed of it,
-            // which is also misuse.
-            ObjectDisposedException.ThrowIf(c is null, this);
-
+            if (c is null)
+            {
+                // This should only ever happen if the user-code that was handed this instance disposed of
+                // it, which is misuse, or held onto it and tried to use it later after we've disposed of it,
+                // which is also misuse.
+                ObjectDisposedException.Throw(this);
+            }
             return c;
         }
     }

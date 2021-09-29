@@ -48,7 +48,7 @@ namespace System.Tests
         {
             var obj = new object();
             ObjectDisposedException ex = AssertExtensions.Throws<ObjectDisposedException>(
-                () => ObjectDisposedException.ThrowIf(true, obj));
+                () => ObjectDisposedException.Throw(obj));
             
             Assert.Equals("System.Object", ex.ObjectName);
         }
@@ -58,7 +58,7 @@ namespace System.Tests
         {
             Type type = new object().GetType();
             ObjectDisposedException ex = AssertExtensions.Throws<ObjectDisposedException>(
-                () => ObjectDisposedException.ThrowIf(true, type));
+                () => ObjectDisposedException.Throw(type));
             
             Assert.Equals("System.Object", ex.ObjectName);
         }

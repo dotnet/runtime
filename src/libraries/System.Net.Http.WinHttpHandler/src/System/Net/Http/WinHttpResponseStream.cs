@@ -57,7 +57,7 @@ namespace System.Net.Http
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckDisposed();
                 throw new NotSupportedException();
             }
         }
@@ -66,13 +66,13 @@ namespace System.Net.Http
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckDisposed();
                 throw new NotSupportedException();
             }
 
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckDisposed();
                 throw new NotSupportedException();
             }
         }
@@ -199,7 +199,7 @@ namespace System.Net.Http
                 return Task.FromCanceled<int>(token);
             }
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
 
             if (_state.AsyncReadInProgress)
             {
@@ -303,19 +303,19 @@ namespace System.Net.Http
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
             throw new NotSupportedException();
         }
 
         public override void SetLength(long value)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
             throw new NotSupportedException();
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
             throw new NotSupportedException();
         }
 
@@ -336,6 +336,14 @@ namespace System.Net.Http
             }
 
             base.Dispose(disposing);
+        }
+
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
         }
 
         // The only way to abort pending async operations in WinHTTP is to close the request handle.

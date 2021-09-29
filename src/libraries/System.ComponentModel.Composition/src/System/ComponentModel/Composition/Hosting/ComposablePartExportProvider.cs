@@ -131,13 +131,13 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_isDisposed, this);
+                ThrowIfDisposed();
 
                 return _sourceProvider;
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_isDisposed, this);
+                ThrowIfDisposed();
 
                 Requires.NotNull(value!, nameof(value));
                 using (_lock.LockStateForWrite())
@@ -202,8 +202,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </remarks>
         protected override IEnumerable<Export>? GetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
         {
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
-
+            ThrowIfDisposed();
             EnsureRunning();
 
             // Determine whether there is a composition atomicComposition-specific list of parts to use,
@@ -237,7 +236,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         public void Compose(CompositionBatch batch)
         {
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
+            ThrowIfDisposed();
             EnsureRunning();
 
             Requires.NotNull(batch, nameof(batch));
@@ -400,10 +399,19 @@ namespace System.ComponentModel.Composition.Hosting
 
         private object? GetExportedValue(ComposablePart part, ExportDefinition export)
         {
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
+            ThrowIfDisposed();
             EnsureRunning();
 
             return CompositionServices.GetExportedValueFromComposedPart(ImportEngine, part, export);
+        }
+
+        [DebuggerStepThrough]
+        private void ThrowIfDisposed()
+        {
+            if (_isDisposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
         }
 
         [DebuggerStepThrough]

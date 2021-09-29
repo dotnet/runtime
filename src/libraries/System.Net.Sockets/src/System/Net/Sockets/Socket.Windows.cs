@@ -128,7 +128,7 @@ namespace System.Net.Sockets
         [SupportedOSPlatform("windows")]
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
-            ObjectDisposedException.ThrowIf(Disposed, this);
+            ThrowIfDisposed();
 
             SocketError errorCode = SocketPal.DuplicateSocket(_handle, targetProcessId, out SocketInformation info);
 

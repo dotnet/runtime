@@ -177,7 +177,7 @@ namespace System.Net.WebSockets
         public async override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanRead)
             {
                 throw new InvalidOperationException("The stream does not support reading.");
@@ -197,7 +197,7 @@ namespace System.Net.WebSockets
         public async override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             bool canRead = CanRead; // Prevent race with Dispose.
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!canRead)
             {
                 throw new InvalidOperationException("The stream does not support reading.");
@@ -218,7 +218,7 @@ namespace System.Net.WebSockets
         public async override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!CanWrite)
             {
                 throw new InvalidOperationException("The stream does not support writing.");
@@ -237,7 +237,7 @@ namespace System.Net.WebSockets
         public async override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             bool canWrite = CanWrite; // Prevent race with Dispose.
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ThrowIfDisposed();
             if (!canWrite)
             {
                 throw new InvalidOperationException("The stream does not support writing.");
@@ -265,6 +265,14 @@ namespace System.Net.WebSockets
         public override void SetLength(long value)
         {
             throw new NotSupportedException("This stream does not support seek operations.");
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed != 0)
+            {
+                ObjectDisposedException.Throw(this);
+            }
         }
 
         private static IOException WrapException(string resourceFormatString, Exception innerException)

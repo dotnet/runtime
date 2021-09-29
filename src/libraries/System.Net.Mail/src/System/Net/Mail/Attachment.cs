@@ -215,7 +215,10 @@ namespace System.Net.Mail
         {
             get
             {
-                ObjectDisposedException.ThrowIf(disposed, this);
+                if (disposed)
+                {
+                    ObjectDisposedException.Throw(this);
+                }
 
                 return _part.Stream!;
             }

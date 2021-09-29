@@ -41,7 +41,7 @@ namespace System.Net.NetworkInformation
 
         private void CheckArgs(int timeout, byte[] buffer, PingOptions? options)
         {
-            ObjectDisposedException.ThrowIf(_disposeRequested, this);
+            CheckDisposed();
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -76,6 +76,14 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        private void CheckDisposed()
+        {
+            if (_disposeRequested)
+            {
+                ObjectDisposedException.Throw(this);
+            }
+        }
+
         private void CheckStart()
         {
             int currentStatus;
@@ -98,7 +106,7 @@ namespace System.Net.NetworkInformation
             else
             {
                 Debug.Assert(currentStatus == Disposed, $"Expected currentStatus == Disposed, got {currentStatus}");
-                throw new ObjectDisposedException(GetType().FullName);
+                ObjectDisposedException.Throw(this);
             }
         }
 

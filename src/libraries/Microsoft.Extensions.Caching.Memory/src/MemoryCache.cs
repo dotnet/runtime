@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <inheritdoc />
         public ICacheEntry CreateEntry(object key)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
             ValidateCacheKey(key);
 
             return new CacheEntry(key, this);
@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public bool TryGetValue(object key, out object result)
         {
             ValidateCacheKey(key);
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
 
             DateTimeOffset utcNow = _options.Clock.UtcNow;
 
@@ -264,7 +264,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             ValidateCacheKey(key);
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
             if (_entries.TryRemove(key, out CacheEntry entry))
             {
                 if (_options.SizeLimit.HasValue)
@@ -492,6 +492,16 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 _disposed = true;
             }
+        }
+
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                Throw();
+            }
+
+            static void Throw() => ObjectDisposedException.Throw(typeof(MemoryCache));
         }
 
         private static void ValidateCacheKey(object key)

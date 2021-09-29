@@ -689,7 +689,7 @@ namespace System.Diagnostics
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckDisposed();
                 if (_standardInput == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardIn);
@@ -707,7 +707,7 @@ namespace System.Diagnostics
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckDisposed();
                 if (_standardOutput == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardOut);
@@ -733,7 +733,7 @@ namespace System.Diagnostics
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckDisposed();
                 if (_standardError == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardError);
@@ -1159,7 +1159,7 @@ namespace System.Diagnostics
             if (!_haveProcessHandle)
             {
                 //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                CheckDisposed();
 
                 SetProcessHandle(GetProcessHandle());
             }
@@ -1232,7 +1232,7 @@ namespace System.Diagnostics
             }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
 
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
 
@@ -1615,7 +1615,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CancelOutputRead()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
             if (_output != null)
             {
                 _output.CancelOperation();
@@ -1636,7 +1636,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CancelErrorRead()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            CheckDisposed();
             if (_error != null)
             {
                 _error.CancelOperation();
@@ -1684,6 +1684,16 @@ namespace System.Diagnostics
                 {
                     errorDataReceived(this, e);
                 }
+            }
+        }
+
+        /// <summary>Throws a System.ObjectDisposedException if the Proces was disposed</summary>
+        /// <exception cref="System.ObjectDisposedException">If the Proces has been disposed.</exception>
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
             }
         }
 

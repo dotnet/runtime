@@ -307,7 +307,7 @@ namespace System.Net.Sockets
 
         public int EndSend(IAsyncResult asyncResult)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             return _active ?
                 _clientSocket.EndSend(asyncResult) :
@@ -316,7 +316,7 @@ namespace System.Net.Sockets
 
         private void ValidateDatagram(byte[] datagram, int bytes, IPEndPoint? endPoint)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (datagram == null)
             {
@@ -368,7 +368,7 @@ namespace System.Net.Sockets
         public IAsyncResult BeginReceive(AsyncCallback? requestCallback, object? state)
         {
             // Validate input parameters.
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             // Due to the nature of the ReceiveFrom() call and the ref parameter convention,
             // we need to cast an IPEndPoint to its base class EndPoint and cast it back down
@@ -388,7 +388,7 @@ namespace System.Net.Sockets
 
         public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint? remoteEP)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             EndPoint tempRemoteEP;
             if (_family == AddressFamily.InterNetwork)
@@ -419,7 +419,7 @@ namespace System.Net.Sockets
         public void JoinMulticastGroup(IPAddress multicastAddr)
         {
             // Validate input parameters.
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (multicastAddr == null)
             {
@@ -457,7 +457,7 @@ namespace System.Net.Sockets
 
         public void JoinMulticastGroup(IPAddress multicastAddr, IPAddress localAddress)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (_family != AddressFamily.InterNetwork)
@@ -476,7 +476,7 @@ namespace System.Net.Sockets
         // Joins an IPv6 multicast address group.
         public void JoinMulticastGroup(int ifindex, IPAddress multicastAddr)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (multicastAddr == null)
@@ -507,7 +507,7 @@ namespace System.Net.Sockets
         // Joins a multicast address group with the specified time to live (TTL).
         public void JoinMulticastGroup(IPAddress multicastAddr, int timeToLive)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             // parameter validation;
             if (multicastAddr == null)
@@ -532,7 +532,7 @@ namespace System.Net.Sockets
         // Leaves a multicast address group.
         public void DropMulticastGroup(IPAddress multicastAddr)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (multicastAddr == null)
@@ -570,7 +570,7 @@ namespace System.Net.Sockets
         // Leaves an IPv6 multicast address group.
         public void DropMulticastGroup(IPAddress multicastAddr, int ifindex)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             // Validate input parameters.
             if (multicastAddr == null)
@@ -674,7 +674,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public ValueTask<int> SendAsync(ReadOnlyMemory<byte> datagram, IPEndPoint? endPoint, CancellationToken cancellationToken = default)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (endPoint is null)
             {
@@ -691,7 +691,7 @@ namespace System.Net.Sockets
 
         public Task<UdpReceiveResult> ReceiveAsync()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             return WaitAndWrap(_clientSocket.ReceiveFromAsync(
                 new ArraySegment<byte>(_buffer, 0, MaxUDPSize),
@@ -721,7 +721,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public ValueTask<UdpReceiveResult> ReceiveAsync(CancellationToken cancellationToken)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             return WaitAndWrap(_clientSocket.ReceiveFromAsync(
                 _buffer,
@@ -773,7 +773,7 @@ namespace System.Net.Sockets
 
         public void Connect(string hostname, int port)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (hostname == null)
             {
@@ -902,7 +902,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress addr, int port)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (addr == null)
             {
@@ -920,7 +920,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPEndPoint endPoint)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (endPoint == null)
             {
@@ -934,7 +934,7 @@ namespace System.Net.Sockets
 
         public byte[] Receive([NotNull] ref IPEndPoint? remoteEP)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             // this is a fix due to the nature of the ReceiveFrom() call and the
             // ref parameter convention, we need to cast an IPEndPoint to it's base
@@ -971,7 +971,7 @@ namespace System.Net.Sockets
         // Sends a UDP datagram to the host at the remote end point.
         public int Send(byte[] dgram, int bytes, IPEndPoint? endPoint)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (dgram == null)
             {
@@ -1008,7 +1008,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public int Send(ReadOnlySpan<byte> datagram, IPEndPoint? endPoint)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (_active && endPoint != null)
             {
@@ -1050,7 +1050,7 @@ namespace System.Net.Sockets
         // Sends a UDP datagram to a remote host.
         public int Send(byte[] dgram, int bytes)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (dgram == null)
             {
@@ -1077,7 +1077,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public int Send(ReadOnlySpan<byte> datagram)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
 
             if (!_active)
             {
@@ -1086,6 +1086,14 @@ namespace System.Net.Sockets
             }
 
             return Client.Send(datagram, SocketFlags.None);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                ObjectDisposedException.Throw(this);
+            }
         }
     }
 }
