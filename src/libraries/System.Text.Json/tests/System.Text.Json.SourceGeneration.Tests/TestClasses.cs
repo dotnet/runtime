@@ -151,38 +151,4 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     internal struct MyStruct { }
-
-    public class ConcreteDerivedClass : AbstractBaseClass
-    {
-        // Ignored including on base class:
-        [JsonIgnore] public override int Abstract_Ignored_Property { get; set; }
-        [JsonIgnore] public override int Virtual_Ignored_Property { get; set; }
-
-        // Ignored but not specified on base class:
-        [JsonIgnore] public override int Abstract_IgnoredOnConcrete_Property { get; set; }
-        [JsonIgnore] public override int Virtual_IgnoredOnConcrete_Property { get; set; }
-
-        // Ignored specified on base class:
-        [JsonPropertyOrder(1)] public override int Abstract_IgnoredOnBase_Property { get; set; }
-        [JsonPropertyOrder(2)] public override int Virtual_IgnoredOnBase_Property { get; set; }
-
-        // Standard overrides (not ignored):
-        [JsonPropertyOrder(3)] public override int Abstract_Property { get; set; }
-        [JsonPropertyOrder(4)] public override int Virtual_Property { get; set; }
-    }
-
-    public abstract class AbstractBaseClass
-    {
-        [JsonIgnore] public abstract int Abstract_Ignored_Property { get; set; }
-        [JsonIgnore] public virtual int Virtual_Ignored_Property { get; set; }
-
-        public abstract int Abstract_IgnoredOnConcrete_Property { get; set; }
-        public virtual int Virtual_IgnoredOnConcrete_Property { get; set; }
-
-        [JsonIgnore] public abstract int Abstract_IgnoredOnBase_Property { get; set; }
-        [JsonIgnore] public virtual int Virtual_IgnoredOnBase_Property { get; set; }
-
-        public abstract int Abstract_Property { get; set; }
-        public virtual int Virtual_Property { get; set; }
-    }
 }
