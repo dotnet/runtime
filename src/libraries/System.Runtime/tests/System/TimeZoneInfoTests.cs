@@ -2541,6 +2541,30 @@ namespace System.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void TimeZoneInfo_LocalZoneWithInvariantMode()
+        {
+            string hostTZId = TimeZoneInfo.Local.Id;
+
+            ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", PlatformDetection.IsInvariantGlobalization ? "0" : "1");
+
+            RemoteExecutor.Invoke((tzId, hostIsRunningInInvariantMode) =>
+            {
+                bool hostInvariantMode = bool.Parse(hostIsRunningInInvariantMode);
+
+                if (!hostInvariantMode)
+                {
+                    // If hostInvariantMode is false, means the child process should enable the globalization invariant mode.
+                    // We validate here that by trying to create a culture which should throws in such mode.
+                    Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("en-US"));
+                }
+
+                Assert.Equal(tzId, TimeZoneInfo.Local.Id);
+
+            }, hostTZId, PlatformDetection.IsInvariantGlobalization.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+        }
+
         [Fact]
         public static void TimeZoneInfo_DaylightDeltaIsNoMoreThan12Hours()
         {
