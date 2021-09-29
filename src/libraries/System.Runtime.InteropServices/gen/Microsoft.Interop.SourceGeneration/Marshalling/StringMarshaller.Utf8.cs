@@ -26,8 +26,8 @@ namespace Microsoft.Interop
         // maximum number of bytes per 'char' is 3.
         private const int MaxByteCountPerChar = 3;
 
-        private static readonly TypeSyntax NativeType = PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword)));
-        private static readonly TypeSyntax UTF8EncodingType = ParseTypeName("System.Text.Encoding.UTF8");
+        private static readonly TypeSyntax s_nativeType = PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword)));
+        private static readonly TypeSyntax s_utf8EncodingType = ParseTypeName("System.Text.Encoding.UTF8");
 
         public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
@@ -43,7 +43,7 @@ namespace Microsoft.Interop
             return Argument(IdentifierName(identifier));
         }
 
-        public override TypeSyntax AsNativeType(TypePositionInfo info) => NativeType;
+        public override TypeSyntax AsNativeType(TypePositionInfo info) => s_nativeType;
 
         public override ParameterSyntax AsParameter(TypePositionInfo info)
         {
@@ -155,7 +155,7 @@ namespace Microsoft.Interop
                         InvocationExpression(
                             MemberAccessExpression(
                                 SyntaxKind.SimpleMemberAccessExpression,
-                                UTF8EncodingType,
+                                s_utf8EncodingType,
                                 IdentifierName("GetBytes")),
                             ArgumentList(
                                 SeparatedList(new ArgumentSyntax[] {

@@ -14,7 +14,7 @@ namespace Microsoft.Interop
 {
     public sealed class Utf16CharMarshaller : IMarshallingGenerator
     {
-        private static readonly PredefinedTypeSyntax NativeType = PredefinedType(Token(SyntaxKind.UShortKeyword));
+        private static readonly PredefinedTypeSyntax s_nativeType = PredefinedType(Token(SyntaxKind.UShortKeyword));
 
         public Utf16CharMarshaller()
         {
@@ -50,7 +50,7 @@ namespace Microsoft.Interop
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
             Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Char));
-            return NativeType;
+            return s_nativeType;
         }
 
         public ParameterSyntax AsParameter(TypePositionInfo info)

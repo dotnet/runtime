@@ -15,21 +15,21 @@ namespace Microsoft.Interop
 {
     public sealed class PlatformDefinedStringMarshaller : ConditionalStackallocMarshallingGenerator
     {
-        private static readonly TypeSyntax NativeType = PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)));
+        private static readonly TypeSyntax s_nativeType = PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)));
 
-        private readonly IMarshallingGenerator windowsMarshaller;
-        private readonly IMarshallingGenerator nonWindowsMarshaller;
+        private readonly IMarshallingGenerator _windowsMarshaller;
+        private readonly IMarshallingGenerator _nonWindowsMarshaller;
 
         public PlatformDefinedStringMarshaller(IMarshallingGenerator windowsMarshaller, IMarshallingGenerator nonWindowsMarshaller)
         {
-            this.windowsMarshaller = windowsMarshaller;
-            this.nonWindowsMarshaller = nonWindowsMarshaller;
+            this._windowsMarshaller = windowsMarshaller;
+            this._nonWindowsMarshaller = nonWindowsMarshaller;
         }
 
         public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
-            var windowsExpr = this.windowsMarshaller.AsArgument(info, context).Expression;
-            var nonWindowsExpr = this.nonWindowsMarshaller.AsArgument(info, context).Expression;
+            var windowsExpr = this._windowsMarshaller.AsArgument(info, context).Expression;
+            var nonWindowsExpr = this._nonWindowsMarshaller.AsArgument(info, context).Expression;
 
             // If the Windows and non-Windows syntax are equivalent, just return one of them.
             if (windowsExpr.IsEquivalentTo(nonWindowsExpr))
@@ -46,7 +46,7 @@ namespace Microsoft.Interop
         public override TypeSyntax AsNativeType(TypePositionInfo info)
         {
             // void*
-            return NativeType;
+            return s_nativeType;
         }
 
         public override ParameterSyntax AsParameter(TypePositionInfo info)
@@ -74,8 +74,8 @@ namespace Microsoft.Interop
                     if (info.RefKind != RefKind.Out)
                     {
                         if (this.TryGetConditionalBlockForStatements(
-                                this.windowsMarshaller.Generate(info, context),
-                                this.nonWindowsMarshaller.Generate(info, context),
+                                this._windowsMarshaller.Generate(info, context),
+                                this._nonWindowsMarshaller.Generate(info, context),
                                 out StatementSyntax marshal))
                         {
                             yield return marshal;
@@ -86,10 +86,10 @@ namespace Microsoft.Interop
                     // [Compat] The built-in system could determine the platform at runtime and pin only on
                     // the platform on which is is needed. In the generated source, if pinning is needed for
                     // any platform, it is done on every platform.
-                    foreach (var s in this.windowsMarshaller.Generate(info, context))
+                    foreach (var s in this._windowsMarshaller.Generate(info, context))
                         yield return s;
 
-                    foreach (var s in this.nonWindowsMarshaller.Generate(info, context))
+                    foreach (var s in this._nonWindowsMarshaller.Generate(info, context))
                         yield return s;
 
                     break;
@@ -97,8 +97,8 @@ namespace Microsoft.Interop
                     if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
                     {
                         if (this.TryGetConditionalBlockForStatements(
-                                this.windowsMarshaller.Generate(info, context),
-                                this.nonWindowsMarshaller.Generate(info, context),
+                                this._windowsMarshaller.Generate(info, context),
+                                this._nonWindowsMarshaller.Generate(info, context),
                                 out StatementSyntax unmarshal))
                         {
                             yield return unmarshal;

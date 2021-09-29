@@ -14,12 +14,12 @@ namespace Microsoft.Interop
 {
     public sealed class HResultExceptionMarshaller : IMarshallingGenerator
     {
-        private static readonly TypeSyntax NativeType = PredefinedType(Token(SyntaxKind.IntKeyword));
+        private static readonly TypeSyntax s_nativeType = PredefinedType(Token(SyntaxKind.IntKeyword));
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
             Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Int32));
-            return NativeType;
+            return s_nativeType;
         }
 
         // Should only be used for return value
