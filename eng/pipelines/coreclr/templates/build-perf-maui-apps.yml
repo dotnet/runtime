@@ -24,15 +24,26 @@ steps:
   # Update the manifests based on the gated source
   # Install the MAUI workload install maui (with proper feeds in the nuget.config)
   # Create MAUI Sample app (Do we want this here or lower?)
+
   - script: |
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
       dotnet workload update --from-rollback-file ./rollback.json
       dotnet workload install maui --skip-manifest-update
       dotnet new maui -n MauiTesting
       cd MauiTesting
-      dotnet build -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false -v d
+  #     dotnet build -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false -v d
     displayName: Install MAUI
     workingDirectory: $(Build.SourcesDirectory)
+
+  - task: UseDotNet@2
+    inputs:
+      version: '6.0.x'
+      includePreviewVersions: true # Required for preview versions
+
+  - task: DotNetCoreCLI@2
+    inputs:
+      command: 'build'
+      arguments: '-bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false'
 
   - script: ls -RA #
     condition: succeededOrFailed() #
