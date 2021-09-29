@@ -21,7 +21,8 @@ target_link_libraries(dotnet
 
 set_target_properties(dotnet PROPERTIES
     CMAKE_EXECUTABLE_SUFFIX ".js"
-    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DENABLE_NETCORE=1 --js-library ${SOURCE_DIR}/library_mono.js --js-library ${SOURCE_DIR}/binding_support.js --js-library ${SOURCE_DIR}/dotnet_support.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
+    LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/runtime.iffe.js;${SOURCE_DIR}/library_mono.js;${SOURCE_DIR}/binding_support.js;${SOURCE_DIR}/dotnet_support.js;${SYSTEM_NATIVE_DIR}/pal_random.js"
+    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DENABLE_NETCORE=1 --pre-js ${NATIVE_BIN_DIR}/src/runtime.iffe.js --js-library ${SOURCE_DIR}/library_mono.js --js-library ${SOURCE_DIR}/binding_support.js --js-library ${SOURCE_DIR}/dotnet_support.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 add_custom_command(TARGET dotnet POST_BUILD COMMAND ${EMSDK_PATH}/upstream/bin/wasm-opt --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.wasm -o ${NATIVE_BIN_DIR}/dotnet.wasm)

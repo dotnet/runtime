@@ -423,7 +423,8 @@ namespace R2RDump
                     {
                         pdbPath = Path.GetDirectoryName(r2r.Filename);
                     }
-                    var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None);
+                    TargetDetails details = new TargetDetails(r2r.TargetArchitecture, r2r.TargetOperatingSystem, TargetAbi.CoreRT);
+                    var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None, details);
                     pdbWriter.WritePDBData(r2r.Filename, ProduceDebugInfoMethods(r2r));
                 }
 

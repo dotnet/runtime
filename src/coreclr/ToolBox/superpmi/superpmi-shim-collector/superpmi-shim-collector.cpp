@@ -193,6 +193,16 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     pJitInstance                           = new interceptor_ICJC();
     pJitInstance->original_ICorJitCompiler = tICJI;
 
+#ifdef TARGET_WINDOWS
+    pJitInstance->currentOs = CORINFO_WINNT;
+#elif defined(TARGET_OSX)
+    pJitInstance->currentOs = CORINFO_MACOS;
+#elif defined(TARGET_UNIX)
+    pJitInstance->currentOs = CORINFO_UNIX;
+#else
+#error No target os defined
+#endif
+
     // create our datafile
     pJitInstance->hFile = CreateFileW(g_dataFileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
                                       FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
