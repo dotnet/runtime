@@ -1725,8 +1725,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal("PKCS7", new string(pemActual[fields.Label]));
                 byte[] data = Convert.FromBase64String(new string(actualBase64));
 
-                using ImportedCollection imported = Cert.Import(data);
-                Assert.Equal(expected.ToArray(), imported.Collection.ToArray(), new X509Certificate2EqualityComparer());
+                (int locationOffset, int locationLength) = fields.Location.GetOffsetAndLength(pemActual.Length);
+                Assert.Equal(0, locationOffset);
+                Assert.Equal(pemActual.Length, locationLength);
+
+                using (ImportedCollection imported = Cert.Import(data))
+                {
+                    Assert.Equal(expected.ToArray(), imported.Collection.ToArray(), new X509Certificate2EqualityComparer());
+                }
             }
 
             string pkcs7Pem = collection.ExportPkcs7Pem();
