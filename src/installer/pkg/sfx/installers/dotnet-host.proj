@@ -105,6 +105,8 @@
                               Properties="$(_MacOSScriptsTemplateProperties)">
       <Output TaskParameter="ResolvedOutputPath" ItemName="FileWrites" />
     </GenerateFileFromTemplate>
+
+    <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))" Command="chmod +x %(_MacOSScript.Destination)" />
   </Target>
 
   <ItemGroup>
