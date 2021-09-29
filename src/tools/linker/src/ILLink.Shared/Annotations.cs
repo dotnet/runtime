@@ -11,23 +11,20 @@ namespace ILLink.Shared
 	internal static class Annotations
 	{
 		public static bool SourceHasRequiredAnnotations (
-			DynamicallyAccessedMemberTypes? sourceMemberTypes,
-			DynamicallyAccessedMemberTypes? targetMemberTypes,
+			DynamicallyAccessedMemberTypes sourceMemberTypes,
+			DynamicallyAccessedMemberTypes targetMemberTypes,
 			out string missingMemberTypesString)
 		{
 			missingMemberTypesString = string.Empty;
-			if (targetMemberTypes == null)
-				return true;
 
-			sourceMemberTypes ??= DynamicallyAccessedMemberTypes.None;
 			var missingMemberTypesList = Enum.GetValues (typeof (DynamicallyAccessedMemberTypes))
 				.Cast<DynamicallyAccessedMemberTypes> ()
 				.Where (damt => (damt & targetMemberTypes & ~sourceMemberTypes) == damt && damt != DynamicallyAccessedMemberTypes.None)
 				.ToList ();
 
-			if (targetMemberTypes.Value.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors) &&
-				sourceMemberTypes.Value.HasFlag (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor) &&
-				!sourceMemberTypes.Value.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
+			if (targetMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors) &&
+				sourceMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor) &&
+				!sourceMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
 				missingMemberTypesList.Add (DynamicallyAccessedMemberTypes.PublicConstructors);
 
 			if (missingMemberTypesList.Contains (DynamicallyAccessedMemberTypes.PublicConstructors) &&
@@ -37,7 +34,7 @@ namespace ILLink.Shared
 			if (missingMemberTypesList.Count == 0)
 				return true;
 
-			missingMemberTypesString = targetMemberTypes.Value == DynamicallyAccessedMemberTypes.All
+			missingMemberTypesString = targetMemberTypes == DynamicallyAccessedMemberTypes.All
 				? $"'{nameof (DynamicallyAccessedMemberTypes)}.{nameof (DynamicallyAccessedMemberTypes.All)}'"
 				: string.Join (", ", missingMemberTypesList.Select (mmt => $"'{nameof (DynamicallyAccessedMemberTypes)}.{mmt}'"));
 
