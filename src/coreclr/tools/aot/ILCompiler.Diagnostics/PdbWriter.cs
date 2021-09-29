@@ -116,7 +116,7 @@ namespace ILCompiler.Diagnostics
         private extern static void CreateNGenPdbWriter(
             [MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath,
             [MarshalAs(UnmanagedType.LPWStr)] string pdbPath,
-            [MarshalAs(UnmanagedType.Interface)] out ISymNGenWriter2 ngenPdbWriter);
+            out IntPtr ngenPdbWriterPtr);
 
         public PdbWriter(string pdbPath, PDBExtraData pdbExtraData, TargetDetails target)
         {
@@ -217,7 +217,9 @@ namespace ILCompiler.Diagnostics
             // Delete any preexisting PDB file upfront, otherwise CreateNGenPdbWriter silently opens it
             File.Delete(_pdbFilePath);
 
-            CreateNGenPdbWriter(dllPath, _pdbFilePath, out _ngenWriter);
+            var comWrapper = new ILCompilerComWrappers();
+            CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
+            _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
 
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file
