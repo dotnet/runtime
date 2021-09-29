@@ -52,8 +52,9 @@
       <_PublishFramework Remove="@(_PublishFramework)" />
       <_PublishFramework Include="$(TargetFrameworks)" />
 
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <!-- Copies every assembly that is in the artifacts/bin/MonoTargetsTasks/ subfolders.  Be careful not to include too much. -->
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
     </ItemGroup>
   </Target>
 </Project>
