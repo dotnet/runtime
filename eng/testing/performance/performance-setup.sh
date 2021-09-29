@@ -37,6 +37,7 @@ verified_mv()
 	if [ "$?" -ne "0" ]; then
 		echo "Failed to move $1 to $2"
 		exit 1
+	fi
 }
 
 verified_rsync()
@@ -45,6 +46,7 @@ verified_rsync()
 	if [ "$?" -ne "0" ]; then
 		echo "Failed to sync $1 to $2"
 		exit 1
+	fi
 }
 
 while (($# > 0)); do
