@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (typeToConvert.IsKeyValuePair())
             {
-                return CreateKeyValuePairConverter(typeToConvert, options);
+                return CreateKeyValuePairConverter(typeToConvert);
             }
 
             JsonConverter converter;
@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Converters
             return converter;
         }
 
-        private JsonConverter CreateKeyValuePairConverter(Type type, JsonSerializerOptions options)
+        private JsonConverter CreateKeyValuePairConverter(Type type)
         {
             Debug.Assert(type.IsKeyValuePair());
 
@@ -107,13 +107,13 @@ namespace System.Text.Json.Serialization.Converters
             Type valueType = type.GetGenericArguments()[1];
 
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(KeyValuePairConverter<,>).MakeGenericType(new Type[] { keyType, valueType }),
+                typeof(SmallObjectWithParameterizedConstructorConverter<,,,,>).MakeGenericType(new Type[] { type, keyType, valueType, JsonTypeInfo.ObjectType, JsonTypeInfo.ObjectType }),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: null,
                 culture: null)!;
 
-            converter.Initialize(options);
+            converter.ConstructorInfo  = type.GetConstructor(new Type[] { keyType, valueType })!;
 
             return converter;
         }
