@@ -19,4 +19,44 @@
     <ProjectReference Include="..\SharedTypes\SharedTypes.csproj" />
   </ItemGroup>
 
+  <Target Name="GetCrossBuildArgumentsForDNNE"
+          BeforeTargets="DnneBuildNativeExports"
+          Condition="'$(CrossBuild)' == 'true'">
+    <Exec Command="cmake -P &quot;$(RepositoryEngineeringDir)/native/output-toolchain-info.cmake&quot;"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low"
+          EnvironmentVariables="TARGET_BUILD_ARCH=$(TargetArchitecture)">
+      <Output TaskParameter="ConsoleOutput" PropertyName="CrossTargetXml" />
+    </Exec>
+
+    <PropertyGroup>
+      <NativeCompiler>$(Compiler)</NativeCompiler>
+      <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
+    </PropertyGroup>
+
+    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $CC '"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low"
+          WorkingDirectory="$(RepositoryEngineeringDir)/common/native">
+      <Output TaskParameter="ConsoleOutput" PropertyName="DnneCompilerCommand" />
+    </Exec>
+
+    <XmlPeek XmlContent="$(CrossTargetXml)" Query="toolchain-info/target-triple/text()">
+      <Output TaskParameter="Result" PropertyName="TargetTriple" />
+    </XmlPeek>
+    <XmlPeek XmlContent="$(CrossTargetXml)" Query="toolchain-info/linker-args/text()">
+      <Output TaskParameter="Result" PropertyName="DnneLinkerUserFlags" />
+    </XmlPeek>
+    <XmlPeek XmlContent="$(CrossTargetXml)" Query="toolchain-info/compiler-args/text()">
+      <Output TaskParameter="Result" PropertyName="DnneCompilerUserFlags" />
+    </XmlPeek>
+
+    <PropertyGroup>
+      <CommonToolchainArgs>--target=$(TargetTriple) --gcc-toolchain=$(ROOTFS_DIR)/usr --sysroot=$(ROOTFS_DIR)</CommonToolchainArgs>
+      <DnneLinkerUserFlags>$(CommonToolchainArgs) $(DnneLinkerUserFlags)</DnneLinkerUserFlags>
+      <DnneCompilerUserFlags>$(CommonToolchainArgs) $(DnneCompilerUserFlags)</DnneCompilerUserFlags>
+    </PropertyGroup>
+  </Target>
 </Project>
