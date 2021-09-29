@@ -12062,6 +12062,25 @@ mono_op_no_side_effects (int opcode)
 	}
 }
 
+gboolean
+mono_ins_no_side_effects (MonoInst *ins)
+{
+	if (mono_op_no_side_effects (ins->opcode))
+		return TRUE;
+	if (ins->opcode == OP_AOTCONST) {
+		MonoJumpInfoType type = (MonoJumpInfoType)ins->inst_p1;
+		// Some AOTCONSTs have side effects
+		switch (type) {
+		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+		case MONO_PATCH_INFO_LDSTR:
+		case MONO_PATCH_INFO_VTABLE:
+		case MONO_PATCH_INFO_METHOD_RGCTX:
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /**
  * mono_handle_global_vregs:
  *
