@@ -9,6 +9,9 @@ import { mono_wasm_load_bytes_into_heap } from './init'
 var commands_received: any;
 var _call_function_res_cache: any = {}
 var _next_call_function_res_id = 0;
+var _debugger_buffer_len = -1;
+var _debugger_buffer: number;
+var _debugger_heap_bytes : Uint8Array;
 
 export function mono_wasm_runtime_ready() {
     MONO.mono_wasm_runtime_is_ready = true;
@@ -16,6 +19,7 @@ export function mono_wasm_runtime_ready() {
     // FIXME: where should this go?
     _next_call_function_res_id = 0;
     _call_function_res_cache = {};
+    _debugger_buffer_len = -1;
 
     // DO NOT REMOVE - magic debugger init function
     if ((<any>globalThis).dotnetDebugger)
@@ -41,10 +45,20 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
     }
     commands_received = buffer_obj;
 }
+function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
+    if (command_parameters.length > _debugger_buffer_len) {
+        if (_debugger_buffer)
+            Module._free(_debugger_buffer);
+        _debugger_buffer_len = Math.max(command_parameters.length, _debugger_buffer_len, 256);
+        _debugger_buffer = Module._malloc(_debugger_buffer_len);
+        _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, _debugger_buffer, _debugger_buffer_len);
+    }
+    _debugger_heap_bytes.set(_base64_to_uint8(command_parameters));
+}
 
 export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, command_parameters: any, length: number, valtype: number, newvalue: number) {
-    const dataHeap = mono_wasm_load_bytes_into_heap(_base64_to_uint8(command_parameters));
-    cwraps.mono_wasm_send_dbg_command_with_parms(id, command_set, command, dataHeap, length, valtype, newvalue.toString());
+    mono_wasm_malloc_and_set_debug_buffer(command_parameters);
+    cwraps.mono_wasm_send_dbg_command_with_parms(id, command_set, command, _debugger_buffer, length, valtype, newvalue.toString());
 
     const { res_ok, res } = commands_received;
     if (!res_ok)
@@ -53,8 +67,8 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
 }
 
 export function mono_wasm_send_dbg_command(id: number, command_set: number, command: number, command_parameters: any) {
-    var dataHeap = mono_wasm_load_bytes_into_heap(_base64_to_uint8(command_parameters));
-    cwraps.mono_wasm_send_dbg_command(id, command_set, command, dataHeap, command_parameters.length);
+    mono_wasm_malloc_and_set_debug_buffer(command_parameters);
+    cwraps.mono_wasm_send_dbg_command(id, command_set, command, _debugger_buffer, command_parameters.length);
 
     const { res_ok, res } = commands_received;
     if (!res_ok)
@@ -159,8 +173,7 @@ export function mono_wasm_call_function_on(request: CallRequest) {
     const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
     const fn_eval_str = `var fn = ${request.functionDeclaration}; fn.call (proxy, ...[${fn_args}]);`;
 
-    const local_eval = eval; // https://rollupjs.org/guide/en/#avoiding-eval
-    const fn_res = local_eval(fn_eval_str);
+    const fn_res = eval(fn_eval_str);
     if (fn_res === undefined)
         return { type: "undefined" };
 
