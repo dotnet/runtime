@@ -22,13 +22,15 @@
   <Import Project="$(MSBuildThisFileDirectory)AppleApp.props" />
 
   <PropertyGroup>
-    <_NetCoreAppToolCurrent>net7.0</_NetCoreAppToolCurrent>
+    <_NetCoreAppCurrent>net7.0</_NetCoreAppCurrent>
+    <_NetCoreAppToolCurrent>net6.0</_NetCoreAppToolCurrent>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(AppleBuildSupportDir)' == ''">
     <ArtifactsBinDir>$(RuntimeSrcDir)\artifacts\bin\</ArtifactsBinDir>
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
+    <MicrosoftNetCoreAppRuntimePackLibDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'lib', '$(_NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackLibDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
 
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(_NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
@@ -47,6 +49,7 @@
     <BuildBaseDir>$(AppleBuildSupportDir)\</BuildBaseDir>
 
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'microsoft.netcore.app.runtime.$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</MicrosoftNetCoreAppRuntimePackLocationToUse>
+    <MicrosoftNetCoreAppRuntimePackLibDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'lib', '$(_NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackLibDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoAOTCompiler'))</MonoAOTCompilerDir>
     <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'RuntimeConfigParser'))</RuntimeConfigParserDir>
