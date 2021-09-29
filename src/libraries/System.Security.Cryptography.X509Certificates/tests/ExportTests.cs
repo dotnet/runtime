@@ -300,80 +300,53 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TryExportCertificatePem_DestinationTooSmall()
         {
-            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
-            Assert.False(cert.TryExportCertificatePem(Span<char>.Empty, out int charsWritten));
-            Assert.Equal(0, charsWritten);
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.CertRfc7468Wrapped))
+            {
+                // Too small by one
+                Span<char> destination = new char[TestData.CertRfc7468Wrapped.Length - 1];
+                Assert.False(cert.TryExportCertificatePem(destination, out int charsWritten));
+                Assert.Equal(0, charsWritten);
+            }
         }
 
         [Fact]
         public static void TryExportCertificatePem_DestinationJustRight()
         {
-            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
-            int pemSize = PemEncoding.GetEncodedSize("CERTIFICATE".Length, cert.RawData.Length);
-            Span<char> destination = new char[pemSize];
-            Assert.True(cert.TryExportCertificatePem(destination, out int charsWritten));
-            Assert.Equal(pemSize, charsWritten);
-
-            using X509Certificate2 importedCert = X509Certificate2.CreateFromPem(destination);
-            Assert.Equal(cert.RawData, importedCert.RawData);
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.CertRfc7468Wrapped))
+            {
+                Span<char> destination = new char[TestData.CertRfc7468Wrapped.Length];
+                Assert.True(cert.TryExportCertificatePem(destination, out int charsWritten));
+                Assert.Equal(TestData.CertRfc7468Wrapped, new string(destination));
+            }
         }
 
         [Fact]
         public static void TryExportCertificatePem_DestinationLarger()
         {
-            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
-            int pemSize = PemEncoding.GetEncodedSize("CERTIFICATE".Length, cert.RawData.Length);
-            Span<char> destination = new char[pemSize * 2];
-            Assert.True(cert.TryExportCertificatePem(destination, out int charsWritten));
-            Assert.Equal(pemSize, charsWritten);
-
-            using X509Certificate2 importedCert = X509Certificate2.CreateFromPem(destination.Slice(0, charsWritten));
-            Assert.Equal(cert.RawData, importedCert.RawData);
-        }
-
-        [Fact]
-        public static void TryExportCertificatePem_ContainsOnlyCertPem()
-        {
-            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
-            int pemSize = PemEncoding.GetEncodedSize("CERTIFICATE".Length, cert.RawData.Length);
-            Span<char> destination = new char[pemSize];
-            Assert.True(cert.TryExportCertificatePem(destination, out int charsWritten));
-            Assert.Equal(pemSize, charsWritten);
-
-            int pemCount = 0;
-
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(destination))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.CertRfc7468Wrapped))
             {
-                AssertExtensions.SequenceEqual("CERTIFICATE", contents[fields.Label]);
-                pemCount++;
-            }
+                int padding = 10;
+                Span<char> destination = new char[TestData.CertRfc7468Wrapped.Length + padding * 2];
+                destination.Fill('!');
+                Assert.True(cert.TryExportCertificatePem(destination.Slice(padding), out int charsWritten));
+                Assert.Equal(TestData.CertRfc7468Wrapped, new string(destination.Slice(padding, charsWritten)));
 
-            Assert.Equal(1, pemCount);
+                // Assert front padding is unaltered
+                AssertExtensions.FilledWith('!', destination.Slice(0, padding));
+
+                // Assert trailing padding is unaltered
+                AssertExtensions.FilledWith('!', destination.Slice(charsWritten + padding));
+            }
         }
 
         [Fact]
         public static void ExportCertificatePem()
         {
-            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
-            string pem = cert.ExportCertificatePem();
-            using X509Certificate2 importedCert = X509Certificate2.CreateFromPem(pem);
-            Assert.Equal(cert.RawData, importedCert.RawData);
-        }
-
-        [Fact]
-        public static void ExportCertificatePem_ContainsOnlyCertPem()
-        {
-            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
-            string pem = cert.ExportCertificatePem();
-            int pemCount = 0;
-
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(pem))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.CertRfc7468Wrapped))
             {
-                AssertExtensions.SequenceEqual("CERTIFICATE", contents[fields.Label]);
-                pemCount++;
+                string pem = cert.ExportCertificatePem();
+                Assert.Equal(TestData.CertRfc7468Wrapped, pem);
             }
-
-            Assert.Equal(1, pemCount);
         }
     }
 }

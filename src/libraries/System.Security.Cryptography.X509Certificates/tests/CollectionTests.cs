@@ -1573,18 +1573,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ExportCertificatePems_SingleCert()
         {
-            const string SinglePem = "-----BEGIN CERTIFICATE-----\n" +
-                "MIIBETCBuaADAgECAgkA9StU5ZnBmM4wCgYIKoZIzj0EAwIwDzENMAsGA1UEAxME\n" +
-                "dGlueTAeFw0yMTA5MTUyMjAyNDNaFw0yMTA5MTUyMjAyNDNaMA8xDTALBgNVBAMT\n" +
-                "BHRpbnkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQZ+baUXzzLi+p3cZEf4f23\n" +
-                "L/2Dbn5UB/uMCB7L71rWf3UwuCA3Is5uPci/3PQYLNwDkP3m3ZzxyzVCgFVqqYFg\n" +
-                "MAoGCCqGSM49BAMCA0cAMEQCIHafyKHQhv+03DaOJpuotD+jNu0Nc9pUI9OA8pUY\n" +
-                "3+qJAiBsqKjtc8LuGtUoqGvxLLQJwJ2QNY/qyEGtaImlqTYg5w==\n" +
-                "-----END CERTIFICATE-----";
-            using ImportedCollection ic = Cert.ImportFromPem(SinglePem);
-            X509Certificate2Collection cc = ic.Collection;
-            AssertPemExport(cc, SinglePem);
-            AssertPkcs7PemExport(cc);
+            using (ImportedCollection ic = Cert.ImportFromPem(TestData.CertRfc7468Wrapped))
+            {
+                X509Certificate2Collection cc = ic.Collection;
+                AssertPemExport(cc, TestData.CertRfc7468Wrapped);
+                AssertPkcs7PemExport(cc);
+            }
         }
 
         [Fact]
@@ -1606,11 +1600,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "MAoGCCqGSM49BAMCA0cAMEQCIHIweJarpnxQ88gAtGbBq6iFWjGhXP0mfxJtrJKd\n" +
                 "WqzGAiBqbvlwpNMDKYGB7fwthHKn4SzxQaHYj27TdRuitsNCHg==\n" +
                 "-----END CERTIFICATE-----";
-            using ImportedCollection ic = Cert.ImportFromPem(MultiPem);
-            X509Certificate2Collection cc = ic.Collection;
-            Assert.Equal(2, cc.Count);
-            AssertPemExport(cc, MultiPem);
-            AssertPkcs7PemExport(cc);
+
+            using (ImportedCollection ic = Cert.ImportFromPem(MultiPem))
+            {
+                X509Certificate2Collection cc = ic.Collection;
+                Assert.Equal(2, cc.Count);
+                AssertPemExport(cc, MultiPem);
+                AssertPkcs7PemExport(cc);
+            }
         }
 
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
