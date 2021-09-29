@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using System.IO.Pipes;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
@@ -189,7 +190,7 @@ namespace System.IO.Tests
             {
                 Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
                 Task<byte[]> readTask = Task.Run(() => File.ReadAllBytes(pipePath), cts.Token);
-                cts.CancelAfter(TimeSpan.FromSeconds(10));
+                cts.CancelAfter(TimeSpan.FromSeconds(50));
 
                 await writingServerTask;
                 byte[] readBytes = await readTask;
@@ -207,10 +208,15 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]
-        public async Task ReadAllBytes_NonSeekableFileStream_InLinux()
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async Task ReadAllBytes_NonSeekableFileStream_InUnix()
         {
             var path = "/dev/tty";
+            if (!File.Exists(path))
+            {
+                throw new SkipTestException(path + " is not available in this environment.");
+            }
+
             var contentBytes = new byte[] { 1, 2, 3 };
 
             using (var cts = new CancellationTokenSource())
