@@ -2647,6 +2647,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
 #endif
 
+#ifdef TARGET_XARCH
     if (opts.compJitAlignLoopAdaptive)
     {
         opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
@@ -2655,8 +2656,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
     }
+#elif TARGET_ARM64
+    // Since instructions of Arm64 are in multiple of 4, just have one padding limit
+    // for adaptive and non-adaptive alignment.
+    opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1);
+#endif
 
     assert(isPow2(opts.compJitAlignLoopBoundary));
+#ifdef TARGET_ARM64
+    // The minimum encoding size for Arm64 is 4 bytes.
+    assert(opts.compJitAlignLoopBoundary >= 4);
+#endif
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns

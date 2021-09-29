@@ -81,6 +81,38 @@ const emitJumpKind emitReverseJumpKinds[] = {
     return emitReverseJumpKinds[jumpKind];
 }
 
+#if FEATURE_LOOP_ALIGN
+//-----------------------------------------------------------------------------
+//
+//  The next instruction will be a loop head entry point
+//  So insert alignment instruction(s) here to ensure that
+//  we can properly align the code.
+//
+//  This emits more than one `INS_align` instruction depending on the
+//  alignmentBoundary parameter.
+//
+void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
+{
+    unsigned short nAlignInstr   = alignmentBoundary / MAX1_ENCODED_SIZE;
+    unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
+
+    // Ensure that all align instructions fall in same IG.
+    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
+    {
+        emitForceNewIG = true;
+    }
+
+    /* Insert a pseudo-instruction to ensure that we align
+    the next instruction properly */
+
+    while (nAlignInstr)
+    {
+        emitLoopAlign(MAX1_ENCODED_SIZE);
+        nAlignInstr--;
+    }
+}
+#endif
+
 /*****************************************************************************
  *
  *  Return the allocated size (in bytes) of the given instruction descriptor.
@@ -138,7 +170,15 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
         if (id->idIsLargeDsp())
             return sizeof(instrDescDsp);
         else
+        {
+#if FEATURE_LOOP_ALIGN
+            if (id->idIns() == INS_align)
+            {
+                return sizeof(instrDescAlign);
+            }
+#endif
             return sizeof(instrDesc);
+        }
     }
 }
 
@@ -11415,9 +11455,39 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SN_0A: // SN_0A   ................ ................
-            code = emitInsCode(ins, fmt);
-            dst += emitOutput_Instr(dst, code);
+        {
+            bool skipIns = false;
+#if FEATURE_LOOP_ALIGN
+            if (id->idIns() == INS_align)
+            {
+                // IG can be marked as not needing alignment after emitting align instruction.
+                // Alternatively, there are fewer align instructions needed than emitted.
+                // If that is the case, skip outputting alignment.
+                if (!ig->isLoopAlign() || id->idIsEmptyAlign())
+                {
+                    skipIns = true;
+                }
+
+#ifdef DEBUG
+                if (!ig->isLoopAlign())
+                {
+                    // Validate if the state is correctly updated
+                    assert(id->idIsEmptyAlign());
+                }
+#endif
+                sz  = sizeof(instrDescAlign);
+                ins = INS_nop;
+            }
+#endif // FEATURE_LOOP_ALIGN
+
+            if (!skipIns)
+            {
+                code = emitInsCode(ins, fmt);
+                dst += emitOutput_Instr(dst, code);
+            }
+
             break;
+        }
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
             imm = emitGetInsSC(id);
@@ -11564,7 +11634,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     /* All instructions are expected to generate code */
 
-    assert(*dp != dst);
+    assert(*dp != dst || id->idIsEmptyAlign());
 
     *dp = dst;
 

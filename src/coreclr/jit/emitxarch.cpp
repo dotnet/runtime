@@ -2771,30 +2771,6 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
 //-----------------------------------------------------------------------------
 //
 //  The next instruction will be a loop head entry point
-//  So insert an alignment instruction here to ensure that
-//  we can properly align the code.
-//
-void emitter::emitLoopAlign(unsigned short paddingBytes)
-{
-    /* Insert a pseudo-instruction to ensure that we align
-       the next instruction properly */
-
-    assert(paddingBytes <= MAX_ENCODED_SIZE);
-    paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
-    instrDescAlign* id = emitNewInstrAlign();
-    id->idCodeSize(paddingBytes);
-    id->idaIG = emitCurIG;
-
-    /* Append this instruction to this IG's alignment list */
-    id->idaNext = emitCurIGAlignList;
-
-    emitCurIGsize += paddingBytes;
-    emitCurIGAlignList = id;
-}
-
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
 //  So insert alignment instruction(s) here to ensure that
 //  we can properly align the code.
 //
