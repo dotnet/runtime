@@ -47,5 +47,3 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: libraries

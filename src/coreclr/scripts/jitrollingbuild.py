@@ -309,8 +309,8 @@ def upload_command(coreclr_args):
 
     # Next, look for any and all cross-compilation JITs. These are named, e.g.:
     #   clrjit_unix_x64_x64.dll
-    #   clrjit_win_arm_x64.dll
-    #   clrjit_win_arm64_x64.dll
+    #   clrjit_universal_arm_x64.dll
+    #   clrjit_universal_arm64_x64.dll
     # and so on, and live in the same product directory as the primary JIT.
     #
     # Note that the expression below explicitly filters out the primary JIT since we added that above.

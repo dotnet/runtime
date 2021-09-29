@@ -254,7 +254,7 @@ superpmi_common_parser.add_argument("--break_on_error", action="store_true", hel
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
-superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
+superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
 superpmi_common_parser.add_argument("-error_limit", help=error_limit_help)
 

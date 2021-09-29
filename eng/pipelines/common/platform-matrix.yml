@@ -117,7 +117,7 @@ jobs:
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
       container:
-        image: ubuntu-16.04-cross-arm-alpine-20210719121212-044d5b9
+        image: ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -144,7 +144,7 @@ jobs:
       targetRid: linux-musl-arm64
       platform: Linux_musl_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-20210719121212-b2c2436
+        image: ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

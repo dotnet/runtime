@@ -394,6 +394,7 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
 
     ADDARG_BOOL(o.breakOnError, "-boe");
     ADDARG_BOOL(o.breakOnAssert, "-boa");
+    ADDARG_BOOL(o.breakOnException, "-box");
     ADDARG_BOOL(o.applyDiff, "-applyDiff");
     ADDARG_STRING(o.reproName, "-reproName");
     ADDARG_STRING(o.writeLogFile, "-writeLogFile");

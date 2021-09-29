@@ -54,9 +54,10 @@ stages:
   #
   # Source Index Build
   #
-  - template: /eng/common/templates/job/source-index-stage1.yml
-    parameters:
-      sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
+  - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    - template: /eng/common/templates/job/source-index-stage1.yml
+      parameters:
+        sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
 
   #
   # Build CoreCLR
