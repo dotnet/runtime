@@ -19,12 +19,13 @@
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
     
     <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:MonoEnableLLVM=true /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=true</_AOTBuildCommand>
-    <_AOTBuildCommand>$(_AOTBuildCommand) &amp;&amp; mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
     <_ResetSimulatorSwitch Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">--reset-simulator</_ResetSimulatorSwitch>
     <_SignalAppEndSwitch Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">--signal-app-end</_SignalAppEndSwitch>
 
     <_AfterBuildCommands>
+      mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
       sign &quot;$app&quot;
       xharness apple test --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) -- 
     </_AfterBuildCommands>
