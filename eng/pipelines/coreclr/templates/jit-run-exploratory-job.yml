@@ -121,6 +121,8 @@ jobs:
         archiveExtension: $(archiveExtension)
         artifactName: 'Antigen_Issues_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
         displayName: ${{ format('Upload artifacts Antigen issues for {0}-{1}', parameters.osGroup, parameters.archType ) }}
+      continueOnError: true
+      condition: always()
 
     # Always upload the available issues-summary.txt files
     - task: CopyFiles@2
@@ -129,20 +131,25 @@ jobs:
         sourceFolder: '$(IssuesLocation)'
         contents: '**/issues-summary-*.txt'
         targetFolder: '$(IssuesSummaryLocation)'
+      continueOnError: true
+      condition: always()
 
     - task: PublishPipelineArtifact@1
       displayName: Publish issues-summary.txt files
       inputs:
         targetPath: $(IssuesSummaryLocation)
         artifactName: 'Issues_Summary_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      continueOnError: true
+      condition: always()
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_unique_issues.py -issues_directory $(IssuesSummaryLocation)
       displayName: ${{ format('Print unique issues ({0})', parameters.osGroup) }}
       continueOnError: true
+      condition: always()
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Antigen build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Antigen_BuildLogs__$(archType)_$(buildConfig)'
+        artifactName: 'Antigen_BuildLogs_$(osGroup)_$(archType)_$(buildConfig)'
       condition: always()
