@@ -199,14 +199,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             // Retry if we hit ETXTBSY due to Linux race
             // https://github.com/dotnet/runtime/issues/58964
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; ; i++)
             {
                 try
                 {
                     Process.Start();
                     break;
                 }
-                catch (Win32Exception e) when (e.Message.Contains("Text file busy"))
+                catch (Win32Exception e) when (i < 3 && e.Message.Contains("Text file busy"))
                 {
                     // 10 ms is short, but the race we're trying to avoid is in-between
                     // "fork" and "exec", so it should be fast
