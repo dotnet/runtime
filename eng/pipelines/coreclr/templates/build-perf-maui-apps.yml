@@ -37,7 +37,7 @@ steps:
 
   - task: UseDotNet@2
     inputs:
-      version: '6.0.0-rc.1.21430.1'
+      version: '6.0.100-rc.1.21430.12'
       includePreviewVersions: true # Required for preview versions
 
   - task: DotNetCoreCLI@2
