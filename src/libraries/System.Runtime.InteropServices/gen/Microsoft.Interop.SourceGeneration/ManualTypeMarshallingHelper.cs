@@ -127,11 +127,11 @@ namespace Microsoft.Interop
             return type.GetMembers(SetUnmarshalledCollectionLengthMethodName)
                 .OfType<IMethodSymbol>()
                 .Any(m => m is
-                    {
-                        IsStatic: false,
-                        Parameters: { Length: 1 },
-                        ReturnType: { SpecialType: SpecialType.System_Void }
-                    } && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32);
+                {
+                    IsStatic: false,
+                    Parameters: { Length: 1 },
+                    ReturnType: { SpecialType: SpecialType.System_Void }
+                } && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32);
         }
 
         public static bool HasNativeValueStorageProperty(ITypeSymbol type, ITypeSymbol spanOfByte)
@@ -139,7 +139,7 @@ namespace Microsoft.Interop
             return type
                 .GetMembers(NativeValueStoragePropertyName)
                 .OfType<IPropertySymbol>()
-                .Any(p => p is {IsStatic: false, GetMethod: not null, ReturnsByRef: false, ReturnsByRefReadonly: false }
+                .Any(p => p is { IsStatic: false, GetMethod: not null, ReturnsByRef: false, ReturnsByRefReadonly: false }
                     && SymbolEqualityComparer.Default.Equals(p.Type, spanOfByte));
         }
     }

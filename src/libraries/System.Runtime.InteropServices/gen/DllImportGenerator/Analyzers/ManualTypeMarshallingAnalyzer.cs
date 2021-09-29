@@ -290,7 +290,7 @@ namespace Microsoft.Interop.Analyzers
                 }
                 else if (nativeMarshallingAttributeData is not null)
                 {
-                    AnalyzeNativeMarshalerType(context, type, nativeMarshallingAttributeData, isNativeMarshallingAttribute:true);
+                    AnalyzeNativeMarshalerType(context, type, nativeMarshallingAttributeData, isNativeMarshallingAttribute: true);
                 }
             }
 

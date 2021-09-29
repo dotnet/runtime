@@ -28,7 +28,7 @@ namespace Microsoft.Interop
         // Add a constructor that can only be called by derived types in the same assembly
         // to enforce that this type cannot be extended by users of this library.
         private protected MarshallingInfo()
-        {}
+        { }
     }
 
     public sealed record NoMarshallingInfo : MarshallingInfo
@@ -87,7 +87,7 @@ namespace Microsoft.Interop
 
     public abstract record CountInfo
     {
-        private protected CountInfo() {}
+        private protected CountInfo() { }
     }
 
     public sealed record NoCountInfo : CountInfo
