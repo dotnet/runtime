@@ -786,10 +786,7 @@ class StaticCtor
 		_ = new StaticCtor ();
 	}
 }";
-			return VerifyRequiresAssemblyFilesAnalyzer (src,
-				// (13,7): warning IL3002: Using member 'StaticCtor.StaticCtor()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. Message for --TestStaticCtor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (13, 7, 13, 24).WithArguments ("StaticCtor.StaticCtor()", " Message for --TestStaticCtor--.", "")
-				);
+			return VerifyRequiresAssemblyFilesAnalyzer (src);
 		}
 
 		[Fact]
@@ -815,10 +812,7 @@ class C
 		var x = StaticCtorTriggeredByFieldAccess.field + 1;
 	}
 }";
-			return VerifyRequiresAssemblyFilesAnalyzer (src,
-				// (18,11): warning IL3002: Using member 'StaticCtorTriggeredByFieldAccess.StaticCtorTriggeredByFieldAccess()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.. Message for --StaticCtorTriggeredByFieldAccess.Cctor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (18, 11, 18, 49).WithArguments ("StaticCtorTriggeredByFieldAccess.StaticCtorTriggeredByFieldAccess()", " Message for --StaticCtorTriggeredByFieldAccess.Cctor--.", "")
-				);
+			return VerifyRequiresAssemblyFilesAnalyzer (src);
 		}
 
 		[Fact]
@@ -849,9 +843,7 @@ class C
 }";
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
 				// (21,3): warning IL3002: Using member 'StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (21, 3, 21, 69).WithArguments ("StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()", " Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.", ""),
-				// (21,3): warning IL3002: Using member 'StaticCtorTriggeredByMethodCall.StaticCtorTriggeredByMethodCall()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. Message for --StaticCtorTriggeredByMethodCall.Cctor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (21, 3, 21, 41).WithArguments ("StaticCtorTriggeredByMethodCall.StaticCtorTriggeredByMethodCall()", " Message for --StaticCtorTriggeredByMethodCall.Cctor--.", "")
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (21, 3, 21, 69).WithArguments ("StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()", " Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.", "")
 				);
 		}
 

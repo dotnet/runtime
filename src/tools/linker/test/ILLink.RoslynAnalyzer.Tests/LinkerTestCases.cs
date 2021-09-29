@@ -15,7 +15,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		[Theory]
 		[MemberData (nameof (TestCaseUtils.GetTestData), parameters: nameof (RequiresCapability))]
-		public void RequiresCapability (MemberDeclarationSyntax m, List<AttributeSyntax> attrs)
+		public void RequiresCapability (string testName, MemberDeclarationSyntax m, List<AttributeSyntax> attrs)
 		{
 			if (m is MethodDeclarationSyntax method &&
 				method.Identifier.ValueText == "TestTypeIsBeforeFieldInit") {

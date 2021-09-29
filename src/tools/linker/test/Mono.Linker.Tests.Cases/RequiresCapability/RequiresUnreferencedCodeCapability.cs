@@ -493,11 +493,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			tmp.GetRequiresUnreferencedCode ();
 		}
 
-		// https://github.com/dotnet/linker/issues/2107
-		// Doesn't work in the analyzer because the test infra for analyzer will not build the second assembly
-		// and provide it as a ref assembly to the compilation - so the analyzer actually sees the below
-		// as errors (missing assembly).
-		[ExpectedWarning ("IL2026", "--Method--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--Method--")]
 		static void TestRequiresInMethodFromCopiedAssembly ()
 		{
 			var tmp = new RequiresUnreferencedCodeInCopyAssembly ();

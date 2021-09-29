@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -39,13 +39,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static IEnumerable<object[]> GetTestData (string testSuiteName)
 		{
 			foreach (var testFile in s_testFiles[testSuiteName]) {
+				var testName = Path.GetFileNameWithoutExtension (testFile);
 				var root = CSharpSyntaxTree.ParseText (File.ReadAllText (testFile)).GetRoot ();
 
 				foreach (var node in root.DescendantNodes ()) {
 					if (node is MemberDeclarationSyntax m) {
 						var attrs = m.AttributeLists.SelectMany (al => al.Attributes.Where (IsWellKnown)).ToList ();
 						if (attrs.Count > 0) {
-							yield return new object[] { m, attrs };
+							yield return new object[] { testName, m, attrs };
 						}
 					}
 				}
@@ -127,7 +128,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			switch (expr.Kind ()) {
 			case SyntaxKind.AddExpression:
 				var addExpr = (BinaryExpressionSyntax) expr;
-				return GetStringFromExpression (addExpr.Left) + GetStringFromExpression (addExpr.Right);
+				return GetStringFromExpression (addExpr.Left, semanticModel) + GetStringFromExpression (addExpr.Right, semanticModel);
 
 			case SyntaxKind.InvocationExpression:
 				var nameofValue = semanticModel!.GetConstantValue (expr);
@@ -143,7 +144,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return token.ValueText;
 
 			case SyntaxKind.TypeOfExpression:
-				return semanticModel.GetTypeInfo (expr).Type!.GetDisplayName ();
+				var typeofExpression = (TypeOfExpressionSyntax) expr;
+				var typeSymbol = semanticModel.GetSymbolInfo (typeofExpression.Type).Symbol;
+				return typeSymbol?.GetDisplayName () ?? string.Empty;
 
 			default:
 				Assert.True (false, "Unsupported expr kind " + expr.Kind ());
