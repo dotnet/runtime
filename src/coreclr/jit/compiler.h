@@ -388,7 +388,8 @@ enum class DoNotEnregisterReason
     StoreBlkSrc,    // the local is used as STORE_BLK source.
     OneAsgRetyping, // fgMorphOneAsgBlockOp prevents this local from being enregister.
     SwizzleArg,     // the local is passed using LCL_FLD as another type.
-    BlockOpRet      // the struct is returned and it promoted or there is a cast.
+    BlockOpRet,     // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck   // the local is used to do SP check
 };
 
 enum class AddressExposedReason
@@ -10301,6 +10302,7 @@ public:
         unsigned m_oneAsgRetyping;
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
+        unsigned m_returnSpCheck;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
