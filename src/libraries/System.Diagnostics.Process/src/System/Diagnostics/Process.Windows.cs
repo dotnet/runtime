@@ -17,6 +17,8 @@ namespace System.Diagnostics
     {
         private static readonly object s_createProcessLock = new object();
 
+        private string? _processName;
+
         /// <summary>
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
@@ -893,8 +895,20 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessName);
-                return _processName!;
+                if (_processName == null)
+                {
+                    EnsureState(State.HaveId);
+                    EnsureState(State.HaveNonExitedId);
+
+                    _processName = ProcessManager.GetProcessName(_processId, _machineName);
+
+                    if (_processName == null)
+                    {
+                        throw new InvalidOperationException(SR.NoProcessInfo);
+                    }
+                }
+
+                return _processName;
             }
         }
     }
