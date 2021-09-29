@@ -57,7 +57,7 @@ namespace Microsoft.Interop
 
             public record ExecutedStepInfo(StepName Step, object Input);
 
-            private List<ExecutedStepInfo> _executedSteps = new();
+            private readonly List<ExecutedStepInfo> _executedSteps = new();
             public IEnumerable<ExecutedStepInfo> ExecutedSteps => _executedSteps;
 
             internal void RecordExecutedStep(ExecutedStepInfo step) => _executedSteps.Add(step);
