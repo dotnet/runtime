@@ -28,6 +28,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
@@ -64,6 +65,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -101,6 +103,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -366,6 +369,41 @@ namespace System.Text.Json.SourceGeneration.Tests
                 ClassWithEnumAndNullable actual = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).ClassWithEnumAndNullable);
                 Assert.Equal(expected.Day, actual.Day);
                 Assert.Equal(expected.NullableDay, actual.NullableDay);
+            }
+        }
+
+        [Fact]
+        public override void ClassWithNullableProperties_Roundtrip()
+        {
+            RunTest(new ClassWithNullableProperties
+            {
+                Uri = new Uri("http://contoso.com"),
+                Array = new int[] { 42 },
+                Poco = new ClassWithNullableProperties.MyPoco(),
+
+                NullableUri = new Uri("http://contoso.com"),
+                NullableArray = new int[] { 42 },
+                NullablePoco = new ClassWithNullableProperties.MyPoco()
+            });
+
+            RunTest(new ClassWithNullableProperties());
+
+            void RunTest(ClassWithNullableProperties expected)
+            {
+                string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithNullableProperties);
+                ClassWithNullableProperties actual = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).ClassWithNullableProperties);
+
+                Assert.Equal(expected.Uri, actual.Uri);
+                Assert.Equal(expected.Array, actual.Array);
+                Assert.Equal(expected.Poco, actual.Poco);
+
+                Assert.Equal(expected.NullableUri, actual.NullableUri);
+                Assert.Equal(expected.NullableArray, actual.NullableArray);
+                Assert.Equal(expected.NullablePoco, actual.NullablePoco);
+
+                Assert.Equal(expected.NullableUriParameter, actual.NullableUriParameter);
+                Assert.Equal(expected.NullableArrayParameter, actual.NullableArrayParameter);
+                Assert.Equal(expected.NullablePocoParameter, actual.NullablePocoParameter);
             }
         }
 
