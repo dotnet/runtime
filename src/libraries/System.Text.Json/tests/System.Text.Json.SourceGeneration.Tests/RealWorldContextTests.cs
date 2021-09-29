@@ -784,6 +784,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             public GenericStruct<int[]?> NullableArrayParameter { get; set; }
             public GenericStruct<MyPoco?> NullablePocoParameter { get; set; }
 
+            public (string? x, int y)? NullableArgumentOfNullableStruct { get; set; }
+
             public record MyPoco { }
             public struct GenericStruct<T> { }
         }
