@@ -75,7 +75,7 @@ namespace System.Security
         {
             get
             {
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
                 return Volatile.Read(ref _decryptedLength);
             }
         }
@@ -104,7 +104,7 @@ namespace System.Security
         {
             lock (_methodLock)
             {
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
                 EnsureNotReadOnly();
 
                 Debug.Assert(_buffer != null);
@@ -134,7 +134,7 @@ namespace System.Security
         {
             lock (_methodLock)
             {
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
                 EnsureNotReadOnly();
 
                 Debug.Assert(_buffer != null);
@@ -159,7 +159,7 @@ namespace System.Security
         {
             lock (_methodLock)
             {
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
                 return new SecureString(this);
             }
         }
@@ -185,7 +185,7 @@ namespace System.Security
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
                 }
 
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
                 EnsureNotReadOnly();
 
                 Debug.Assert(_buffer != null);
@@ -213,13 +213,13 @@ namespace System.Security
 
         public bool IsReadOnly()
         {
-            EnsureNotDisposed();
+            ObjectDisposedException.ThrowIf(_buffer == null, this);
             return Volatile.Read(ref _readOnly);
         }
 
         public void MakeReadOnly()
         {
-            EnsureNotDisposed();
+            ObjectDisposedException.ThrowIf(_buffer == null, this);
             Volatile.Write(ref _readOnly, true);
         }
 
@@ -232,7 +232,7 @@ namespace System.Security
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
                 }
 
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
                 EnsureNotReadOnly();
 
                 Debug.Assert(_buffer != null);
@@ -264,7 +264,7 @@ namespace System.Security
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
                 }
 
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
                 EnsureNotReadOnly();
 
                 Debug.Assert(_buffer != null);
@@ -306,19 +306,11 @@ namespace System.Security
             }
         }
 
-        private void EnsureNotDisposed()
-        {
-            if (_buffer == null)
-            {
-                ObjectDisposedException.Throw(this);
-            }
-        }
-
         internal unsafe IntPtr MarshalToBSTR()
         {
             lock (_methodLock)
             {
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
 
                 UnprotectMemory();
 
@@ -356,7 +348,7 @@ namespace System.Security
         {
             lock (_methodLock)
             {
-                EnsureNotDisposed();
+                ObjectDisposedException.ThrowIf(_buffer == null, this);
 
                 UnprotectMemory();
 

@@ -163,7 +163,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void RaiseForestFunctionalityLevel(int forestMode)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             // check new functional level is valid or not
             if (forestMode < 0)
@@ -210,7 +210,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void RaiseForestFunctionality(ForestMode forestMode)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             // check if forest mode is a valid enum value
             if (forestMode < ForestMode.Windows2000Forest)
@@ -230,14 +230,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public GlobalCatalog FindGlobalCatalog()
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             return GlobalCatalog.FindOneInternal(_context, Name, null, 0);
         }
 
         public GlobalCatalog FindGlobalCatalog(string siteName)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (siteName == null)
             {
@@ -249,14 +249,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public GlobalCatalog FindGlobalCatalog(LocatorOptions flag)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             return GlobalCatalog.FindOneInternal(_context, Name, null, flag);
         }
 
         public GlobalCatalog FindGlobalCatalog(string siteName, LocatorOptions flag)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (siteName == null)
             {
@@ -268,14 +268,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public GlobalCatalogCollection FindAllGlobalCatalogs()
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             return GlobalCatalog.FindAllInternal(_context, null);
         }
 
         public GlobalCatalogCollection FindAllGlobalCatalogs(string siteName)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (siteName == null)
             {
@@ -289,7 +289,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             long flag = (long)PrivateLocatorFlags.GCRequired;
 
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return new GlobalCatalogCollection(Locator.EnumerateDomainControllers(_context, Name, null, flag));
         }
 
@@ -297,7 +297,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             long flag = (long)PrivateLocatorFlags.GCRequired;
 
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (siteName == null)
             {
@@ -314,14 +314,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public TrustRelationshipInformationCollection GetAllTrustRelationships()
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             return GetTrustsHelper(null);
         }
 
         public ForestTrustRelationshipInformation GetTrustRelationship(string targetForestName)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -344,7 +344,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool GetSelectiveAuthenticationStatus(string targetForestName)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -357,7 +357,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void SetSelectiveAuthenticationStatus(string targetForestName, bool enable)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -370,7 +370,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool GetSidFilteringStatus(string targetForestName)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -383,7 +383,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void SetSidFilteringStatus(string targetForestName, bool enable)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -396,7 +396,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void DeleteLocalSideOfTrustRelationship(string targetForestName)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -410,7 +410,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void DeleteTrustRelationship(Forest targetForest)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForest == null)
                 throw new ArgumentNullException(nameof(targetForest));
@@ -424,7 +424,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void VerifyOutboundTrustRelationship(string targetForestName)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -437,7 +437,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void VerifyTrustRelationship(Forest targetForest, TrustDirection direction)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForest == null)
                 throw new ArgumentNullException(nameof(targetForest));
@@ -474,7 +474,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void CreateLocalSideOfTrustRelationship(string targetForestName, TrustDirection direction, string trustPassword)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -501,7 +501,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void CreateTrustRelationship(Forest targetForest, TrustDirection direction)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForest == null)
                 throw new ArgumentNullException(nameof(targetForest));
@@ -526,7 +526,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void UpdateLocalSideOfTrustRelationship(string targetForestName, string newTrustPassword)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -545,7 +545,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void UpdateLocalSideOfTrustRelationship(string targetForestName, TrustDirection newTrustDirection, string newTrustPassword)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForestName == null)
                 throw new ArgumentNullException(nameof(targetForestName));
@@ -567,7 +567,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void UpdateTrustRelationship(Forest targetForest, TrustDirection newTrustDirection)
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForest == null)
                 throw new ArgumentNullException(nameof(targetForest));
@@ -593,7 +593,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public void RepairTrustRelationship(Forest targetForest)
         {
             TrustDirection direction = TrustDirection.Bidirectional;
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (targetForest == null)
                 throw new ArgumentNullException(nameof(targetForest));
@@ -639,7 +639,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 return _forestDnsName;
             }
         }
@@ -648,7 +648,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_cachedSites == null)
                 {
                     _cachedSites = new ReadOnlySiteCollection(GetSites());
@@ -661,7 +661,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_cachedDomains == null)
                 {
                     _cachedDomains = new DomainCollection(GetDomains());
@@ -674,7 +674,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_cachedGlobalCatalogs == null)
                 {
                     _cachedGlobalCatalogs = FindAllGlobalCatalogs();
@@ -687,7 +687,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_cachedApplicationPartitions == null)
                 {
                     _cachedApplicationPartitions = new ApplicationPartitionCollection(GetApplicationPartitions());
@@ -700,7 +700,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_forestModeLevel == -1)
                 {
                     _forestModeLevel = GetForestModeLevel();
@@ -713,7 +713,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 // if forest mode is known cast to proper enum
                 if (ForestModeLevel <= (int)ForestMode.Windows2012R2Forest)
                 {
@@ -728,7 +728,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_cachedRootDomain == null)
                 {
                     // Domain context is created by passing the name of the forest
@@ -744,7 +744,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_cachedSchema == null)
                 {
                     try
@@ -764,7 +764,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_cachedSchemaRoleOwner == null)
                 {
                     _cachedSchemaRoleOwner = GetRoleOwner(ActiveDirectoryRole.SchemaRole);
@@ -777,7 +777,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 if (_cachedNamingRoleOwner == null)
                 {
                     _cachedNamingRoleOwner = GetRoleOwner(ActiveDirectoryRole.NamingRole);
@@ -1094,14 +1094,6 @@ namespace System.DirectoryServices.ActiveDirectory
             else
             {
                 dsHandle = Utils.GetDSHandle(null, _context.GetServerName(), authIdentity, DirectoryContext.ADHandle);
-            }
-        }
-
-        private void CheckIfDisposed()
-        {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
             }
         }
 

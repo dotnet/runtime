@@ -291,10 +291,7 @@ namespace System.Net
 
         internal void CheckDisposed()
         {
-            if (_state == State.Closed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_state == State.Closed, this);
         }
 
         private enum State

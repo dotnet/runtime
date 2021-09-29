@@ -274,10 +274,7 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                if (_connection._disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
                 var secInfo = new SecurityPackageContextConnectionInformation();
                 int error = LdapPal.GetSecInfoOption(_connection._ldapHandle, LdapOption.LDAP_OPT_SSL_INFO, secInfo);
@@ -291,10 +288,7 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                if (_connection._disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
                 SecurityHandle tempHandle = default;
 
@@ -396,19 +390,13 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                if (_connection._disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
                 return _callbackRoutine;
             }
             set
             {
-                if (_connection._disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
                 var tempCallback = new ReferralCallback();
 
@@ -434,19 +422,13 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                if (_connection._disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
                 return _clientCertificateDelegate;
             }
             set
             {
-                if (_connection._disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
                 if (value != null)
                 {
@@ -476,19 +458,13 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                if (_connection._disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
                 return _serverCertificateDelegate;
             }
             set
             {
-                if (_connection._disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
                 if (value != null)
                 {
@@ -516,10 +492,7 @@ namespace System.DirectoryServices.Protocols
 
         public void FastConcurrentBind()
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
 
             // Bump up the protocol version
@@ -543,10 +516,7 @@ namespace System.DirectoryServices.Protocols
             int serverError = 0;
             Uri[] responseReferral = null;
 
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             try
             {
@@ -724,10 +694,7 @@ namespace System.DirectoryServices.Protocols
 
         public void StopTransportLayerSecurity()
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             byte result = LdapPal.StopTls(_connection._ldapHandle);
             if (result == 0)
@@ -738,10 +705,7 @@ namespace System.DirectoryServices.Protocols
 
         private int GetIntValueHelper(LdapOption option)
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             int outValue = 0;
             int error = LdapPal.GetIntOption(_connection._ldapHandle, option, ref outValue);
@@ -752,10 +716,7 @@ namespace System.DirectoryServices.Protocols
 
         private void SetIntValueHelper(LdapOption option, int value)
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             int temp = value;
             int error = LdapPal.SetIntOption(_connection._ldapHandle, option, ref temp);
@@ -765,10 +726,7 @@ namespace System.DirectoryServices.Protocols
 
         private IntPtr GetPtrValueHelper(LdapOption option)
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             IntPtr outValue = new IntPtr(0);
             int error = LdapPal.GetPtrOption(_connection._ldapHandle, option, ref outValue);
@@ -779,10 +737,7 @@ namespace System.DirectoryServices.Protocols
 
         private void SetPtrValueHelper(LdapOption option, IntPtr value)
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             IntPtr temp = value;
             int error = LdapPal.SetPtrOption(_connection._ldapHandle, option, ref temp);
@@ -792,10 +747,7 @@ namespace System.DirectoryServices.Protocols
 
         private string GetStringValueHelper(LdapOption option, bool releasePtr)
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             IntPtr outValue = new IntPtr(0);
             int error = LdapPal.GetPtrOption(_connection._ldapHandle, option, ref outValue);
@@ -817,10 +769,7 @@ namespace System.DirectoryServices.Protocols
 
         private void SetStringValueHelper(LdapOption option, string value)
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             IntPtr inValue = IntPtr.Zero;
             if (value != null)

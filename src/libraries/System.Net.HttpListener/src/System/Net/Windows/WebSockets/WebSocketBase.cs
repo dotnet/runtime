@@ -1241,7 +1241,7 @@ namespace System.Net.WebSockets
         {
             if (_isDisposed)
             {
-                ObjectDisposedException.Throw(this);
+                throw new ObjectDisposedException(GetType().FullName);
             }
         }
 
@@ -2082,7 +2082,7 @@ namespace System.Net.WebSockets
             public bool TryStartOperation(CancellationToken userCancellationToken, out CancellationToken linkedCancellationToken)
             {
                 linkedCancellationToken = CancellationToken.None;
-                ThrowIfDisposed();
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
 
                 lock (_thisLock)
                 {
@@ -2189,14 +2189,6 @@ namespace System.Net.WebSockets
                 if (snapshot != null)
                 {
                     snapshot.Dispose();
-                }
-            }
-
-            private void ThrowIfDisposed()
-            {
-                if (_isDisposed)
-                {
-                    ObjectDisposedException.Throw(this);
                 }
             }
         }

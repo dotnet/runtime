@@ -322,7 +322,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Save()
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);();
 
             if (!isBound)
             {
@@ -479,7 +479,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            CheckIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);();
 
             if (!isBound)
             {
@@ -499,7 +499,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
                 return _ldapDisplayName;
             }
         }
@@ -508,7 +508,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -522,7 +522,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value != null && value.Length == 0)
                     throw new ArgumentException(SR.EmptyStringParameter, nameof(value));
@@ -540,7 +540,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -569,7 +569,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value != null && value.Length == 0)
                     throw new ArgumentException(SR.EmptyStringParameter, nameof(value));
@@ -587,7 +587,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -606,7 +606,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value < ActiveDirectorySyntax.CaseExactString || value > ActiveDirectorySyntax.ReplicaLink)
                 {
@@ -626,7 +626,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -641,7 +641,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value != null && value.Length == 0)
                     throw new ArgumentException(SR.EmptyStringParameter, nameof(value));
@@ -659,7 +659,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -689,7 +689,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -708,13 +708,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 return IsSetInSearchFlags(SearchFlags.IsIndexed);
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value)
                 {
@@ -731,13 +731,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 return IsSetInSearchFlags(SearchFlags.IsIndexedOverContainer);
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value)
                 {
@@ -754,13 +754,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 return IsSetInSearchFlags(SearchFlags.IsInAnr);
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value)
                 {
@@ -777,13 +777,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 return IsSetInSearchFlags(SearchFlags.IsOnTombstonedObject);
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value)
                 {
@@ -800,13 +800,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 return IsSetInSearchFlags(SearchFlags.IsTupleIndexed);
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (value)
                 {
@@ -823,7 +823,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -839,7 +839,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -858,7 +858,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -882,7 +882,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -911,7 +911,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -935,7 +935,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -964,13 +964,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
                 // this is initialized for bound properties in the constructor
                 return _isDefunct;
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -985,7 +985,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -1031,7 +1031,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -1054,7 +1054,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -1083,7 +1083,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -1099,7 +1099,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                CheckIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);();
 
                 if (isBound)
                 {
@@ -1113,14 +1113,6 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion public properties
 
         #region private methods
-
-        private void CheckIfDisposed()
-        {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
-        }
 
         //
         // This method retrieves the value of a property (single valued) from the values

@@ -673,8 +673,7 @@ namespace System.ServiceProcess
             if (!_initialized)
             {
                 //Cannot register the service with NT service manatger if the object has been disposed, since finalization has been suppressed.
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (!multipleServices)
                 {

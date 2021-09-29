@@ -65,7 +65,7 @@ namespace System.Net.Http
         {
             get
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 throw new NotSupportedException();
             }
         }
@@ -74,13 +74,13 @@ namespace System.Net.Http
         {
             get
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 throw new NotSupportedException();
             }
 
             set
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 throw new NotSupportedException();
             }
         }
@@ -126,7 +126,7 @@ namespace System.Net.Http
                 return tcs.Task;
             }
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (_state.TcsInternalWriteDataToRequestStream != null &&
                 !_state.TcsInternalWriteDataToRequestStream.Task.IsCompleted)
@@ -150,19 +150,19 @@ namespace System.Net.Http
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             throw new NotSupportedException();
         }
 
         public override void SetLength(long value)
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             throw new NotSupportedException();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             throw new NotSupportedException();
         }
 
@@ -192,14 +192,6 @@ namespace System.Net.Http
             }
 
             base.Dispose(disposing);
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
         }
 
         private Task InternalWriteAsync(byte[] buffer, int offset, int count, CancellationToken token)

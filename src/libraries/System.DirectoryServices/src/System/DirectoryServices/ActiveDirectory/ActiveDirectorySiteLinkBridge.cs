@@ -186,8 +186,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _name;
             }
@@ -197,8 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_existing)
                 {
@@ -222,8 +220,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _transport;
             }
@@ -231,8 +228,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Save()
         {
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             try
             {
@@ -256,8 +252,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Delete()
         {
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!_existing)
             {
@@ -278,16 +273,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override string ToString()
         {
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             return _name;
         }
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!_existing)
             {

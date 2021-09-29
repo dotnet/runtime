@@ -37,7 +37,7 @@ namespace System.Net
             get => Headers[HttpKnownHeaderNames.ContentType];
             set
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
                 if (string.IsNullOrEmpty(value))
                 {
                     Headers.Remove(HttpKnownHeaderNames.ContentType);
@@ -58,7 +58,7 @@ namespace System.Net
             get => (EntitySendFormat)_boundaryType;
             set
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
                 CheckSentHeaders();
                 if (value == EntitySendFormat.Chunked && HttpListenerRequest.ProtocolVersion.Minor == 0)
                 {
@@ -98,7 +98,7 @@ namespace System.Net
             get => _contentLength;
             set
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
                 CheckSentHeaders();
                 if (value >= 0)
                 {
@@ -123,7 +123,7 @@ namespace System.Net
             get => _keepAlive;
             set
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
                 _keepAlive = value;
             }
         }
@@ -132,7 +132,7 @@ namespace System.Net
         {
             get
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
                 EnsureResponseStream();
                 return _responseStream!;
             }
@@ -144,7 +144,7 @@ namespace System.Net
             set
             {
                 // note that this doesn't set the status code to a redirect one
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
                 if (string.IsNullOrEmpty(value))
                 {
                     Headers.Remove(HttpKnownHeaderNames.Location);
@@ -174,7 +174,7 @@ namespace System.Net
             }
             set
             {
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(value));
@@ -294,14 +294,6 @@ namespace System.Net
         }
 
         void IDisposable.Dispose() => Dispose();
-
-        private void CheckDisposed()
-        {
-            if (Disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
-        }
 
         private void CheckSentHeaders()
         {

@@ -193,8 +193,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _name;
             }
@@ -204,15 +203,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _site;
             }
             set
             {
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (value != null)
                 {
@@ -229,8 +226,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 try
                 {
@@ -246,8 +242,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                if (_disposed)
-                    ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 // if the value is null, it means that user wants to clear the value
                 try
@@ -271,8 +266,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Save()
         {
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             try
             {
@@ -311,8 +305,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Delete()
         {
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!existing)
             {
@@ -333,16 +326,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override string ToString()
         {
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             return Name;
         }
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            if (_disposed)
-                ObjectDisposedException.Throw(this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!existing)
             {

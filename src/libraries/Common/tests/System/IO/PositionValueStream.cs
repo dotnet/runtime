@@ -18,10 +18,7 @@ namespace Test.IO.Streams
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (_remaining < 0)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_remaining < 0, this);
 
             if (_remaining == 0)
             {

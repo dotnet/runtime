@@ -211,7 +211,7 @@ namespace System.Data
                     // Stacks should never be popped out of order.
                     // We want to trap this condition in production.
                     Debug.Fail("Scope was popped out of order.");
-                    ObjectDisposedException.Throw(this);
+                    throw new ObjectDisposedException(GetType().FullName);
                 }
 
                 m_deserializationToken.Dispose(); // it's a readonly struct, but Dispose still works properly

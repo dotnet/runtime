@@ -258,7 +258,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                ThrowIfDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 int argp;
 
@@ -282,7 +282,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                ThrowIfDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 CheckNonBlockingConnectCompleted();
 
@@ -320,7 +320,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                ThrowIfDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 if (_remoteEndPoint == null)
                 {
@@ -383,7 +383,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                ThrowIfDisposed();
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"value:{value} willBlock:{_willBlock} willBlockInternal:{_willBlockInternal}");
 
@@ -746,7 +746,7 @@ namespace System.Net.Sockets
         public void Bind(EndPoint localEP)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localEP);
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             // Validate input parameters.
             if (localEP == null)
@@ -792,7 +792,7 @@ namespace System.Net.Sockets
         // Establishes a connection to a remote system.
         public void Connect(EndPoint remoteEP)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             // Validate input parameters.
             if (remoteEP == null)
@@ -844,7 +844,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress address, int port)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (address == null)
             {
@@ -874,7 +874,7 @@ namespace System.Net.Sockets
 
         public void Connect(string host, int port)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (host == null)
             {
@@ -906,7 +906,7 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress[] addresses, int port)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (addresses == null)
             {
@@ -994,7 +994,7 @@ namespace System.Net.Sockets
         public void Listen(int backlog)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, backlog);
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             // This may throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Listen(_handle, backlog);
@@ -1012,7 +1012,7 @@ namespace System.Net.Sockets
         {
             // Validate input parameters.
 
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (_rightEndPoint == null)
             {
@@ -1114,7 +1114,7 @@ namespace System.Net.Sockets
 
         public int Send(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (buffers == null)
             {
@@ -1165,7 +1165,7 @@ namespace System.Net.Sockets
 
         public int Send(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             ValidateBufferArguments(buffer, offset, size);
 
@@ -1213,7 +1213,7 @@ namespace System.Net.Sockets
 
         public int Send(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBlockingMode();
 
             int bytesTransferred;
@@ -1290,7 +1290,7 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         public void SendFile(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (!Connected)
             {
@@ -1307,7 +1307,7 @@ namespace System.Net.Sockets
         // Sends data to a specific end point, starting at the indicated location in the buffer.
         public int SendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             ValidateBufferArguments(buffer, offset, size);
             if (remoteEP == null)
@@ -1385,7 +1385,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             if (remoteEP == null)
             {
                 throw new ArgumentNullException(nameof(remoteEP));
@@ -1450,7 +1450,7 @@ namespace System.Net.Sockets
 
         public int Receive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
@@ -1490,7 +1490,7 @@ namespace System.Net.Sockets
 
         public int Receive(Span<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBlockingMode();
 
             int bytesTransferred;
@@ -1531,7 +1531,7 @@ namespace System.Net.Sockets
 
         public int Receive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (buffers == null)
             {
@@ -1572,7 +1572,7 @@ namespace System.Net.Sockets
         // the end point.
         public int ReceiveMessageFrom(byte[] buffer, int offset, int size, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
@@ -1652,7 +1652,7 @@ namespace System.Net.Sockets
         /// <para>You must call the Bind method before performing this operation.</para></exception>
         public int ReceiveMessageFrom(Span<byte> buffer, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (remoteEP == null)
             {
@@ -1718,7 +1718,7 @@ namespace System.Net.Sockets
         // the end point.
         public int ReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
@@ -1821,7 +1821,7 @@ namespace System.Net.Sockets
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, ref EndPoint remoteEP)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
             SocketPal.CheckDualModeReceiveSupport(this);
@@ -1884,7 +1884,7 @@ namespace System.Net.Sockets
 
         public int IOControl(int ioControlCode, byte[]? optionInValue, byte[]? optionOutValue)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             int realOptionLength = 0;
 
@@ -1913,7 +1913,7 @@ namespace System.Net.Sockets
         // Sets the specified option to the specified value.
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
             SetSocketOption(optionLevel, optionName, optionValue, false);
@@ -1921,7 +1921,7 @@ namespace System.Net.Sockets
 
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
@@ -1946,7 +1946,7 @@ namespace System.Net.Sockets
         // Sets the specified option to the specified value.
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, object optionValue)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             // Validate input parameters.
             if (optionValue == null)
@@ -2007,7 +2007,7 @@ namespace System.Net.Sockets
         /// </remarks>
         public void SetRawSocketOption(int optionLevel, int optionName, ReadOnlySpan<byte> optionValue)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             SocketError errorCode = SocketPal.SetRawSockOpt(_handle, optionLevel, optionName, optionValue);
 
@@ -2022,7 +2022,7 @@ namespace System.Net.Sockets
         // Gets the value of a socket option.
         public object? GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             if (optionLevel == SocketOptionLevel.Socket && optionName == SocketOptionName.Linger)
             {
                 return GetLingerOpt();
@@ -2059,7 +2059,7 @@ namespace System.Net.Sockets
 
         public void GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             int optionLength = optionValue != null ? optionValue.Length : 0;
 
@@ -2082,7 +2082,7 @@ namespace System.Net.Sockets
 
         public byte[] GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionLength)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             byte[] optionValue = new byte[optionLength];
             int realOptionLength = optionLength;
@@ -2127,7 +2127,7 @@ namespace System.Net.Sockets
         /// </remarks>
         public int GetRawSocketOption(int optionLevel, int optionName, Span<byte> optionValue)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             int realOptionLength = optionValue.Length;
             SocketError errorCode = SocketPal.GetRawSockOpt(_handle, optionLevel, optionName, optionValue, ref realOptionLength);
@@ -2167,7 +2167,7 @@ namespace System.Net.Sockets
         // Determines the status of the socket.
         public bool Poll(int microSeconds, SelectMode mode)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             bool status;
             SocketError errorCode = SocketPal.Poll(_handle, microSeconds, mode, out status);
@@ -2227,7 +2227,7 @@ namespace System.Net.Sockets
 
         public void EndConnect(IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             TaskToApm.End(asyncResult);
         }
 
@@ -2236,7 +2236,7 @@ namespace System.Net.Sockets
 
         public void Disconnect(bool reuseSocket)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             SocketError errorCode = SocketError.Success;
 
@@ -2257,14 +2257,14 @@ namespace System.Net.Sockets
 
         public void EndDisconnect(IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             TaskToApm.End(asyncResult);
         }
 
 
         public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
 
             return TaskToApm.Begin(SendAsync(new ReadOnlyMemory<byte>(buffer, offset, size), socketFlags, default).AsTask(), callback, state);
@@ -2272,7 +2272,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult? BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
 
             Task<int> t = SendAsync(new ReadOnlyMemory<byte>(buffer, offset, size), socketFlags, default).AsTask();
@@ -2288,14 +2288,14 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             return TaskToApm.Begin(SendAsync(buffers, socketFlags), callback, state);
         }
 
         public IAsyncResult? BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             Task<int> t = SendAsync(buffers, socketFlags);
             if (t.IsFaulted || t.IsCanceled)
@@ -2310,7 +2310,7 @@ namespace System.Net.Sockets
 
         public int EndSend(IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             return TaskToApm.End<int>(asyncResult);
         }
@@ -2325,7 +2325,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (!Connected)
             {
@@ -2339,7 +2339,7 @@ namespace System.Net.Sockets
 
         public void EndSendFile(IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (asyncResult == null)
             {
@@ -2351,7 +2351,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
             if (remoteEP == null)
             {
@@ -2364,20 +2364,20 @@ namespace System.Net.Sockets
 
         public int EndSendTo(IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             return TaskToApm.End<int>(asyncResult);
         }
 
         public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
             return TaskToApm.Begin(ReceiveAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags, fromNetworkStream: false, default).AsTask(), callback, state);
         }
 
         public IAsyncResult? BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
             Task<int> t = ReceiveAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags, fromNetworkStream: false, default).AsTask();
 
@@ -2393,13 +2393,13 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             return TaskToApm.Begin(ReceiveAsync(buffers, socketFlags), callback, state);
         }
 
         public IAsyncResult? BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             Task<int> t = ReceiveAsync(buffers, socketFlags);
 
             if (t.IsFaulted || t.IsCanceled)
@@ -2414,7 +2414,7 @@ namespace System.Net.Sockets
 
         public int EndReceive(IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             return TaskToApm.End<int>(asyncResult);
         }
 
@@ -2423,7 +2423,7 @@ namespace System.Net.Sockets
 
         private int EndSendReceive(IAsyncResult asyncResult, out SocketError errorCode)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (TaskToApm.GetTask(asyncResult) is not Task<int> ti)
             {
@@ -2450,7 +2450,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size}");
 
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
@@ -2469,7 +2469,7 @@ namespace System.Net.Sockets
 
         public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             if (endPoint == null)
             {
                 throw new ArgumentNullException(nameof(endPoint));
@@ -2491,7 +2491,7 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
@@ -2509,7 +2509,7 @@ namespace System.Net.Sockets
 
         public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             // Validate input parameters.
             if (endPoint == null)
@@ -2534,7 +2534,7 @@ namespace System.Net.Sockets
 
         public Socket EndAccept(IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             return TaskToApm.End<Socket>(asyncResult);
         }
 
@@ -2591,7 +2591,7 @@ namespace System.Net.Sockets
 
         public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
             Socket s;
             (s, buffer, bytesTransferred) = TaskToApm.End<(Socket, byte[], int)>(asyncResult);
             return s;
@@ -2600,7 +2600,7 @@ namespace System.Net.Sockets
         // Disables sends and receives on a socket.
         public void Shutdown(SocketShutdown how)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"how:{how}");
 
@@ -2627,7 +2627,7 @@ namespace System.Net.Sockets
 
         private bool AcceptAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -2682,7 +2682,7 @@ namespace System.Net.Sockets
         {
             bool pending;
 
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -2847,7 +2847,7 @@ namespace System.Net.Sockets
         private bool DisconnectAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             // Throw if socket disposed
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -2875,7 +2875,7 @@ namespace System.Net.Sockets
 
         private bool ReceiveAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -2903,7 +2903,7 @@ namespace System.Net.Sockets
 
         private bool ReceiveFromAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -2952,7 +2952,7 @@ namespace System.Net.Sockets
 
         private bool ReceiveMessageFromAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -3002,7 +3002,7 @@ namespace System.Net.Sockets
 
         private bool SendAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -3030,7 +3030,7 @@ namespace System.Net.Sockets
 
         private bool SendPacketsAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -3066,7 +3066,7 @@ namespace System.Net.Sockets
 
         private bool SendToAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (e == null)
             {
@@ -3804,14 +3804,6 @@ namespace System.Net.Sockets
             if (Disposed)
             {
                 socketError = SocketError.Interrupted;
-            }
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (Disposed)
-            {
-                ObjectDisposedException.Throw(this);
             }
         }
 

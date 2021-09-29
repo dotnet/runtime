@@ -15,12 +15,12 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                if (_connection._disposed) ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
                 return _secureSocketLayer;
             }
             set
             {
-                if (_connection._disposed) ObjectDisposedException.Throw(this);
+                ObjectDisposedException.ThrowIf(_connection._disposed, this);
                 _secureSocketLayer = value;
             }
         }
@@ -54,10 +54,7 @@ namespace System.DirectoryServices.Protocols
 
         private bool GetBoolValueHelper(LdapOption option)
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             bool outValue = false;
             int error = LdapPal.GetBoolOption(_connection._ldapHandle, option, ref outValue);
@@ -68,10 +65,7 @@ namespace System.DirectoryServices.Protocols
 
         private void SetBoolValueHelper(LdapOption option, bool value)
         {
-            if (_connection._disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_connection._disposed, this);
 
             int error = LdapPal.SetBoolOption(_connection._ldapHandle, option, value);
 

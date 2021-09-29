@@ -218,10 +218,7 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryResponse SendRequest(DirectoryRequest request, TimeSpan requestTimeout)
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (request == null)
             {
@@ -291,10 +288,7 @@ namespace System.DirectoryServices.Protocols
 
         public IAsyncResult BeginSendRequest(DirectoryRequest request, TimeSpan requestTimeout, PartialResultProcessing partialMode, AsyncCallback callback, object state)
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (request == null)
             {
@@ -411,10 +405,7 @@ namespace System.DirectoryServices.Protocols
 
         public void Abort(IAsyncResult asyncResult)
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (asyncResult == null)
             {
@@ -459,10 +450,7 @@ namespace System.DirectoryServices.Protocols
 
         public PartialResultsCollection GetPartialResults(IAsyncResult asyncResult)
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (asyncResult == null)
             {
@@ -484,10 +472,7 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryResponse EndSendRequest(IAsyncResult asyncResult)
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (asyncResult == null)
             {
@@ -1028,10 +1013,7 @@ namespace System.DirectoryServices.Protocols
 
         private void BindHelper(NetworkCredential newCredential, bool needSetCredential)
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             // Throw if user wants to do anonymous bind but specifies credentials.
             if (AuthType == AuthType.Anonymous && (newCredential != null && (!string.IsNullOrEmpty(newCredential.Password) || string.IsNullOrEmpty(newCredential.UserName))))

@@ -47,14 +47,19 @@ namespace System
         }
 
         [StackTraceHidden]
-        [DoesNotReturn]
-        public static void Throw(object instance) =>
-            Throw(instance?.GetType());
+        public static void ThrowIf([DoesNotReturnIf(true)] bool condition, object instance)
+        {
+            ThrowIf(condition, instance?.GetType());
+        }
 
         [StackTraceHidden]
-        [DoesNotReturn]
-        public static void Throw(Type type) =>
-            throw new ObjectDisposedException(type?.FullName);
+        public static void ThrowIf([DoesNotReturnIf(true)] bool condition, Type type)
+        {
+            if (condition)
+            {
+                throw new ObjectDisposedException(type?.FullName);
+            }
+        }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

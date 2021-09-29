@@ -656,10 +656,7 @@ namespace System.Drawing
         {
             get
             {
-                if (disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 // note: this handle doesn't survive the lifespan of the icon instance
                 if (handle == IntPtr.Zero)
@@ -675,10 +672,7 @@ namespace System.Drawing
         {
             get
             {
-                if (disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return iconSize.Height;
             }
@@ -688,10 +682,7 @@ namespace System.Drawing
         {
             get
             {
-                if (disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return iconSize;
             }
@@ -702,10 +693,7 @@ namespace System.Drawing
         {
             get
             {
-                if (disposed)
-                {
-                    ObjectDisposedException.Throw(this);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return iconSize.Width;
             }
