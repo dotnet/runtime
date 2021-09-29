@@ -96,14 +96,6 @@ namespace ILLink.RoslynAnalyzer
 				}, OperationKind.ObjectCreation);
 
 				context.RegisterOperationAction (operationContext => {
-					var fieldAccess = (IFieldReferenceOperation) operationContext.Operation;
-					if (fieldAccess.Field.ContainingType is INamedTypeSymbol { StaticConstructors: var ctors } &&
-						!SymbolEqualityComparer.Default.Equals (operationContext.ContainingSymbol.ContainingType, fieldAccess.Field.ContainingType)) {
-						CheckStaticConstructors (operationContext, ctors);
-					}
-				}, OperationKind.FieldReference);
-
-				context.RegisterOperationAction (operationContext => {
 					var propAccess = (IPropertyReferenceOperation) operationContext.Operation;
 					var prop = propAccess.Property;
 					var usageInfo = propAccess.GetValueUsageInfo (prop);
@@ -161,29 +153,6 @@ namespace ILLink.RoslynAnalyzer
 							symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
 								symbol.Locations[0], attr.AttributeConstructor!.Name, GetMessageFromAttribute (requiresAttribute), GetUrlFromAttribute (requiresAttribute)));
 						}
-
-						foreach (var namedArgument in attr.NamedArguments) {
-							var propertyOnArgument = attr.AttributeClass!.GetMembers ()
-								.Where (m => m.Kind == SymbolKind.Property && m.Name == namedArgument.Key)
-								.FirstOrDefault ();
-
-							if (propertyOnArgument is not IPropertySymbol setProperty)
-								continue;
-
-							if (setProperty.SetMethod is IMethodSymbol setter && setter.TryGetAttribute (RequiresAttributeFullyQualifiedName, out var requiresAttributeOnProperty)) {
-								symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
-									symbol.Locations[0], attr.AttributeConstructor!.Name, GetMessageFromAttribute (requiresAttributeOnProperty), GetUrlFromAttribute (requiresAttributeOnProperty)));
-							}
-						}
-					}
-				}
-
-				void CheckStaticConstructors (OperationAnalysisContext operationContext,
-					ImmutableArray<IMethodSymbol> staticConstructors)
-				{
-					foreach (var staticConstructor in staticConstructors) {
-						if (staticConstructor.HasAttribute (RequiresAttributeName) && TryGetRequiresAttribute (staticConstructor, out var requiresAttribute))
-							ReportRequiresDiagnostic (operationContext, staticConstructor, requiresAttribute);
 					}
 				}
 
@@ -201,10 +170,6 @@ namespace ILLink.RoslynAnalyzer
 					// Check also for RequiresAttribute in the associated symbol
 					if (containingSymbol is IMethodSymbol methodSymbol && methodSymbol.AssociatedSymbol is not null && methodSymbol.AssociatedSymbol!.HasAttribute (RequiresAttributeName))
 						return;
-
-					// If calling an instance constructor, check first for any static constructor since it will be called implicitly
-					if (member.ContainingType is { } containingType && operationContext.Operation is IObjectCreationOperation)
-						CheckStaticConstructors (operationContext, containingType.StaticConstructors);
 
 					if (ReportSpecialIncompatibleMembersDiagnostic (operationContext, incompatibleMembers, member))
 						return;

@@ -441,10 +441,7 @@ class StaticCtor
 		_ = new StaticCtor ();
 	}
 }";
-			return VerifyRequiresUnreferencedCodeAnalyzer (src,
-				// (13,7): warning IL2026: Using member 'StaticCtor.StaticCtor()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message for --TestStaticCtor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (13, 7, 13, 24).WithArguments ("StaticCtor.StaticCtor()", " Message for --TestStaticCtor--.", "")
-				);
+			return VerifyRequiresUnreferencedCodeAnalyzer (src);
 		}
 
 		[Fact]
@@ -470,10 +467,7 @@ class C
 		var x = StaticCtorTriggeredByFieldAccess.field + 1;
 	}
 }";
-			return VerifyRequiresUnreferencedCodeAnalyzer (src,
-				// (18,11): warning IL2026: Using member 'StaticCtorTriggeredByFieldAccess.StaticCtorTriggeredByFieldAccess()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message for --StaticCtorTriggeredByFieldAccess.Cctor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (18, 11, 18, 49).WithArguments ("StaticCtorTriggeredByFieldAccess.StaticCtorTriggeredByFieldAccess()", " Message for --StaticCtorTriggeredByFieldAccess.Cctor--.", "")
-				);
+			return VerifyRequiresUnreferencedCodeAnalyzer (src);
 		}
 
 		[Fact]
@@ -504,9 +498,7 @@ class C
 }";
 			return VerifyRequiresUnreferencedCodeAnalyzer (src,
 				// (21,3): warning IL2026: Using member 'StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (21, 3, 21, 69).WithArguments ("StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()", " Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.", ""),
-				// (21,3): warning IL2026: Using member 'StaticCtorTriggeredByMethodCall.StaticCtorTriggeredByMethodCall()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message for --StaticCtorTriggeredByMethodCall.Cctor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (21, 3, 21, 41).WithArguments ("StaticCtorTriggeredByMethodCall.StaticCtorTriggeredByMethodCall()", " Message for --StaticCtorTriggeredByMethodCall.Cctor--.", "")
+				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (21, 3, 21, 69).WithArguments ("StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()", " Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.", "")
 				);
 		}
 
