@@ -35,6 +35,7 @@ namespace System.Net.Http
                 {
                     cache = lastValue = descriptor.GetHeaderValue(value, encoding);
                 }
+                Debug.Assert(cache is not null);
                 return lastValue;
             }
         }

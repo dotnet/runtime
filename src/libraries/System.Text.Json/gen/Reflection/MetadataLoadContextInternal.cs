@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace System.Text.Json.Reflection
 {

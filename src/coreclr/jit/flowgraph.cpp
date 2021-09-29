@@ -2757,6 +2757,9 @@ void Compiler::fgAddInternal()
 
         lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Pinvoke FrameVar"));
 
+        // Lowering::InsertPInvokeMethodProlog will create a call with this local addr as an argument.
+        lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+
         LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
         varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.

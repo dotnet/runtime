@@ -136,18 +136,23 @@
 
     <PropertyGroup>
       <EmsdkExt Condition="'$(OS)' != 'Windows_NT'">.sh</EmsdkExt>
-      <EmsdkExt Condition="'$(OS)' == 'Windows_NT'">.bat</EmsdkExt>
+      <EmsdkExt Condition="'$(OS)' == 'Windows_NT'">.ps1</EmsdkExt>
       <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
       <WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
+
+      <InstallCmd>./emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
+      <ActivateCmd>./emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
+      <InstallCmd Condition="'$(OS)' == 'Windows_NT'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
+      <ActivateCmd Condition="'$(OS)' == 'Windows_NT'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
     <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
           WorkingDirectory="$(WasmLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; emsdk$(EmsdkExt) install $(EmscriptenVersion) &amp;&amp; emsdk$(EmsdkExt) activate $(EmscriptenVersion)"
+    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
           WorkingDirectory="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>
