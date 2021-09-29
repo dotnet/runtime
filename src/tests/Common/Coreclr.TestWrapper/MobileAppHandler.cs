@@ -79,7 +79,7 @@ namespace CoreclrTestLib
 
                         if (action == "install")
                         {
-                            cmdStr += $" --app={testBinaryBase}/{category}.{appExtension}";
+                            cmdStr += $" --app={testBinaryBase}/{category}.{appExtension} ";
                         }
                         else // action is uninstall
                         {
