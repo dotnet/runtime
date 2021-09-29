@@ -110,7 +110,7 @@
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
-    <ServiceModelVersion>4.8.1</ServiceModelVersion>
+    <SystemServiceModelPrimitivesVersion>4.9.0-rc2.21473.1</SystemServiceModelPrimitivesVersion>
     <SystemTextJsonVersion>7.0.0-alpha.1.21463.1</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>7.0.0-alpha.1.21463.1</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>

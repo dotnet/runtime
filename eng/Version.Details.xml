@@ -12,6 +12,10 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>9f2345b3c5f43dbf34790e21657ae1f2445cd06a</Sha>
     </Dependency>
+    <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
+      <Uri>https://github.com/dotnet/wcf</Uri>
+      <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="7.0.0-beta.21463.4">
