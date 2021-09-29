@@ -118,9 +118,10 @@ public class PInvokeTableGenerator : Task
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
         w.WriteLine();
 
-        var pinvokesGroupedByEntryPoint = pinvokes.Where(l => modules.ContainsKey(l.Module))
-                             .OrderBy(l => l.EntryPoint)
-                             .GroupBy(l => l.EntryPoint);
+        var pinvokesGroupedByEntryPoint = pinvokes
+                                            .Where(l => modules.ContainsKey(l.Module))
+                                            .OrderBy(l => l.EntryPoint)
+                                            .GroupBy(l => l.EntryPoint);
 
         var comparer = new PInvokeComparer();
         foreach (IGrouping<string, PInvoke> group in pinvokesGroupedByEntryPoint)
@@ -129,8 +130,11 @@ public class PInvokeTableGenerator : Task
             PInvoke first = candidates[0];
             if (ShouldTreatAsVariadic(candidates))
             {
-                string imports = string.Join(Environment.NewLine, candidates.Select(p => $"    {p.Method}"));
-                Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs, which is not supported. Calling it will fail at runtime. Native library: {first.Module}." +
+                string imports = string.Join(Environment.NewLine,
+                                            candidates.Select(
+                                                p => $"    {p.Method} (in [{p.Method.DeclaringType?.Assembly.GetName().Name}] {p.Method.DeclaringType})"));
+                Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
+                                 " Calling such functions is not supported, and will fail at runtime." +
                                 $" Managed DllImports: {Environment.NewLine}{imports}");
 
                 foreach (var c in candidates)

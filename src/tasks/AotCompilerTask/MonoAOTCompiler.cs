@@ -928,11 +928,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         foreach (ITaskItem item in originalAssemblies)
         {
             if (dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
-            {
-                // throw new LogAsErrorException($"Bug: Could not find item in the dict with key {item.ItemSpec}");
-
                 outItems.Add(dictItem);
-            }
         }
         return outItems;
     }
