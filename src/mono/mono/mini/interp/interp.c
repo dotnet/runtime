@@ -1679,7 +1679,7 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 
 /* Convert a function pointer for a managed method to an InterpMethod* */
 static InterpMethod*
-ftnptr_to_imethod (gpointer addr)
+ftnptr_to_imethod (gpointer addr, gboolean *need_unbox)
 {
 	InterpMethod *imethod;
 
@@ -1690,44 +1690,59 @@ ftnptr_to_imethod (gpointer addr)
 		g_assert (ftndesc);
 		g_assert (ftndesc->method);
 
-		imethod = ftndesc->interp_method;
-		if (!imethod) {
+		if (!ftndesc->interp_method) {
 			imethod = mono_interp_get_imethod (ftndesc->method, error);
 			mono_error_assert_ok (error);
 			mono_memory_barrier ();
+			// FIXME Handle unboxing here ?
 			ftndesc->interp_method = imethod;
 		}
+		*need_unbox = INTERP_IMETHOD_IS_TAGGED_UNBOX (ftndesc->interp_method);
+		imethod = INTERP_IMETHOD_UNTAG_UNBOX (ftndesc->interp_method);
 	} else {
 		/* Function pointers are represented by their InterpMethod */
-		imethod = (InterpMethod*)addr;
+		*need_unbox = INTERP_IMETHOD_IS_TAGGED_UNBOX (addr);
+		imethod = INTERP_IMETHOD_UNTAG_UNBOX (addr);
 	}
 	return imethod;
 }
 
 static gpointer
-imethod_to_ftnptr (InterpMethod *imethod)
+imethod_to_ftnptr (InterpMethod *imethod, gboolean need_unbox)
 {
 	if (mono_llvm_only) {
 		ERROR_DECL (error);
 		/* Function pointers are represented by a MonoFtnDesc structure */
-		MonoFtnDesc *ftndesc = imethod->ftndesc;
-		if (!ftndesc) {
-			ftndesc = mini_llvmonly_load_method_ftndesc (imethod->method, FALSE, FALSE, error);
+		MonoFtnDesc **ftndesc_p;
+		if (need_unbox)
+			ftndesc_p = &imethod->ftndesc_unbox;
+		else
+			ftndesc_p = &imethod->ftndesc;
+		if (!*ftndesc_p) {
+			MonoFtnDesc *ftndesc = mini_llvmonly_load_method_ftndesc (imethod->method, FALSE, need_unbox, error);
 			mono_error_assert_ok (error);
+			if (need_unbox)
+				ftndesc->interp_method = INTERP_IMETHOD_TAG_UNBOX (imethod);
+			else
+				ftndesc->interp_method = imethod;
 			mono_memory_barrier ();
-			imethod->ftndesc = ftndesc;
+			*ftndesc_p = ftndesc;
 		}
-		return ftndesc;
+		return *ftndesc_p;
 	} else {
-		return imethod;
+		if (need_unbox)
+			return INTERP_IMETHOD_TAG_UNBOX (imethod);
+		else
+			return imethod;
 	}
 }
 
 static void
 interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)
 {
+	gboolean need_unbox;
 	/* addr is the result of an LDFTN opcode */
-	InterpMethod *imethod = ftnptr_to_imethod (addr);
+	InterpMethod *imethod = ftnptr_to_imethod (addr, &need_unbox);
 
 	if (!(imethod->method->flags & METHOD_ATTRIBUTE_STATIC)) {
 		MonoMethod *invoke = mono_get_delegate_invoke_internal (mono_handle_class (this_obj));
@@ -3484,12 +3499,10 @@ main_loop:
 			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
-			MonoMethodSignature *csignature;
-
-			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
+			gboolean need_unbox;
 
 			/* In mixed mode, stay in the interpreter for simplicity even if there is an AOT version of the callee */
-			cmethod = ftnptr_to_imethod (LOCAL_VAR (ip [2], gpointer));
+			cmethod = ftnptr_to_imethod (LOCAL_VAR (ip [2], gpointer), &need_unbox);
 
 			if (cmethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 				cmethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (cmethod->method, FALSE, FALSE), error);
@@ -3499,15 +3512,11 @@ main_loop:
 			return_offset = ip [1];
 			call_args_offset = ip [3];
 
-			if (csignature->hasthis) {
+			if (need_unbox) {
 				MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*); 
-
-				if (m_class_is_valuetype (this_arg->vtable->klass)) {
-					gpointer unboxed = mono_object_unbox_internal (this_arg);
-					LOCAL_VAR (call_args_offset, gpointer) = unboxed;
-				}
+				LOCAL_VAR (call_args_offset, gpointer) = mono_object_unbox_internal (this_arg);
 			}
-			ip += 5;
+			ip += 4;
 
 			goto call;
 		}
@@ -6508,17 +6517,18 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFTN) {
 			InterpMethod *m = (InterpMethod*)frame->imethod->data_items [ip [2]];
 
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m);
+			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m, FALSE);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDVIRTFTN) {
-			InterpMethod *m = (InterpMethod*)frame->imethod->data_items [ip [3]];
+			InterpMethod *virtual_method = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			NULL_CHECK (o);
 
-			m = get_virtual_method (m, o->vtable);
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m);
+			InterpMethod *res_method = get_virtual_method (virtual_method, o->vtable);
+			gboolean need_unbox = m_class_is_valuetype (res_method->method->klass) && !m_class_is_valuetype (virtual_method->method->klass);
+			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (res_method, need_unbox);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -6529,7 +6539,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			InterpMethod *m = mono_interp_get_imethod (cmethod, error);
 			mono_error_assert_ok (error);
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m);
+			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m, FALSE);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6711,7 +6721,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				mono_error_assert_ok (error);
 			}
 			g_assert (del->interp_method);
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (del->interp_method);
+			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (del->interp_method, FALSE);
 			ip += 3;
 			MINT_IN_BREAK;
 		}

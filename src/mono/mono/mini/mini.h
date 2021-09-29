@@ -1146,7 +1146,7 @@ typedef struct
 	gpointer addr;
 	gpointer arg;
 	MonoMethod *method;
-	/* InterpMethod* */
+	/* Tagged InterpMethod* */
 	gpointer interp_method;
 } MonoFtnDesc;
 
