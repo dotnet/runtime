@@ -4979,6 +4979,12 @@ public:
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    BlockSet fgAlwaysBlks; // Set of blocks which are BBJ_ALWAYS part  of BBJ_CALLFINALLY/BBJ_ALWAYS pair that should
+                           // never be removed due to a requirement to use the BBJ_ALWAYS for generating code and
+                           // not have "retless" blocks.
+
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
     bool fgReachabilitySetsValid; // Are the bbReach sets valid?
