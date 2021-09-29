@@ -6335,9 +6335,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     if ((intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar))
                     {
-                        bool supportsRegOptional = false;
-                        bool supportsRegOptional2 = false;
-                        unsigned overwrittenOpNum    = 0;
+                        bool     supportsRegOptional  = false;
+                        bool     supportsRegOptional2 = false;
+                        unsigned overwrittenOpNum     = 0;
                         LIR::Use use;
 
                         if (BlockRange().TryGetUse(node, &use))
@@ -6345,30 +6345,31 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             overwrittenOpNum = node->GetOverwrittenOpNumForFMA(use.User(), op1, op2, op3);
                         }
 
-                        if (overwrittenOpNum != 1 && IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional) && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
+                        if (overwrittenOpNum != 1 && IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional) &&
+                            !HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                         {
-                             // result = ([op1] * op2) + op3
-                             MakeSrcContained(node, op1);
+                            // result = ([op1] * op2) + op3
+                            MakeSrcContained(node, op1);
                         }
-                        else if (overwrittenOpNum != 2 && IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional2)) 
+                        else if (overwrittenOpNum != 2 && IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional2))
                         {
-                             // result = (op1 * [op2]) + op3
-                             MakeSrcContained(node, op2);
+                            // result = (op1 * [op2]) + op3
+                            MakeSrcContained(node, op2);
                         }
                         else if (overwrittenOpNum != 3 && IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
                         {
-                             // result = (op1 * op2) + [op3]
-                             MakeSrcContained(node, op3);
+                            // result = (op1 * op2) + [op3]
+                            MakeSrcContained(node, op3);
                         }
                         else if (overwrittenOpNum == 3)
                         {
-                             assert(supportsRegOptional2);
-                             op2->SetRegOptional();
+                            assert(supportsRegOptional2);
+                            op2->SetRegOptional();
                         }
                         else
                         {
-                             assert(supportsRegOptional);
-                             op3->SetRegOptional();
+                            assert(supportsRegOptional);
+                            op3->SetRegOptional();
                         }
                     }
                     else

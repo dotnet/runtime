@@ -21833,7 +21833,7 @@ unsigned GenTreeHWIntrinsic::GetOverwrittenOpNumForFMA(GenTree* use, GenTree* op
     unsigned overwrittenOpNum = 0; // 1->op1, 2->op2, 3->op3
     if (!use->OperIs(GT_STORE_LCL_VAR))
     {
-        if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0)) 
+        if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
             overwrittenOpNum = 1;
         else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
             overwrittenOpNum = 3;
@@ -21842,8 +21842,8 @@ unsigned GenTreeHWIntrinsic::GetOverwrittenOpNumForFMA(GenTree* use, GenTree* op
     }
     else
     {
-        GenTreeLclVarCommon* overwritten = use->AsLclVarCommon();
-        unsigned overwrittenLclNum = overwritten->GetLclNum();
+        GenTreeLclVarCommon* overwritten       = use->AsLclVarCommon();
+        unsigned             overwrittenLclNum = overwritten->GetLclNum();
         if (op1->IsLocal() && op1->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
         {
             overwrittenOpNum = 1;

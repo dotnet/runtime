@@ -2187,7 +2187,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             op1Reg = op2->GetRegNum();
             op2Reg = op3->GetRegNum();
             op3    = op1;
-
         }
         else
         {
@@ -2229,7 +2228,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             }
             isCommutative = copiesUpperBits;
         }
-
     }
 
     if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
