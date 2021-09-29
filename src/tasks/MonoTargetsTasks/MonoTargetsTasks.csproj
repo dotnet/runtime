@@ -10,12 +10,18 @@
     <NoWarn Condition="$(TargetFramework.StartsWith('net4'))">$(NoWarn),CS8604,CS8602</NoWarn>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETCoreTasks)'">
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
-    <PackageReference Include="Microsoft.DotNet.CilStrip.Sources" Version="$(MicrosoftDotNetCilStripSourcesVersion)" />
+  </ItemGroup>
+  <!-- On .NET Framework, make sure we don't include a copy of the MSBuild assemblies with the task. The NETCore version doesn't do it already. -->
+  <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETFrameworkTasks)'">
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" IncludeAssets="compile" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" IncludeAssets="compile"  />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" IncludeAssets="compile" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" IncludeAssets="compile" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETCoreTasks)'">
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
