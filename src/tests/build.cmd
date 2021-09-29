@@ -53,7 +53,6 @@ set __SkipManaged=
 set __SkipTestWrappers=
 set __BuildTestWrappersOnly=
 set __SkipNative=
-set __TargetsWindows=1
 set __DoCrossgen2=
 set __CompositeBuildMode=
 set __TestBuildMode=
@@ -118,7 +117,6 @@ if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages 
 if /i "%1" == "crossgen2"             (set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pdb"                   (set __CreatePdb=1&shift&goto Arg_Loop)
-if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 if /i "%1" == "allTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -176,12 +174,6 @@ REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 set __CommonMSBuildArgs="/p:TargetOS=%__TargetOS%"
-if "%__TargetsWindows%"=="1" (
-    set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:TargetsWindows=true"
-) else if "%__TargetsWindows%"=="0" (
-    set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:TargetsWindows=false"
-)
-
 set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:Configuration=%__BuildType%"
 set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:TargetArchitecture=%__BuildArch%"
 

@@ -57,6 +57,9 @@
 
     <WindowsHost>$([MSBuild]::IsOSPlatform(Windows))</WindowsHost>
 
+    <TargetsWindows>false</TargetsWindows>
+    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
+
     <ScriptExt>.sh</ScriptExt>
     <ScriptExt Condition="$(WindowsHost)">.cmd</ScriptExt>
 
