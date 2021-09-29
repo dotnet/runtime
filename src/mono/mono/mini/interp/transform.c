@@ -1424,6 +1424,7 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, g
 			target = ins_offset + *(gint16*)(data + 1);
 			g_string_append_printf (str, " %u, IR_%04x", *(guint16*)data, target);
 		}
+		break;
 	case MintOpPair2:
 		g_string_append_printf (str, " %u <- %u, %u <- %u", data [0], data [1], data [2], data [3]);
 		break;
