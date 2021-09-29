@@ -4,7 +4,6 @@
 declare interface ManagedPointer { }
 declare interface NativePointer { }
 
-declare interface MonoString extends ManagedPointer { }
 declare interface VoidPtr extends NativePointer { }
 declare interface CharPtr extends NativePointer { }
 declare interface Int32Ptr extends NativePointer { }
@@ -35,8 +34,8 @@ declare interface t_Module {
     HEAPF64: Float64Array;
 
     // this should match emcc -s EXPORTED_FUNCTIONS
-    _malloc(amnt: number): number;
-    _free(amn: number): void;
+    _malloc(size: number): NativePointer;
+    _free(ptr: NativePointer): void;
 
     // this should match emcc -s EXPORTED_RUNTIME_METHODS
     print(message: string): void;

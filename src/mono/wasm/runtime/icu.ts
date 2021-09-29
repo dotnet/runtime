@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from './cwraps'
+import { GlobalizationMode } from './types';
 
 let num_icu_assets_loaded_successfully = 0;
 
@@ -21,7 +22,6 @@ export function mono_wasm_load_icu_data(offset: VoidPtr): boolean {
 export function mono_wasm_get_icudt_name(culture: string): string {
     return cwraps.mono_wasm_get_icudt_name(culture);
 }
-
 
 // Performs setup for globalization.
 // @globalization_mode is one of "icu", "invariant", or "auto".
@@ -53,8 +53,3 @@ export function mono_wasm_globalization_init(globalization_mode: GlobalizationMo
     cwraps.mono_wasm_setenv("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "1");
 }
 
-export const enum GlobalizationMode {
-    ICU = "icu", // load ICU globalization data from any runtime assets with behavior "icu".
-    INVARIANT = "invariant", //  operate in invariant globalization mode.
-    AUTO = "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
-}

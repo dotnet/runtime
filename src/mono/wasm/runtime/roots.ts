@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from './cwraps'
-import { Module } from '../runtime'
+import { Module } from './modules'
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -16,27 +16,27 @@ const _scratch_root_free_instances: WasmRoot[] = [];
  * Once you are done using the root buffer, you must call its release() method.
  * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
  */
-export function mono_wasm_new_root_buffer(capacity: number, msg: string): WasmRootBuffer {
+export function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer {
     if (capacity <= 0)
         throw new Error("capacity >= 1");
 
     capacity = capacity | 0;
 
     var capacityBytes = capacity * 4;
-    var offset = Module._malloc(capacityBytes);
+    var offset = <number>Module._malloc(capacityBytes);
     if ((offset % 4) !== 0)
         throw new Error("Malloc returned an unaligned offset");
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBuffer(offset, capacity, true, msg);
+    return new WasmRootBuffer(offset, capacity, true, name);
 }
 
 /**
  * Creates a root buffer object representing an existing allocation in the native heap and registers
  *  the allocation with the GC. The caller is responsible for managing the lifetime of the allocation.
  */
-export function mono_wasm_new_root_buffer_from_pointer(offset: number, capacity: number, msg: string): WasmRootBuffer {
+export function mono_wasm_new_root_buffer_from_pointer(offset: number, capacity: number, name?: string): WasmRootBuffer {
     if (capacity <= 0)
         throw new Error("capacity >= 1");
 
@@ -48,7 +48,7 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: number, capacity:
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBuffer(offset, capacity, false, msg);
+    return new WasmRootBuffer(offset, capacity, false, name);
 }
 
 /**
@@ -113,12 +113,12 @@ export function mono_wasm_new_roots(count_or_values: number | ManagedPointer[]):
  *  even if you are not sure all of your roots have been created yet.
  * @param {... WasmRoot} roots
  */
-export function mono_wasm_release_roots() {
-    for (var i = 0; i < arguments.length; i++) {
-        if (!arguments[i])
+export function mono_wasm_release_roots(...args: WasmRoot[]) {
+    for (var i = 0; i < args.length; i++) {
+        if (!args[i])
             continue;
 
-        arguments[i].release();
+        args[i].release();
     }
 }
 
@@ -165,14 +165,14 @@ export class WasmRootBuffer {
     private __handle: number;
     private __ownsAllocation: boolean;
 
-    constructor(offset: number, capacity: number, ownsAllocation: boolean, msg: string) {
+    constructor(offset: number, capacity: number, ownsAllocation: boolean, name?: string) {
         const capacityBytes = capacity * 4;
 
         this.__offset = offset;
         this.__offset32 = (offset / 4) | 0;
         this.__count = capacity;
         this.length = capacity;
-        this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, msg || 0);
+        this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || 0);
         this.__ownsAllocation = ownsAllocation;
     }
 

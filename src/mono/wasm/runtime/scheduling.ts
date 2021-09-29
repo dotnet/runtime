@@ -5,7 +5,7 @@ import cwraps from './cwraps'
 
 const timeout_queue: Function[] = [];
 let spread_timers_maximum = 0;
-let isChromium = false;
+export let isChromium = false;
 let pump_count = 0;
 
 if (globalThis.navigator) {

@@ -12,7 +12,7 @@ const plugins = isDebug ? [writeOnChangePlugin()] : [terser(), writeOnChangePlug
 
 export default defineConfig({
   treeshake: !isDebug,
-  input: 'src/startup.ts',
+  input: 'exports.ts',
   output: [{
     banner: '//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n',
     name: '__dotnet_runtime',
