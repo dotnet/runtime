@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal static partial class RoslynExtensions
+    internal static class RoslynExtensions
     {
         public static Type AsType(this ITypeSymbol typeSymbol, MetadataLoadContextInternal metadataLoadContext)
         {
