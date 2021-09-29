@@ -7100,12 +7100,170 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     emitAdjustStackDepthPushPop(ins);
 }
 
+//----------------------------------------------------------------------------------------
+// IsRedundantMov_S_R:
+//    Check if the current `mov` instruction is redundant and can be omitted when dealing with Load/Store from stack.
+//    A `mov` is redundant in following 2 cases:
+//
+//    1. Move that is identical to last instruction emitted.
+//
+//         vmovapd  xmmword ptr [V01 rbp-20H], xmm0  # <-- last instruction
+//         vmovapd  xmmword ptr [V01 rbp-20H], xmm0  # <-- current instruction can be omitted.
+//
+//    2. Opposite Move as that of last instruction emitted.
+//
+//         vmovupd  ymmword ptr[V01 rbp-50H], ymm0  # <-- last instruction
+//         vmovupd  ymm0, ymmword ptr[V01 rbp-50H]  # <-- current instruction can be omitted.
+//
+// Arguments:
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 ireg - The current source/destination register
+//                 varx - The variable index used for the memory address
+//                 offs - The offset added to the memory address from varx
+//
+// Return Value:
+//    true if the move instruction is redundant; otherwise, false.
+
+bool emitter::IsRedundantMov_S_R(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs)
+{
+    assert(IsMovInstruction(ins));
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
+    // is not an important detail, such as when "regular" floating-point code is generated
+    //
+    // This differs from cases like HWIntrinsics that deal with the entire vector and so
+    // they need to be "aware" that a given move impacts the upper-bits.
+
+    // Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
+    bool hasSideEffect = false;
+
+    switch (ins)
+    {
+        case INS_mov:
+        {
+            // non EA_PTRSIZE moves may zero-extend the source
+            hasSideEffect = (size != EA_PTRSIZE);
+            break;
+        }
+
+        case INS_movapd:
+        case INS_movaps:
+        case INS_movdqa:
+        case INS_movdqu:
+        case INS_movupd:
+        case INS_movups:
+        {
+            // non EA_32BYTE moves clear the upper bits under VEX encoding
+            hasSideEffect = UseVEXEncoding() && (size != EA_32BYTE);
+            break;
+        }
+
+        case INS_movd:
+        {
+            // Clears the upper bits
+            hasSideEffect = true;
+            break;
+        }
+
+        case INS_movsdsse2:
+        case INS_movss:
+        {
+            // Clears the upper bits under VEX encoding
+            hasSideEffect = UseVEXEncoding();
+            break;
+        }
+
+        case INS_movsx:
+        case INS_movzx:
+        {
+            // Sign/Zero-extends the source
+            hasSideEffect = true;
+            break;
+        }
+
+#if defined(TARGET_AMD64)
+        case INS_movq:
+        {
+            // Clears the upper bits
+            hasSideEffect = true;
+            break;
+        }
+
+        case INS_movsxd:
+        {
+            // Sign-extends the source
+            hasSideEffect = true;
+            break;
+        }
+#endif // TARGET_AMD64
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+    // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
+    // functionality even if their actual identifier differs and we should optimize these
+
+    if (isFirstInstrInBlock ||             // Don't optimize if instruction is the first instruction in IG.
+        (emitLastIns == nullptr) ||        // or if a last instruction doesn't exist
+        (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
+    {
+        return false;
+    }
+
+    // Don't optimize if the last instruction is also not a Load/Store.
+    if (!((emitLastIns->idInsFmt() == IF_SWR_RRD) || (emitLastIns->idInsFmt() == IF_RWR_SRD)))
+    {
+        return false;
+    }
+
+    regNumber lastReg1 = emitLastIns->idReg1();
+    int       varNum   = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+    int       lastOffs = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+
+    // Check if the last instruction and current instructions use the same register and local memory.
+    if (varNum == varx && lastReg1 == ireg && lastOffs == offs)
+    {
+        // Check if we did a switched mov in the last instruction  and don't have a side effect
+        if ((((emitLastIns->idInsFmt() == IF_RWR_SRD) && (fmt == IF_SWR_RRD)) ||
+             ((emitLastIns->idInsFmt() == IF_SWR_RRD) && (fmt == IF_RWR_SRD))) &&
+            !hasSideEffect) // or if the format is different from the last instruction
+        {
+            JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src and the mov has "
+                    "no side-effects.\n");
+            return true;
+        }
+        // Check if we did same move in last instruction, side effects don't matter since they already happened
+        if (emitLastIns->idInsFmt() == fmt)
+        {
+            JITDUMP("\n -- suppressing mov because last instruction already moved from src to dst.\n");
+            return true;
+        }
+    }
+    return false;
+}
+
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
-    UNATIVE_OFFSET sz;
-    instrDesc*     id  = emitNewInstr(attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_SRD_RRD);
+    insFormat fmt = emitInsModeFormat(ins, IF_SRD_RRD);
+    if (IsMovInstruction(ins) && IsRedundantMov_S_R(ins, fmt, attr, ireg, varx, offs))
+    {
+        return;
+    }
 
+    UNATIVE_OFFSET sz;
+    instrDesc*     id = emitNewInstr(attr);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -7132,11 +7290,15 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
 {
     emitAttr size = EA_SIZE(attr);
     noway_assert(emitVerifyEncodable(ins, size, ireg));
+    insFormat fmt = emitInsModeFormat(ins, IF_RRD_SRD);
 
+    if (IsMovInstruction(ins) && IsRedundantMov_S_R(ins, fmt, attr, ireg, varx, offs))
+    {
+        return;
+    }
+
+    instrDesc*     id = emitNewInstr(attr);
     UNATIVE_OFFSET sz;
-    instrDesc*     id  = emitNewInstr(attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_SRD);
-
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
