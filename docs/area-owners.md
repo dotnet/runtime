@@ -160,7 +160,7 @@ Note: Editing this file doesn't update the mapping used by the `@msftbot` issue 
 
 ## Community Triagers
 
-The repo has a number of community members carrying the triager role. While not necessarily associated with a specific area they might be able to assist with labeling certain issues and pull requests. Currently, the following community members are triagers:
+The repo has a number of community members carrying the triager role. While not necessarily associated with a specific area, they may assist with labeling issues and pull requests. Currently, the following community members are triagers:
 
 * @huoyaoyuan
 * @SingleAccretion
