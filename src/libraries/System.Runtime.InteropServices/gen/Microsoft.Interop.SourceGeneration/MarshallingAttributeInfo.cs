@@ -449,8 +449,8 @@ namespace Microsoft.Interop
             ref int maxIndirectionLevelUsed)
         {
             object unmanagedTypeObj = attrData.ConstructorArguments[0].Value!;
-            UnmanagedType unmanagedType = unmanagedTypeObj is short
-                ? (UnmanagedType)(short)unmanagedTypeObj
+            UnmanagedType unmanagedType = unmanagedTypeObj is short unmanagedTypeAsShort
+                ? (UnmanagedType)unmanagedTypeAsShort
                 : (UnmanagedType)unmanagedTypeObj;
             if (!Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
                 || unmanagedType == UnmanagedType.CustomMarshaler
