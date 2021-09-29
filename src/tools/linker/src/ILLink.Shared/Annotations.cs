@@ -20,16 +20,13 @@ namespace ILLink.Shared
 	internal static class Annotations
 	{
 		public static bool SourceHasRequiredAnnotations (
-			DynamicallyAccessedMemberTypes? sourceMemberTypes,
-			DynamicallyAccessedMemberTypes? targetMemberTypes,
+			DynamicallyAccessedMemberTypes sourceMemberTypes,
+			DynamicallyAccessedMemberTypes targetMemberTypes,
 			out string missingMemberTypesString)
 		{
 			missingMemberTypesString = string.Empty;
-			if (targetMemberTypes == null)
-				return true;
 
-			sourceMemberTypes ??= DynamicallyAccessedMemberTypes.None;
-			var missingMemberTypes = GetMissingMemberTypes (targetMemberTypes.Value, sourceMemberTypes.Value);
+			var missingMemberTypes = GetMissingMemberTypes (targetMemberTypes, sourceMemberTypes);
 			if (missingMemberTypes == DynamicallyAccessedMemberTypes.None)
 				return true;
 

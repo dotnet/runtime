@@ -35,22 +35,16 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
-		internal static bool TryGetDynamicallyAccessedMemberTypes (this ISymbol symbol, out DynamicallyAccessedMemberTypes? dynamicallyAccessedMemberTypes)
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes (this ISymbol symbol)
 		{
-			dynamicallyAccessedMemberTypes = null;
 			if (!TryGetAttribute (symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))
-				return false;
+				return DynamicallyAccessedMemberTypes.None;
 
-			dynamicallyAccessedMemberTypes = (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers!.ConstructorArguments[0].Value!;
-			return true;
+			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers!.ConstructorArguments[0].Value!;
 		}
 
-		internal static bool TryGetDynamicallyAccessedMemberTypesOnReturnType (this ISymbol symbol, out DynamicallyAccessedMemberTypes? dynamicallyAccessedMemberTypes)
+		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesOnReturnType (this IMethodSymbol methodSymbol)
 		{
-			dynamicallyAccessedMemberTypes = null;
-			if (symbol is not IMethodSymbol methodSymbol)
-				return false;
-
 			AttributeData? dynamicallyAccessedMembers = null;
 			foreach (var returnTypeAttribute in methodSymbol.GetReturnTypeAttributes ())
 				if (returnTypeAttribute.AttributeClass is var attrClass && attrClass != null &&
@@ -60,10 +54,9 @@ namespace ILLink.RoslynAnalyzer
 				}
 
 			if (dynamicallyAccessedMembers == null)
-				return false;
+				return DynamicallyAccessedMemberTypes.None;
 
-			dynamicallyAccessedMemberTypes = (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
-			return true;
+			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
 		}
 
 		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overridenMember)
