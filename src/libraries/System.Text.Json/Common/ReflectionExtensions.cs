@@ -228,14 +228,7 @@ namespace System.Text.Json.Reflection
         public static bool IsVirtual(this PropertyInfo? propertyInfo)
         {
             Debug.Assert(propertyInfo != null);
-            return propertyInfo != null &&
-                (propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true
-#if BUILDING_SOURCE_GENERATOR
-                // The Roslyn PropertyInfo.IsVirtual extension is based on ISymbol and does not match
-                // reflection semantics which includes IsAbstract, so add that here.
-                || propertyInfo.GetMethod?.IsAbstract == true || propertyInfo.SetMethod?.IsAbstract == true
-#endif
-            );
+            return propertyInfo != null && (propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true);
         }
 
         public static bool IsKeyValuePair(this Type type, Type? keyValuePairType = null)
