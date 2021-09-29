@@ -1738,13 +1738,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string pkcs7Pem = collection.ExportPkcs7Pem();
             AssertPem(collection, pkcs7Pem);
 
-            Span<char> pkcs7Buffer = new char[pkcs7Pem.Length];
-            Assert.False(collection.TryExportPkcs7Pem(pkcs7Buffer.Slice(1), out int written), nameof(collection.TryExportPkcs7Pem));
+            Span<char> pkcs7Buffer;
+
+            // Too small
+            pkcs7Buffer = new char[pkcs7Pem.Length - 1];
+            Assert.False(collection.TryExportPkcs7Pem(pkcs7Buffer, out int written), nameof(collection.TryExportPkcs7Pem));
             Assert.Equal(0, written);
 
+            // Just enough
+            pkcs7Buffer = new char[pkcs7Pem.Length];
             Assert.True(collection.TryExportPkcs7Pem(pkcs7Buffer, out written), nameof(collection.TryExportPkcs7Pem));
-            Assert.Equal(pkcs7Buffer.Length, written);
-            AssertPem(collection, pkcs7Buffer);
+            Assert.Equal(pkcs7Pem.Length, written);
+            AssertPem(collection, pkcs7Buffer.Slice(0, written));
+
+            // More than enough
+            int padding = 10;
+            pkcs7Buffer = new char[pkcs7Pem.Length + padding * 2];
+            pkcs7Buffer.Fill('!');
+            Assert.True(collection.TryExportPkcs7Pem(pkcs7Buffer.Slice(padding), out written), nameof(collection.TryExportPkcs7Pem));
+            Assert.Equal(pkcs7Pem.Length, written);
+            AssertPem(collection, pkcs7Buffer.Slice(padding, written));
+
+            // Make sure the expected padding at the end was not altered.
+            ReadOnlySpan<char> extraEnd = pkcs7Buffer.Slice(padding + written);
+            Assert.Equal(padding, extraEnd.Length);
+            AssertExtensions.FilledWith('!', extraEnd);
+
+            // Make sure the padding at the front was not altered.
+            ReadOnlySpan<char> extraStart = pkcs7Buffer.Slice(0, padding);
+            AssertExtensions.FilledWith('!', extraStart);
         }
 
         public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
