@@ -1198,7 +1198,10 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+    if (!compMacOsArm64Abi())
+    {
+        nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+    }
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, byteAlignment);
@@ -1297,9 +1300,12 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
-    assert(curArgTabEntry->slotNum == nextSlotNum);
-    nextSlotNum += curArgTabEntry->numSlots;
+    if (!compMacOsArm64Abi())
+    {
+        nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
+        assert(curArgTabEntry->slotNum == nextSlotNum);
+        nextSlotNum += curArgTabEntry->numSlots;
+    }
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->GetByteAlignment());
@@ -1520,7 +1526,7 @@ void fgArgInfo::ArgsComplete()
                 {
                     prevArgTabEntry->needPlace = true;
                 }
-#endif // TARGET_ARM
+#endif // FEATURE_ARG_SPLIT
 #endif
             }
         }
@@ -2098,7 +2104,8 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         {
             var_types addrType = TYP_BYREF;
             arg                = gtNewOperNode(GT_ADDR, addrType, arg);
-            addrNode           = arg;
+            lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+            addrNode = arg;
 
 #if FEATURE_MULTIREG_ARGS
 #ifdef TARGET_ARM64
@@ -2137,10 +2144,6 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
     if (addrNode != nullptr)
     {
         assert(addrNode->gtOper == GT_ADDR);
-
-        // This will prevent this LclVar from being optimized away
-        lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-
         // the child of a GT_ADDR is required to have this flag set
         addrNode->AsOp()->gtOp1->gtFlags |= GTF_DONT_CSE;
     }
@@ -2545,8 +2548,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // At this point, we should never have gtCallLateArgs, as this needs to be done before those are determined.
     assert(call->gtCallLateArgs == nullptr);
 
-#ifdef TARGET_UNIX
-    if (callIsVararg)
+    if (TargetOS::IsUnix && callIsVararg)
     {
         // Currently native varargs is not implemented on non windows targets.
         //
@@ -2555,7 +2557,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // such as amd64 Unix, which just expects RAX to pass numFPArguments.
         NYI("Morphing Vararg call not yet implemented on non Windows targets.");
     }
-#endif // TARGET_UNIX
 
     // Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
     // following the normal calling convention or in the normal argument registers. We either mark existing
@@ -3052,22 +3053,23 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         var_types hfaType  = TYP_UNDEF;
         unsigned  hfaSlots = 0;
 
-        bool passUsingFloatRegs;
-#if !defined(OSX_ARM64_ABI)
+        bool     passUsingFloatRegs;
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
-#endif
-        unsigned size     = 0;
-        unsigned byteSize = 0;
+        unsigned size          = 0;
+        unsigned byteSize      = 0;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
             hfaType  = GetHfaType(argx);
             isHfaArg = varTypeIsValidHfaType(hfaType);
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            // Make sure for vararg methods isHfaArg is not true.
-            isHfaArg = callIsVararg ? false : isHfaArg;
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
+            if (TargetOS::IsWindows)
+            {
+                // Make sure for vararg methods isHfaArg is not true.
+                isHfaArg = callIsVararg ? false : isHfaArg;
+            }
+#endif // defined(TARGET_ARM64)
 
             if (isHfaArg)
             {
@@ -3302,12 +3304,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(size != 0);
         assert(byteSize != 0);
 
-#if defined(OSX_ARM64_ABI)
-        // Arm64 Apple has a special ABI for passing small size arguments on stack,
-        // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
-        // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-        unsigned argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
-#endif
+        if (compMacOsArm64Abi())
+        {
+            // Arm64 Apple has a special ABI for passing small size arguments on stack,
+            // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
+            // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
+            argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
+        }
 
         //
         // Figure out if the argument will be passed in a register.
@@ -3387,16 +3390,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 //
                 if (!isRegArg && (size > 1))
                 {
-#if defined(TARGET_WINDOWS)
                     // Arm64 windows native varargs allows splitting a 16 byte struct between stack
                     // and the last general purpose register.
-                    if (callIsVararg)
+                    if (TargetOS::IsWindows && callIsVararg)
                     {
                         // Override the decision and force a split.
                         isRegArg = (intArgRegNum + (size - 1)) <= maxRegArgs;
                     }
                     else
-#endif // defined(TARGET_WINDOWS)
                     {
                         // We also must update intArgRegNum so that we no longer try to
                         // allocate any new general purpose registers for args
@@ -3405,7 +3406,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     }
                 }
             }
-#else  // not TARGET_ARM or TARGET_ARM64
+#else // not TARGET_ARM or TARGET_ARM64
 
 #if defined(UNIX_AMD64_ABI)
 
@@ -3580,7 +3581,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     {
 #if FEATURE_ARG_SPLIT
                         // Check for a split (partially enregistered) struct
-                        if (!passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
+                        if (compFeatureArgSplit() && !passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
                         {
                             // This indicates a partial enregistration of a struct type
                             assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||
@@ -3784,11 +3785,14 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
+        if (!compMacOsArm64Abi())
         {
-            if (argSlots % 2 == 1)
+            if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
             {
-                argSlots++;
+                if (argSlots % 2 == 1)
+                {
+                    argSlots++;
+                }
             }
         }
 #endif // DEBUG
@@ -4240,8 +4244,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         const unsigned outgoingArgSpaceSize = GetOutgoingArgByteSize(call->fgArgInfo->GetNextSlotByteOffset());
 
 #if defined(DEBUG_ARG_SLOTS)
-        unsigned preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
-        assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+        unsigned preallocatedArgCount = 0;
+        if (!compMacOsArm64Abi())
+        {
+            preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
+            assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+        }
 #endif
         call->fgArgInfo->SetOutArgSize(max(outgoingArgSpaceSize, MIN_ARG_AREA_FOR_CALL));
 
@@ -4250,10 +4258,18 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         {
             const fgArgInfo* argInfo = call->fgArgInfo;
 #if defined(DEBUG_ARG_SLOTS)
-            printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
-                   "outgoingArgSpaceSize=%d\n",
-                   argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
-                   outgoingArgSpaceSize);
+            if (!compMacOsArm64Abi())
+            {
+                printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
+                       "outgoingArgSpaceSize=%d\n",
+                       argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
+                       outgoingArgSpaceSize);
+            }
+            else
+            {
+                printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
+                       outgoingArgSpaceSize);
+            }
 #else
             printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
                    outgoingArgSpaceSize);
@@ -6987,13 +7003,11 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // work required to shuffle arguments to the correct locations.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
-    if (info.compIsVarArgs || callee->IsVarargs())
+    if (TargetOS::IsWindows && TargetArchitecture::IsArmArch && (info.compIsVarArgs || callee->IsVarargs()))
     {
         reportFastTailCallDecision("Fast tail calls with varargs not supported on Windows ARM/ARM64");
         return false;
     }
-#endif // (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
 
     if (compLocallocUsed)
     {

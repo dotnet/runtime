@@ -1300,9 +1300,9 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Case of call returning a struct via hidden retbuf arg
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if (defined(TARGET_WINDOWS) && !defined(TARGET_ARM)) || defined(UNIX_X86_ABI)
-            // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
-            if (srcCall->IsUnmanaged())
+#if !defined(TARGET_ARM)
+            // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
+            if ((TargetOS::IsWindows || compUnixX86Abi()) && srcCall->IsUnmanaged())
             {
                 if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {
@@ -1366,7 +1366,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                 }
             }
             else
-#endif // (defined(TARGET_WINDOWS) && !defined(TARGET_ARM)) || defined(UNIX_X86_ABI)
+#endif // !defined(TARGET_ARM)
             {
                 // insert the return value buffer into the argument list as first byref parameter
                 srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
@@ -3734,10 +3734,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     *pIntrinsicID = intrinsicID;
 
-#ifndef TARGET_ARM
-    genTreeOps interlockedOperator;
-#endif
-
     if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_GetStubContext)
     {
         // must be done regardless of DbgCode and MinOpts
@@ -3784,96 +3780,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     switch (intrinsicID)
     {
         GenTree* op1;
-
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        // TODO-ARM-CQ: reenable treating Interlocked operation as intrinsic
-
-        // Note that CORINFO_INTRINSIC_InterlockedAdd32/64 are not actually used.
-        // Anyway, we can import them as XADD and leave it to lowering/codegen to perform
-        // whatever optimizations may arise from the fact that result value is not used.
-        case CORINFO_INTRINSIC_InterlockedAdd32:
-        case CORINFO_INTRINSIC_InterlockedXAdd32:
-            interlockedOperator = GT_XADD;
-            goto InterlockedBinOpCommon;
-        case CORINFO_INTRINSIC_InterlockedXchg32:
-            interlockedOperator = GT_XCHG;
-            goto InterlockedBinOpCommon;
-
-#ifdef TARGET_64BIT
-        case CORINFO_INTRINSIC_InterlockedAdd64:
-        case CORINFO_INTRINSIC_InterlockedXAdd64:
-            interlockedOperator = GT_XADD;
-            goto InterlockedBinOpCommon;
-        case CORINFO_INTRINSIC_InterlockedXchg64:
-            interlockedOperator = GT_XCHG;
-            goto InterlockedBinOpCommon;
-#endif // TARGET_AMD64
-
-        InterlockedBinOpCommon:
-            assert(callType != TYP_STRUCT);
-            assert(sig->numArgs == 2);
-
-            GenTree* op2;
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-
-            // This creates:
-            //   val
-            // XAdd
-            //   addr
-            //     field (for example)
-            //
-            // In the case where the first argument is the address of a local, we might
-            // want to make this *not* make the var address-taken -- but atomic instructions
-            // on a local are probably pretty useless anyway, so we probably don't care.
-
-            op1 = gtNewOperNode(interlockedOperator, genActualType(callType), op1, op2);
-            op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-            retNode = op1;
-            break;
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
-
-        case CORINFO_INTRINSIC_MemoryBarrier:
-        case CORINFO_INTRINSIC_MemoryBarrierLoad:
-
-            assert(sig->numArgs == 0);
-
-            op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
-            op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-
-            // On XARCH `CORINFO_INTRINSIC_MemoryBarrierLoad` fences need not be emitted.
-            // However, we still need to capture the effect on reordering.
-            if (intrinsicID == CORINFO_INTRINSIC_MemoryBarrierLoad)
-            {
-                op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
-            }
-
-            retNode = op1;
-            break;
-
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
-        case CORINFO_INTRINSIC_InterlockedCmpXchg32:
-#ifdef TARGET_64BIT
-        case CORINFO_INTRINSIC_InterlockedCmpXchg64:
-#endif
-        {
-            assert(callType != TYP_STRUCT);
-            assert(sig->numArgs == 3);
-            GenTree* op2;
-            GenTree* op3;
-
-            op3 = impPopStack().val; // comparand
-            op2 = impPopStack().val; // value
-            op1 = impPopStack().val; // location
-
-            GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
-
-            node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
-            retNode = node;
-            break;
-        }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
         case CORINFO_INTRINSIC_InitializeArray:
             retNode = impInitializeArrayIntrinsic(sig);
@@ -4371,6 +4277,90 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 #endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+            // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
+            case NI_System_Threading_Interlocked_CompareExchange:
+            {
+                var_types retType = JITtype2varType(sig->retType);
+                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                {
+                    break;
+                }
+                if ((retType != TYP_INT) && (retType != TYP_LONG))
+                {
+                    break;
+                }
+
+                assert(callType != TYP_STRUCT);
+                assert(sig->numArgs == 3);
+
+                GenTree* op3 = impPopStack().val; // comparand
+                GenTree* op2 = impPopStack().val; // value
+                GenTree* op1 = impPopStack().val; // location
+
+                GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
+
+                node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
+                retNode = node;
+                break;
+            }
+
+            case NI_System_Threading_Interlocked_Exchange:
+            case NI_System_Threading_Interlocked_ExchangeAdd:
+            {
+                assert(callType != TYP_STRUCT);
+                assert(sig->numArgs == 2);
+
+                var_types retType = JITtype2varType(sig->retType);
+                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                {
+                    break;
+                }
+                if ((retType != TYP_INT) && (retType != TYP_LONG))
+                {
+                    break;
+                }
+
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+
+                // This creates:
+                //   val
+                // XAdd
+                //   addr
+                //     field (for example)
+                //
+                // In the case where the first argument is the address of a local, we might
+                // want to make this *not* make the var address-taken -- but atomic instructions
+                // on a local are probably pretty useless anyway, so we probably don't care.
+
+                op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
+                                    genActualType(callType), op1, op2);
+                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+                retNode = op1;
+                break;
+            }
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+
+            case NI_System_Threading_Interlocked_MemoryBarrier:
+            case NI_System_Threading_Interlocked_ReadMemoryBarrier:
+            {
+                assert(sig->numArgs == 0);
+
+                GenTree* op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
+                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+
+                // On XARCH `NI_System_Threading_Interlocked_ReadMemoryBarrier` fences need not be emitted.
+                // However, we still need to capture the effect on reordering.
+                if (ni == NI_System_Threading_Interlocked_ReadMemoryBarrier)
+                {
+                    op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
+                }
+
+                retNode = op1;
+                break;
+            }
 
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
@@ -4962,10 +4952,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_Threading_Thread_get_ManagedThreadId;
             }
         }
-#ifndef TARGET_ARM64
-        // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
         else if (strcmp(className, "Interlocked") == 0)
         {
+#ifndef TARGET_ARM64
+            // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
             if (strcmp(methodName, "And") == 0)
             {
                 result = NI_System_Threading_Interlocked_And;
@@ -4974,8 +4964,28 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Threading_Interlocked_Or;
             }
-        }
 #endif
+            if (strcmp(methodName, "CompareExchange") == 0)
+            {
+                result = NI_System_Threading_Interlocked_CompareExchange;
+            }
+            else if (strcmp(methodName, "Exchange") == 0)
+            {
+                result = NI_System_Threading_Interlocked_Exchange;
+            }
+            else if (strcmp(methodName, "ExchangeAdd") == 0)
+            {
+                result = NI_System_Threading_Interlocked_ExchangeAdd;
+            }
+            else if (strcmp(methodName, "MemoryBarrier") == 0)
+            {
+                result = NI_System_Threading_Interlocked_MemoryBarrier;
+            }
+            else if (strcmp(methodName, "ReadMemoryBarrier") == 0)
+            {
+                result = NI_System_Threading_Interlocked_ReadMemoryBarrier;
+            }
+        }
     }
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
@@ -8788,14 +8798,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     CORINFO_CLASS_HANDLE actualMethodRetTypeSigClass;
     actualMethodRetTypeSigClass = sig->retTypeSigClass;
 
-#if !FEATURE_VARARG
     /* Check for varargs */
-    if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
-        (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
+    if (!compFeatureVarArg() && ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
+                                 (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG))
     {
         BADCODE("Varargs not supported.");
     }
-#endif // !FEATURE_VARARG
 
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
@@ -12196,7 +12204,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* The ARGLIST cookie is a hidden 'last' parameter, we have already
                    adjusted the arg count cos this is like fetching the last param */
                 assertImp(0 < numArgs);
-                assert(lvaTable[lvaVarargsHandleArg].IsAddressExposed());
                 lclNum = lvaVarargsHandleArg;
                 op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
                 op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
@@ -17510,10 +17517,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
         // On ARM64, the native instance calling convention variant
         // requires the implicit ByRef to be explicitly returned.
-        else if (callConvIsInstanceMethodCallConv(info.compCallConv))
+        else if (TargetOS::IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
@@ -21338,13 +21345,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         (isExact || objClassIsFinal) && (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
     if (JitConfig.JitCrossCheckDevirtualizationAndPGO() && canSensiblyCheck)
     {
-        unsigned likelihood      = 0;
-        unsigned numberOfClasses = 0;
+        // We only can handle a single likely class for now
+        const int         maxLikelyClasses = 1;
+        LikelyClassRecord likelyClasses[maxLikelyClasses];
 
-        CORINFO_CLASS_HANDLE likelyClass =
-            getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+        UINT32 numberOfClasses =
+            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        UINT32 likelihood = likelyClasses[0].likelihood;
 
-        if (likelyClass != NO_CLASS_HANDLE)
+        CORINFO_CLASS_HANDLE likelyClass = likelyClasses[0].clsHandle;
+
+        if (numberOfClasses > 0)
         {
             // PGO had better agree the class we devirtualized to is plausible.
             //
@@ -21905,6 +21916,9 @@ void Compiler::considerGuardedDevirtualization(
 
     bool doRandomDevirt = false;
 
+    const int         maxLikelyClasses = 32;
+    LikelyClassRecord likelyClasses[maxLikelyClasses];
+
 #ifdef DEBUG
     // Optional stress mode to pick a random known class, rather than
     // the most likely known class.
@@ -21917,24 +21931,40 @@ void Compiler::considerGuardedDevirtualization(
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        likelihood      = 100;
-        numberOfClasses = 1;
-        likelyClass     = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+        likelyClasses[0].clsHandle  = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+        likelyClasses[0].likelihood = 100;
+        if (likelyClasses[0].clsHandle != NO_CLASS_HANDLE)
+        {
+            numberOfClasses = 1;
+        }
     }
     else
 #endif
     {
-        likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
+        numberOfClasses =
+            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
     }
 
-    if (likelyClass == NO_CLASS_HANDLE)
+    // For now we only use the most popular type
+
+    likelihood  = likelyClasses[0].likelihood;
+    likelyClass = likelyClasses[0].clsHandle;
+
+    if (numberOfClasses < 1)
     {
         JITDUMP("No likely class, sorry\n");
         return;
     }
 
-    JITDUMP("%s class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", doRandomDevirt ? "Random" : "Likely",
-            dspPtr(objClass), objClassName, likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
+    assert(likelyClass != NO_CLASS_HANDLE);
+
+    // Print all likely classes
+    JITDUMP("%s classes for %p (%s):\n", doRandomDevirt ? "Random" : "Likely", dspPtr(objClass), objClassName)
+    for (UINT32 i = 0; i < numberOfClasses; i++)
+    {
+        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].clsHandle,
+                eeGetClassName(likelyClasses[i].clsHandle), likelyClasses[i].likelihood);
+    }
 
     // Todo: a more advanced heuristic using likelihood, number of
     // classes, and the profile count for this block.

@@ -6919,7 +6919,7 @@ void LinearScan::resolveRegisters()
                                 splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
 #ifdef TARGET_ARM
-                            else if (treeNode->OperIsMultiRegOp())
+                            else if (compFeatureArgSplit() && treeNode->OperIsMultiRegOp())
                             {
                                 GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
                                 multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());

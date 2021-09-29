@@ -117,7 +117,7 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
 
 #endif // FEATURE_EH_FUNCLETS
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
 
 void Compiler::createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR cfiOpcode, short dwarfReg, INT offset)
 {
@@ -389,7 +389,7 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
 }
 #endif // DEBUG
 
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
 //------------------------------------------------------------------------
 // Compiler::unwindGetCurrentOffset: Calculate the current byte offset of the
@@ -411,12 +411,16 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
     }
     else
     {
-#if defined(TARGET_AMD64) || (defined(TARGET_UNIX) && (defined(TARGET_ARMARCH) || defined(TARGET_X86)))
-        assert(func->startLoc != nullptr);
-        offset = func->startLoc->GetFuncletPrologOffset(GetEmitter());
-#else
-        offset = 0; // TODO ???
-#endif
+        if (TargetArchitecture::IsX64 ||
+            (TargetOS::IsUnix && (TargetArchitecture::IsArmArch || TargetArchitecture::IsX86)))
+        {
+            assert(func->startLoc != nullptr);
+            offset = func->startLoc->GetFuncletPrologOffset(GetEmitter());
+        }
+        else
+        {
+            offset = 0; // TODO ???
+        }
     }
 
     return offset;
