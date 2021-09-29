@@ -444,7 +444,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
 
             string assemblyPath = asmItem.GetMetadata("FullPath");
-            PEReader reader = new(File.OpenRead(assemblyPath), PEStreamOptions.Default);
+            using var assemblyFile = File.OpenRead(assemblyPath);
+            using PEReader reader = new(assemblyFile, PEStreamOptions.Default);
             if (!reader.HasMetadata)
             {
                 Log.LogWarning($"Skipping unmanaged {assemblyPath} for AOT");

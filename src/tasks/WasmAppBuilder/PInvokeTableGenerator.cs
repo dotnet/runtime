@@ -62,7 +62,7 @@ public class PInvokeTableGenerator : Task
         var callbacks = new List<PInvokeCallback>();
 
         var resolver = new PathAssemblyResolver(assemblies);
-        var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
+        using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
         {
             var a = mlc.LoadFromAssemblyPath(aname);
