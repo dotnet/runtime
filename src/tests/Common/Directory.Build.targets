@@ -144,7 +144,7 @@
 
         <RunTimeDependencyCopyLocal
           Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.*"
-          TargetDir="build/microsoft.netcore.app.runtime.browser-wasm"/>
+          TargetDir="build/microsoft.netcore.app.runtime.browser-wasm/"/>
 
 
         <!-- TODO: Need to find a way to compute this path instead of hard coding-->
@@ -155,7 +155,7 @@
 
          <RunTimeDependencyCopyLocal
             Include="$(JsonToItemsTaskFactoryDir)/**"     
-            Destination="build/JsonToItemsTaskFactory/"
+            Destination="build/Json ToItemsTaskFactory/"
          />
 
         <!-- This throws everything in 'native', include many non-native assemblies.
