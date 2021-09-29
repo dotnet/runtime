@@ -41,13 +41,13 @@ namespace Microsoft.Interop
                 && collectionMarshalling.ElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler }
                 && info.ManagedType is IArrayTypeSymbol)
             {
-                List<AttributeArgumentSyntax> marshalAsArguments = new List<AttributeArgumentSyntax>();
-                marshalAsArguments.Add(
+                List<AttributeArgumentSyntax> marshalAsArguments = new List<AttributeArgumentSyntax>
+                {
                     AttributeArgument(
                         CastExpression(ParseTypeName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
                         LiteralExpression(SyntaxKind.NumericLiteralExpression,
                             Literal((int)UnmanagedType.LPArray))))
-                    );
+                };
 
                 if (collectionMarshalling.ElementCountInfo is SizeAndParamIndexInfo countInfo)
                 {
