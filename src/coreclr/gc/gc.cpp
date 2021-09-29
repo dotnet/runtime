@@ -33360,8 +33360,6 @@ void gc_heap::background_mark_phase ()
 #endif //MULTIPLE_HEAPS
     }
 
-    gen0_bricks_cleared = FALSE;
-
     dprintf (2, ("end of bgc mark: loh: %d, poh: %d, soh: %d",
                  generation_size (loh_generation),
                  generation_size (poh_generation),
