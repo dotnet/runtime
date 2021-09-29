@@ -56,15 +56,15 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     {
         string assemblyFile = assemblyItem.ItemSpec;
         var outputPath = assemblyItem.GetMetadata("OutputPath");
-        if (String.IsNullOrWhiteSpace(outputPath))
+        if (string.IsNullOrWhiteSpace(outputPath))
         {
             outputPath = assemblyFile;
-        	Log.LogMessage(MessageImportance.Low, $"[ILStrip] {assemblyFile}");
+            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {assemblyFile}");
         }
-		else
-		{
-        	Log.LogMessage(MessageImportance.Low, $"[ILStrip] {assemblyFile} to {outputPath}");
-		}
+        else
+        {
+            Log.LogMessage(MessageImportance.Low, $"[ILStrip] {assemblyFile} to {outputPath}");
+        }
 
         try
         {
