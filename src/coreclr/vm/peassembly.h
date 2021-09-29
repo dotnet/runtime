@@ -88,6 +88,14 @@ class PEAssembly
     // ------------------------------------------------------------
     VPTR_BASE_CONCRETE_VTABLE_CLASS(PEAssembly)
 
+    friend class DomainFile;
+    friend class DomainAssembly;
+    friend class Assembly;
+    friend class COMDynamicWrite;
+    friend class AssemblyNative;
+    friend class Module;
+    friend class ClrDataAccess;
+
 public:
 
     // ------------------------------------------------------------
@@ -105,36 +113,6 @@ public:
     CHECK Invariant();
 #endif
 
-private:
-    // ------------------------------------------------------------
-    // Loader access API
-    // ------------------------------------------------------------
-
-    friend class DomainFile;
-
-public:
-    void LoadLibrary();
-
-
-private:
-    // For use inside LoadLibrary callback
-    void SetLoadedHMODULE(HMODULE hMod);
-
-    // DO NOT USE !!! this is to be removed when we move to new fusion binding API
-    friend class DomainAssembly;
-
-    // Helper for creating metadata for CreateDynamic
-    friend class Assembly;
-    friend class COMDynamicWrite;
-    friend class AssemblyNative;
-    static void DefineEmitScope(
-        GUID   iid,
-        void **ppEmit);
-
-protected:
-    IMDInternalImportHolder GetMDImport();
-
-public:
     // ------------------------------------------------------------
     // Identity
     // ------------------------------------------------------------
@@ -314,79 +292,7 @@ public:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pImport = NULL);
 
-protected:
-    // ------------------------------------------------------------
-    // Internal routines
-    // ------------------------------------------------------------
-
-#ifdef DACCESS_COMPILE
-    // just to make the DAC and GCC happy.
-    virtual ~PEAssembly() {};
-    PEAssembly() {}
-#else
-    PEAssembly(
-        BINDER_SPACE::Assembly* pBindResultInfo,
-        IMetaDataEmit* pEmit,
-        PEAssembly* creator,
-        BOOL isSystem,
-        PEImage* pPEImageIL = NULL,
-        BINDER_SPACE::Assembly* pHostAssembly = NULL
-    );
-
-    virtual ~PEAssembly();
-#endif
-
-    void OpenMDImport();
-    void OpenMDImport_Unsafe();
-    void OpenImporter();
-    void OpenEmitter();
-
-    void ReleaseMetadataInterfaces(BOOL bDestructor);
-
-
-    friend class Module;
-
-#ifndef DACCESS_COMPILE
-    void EnsureImageOpened();
-#endif // DACCESS_COMPILE
-
-    friend class ClrDataAccess;
-
-    // ------------------------------------------------------------
-    // Instance fields
-    // ------------------------------------------------------------
-
-#ifdef _DEBUG
-    LPCWSTR                 m_pDebugName;
-    SString                 m_debugName;
-#endif
-
-    // Identity image
-    PTR_PEImage              m_identity;
-    // IL image, NULL if we didn't need to open the file
-    PTR_PEImage              m_openedILimage;
-
-    PTR_PEAssembly           m_creator;
-    // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
-    // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
-    // IID_IMDInternalImportENC
-    BOOL                     m_MDImportIsRW_Debugger_Use_Only;
-    Volatile<BOOL>           m_bHasPersistentMDImport;
-
-#ifndef DACCESS_COMPILE
-    IMDInternalImport       *m_pMDImport;
-#else
-    IMDInternalImport       *m_pMDImport_UseAccessor;
-#endif
-
-    IMetaDataImport2        *m_pImporter;
-    IMetaDataEmit           *m_pEmitter;
-    SimpleRWLock            *m_pMetadataLock;
-
-    Volatile<LONG>           m_refCount;
-    bool                     m_isSystem;
-
-public:
+    void LoadLibrary();
 
     PTR_PEImage GetILimage()
     {
@@ -401,15 +307,15 @@ public:
         if (m_openedILimage == NULL && m_identity != NULL)
         {
             PEImage* pOpenedILimage;
-            m_identity->Clone(MDInternalImport_Default,&pOpenedILimage);
-            if (InterlockedCompareExchangeT(&m_openedILimage,pOpenedILimage,NULL) != NULL)
+            m_identity->Clone(&pOpenedILimage);
+            if (InterlockedCompareExchangeT(&m_openedILimage, pOpenedILimage, NULL) != NULL)
                 pOpenedILimage->Release();
         }
 #endif
         return m_openedILimage;
     }
 
-    PEImage *GetOpenedILimage()
+    PEImage* GetOpenedILimage()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(HasOpenedILimage());
@@ -427,24 +333,12 @@ public:
     BOOL HasLoadedIL()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return HasOpenedILimage() &&  GetOpenedILimage()->HasLoadedLayout();
+        return HasOpenedILimage() && GetOpenedILimage()->HasLoadedLayout();
     }
 
     LPCWSTR GetPathForErrorMessages();
 
     void ConvertMDInternalToReadWrite();
-
-protected:
-    PTR_BINDER_SPACE_Assembly m_pHostAssembly;
-
-    // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
-    // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
-    // we need to ensure they are loaded in appropriate load context.
-    //
-    // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
-    // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
-    // load context would be propagated to the assembly being dynamically generated.
-    PTR_AssemblyBinder m_pFallbackBinder;
 
 public:
     // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
@@ -477,38 +371,31 @@ public:
         return m_pFallbackBinder;
     }
 
-      public:
-          // ------------------------------------------------------------
-          // Statics initialization.
-          // ------------------------------------------------------------
-          static void Attach();
+    // ------------------------------------------------------------
+    // Statics initialization.
+    // ------------------------------------------------------------
+    static void Attach();
 
-          // ------------------------------------------------------------
-          // Public API
-          // ------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Public API
+    // ------------------------------------------------------------
 
-          // CoreCLR's PrivBinder PEAssembly creation entrypoint
-          static PEAssembly* Open(
-              PEAssembly* pParent,
-              PEImage* pPEImageIL,
-              BINDER_SPACE::Assembly* pHostAssembly);
+    // CoreCLR's PrivBinder PEAssembly creation entrypoint
+    static PEAssembly* Open(
+        PEAssembly* pParent,
+        PEImage* pPEImageIL,
+        BINDER_SPACE::Assembly* pHostAssembly);
 
-          // This opens the canonical System.Private.CoreLib.dll
-          static PEAssembly* OpenSystem();
+    // This opens the canonical System.Private.CoreLib.dll
+    static PEAssembly* OpenSystem();
 
-          static PEAssembly* Open(
-              BINDER_SPACE::Assembly* pBindResult,
-              BOOL isSystem);
+    static PEAssembly* Open(
+        BINDER_SPACE::Assembly* pBindResult,
+        BOOL isSystem);
 
-          static PEAssembly* Create(
-              PEAssembly* pParentAssembly,
-              IMetaDataAssemblyEmit* pEmit);
-
-  private:
-      // Private helpers for crufty exception handling reasons
-      static PEAssembly* DoOpenSystem();
-
-  public:
+    static PEAssembly* Create(
+        PEAssembly* pParentAssembly,
+        IMetaDataAssemblyEmit* pEmit);
 
       // ------------------------------------------------------------
       // binding & source
@@ -545,6 +432,106 @@ public:
       static void PathToUrl(SString& string);
       static void UrlToPath(SString& string);
       static BOOL FindLastPathSeparator(const SString& path, SString::Iterator& i);
+
+private:
+    // ------------------------------------------------------------
+    // Loader access API
+    // ------------------------------------------------------------
+
+    // For use inside LoadLibrary callback
+    void SetLoadedHMODULE(HMODULE hMod);
+
+    // DO NOT USE !!! this is to be removed when we move to new fusion binding API
+
+    // Helper for creating metadata for CreateDynamic
+    static void DefineEmitScope(
+        GUID   iid,
+        void** ppEmit);
+
+    IMDInternalImportHolder GetMDImport();
+
+    // Private helper for crufty exception handling reasons
+    static PEAssembly* DoOpenSystem();
+
+    // ------------------------------------------------------------
+    // Internal routines
+    // ------------------------------------------------------------
+
+#ifdef DACCESS_COMPILE
+    // just to make the DAC and GCC happy.
+    virtual ~PEAssembly() {};
+    PEAssembly() {}
+#else
+    PEAssembly(
+        BINDER_SPACE::Assembly* pBindResultInfo,
+        IMetaDataEmit* pEmit,
+        PEAssembly* creator,
+        BOOL isSystem,
+        PEImage* pPEImageIL = NULL,
+        BINDER_SPACE::Assembly* pHostAssembly = NULL
+    );
+
+    virtual ~PEAssembly();
+#endif
+
+    void OpenMDImport();
+    void OpenMDImport_Unsafe();
+    void OpenImporter();
+    void OpenEmitter();
+
+    void ReleaseMetadataInterfaces(BOOL bDestructor);
+
+#ifndef DACCESS_COMPILE
+    void EnsureImageOpened();
+#endif // DACCESS_COMPILE
+
+
+private:
+
+ // ------------------------------------------------------------
+ // Instance fields
+ // ------------------------------------------------------------
+
+#ifdef _DEBUG
+    LPCWSTR                 m_pDebugName;
+    SString                 m_debugName;
+#endif
+
+    // Identity image
+    PTR_PEImage              m_identity;
+    // IL image, NULL if we didn't need to open the file
+    PTR_PEImage              m_openedILimage;
+
+    PTR_PEAssembly           m_creator;
+    // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
+    // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
+    // IID_IMDInternalImportENC
+    BOOL                     m_MDImportIsRW_Debugger_Use_Only;
+    Volatile<BOOL>           m_bHasPersistentMDImport;
+
+#ifndef DACCESS_COMPILE
+    IMDInternalImport* m_pMDImport;
+#else
+    IMDInternalImport* m_pMDImport_UseAccessor;
+#endif
+
+    IMetaDataImport2* m_pImporter;
+    IMetaDataEmit* m_pEmitter;
+    SimpleRWLock* m_pMetadataLock;
+
+    Volatile<LONG>           m_refCount;
+    bool                     m_isSystem;
+
+    PTR_BINDER_SPACE_Assembly m_pHostAssembly;
+
+    // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
+    // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
+    // we need to ensure they are loaded in appropriate load context.
+    //
+    // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
+    // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
+    // load context would be propagated to the assembly being dynamically generated.
+    PTR_AssemblyBinder m_pFallbackBinder;
 
 };  // class PEAssembly
 
