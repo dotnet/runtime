@@ -16,13 +16,11 @@ namespace Mono.Linker
 	{
 		protected readonly AssemblyDefinition assembly;
 
-		HashSet<TypeReference>? visited;
-		protected HashSet<TypeReference> Visited => visited ?? throw new InvalidOperationException ();
+		protected HashSet<TypeReference> Visited { get; } = new HashSet<TypeReference> ();
 
 		public TypeReferenceWalker (AssemblyDefinition assembly)
 		{
 			this.assembly = assembly;
-			visited = null;
 		}
 
 		// Traverse the assembly and mark the scopes of discovered type references (but not exported types).
@@ -30,7 +28,8 @@ namespace Mono.Linker
 		// such as references to built-in types, or attribute arguments which encode type references as strings.
 		protected virtual void Process ()
 		{
-			visited = new HashSet<TypeReference> ();
+			if (Visited.Count > 0)
+				throw new InvalidOperationException ();
 
 			WalkCustomAttributesTypesScopes (assembly);
 			WalkSecurityAttributesTypesScopes (assembly);
@@ -49,8 +48,6 @@ namespace Mono.Linker
 				WalkTypeScope (mmodule.ExportedTypes);
 
 			ProcessExtra ();
-
-			visited = null;
 		}
 
 		protected virtual void ProcessExtra () { }
@@ -321,7 +318,7 @@ namespace Mono.Linker
 			if (type == null)
 				return;
 
-			if (!visited!.Add (type))
+			if (!Visited.Add (type))
 				return;
 
 			// Don't walk the scope of windows runtime projections
