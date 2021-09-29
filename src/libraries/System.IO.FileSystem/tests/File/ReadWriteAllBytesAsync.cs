@@ -197,20 +197,44 @@ namespace System.IO.Tests
 
             var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);
             var contentBytes = new byte[] { 1, 2, 3 };
-            Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes);
 
-            byte[] readBytes = await File.ReadAllBytesAsync(pipePath);
+            using (var cts = new CancellationTokenSource())
+            {
+                Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
+                Task<byte[]> readTask = File.ReadAllBytesAsync(pipePath, cts.Token);
+                cts.CancelAfter(TimeSpan.FromSeconds(10));
 
-            await writingServerTask;
-            Assert.Equal<byte>(contentBytes, readBytes);
+                await writingServerTask;
+                byte[] readBytes = await readTask;
+                Assert.Equal<byte>(contentBytes, readBytes);
+            }
 
-            static async Task WaitConnectionAndWritePipeStreamAsync(NamedPipeServerStream namedPipeWriterStream, byte[] contentBytes)
+            static async Task WaitConnectionAndWritePipeStreamAsync(NamedPipeServerStream namedPipeWriterStream, byte[] contentBytes, CancellationToken cancellationToken)
             {
                 await using (namedPipeWriterStream)
                 {
-                    await namedPipeWriterStream.WaitForConnectionAsync();
-                    await namedPipeWriterStream.WriteAsync(contentBytes);
+                    await namedPipeWriterStream.WaitForConnectionAsync(cancellationToken);
+                    await namedPipeWriterStream.WriteAsync(contentBytes, cancellationToken);
                 }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task ReadAllBytesAsync_NonSeekableFileStream_InLinux()
+        {
+            var path = "/dev/tty";
+            var contentBytes = new byte[] { 1, 2, 3 };
+
+            using (var cts = new CancellationTokenSource())
+            {
+                Task writingTask = File.WriteAllBytesAsync(path, contentBytes, cts.Token);
+                Task<byte[]> readTask = File.ReadAllBytesAsync(path, cts.Token);
+                cts.CancelAfter(TimeSpan.FromMilliseconds(500));
+
+                await writingTask;
+                byte[] readBytes = await readTask;
+                Assert.Equal<byte>(contentBytes, readBytes);
             }
         }
     }
