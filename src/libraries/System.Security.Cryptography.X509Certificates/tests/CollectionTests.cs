@@ -1692,21 +1692,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static void AssertPemExport(X509Certificate2Collection collection, string expectedContents)
         {
-            Span<char> buffer = new char[expectedContents.Length];
+            Span<char> buffer;
             int written;
 
+            // Too small
             // If we expect something to get written, try writing to a buffer that is too small by one
             // and make sure it fails.
-            if (!buffer.IsEmpty)
+            if (expectedContents.Length > 0)
             {
-                Assert.False(collection.TryExportCertificatePems(buffer.Slice(1), out written), nameof(collection.TryExportCertificatePems));
+                buffer = new char[expectedContents.Length - 1];
+                Assert.False(collection.TryExportCertificatePems(buffer, out written), nameof(collection.TryExportCertificatePems));
                 Assert.Equal(0, written);
             }
 
+            // Just enough
+            buffer = new char[expectedContents.Length];
             Assert.True(collection.TryExportCertificatePems(buffer, out written), nameof(collection.TryExportCertificatePems));
-            Assert.Equal(written, buffer.Length);
+            Assert.Equal(written, expectedContents.Length);
             Assert.Equal(expectedContents, new string(buffer));
 
+            // More than enough
+            int padding = 10;
+            buffer = new char[expectedContents.Length + padding * 2];
+            buffer.Fill('!');
+            Assert.True(collection.TryExportCertificatePems(buffer.Slice(10), out written), nameof(collection.TryExportCertificatePems));
+            Assert.Equal(written, expectedContents.Length);
+            Assert.Equal(expectedContents, new string(buffer.Slice(padding, written)));
+            AssertExtensions.FilledWith('!', buffer.Slice(0, 10));
+            AssertExtensions.FilledWith('!', buffer[^10..]);
+
+            // Array-allocating return
             string exported = collection.ExportCertificatePems();
             Assert.Equal(expectedContents, exported);
         }
