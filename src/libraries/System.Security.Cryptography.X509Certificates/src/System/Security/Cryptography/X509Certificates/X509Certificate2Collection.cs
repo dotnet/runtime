@@ -549,6 +549,10 @@ namespace System.Security.Cryptography.X509Certificates
                 ReadOnlyMemory<byte> certData = this[i].RawDataMemory;
                 int certSize = PemEncoding.GetEncodedSize(PemLabels.X509Certificate.Length, certData.Length);
 
+                // If we ran out of space in the destination, return false. It's okay
+                // that we may have successfully written data to the destination
+                // already. Since certificates only contain "public" information,
+                // we don't need to clear what has been written already.
                 if (buffer.Length < certSize)
                 {
                     charsWritten = 0;
@@ -574,6 +578,8 @@ namespace System.Security.Cryptography.X509Certificates
                         return false;
                     }
 
+                    // Always use Unix line endings between certificates to match the
+                    // behavior of PemEncoding.TryWrite, which is following RFC 7468.
                     buffer[0] = '\n';
                     buffer = buffer.Slice(1);
                     written++;

@@ -1567,7 +1567,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void TryExportCertificatePems_Empty()
         {
             X509Certificate2Collection cc = new X509Certificate2Collection();
-           AssertPemExport(cc, string.Empty);
+            AssertPemExport(cc, string.Empty);
         }
 
         [Fact]
