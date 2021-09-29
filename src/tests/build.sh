@@ -81,7 +81,7 @@ build_Tests()
 
     # Uncomment the line below when instrumenting Linux builds to produce binlogs;
     # they seem to be too lengthy to be enabled by default.
-    # __msbuildBinLog="\"/bl:${__BuildBinLog}\""
+    __msbuildBinLog="\"/bl:${__BuildBinLog}\""
 
     # Export properties as environment variables for the MSBuild scripts to use
     export __TestDir
