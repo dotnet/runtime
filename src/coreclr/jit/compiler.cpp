@@ -4665,7 +4665,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if defined(DEBUG) && defined(TARGET_XARCH)
         if (opts.compStackCheckOnRet)
         {
-            lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
+            lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
+            lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason::ReturnSpCheck);
             lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
@@ -9825,6 +9826,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_blockOpRet++;
                 break;
 
+            case DoNotEnregisterReason::ReturnSpCheck:
+                m_returnSpCheck++;
+                break;
+
             default:
                 unreached();
                 break;
@@ -9945,6 +9950,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_oneAsgRetyping, notEnreg);
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
+    PRINT_STATS(m_returnSpCheck, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

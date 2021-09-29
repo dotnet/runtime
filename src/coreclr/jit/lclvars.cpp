@@ -2664,6 +2664,10 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("return uses a block op\n");
             break;
 
+        case DoNotEnregisterReason::ReturnSpCheck:
+            JITDUMP("Used for SP check\n");
+            break;
+
         default:
             unreached();
             break;
