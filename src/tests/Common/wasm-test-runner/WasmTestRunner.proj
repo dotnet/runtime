@@ -5,7 +5,7 @@
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existant</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\build\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
@@ -19,13 +19,14 @@
     <WasmBuildAppDependsOn>BuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <JsonToItemsTaskFactoryTasksAssemblyPath>$(CORE_ROOT)\JsonToItemsTaskFactory\JsonToItemsTaskFactory.dll</JsonToItemsTaskFactoryTasksAssemblyPath>
     <RuntimeConfigParserTasksAssemblyPath>$(CORE_ROOT)\RuntimeConfigParser\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
-    <EMSDK_PATH>$(CORE_ROOT)\emsdk</EMSDK_PATH>
+    <EMSDK_PATH>$(CORE_ROOT)\build\emsdk</EMSDK_PATH>
     <MonoAOTCompilerDir>$(CORE_ROOT)\monoaotcompiler</MonoAOTCompilerDir>
     <PublishTrimmed>true</PublishTrimmed>
+    <WasmBuildSupportDir>$(CORE_ROOT)/build/</WasmBuildSupportDir>
   </PropertyGroup>
 
-  <Import Project="$(RuntimeSrcDir)/src/mono/wasm/build/WasmApp.LocalBuild.props" />
-  <Import Project="$(RuntimeSrcDir)/src/mono/wasm/build/WasmApp.LocalBuild.targets" />
+  <Import Project="$(CORE_ROOT)/build/WasmApp.LocalBuild.props" />
+  <Import Project="$(CORE_ROOT)/build/WasmApp.LocalBuild.targets" />
 
   <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
