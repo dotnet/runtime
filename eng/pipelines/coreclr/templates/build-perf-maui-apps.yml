@@ -27,24 +27,19 @@ steps:
 
   - script: |
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
-      dotnet workload update --from-rollback-file ./rollback.json
-      dotnet workload install maui --skip-manifest-update
-      dotnet new maui -n MauiTesting
-      cd MauiTesting
-  #     dotnet build -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false -v d
+      ./dotnet workload update --from-rollback-file ./rollback.json
+      ./dotnet workload install maui --skip-manifest-update
     displayName: Install MAUI
     workingDirectory: $(Build.SourcesDirectory)
-
-  - task: UseDotNet@2
-    inputs:
-      version: '6.0.x'
-      includePreviewVersions: true # Required for preview versions
-
-  - task: DotNetCoreCLI@2
-    inputs:
-      command: 'build'
-      arguments: '-bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false'
-      projects: 'MauiTesting/MauiTesting.sln'
+  
+  - script: |
+      ./dotnet new maui -n MauiTesting
+      cd MauiTesting
+      ../dotnet build -f net6.0-android -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
+      xcode-select --switch /Applications/Xcode.app/Contents/Developer
+      ../dotnet build -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
+    displayName: Build MAUI
+    workingDirectory: $(Build.SourcesDirectory)
 
   - script: ls -RA #
     condition: succeededOrFailed() #
