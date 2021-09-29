@@ -408,7 +408,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         {
                             ReadOnlySpan<QuicBuffer> quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle, sizeof(QuicBuffer));
                             certificate = new X509Certificate2(new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length));
-                            certificateBuffer = (IntPtr) quicBuffer[0].Buffer;
+                            certificateBuffer = (IntPtr)quicBuffer[0].Buffer;
                             certificateLength = (int)quicBuffer[0].Length;
 
                             if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle != IntPtr.Zero)
