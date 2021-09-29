@@ -125,7 +125,6 @@ jobs:
         parameters:
           platform:
             buildScript: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-            nonPortable: true
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
