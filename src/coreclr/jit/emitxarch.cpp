@@ -4538,6 +4538,45 @@ bool emitter::IsRedundantMov(
 }
 
 //------------------------------------------------------------------------
+// EmitMovsxAsCwde: try to emit "movsxd rax, eax" and "movsx eax, ax" as
+//                  "cdqe" and "cwde" as a code size optimization.
+//
+// Arguments:
+//    ins  - The instruction for the original mov
+//    size - The size of the original mov
+//    dst  - The destination register for the original mov
+//    src  - The source register for the original mov
+//
+// Return Value:
+//    "true" if the optimization succeded, in which case the instruction can be
+//    counted as emitted, "false" otherwise.
+//
+bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
+{
+    if ((src == REG_EAX) && (src == dst))
+    {
+#ifdef TARGET_64BIT
+        // "movsxd rax, eax".
+        if ((ins == INS_movsxd) && (size == EA_4BYTE))
+        {
+            // "cdqe".
+            emitIns(INS_cwde, EA_8BYTE);
+            return true;
+        }
+#endif
+        // "movsx eax, ax".
+        if ((ins == INS_movsx) && (size == EA_2BYTE))
+        {
+            // "cwde".
+            emitIns(INS_cwde, EA_4BYTE);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // emitIns_Mov: Emits a move instruction
 //
 // Arguments:
@@ -4608,13 +4647,19 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
 
-    UNATIVE_OFFSET sz  = emitInsSizeRR(ins, dstReg, srcReg, attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_RRD);
+    insFormat fmt = emitInsModeFormat(ins, IF_RRD_RRD);
 
     if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
     {
         return;
     }
+
+    if (EmitMovsxAsCwde(ins, size, dstReg, srcReg))
+    {
+        return;
+    }
+
+    UNATIVE_OFFSET sz = emitInsSizeRR(ins, dstReg, srcReg, attr);
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);

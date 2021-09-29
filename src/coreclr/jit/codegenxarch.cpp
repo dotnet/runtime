@@ -6468,30 +6468,6 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         genIntCastOverflowCheck(cast, desc, srcReg);
     }
 
-    // Code size optimization: use "cdqe" and "cdwe" instead
-    // of "movsxd rax, eax" and "movsx eax, ax", respectively.
-    if ((srcReg == REG_EAX) && (srcReg == dstReg))
-    {
-        emitAttr attribute = EA_UNKNOWN;
-#ifdef TARGET_64BIT
-        if (desc.ExtendKind() == GenIntCastDesc::SIGN_EXTEND_INT)
-        {
-            attribute = EA_8BYTE;
-        }
-#endif
-        if ((desc.ExtendKind() == GenIntCastDesc::SIGN_EXTEND_SMALL_INT) && (desc.ExtendSrcSize() == sizeof(int16_t)))
-        {
-            attribute = EA_4BYTE;
-        }
-
-        if (attribute != EA_UNKNOWN)
-        {
-            emit->emitIns(INS_cwde, attribute);
-            genProduceReg(cast);
-            return;
-        }
-    }
-
     instruction ins;
     unsigned    insSize;
     bool        canSkip = false;
