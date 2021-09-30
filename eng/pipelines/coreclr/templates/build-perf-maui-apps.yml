@@ -37,7 +37,7 @@ steps:
       cd MauiTesting
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.targets
-      ../dotnet.sh build -f net6.0-android -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
+      ../dotnet.sh build -bl:MauiTestingBin.binlog
     displayName: Build MAUI
     workingDirectory: $(Build.SourcesDirectory)
 
@@ -51,12 +51,6 @@ steps:
         archiveType: tar #
         tarCompression: gz #
 
-
-# # Build MAUI Android sample app
-#   - ${{ if eq(parameters.osGroup, 'Android') }}:
-#     - script: make run MONO_ARCH=arm64 DEPLOY_AND_RUN=false  #
-#       workingDirectory: $(Build.SourcesDirectory) #
-#       displayName: Build MAUI Android sample app 
 # # Build the iOS sample app #
 #   - ${{ if eq(parameters.osGroup, 'iOS') }}:
 #     - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false #
