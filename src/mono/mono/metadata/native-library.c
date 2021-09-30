@@ -1048,7 +1048,7 @@ retry_with_libcoreclr:
 			mono_custom_attrs_free (cinfo);
 	}
 	if (flags < 0)
-		flags = 0;
+		flags = DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY;
 	module = netcore_lookup_native_library (alc, image, new_scope, flags);
 
 	if (!module) {
