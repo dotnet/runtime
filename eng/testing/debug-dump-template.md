@@ -6,11 +6,13 @@ dotnet tool install --global runfo
 dotnet tool update --global runfo
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
-```sh
-# On Windows
-# assumes %WOUTDIR% does not exist
+Windows:
+```cmd
+:: assumes %WOUTDIR% does not exist
 runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %WOUTDIR%
-# On Linux and macOS
+```
+Linux and macOS:
+```sh
 # assumes %LOUTDIR% does not exist
 runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %LOUTDIR%
 ```
@@ -21,23 +23,24 @@ Any dump files published by helix will be downloaded.
 
 Now extract the files:
 
-```sh
-# On Windows
+Windows:
+```cmd
 for /f %i in ('dir /s/b %WOUTDIR%\*zip') do tar -xf %i -C %WOUTDIR%
-
-# On Linux and macOS
+```
+Linux and macOS
+```sh
 # obtain `unzip` if necessary; eg `sudo apt-get install unzip` or `sudo dnf install unzip`
 find %LOUTDIR% -name '*zip' -exec unzip -d %LOUTDIR% {} \;
 ```
 
 Now use the [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos) to install the SOS debugging extension.
-```sh
+```cmd
 dotnet tool install --global dotnet-sos
 dotnet tool update --global dotnet-sos
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
-```sh
-# Install only one: the one matching your dump
+```cmd
+:: Install only one: the one matching your dump
 dotnet sos install --architecture Arm
 dotnet sos install --architecture Arm64
 dotnet sos install --architecture x86
@@ -71,23 +74,21 @@ Currently this is not possible because mscordbi.dll is not signed.
 ## ... and you want to debug with dotnet-dump
 
 Install the [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
-```sh
+```cmd
 dotnet tool install --global dotnet-dump
 dotnet tool update --global dotnet-dump
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
-```sh
-dotnet-dump analyze <win-path-to-dump>
-```
-Within dotnet-dump:
-```sh
-setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0
-setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0
+```cmd
+dotnet-dump analyze ^
+  <win-path-to-dump> ^
+  --command "setclrpath %WOUTDIR%/shared/Microsoft.NETCore.App/7.0.0" ^
+  "setsymbolserver -directory %WOUTDIR%/shared/Microsoft.NETCore.App/7.0.0"
 ```
 
 Now you can use regular SOS commands like `dumpstack`, `pe`, etc.
 If you are debugging a 32 bit dump using 64 bit dotnet, you will get an error `SOS does not support the current target architecture`. In that case replace dotnet-dump with the 32 bit version:
-```sh
+```cmd
 dotnet tool uninstall --global dotnet-dump
 "C:\Program Files (x86)\dotnet\dotnet.exe" tool install --global dotnet-dump
 ```
