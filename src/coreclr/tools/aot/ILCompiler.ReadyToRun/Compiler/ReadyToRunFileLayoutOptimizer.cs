@@ -26,6 +26,7 @@ namespace ILCompiler
         HotWarmCold,
         CallFrequency,
         PettisHansen,
+        Random,
     }
 
     public enum ReadyToRunFileLayoutAlgorithm
@@ -164,6 +165,17 @@ namespace ILCompiler
 
                 case ReadyToRunMethodLayoutAlgorithm.PettisHansen:
                     methods = PettisHansenSort(methods);
+                    break;
+
+                case ReadyToRunMethodLayoutAlgorithm.Random:
+                    Random rand = new Random(0);
+                    for (int i = 0; i < methods.Count - 1; i++)
+                    {
+                        int j = rand.Next(i, methods.Count);
+                        MethodWithGCInfo temp = methods[i];
+                        methods[i] = methods[j];
+                        methods[j] = temp;
+                    }
                     break;
 
                 default:
