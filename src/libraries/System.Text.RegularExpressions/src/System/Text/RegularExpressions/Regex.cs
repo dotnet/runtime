@@ -208,28 +208,8 @@ namespace System.Text.RegularExpressions
             CompileToAssembly(regexinfos, assemblyname, attributes, null);
 
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
-        {
-            if (assemblyname is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.assemblyname);
-            }
-
-            if (regexinfos is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.regexinfos);
-            }
-
-            foreach (RegexCompilationInfo info in regexinfos)
-            {
-                if (info is null)
-                {
-                    throw new ArgumentNullException(nameof(regexinfos), SR.ArgumentNull_ArrayWithNullElements);
-                }
-            }
-
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-        }
 
         /// <summary>
         /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and
