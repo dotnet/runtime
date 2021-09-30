@@ -475,13 +475,34 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
+        [Fact]
+        public async Task MultipleTypeDefinitions_DoesntBreakGeneration()
+        {
+            byte[] referencedAssembly = CreateAssemblyImage(@"
+                namespace System.Text.RegularExpressions;
+
+                [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+                internal sealed class RegexGeneratorAttribute : Attribute
+                {
+                    public RegexGeneratorAttribute(string pattern){}
+                }", "TestAssembly");
+
+            Assert.Empty(await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""abc"")]
+                    private static partial Regex Valid();
+                }", compile: true, additionalRefs: new[] { MetadataReference.CreateFromImage(referencedAssembly) }));
+        }
+
         private async Task<IReadOnlyList<Diagnostic>> RunGenerator(
-            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, CancellationToken cancellationToken = default)
+            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()
                 .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                 .AddProject("RegexGeneratorTest", "RegexGeneratorTest.dll", "C#")
-                .WithMetadataReferences(s_refs)
+                .WithMetadataReferences(additionalRefs is not null ? s_refs.Concat(additionalRefs) : s_refs)
                 .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithNullableContextOptions(NullableContextOptions.Enable))
                 .WithParseOptions(new CSharpParseOptions(langVersion))
@@ -513,10 +534,33 @@ namespace System.Text.RegularExpressions.Generator.Tests
             return generatorResults.Diagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
         }
 
+        private static byte[] CreateAssemblyImage(string source, string assemblyName)
+        {
+            CSharpCompilation compilation = CSharpCompilation.Create(
+                assemblyName,
+                new[] { CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview)) },
+                s_refs.ToArray(),
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            var ms = new MemoryStream();
+            if (compilation.Emit(ms).Success)
+            {
+               return ms.ToArray();
+            }
+
+            throw new InvalidOperationException();
+        }
+
         private static readonly MetadataReference[] s_refs = CreateReferences();
 
         private static MetadataReference[] CreateReferences()
         {
+            if (PlatformDetection.IsBrowser)
+            {
+                // These tests that use Roslyn don't work well on browser wasm today
+                return new MetadataReference[0];
+            }
+
             string corelibPath = typeof(object).Assembly.Location;
             return new[]
             {
