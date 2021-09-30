@@ -10574,6 +10574,23 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
     }
     if (ret != nullptr)
     {
+        var_types fieldType = tree->TypeGet();
+        if (fieldType == TYP_LONG)
+        {
+            // Vector2/3/4 expose public float fields while Vector<T>
+            // and Vector64/128/256<T> have internal ulong fields. So
+            // we should only ever encounter accesses for TYP_FLOAT or
+            // TYP_LONG and in the case of the latter we don't want the
+            // generic type since we are executing some algorithm on the
+            // raw underlying bits instead.
+
+            *simdBaseJitTypeOut = CORINFO_TYPE_ULONG;
+        }
+        else
+        {
+            assert(fieldType == TYP_FLOAT);
+        }
+
         unsigned baseTypeSize = genTypeSize(JITtype2varType(*simdBaseJitTypeOut));
         *indexOut             = tree->AsField()->gtFldOffset / baseTypeSize;
     }
