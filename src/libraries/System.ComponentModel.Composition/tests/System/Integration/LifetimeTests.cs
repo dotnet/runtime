@@ -392,12 +392,12 @@ namespace Tests.Integration
             {
                 get
                 {
-                    ObjectDisposedException.ThrowIf(this.IdDisposed, this);
+                    ObjectDisposedException.ThrowIf(this.IsDisposed, this);
                     return this._value;
                 }
                 set
                 {
-                    ObjectDisposedException.ThrowIf(this.IdDisposed, this);
+                    ObjectDisposedException.ThrowIf(this.IsDisposed, this);
                     this._value = value;
                 }
             }
