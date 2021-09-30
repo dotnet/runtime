@@ -305,6 +305,7 @@
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="ls -laR $HELIX_WORKITEM_UPLOAD_ROOT"/>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
