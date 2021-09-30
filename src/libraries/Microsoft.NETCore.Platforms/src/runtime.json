@@ -2365,23 +2365,6 @@
         "rhel.8-x64"
       ]
     },
-    "rocky.8.4": {
-      "#import": [
-        "rocky"
-      ]
-    },
-    "rocky.8.4-arm64": {
-      "#import": [
-        "rocky.8.4",
-        "rocky-arm64"
-      ]
-    },
-    "rocky.8.4-x64": {
-      "#import": [
-        "rocky.8.4",
-        "rocky-x64"
-      ]
-    },
     "rocky.9": {
       "#import": [
         "rocky",

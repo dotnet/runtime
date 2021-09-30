@@ -219,7 +219,7 @@
     <RuntimeGroup Include="rocky">
       <Parent>rhel</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>8;8.4;9</Versions>
+      <Versions>8;9</Versions>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>

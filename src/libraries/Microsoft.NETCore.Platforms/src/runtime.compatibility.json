@@ -5760,43 +5760,6 @@
     "any",
     "base"
   ],
-  "rocky.8.4": [
-    "rocky.8.4",
-    "rocky",
-    "rhel",
-    "linux",
-    "unix",
-    "any",
-    "base"
-  ],
-  "rocky.8.4-arm64": [
-    "rocky.8.4-arm64",
-    "rocky.8.4",
-    "rocky-arm64",
-    "rocky",
-    "rhel-arm64",
-    "rhel",
-    "linux-arm64",
-    "linux",
-    "unix-arm64",
-    "unix",
-    "any",
-    "base"
-  ],
-  "rocky.8.4-x64": [
-    "rocky.8.4-x64",
-    "rocky.8.4",
-    "rocky-x64",
-    "rocky",
-    "rhel-x64",
-    "rhel",
-    "linux-x64",
-    "linux",
-    "unix-x64",
-    "unix",
-    "any",
-    "base"
-  ],
   "rocky.9": [
     "rocky.9",
     "rocky",
