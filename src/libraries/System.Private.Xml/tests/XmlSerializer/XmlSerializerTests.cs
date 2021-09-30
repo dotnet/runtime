@@ -1963,6 +1963,11 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
@@ -1970,7 +1975,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         for (int i = 0; weakRef.IsAlive && i < 10; i++)
         {
             GC.Collect();
-            GC.WaitForFullGCComplete();
             GC.WaitForPendingFinalizers();
         }
         Assert.True(!weakRef.IsAlive);
