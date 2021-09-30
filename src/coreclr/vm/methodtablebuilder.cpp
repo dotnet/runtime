@@ -1206,7 +1206,7 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
         MethodDesc *pDeclMD = it.GetDeclMethodDesc();
         if (!pDeclMD->IsVirtual())
         {
-            break;
+            continue;
         }
 
         bmtRTMethod * pCurMethod = new (pStackingAllocator)

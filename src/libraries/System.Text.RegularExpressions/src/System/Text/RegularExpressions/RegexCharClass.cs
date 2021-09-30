@@ -1512,35 +1512,38 @@ namespace System.Text.RegularExpressions
 
                     const char GroupChar = (char)0;
                     int lastindex = set.IndexOf(GroupChar, index + 1);
-                    string group = set.Substring(index, lastindex - index + 1);
-
-                    foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                    if (lastindex != -1)
                     {
-                        if (group.Equals(kvp.Value))
-                        {
-                            desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
-                            found = true;
-                            break;
-                        }
-                    }
+                        string group = set.Substring(index, lastindex - index + 1);
 
-                    if (!found)
-                    {
-                        if (group.Equals(Word))
+                        foreach (KeyValuePair<string, string> kvp in s_definedCategories)
                         {
-                            desc.Append("\\w");
+                            if (group.Equals(kvp.Value))
+                            {
+                                desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
+                                found = true;
+                                break;
+                            }
                         }
-                        else if (group.Equals(NotWord))
-                        {
-                            desc.Append("\\W");
-                        }
-                        else
-                        {
-                            // TODO: The code is incorrectly handling pretty-printing groups like \P{P}.
-                        }
-                    }
 
-                    index = lastindex;
+                        if (!found)
+                        {
+                            if (group.Equals(Word))
+                            {
+                                desc.Append("\\w");
+                            }
+                            else if (group.Equals(NotWord))
+                            {
+                                desc.Append("\\W");
+                            }
+                            else
+                            {
+                                // TODO: The code is incorrectly handling pretty-printing groups like \P{P}.
+                            }
+                        }
+
+                        index = lastindex;
+                    }
                 }
                 else
                 {

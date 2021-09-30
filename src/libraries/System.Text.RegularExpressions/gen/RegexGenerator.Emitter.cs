@@ -151,6 +151,12 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
             writer.WriteLine($"    private {id}()");
             writer.WriteLine($"    {{");
+#if DEBUG
+            writer.WriteLine("        /*");
+            writer.WriteLine($"{rm.Code.Tree.ToString().Replace("*/", @"* /")}");
+            writer.WriteLine($"{rm.Code.ToString().Replace("*/", @"* /")}");
+            writer.WriteLine("        */");
+#endif
             writer.WriteLine($"        pattern = {patternExpression};");
             writer.WriteLine($"        roptions = {optionsExpression};");
             writer.WriteLine($"        internalMatchTimeout = {timeoutExpression};");
@@ -161,17 +167,17 @@ namespace System.Text.RegularExpressions.Generator
                 AppendHashtableContents(writer, rm.Code.Caps);
                 writer.WriteLine(" };");
             }
-            if (rm.Tree.CapNames is not null)
+            if (rm.Code.Tree.CapNames is not null)
             {
                 writer.Write("        CapNames = new global::System.Collections.Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CapNames);
+                AppendHashtableContents(writer, rm.Code.Tree.CapNames);
                 writer.WriteLine(" };");
             }
-            if (rm.Tree.CapsList is not null)
+            if (rm.Code.Tree.CapsList is not null)
             {
                 writer.Write("        capslist = new string[] {");
                 string separator = "";
-                foreach (string s in rm.Tree.CapsList)
+                foreach (string s in rm.Code.Tree.CapsList)
                 {
                     writer.Write(separator);
                     writer.Write(Literal(s));
@@ -258,8 +264,8 @@ namespace System.Text.RegularExpressions.Generator
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
             // especially since we want the "return false" code regardless.
             writer.WriteLine("// Minimum required length check");
-            int minRequiredLength = rm.Tree.MinRequiredLength;
-            string minRequiredLengthOffset = rm.Tree.MinRequiredLength > 0 ? $" - {rm.Tree.MinRequiredLength}" : "";
+            int minRequiredLength = rm.Code.Tree.MinRequiredLength;
+            string minRequiredLengthOffset = rm.Code.Tree.MinRequiredLength > 0 ? $" - {rm.Code.Tree.MinRequiredLength}" : "";
             Debug.Assert(minRequiredLength >= 0);
             using (EmitBlock(writer, !rtl ?
                 $"if (runtextpos <= runtextend{minRequiredLengthOffset})" :
@@ -292,7 +298,6 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
                             else
                             {
@@ -301,9 +306,8 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("base.runtextpos = runtextbeg;");
                                 }
-                                writer.WriteLine("return true;");
                             }
-                            writer.WriteLine();
+                            writer.WriteLine("return true;");
                             return;
 
                         case RegexPrefixAnalyzer.Start:
@@ -314,7 +318,6 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
                             else
                             {
@@ -323,9 +326,8 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
-                            writer.WriteLine();
+                            writer.WriteLine("return true;");
                             return;
 
                         case RegexPrefixAnalyzer.EndZ:
@@ -337,7 +339,6 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("base.runtextpos = runtextend - 1;");
                                 }
-                                writer.WriteLine("return true;");
                             }
                             else
                             {
@@ -346,9 +347,8 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
-                            writer.WriteLine();
+                            writer.WriteLine("return true;");
                             return;
 
                         case RegexPrefixAnalyzer.End when minRequiredLength == 0: // if it's > 0, we already output a more stringent check
@@ -359,7 +359,6 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("base.runtextpos = runtextend;");
                                 }
-                                writer.WriteLine("return true;");
                             }
                             else
                             {
@@ -367,9 +366,8 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("return true;");
                             }
-                            writer.WriteLine();
+                            writer.WriteLine("return true;");
                             return;
 
                         case RegexPrefixAnalyzer.Bol when !rtl: // Don't bother optimizing for the niche case of RegexOptions.RightToLeft | RegexOptions.Multiline
@@ -417,124 +415,105 @@ namespace System.Text.RegularExpressions.Generator
 
                     int chLast = rbm.Pattern[last];
 
-                    writer.WriteLine(!rtl ?
-                        $"runtextpos += {rbm.Pattern.Length - 1};" :
-                        $"runtextpos -= {rbm.Pattern.Length};");
-                    writer.WriteLine("int offset = 0;");
+                    EmitAdd(writer, "runtextpos", !rtl ? rbm.Pattern.Length - 1 : -rbm.Pattern.Length);
 
-                    writer.WriteLine("goto Start;");
-                    writer.WriteLine();
-                    writer.WriteLine("DefaultAdvance:");
-                    writer.WriteLine($"offset = {(!rtl ? rbm.Pattern.Length : -rbm.Pattern.Length)};");
-                    writer.WriteLine();
-                    writer.WriteLine("Advance:");
-                    writer.WriteLine("runtextpos += offset;");
-                    writer.WriteLine();
-                    writer.WriteLine("Start:");
-                    using (EmitBlock(writer, !rtl ? "if (runtextpos >= runtextend)" : "if (runtextpos < runtextbeg)"))
+                    using (EmitBlock(writer, $"while ({(!rtl ? "runtextpos < runtextend" : "runtextpos >= runtextbeg")})"))
                     {
-                        writer.WriteLine("goto ReturnFalse;");
-                    }
-                    writer.WriteLine();
-                    writer.WriteLine($"ch = {ToLowerIfNeeded(hasTextInfo, options, "runtext[runtextpos]", rbm.CaseInsensitive)};");
+                        writer.WriteLine($"ch = {ToLowerIfNeeded(hasTextInfo, options, "runtext[runtextpos]", rbm.CaseInsensitive)};");
 
-                    using (EmitBlock(writer, $"if (ch == {Literal((char)chLast)})"))
-                    {
-                        writer.WriteLine("goto PartialMatch;");
-                    }
-                    writer.WriteLine($"ch -= {rbm.LowASCII};");
-                    using (EmitBlock(writer, $"if ((uint)ch > {rbm.HighASCII - rbm.LowASCII})"))
-                    {
-                        writer.WriteLine("goto DefaultAdvance;");
-                    }
-
-                    writer.Write("offset = ");
-                    int negativeRange = rbm.HighASCII - rbm.LowASCII + 1;
-                    if (negativeRange > 1)
-                    {
-                        // Create a string to store the lookup table we use to find the offset.
-                        // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
-                        // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
-                        Debug.Assert(rbm.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
-                        Span<char> span = new char[negativeRange];
-                        for (int i = 0; i < span.Length; i++)
+                        using (EmitBlock(writer, $"if (ch != {Literal((char)chLast)})"))
                         {
-                            int offset = rbm.NegativeASCII[i + rbm.LowASCII];
-                            if (offset == beforefirst)
+                            writer.WriteLine($"ch -= {Literal((char)rbm.LowASCII)};");
+                            using (EmitBlock(writer, $"if ((uint)ch > ({Literal((char)rbm.HighASCII)} - {Literal((char)rbm.LowASCII)}))"))
                             {
-                                offset = rbm.Pattern.Length;
+                                EmitAdd(writer, "runtextpos", (!rtl ? rbm.Pattern.Length : -rbm.Pattern.Length));
+                                writer.WriteLine("continue;");
                             }
-                            else if (rtl)
+
+                            int negativeRange = rbm.HighASCII - rbm.LowASCII + 1;
+                            if (negativeRange > 1) // High > Low
                             {
-                                offset = -offset;
+                                // Create a string to store the lookup table we use to find the offset.
+                                // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
+                                // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
+                                Debug.Assert(rbm.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
+                                Span<char> span = new char[negativeRange];
+                                for (int i = 0; i < span.Length; i++)
+                                {
+                                    int offset = rbm.NegativeASCII[i + rbm.LowASCII];
+                                    if (offset == beforefirst)
+                                    {
+                                        offset = rbm.Pattern.Length;
+                                    }
+                                    else if (rtl)
+                                    {
+                                        offset = -offset;
+                                    }
+                                    Debug.Assert(offset >= 0 && offset <= char.MaxValue);
+                                    span[i] = (char)offset;
+                                }
+
+                                writer.WriteLine($"runtextpos {(rtl ? "-=" : "+=")} {Literal(span.ToString())}[ch];");
                             }
-                            Debug.Assert(offset >= 0 && offset <= char.MaxValue);
-                            span[i] = (char)offset;
-                        }
-
-                        if (rtl)
-                        {
-                            writer.Write('-');
-                        }
-                        writer.WriteLine($"{Literal(span.ToString())}[ch];");
-                    }
-                    else
-                    {
-                        Debug.Assert(negativeRange == 1);
-                        int offset = rbm.NegativeASCII[rbm.LowASCII];
-                        if (offset == beforefirst)
-                        {
-                            offset = rtl ? -rbm.Pattern.Length : rbm.Pattern.Length;
-                        }
-                        writer.WriteLine($"{offset.ToString(CultureInfo.InvariantCulture)};");
-                    }
-                    writer.WriteLine("goto Advance;");
-                    writer.WriteLine();
-
-                    writer.WriteLine("PartialMatch:");
-                    writer.WriteLine("int test = runtextpos;");
-
-                    int nextAvailableLabelId = 0;
-                    int prevLabelOffset = int.MaxValue;
-                    int prevLabel = 0;
-                    for (int i = rbm.Pattern.Length - 2; i >= 0; i--)
-                    {
-                        int charIndex = !rtl ? i : rbm.Pattern.Length - 1 - i;
-
-                        string nextCharExpr = ToLowerIfNeeded(hasTextInfo, options, (!rtl ? "runtext[--test]" : "runtext[++test]"), rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[charIndex]));
-                        string matchExpr = Literal(rbm.Pattern[charIndex]);
-                        if (prevLabelOffset == rbm.Positive[charIndex])
-                        {
-                            using (EmitBlock(writer, $"if ({nextCharExpr} != {matchExpr})"))
+                            else
                             {
-                                writer.WriteLine($"goto L{prevLabel};");
+                                Debug.Assert(negativeRange == 1); // High == Low
+                                int offset = rbm.NegativeASCII[rbm.LowASCII];
+                                if (offset == beforefirst)
+                                {
+                                    offset = rtl ? -rbm.Pattern.Length : rbm.Pattern.Length;
+                                }
+                                EmitAdd(writer, "runtextpos", offset);
                             }
+                            writer.WriteLine("continue;");
                         }
-                        else
+                        writer.WriteLine();
+                        writer.WriteLine("int test = runtextpos;");
+                        writer.WriteLine();
+
+                        for (int i = rbm.Pattern.Length - 2; i >= 0; i--)
                         {
-                            int lNext = nextAvailableLabelId++;
-                            using (EmitBlock(writer, $"if ({nextCharExpr} == {matchExpr})"))
+                            int charIndex = !rtl ? i : rbm.Pattern.Length - 1 - i;
+                            bool sameAsPrev = i < rbm.Pattern.Length - 2 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i + 1 : rbm.Pattern.Length - 1 - (i + 1)];
+                            bool sameAsNext = i > 0 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i - 1 : rbm.Pattern.Length - 1 - (i - 1)];
+
+                            string condition = $"{ToLowerIfNeeded(hasTextInfo, options, (!rtl ? "runtext[--test]" : "runtext[++test]"), rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[charIndex]))} != {Literal(rbm.Pattern[charIndex])}";
+                            switch ((sameAsPrev, sameAsNext))
                             {
-                                writer.WriteLine($"goto L{lNext};");
+                                case (true, true):
+                                    writer.WriteLine($"    {condition} ||");
+                                    break;
+
+                                case (false, true):
+                                    writer.WriteLine($"if ({condition} ||");
+                                    break;
+
+                                case (true, false):
+                                    writer.WriteLine($"    {condition})");
+                                    using (EmitBlock(writer, null))
+                                    {
+                                        EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
+                                        writer.WriteLine("continue;");
+                                    }
+                                    writer.WriteLine();
+                                    break;
+
+                                case (false, false):
+                                    using (EmitBlock(writer, $"if ({condition})"))
+                                    {
+                                        EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
+                                        writer.WriteLine("continue;");
+                                    }
+                                    writer.WriteLine();
+                                    break;
                             }
-                            prevLabel = nextAvailableLabelId++;
-                            prevLabelOffset = rbm.Positive[charIndex];
-                            writer.WriteLine();
-
-                            writer.WriteLine($"L{prevLabel}:");
-                            writer.WriteLine($"offset = {prevLabelOffset.ToString(CultureInfo.InvariantCulture)};");
-                            writer.WriteLine("goto Advance;");
-                            writer.WriteLine();
-
-                            writer.WriteLine($"L{lNext}:");
                         }
-                    }
 
-                    writer.WriteLine();
-                    writer.WriteLine(!rtl ?
-                        "base.runtextpos = test;" :
-                        "base.runtextpos = test + 1;");
-                    writer.WriteLine("return true;");
+                        writer.WriteLine(!rtl ?
+                            "base.runtextpos = test;" :
+                            "base.runtextpos = test + 1;");
+                        writer.WriteLine("return true;");
+                    }
                 }
                 else if (code.LeadingCharClasses is null)
                 {
@@ -695,9 +674,9 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Emits the body of the Go override.</summary>
         private static void EmitGo(IndentedTextWriter writer, RegexMethod rm, string id)
         {
-            Debug.Assert(rm.Tree.Root.Type == RegexNode.Capture);
-            if (RegexNode.NodeSupportsSimplifiedCodeGenerationImplementation(rm.Tree.Root.Child(0), RegexNode.DefaultMaxRecursionDepth) &&
-                (((RegexOptions)rm.Tree.Root.Options) & RegexOptions.RightToLeft) == 0)
+            Debug.Assert(rm.Code.Tree.Root.Type == RegexNode.Capture);
+            if (RegexNode.NodeSupportsSimplifiedCodeGenerationImplementation(rm.Code.Tree.Root.Child(0), RegexNode.DefaultMaxRecursionDepth) &&
+                (((RegexOptions)rm.Code.Tree.Root.Options) & RegexOptions.RightToLeft) == 0)
             {
                 EmitSimplifiedGo(writer, rm, id);
             }
@@ -719,12 +698,31 @@ namespace System.Text.RegularExpressions.Generator
             int nextLocalId = 0;
             string GetNextLocalId() => $"i{nextLocalId++}"; ;
 
-            RegexNode node = rm.Tree.Root;
+            RegexNode node = rm.Code.Tree.Root;
             Debug.Assert(node.Type == RegexNode.Capture, "Every generated tree should begin with a capture node");
             Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
 
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
+
+            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole thing.
+            // This is the case, in particular, for strings.  We can special case these to do essentially nothing
+            // in Go other than emit the capture.
+            if (!IsCaseInsensitive(node)) // FindFirstChar may not be 100% accurate on casing in all cultures
+            {
+                switch (node.Type)
+                {
+                    case RegexNode.Multi:
+                    case RegexNode.Notone:
+                    case RegexNode.One:
+                    case RegexNode.Set:
+                        writer.WriteLine($"int start = base.runtextpos;");
+                        writer.WriteLine($"int end = start + {(node.Type == RegexNode.Multi ? node.Str!.Length : 1)};");
+                        writer.WriteLine("base.Capture(0, start, end);");
+                        writer.WriteLine("base.runtextpos = end;");
+                        return;
+                }
+            }
 
             // Declare some locals.
             string textSpanLocal = "textSpan";
@@ -732,6 +730,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("int runtextpos = base.runtextpos;");
             writer.WriteLine("int runtextend = base.runtextend;");
             writer.WriteLine("int originalruntextpos = runtextpos;");
+            writer.WriteLine("ref byte byteStr = ref global::System.Runtime.CompilerServices.Unsafe.NullRef<byte>();");
             writer.WriteLine("char ch;");
             hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
 
@@ -764,7 +763,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("// Match");
             if (textSpanPos > 0)
             {
-                writer.WriteLine($"runtextpos += {textSpanPos};");
+                EmitAdd(writer, "runtextpos", textSpanPos);
             }
             writer.WriteLine("base.runtextpos = runtextpos;");
             writer.WriteLine("base.Capture(0, originalruntextpos, runtextpos);");
@@ -823,7 +822,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 if (textSpanPos > 0)
                 {
-                    writer.WriteLine($"runtextpos += {textSpanPos};");
+                    EmitAdd(writer, "runtextpos", textSpanPos);
                     writer.WriteLine($"{textSpanLocal} = {textSpanLocal}.Slice({textSpanPos});");
                     textSpanPos = 0;
                 }
@@ -1000,16 +999,18 @@ namespace System.Text.RegularExpressions.Generator
                 textSpanPos = startingTextSpanPos;
             }
 
+            static string DescribeNode(RegexNode node) => SymbolDisplay.FormatLiteral(node.Description(), quote: false);
+
             // Emits the code for the node.
-            void EmitNode(RegexNode node)
+            void EmitNode(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
-                using var _ = EmitScope(writer, SymbolDisplay.FormatLiteral(node.Description(), quote: false));
+                using var _ = EmitScope(writer, DescribeNode(node));
                 switch (node.Type)
                 {
                     case RegexNode.One:
                     case RegexNode.Notone:
                     case RegexNode.Set:
-                        EmitSingleChar(node);
+                        EmitSingleChar(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Boundary:
@@ -1029,13 +1030,13 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.Multi:
-                        EmitMultiChar(node);
+                        EmitMultiChar(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Oneloopatomic:
                     case RegexNode.Notoneloopatomic:
                     case RegexNode.Setloopatomic:
-                        EmitSingleCharAtomicLoop(node);
+                        EmitSingleCharAtomicLoop(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Loop:
@@ -1067,14 +1068,28 @@ namespace System.Text.RegularExpressions.Generator
                     case RegexNode.Notonelazy:
                     case RegexNode.Setloop:
                     case RegexNode.Setlazy:
-                        EmitSingleCharRepeater(node);
+                        EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Concatenate:
                         int childCount = node.ChildCount();
                         for (int i = 0; i < childCount; i++)
                         {
-                            EmitNode(node.Child(i));
+                            if (emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
+                            {
+                                EmitSpanLengthCheck(requiredLength);
+                                writer.WriteLine();
+
+                                for (; i < exclusiveEnd; i++)
+                                {
+                                    EmitNode(node.Child(i), emitLengthChecksIfRequired: false);
+                                }
+
+                                i--;
+                                continue;
+                            }
+
+                            EmitNode(node.Child(i), emitLengthChecksIfRequired);
                         }
                         break;
 
@@ -1253,7 +1268,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a multiple-character match.
-            void EmitMultiChar(RegexNode node)
+            void EmitMultiChar(RegexNode node, bool emitLengthCheck = true)
             {
                 bool caseInsensitive = IsCaseInsensitive(node);
 
@@ -1273,32 +1288,49 @@ namespace System.Text.RegularExpressions.Generator
                     // by comparing 2 or 4 characters at a time.  Because we might be compiling on one endianness and running on another,
                     // both little and big endian values are emitted and which is used is selected at run-time.
                     ReadOnlySpan<byte> byteStr = MemoryMarshal.AsBytes(str.AsSpan());
-                    bool useMultiCharReads = !caseInsensitive && byteStr.Length > sizeof(uint);
+                    bool useMultiCharReads = !caseInsensitive && byteStr.Length >= sizeof(uint);
                     if (useMultiCharReads)
                     {
-                        writer.WriteLine($"ref byte byteStr = ref global::System.Runtime.InteropServices.MemoryMarshal.GetReference(global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal}));");
+                        writer.WriteLine($"byteStr = ref global::System.Runtime.InteropServices.MemoryMarshal.GetReference(global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal}));");
                     }
 
-                    writer.Write($"if ((uint){textSpanLocal}.Length < {textSpanPos + str.Length}");
+                    writer.Write("if (");
+
+                    bool emittedFirstCheck = false;
+                    if (emitLengthCheck)
+                    {
+                        writer.Write($"(uint){textSpanLocal}.Length < {textSpanPos + str.Length}");
+                        emittedFirstCheck = true;
+                    }
+
+                    void EmitOr()
+                    {
+                        if (emittedFirstCheck)
+                        {
+                            writer.WriteLine(" ||");
+                            writer.Write("    ");
+                        }
+                        emittedFirstCheck = true;
+                    }
 
                     if (useMultiCharReads)
                     {
                         while (byteStr.Length >= sizeof(ulong))
                         {
-                            writer.WriteLine(" ||");
                             ulong little = BinaryPrimitives.ReadUInt64LittleEndian(byteStr);
                             ulong big = BinaryPrimitives.ReadUInt64BigEndian(byteStr);
-                            writer.Write($"    global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<ulong>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}ul : 0x{big:X}ul)");
+                            EmitOr();
+                            writer.Write($"global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<ulong>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}ul : 0x{big:X}ul)");
                             textSpanPos += sizeof(ulong) / 2;
                             byteStr = byteStr.Slice(sizeof(ulong));
                         }
 
                         while (byteStr.Length >= sizeof(uint))
                         {
-                            writer.WriteLine(" ||");
                             uint little = BinaryPrimitives.ReadUInt32LittleEndian(byteStr);
                             uint big = BinaryPrimitives.ReadUInt32BigEndian(byteStr);
-                            writer.Write($"    global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<uint>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}u : 0x{big:X}u)");
+                            EmitOr();
+                            writer.Write($"global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<uint>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}u : 0x{big:X}u)");
                             textSpanPos += sizeof(uint) / 2;
                             byteStr = byteStr.Slice(sizeof(uint));
                         }
@@ -1307,8 +1339,8 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit remaining comparisons character by character.
                     for (int i = (str.Length * 2 - byteStr.Length) / 2; i < str.Length; i++)
                     {
-                        writer.WriteLine(" ||");
-                        writer.Write($"    {ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos}]", caseInsensitive)} != {Literal(str[i])}");
+                        EmitOr();
+                        writer.Write($"{ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos}]", caseInsensitive)} != {Literal(str[i])}");
                         textSpanPos++;
                     }
 
@@ -1350,7 +1382,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
             // RegexNode.M is used for the number of iterations; RegexNode.N is ignored.
-            void EmitSingleCharRepeater(RegexNode node)
+            void EmitSingleCharRepeater(RegexNode node, bool emitLengthCheck = true)
             {
                 int iterations = node.M;
                 if (iterations == 0)
@@ -1360,7 +1392,10 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length) goto doneLabel;
-                EmitSpanLengthCheck(iterations);
+                if (emitLengthCheck)
+                {
+                    EmitSpanLengthCheck(iterations);
+                }
 
                 // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
                 // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
@@ -1428,7 +1463,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a non-backtracking, variable-length loop around a single character comparison.
-            void EmitSingleCharAtomicLoop(RegexNode node)
+            void EmitSingleCharAtomicLoop(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
                 Debug.Assert(
                     node.Type == RegexNode.Oneloopatomic ||
@@ -1438,7 +1473,7 @@ namespace System.Text.RegularExpressions.Generator
                 // If this is actually a repeater, emit that instead.
                 if (node.M == node.N)
                 {
-                    EmitSingleCharRepeater(node);
+                    EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                     return;
                 }
 
@@ -2273,7 +2308,7 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 writer.WriteLine($"goto {Backtrack};");
                             }
-                            writer.WriteLine($"runtextpos += {str.Length};");
+                            EmitAdd(writer, "runtextpos", str.Length);
                             break;
                         }
 
@@ -2381,7 +2416,7 @@ namespace System.Text.RegularExpressions.Generator
                                         writer.WriteLine($"goto {Backtrack};");
                                     }
                                 }
-                                writer.WriteLine($"runtextpos += {c};");
+                                EmitAdd(writer, "runtextpos", c);
                             }
                         }
                         break;
@@ -2860,7 +2895,7 @@ namespace System.Text.RegularExpressions.Generator
             string PopStack() => "runstack[runstackpos++]";
 
             /// <summary>Pops i elements off the grouping stack and discards them.</summary>
-            void PopDiscardStack(int i = 1) => writer.WriteLine(i == 1 ? "runstackpos++;" : $"runstackpos += {i};");
+            void PopDiscardStack(int i = 1) => EmitAdd(writer, "runstackpos", i);
 
             /// <summary>Prologue to code that will replace the ith element on the grouping stack.</summary>
             string ReadyReplaceStack(int i) => i == 0 ? "runstack[runstackpos]" : $"runstack[runstackpos + {i}]";
@@ -3156,6 +3191,21 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("{");
             writer.Indent++;
             return new FinishEmitScope(writer, appendBlankLine);
+        }
+
+        private static void EmitAdd(IndentedTextWriter writer, string variable, int value)
+        {
+            if (value == 0)
+            {
+                return;
+            }
+
+            writer.WriteLine(
+                value == 1 ? $"{variable}++;" :
+                value == -1 ? $"{variable}--;" :
+                value > 0 ? $"{variable} += {value};" :
+                value < 0 && value > int.MinValue ? $"{variable} -= {-value};" :
+                $"{variable} += {value.ToString(CultureInfo.InvariantCulture)};");
         }
 
         private readonly struct FinishEmitScope : IDisposable

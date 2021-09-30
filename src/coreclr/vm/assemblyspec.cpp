@@ -239,14 +239,11 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
 
     // Set the binding context for the AssemblySpec
     AssemblyBinder* pCurrentBinder = GetBinder();
-    AssemblyBinder* pExpectedBinder = pFile->GetBinder();
     if (pCurrentBinder == NULL)
     {
-        // We should aways have the binding context in the PEAssembly. The only exception to this are the following:
-        //
-        // 1) when we are here during EEStartup and loading CoreLib.
-        // 2) We are dealing with dynamic assemblies
-        _ASSERTE((pExpectedBinder != NULL) || pFile->IsSystem() || pFile->IsDynamic());
+        AssemblyBinder* pExpectedBinder = pFile->GetAssemblyBinder();
+        // We should aways have the binding context in the PEAssembly.
+        _ASSERTE(pExpectedBinder != NULL);
         SetBinder(pExpectedBinder);
     }
 }
@@ -694,7 +691,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     {
         // Get the PEAssembly associated with the parent's domain assembly
         PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetFile();
-        pParentAssemblyBinder = pParentPEAssembly->GetBinder();
+        pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
     if (GetPreferFallbackBinder())
@@ -996,13 +993,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
     // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
-    if(!pSpec->IsAssemblySpecForCoreLib())
-        pBinderForLookup = pSpec->GetBinder();
-    else
-    {
-        // For System.Private.Corelib Binding context is either not set or if set then it should be TPA
-        _ASSERTE(pSpec->GetBinder() == NULL || pSpec->GetBinder()->IsDefault());
-    }
+    pBinderForLookup = pSpec->GetBinder();
 
     if (pBinderForLookup != NULL)
     {
@@ -1013,13 +1004,8 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     if (fGetBindingContextFromParent)
     {
-        // CoreLib does not have a binding context associated with it and its lookup will only be done
-        // using its AssemblySpec hash.
-        if (!pSpec->IsAssemblySpecForCoreLib())
-        {
-            pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
-            pSpec->SetBinder(pBinderForLookup);
-        }
+        pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+        pSpec->SetBinder(pBinderForLookup);
     }
 
     if (pBinderForLookup)
@@ -1233,17 +1219,12 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    AssemblyBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBinder();
+    AssemblyBinder* pBinderContextForLookup = pAssembly->GetFile()->GetAssemblyBinder();
+    key = key ^ (UPTR)pBinderContextForLookup;
 
-    _ASSERTE(pBinderContextForLookup || pAssembly->GetFile()->IsSystem());
-    if (pBinderContextForLookup)
+    if (!pSpec->GetBinder())
     {
-        key = key ^ (UPTR)pBinderContextForLookup;
-
-        if (!pSpec->GetBinder())
-        {
-            pSpec->SetBinder(pBinderContextForLookup);
-        }
+        pSpec->SetBinder(pBinderContextForLookup);
     }
 
     AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
@@ -1314,17 +1295,12 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    AssemblyBinder* pBinderContextForLookup = pFile->GetBinder();
+    AssemblyBinder* pBinderContextForLookup = pFile->GetAssemblyBinder();
+    key = key ^ (UPTR)pBinderContextForLookup;
 
-    _ASSERTE(pBinderContextForLookup || pFile->IsSystem());
-    if (pBinderContextForLookup)
+    if (!pSpec->GetBinder())
     {
-        key = key ^ (UPTR)pBinderContextForLookup;
-
-        if (!pSpec->GetBinder())
-        {
-            pSpec->SetBinder(pBinderContextForLookup);
-        }
+        pSpec->SetBinder(pBinderContextForLookup);
     }
 
     AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
@@ -1406,11 +1382,8 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         pBinderToSaveException = pSpec->GetBinder();
         if (pBinderToSaveException == NULL)
         {
-            if (!pSpec->IsAssemblySpecForCoreLib())
-            {
-                pBinderToSaveException = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
-                key = key ^ (UPTR)pBinderToSaveException;
-            }
+            pBinderToSaveException = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+            key = key ^ (UPTR)pBinderToSaveException;
         }
     }
 

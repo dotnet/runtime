@@ -1235,17 +1235,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
 #endif // TARGET_X86
 
-#if FEATURE_VARARG
         // If it is a fast tail call, it is already preferenced to use RAX.
         // Therefore, no need set src candidates on call tgt again.
-        if (call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall())
+        if (compFeatureVarArg() && call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall())
         {
             // Don't assign the call target to any of the argument registers because
             // we will use them to also pass floating point arguments as required
             // by Amd64 ABI.
             ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS);
         }
-#endif // !FEATURE_VARARG
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 

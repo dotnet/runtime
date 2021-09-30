@@ -388,7 +388,8 @@ enum class DoNotEnregisterReason
     StoreBlkSrc,    // the local is used as STORE_BLK source.
     OneAsgRetyping, // fgMorphOneAsgBlockOp prevents this local from being enregister.
     SwizzleArg,     // the local is passed using LCL_FLD as another type.
-    BlockOpRet      // the struct is returned and it promoted or there is a cast.
+    BlockOpRet,     // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck   // the local is used to do SP check
 };
 
 enum class AddressExposedReason
@@ -1602,12 +1603,10 @@ struct FuncInfoDsc
 
 #elif defined(TARGET_X86)
 
-#if defined(TARGET_UNIX)
     emitLocation* startLoc;
     emitLocation* endLoc;
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
-#endif // TARGET_UNIX
 
 #elif defined(TARGET_ARMARCH)
 
@@ -1619,18 +1618,16 @@ struct FuncInfoDsc
                          //   Note 2: we currently don't support hot/cold splitting in functions
                          //   with EH, so uwiCold will be NULL for all funclets.
 
-#if defined(TARGET_UNIX)
     emitLocation* startLoc;
     emitLocation* endLoc;
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
-#endif // TARGET_UNIX
 
 #endif // TARGET_ARMARCH
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     jitstd::vector<CFI_CODE>* cfiCodes;
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // Eventually we may want to move rsModifiedRegsMask, lvaOutgoingArgSize, and anything else
     // that isn't shared between the main function body and funclets.
@@ -1728,7 +1725,7 @@ public:
     bool isStruct : 1;                         // True if this is a struct arg
     bool _isVararg : 1;                        // True if the argument is in a vararg context.
     bool passedByRef : 1;                      // True iff the argument is passed by reference.
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HFA_FIELDS_PRESENT
@@ -1823,32 +1820,29 @@ public:
 
     bool IsSplit() const
     {
-#ifdef FEATURE_ARG_SPLIT
-        return _isSplit;
+#if FEATURE_ARG_SPLIT
+        return compFeatureArgSplit() && _isSplit;
 #else // FEATURE_ARG_SPLIT
         return false;
 #endif
     }
     void SetSplit(bool value)
     {
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
         _isSplit = value;
 #endif
     }
 
     bool IsVararg() const
     {
-#ifdef FEATURE_VARARG
-        return _isVararg;
-#else
-        return false;
-#endif
+        return compFeatureVarArg() && _isVararg;
     }
     void SetIsVararg(bool value)
     {
-#ifdef FEATURE_VARARG
-        _isVararg = value;
-#endif // FEATURE_VARARG
+        if (compFeatureVarArg())
+        {
+            _isVararg = value;
+        }
     }
 
     bool IsHfaArg() const
@@ -2114,20 +2108,23 @@ public:
     void SetByteSize(unsigned byteSize, bool isStruct, bool isFloatHfa)
     {
 
-#ifdef OSX_ARM64_ABI
         unsigned roundedByteSize;
-        // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
-        if (isStruct && !isFloatHfa)
+        if (compMacOsArm64Abi())
         {
-            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+            // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
+            if (isStruct && !isFloatHfa)
+            {
+                roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                roundedByteSize = byteSize;
+            }
         }
         else
         {
-            roundedByteSize = byteSize;
+            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
         }
-#else  // OSX_ARM64_ABI
-        unsigned roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
-#endif // OSX_ARM64_ABI
 
 #if !defined(TARGET_ARM)
         // Arm32 could have a struct with 8 byte alignment
@@ -2137,7 +2134,7 @@ public:
 #endif // TARGET_ARM
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (!isStruct)
+        if (!compMacOsArm64Abi() && !isStruct)
         {
             assert(roundedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
         }
@@ -4045,8 +4042,8 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
         assert(varDsc->lvExactSize == 12);
 
-#if defined(TARGET_64BIT) && !defined(OSX_ARM64_ABI)
-        assert(varDsc->lvSize() == 16);
+#if defined(TARGET_64BIT)
+        assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.
@@ -4739,10 +4736,8 @@ private:
     bool impIsValueType(typeInfo* pTypeInfo);
     var_types mangleVarArgsType(var_types type);
 
-#if FEATURE_VARARG
     regNumber getCallArgIntRegister(regNumber floatReg);
     regNumber getCallArgFloatRegister(regNumber intReg);
-#endif // FEATURE_VARARG
 
 #if defined(DEBUG)
     static unsigned jitTotalMethodCompiled;
@@ -4985,6 +4980,12 @@ public:
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    BlockSet fgAlwaysBlks; // Set of blocks which are BBJ_ALWAYS part  of BBJ_CALLFINALLY/BBJ_ALWAYS pair that should
+                           // never be removed due to a requirement to use the BBJ_ALWAYS for generating code and
+                           // not have "retless" blocks.
+
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
     bool fgReachabilitySetsValid; // Are the bbReach sets valid?
@@ -6212,7 +6213,7 @@ private:
 
 #endif // FEATURE_SIMD
     GenTree* fgMorphArrayIndex(GenTree* tree);
-    GenTree* fgMorphCast(GenTree* tree);
+    GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
@@ -6283,8 +6284,10 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgOptimizeCast(GenTree* tree);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
@@ -7785,8 +7788,8 @@ public:
     bool optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext* context);
     BasicBlock* optInsertLoopChoiceConditions(LoopCloneContext* context,
                                               unsigned          loopNum,
-                                              BasicBlock*       head,
-                                              BasicBlock*       slow);
+                                              BasicBlock*       slowHead,
+                                              BasicBlock*       insertAfter);
 
 protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
@@ -8051,8 +8054,8 @@ public:
 
     bool generateCFIUnwindCodes()
     {
-#if defined(TARGET_UNIX)
-        return IsTargetAbi(CORINFO_CORERT_ABI);
+#if defined(FEATURE_CFI_SUPPORT)
+        return TargetOS::IsUnix && IsTargetAbi(CORINFO_CORERT_ABI);
 #else
         return false;
 #endif
@@ -8494,7 +8497,7 @@ private:
 
 #endif // TARGET_ARM
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     short mapRegNumToDwarfReg(regNumber reg);
     void createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR opcode, short dwarfReg, INT offset = 0);
     void unwindPushPopCFI(regNumber reg);
@@ -8511,7 +8514,7 @@ private:
                      const CFI_CODE* const pCfiCode);
 #endif
 
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
 #if !defined(__GNUC__)
 #pragma endregion // Note: region is NOT under !defined(__GNUC__)
@@ -9993,13 +9996,16 @@ public:
         // 3. Windows ARM64 native instance calling convention requires the address of RetBuff
         //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        auto callConv = info.compCallConv;
-        if (callConvIsInstanceMethodCallConv(callConv))
+#if defined(TARGET_ARM64)
+        if (TargetOS::IsWindows)
         {
-            return (info.compRetBuffArg != BAD_VAR_NUM);
+            auto callConv = info.compCallConv;
+            if (callConvIsInstanceMethodCallConv(callConv))
+            {
+                return (info.compRetBuffArg != BAD_VAR_NUM);
+            }
         }
-#endif // TARGET_WINDOWS && TARGET_ARM64
+#endif // TARGET_ARM64
         // 4. x86 unmanaged calling conventions require the address of RetBuff to be returned in eax.
         CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_X86)
@@ -10298,6 +10304,7 @@ public:
         unsigned m_oneAsgRetyping;
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
+        unsigned m_returnSpCheck;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
@@ -11874,12 +11881,12 @@ const instruction INS_SQRT = INS_vsqrt;
 
 #ifdef TARGET_ARM64
 
-const instruction INS_MULADD = INS_madd;
-#if defined(TARGET_UNIX)
-const instruction INS_BREAKPOINT = INS_brk;
-#else
-const instruction INS_BREAKPOINT = INS_bkpt;
-#endif
+const instruction        INS_MULADD = INS_madd;
+inline const instruction INS_BREAKPOINT_osHelper()
+{
+    return TargetOS::IsUnix ? INS_brk : INS_bkpt;
+}
+#define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
 
 const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;

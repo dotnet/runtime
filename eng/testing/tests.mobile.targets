@@ -52,11 +52,11 @@
   <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" Condition="'$(TargetOS)' == 'Browser'" />
 
   <UsingTask TaskName="RuntimeConfigParserTask"
-             AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
-             Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
+             Condition="'$(MonoTargetsTasksAssemblyPath)' != ''" />
 
   <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'"
-                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json" 
+                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json"
                                        Outputs="$(PublishDir)runtimeconfig.bin">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
@@ -150,7 +150,7 @@
 
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true' and ('$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')"
              TaskName="ILStrip"
-             AssemblyFile="$(ILStripTasksAssemblyPath)" />
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" Name="BundleTestAppleApp" DependsOnTargets="GenerateRuntimeConfig">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
@@ -208,7 +208,7 @@
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
-    <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'" Assemblies="@(BundleAssemblies)" />
+    <!-- <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'" Assemblies="@(BundleAssemblies)" /> -->
 
     <ItemGroup>
       <BundleAssemblies Include="@(_BundleNonAotAssemblies)" />
@@ -249,7 +249,7 @@
           SkipUnchangedFiles="true"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(GenerateXcodeProject)' == 'true'" />
 
-    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" 
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
                Directories="$(OutDir)" />
   </Target>
 

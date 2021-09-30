@@ -297,9 +297,7 @@ enum {
 
 #define MONO_JUMP_TABLE_FROM_INS(ins) (((ins)->opcode == OP_JUMP_TABLE) ? (ins)->inst_p0 : (((ins)->opcode == OP_AOTCONST) && (ins->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH) ? (ins)->inst_p0 : (((ins)->opcode == OP_SWITCH) ? (ins)->inst_p0 : ((((ins)->opcode == OP_GOT_ENTRY) && ((ins)->inst_right->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH)) ? (ins)->inst_right->inst_p0 : NULL))))
 
-/* FIXME: Add more instructions */
-/* INEG sets the condition codes, and the OP_LNEG decomposition depends on this on x86 */
-#define MONO_INS_HAS_NO_SIDE_EFFECT(ins) (MONO_IS_MOVE (ins) || (ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || MONO_IS_ZERO (ins) || (ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_R8CONST) || (ins->opcode == OP_LADD_IMM) || (ins->opcode == OP_ISUB_IMM) || (ins->opcode == OP_IADD_IMM) || (ins->opcode == OP_LNEG) || (ins->opcode == OP_ISUB) || (ins->opcode == OP_CMOV_IGE) || (ins->opcode == OP_ISHL_IMM) || (ins->opcode == OP_ISHR_IMM) || (ins->opcode == OP_ISHR_UN_IMM) || (ins->opcode == OP_IAND_IMM) || (ins->opcode == OP_ICONV_TO_U1) || (ins->opcode == OP_ICONV_TO_I1) || (ins->opcode == OP_SEXT_I4) || (ins->opcode == OP_LCONV_TO_U1) || (ins->opcode == OP_ICONV_TO_U2) || (ins->opcode == OP_ICONV_TO_I2) || (ins->opcode == OP_LCONV_TO_I2) || (ins->opcode == OP_LDADDR) || (ins->opcode == OP_PHI) || (ins->opcode == OP_NOP) || (ins->opcode == OP_ZEXT_I4) || (ins->opcode == OP_NOT_NULL) || (ins->opcode == OP_IL_SEQ_POINT) || (ins->opcode == OP_XZERO))
+#define MONO_INS_HAS_NO_SIDE_EFFECT(ins) (mono_ins_no_side_effects ((ins)))
 
 #define MONO_INS_IS_PCONST_NULL(ins) ((ins)->opcode == OP_PCONST && (ins)->inst_p0 == 0)
 
@@ -2153,6 +2151,8 @@ const char* mono_inst_name (int op);
 int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
+gboolean  mono_op_no_side_effects           (int opcode);
+gboolean  mono_ins_no_side_effects          (MonoInst *ins);
 guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type);
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type);
 guint32   mono_type_to_stloc_coerce         (MonoType *type);

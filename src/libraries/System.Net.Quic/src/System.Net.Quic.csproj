@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <DefineConstants Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsOSX)' == 'true'">$(DefineConstants);SOCKADDR_HAS_LENGTH</DefineConstants>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -76,21 +77,23 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs" Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.Linux.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs" Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
   </ItemGroup>
   <!-- FreeBSD specific files -->
   <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' ">
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs" Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
     <!-- Assume similarity with OSX for now -->
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.OSX.cs" Link="Common\System\Net\Security\CertificateValidation.OSX.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>

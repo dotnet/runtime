@@ -29,8 +29,7 @@
 #ifndef DACCESS_COMPILE
 
 // ================================================================================
-// PEFile class - this is an abstract base class for PEModule and PEAssembly
-// <TODO>@todo: rename TargetFile</TODO>
+// PEFile class - this is an abstract base class for PEAssembly
 // ================================================================================
 
 PEFile::PEFile(PEImage *identity) :
@@ -47,7 +46,6 @@ PEFile::PEFile(PEImage *identity) :
     m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
     m_refCount(1),
     m_flags(0),
-    m_pAssemblyBinder(nullptr),
     m_pHostAssembly(nullptr),
     m_pFallbackBinder(nullptr)
 {
@@ -113,7 +111,6 @@ PEFile *PEFile::Open(PEImage *image)
         PRECONDITION(image != NULL);
         PRECONDITION(image->CheckFormat());
         POSTCONDITION(RETVAL != NULL);
-        POSTCONDITION(!RETVAL->IsModule());
         POSTCONDITION(!RETVAL->IsAssembly());
         THROWS;
         GC_TRIGGERS;
@@ -1047,8 +1044,6 @@ PEAssembly::PEAssembly(
     m_debugName.Normalize();
     m_pDebugName = m_debugName;
 #endif
-
-    SetupAssemblyLoadContext();
 }
 #endif // !DACCESS_COMPILE
 
@@ -1125,10 +1120,10 @@ PEAssembly *PEAssembly::DoOpenSystem()
     CONTRACT_END;
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
-    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
-    IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::BindToSystem(&pPrivAsm));
+    ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
+    IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    RETURN new PEAssembly(pPrivAsm, NULL, NULL, TRUE);
+    RETURN new PEAssembly(pBoundAssembly, NULL, NULL, TRUE);
 }
 
 PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult,
@@ -1379,15 +1374,6 @@ void PEFile::EnsureImageOpened()
     GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED)->Release();
 }
 
-void PEFile::SetupAssemblyLoadContext()
-{
-    PTR_AssemblyBinder pBinder = GetBinder();
-
-    m_pAssemblyBinder = (pBinder != NULL) ?
-        pBinder :
-        AppDomain::GetCurrentDomain()->CreateBinderContext();
-}
-
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -1487,30 +1473,25 @@ TADDR PEFile::GetMDInternalRWAddress()
 #endif
 
 // Returns the AssemblyBinder* instance associated with the PEFile
-PTR_AssemblyBinder PEFile::GetBinder()
+PTR_AssemblyBinder PEFile::GetAssemblyBinder()
 {
     LIMITED_METHOD_CONTRACT;
 
     PTR_AssemblyBinder pBinder = NULL;
 
-    // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
-    // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
-    if (!IsSystem())
+    BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
+    if (pHostAssembly)
     {
-        BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
-        if (pHostAssembly)
+        pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+    }
+    else
+    {
+        // If we do not have a host assembly, check if we are dealing with
+        // a dynamically emitted assembly and if so, use its fallback load context
+        // binder reference.
+        if (IsDynamic())
         {
-            pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
-        }
-        else
-        {
-            // If we do not have a host assembly, check if we are dealing with
-            // a dynamically emitted assembly and if so, use its fallback load context
-            // binder reference.
-            if (IsDynamic())
-            {
-                pBinder = GetFallbackBinder();
-            }
+            pBinder = GetFallbackBinder();
         }
     }
 
