@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -12,10 +13,8 @@ namespace System.Net.Security
     {
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
-        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName, IntPtr certificateBuffer, int bufferLength)
-            => BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName);
-
-        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName)
+        // WARNING: This function will do the verification using OpenSSL. If the intention is to use OS function, caller should use CertificatePal interface.
+        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName, IntPtr certificateBuffer, int bufferLength = 0)
         {
             SslPolicyErrors errors = chain.Build(remoteCertificate) ?
                 SslPolicyErrors.None :
@@ -31,8 +30,20 @@ namespace System.Net.Security
                 return errors | SslPolicyErrors.RemoteCertificateNameMismatch;
             }
 
+            SafeX509Handle certHandle;
+            if (certificateBuffer != IntPtr.Zero && bufferLength > 0)
+            {
+                certHandle = Interop.Crypto.DecodeX509(certificateBuffer, bufferLength);
+            }
+            else
+            {
+                // We dont't have DER encoded buffer.
+                byte[] der = remoteCertificate.Export(X509ContentType.Cert);
+                certHandle = Interop.Crypto.DecodeX509(Marshal.UnsafeAddrOfPinnedArrayElement(der, 0), der.Length);
+            }
+
             int hostNameMatch;
-            using (SafeX509Handle certHandle = Interop.Crypto.X509UpRef(remoteCertificate.Handle))
+            using (certHandle)
             {
                 IPAddress? hostnameAsIp;
                 if (IPAddress.TryParse(hostName, out hostnameAsIp))
