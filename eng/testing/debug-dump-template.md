@@ -107,16 +107,11 @@ Install or update LLDB if necessary ([instructions here](https://github.com/dotn
 
 Load the dump:
 ```sh
-lldb --core <lin-path-to-dump> %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0/dotnet
+lldb --core <lin-path-to-dump> \
+  %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0/dotnet \
+  -o "setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0" \
+  -o "setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0"
 ```
-
-Within lldb:
-```gdb
-setclrpath /home/<YOUR USERNAME>/helix_payload/%WORKITEM%/shared/Microsoft.NETCore.App/7.0.0
-sethostruntime /usr/bin/dotnet
-setsymbolserver -directory /home/<YOUR USERNAME>/helix_payload/%WORKITEM%/shared/Microsoft.NETCore.App/7.0.0
-```
-note: on macOS change `/home/<YOUR USERNAME>` to `/Users/<your yourname>`.
 
 If you want to load native symbols
 ```gdb
@@ -132,14 +127,11 @@ dotnet tool update --global dotnet-dump
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
 ```sh
-dotnet-dump analyze <lin-path-to-dump>
+dotnet-dump analyze \
+  <lin-path-to-dump> \
+  --command "setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0" \
+  "setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0"
 ```
-Within dotnet-dump:
-```sh
-setclrpath /home/<YOUR USERNAME>/helix_payload/%WORKITEM%/shared/Microsoft.NETCore.App/7.0.0
-setsymbolserver -directory /home/<YOUR USERNAME>/helix_payload/%WORKITEM%/shared/Microsoft.NETCore.App/7.0.0
-```
-note: on macOS change `/home/<YOUR USERNAME>` to `/Users/<your yourname>`.
 
 ---
 ## If it's a macOS dump
