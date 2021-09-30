@@ -58,8 +58,8 @@ Open WinDbg and open the dump with `File>Open Dump`.
 ```
 
 ```
-!setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
-.sympath+ %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
+!setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0
+.sympath+ %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0
 ```
 
 Now you can use regular SOS commands like `!dumpstack`, `!pe`, etc.
@@ -81,8 +81,8 @@ dotnet-dump analyze <win-path-to-dump>
 ```
 Within dotnet-dump:
 ```sh
-setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
-setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
+setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0
+setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0
 ```
 
 Now you can use regular SOS commands like `dumpstack`, `pe`, etc.
@@ -94,7 +94,7 @@ dotnet tool uninstall --global dotnet-dump
 ---
 ## If it's a Linux dump on Windows...
 
-Download the [Cross DAC Binaries](https://dev.azure.com/dnceng/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), open it and choose the flavor that matches the dump you are to debug, and copy those files to `%WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0`.
+Download the [Cross DAC Binaries](https://dev.azure.com/dnceng/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), open it and choose the flavor that matches the dump you are to debug, and copy those files to `%WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0`.
 
 Now you can debug with WinDbg or `dotnet-dump` as if it was a Windows dump. See above.
 
@@ -107,17 +107,19 @@ Install or update LLDB if necessary ([instructions here](https://github.com/dotn
 
 Load the dump:
 ```sh
-lldb --core <lin-path-to-dump> %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0/dotnet
+lldb --core <lin-path-to-dump> %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0/dotnet
 ```
 
 Within lldb:
-```
-setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
+```gdb
+setclrpath /home/<YOUR USERNAME>/helix_payload/%WORKITEM%/shared/Microsoft.NETCore.App/7.0.0
 sethostruntime /usr/bin/dotnet
-setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
+setsymbolserver -directory /home/<YOUR USERNAME>/helix_payload/%WORKITEM%/shared/Microsoft.NETCore.App/7.0.0
 ```
+note: on macOS change `/home/<YOUR USERNAME>` to `/Users/<your yourname>`.
+
 If you want to load native symbols
-```
+```gdb
 loadsymbols
 ```
 
@@ -134,9 +136,10 @@ dotnet-dump analyze <lin-path-to-dump>
 ```
 Within dotnet-dump:
 ```sh
-setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
-setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
+setclrpath /home/<YOUR USERNAME>/helix_payload/%WORKITEM%/shared/Microsoft.NETCore.App/7.0.0
+setsymbolserver -directory /home/<YOUR USERNAME>/helix_payload/%WORKITEM%/shared/Microsoft.NETCore.App/7.0.0
 ```
+note: on macOS change `/home/<YOUR USERNAME>` to `/Users/<your yourname>`.
 
 ---
 ## If it's a macOS dump
