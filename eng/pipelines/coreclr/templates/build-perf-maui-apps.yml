@@ -31,89 +31,103 @@ steps:
       ./dotnet.sh workload install maui --skip-manifest-update
     displayName: Install MAUI
     workingDirectory: $(Build.SourcesDirectory)
-  
   - script: |
       ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.targets
-      ../dotnet.sh build -bl:MauiTestingBin.binlog
-    displayName: Build MAUI
+    displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
-
+  
+  - script: |
+      ../dotnet.sh build -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -o MacCatalystBuildOutput
+    displayName: Build MAUI MacCatalyst
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  - task: PublishBuildArtifacts@1 #
+    condition: succeededOrFailed() #
+    displayName: 'Publish MacCatalyst binlog' #
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
+      artifactName:  ${{ parameters.artifactName }} #
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting #
         includeRootFolder: true #
-        displayName: Maui Build #
-        artifactName: MauiBuild #
+        displayName: Maui MacCatalyst App #
+        artifactName: MauiMacatalystApp #
         archiveExtension: '.tar.gz' #
         archiveType: tar #
         tarCompression: gz #
+  - script: rm -r -f ./bin
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+    displayName: Clean bindir
 
-# # Build the iOS sample app #
-#   - ${{ if eq(parameters.osGroup, 'iOS') }}:
-#     - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false #
-#       env:
-#         DevTeamProvisioning: '-' #
-#       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS #
-#       displayName: Build HelloiOS AOT sample app LLVM=False #
-#     - task: PublishBuildArtifacts@1 #
-#       condition: succeededOrFailed() #
-#       displayName: 'Publish binlog' #
-#       inputs:
-#         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog #
-#         artifactName:  ${{ parameters.artifactName }} #
-#     - template: /eng/pipelines/common/upload-artifact-step.yml
-#       parameters:
-#           rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app #
-#           includeRootFolder: true #
-#           displayName: iOS Sample App NoLLVM #
-#           artifactName: iOSSampleAppNoLLVM #
-#           archiveExtension: '.tar.gz' #
-#           archiveType: tar #
-#           tarCompression: gz #
-#     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin #
-#       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS #
-#       displayName: Clean bindir #
-#     - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false #
-#       env:
-#         DevTeamProvisioning: '-'
-#       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS #
-#       displayName: Build HelloiOS AOT sample app LLVM=True #
-#     - task: PublishBuildArtifacts@1 #
-#       condition: succeededOrFailed() #
-#       displayName: 'Publish binlog' #
-#       inputs:
-#         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog #
-#         artifactName:  ${{ parameters.artifactName }} #
-#     - template: /eng/pipelines/common/upload-artifact-step.yml
-#       parameters:
-#           rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app #
-#           includeRootFolder: true #
-#           displayName: iOS Sample App LLVM #
-#           artifactName: iOSSampleAppLLVM #
-#           archiveExtension: '.tar.gz' #
-#           archiveType: tar #
-#           tarCompression: gz #
+  - script: |
+      ../dotnet.sh build -bl:MauiAndroid.binlog -f net6.0-android -o AndroidBuildOutput
+    displayName: Build MAUI Android
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  - task: PublishBuildArtifacts@1 #
+    condition: succeededOrFailed() #
+    displayName: 'Publish Android binlog' #
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
+      artifactName:  ${{ parameters.artifactName }} #
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting #
+        includeRootFolder: true #
+        displayName: Maui Android App #
+        artifactName: MauiAndroidApp #
+        archiveExtension: '.tar.gz' #
+        archiveType: tar #
+        tarCompression: gz #
+  - script: rm -r -f ./bin
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+    displayName: Clean bindir
 
-#   - template: /eng/pipelines/common/upload-artifact-step.yml
-#     parameters:
-#       osGroup: ${{ parameters.osGroup }}
-#       osSubgroup: ${{ parameters.osSubgroup }}
-#       archType: ${{ parameters.archType }}
-#       buildConfig: ${{ parameters.buildConfig }}
-#       runtimeFlavor: ${{ parameters.runtimeFlavor }}
-#       helixQueues: ${{ parameters.helixQueues }}
-#       targetRid: ${{ parameters.targetRid }}
-#       nameSuffix: ${{ parameters.nameSuffix }}
-#       platform: ${{ parameters.platform }}
-#       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-#       rootFolder:  ${{ parameters.rootFolder }}
-#       includeRootFolder:  ${{ parameters.includeRootFolder }}
-#       displayName:  ${{ parameters.displayName }}
-#       artifactName:  ${{ parameters.artifactName }}
-#       archiveExtension:  ${{ parameters.archiveExtension }}
-#       archiveType:  ${{ parameters.archiveType }}
-#       tarCompression:  ${{ parameters.tarCompression }}
+  - script: |
+      ../dotnet.sh build -bl:MauiiOS.binlog -f net6.0-ios -o iOSBuildOutput
+    displayName: Build MAUI iOS
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  - task: PublishBuildArtifacts@1 #
+    condition: succeededOrFailed() #
+    displayName: 'Publish iOS binlog' #
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
+      artifactName:  ${{ parameters.artifactName }} #
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting #
+        includeRootFolder: true #
+        displayName: Maui iOS App #
+        artifactName: MauiiOSApp #
+        archiveExtension: '.tar.gz' #
+        archiveType: tar #
+        tarCompression: gz #
+  - script: rm -r -f ./bin
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+    displayName: Clean bindir
+
+
+
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      archType: ${{ parameters.archType }}
+      buildConfig: ${{ parameters.buildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      helixQueues: ${{ parameters.helixQueues }}
+      targetRid: ${{ parameters.targetRid }}
+      nameSuffix: ${{ parameters.nameSuffix }}
+      platform: ${{ parameters.platform }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      rootFolder:  ${{ parameters.rootFolder }}
+      includeRootFolder:  ${{ parameters.includeRootFolder }}
+      displayName:  ${{ parameters.displayName }}
+      artifactName:  ${{ parameters.artifactName }}
+      archiveExtension:  ${{ parameters.archiveExtension }}
+      archiveType:  ${{ parameters.archiveType }}
+      tarCompression:  ${{ parameters.tarCompression }}
   
