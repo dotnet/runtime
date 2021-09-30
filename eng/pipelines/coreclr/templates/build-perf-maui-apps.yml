@@ -36,8 +36,6 @@ steps:
       ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
       ../dotnet.sh build -f net6.0-android -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
-      xcode-select --switch /Applications/Xcode.app/Contents/Developer
-      ../dotnet.sh build -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
     displayName: Build MAUI
     workingDirectory: $(Build.SourcesDirectory)
 
