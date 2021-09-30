@@ -82,8 +82,8 @@ If prompted, open a new command prompt to pick up the updated PATH.
 ```cmd
 dotnet-dump analyze ^
   <win-path-to-dump> ^
-  --command "setclrpath %WOUTDIR%/shared/Microsoft.NETCore.App/7.0.0" ^
-  "setsymbolserver -directory %WOUTDIR%/shared/Microsoft.NETCore.App/7.0.0"
+  --command "setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0" ^
+  "setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0"
 ```
 
 Now you can use regular SOS commands like `dumpstack`, `pe`, etc.
