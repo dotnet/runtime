@@ -7851,7 +7851,7 @@ format_cmd_line (int argc, char **argv, gboolean add_host)
 	GString *cmd_line = NULL;
 
 	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
+#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
 		host_path = mono_w32process_get_path (getpid ());
 #elif defined(HOST_WIN32)
 		gunichar2 *host_path_ucs2 = NULL;
