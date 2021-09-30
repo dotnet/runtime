@@ -17,7 +17,8 @@ function DownloadClangTool {
             Write-Output "Attempting download of '$baseUri/$toolName.exe'"
             try {
                 # Pass -PassThru as otherwise Invoke-WebRequest leaves a corrupted file if the download fails. With -PassThru the download is buffered first.
-                $null = Invoke-WebRequest -Uri "$baseUri/$toolName.exe" -OutFile $(Join-Path $downloadOutputPath -ChildPath "$toolName.exe") -PassThru
+                # -UseBasicParsing is necessary for older PowerShells when Internet Explorer might not be installed/configured
+                $null = Invoke-WebRequest -Uri "$baseUri/$toolName.exe" -OutFile $(Join-Path $downloadOutputPath -ChildPath "$toolName.exe") -PassThru -UseBasicParsing
                 $success = $true
                 break
             }
