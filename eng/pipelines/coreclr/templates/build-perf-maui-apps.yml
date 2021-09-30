@@ -27,17 +27,17 @@ steps:
 
   - script: |
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
-      ./dotnet workload update --from-rollback-file ./rollback.json
-      ./dotnet workload install maui --skip-manifest-update
+      ./dotnet.sh workload update --from-rollback-file ./rollback.json
+      ./dotnet.sh workload install maui --skip-manifest-update
     displayName: Install MAUI
     workingDirectory: $(Build.SourcesDirectory)
   
   - script: |
-      ./dotnet new maui -n MauiTesting
+      ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
-      ../dotnet build -f net6.0-android -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
+      ../dotnet.sh build -f net6.0-android -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
       xcode-select --switch /Applications/Xcode.app/Contents/Developer
-      ../dotnet build -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
+      ../dotnet.sh build -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
     displayName: Build MAUI
     workingDirectory: $(Build.SourcesDirectory)
 
