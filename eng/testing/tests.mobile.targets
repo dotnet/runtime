@@ -56,7 +56,7 @@
              Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
 
   <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'"
-                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json" 
+                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json"
                                        Outputs="$(PublishDir)runtimeconfig.bin">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
@@ -208,7 +208,7 @@
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
-    <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'" Assemblies="@(BundleAssemblies)" />
+    <!-- <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'" Assemblies="@(BundleAssemblies)" /> -->
 
     <ItemGroup>
       <BundleAssemblies Include="@(_BundleNonAotAssemblies)" />
@@ -249,7 +249,7 @@
           SkipUnchangedFiles="true"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(GenerateXcodeProject)' == 'true'" />
 
-    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" 
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
                Directories="$(OutDir)" />
   </Target>
 
