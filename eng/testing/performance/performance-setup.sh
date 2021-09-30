@@ -304,9 +304,9 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     popd
     # wasm aot and interpreter need some source code from dotnet\runtime repo
     verified_rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests --exclude __download__
-	# copy wasm build drop to the location that aot and interpreter build expects
+    # copy wasm build drop to the location that aot and interpreter build expects
     verified_rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
-	rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
+    rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600" 
     else
