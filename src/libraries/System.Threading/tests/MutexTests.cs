@@ -306,13 +306,6 @@ namespace System.Threading.Tests
             using (var m = new Mutex(false, name)) { }
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
             Assert.False(Mutex.TryOpenExisting(name, out _));
-
-            using (var m = new Mutex(false, name + "Case"))
-            {
-                string nameWithDifferentCase = name + "case";
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(nameWithDifferentCase));
-                Assert.False(Mutex.TryOpenExisting(nameWithDifferentCase, out _));
-            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix

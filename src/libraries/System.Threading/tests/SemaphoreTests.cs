@@ -335,13 +335,6 @@ namespace System.Threading.Tests
             using (var s = new Semaphore(0, 1, name)) { }
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
             Assert.False(Semaphore.TryOpenExisting(name, out _));
-
-            using (var s = new Semaphore(0, 1, name + "Case"))
-            {
-                string nameWithDifferentCase = name + "case";
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(nameWithDifferentCase));
-                Assert.False(Semaphore.TryOpenExisting(nameWithDifferentCase, out _));
-            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix

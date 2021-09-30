@@ -168,13 +168,6 @@ namespace System.Threading.Tests
             using (var e = new EventWaitHandle(false, EventResetMode.AutoReset, name)) { }
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(name));
             Assert.False(EventWaitHandle.TryOpenExisting(name, out _));
-
-            using (var e = new EventWaitHandle(false, EventResetMode.AutoReset, name + "Case"))
-            {
-                string nameWithDifferentCase = name + "case";
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(nameWithDifferentCase));
-                Assert.False(EventWaitHandle.TryOpenExisting(nameWithDifferentCase, out _));
-            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // OpenExisting not supported on Unix
