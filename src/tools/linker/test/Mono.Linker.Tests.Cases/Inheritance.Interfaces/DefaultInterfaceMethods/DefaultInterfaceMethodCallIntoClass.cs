@@ -6,19 +6,17 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 {
-#if !NETCOREAPP
-	[IgnoreTestCase ("Requires support for default interface methods")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
 	class DefaultInterfaceMethodCallIntoClass
 	{
 		public static void Main ()
 		{
-#if NETCOREAPP
+#if SUPPORTS_DEFAULT_INTERFACE_METHODS
 			((IBase) new Derived ()).Frob ();
 #endif
 		}
 
-#if NETCOREAPP
+#if SUPPORTS_DEFAULT_INTERFACE_METHODS
 		[Kept]
 		interface IBase
 		{

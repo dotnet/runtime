@@ -9,6 +9,8 @@ namespace ILLink.Shared
 		// Linker diagnostic ids.
 		RequiresUnreferencedCode = 2026,
 		RequiresUnreferencedCodeAttributeMismatch = 2046,
+		MakeGenericType = 2055,
+		MakeGenericMethod = 2060,
 		RequiresUnreferencedCodeOnStaticConstructor = 2116,
 
 		// Dynamically Accessed Members attribute mismatch.

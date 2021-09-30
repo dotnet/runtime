@@ -6,17 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using ILLink.Shared;
 using Mono.Cecil;
+
+#nullable enable
 
 namespace Mono.Linker
 {
-	// Temporary workaround - should be removed once linker can be upgraded to build against
-	// high enough version of the framework which has this enum value.
-	internal static class DynamicallyAccessedMemberTypesOverlay
-	{
-		public const DynamicallyAccessedMemberTypes Interfaces = (DynamicallyAccessedMemberTypes) 0x2000;
-	}
-
 	internal static class DynamicallyAccessedMembersBinder
 	{
 		// Returns the members of the type bound by memberTypes. For DynamicallyAccessedMemberTypes.All, this returns all members of the type and its
@@ -118,7 +114,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<MethodDefinition> GetConstructorsOnType (this TypeDefinition type, Func<MethodDefinition, bool> filter, BindingFlags? bindingFlags = null)
+		public static IEnumerable<MethodDefinition> GetConstructorsOnType (this TypeDefinition type, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
 		{
 			foreach (var method in type.Methods) {
 				if (!method.IsConstructor)
@@ -143,8 +139,9 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<MethodDefinition> GetMethodsOnTypeHierarchy (this TypeDefinition type, LinkContext context, Func<MethodDefinition, bool> filter, BindingFlags? bindingFlags = null)
+		public static IEnumerable<MethodDefinition> GetMethodsOnTypeHierarchy (this TypeDefinition thisType, LinkContext context, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
 		{
+			TypeDefinition? type = thisType;
 			bool onBaseType = false;
 			while (type != null) {
 				foreach (var method in type.Methods) {
@@ -186,8 +183,9 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<FieldDefinition> GetFieldsOnTypeHierarchy (this TypeDefinition type, LinkContext context, Func<FieldDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		public static IEnumerable<FieldDefinition> GetFieldsOnTypeHierarchy (this TypeDefinition thisType, LinkContext context, Func<FieldDefinition, bool>? filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
+			TypeDefinition? type = thisType;
 			bool onBaseType = false;
 			while (type != null) {
 				foreach (var field in type.Fields) {
@@ -225,7 +223,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<TypeDefinition> GetNestedTypesOnType (this TypeDefinition type, Func<TypeDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		public static IEnumerable<TypeDefinition> GetNestedTypesOnType (this TypeDefinition type, Func<TypeDefinition, bool>? filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			foreach (var nestedType in type.NestedTypes) {
 				if (filter != null && !filter (nestedType))
@@ -245,8 +243,9 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<PropertyDefinition> GetPropertiesOnTypeHierarchy (this TypeDefinition type, LinkContext context, Func<PropertyDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		public static IEnumerable<PropertyDefinition> GetPropertiesOnTypeHierarchy (this TypeDefinition thisType, LinkContext context, Func<PropertyDefinition, bool>? filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
+			TypeDefinition? type = thisType;
 			bool onBaseType = false;
 			while (type != null) {
 				foreach (var property in type.Properties) {
@@ -293,8 +292,9 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<EventDefinition> GetEventsOnTypeHierarchy (this TypeDefinition type, LinkContext context, Func<EventDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		public static IEnumerable<EventDefinition> GetEventsOnTypeHierarchy (this TypeDefinition thisType, LinkContext context, Func<EventDefinition, bool>? filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
+			TypeDefinition? type = thisType;
 			bool onBaseType = false;
 			while (type != null) {
 				foreach (var @event in type.Events) {
@@ -343,13 +343,14 @@ namespace Mono.Linker
 
 		// declaredOnly will cause this to retrieve interfaces recursively required by the type, but doesn't necessarily
 		// include interfaces required by any base types.
-		public static IEnumerable<InterfaceImplementation> GetAllInterfaceImplementations (this TypeDefinition type, LinkContext context, bool declaredOnly)
+		public static IEnumerable<InterfaceImplementation> GetAllInterfaceImplementations (this TypeDefinition thisType, LinkContext context, bool declaredOnly)
 		{
+			TypeDefinition? type = thisType;
 			while (type != null) {
 				foreach (var i in type.Interfaces) {
 					yield return i;
 
-					TypeDefinition interfaceType = context.TryResolve (i.InterfaceType);
+					TypeDefinition? interfaceType = context.TryResolve (i.InterfaceType);
 					if (interfaceType != null) {
 						// declaredOnly here doesn't matter since interfaces don't have base types
 						foreach (var innerInterface in interfaceType.GetAllInterfaceImplementations (context, declaredOnly: true))

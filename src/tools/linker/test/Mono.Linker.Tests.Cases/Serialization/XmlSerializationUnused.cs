@@ -5,11 +5,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Serialization
 {
-	[Reference ("System.Xml.XmlSerializer.dll")]
-	[Reference ("System.Private.Xml.dll")]
-	[Reference ("System.Runtime.Serialization.dll")]
 	[Reference ("System.Runtime.Serialization.Xml.dll")]
-	[Reference ("System.Private.DataContractSerialization.dll")]
+	[Reference ("System.Xml.ReaderWriter.dll")]
+	[Reference ("System.Xml.XmlSerializer.dll")]
 	public class XmlSerializationUnused
 	{
 		public static void Main ()

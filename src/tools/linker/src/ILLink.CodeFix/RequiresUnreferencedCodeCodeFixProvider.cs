@@ -12,7 +12,6 @@ using ILLink.RoslynAnalyzer;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 
 namespace ILLink.CodeFix
@@ -32,15 +31,13 @@ namespace ILLink.CodeFix
 
 		public sealed override Task RegisterCodeFixesAsync (CodeFixContext context) => BaseRegisterCodeFixesAsync (context);
 
-		protected override SyntaxNode[] GetAttributeArguments (SemanticModel semanticModel, SyntaxNode targetNode, CSharpSyntaxNode containingDecl, SyntaxGenerator generator, Diagnostic diagnostic)
+		protected override SyntaxNode[] GetAttributeArguments (ISymbol attributableSymbol, ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, Diagnostic diagnostic)
 		{
-			var containingSymbol = semanticModel.GetDeclaredSymbol (containingDecl);
-			var name = semanticModel.GetSymbolInfo (targetNode).Symbol?.Name;
-			if (string.IsNullOrEmpty (name) || HasPublicAccessibility (containingSymbol!)) {
+			var symbolDisplayName = targetSymbol.GetDisplayName ();
+			if (string.IsNullOrEmpty (symbolDisplayName) || HasPublicAccessibility (attributableSymbol))
 				return Array.Empty<SyntaxNode> ();
-			} else {
-				return new[] { generator.AttributeArgument (generator.LiteralExpression ($"Calls {name}")) };
-			}
+
+			return new[] { syntaxGenerator.AttributeArgument (syntaxGenerator.LiteralExpression ($"Calls {symbolDisplayName}")) };
 		}
 	}
 }

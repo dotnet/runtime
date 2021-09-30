@@ -4,9 +4,7 @@ using Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.LinkXml.FeatureExclude
 {
-#if NETCOREAPP
-	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.TargetingNetFramework, "--exclude-feature is not supported on .NET Core")]
 	[SetupLinkerArgument ("--exclude-feature", "one")]
 	[SetupCompileBefore ("library1.dll", new[] { typeof (OnAssembly_Lib1) })]
 	[SetupCompileBefore ("library2.dll", new[] { typeof (OnAssembly_Lib2) })]

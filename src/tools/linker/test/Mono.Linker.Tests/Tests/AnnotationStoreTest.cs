@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Tests
 		[SetUp]
 		public void Setup ()
 		{
-			var ctx = new LinkContext (null, new ConsoleLogger ());
+			var ctx = new LinkContext (null, new ConsoleLogger (), string.Empty);
 			store = new AnnotationStore (ctx);
 		}
 

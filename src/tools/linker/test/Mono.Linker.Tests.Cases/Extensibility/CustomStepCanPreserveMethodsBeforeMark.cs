@@ -3,9 +3,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Extensibility
 {
-#if !NETCOREAPP
-	[IgnoreTestCase ("Specific to the illink build")]
-#endif
 	[SetupCompileBefore ("CustomStepBeforeMark.dll", new[] { "Dependencies/PreserveMethodsSubStep.cs" }, new[] { "illink.dll", "Mono.Cecil.dll", "netstandard.dll" })]
 	[SetupLinkerArgument ("--custom-step", "-MarkStep:PreserveMethodsSubStep,CustomStepBeforeMark.dll")]
 	public class CustomStepCanPreserveMethodsBeforeMark

@@ -23,7 +23,7 @@ Another tool available for developers is implemented as [Roslyn Analyzer](src/IL
 
 # Contributing
 
-We welcome contributions! Many developers have helped make this project better by reporting [issues](https://github.com/mono/linker/issues) or contributing [pull requests](https://github.com/mono/linker/pulls).
+We welcome contributions! Many developers have helped make this project better by reporting [issues](https://github.com/dotnet/linker/issues) or contributing [pull requests](https://github.com/dotnet/linker/pulls).
 
 ## How to build all projects
 
@@ -44,4 +44,4 @@ The same script can be used to run all tests from the terminal. We also have int
 
 ## CI Build & Test Status
 
-[![Build Status](https://dev.azure.com/dnceng/public/_apis/build/status/mono/linker-ci?branchName=main)](https://dev.azure.com/dnceng/public/_build/latest?definitionId=364&branchName=main)
+[![Build Status](https://dev.azure.com/dnceng/public/_apis/build/status/dotnet/linker-ci?branchName=main)](https://dev.azure.com/dnceng/public/_build/latest?definitionId=364&branchName=main)
