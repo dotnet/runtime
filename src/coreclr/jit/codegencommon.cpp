@@ -2096,10 +2096,6 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     this->codePtr          = codePtr;
     this->nativeSizeOfCode = nativeSizeOfCode;
 
-#ifdef TARGET_ARM64
-    compiler->verbose = true;
-#endif
-
     DoPhase(this, PHASE_GENERATE_CODE, &CodeGen::genGenerateMachineCode);
     DoPhase(this, PHASE_EMIT_CODE, &CodeGen::genEmitMachineCode);
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);

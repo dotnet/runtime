@@ -13352,6 +13352,10 @@ void emitter::emitDispIns(
             break;
 
         case IF_SN_0A: // SN_0A   ................ ................
+            if (ins == INS_align)
+            {
+                printf("[%d bytes]", id->idIsEmptyAlign() ? 0 : MAX1_ENCODED_SIZE);
+            }
             break;
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
