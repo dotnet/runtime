@@ -3040,16 +3040,9 @@ namespace System.Text.RegularExpressions.Generator
             if (!invariant && RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
             {
                 bool invert = RegexCharClass.IsNegated(charClass);
-                if (lowInclusive == highInclusive)
-                {
-                    chExpr = $"({chExpr} {(invert ? "!=" : "==")} {Literal(lowInclusive)})";
-                }
-                else
-                {
-                    chExpr = $"(((uint){chExpr}) - {Literal(lowInclusive)} {(invert ? ">=" : "<")} (uint){highInclusive - lowInclusive + 1})";
-                }
-
-                return chExpr;
+                return lowInclusive == highInclusive ?
+                    $"({chExpr} {(invert ? "!=" : "==")} {Literal(lowInclusive)})" :
+                    $"(((uint){chExpr}) - {Literal(lowInclusive)} {(invert ? ">" : "<=")} (uint)({Literal(highInclusive)} - {Literal(lowInclusive)}))";
             }
 
             // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
