@@ -26,6 +26,7 @@ steps:
   # Create MAUI Sample app (Do we want this here or lower?)
 
   - script: |
+      find . -name "Microsoft.NETCore.App.Runtime.Mono.android"
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
       ./dotnet.sh workload update --from-rollback-file ./rollback.json
       ./dotnet.sh workload install maui --skip-manifest-update
