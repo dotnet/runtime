@@ -70,8 +70,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
 
         protected ILGenerator? _ilg;
-        /// <summary>true if the compiled code is saved for later use, potentially on a different machine.</summary>
-        private readonly bool _persistsAssembly;
 
         // tokens representing local variables
         private LocalBuilder? _runtextbegLocal;
@@ -123,11 +121,6 @@ namespace System.Text.RegularExpressions
         private const int Uniquecount = 10;
         private const int LoopTimeoutCheckCount = 2048; // A conservative value to guarantee the correct timeout handling.
 
-        protected RegexCompiler(bool persistsAssembly)
-        {
-            _persistsAssembly = persistsAssembly;
-        }
-
         private static FieldInfo RegexRunnerField(string fieldname) => typeof(RegexRunner).GetField(fieldname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
 
         private static MethodInfo RegexRunnerMethod(string methname) => typeof(RegexRunner).GetMethod(methname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
@@ -138,40 +131,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
             new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, code, options, hasTimeout);
-
-#if DEBUG // until it can be fully implemented
-        /// <summary>
-        /// Entry point to dynamically compile a regular expression.  The expression is compiled to
-        /// an assembly saved to a file.
-        /// </summary>
-        internal static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
-        {
-            var c = new RegexAssemblyCompiler(assemblyname, attributes, resourceFile);
-
-            for (int i = 0; i < regexinfos.Length; i++)
-            {
-                if (regexinfos[i] is null)
-                {
-                    throw new ArgumentNullException(nameof(regexinfos), SR.ArgumentNull_ArrayWithNullElements);
-                }
-
-                string pattern = regexinfos[i].Pattern;
-
-                RegexOptions options = regexinfos[i].Options | RegexOptions.Compiled; // ensure compiled is set; it enables more optimization specific to compilation
-
-                string fullname = regexinfos[i].Namespace.Length == 0 ?
-                    regexinfos[i].Name :
-                    regexinfos[i].Namespace + "." + regexinfos[i].Name;
-
-                RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
-                RegexCode code = RegexWriter.Write(tree);
-
-                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, code, regexinfos[i].MatchTimeout);
-            }
-
-            c.Save();
-        }
-#endif
 
         /// <summary>
         /// Keeps track of an operation that needs to be referenced in the backtrack-jump
@@ -2523,11 +2482,11 @@ namespace System.Text.RegularExpressions
                 // If we're doing a case-insensitive comparison, we need to lower case each character,
                 // so we just go character-by-character.  But if we're not, we try to process multiple
                 // characters at a time; this is helpful not only for throughput but also in reducing
-                // the amount of IL and asm that results from this unrolling. Also, this optimization
+                // the amount of IL and asm that results from this unrolling. This optimization
                 // is subject to endianness issues if the generated code is used on a machine with a
-                // different endianness; for now, we simply disable the optimization if the generated
-                // code is being saved. TODO https://github.com/dotnet/runtime/issues/30153.
-                if (!caseInsensitive && !_persistsAssembly)
+                // different endianness, but that's not a concern when the code is emitted by the
+                // same process that then uses it.
+                if (!caseInsensitive)
                 {
                     // On 64-bit, process 4 characters at a time until the string isn't at least 4 characters long.
                     if (IntPtr.Size == 8)
