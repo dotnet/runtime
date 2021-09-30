@@ -92,9 +92,6 @@
     At the command-line, the user can specify:
     +  /p:CLRTestBuildAllTargets=allTargets    Build managed tests for all target platforms.
    -->
-  <PropertyGroup>
-    <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
-  </PropertyGroup>
 
   <!-- Language settings -->
   <PropertyGroup>
