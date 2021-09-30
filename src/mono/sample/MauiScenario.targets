@@ -63,10 +63,9 @@
 
   <!-- Filter out conflicting implicit assembly references. -->
   <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(DisableImplicitAssemblyReferences)' != 'true'"
+          Condition="'$(DisableImplicitAssemblyReferences)' != 'true' and 'false' == 'true'"
           DependsOnTargets="ResolveProjectReferences"
-          AfterTargets="ResolveTargetingPackAssets"
-          Condition="'false' == 'true'">
+          AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <_targetingPackReferenceExclusion Include="$(TargetName)" />
       <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
