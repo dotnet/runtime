@@ -6389,7 +6389,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
 
     unsigned actualCodeSize = emitCurCodeOffs(cp);
+
+#if defined(TARGET_ARM64)
+    assert(emitTotalCodeSize == actualCodeSize);
+#else
     assert(emitTotalCodeSize >= actualCodeSize);
+#endif
 
 #if EMITTER_STATS
     totAllocdSize += emitTotalCodeSize;
