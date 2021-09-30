@@ -263,6 +263,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(StructWithPropertiesWithJsonPropertyName_PrivateSetter))]
         [JsonSerializable(typeof(ClassWithValueAndReferenceTypes))]
         [JsonSerializable(typeof(ClassWithReadOnlyStringProperty_IgnoreWhenWritingDefault))]
+        [JsonSerializable(typeof(ConcreteDerivedClass))]
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -429,6 +430,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(StructWithPropertiesWithJsonPropertyName_PrivateSetter))]
         [JsonSerializable(typeof(ClassWithValueAndReferenceTypes))]
         [JsonSerializable(typeof(ClassWithReadOnlyStringProperty_IgnoreWhenWritingDefault))]
+        [JsonSerializable(typeof(ConcreteDerivedClass))]
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }

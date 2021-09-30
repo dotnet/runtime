@@ -37,7 +37,7 @@ namespace System.Text.Json.Reflection
 
             if (methodSymbol.IsAbstract)
             {
-                attributes |= MethodAttributes.Abstract;
+                attributes |= MethodAttributes.Abstract | MethodAttributes.Virtual;
             }
 
             if (methodSymbol.IsStatic)
