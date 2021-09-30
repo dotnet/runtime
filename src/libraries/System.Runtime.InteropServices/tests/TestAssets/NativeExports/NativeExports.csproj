@@ -9,6 +9,7 @@
     <DnneGenRollForward>Major</DnneGenRollForward>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <AppHostRuntimeIdentifier>$(OutputRid)</AppHostRuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -57,6 +58,7 @@
       <CommonToolchainArgs>--target=$(TargetTriple) --gcc-toolchain=$(ROOTFS_DIR)/usr --sysroot=$(ROOTFS_DIR)</CommonToolchainArgs>
       <DnneLinkerUserFlags>$(CommonToolchainArgs) $(DnneLinkerUserFlags)</DnneLinkerUserFlags>
       <DnneCompilerUserFlags>$(CommonToolchainArgs) $(DnneCompilerUserFlags)</DnneCompilerUserFlags>
+      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
     </PropertyGroup>
   </Target>
 </Project>
