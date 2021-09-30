@@ -80,22 +80,7 @@ CHECK PEImage::CheckLayoutFormat(PEDecoder *pe)
 CHECK PEImage::CheckILFormat()
 {
     WRAPPER_NO_CONTRACT;
-
-    PTR_PEImageLayout pLayoutToCheck;
-    PEImageLayoutHolder pLayoutHolder;
-
-    if (HasLoadedLayout())
-    {
-        pLayoutToCheck = GetLoadedLayout();
-    }
-    else
-    {
-        pLayoutHolder = GetLayout(PEImageLayout::LAYOUT_ANY);
-        pLayoutToCheck = pLayoutHolder;
-    }
-
-    CHECK(pLayoutToCheck->CheckILFormat());
-
+    CHECK(GetLayout(PEImageLayout::LAYOUT_ANY)->CheckILFormat());
     CHECK_OK;
 };
 
@@ -821,18 +806,13 @@ PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    // First attempt to find an existing layout matching imageLayoutMask.  If that fails,
-    // and the caller has asked us to create layouts if needed, then try again passing
-    // the create flag to GetLayoutInternal.  We need this to be synchronized, but the common
-    // case is that the layout already exists, so use a reader-writer lock.
+    // First attempt to find an existing layout matching imageLayoutMask.
+    // If that fails, try again with auto-creating helper.
+    // Note: we use reader-writer lock, but only writes are synchronized.
     PTR_PEImageLayout pRetVal = GetExistingLayoutInternal(imageLayoutMask);
 
 #ifndef DACCESS_COMPILE
-    if (pRetVal != NULL)
-    {
-        pRetVal->AddRef();
-    }
-    else
+    if (pRetVal == NULL)
     {
         GCX_PREEMP();
         SimpleWriteLockHolder lock(m_pLayoutLock);
@@ -849,6 +829,16 @@ PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask)
 }
 
 #ifndef DACCESS_COMPILE
+
+void   PEImage::SetLayout(DWORD dwLayout, PEImageLayout* pLayout)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(dwLayout < IMAGE_COUNT);
+    _ASSERTE(m_pLayoutLock->IsWriterLock());
+    _ASSERTE(m_pLayouts[dwLayout] == NULL);
+
+    m_pLayouts[dwLayout] = pLayout;
+}
 
 PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask)
 {
@@ -975,9 +965,10 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     }
     else
     {
-        PEImageLayoutHolder flatPE(GetLayout(PEImageLayout::LAYOUT_FLAT));
+        PEImageLayout* flatPE = GetLayout(PEImageLayout::LAYOUT_FLAT);
         if (!flatPE->CheckFormat() || !flatPE->IsILOnly())
             ThrowHR(COR_E_BADIMAGEFORMAT);
+
         pRetVal=PEImageLayout::LoadFromFlat(flatPE);
         SetLayout(IMAGE_MAPPED,pRetVal);
     }
@@ -1027,6 +1018,7 @@ PTR_PEImage PEImage::LoadFlat(const void *flat, COUNT_T size)
     PEImageHolder pImage(new PEImage());
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFlat(flat,size,pImage);
     _ASSERTE(!pLayout->IsMapped());
+    SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
     pImage->SetLayout(IMAGE_FLAT,pLayout);
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
@@ -1149,10 +1141,13 @@ void PEImage::LoadFromMapped()
         return;
     }
 
-    PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_MAPPED));
+    PEImageLayout* pLayout = GetLayout(PEImageLayout::LAYOUT_MAPPED);
     SimpleWriteLockHolder lock(m_pLayoutLock);
-    if(m_pLayouts[IMAGE_LOADED]==NULL)
-        SetLayout(IMAGE_LOADED,pLayout.Extract());
+    if (m_pLayouts[IMAGE_LOADED] == NULL)
+    {
+        pLayout->AddRef();
+        SetLayout(IMAGE_LOADED, pLayout);
+    }
 }
 
 void PEImage::LoadNoFile()
@@ -1166,13 +1161,16 @@ void PEImage::LoadNoFile()
     if (HasLoadedLayout())
         return;
 
-    PEImageLayoutHolder pLayout(GetExistingLayoutInternal(PEImageLayout::LAYOUT_ANY));
+    PEImageLayout* pLayout = GetExistingLayoutInternal(PEImageLayout::LAYOUT_ANY);
     if (!pLayout->CheckILOnly())
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
     SimpleWriteLockHolder lock(m_pLayoutLock);
-    if(m_pLayouts[IMAGE_LOADED]==NULL)
-        SetLayout(IMAGE_LOADED,pLayout.Extract());
+    if (m_pLayouts[IMAGE_LOADED] == NULL)
+    {
+        pLayout->AddRef();
+        SetLayout(IMAGE_LOADED, pLayout);
+    }
 }
 
 

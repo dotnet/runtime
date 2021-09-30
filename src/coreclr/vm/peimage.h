@@ -63,8 +63,8 @@ public:
     // Public constants
     // ------------------------------------------------------------
 
-    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask); //with ref
-    PTR_PEImageLayout GetLoadedLayout(); //no ref
+    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask);
+    PTR_PEImageLayout GetLoadedLayout();
     BOOL IsOpened();
     BOOL HasLoadedLayout();
 
@@ -74,14 +74,6 @@ public:
     // ------------------------------------------------------------
 
     static void Startup();
-
-    // Normal constructed PEImages do NOT share images between calls and
-    // cannot be accessed by Get methods.
-    //
-    // DO NOT USE these unless you want a private copy-on-write mapping of
-    // the file.
-
-
 
 public:
     ~PEImage();
