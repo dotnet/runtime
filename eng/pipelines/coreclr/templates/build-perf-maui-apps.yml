@@ -41,23 +41,12 @@ steps:
     displayName: Build MAUI
     workingDirectory: $(Build.SourcesDirectory)
 
-  - script: ls -RA #
-    condition: succeededOrFailed() #
-    workingDirectory: $(Build.SourcesDirectory)/.dotnet #
-    displayName: List All Files
-
-  - task: PublishBuildArtifacts@1 #
-    condition: succeededOrFailed() #
-    displayName: 'Publish binlog' #
-    inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
-      artifactName:  ${{ parameters.artifactName }} #
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting #
         includeRootFolder: true #
         displayName: Maui Build #
-        artifactName: MauiBuildBinLog #
+        artifactName: MauiBuild #
         archiveExtension: '.tar.gz' #
         archiveType: tar #
         tarCompression: gz #
