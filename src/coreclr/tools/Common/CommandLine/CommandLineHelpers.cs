@@ -63,12 +63,14 @@ namespace Internal.CommandLine
             }
         }
 
+// ILVerify needs to switch command line processing to Internal.CommandLine and then it can take advantage of this too
+#if !ILVERIFY
         public static void MakeReproPackage(string makeReproPath, string outputFilePath, string[] args, ArgumentSyntax argSyntax, IEnumerable<string> inputOptions)
         {
             Directory.CreateDirectory(makeReproPath);
 
             List<string> details = new List<string>();
-            details.Add("Compiler version");
+            details.Add("Tool version");
             try
             {
                 details.Add(Environment.GetCommandLineArgs()[0]);
@@ -211,5 +213,6 @@ namespace Internal.CommandLine
                 }
             }
         }
+#endif // !ILVERIFY
     }
 }
