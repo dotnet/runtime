@@ -6,7 +6,12 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!--  CilStrip.Sources doesn't play nicely with nullability -->
     <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn),CA1050,CS0618,CS0649,CS8604,CS8602,CS8632,SYSLIB0003</NoWarn>
+    <!-- SYSLIB0003: Mono.Cecil uses Code Access Security types
+         CS0618: Mono.Cecil uses a number of other obsolete types
+         CS0649: Mono.Cecil.Binary.ExportTable has some unused fields
+    -->
+    <NoWarn>$(NoWarn),CS0618,CS0649,SYSLIB0003</NoWarn>
+    <!-- the analyzers don't like Mono.Cecil either -->
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
   <ItemGroup>
