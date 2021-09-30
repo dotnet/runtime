@@ -6302,7 +6302,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             }
 
             // Note we are always reading from the original frame here
-            const var_types lclTyp  = genActualType(varDsc->lvType);
+            //
+            const var_types lclTyp  = varDsc->GetActualRegisterType();
             const emitAttr  size    = emitTypeSize(lclTyp);
             const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
 
