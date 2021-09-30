@@ -670,6 +670,8 @@ OPDEF(MINT_CALLI_NAT_DYNAMIC, "calli.nat.dynamic", 5, 1, 2, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT_FAST, "calli.nat.fast", 7, 1, 2, MintOpMethodToken)
 OPDEF(MINT_CALL_VARARG, "call.vararg", 6, 1, 1, MintOpMethodToken)
 OPDEF(MINT_CALLRUN, "callrun", 5, 1, 1, MintOpNoArgs)
+OPDEF(MINT_TAILCALL, "tailcall", 4, 0, 1, MintOpMethodToken)
+OPDEF(MINT_TAILCALL_VIRT, "tailcall.virt", 5, 0, 1, MintOpMethodToken)
 
 OPDEF(MINT_ICALL_V_V, "mono_icall_v_v", 3, 0, 1, MintOpShortInt)
 OPDEF(MINT_ICALL_V_P, "mono_icall_v_p", 4, 1, 1, MintOpShortInt)
