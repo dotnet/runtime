@@ -56,6 +56,18 @@ if(DEFINED ENV{TOOLCHAIN})
   set(TOOLCHAIN $ENV{TOOLCHAIN})
 endif()
 
+set (ADDED_COMPILE_OPTIONS)
+if (CMAKE_SCRIPT_MODE_FILE)
+  # add_compile_options and add_definitions can't be used in scripts,
+  # so override the implementations to append to a local property
+  macro(add_compile_options)
+    list(APPEND ADDED_COMPILE_OPTIONS ${ARGV})
+  endmacro()
+  macro(add_definitions)
+    list(APPEND ADDED_COMPILE_OPTIONS ${ARGV})
+  endmacro()
+endif()
+
 # Specify include paths
 if(DEFINED TIZEN_TOOLCHAIN)
   if(TARGET_ARCH_NAME STREQUAL "armel")

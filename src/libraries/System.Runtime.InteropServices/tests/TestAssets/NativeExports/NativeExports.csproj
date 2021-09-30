@@ -56,8 +56,8 @@
 
     <PropertyGroup>
       <CommonToolchainArgs>--target=$(TargetTriple) --gcc-toolchain=$(ROOTFS_DIR)/usr --sysroot=$(ROOTFS_DIR)</CommonToolchainArgs>
-      <DnneLinkerUserFlags>$(CommonToolchainArgs) $(DnneLinkerUserFlags)</DnneLinkerUserFlags>
-      <DnneCompilerUserFlags>$(CommonToolchainArgs) $(DnneCompilerUserFlags)</DnneCompilerUserFlags>
+      <DnneLinkerUserFlags>$(CommonToolchainArgs) $(DnneLinkerUserFlags.Replace(';',' '))</DnneLinkerUserFlags>
+      <DnneCompilerUserFlags>$(CommonToolchainArgs) $(DnneCompilerUserFlags.Replace(';',' '))</DnneCompilerUserFlags>
       <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
     </PropertyGroup>
   </Target>
