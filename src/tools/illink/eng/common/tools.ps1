@@ -709,6 +709,8 @@ function MSBuild() {
       Write-PipelineSetVariable -Name 'NUGET_PLUGIN_REQUEST_TIMEOUT_IN_SECONDS' -Value '20'
     }
 
+    Enable-Nuget-EnhancedRetry
+
     $toolsetBuildProject = InitializeToolset
     $basePath = Split-Path -parent $toolsetBuildProject
     $possiblePaths = @(
@@ -717,6 +719,8 @@ function MSBuild() {
       (Join-Path $basePath (Join-Path $buildTool.Framework 'Microsoft.DotNet.Arcade.Sdk.dll')),
       (Join-Path $basePath (Join-Path netcoreapp2.1 'Microsoft.DotNet.ArcadeLogging.dll')),
       (Join-Path $basePath (Join-Path netcoreapp2.1 'Microsoft.DotNet.Arcade.Sdk.dll'))
+      (Join-Path $basePath (Join-Path netcoreapp3.1 'Microsoft.DotNet.ArcadeLogging.dll')),
+      (Join-Path $basePath (Join-Path netcoreapp3.1 'Microsoft.DotNet.Arcade.Sdk.dll'))
     )
     $selectedPath = $null
     foreach ($path in $possiblePaths) {
@@ -752,6 +756,8 @@ function MSBuild-Core() {
       ExitWithExitCode 1
     }
   }
+
+  Enable-Nuget-EnhancedRetry
 
   $buildTool = InitializeBuildTool
 
@@ -891,5 +897,20 @@ function Try-LogClientIpAddress()
     catch
     {
         Write-Host "Unable to get this machine's effective IP address for logging: $_"
+    }
+}
+
+#
+# If $ci flag is set, turn on (and log that we did) special environment variables for improved Nuget client retry logic.
+#
+function Enable-Nuget-EnhancedRetry() {
+    if ($ci) {
+      Write-Host "Setting NUGET enhanced retry environment variables"
+      $env:NUGET_ENABLE_EXPERIMENTAL_HTTP_RETRY = 'true'
+      $env:NUGET_EXPERIMENTAL_MAX_NETWORK_TRY_COUNT = 6
+      $env:NUGET_EXPERIMENTAL_NETWORK_RETRY_DELAY_MILLISECONDS = 1000
+      Write-PipelineSetVariable -Name 'NUGET_ENABLE_EXPERIMENTAL_HTTP_RETRY' -Value 'true'
+      Write-PipelineSetVariable -Name 'NUGET_EXPERIMENTAL_MAX_NETWORK_TRY_COUNT' -Value '6'
+      Write-PipelineSetVariable -Name 'NUGET_EXPERIMENTAL_NETWORK_RETRY_DELAY_MILLISECONDS' -Value '1000'
     }
 }

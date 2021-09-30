@@ -9,6 +9,8 @@ using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
+#nullable enable
+
 namespace Mono.Linker.Dataflow
 {
 	class FlowAnnotations
@@ -74,7 +76,7 @@ namespace Mono.Linker.Dataflow
 
 		public DynamicallyAccessedMemberTypes GetGenericParameterAnnotation (GenericParameter genericParameter)
 		{
-			TypeDefinition declaringType = _context.Resolve (genericParameter.DeclaringType);
+			TypeDefinition? declaringType = _context.Resolve (genericParameter.DeclaringType);
 			if (declaringType != null) {
 				if (GetAnnotations (declaringType).TryGetAnnotation (genericParameter, out var annotation))
 					return annotation;
@@ -82,7 +84,7 @@ namespace Mono.Linker.Dataflow
 				return DynamicallyAccessedMemberTypes.None;
 			}
 
-			MethodDefinition declaringMethod = _context.Resolve (genericParameter.DeclaringMethod);
+			MethodDefinition? declaringMethod = _context.Resolve (genericParameter.DeclaringMethod);
 			if (declaringMethod != null && GetAnnotations (declaringMethod.DeclaringType).TryGetAnnotation (declaringMethod, out var methodTypeAnnotations) &&
 				methodTypeAnnotations.TryGetAnnotation (genericParameter, out var methodAnnotation))
 				return methodAnnotation;
@@ -159,8 +161,9 @@ namespace Mono.Linker.Dataflow
 			return attributeType.Name == "DynamicallyAccessedMembersAttribute" && attributeType.Namespace == "System.Diagnostics.CodeAnalysis";
 		}
 
-		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute (ICustomAttributeProvider provider, IMemberDefinition locationMember = null)
+		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute (IMemberDefinition member, ICustomAttributeProvider? providerIfNotMember = null)
 		{
+			ICustomAttributeProvider provider = providerIfNotMember ?? member;
 			if (!_context.CustomAttributes.HasAny (provider))
 				return DynamicallyAccessedMemberTypes.None;
 			foreach (var attribute in _context.CustomAttributes.GetCustomAttributes (provider)) {
@@ -171,7 +174,7 @@ namespace Mono.Linker.Dataflow
 				else
 					_context.LogWarning (
 						$"Attribute 'System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute' doesn't have the required number of parameters specified.",
-						2028, locationMember ?? (provider as IMemberDefinition));
+						2028, member);
 			}
 			return DynamicallyAccessedMemberTypes.None;
 		}
@@ -208,7 +211,7 @@ namespace Mono.Linker.Dataflow
 			// Next go over all methods with an explicit annotation
 			if (type.HasMethods) {
 				foreach (MethodDefinition method in type.Methods) {
-					DynamicallyAccessedMemberTypes[] paramAnnotations = null;
+					DynamicallyAccessedMemberTypes[]? paramAnnotations = null;
 
 					// We convert indices from metadata space to IL space here.
 					// IL space assigns index 0 to the `this` parameter on instance methods.
@@ -242,7 +245,7 @@ namespace Mono.Linker.Dataflow
 
 					for (int i = 0; i < method.Parameters.Count; i++) {
 						var methodParameter = method.Parameters[i];
-						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (methodParameter, method);
+						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: methodParameter);
 						if (pa == DynamicallyAccessedMemberTypes.None)
 							continue;
 
@@ -259,18 +262,18 @@ namespace Mono.Linker.Dataflow
 						paramAnnotations[i + offset] = pa;
 					}
 
-					DynamicallyAccessedMemberTypes returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method.MethodReturnType, method);
+					DynamicallyAccessedMemberTypes returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: method.MethodReturnType);
 					if (returnAnnotation != DynamicallyAccessedMemberTypes.None && !IsTypeInterestingForDataflow (method.ReturnType)) {
 						_context.LogWarning (
 							$"Return type of method '{method.GetDisplayName ()}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'.",
 							2106, method, subcategory: MessageSubCategory.TrimAnalysis);
 					}
 
-					DynamicallyAccessedMemberTypes[] genericParameterAnnotations = null;
+					DynamicallyAccessedMemberTypes[]? genericParameterAnnotations = null;
 					if (method.HasGenericParameters) {
 						for (int genericParameterIndex = 0; genericParameterIndex < method.GenericParameters.Count; genericParameterIndex++) {
 							var genericParameter = method.GenericParameters[genericParameterIndex];
-							var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (genericParameter, method);
+							var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: genericParameter);
 							if (annotation != DynamicallyAccessedMemberTypes.None) {
 								if (genericParameterAnnotations == null)
 									genericParameterAnnotations = new DynamicallyAccessedMemberTypes[method.GenericParameters.Count];
@@ -312,7 +315,7 @@ namespace Mono.Linker.Dataflow
 						continue;
 					}
 
-					FieldDefinition backingFieldFromSetter = null;
+					FieldDefinition? backingFieldFromSetter = null;
 
 					// Propagate the annotation to the setter method
 					MethodDefinition setMethod = property.SetMethod;
@@ -341,7 +344,7 @@ namespace Mono.Linker.Dataflow
 						}
 					}
 
-					FieldDefinition backingFieldFromGetter = null;
+					FieldDefinition? backingFieldFromGetter = null;
 
 					// Propagate the annotation to the getter method
 					MethodDefinition getMethod = property.GetMethod;
@@ -365,7 +368,7 @@ namespace Mono.Linker.Dataflow
 						}
 					}
 
-					FieldDefinition backingField;
+					FieldDefinition? backingField;
 					if (backingFieldFromGetter != null && backingFieldFromSetter != null &&
 						backingFieldFromGetter != backingFieldFromSetter) {
 						_context.LogWarning (
@@ -388,11 +391,11 @@ namespace Mono.Linker.Dataflow
 				}
 			}
 
-			DynamicallyAccessedMemberTypes[] typeGenericParameterAnnotations = null;
+			DynamicallyAccessedMemberTypes[]? typeGenericParameterAnnotations = null;
 			if (type.HasGenericParameters) {
 				for (int genericParameterIndex = 0; genericParameterIndex < type.GenericParameters.Count; genericParameterIndex++) {
 					var genericParameter = type.GenericParameters[genericParameterIndex];
-					var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (genericParameter, type);
+					var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (type, providerIfNotMember: genericParameter);
 					if (annotation != DynamicallyAccessedMemberTypes.None) {
 						if (typeGenericParameterAnnotations == null)
 							typeGenericParameterAnnotations = new DynamicallyAccessedMemberTypes[type.GenericParameters.Count];
@@ -404,13 +407,13 @@ namespace Mono.Linker.Dataflow
 			return new TypeAnnotations (type, typeAnnotation, annotatedMethods.ToArray (), annotatedFields.ToArray (), typeGenericParameterAnnotations);
 		}
 
-		bool ScanMethodBodyForFieldAccess (MethodBody body, bool write, out FieldDefinition found)
+		bool ScanMethodBodyForFieldAccess (MethodBody body, bool write, out FieldDefinition? found)
 		{
 			// Tries to find the backing field for a property getter/setter.
 			// Returns true if this is a method body that we can unambiguously analyze.
 			// The found field could still be null if there's no backing store.
 
-			FieldReference foundReference = null;
+			FieldReference? foundReference = null;
 
 			foreach (Instruction instruction in body.Instructions) {
 				switch (instruction.OpCode.Code) {
@@ -463,7 +466,7 @@ namespace Mono.Linker.Dataflow
 			if (typeReference.MetadataType == MetadataType.String)
 				return true;
 
-			TypeDefinition type = _context.TryResolve (typeReference);
+			TypeDefinition? type = _context.TryResolve (typeReference);
 			return type != null && (
 				_hierarchyInfo.IsSystemType (type) ||
 				_hierarchyInfo.IsSystemReflectionIReflect (type));
@@ -479,9 +482,9 @@ namespace Mono.Linker.Dataflow
 
 			if (methodAnnotations.ParameterAnnotations != null || baseMethodAnnotations.ParameterAnnotations != null) {
 				if (methodAnnotations.ParameterAnnotations == null)
-					ValidateMethodParametersHaveNoAnnotations (ref baseMethodAnnotations, method, baseMethod, method);
+					ValidateMethodParametersHaveNoAnnotations (baseMethodAnnotations.ParameterAnnotations!, method, baseMethod, method);
 				else if (baseMethodAnnotations.ParameterAnnotations == null)
-					ValidateMethodParametersHaveNoAnnotations (ref methodAnnotations, method, baseMethod, method);
+					ValidateMethodParametersHaveNoAnnotations (methodAnnotations.ParameterAnnotations, method, baseMethod, method);
 				else {
 					if (methodAnnotations.ParameterAnnotations.Length != baseMethodAnnotations.ParameterAnnotations.Length)
 						return;
@@ -498,9 +501,9 @@ namespace Mono.Linker.Dataflow
 
 			if (methodAnnotations.GenericParameterAnnotations != null || baseMethodAnnotations.GenericParameterAnnotations != null) {
 				if (methodAnnotations.GenericParameterAnnotations == null)
-					ValidateMethodGenericParametersHaveNoAnnotations (ref baseMethodAnnotations, method, baseMethod, method);
+					ValidateMethodGenericParametersHaveNoAnnotations (baseMethodAnnotations.GenericParameterAnnotations!, method, baseMethod, method);
 				else if (baseMethodAnnotations.GenericParameterAnnotations == null)
-					ValidateMethodGenericParametersHaveNoAnnotations (ref methodAnnotations, method, baseMethod, method);
+					ValidateMethodGenericParametersHaveNoAnnotations (methodAnnotations.GenericParameterAnnotations, method, baseMethod, method);
 				else {
 					if (methodAnnotations.GenericParameterAnnotations.Length != baseMethodAnnotations.GenericParameterAnnotations.Length)
 						return;
@@ -517,10 +520,10 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		void ValidateMethodParametersHaveNoAnnotations (ref MethodAnnotations methodAnnotations, MethodDefinition method, MethodDefinition baseMethod, IMemberDefinition origin)
+		void ValidateMethodParametersHaveNoAnnotations (DynamicallyAccessedMemberTypes[] parameterAnnotations, MethodDefinition method, MethodDefinition baseMethod, IMemberDefinition origin)
 		{
-			for (int parameterIndex = 0; parameterIndex < methodAnnotations.ParameterAnnotations.Length; parameterIndex++) {
-				var annotation = methodAnnotations.ParameterAnnotations[parameterIndex];
+			for (int parameterIndex = 0; parameterIndex < parameterAnnotations.Length; parameterIndex++) {
+				var annotation = parameterAnnotations[parameterIndex];
 				if (annotation != DynamicallyAccessedMemberTypes.None)
 					LogValidationWarning (
 						DiagnosticUtilities.GetMethodParameterFromIndex (method, parameterIndex),
@@ -529,10 +532,10 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		void ValidateMethodGenericParametersHaveNoAnnotations (ref MethodAnnotations methodAnnotations, MethodDefinition method, MethodDefinition baseMethod, IMemberDefinition origin)
+		void ValidateMethodGenericParametersHaveNoAnnotations (DynamicallyAccessedMemberTypes[] genericParameterAnnotations, MethodDefinition method, MethodDefinition baseMethod, IMemberDefinition origin)
 		{
-			for (int genericParameterIndex = 0; genericParameterIndex < methodAnnotations.GenericParameterAnnotations.Length; genericParameterIndex++) {
-				if (methodAnnotations.GenericParameterAnnotations[genericParameterIndex] != DynamicallyAccessedMemberTypes.None) {
+			for (int genericParameterIndex = 0; genericParameterIndex < genericParameterAnnotations.Length; genericParameterIndex++) {
+				if (genericParameterAnnotations[genericParameterIndex] != DynamicallyAccessedMemberTypes.None) {
 					LogValidationWarning (
 						method.GenericParameters[genericParameterIndex],
 						baseMethod.GenericParameters[genericParameterIndex],
@@ -588,14 +591,14 @@ namespace Mono.Linker.Dataflow
 			readonly DynamicallyAccessedMemberTypes _typeAnnotation;
 			readonly MethodAnnotations[] _annotatedMethods;
 			readonly FieldAnnotation[] _annotatedFields;
-			readonly DynamicallyAccessedMemberTypes[] _genericParameterAnnotations;
+			readonly DynamicallyAccessedMemberTypes[]? _genericParameterAnnotations;
 
 			public TypeAnnotations (
 				TypeDefinition type,
 				DynamicallyAccessedMemberTypes typeAnnotation,
 				MethodAnnotations[] annotatedMethods,
 				FieldAnnotation[] annotatedFields,
-				DynamicallyAccessedMemberTypes[] genericParameterAnnotations)
+				DynamicallyAccessedMemberTypes[]? genericParameterAnnotations)
 				=> (_type, _typeAnnotation, _annotatedMethods, _annotatedFields, _genericParameterAnnotations)
 				 = (type, typeAnnotation, annotatedMethods, annotatedFields, genericParameterAnnotations);
 
@@ -658,15 +661,15 @@ namespace Mono.Linker.Dataflow
 		readonly struct MethodAnnotations
 		{
 			public readonly MethodDefinition Method;
-			public readonly DynamicallyAccessedMemberTypes[] ParameterAnnotations;
+			public readonly DynamicallyAccessedMemberTypes[]? ParameterAnnotations;
 			public readonly DynamicallyAccessedMemberTypes ReturnParameterAnnotation;
-			public readonly DynamicallyAccessedMemberTypes[] GenericParameterAnnotations;
+			public readonly DynamicallyAccessedMemberTypes[]? GenericParameterAnnotations;
 
 			public MethodAnnotations (
 				MethodDefinition method,
-				DynamicallyAccessedMemberTypes[] paramAnnotations,
+				DynamicallyAccessedMemberTypes[]? paramAnnotations,
 				DynamicallyAccessedMemberTypes returnParamAnnotations,
-				DynamicallyAccessedMemberTypes[] genericParameterAnnotations)
+				DynamicallyAccessedMemberTypes[]? genericParameterAnnotations)
 				=> (Method, ParameterAnnotations, ReturnParameterAnnotation, GenericParameterAnnotations) =
 					(method, paramAnnotations, returnParamAnnotations, genericParameterAnnotations);
 

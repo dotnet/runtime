@@ -16,7 +16,7 @@ namespace Mono.Linker.Steps
 		protected override void Process ()
 		{
 			CheckOutputDirectory ();
-			Context.WarningSuppressionWriter.OutputSuppressions (Context.OutputDirectory);
+			Context.WarningSuppressionWriter?.OutputSuppressions (Context.OutputDirectory);
 		}
 
 		void CheckOutputDirectory ()

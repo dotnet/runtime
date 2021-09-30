@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[SetupCompileBefore ("unusedreference.dll", new[] { "Dependencies/UnusedAssemblyDependency.cs" })]
 	[SetupCompileBefore ("reference.dll", new[] { "Dependencies/AssemblyDependency.cs" }, addAsReference: false)]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AssemblyDependencyWithMultipleReferences.cs" }, new[] { "reference.dll", "unusedreference.dll" }, addAsReference: false)]
-	// TODO: keep library even if type is not found in it (https://github.com/mono/linker/issues/1795)
+	// TODO: keep library even if type is not found in it (https://github.com/dotnet/linker/issues/1795)
 	// [KeptAssembly ("library")]
 	public class AssemblyImportedViaReflectionWithSweptReferences
 	{

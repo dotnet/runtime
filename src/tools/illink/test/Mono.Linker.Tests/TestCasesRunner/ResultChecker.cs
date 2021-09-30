@@ -651,6 +651,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
+		bool IsProducedByLinker (CustomAttribute attr)
+		{
+			var producedBy = attr.GetPropertyValue ("ProducedBy");
+			return producedBy is null ? true : ((ProducedBy) producedBy).HasFlag (ProducedBy.Trimmer);
+		}
 		IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
 		{
 			foreach (var testType in assembly.AllDefinedTypes ()) {
@@ -673,6 +678,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var attrProvider in GetAttributeProviders (original)) {
 				bool foundReflectionAccessPatternAttributesToVerify = false;
 				foreach (var attr in attrProvider.CustomAttributes) {
+					if (!IsProducedByLinker (attr))
+						break;
+
 					switch (attr.AttributeType.Name) {
 
 					case nameof (LogContainsAttribute): {

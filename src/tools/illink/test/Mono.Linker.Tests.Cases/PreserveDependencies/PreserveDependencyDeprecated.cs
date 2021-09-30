@@ -4,9 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.PreserveDependencies
 {
-#if !NETCOREAPP
-	[IgnoreTestCase ("This test checks that PreserveDependency correctly issues a warning on .NET Core where it is deprecated.")]
-#endif
+	[TestCaseRequirements (TestRunCharacteristics.TargetingNetCore, "This test checks that PreserveDependency correctly issues a warning on .NET Core where it is deprecated.")]
 	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
 	class PreserveDependencyDeprecated
 	{

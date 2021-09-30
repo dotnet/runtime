@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -39,13 +39,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static IEnumerable<object[]> GetTestData (string testSuiteName)
 		{
 			foreach (var testFile in s_testFiles[testSuiteName]) {
+				var testName = Path.GetFileNameWithoutExtension (testFile);
 				var root = CSharpSyntaxTree.ParseText (File.ReadAllText (testFile)).GetRoot ();
 
 				foreach (var node in root.DescendantNodes ()) {
 					if (node is MemberDeclarationSyntax m) {
 						var attrs = m.AttributeLists.SelectMany (al => al.Attributes.Where (IsWellKnown)).ToList ();
 						if (attrs.Count > 0) {
-							yield return new object[] { m, attrs };
+							yield return new object[] { testName, m, attrs };
 						}
 					}
 				}
@@ -57,8 +58,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 					case "ExpectedWarning":
 					case "LogContains":
 					case "LogDoesNotContain":
-						return attr.Ancestors ().OfType<MemberDeclarationSyntax> ().First ().IsKind (SyntaxKind.MethodDeclaration);
-
 					case "UnrecognizedReflectionAccessPattern":
 						return true;
 					}
@@ -71,8 +70,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static void RunTest<TAnalyzer> (MemberDeclarationSyntax m, List<AttributeSyntax> attrs, params (string, string)[] MSBuildProperties)
 			where TAnalyzer : DiagnosticAnalyzer, new()
 		{
+			var testSyntaxTree = m.SyntaxTree.GetRoot ().SyntaxTree;
+			var testDependenciesSource = GetTestDependencies (testSyntaxTree)
+				.Select (testDependency => CSharpSyntaxTree.ParseText (File.ReadAllText (testDependency)));
+
 			var test = new TestChecker (m, CSharpAnalyzerVerifier<TAnalyzer>
-				.CreateCompilation (m.SyntaxTree.GetRoot ().SyntaxTree, MSBuildProperties).Result);
+				.CreateCompilation (testSyntaxTree, MSBuildProperties, additionalSources: testDependenciesSource).Result);
+
 			test.ValidateAttributes (attrs);
 		}
 
@@ -124,7 +128,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			switch (expr.Kind ()) {
 			case SyntaxKind.AddExpression:
 				var addExpr = (BinaryExpressionSyntax) expr;
-				return GetStringFromExpression (addExpr.Left) + GetStringFromExpression (addExpr.Right);
+				return GetStringFromExpression (addExpr.Left, semanticModel) + GetStringFromExpression (addExpr.Right, semanticModel);
 
 			case SyntaxKind.InvocationExpression:
 				var nameofValue = semanticModel!.GetConstantValue (expr);
@@ -140,7 +144,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return token.ValueText;
 
 			case SyntaxKind.TypeOfExpression:
-				return semanticModel.GetTypeInfo (expr).Type!.GetDisplayName ();
+				var typeofExpression = (TypeOfExpressionSyntax) expr;
+				var typeSymbol = semanticModel.GetSymbolInfo (typeofExpression.Type).Symbol;
+				return typeSymbol?.GetDisplayName () ?? string.Empty;
 
 			default:
 				Assert.True (false, "Unsupported expr kind " + expr.Kind ());
@@ -171,7 +177,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static IEnumerable<string> GetTestFiles ()
 		{
 			GetDirectoryPaths (out var rootSourceDir, out _);
-
 			foreach (var subDir in Directory.EnumerateDirectories (rootSourceDir, "*", SearchOption.AllDirectories)) {
 				var subDirName = Path.GetFileName (subDir);
 				switch (subDirName) {
@@ -199,6 +204,22 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return Directory.GetParent (ThisFile ())!.Parent!.Parent!.FullName;
 
 			string ThisFile ([CallerFilePath] string path = "") => path;
+		}
+
+		public static IEnumerable<string> GetTestDependencies (SyntaxTree testSyntaxTree)
+		{
+			GetDirectoryPaths (out var rootSourceDir, out _);
+			foreach (var attribute in testSyntaxTree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
+				if (attribute.Name.ToString () != "SetupCompileBefore")
+					continue;
+
+				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().Single ().Name.ToString ();
+				var testSuiteName = testNamespace.Substring (testNamespace.LastIndexOf ('.') + 1);
+				var args = GetAttributeArguments (attribute);
+				string outputName = GetStringFromExpression (args["#0"]);
+				foreach (var sourceFile in ((ImplicitArrayCreationExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
+					yield return Path.Combine (rootSourceDir, testSuiteName, GetStringFromExpression (sourceFile));
+			}
 		}
 	}
 }

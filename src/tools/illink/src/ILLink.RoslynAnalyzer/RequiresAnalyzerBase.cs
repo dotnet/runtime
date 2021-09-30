@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -27,6 +28,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected virtual ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions { get; } = ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)>.Empty;
 
+		private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
+
 		public override void Initialize (AnalysisContext context)
 		{
 			context.EnableConcurrentExecution ();
@@ -35,31 +38,49 @@ namespace ILLink.RoslynAnalyzer
 				var compilation = context.Compilation;
 				if (!IsAnalyzerEnabled (context.Options, compilation))
 					return;
-				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
 
+				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
 				context.RegisterSymbolAction (symbolAnalysisContext => {
 					var methodSymbol = (IMethodSymbol) symbolAnalysisContext.Symbol;
 					CheckMatchingAttributesInOverrides (symbolAnalysisContext, methodSymbol);
+					CheckAttributeInstantiation (symbolAnalysisContext, methodSymbol);
+					foreach (var typeParameter in methodSymbol.TypeParameters)
+						CheckAttributeInstantiation (symbolAnalysisContext, typeParameter);
+
 				}, SymbolKind.Method);
 
 				context.RegisterSymbolAction (symbolAnalysisContext => {
 					var typeSymbol = (INamedTypeSymbol) symbolAnalysisContext.Symbol;
 					CheckMatchingAttributesInInterfaces (symbolAnalysisContext, typeSymbol);
+					CheckAttributeInstantiation (symbolAnalysisContext, typeSymbol);
+					foreach (var typeParameter in typeSymbol.TypeParameters)
+						CheckAttributeInstantiation (symbolAnalysisContext, typeParameter);
+
 				}, SymbolKind.NamedType);
 
-				if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Property)) {
-					context.RegisterSymbolAction (symbolAnalysisContext => {
-						var propertySymbol = (IPropertySymbol) symbolAnalysisContext.Symbol;
-						CheckMatchingAttributesInOverrides (symbolAnalysisContext, propertySymbol);
-					}, SymbolKind.Property);
-				}
 
-				if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {
-					context.RegisterSymbolAction (symbolAnalysisContext => {
-						var eventSymbol = (IEventSymbol) symbolAnalysisContext.Symbol;
+				context.RegisterSymbolAction (symbolAnalysisContext => {
+					var propertySymbol = (IPropertySymbol) symbolAnalysisContext.Symbol;
+					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Property)) {
+						CheckMatchingAttributesInOverrides (symbolAnalysisContext, propertySymbol);
+					}
+
+					CheckAttributeInstantiation (symbolAnalysisContext, propertySymbol);
+				}, SymbolKind.Property);
+
+				context.RegisterSymbolAction (symbolAnalysisContext => {
+					var eventSymbol = (IEventSymbol) symbolAnalysisContext.Symbol;
+					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {
 						CheckMatchingAttributesInOverrides (symbolAnalysisContext, eventSymbol);
-					}, SymbolKind.Event);
-				}
+					}
+
+					CheckAttributeInstantiation (symbolAnalysisContext, eventSymbol);
+				}, SymbolKind.Event);
+
+				context.RegisterSymbolAction (symbolAnalysisContext => {
+					var fieldSymbol = (IFieldSymbol) symbolAnalysisContext.Symbol;
+					CheckAttributeInstantiation (symbolAnalysisContext, fieldSymbol);
+				}, SymbolKind.Field);
 
 				context.RegisterOperationAction (operationContext => {
 					var methodInvocation = (IInvocationOperation) operationContext.Operation;
@@ -75,14 +96,6 @@ namespace ILLink.RoslynAnalyzer
 				}, OperationKind.ObjectCreation);
 
 				context.RegisterOperationAction (operationContext => {
-					var fieldAccess = (IFieldReferenceOperation) operationContext.Operation;
-					if (fieldAccess.Field.ContainingType is INamedTypeSymbol { StaticConstructors: var ctors } &&
-						!SymbolEqualityComparer.Default.Equals (operationContext.ContainingSymbol.ContainingType, fieldAccess.Field.ContainingType)) {
-						CheckStaticConstructors (operationContext, ctors);
-					}
-				}, OperationKind.FieldReference);
-
-				context.RegisterOperationAction (operationContext => {
 					var propAccess = (IPropertyReferenceOperation) operationContext.Operation;
 					var prop = propAccess.Property;
 					var usageInfo = propAccess.GetValueUsageInfo (prop);
@@ -96,12 +109,17 @@ namespace ILLink.RoslynAnalyzer
 						CheckCalledMember (operationContext, prop, incompatibleMembers);
 				}, OperationKind.PropertyReference);
 
-				if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {
-					context.RegisterOperationAction (operationContext => {
-						var eventRef = (IEventReferenceOperation) operationContext.Operation;
-						CheckCalledMember (operationContext, eventRef.Member, incompatibleMembers);
-					}, OperationKind.EventReference);
-				}
+				context.RegisterOperationAction (operationContext => {
+					var eventRef = (IEventReferenceOperation) operationContext.Operation;
+					var eventSymbol = (IEventSymbol) eventRef.Member;
+					CheckCalledMember (operationContext, eventSymbol, incompatibleMembers);
+
+					if (eventSymbol.AddMethod is IMethodSymbol eventAddMethod)
+						CheckCalledMember (operationContext, eventAddMethod, incompatibleMembers);
+
+					if (eventSymbol.RemoveMethod is IMethodSymbol eventRemoveMethod)
+						CheckCalledMember (operationContext, eventRemoveMethod, incompatibleMembers);
+				}, OperationKind.EventReference);
 
 				context.RegisterOperationAction (operationContext => {
 					var delegateCreation = (IDelegateCreationOperation) operationContext.Operation;
@@ -112,6 +130,7 @@ namespace ILLink.RoslynAnalyzer
 						methodSymbol = lambda.Symbol;
 					else
 						return;
+
 					CheckCalledMember (operationContext, methodSymbol, incompatibleMembers);
 				}, OperationKind.DelegateCreation);
 
@@ -119,12 +138,21 @@ namespace ILLink.RoslynAnalyzer
 				foreach (var extraOperationAction in ExtraOperationActions)
 					context.RegisterOperationAction (extraOperationAction.Action, extraOperationAction.OperationKind);
 
-				void CheckStaticConstructors (OperationAnalysisContext operationContext,
-					ImmutableArray<IMethodSymbol> staticConstructors)
+				foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
+					context.RegisterSyntaxNodeAction (extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
+
+				void CheckAttributeInstantiation (
+					SymbolAnalysisContext symbolAnalysisContext,
+					ISymbol symbol)
 				{
-					foreach (var staticConstructor in staticConstructors) {
-						if (TryGetRequiresAttribute (staticConstructor, out var requiresAttribute))
-							ReportRequiresDiagnostic (operationContext, staticConstructor, requiresAttribute);
+					if (symbol.HasAttribute (RequiresAttributeName))
+						return;
+
+					foreach (var attr in symbol.GetAttributes ()) {
+						if (TryGetRequiresAttribute (attr.AttributeConstructor, out var requiresAttribute)) {
+							symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
+								symbol.Locations[0], attr.AttributeConstructor!.Name, GetMessageFromAttribute (requiresAttribute), GetUrlFromAttribute (requiresAttribute)));
+						}
 					}
 				}
 
@@ -143,10 +171,6 @@ namespace ILLink.RoslynAnalyzer
 					if (containingSymbol is IMethodSymbol methodSymbol && methodSymbol.AssociatedSymbol is not null && methodSymbol.AssociatedSymbol!.HasAttribute (RequiresAttributeName))
 						return;
 
-					// If calling an instance constructor, check first for any static constructor since it will be called implicitly
-					if (member.ContainingType is { } containingType && operationContext.Operation is IObjectCreationOperation)
-						CheckStaticConstructors (operationContext, containingType.StaticConstructors);
-
 					if (ReportSpecialIncompatibleMembersDiagnostic (operationContext, incompatibleMembers, member))
 						return;
 
@@ -158,6 +182,14 @@ namespace ILLink.RoslynAnalyzer
 						member = method.OverriddenMethod;
 
 					if (TryGetRequiresAttribute (member, out var requiresAttribute)) {
+						if (member is IMethodSymbol eventAccessorMethod && eventAccessorMethod.AssociatedSymbol is IEventSymbol eventSymbol) {
+							// If the annotated member is an event accessor, we warn on the event to match the linker behavior.
+							member = eventAccessorMethod.ContainingSymbol;
+							operationContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
+								eventSymbol.Locations[0], member.Name, GetMessageFromAttribute (requiresAttribute), GetUrlFromAttribute (requiresAttribute)));
+							return;
+						}
+
 						ReportRequiresDiagnostic (operationContext, member, requiresAttribute);
 					}
 				}
@@ -264,7 +296,7 @@ namespace ILLink.RoslynAnalyzer
 
 		protected abstract string GetMessageFromAttribute (AttributeData requiresAttribute);
 
-		private string GetUrlFromAttribute (AttributeData? requiresAttribute)
+		public static string GetUrlFromAttribute (AttributeData? requiresAttribute)
 		{
 			var url = requiresAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Url").Value.Value?.ToString ();
 			return MessageFormat.FormatRequiresAttributeUrlArg (url);
@@ -276,9 +308,12 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="member">Symbol of the member to search attribute.</param>
 		/// <param name="requiresAttribute">Output variable in case of matching Requires attribute.</param>
 		/// <returns>True if the member contains a Requires attribute; otherwise, returns false.</returns>
-		private bool TryGetRequiresAttribute (ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
+		private bool TryGetRequiresAttribute (ISymbol? member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
 		{
 			requiresAttribute = null;
+			if (member == null)
+				return false;
+
 			if (!member.TryGetAttribute (RequiresAttributeFullyQualifiedName, out var _attribute))
 				return false;
 

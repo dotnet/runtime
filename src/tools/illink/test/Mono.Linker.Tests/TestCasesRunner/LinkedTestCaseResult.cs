@@ -10,19 +10,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public readonly NPath OutputAssemblyPath;
 		public readonly NPath ExpectationsAssemblyPath;
 		public readonly TestCaseSandbox Sandbox;
-		public readonly TestCaseMetadaProvider MetadataProvider;
+		public readonly TestCaseMetadataProvider MetadataProvider;
 		public readonly ManagedCompilationResult CompilationResult;
 		public readonly LinkerTestLogger Logger;
 		public readonly LinkerCustomizations Customizations;
 
-		public LinkedTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath outputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadaProvider metadaProvider, ManagedCompilationResult compilationResult, LinkerTestLogger logger, LinkerCustomizations customizations)
+		public LinkedTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath outputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadataProvider metadataProvider, ManagedCompilationResult compilationResult, LinkerTestLogger logger, LinkerCustomizations customizations)
 		{
 			TestCase = testCase;
 			InputAssemblyPath = inputAssemblyPath;
 			OutputAssemblyPath = outputAssemblyPath;
 			ExpectationsAssemblyPath = expectationsAssemblyPath;
 			Sandbox = sandbox;
-			MetadataProvider = metadaProvider;
+			MetadataProvider = metadataProvider;
 			CompilationResult = compilationResult;
 			Logger = logger;
 			Customizations = customizations;

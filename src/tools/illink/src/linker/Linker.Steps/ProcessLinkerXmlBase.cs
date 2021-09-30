@@ -14,6 +14,8 @@ using System.Xml.Linq;
 using System.Xml.XPath;
 using Mono.Cecil;
 
+#nullable enable
+
 namespace Mono.Linker.Steps
 {
 	[Flags]
@@ -40,8 +42,7 @@ namespace Mono.Linker.Steps
 
 		protected readonly string _xmlDocumentLocation;
 		readonly XPathNavigator _document;
-		readonly EmbeddedResource _resource;
-		protected readonly AssemblyDefinition _resourceAssembly;
+		protected readonly (EmbeddedResource Resource, AssemblyDefinition Assembly)? _resource;
 		protected readonly LinkContext _context;
 
 		protected ProcessLinkerXmlBase (LinkContext context, Stream documentStream, string xmlDocumentLocation)
@@ -56,15 +57,17 @@ namespace Mono.Linker.Steps
 		protected ProcessLinkerXmlBase (LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation)
 			: this (context, documentStream, xmlDocumentLocation)
 		{
-			_resource = resource ?? throw new ArgumentNullException (nameof (resource));
-			_resourceAssembly = resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly));
+			_resource = (
+				resource ?? throw new ArgumentNullException (nameof (resource)),
+				resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly))
+			);
 		}
 
 		protected virtual bool ShouldProcessElement (XPathNavigator nav) => FeatureSettings.ShouldProcessElement (nav, _context, _xmlDocumentLocation);
 
 		protected virtual void ProcessXml (bool stripResource, bool ignoreResource)
 		{
-			if (!AllowedAssemblySelector.HasFlag (AllowedAssemblies.AnyAssembly) && _resourceAssembly == null)
+			if (!AllowedAssemblySelector.HasFlag (AllowedAssemblies.AnyAssembly) && _resource == null)
 				throw new InvalidOperationException ("The containing assembly must be specified for XML which is restricted to modifying that assembly only.");
 
 			try {
@@ -76,7 +79,7 @@ namespace Mono.Linker.Steps
 
 				if (_resource != null) {
 					if (stripResource)
-						_context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
+						_context.Annotations.AddResourceToRemove (_resource.Value.Assembly, _resource.Value.Resource);
 					if (ignoreResource)
 						return;
 				}
@@ -87,17 +90,17 @@ namespace Mono.Linker.Steps
 				ProcessAssemblies (nav);
 
 				// For embedded XML, allow not specifying the assembly explicitly in XML.
-				if (_resourceAssembly != null)
-					ProcessAssembly (_resourceAssembly, nav, warnOnUnresolvedTypes: true);
+				if (_resource != null)
+					ProcessAssembly (_resource.Value.Assembly, nav, warnOnUnresolvedTypes: true);
 
 			} catch (Exception ex) when (!(ex is LinkerFatalErrorException)) {
 				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Error processing '{_xmlDocumentLocation}'", 1013), ex);
 			}
 		}
 
-		protected virtual AllowedAssemblies AllowedAssemblySelector { get => _resourceAssembly != null ? AllowedAssemblies.ContainingAssembly : AllowedAssemblies.AnyAssembly; }
+		protected virtual AllowedAssemblies AllowedAssemblySelector { get => _resource != null ? AllowedAssemblies.ContainingAssembly : AllowedAssemblies.AnyAssembly; }
 
-		bool ShouldProcessAllAssemblies (XPathNavigator nav, [NotNullWhen (false)] out AssemblyNameReference assemblyName)
+		bool ShouldProcessAllAssemblies (XPathNavigator nav, [NotNullWhen (false)] out AssemblyNameReference? assemblyName)
 		{
 			assemblyName = null;
 			if (GetFullName (nav) == AllAssembliesFullName)
@@ -112,34 +115,36 @@ namespace Mono.Linker.Steps
 			foreach (XPathNavigator assemblyNav in nav.SelectChildren ("assembly", "")) {
 				// Errors for invalid assembly names should show up even if this element will be
 				// skipped due to feature conditions.
-				bool processAllAssemblies = ShouldProcessAllAssemblies (assemblyNav, out AssemblyNameReference name);
+				bool processAllAssemblies = ShouldProcessAllAssemblies (assemblyNav, out AssemblyNameReference? name);
 				if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies) {
 					LogWarning ($"XML contains unsupported wildcard for assembly 'fullname' attribute.", 2100, assemblyNav);
 					continue;
 				}
 
-				AssemblyDefinition assemblyToProcess = null;
+				AssemblyDefinition? assemblyToProcess = null;
 				if (!AllowedAssemblySelector.HasFlag (AllowedAssemblies.AnyAssembly)) {
 					Debug.Assert (!processAllAssemblies);
-					if (_resourceAssembly.Name.Name != name.Name) {
-						LogWarning ($"Embedded XML in assembly '{_resourceAssembly.Name.Name}' contains assembly 'fullname' attribute for another assembly '{name}'.", 2101, assemblyNav);
+					Debug.Assert (_resource != null);
+					if (_resource.Value.Assembly.Name.Name != name!.Name) {
+						LogWarning ($"Embedded XML in assembly '{_resource.Value.Assembly.Name.Name}' contains assembly 'fullname' attribute for another assembly '{name}'.", 2101, assemblyNav);
 						continue;
 					}
-					assemblyToProcess = _resourceAssembly;
+					assemblyToProcess = _resource.Value.Assembly;
 				}
 
 				if (!ShouldProcessElement (assemblyNav))
 					continue;
 
 				if (processAllAssemblies) {
-					// We could avoid loading all references in this case: https://github.com/mono/linker/issues/1708
+					// We could avoid loading all references in this case: https://github.com/dotnet/linker/issues/1708
 					foreach (AssemblyDefinition assembly in _context.GetReferencedAssemblies ())
 						ProcessAssembly (assembly, assemblyNav, warnOnUnresolvedTypes: false);
 				} else {
-					AssemblyDefinition assembly = assemblyToProcess ?? _context.TryResolve (name);
+					Debug.Assert (!processAllAssemblies);
+					AssemblyDefinition assembly = assemblyToProcess ?? _context.TryResolve (name!);
 
 					if (assembly == null) {
-						LogWarning ($"Could not resolve assembly '{name.Name}'.", 2007, assemblyNav);
+						LogWarning ($"Could not resolve assembly '{name!.Name}'.", 2007, assemblyNav);
 						continue;
 					}
 
@@ -188,7 +193,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual TypeDefinition ProcessExportedType (ExportedType exported, AssemblyDefinition assembly) => exported.Resolve ();
+		protected virtual TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly) => exported.Resolve ();
 
 		void MatchType (TypeDefinition type, Regex regex, XPathNavigator nav)
 		{
@@ -226,7 +231,7 @@ namespace Mono.Linker.Steps
 
 		protected abstract void ProcessType (TypeDefinition type, XPathNavigator nav);
 
-		protected void ProcessTypeChildren (TypeDefinition type, XPathNavigator nav, object customData = null)
+		protected void ProcessTypeChildren (TypeDefinition type, XPathNavigator nav, object? customData = null)
 		{
 			if (nav.HasChildren) {
 				ProcessSelectedFields (nav, type);
@@ -238,14 +243,10 @@ namespace Mono.Linker.Steps
 
 		void ProcessSelectedFields (XPathNavigator nav, TypeDefinition type)
 		{
-			XPathNodeIterator fields = nav.SelectChildren (FieldElementName, XmlNamespace);
-			if (fields.Count == 0)
-				return;
-
-			while (fields.MoveNext ()) {
-				if (!ShouldProcessElement (fields.Current))
+			foreach (XPathNavigator fieldNav in nav.SelectChildren (FieldElementName, XmlNamespace)) {
+				if (!ShouldProcessElement (fieldNav))
 					continue;
-				ProcessField (type, fields.Current);
+				ProcessField (type, fieldNav);
 			}
 		}
 
@@ -253,7 +254,7 @@ namespace Mono.Linker.Steps
 		{
 			string signature = GetSignature (nav);
 			if (!String.IsNullOrEmpty (signature)) {
-				FieldDefinition field = GetField (type, signature);
+				FieldDefinition? field = GetField (type, signature);
 				if (field == null) {
 					LogWarning ($"Could not find field '{signature}' on type '{type.GetDisplayName ()}'.", 2012, nav);
 					return;
@@ -262,7 +263,7 @@ namespace Mono.Linker.Steps
 				ProcessField (type, field, nav);
 			}
 
-			string name = GetAttribute (nav, NameAttributeName);
+			string name = GetName (nav);
 			if (!String.IsNullOrEmpty (name)) {
 				bool foundMatch = false;
 				if (type.HasFields) {
@@ -280,7 +281,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected static FieldDefinition GetField (TypeDefinition type, string signature)
+		protected static FieldDefinition? GetField (TypeDefinition type, string signature)
 		{
 			if (!type.HasFields)
 				return null;
@@ -294,24 +295,20 @@ namespace Mono.Linker.Steps
 
 		protected virtual void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav) { }
 
-		void ProcessSelectedMethods (XPathNavigator nav, TypeDefinition type, object customData)
+		void ProcessSelectedMethods (XPathNavigator nav, TypeDefinition type, object? customData)
 		{
-			XPathNodeIterator methods = nav.SelectChildren (MethodElementName, XmlNamespace);
-			if (methods.Count == 0)
-				return;
-
-			while (methods.MoveNext ()) {
-				if (!ShouldProcessElement (methods.Current))
+			foreach (XPathNavigator methodNav in nav.SelectChildren (MethodElementName, XmlNamespace)) {
+				if (!ShouldProcessElement (methodNav))
 					continue;
-				ProcessMethod (type, methods.Current, customData);
+				ProcessMethod (type, methodNav, customData);
 			}
 		}
 
-		protected virtual void ProcessMethod (TypeDefinition type, XPathNavigator nav, object customData)
+		protected virtual void ProcessMethod (TypeDefinition type, XPathNavigator nav, object? customData)
 		{
 			string signature = GetSignature (nav);
 			if (!String.IsNullOrEmpty (signature)) {
-				MethodDefinition method = GetMethod (type, signature);
+				MethodDefinition? method = GetMethod (type, signature);
 				if (method == null) {
 					LogWarning ($"Could not find method '{signature}' on type '{type.GetDisplayName ()}'.", 2009, nav);
 					return;
@@ -338,28 +335,24 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual MethodDefinition GetMethod (TypeDefinition type, string signature) => null;
+		protected virtual MethodDefinition? GetMethod (TypeDefinition type, string signature) => null;
 
-		protected virtual void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData) { }
+		protected virtual void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData) { }
 
-		void ProcessSelectedEvents (XPathNavigator nav, TypeDefinition type, object customData)
+		void ProcessSelectedEvents (XPathNavigator nav, TypeDefinition type, object? customData)
 		{
-			XPathNodeIterator events = nav.SelectChildren (EventElementName, XmlNamespace);
-			if (events.Count == 0)
-				return;
-
-			while (events.MoveNext ()) {
-				if (!ShouldProcessElement (events.Current))
+			foreach (XPathNavigator eventNav in nav.SelectChildren (EventElementName, XmlNamespace)) {
+				if (!ShouldProcessElement (eventNav))
 					continue;
-				ProcessEvent (type, events.Current, customData);
+				ProcessEvent (type, eventNav, customData);
 			}
 		}
 
-		protected virtual void ProcessEvent (TypeDefinition type, XPathNavigator nav, object customData)
+		protected virtual void ProcessEvent (TypeDefinition type, XPathNavigator nav, object? customData)
 		{
 			string signature = GetSignature (nav);
 			if (!String.IsNullOrEmpty (signature)) {
-				EventDefinition @event = GetEvent (type, signature);
+				EventDefinition? @event = GetEvent (type, signature);
 				if (@event == null) {
 					LogWarning ($"Could not find event '{signature}' on type '{type.GetDisplayName ()}'.", 2016, nav);
 					return;
@@ -384,7 +377,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected static EventDefinition GetEvent (TypeDefinition type, string signature)
+		protected static EventDefinition? GetEvent (TypeDefinition type, string signature)
 		{
 			if (!type.HasEvents)
 				return null;
@@ -396,26 +389,22 @@ namespace Mono.Linker.Steps
 			return null;
 		}
 
-		protected virtual void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object customData) { }
+		protected virtual void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData) { }
 
-		void ProcessSelectedProperties (XPathNavigator nav, TypeDefinition type, object customData)
+		void ProcessSelectedProperties (XPathNavigator nav, TypeDefinition type, object? customData)
 		{
-			XPathNodeIterator properties = nav.SelectChildren (PropertyElementName, XmlNamespace);
-			if (properties.Count == 0)
-				return;
-
-			while (properties.MoveNext ()) {
-				if (!ShouldProcessElement (properties.Current))
+			foreach (XPathNavigator propertyNav in nav.SelectChildren (PropertyElementName, XmlNamespace)) {
+				if (!ShouldProcessElement (propertyNav))
 					continue;
-				ProcessProperty (type, properties.Current, customData);
+				ProcessProperty (type, propertyNav, customData);
 			}
 		}
 
-		protected virtual void ProcessProperty (TypeDefinition type, XPathNavigator nav, object customData)
+		protected virtual void ProcessProperty (TypeDefinition type, XPathNavigator nav, object? customData)
 		{
 			string signature = GetSignature (nav);
 			if (!String.IsNullOrEmpty (signature)) {
-				PropertyDefinition property = GetProperty (type, signature);
+				PropertyDefinition? property = GetProperty (type, signature);
 				if (property == null) {
 					LogWarning ($"Could not find property '{signature}' on type '{type.GetDisplayName ()}'.", 2017, nav);
 					return;
@@ -440,7 +429,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected static PropertyDefinition GetProperty (TypeDefinition type, string signature)
+		protected static PropertyDefinition? GetProperty (TypeDefinition type, string signature)
 		{
 			if (!type.HasProperties)
 				return null;
@@ -452,7 +441,7 @@ namespace Mono.Linker.Steps
 			return null;
 		}
 
-		protected virtual void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object customData, bool fromSignature) { }
+		protected virtual void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature) { }
 
 		protected virtual AssemblyNameReference GetAssemblyName (XPathNavigator nav)
 		{
@@ -492,7 +481,7 @@ namespace Mono.Linker.Steps
 
 		public override string ToString () => GetType ().Name + ": " + _xmlDocumentLocation;
 
-		public bool TryConvertValue (string value, TypeReference target, out object result)
+		public bool TryConvertValue (string value, TypeReference target, out object? result)
 		{
 			switch (target.MetadataType) {
 			case MetadataType.Boolean:

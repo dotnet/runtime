@@ -3,9 +3,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
-#if !NETCOREAPP
-	[IgnoreTestCase ("Correctly handled by illink only")]
-#endif
 	[Kept]
 	[KeptMember (".ctor()")]
 	[SetupLinkerAction ("copyused", "test")]

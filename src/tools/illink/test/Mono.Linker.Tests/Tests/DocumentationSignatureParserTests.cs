@@ -495,7 +495,7 @@ namespace Mono.Linker.Tests
 			[ExpectUnresolvedDocumentationSignature ("E:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.OnEvent`gibberish")]
 			public event EventHandler OnEvent;
 
-			// the below work, but seem like they shouldn't. See https://github.com/mono/linker/issues/1214.
+			// the below work, but seem like they shouldn't. See https://github.com/dotnet/linker/issues/1214.
 
 			[ExpectExactlyResolvedDocumentationSignature ("TMono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoColon")]
 			public class NoColon

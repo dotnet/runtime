@@ -25,10 +25,9 @@ namespace ILLink.RoslynAnalyzer
 		internal static bool TryGetAttribute (this ISymbol member, string attributeName, [NotNullWhen (returnValue: true)] out AttributeData? attribute)
 		{
 			attribute = null;
-			foreach (var _attribute in member.GetAttributes ()) {
-				if (_attribute.AttributeClass is { } attrClass &&
-					attrClass.HasName (attributeName)) {
-					attribute = _attribute;
+			foreach (var attr in member.GetAttributes ()) {
+				if (attr.AttributeClass is { } attrClass && attrClass.HasName (attributeName)) {
+					attribute = attr;
 					return true;
 				}
 			}

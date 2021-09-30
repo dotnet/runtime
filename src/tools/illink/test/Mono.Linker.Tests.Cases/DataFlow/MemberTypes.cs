@@ -300,14 +300,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEventOnBase;
 			protected event EventHandler<EventArgs> ProtectedEventOnBase;
 			private event EventHandler<EventArgs> PrivateEventOnBase;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> HideEvent;
 
 			[Kept]
@@ -367,14 +367,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEvent;
 			protected event EventHandler<EventArgs> ProtectedEvent;
 			private event EventHandler<EventArgs> PrivateEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> HideEvent;
 
 			[Kept]
@@ -435,7 +435,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			protected event EventHandler<EventArgs> ProtectedEventOnBase;
 			private event EventHandler<EventArgs> PrivateEventOnBase;
 			public event EventHandler<EventArgs> HideEvent;
@@ -491,12 +491,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			protected event EventHandler<EventArgs> ProtectedEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			private event EventHandler<EventArgs> PrivateEvent;
 			public event EventHandler<EventArgs> HideEvent;
 
@@ -563,18 +563,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEventOnBase;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			protected event EventHandler<EventArgs> ProtectedEventOnBase;
 			private event EventHandler<EventArgs> PrivateEventOnBase;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> HideEvent;
 
 			[Kept]
@@ -646,22 +646,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			protected event EventHandler<EventArgs> ProtectedEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			private event EventHandler<EventArgs> PrivateEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> HideEvent;
 
 			[Kept]
@@ -1372,14 +1372,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEventOnBase;
 			protected event EventHandler<EventArgs> ProtectedEventOnBase;
 			private event EventHandler<EventArgs> PrivateEventOnBase;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> HideEvent;
 
 			[Kept]
@@ -1403,14 +1403,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEvent;
 			protected event EventHandler<EventArgs> ProtectedEvent;
 			private event EventHandler<EventArgs> PrivateEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> HideEvent;
 
 			[Kept]
@@ -1443,7 +1443,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			protected event EventHandler<EventArgs> ProtectedEventOnBase;
 			private event EventHandler<EventArgs> PrivateEventOnBase;
 			public event EventHandler<EventArgs> HideEvent;
@@ -1466,12 +1466,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			protected event EventHandler<EventArgs> ProtectedEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			private event EventHandler<EventArgs> PrivateEvent;
 			public event EventHandler<EventArgs> HideEvent;
 
@@ -1503,18 +1503,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEventOnBase;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			protected event EventHandler<EventArgs> ProtectedEventOnBase;
 			private event EventHandler<EventArgs> PrivateEventOnBase;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> HideEvent;
 
 			[Kept]
@@ -1542,22 +1542,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> PublicEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			protected event EventHandler<EventArgs> ProtectedEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			private event EventHandler<EventArgs> PrivateEvent;
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified, ExpectLocalsModified]
+			[method: ExpectBodyModified]
 			public event EventHandler<EventArgs> HideEvent;
 
 			[Kept]

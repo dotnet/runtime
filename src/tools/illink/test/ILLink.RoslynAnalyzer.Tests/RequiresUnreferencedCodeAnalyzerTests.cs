@@ -111,17 +111,17 @@ public class C
     [RequiresUnreferencedCodeAttribute(""message"")]
     public int M1() => 0;
 
-    [RequiresUnreferencedCode(""Calls M1"")]
+    [RequiresUnreferencedCode(""Calls C.M1()"")]
     int M2() => M1();
 }
 class D
 {
-    [RequiresUnreferencedCode(""Calls M1"")]
+    [RequiresUnreferencedCode(""Calls C.M1()"")]
     public int M3(C c) => c.M1();
 
     public class E
     {
-        [RequiresUnreferencedCode(""Calls M1"")]
+        [RequiresUnreferencedCode(""Calls C.M1()"")]
         public int M4(C c) => c.M1();
     }
 }
@@ -221,10 +221,10 @@ public class C
     [RequiresUnreferencedCodeAttribute(""message"")]
     public int M1() => 0;
 
-    [RequiresUnreferencedCode(""Calls Wrapper"")]
+    [RequiresUnreferencedCode(""Calls Wrapper()"")]
     Action M2()
     {
-        [global::System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute(""Calls M1"")] void Wrapper () => M1();
+        [global::System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute(""Calls C.M1()"")] void Wrapper () => M1();
         return Wrapper;
     }
 }";
@@ -441,10 +441,7 @@ class StaticCtor
 		_ = new StaticCtor ();
 	}
 }";
-			return VerifyRequiresUnreferencedCodeAnalyzer (src,
-				// (13,7): warning IL2026: Using member 'StaticCtor.StaticCtor()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message for --TestStaticCtor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (13, 7, 13, 24).WithArguments ("StaticCtor.StaticCtor()", " Message for --TestStaticCtor--.", "")
-				);
+			return VerifyRequiresUnreferencedCodeAnalyzer (src);
 		}
 
 		[Fact]
@@ -470,10 +467,7 @@ class C
 		var x = StaticCtorTriggeredByFieldAccess.field + 1;
 	}
 }";
-			return VerifyRequiresUnreferencedCodeAnalyzer (src,
-				// (18,11): warning IL2026: Using member 'StaticCtorTriggeredByFieldAccess.StaticCtorTriggeredByFieldAccess()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message for --StaticCtorTriggeredByFieldAccess.Cctor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (18, 11, 18, 49).WithArguments ("StaticCtorTriggeredByFieldAccess.StaticCtorTriggeredByFieldAccess()", " Message for --StaticCtorTriggeredByFieldAccess.Cctor--.", "")
-				);
+			return VerifyRequiresUnreferencedCodeAnalyzer (src);
 		}
 
 		[Fact]
@@ -504,9 +498,7 @@ class C
 }";
 			return VerifyRequiresUnreferencedCodeAnalyzer (src,
 				// (21,3): warning IL2026: Using member 'StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (21, 3, 21, 69).WithArguments ("StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()", " Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.", ""),
-				// (21,3): warning IL2026: Using member 'StaticCtorTriggeredByMethodCall.StaticCtorTriggeredByMethodCall()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message for --StaticCtorTriggeredByMethodCall.Cctor--.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (21, 3, 21, 41).WithArguments ("StaticCtorTriggeredByMethodCall.StaticCtorTriggeredByMethodCall()", " Message for --StaticCtorTriggeredByMethodCall.Cctor--.", "")
+				VerifyCS.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (21, 3, 21, 69).WithArguments ("StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking()", " Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--.", "")
 				);
 		}
 
@@ -915,6 +907,54 @@ class C
 	{
 		dynamic dynamicField = ""Some string"";
 		Console.WriteLine (dynamicField);
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+		}
+
+		[Fact]
+		public Task TestMakeGenericMethodUsage ()
+		{
+			var source = @"
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
+class C
+{
+	static void M1 (MethodInfo methodInfo)
+	{
+		methodInfo.MakeGenericMethod (typeof (C));
+	}
+
+	[RequiresUnreferencedCode (""Message from RUC"")]
+	static void M2 (MethodInfo methodInfo)
+	{
+		methodInfo.MakeGenericMethod (typeof (C));
+	}
+}";
+
+			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+		}
+
+		[Fact]
+		public Task TestMakeGenericTypeUsage ()
+		{
+			var source = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+class C
+{
+	static void M1 (Type t)
+	{
+		typeof (Nullable<>).MakeGenericType (typeof (C));
+	}
+
+	[RequiresUnreferencedCode (""Message from RUC"")]
+	static void M2 (Type t)
+	{
+		typeof (Nullable<>).MakeGenericType (typeof (C));
 	}
 }";
 

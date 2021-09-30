@@ -277,7 +277,7 @@ namespace Mono.Linker.Steps
 					return false;
 				}
 
-				var assembly = _context.GetLoadedAssembly (an.Name);
+				var assembly = _context.GetLoadedAssembly (an.Name!);
 				if (assembly == null)
 					return false;
 
@@ -558,7 +558,7 @@ namespace Mono.Linker.Steps
 
 		void DiscoverDynamicCastableImplementationInterfaces ()
 		{
-			// We could potentially avoid loading all references here: https://github.com/mono/linker/issues/1788
+			// We could potentially avoid loading all references here: https://github.com/dotnet/linker/issues/1788
 			foreach (var assembly in _context.GetReferencedAssemblies ().ToArray ()) {
 				switch (Annotations.GetAction (assembly)) {
 				// We only need to search assemblies where we don't mark everything
@@ -1380,13 +1380,47 @@ namespace Mono.Linker.Steps
 			foreach (TypeDefinition type in module.Types)
 				MarkEntireType (type, new DependencyInfo (DependencyKind.TypeInAssembly, assembly));
 
-			foreach (ExportedType exportedType in module.ExportedTypes) {
-				MarkingHelpers.MarkExportedType (exportedType, module, new DependencyInfo (DependencyKind.ExportedType, assembly));
-				MarkingHelpers.MarkForwardedScope (new TypeReference (exportedType.Namespace, exportedType.Name, module, exportedType.Scope));
+			// Mark scopes of type references and exported types.
+			TypeReferenceMarker.MarkTypeReferences (assembly, MarkingHelpers);
+		}
+
+		class TypeReferenceMarker : TypeReferenceWalker
+		{
+
+			readonly MarkingHelpers markingHelpers;
+
+			TypeReferenceMarker (AssemblyDefinition assembly, MarkingHelpers markingHelpers)
+				: base (assembly)
+			{
+				this.markingHelpers = markingHelpers;
 			}
 
-			foreach (TypeReference typeReference in module.GetTypeReferences ())
-				MarkingHelpers.MarkForwardedScope (typeReference);
+			public static void MarkTypeReferences (AssemblyDefinition assembly, MarkingHelpers markingHelpers)
+			{
+				new TypeReferenceMarker (assembly, markingHelpers).Process ();
+			}
+
+			protected override void ProcessTypeReference (TypeReference type)
+			{
+				markingHelpers.MarkForwardedScope (type);
+			}
+
+			protected override void ProcessExportedType (ExportedType exportedType)
+			{
+				markingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, assembly));
+				markingHelpers.MarkForwardedScope (new TypeReference (exportedType.Namespace, exportedType.Name, assembly.MainModule, exportedType.Scope));
+			}
+
+			protected override void ProcessExtra ()
+			{
+				// Also mark the scopes of metadata typeref rows to cover any not discovered by the traversal.
+				// This can happen when the compiler emits typerefs into IL which aren't strictly necessary per ECMA 335.
+				foreach (TypeReference typeReference in assembly.MainModule.GetTypeReferences ()) {
+					if (!Visited!.Add (typeReference))
+						continue;
+					markingHelpers.MarkForwardedScope (typeReference);
+				}
+			}
 		}
 
 		void ProcessModuleType (AssemblyDefinition assembly)
@@ -1713,7 +1747,7 @@ namespace Mono.Linker.Steps
 			// Marking the property itself actually doesn't keep it (it only marks its attributes and records the dependency), we have to mark the methods on it
 			MarkProperty (property, reason);
 			// We don't track PropertyInfo, so we can't tell if any accessor is needed by the app, so include them both.
-			// With better tracking it might be possible to be more precise here: mono/linker/issues/1948
+			// With better tracking it might be possible to be more precise here: dotnet/linker/issues/1948
 			MarkMethodIfNotNull (property.GetMethod, reason);
 			MarkMethodIfNotNull (property.SetMethod, reason);
 			MarkMethodsIf (property.OtherMethods, m => true, reason);
@@ -1817,9 +1851,9 @@ namespace Mono.Linker.Steps
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 
-			if (type.BaseType is not null &&
+			if (_context.TryResolve (type.BaseType) is TypeDefinition baseType &&
 				!_context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (type) &&
-				_context.Annotations.TryGetLinkerAttribute (_context.TryResolve (type.BaseType), out RequiresUnreferencedCodeAttribute effectiveRequiresUnreferencedCode)) {
+				_context.Annotations.TryGetLinkerAttribute (baseType, out RequiresUnreferencedCodeAttribute effectiveRequiresUnreferencedCode)) {
 
 				var currentOrigin = _scopeStack.CurrentScope.Origin;
 
@@ -2114,7 +2148,7 @@ namespace Mono.Linker.Steps
 
 					while (type != null) {
 						// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
-						// This can be improved: mono/linker/issues/1873
+						// This can be improved: dotnet/linker/issues/1873
 						MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute));
 						MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
 						type = _context.TryResolve (type.BaseType);
@@ -2736,8 +2770,8 @@ namespace Mono.Linker.Steps
 			if (reference.DeclaringType is ArrayType arrayType) {
 				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference));
 
-				if (reference.Name == ".ctor") {
-					Annotations.MarkRelevantToVariantCasting (_context.TryResolve (arrayType));
+				if (reference.Name == ".ctor" && _context.TryResolve (arrayType) is TypeDefinition typeDefinition) {
+					Annotations.MarkRelevantToVariantCasting (typeDefinition);
 				}
 				return null;
 			}
@@ -2818,7 +2852,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.Unspecified:
 
 			// Don't warn for methods kept due to non-understood DebuggerDisplayAttribute
-			// until https://github.com/mono/linker/issues/1873 is fixed.
+			// until https://github.com/dotnet/linker/issues/1873 is fixed.
 			case DependencyKind.KeptForSpecialAttribute:
 				return;
 
@@ -3414,7 +3448,8 @@ namespace Mono.Linker.Steps
 				var operand = (TypeReference) instruction.Operand;
 				switch (instruction.OpCode.Code) {
 				case Code.Newarr:
-					Annotations.MarkRelevantToVariantCasting (_context.TryResolve (operand));
+					if (_context.TryResolve (operand) is TypeDefinition typeDefinition)
+						Annotations.MarkRelevantToVariantCasting (typeDefinition);
 					break;
 				case Code.Isinst:
 					if (operand is TypeSpecification || operand is GenericParameter)
