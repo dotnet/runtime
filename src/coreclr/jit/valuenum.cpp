@@ -9769,6 +9769,81 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
 }
 
+void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
+{
+    CorInfoHelpFunc helpFunc         = eeGetHelperNum(call->gtCallMethHnd);
+    var_types       castToType       = TYP_UNDEF;
+    var_types       castFromType     = TYP_UNDEF;
+    bool            srcIsUnsigned    = false;
+    bool            hasOverflowCheck = false;
+
+    switch (helpFunc)
+    {
+        case CORINFO_HELP_LNG2DBL:
+            castToType   = TYP_DOUBLE;
+            castFromType = TYP_LONG;
+            break;
+
+        case CORINFO_HELP_ULNG2DBL:
+            castToType    = TYP_DOUBLE;
+            castFromType  = TYP_LONG;
+            srcIsUnsigned = true;
+            break;
+
+        case CORINFO_HELP_DBL2INT:
+            castToType   = TYP_INT;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2INT_OVF:
+            castToType       = TYP_INT;
+            castFromType     = TYP_DOUBLE;
+            hasOverflowCheck = true;
+            break;
+
+        case CORINFO_HELP_DBL2LNG:
+            castToType   = TYP_LONG;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2LNG_OVF:
+            castToType       = TYP_LONG;
+            castFromType     = TYP_DOUBLE;
+            hasOverflowCheck = true;
+            break;
+
+        case CORINFO_HELP_DBL2UINT:
+            castToType   = TYP_UINT;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2UINT_OVF:
+            castToType       = TYP_UINT;
+            castFromType     = TYP_DOUBLE;
+            hasOverflowCheck = true;
+            break;
+
+        case CORINFO_HELP_DBL2ULNG:
+            castToType   = TYP_ULONG;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2ULNG_OVF:
+            castToType       = TYP_ULONG;
+            castFromType     = TYP_DOUBLE;
+            hasOverflowCheck = true;
+            break;
+
+        default:
+            unreached();
+    }
+
+    ValueNumPair argVNP  = call->gtCallArgs->GetNode()->gtVNPair;
+    ValueNumPair castVNP = vnStore->VNPairForCast(argVNP, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
+
+    call->SetVNs(castVNP);
+}
+
 VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 {
     assert(s_helperCallProperties.IsPure(helpFunc) || s_helperCallProperties.IsAllocator(helpFunc));
@@ -9816,37 +9891,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_ULMOD:
             vnf = VNFunc(GT_UMOD);
-            break;
-
-        case CORINFO_HELP_LNG2DBL:
-            vnf = VNF_Lng2Dbl;
-            break;
-        case CORINFO_HELP_ULNG2DBL:
-            vnf = VNF_ULng2Dbl;
-            break;
-        case CORINFO_HELP_DBL2INT:
-            vnf = VNF_Dbl2Int;
-            break;
-        case CORINFO_HELP_DBL2INT_OVF:
-            vnf = VNF_Dbl2IntOvf;
-            break;
-        case CORINFO_HELP_DBL2LNG:
-            vnf = VNF_Dbl2Lng;
-            break;
-        case CORINFO_HELP_DBL2LNG_OVF:
-            vnf = VNF_Dbl2LngOvf;
-            break;
-        case CORINFO_HELP_DBL2UINT:
-            vnf = VNF_Dbl2UInt;
-            break;
-        case CORINFO_HELP_DBL2UINT_OVF:
-            vnf = VNF_Dbl2UIntOvf;
-            break;
-        case CORINFO_HELP_DBL2ULNG:
-            vnf = VNF_Dbl2ULng;
-            break;
-        case CORINFO_HELP_DBL2ULNG_OVF:
-            vnf = VNF_Dbl2ULngOvf;
             break;
         case CORINFO_HELP_FLTREM:
             vnf = VNFunc(GT_MOD);
@@ -10052,12 +10096,32 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
 bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 {
-    CorInfoHelpFunc helpFunc    = eeGetHelperNum(call->gtCallMethHnd);
-    bool            pure        = s_helperCallProperties.IsPure(helpFunc);
-    bool            isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
-    bool            modHeap     = s_helperCallProperties.MutatesHeap(helpFunc);
-    bool            mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
-    bool            noThrow     = s_helperCallProperties.NoThrow(helpFunc);
+    CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+
+    switch (helpFunc)
+    {
+        case CORINFO_HELP_LNG2DBL:
+        case CORINFO_HELP_ULNG2DBL:
+        case CORINFO_HELP_DBL2INT:
+        case CORINFO_HELP_DBL2INT_OVF:
+        case CORINFO_HELP_DBL2LNG:
+        case CORINFO_HELP_DBL2LNG_OVF:
+        case CORINFO_HELP_DBL2UINT:
+        case CORINFO_HELP_DBL2UINT_OVF:
+        case CORINFO_HELP_DBL2ULNG:
+        case CORINFO_HELP_DBL2ULNG_OVF:
+            fgValueNumberCastHelper(call);
+            return false;
+
+        default:
+            break;
+    }
+
+    bool pure        = s_helperCallProperties.IsPure(helpFunc);
+    bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
+    bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc);
+    bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
+    bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
 
