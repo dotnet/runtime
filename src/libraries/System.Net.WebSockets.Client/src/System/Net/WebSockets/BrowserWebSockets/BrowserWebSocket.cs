@@ -347,10 +347,7 @@ namespace System.Net.WebSockets
 
         private void ThrowIfDisposed()
         {
-            if (_disposed)
-            {
-                ObjectDisposedException.Throw(this);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private WebSocketState GetReadyState()
