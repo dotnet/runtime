@@ -263,13 +263,22 @@ namespace System.Text.RegularExpressions.Generator
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
             // especially since we want the "return false" code regardless.
-            writer.WriteLine("// Minimum required length check");
             int minRequiredLength = rm.Code.Tree.MinRequiredLength;
-            string minRequiredLengthOffset = rm.Code.Tree.MinRequiredLength > 0 ? $" - {rm.Code.Tree.MinRequiredLength}" : "";
-            Debug.Assert(minRequiredLength >= 0);
-            using (EmitBlock(writer, !rtl ?
-                $"if (runtextpos <= runtextend{minRequiredLengthOffset})" :
-                $"if (runtextpos{minRequiredLengthOffset} >= runtextbeg)"))
+            Debug.Assert(rm.Code.Tree.MinRequiredLength >= 0);
+            string clause = !rtl ?
+                rm.Code.Tree.MinRequiredLength switch
+                {
+                    0 => "if (runtextpos <= runtextend)",
+                    1 => "if (runtextpos < runtextend)",
+                    _ => $"if (runtextpos < runtextend - {minRequiredLength - 1})"
+                } :
+                rm.Code.Tree.MinRequiredLength switch
+                {
+                    0 => "if (runtextpos >= runtextbeg)",
+                    1 => "if (runtextpos > runtextbeg)",
+                    _ => $"if (runtextpos - {minRequiredLength - 1} > runtextbeg)"
+                };
+            using (EmitBlock(writer, clause))
             {
                 EmitAnchorAndLeadingChecks();
             }
