@@ -88,7 +88,7 @@ inline ULONG PEAssembly::HashIdentity()
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(m_identity));
+        PRECONDITION(CheckPointer(m_openedILimage));
         MODE_ANY;
         THROWS;
         GC_TRIGGERS;
@@ -169,11 +169,12 @@ inline const SString& PEAssembly::GetPath()
     }
     CONTRACTL_END;
 
-    if (IsDynamic() || m_identity->IsInBundle ())
+    if (IsDynamic() || m_openedILimage->IsInBundle ())
     {
         return SString::Empty();
     }
-    return m_identity->GetPath();
+
+    return m_openedILimage->GetPath();
 }
 
 //
@@ -192,11 +193,12 @@ inline const SString& PEAssembly::GetIdentityPath()
     }
     CONTRACTL_END;
 
-    if (m_identity == nullptr)
+    if (m_openedILimage == nullptr)
     {
         return SString::Empty();
     }
-    return m_identity->GetPath();
+
+    return m_openedILimage->GetPath();
 }
 
 #ifdef DACCESS_COMPILE
@@ -216,7 +218,7 @@ inline const SString &PEAssembly::GetModuleFileNameHint()
         return SString::Empty();
     }
     else
-        return m_identity->GetModuleFileNameHintForDAC();
+        return m_openedILimage->GetModuleFileNameHintForDAC();
 }
 #endif // DACCESS_COMPILE
 
@@ -272,7 +274,7 @@ inline BOOL PEAssembly::IsDynamic() const
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    return m_identity == NULL;
+    return m_openedILimage == NULL;
 }
 
 inline PEAssembly *PEAssembly::GetAssembly() const

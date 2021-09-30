@@ -303,15 +303,7 @@ public:
             GC_TRIGGERS;
         }
         CONTRACTL_END;
-#ifndef DACCESS_COMPILE
-        if (m_openedILimage == NULL && m_identity != NULL)
-        {
-            PEImage* pOpenedILimage;
-            m_identity->Clone(&pOpenedILimage);
-            if (InterlockedCompareExchangeT(&m_openedILimage, pOpenedILimage, NULL) != NULL)
-                pOpenedILimage->Release();
-        }
-#endif
+
         return m_openedILimage;
     }
 
@@ -497,9 +489,7 @@ private:
     SString                 m_debugName;
 #endif
 
-    // Identity image
-    PTR_PEImage              m_identity;
-    // IL image, NULL if we didn't need to open the file
+    // IL image, NULL if dynamic
     PTR_PEImage              m_openedILimage;
 
     PTR_PEAssembly           m_creator;

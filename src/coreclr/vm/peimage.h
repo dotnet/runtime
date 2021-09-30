@@ -92,20 +92,6 @@ public:
         MDInternalImportFlags flags = MDInternalImport_Default,
         BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
-
-    // clones the image (this is pretty much about cached / noncached difference)
-    void Clone(PTR_PEImage* ppImage)
-    {
-        if (GetPath().IsEmpty())
-        {
-            AddRef();
-            *ppImage = this;
-        }
-        else
-            *ppImage = PEImage::OpenImage(GetPath(), MDInternalImport_Default);
-
-    };
-
     static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle = TRUE);
     void AddToHashMap();
 
@@ -149,12 +135,15 @@ public:
 
     BOOL HasContents() ;
     BOOL IsPtrInImage(PTR_CVOID data);
-    CHECK CheckFormat();
 
     // Check utilites
-    CHECK CheckILFormat();
-    static CHECK CheckCanonicalFullPath(const SString &path);
     static CHECK CheckStartup();
+    static CHECK CheckCanonicalFullPath(const SString& path);
+
+    CHECK CheckFormat();
+    CHECK CheckILFormat();
+    CHECK CheckUniqueInstance();
+
     PTR_CVOID GetMetadata(COUNT_T *pSize = NULL);
 
 #ifndef TARGET_UNIX
@@ -180,7 +169,7 @@ public:
     BOOL IsILOnly();
     BOOL IsDll();
     WORD GetSubsystem();
-    BOOL  IsFileLocked();
+    BOOL IsFileLocked();
 
     BOOL Has32BitNTHeaders();
 

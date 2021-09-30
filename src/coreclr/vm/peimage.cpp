@@ -84,6 +84,13 @@ CHECK PEImage::CheckILFormat()
     CHECK_OK;
 };
 
+// PEImage is always unique on CoreCLR so a simple pointer check is sufficient in PEImage::Equals
+CHECK PEImage::CheckUniqueInstance()
+{
+    CHECK(GetPath().IsEmpty() || m_bInHashMap);
+    CHECK_OK;
+}
+
 PEImage::~PEImage()
 {
     CONTRACTL
@@ -299,8 +306,7 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     {
         SString path(SString::Literal, pLocator->m_pPath);
         BOOL isInBundle = pLocator->m_bIsInBundle;
-        if (PathEquals(path, pImage->GetPath()) &&
-            (!isInBundle == !pImage->IsInBundle()))
+        if (PathEquals(path, pImage->GetPath()) && (isInBundle == pImage->IsInBundle()))
             ret = TRUE;
     }
     EX_CATCH_HRESULT(hr); //<TODO>ignores failure!</TODO>
@@ -320,8 +326,8 @@ BOOL PEImage::Equals(PEImage *pImage)
     CONTRACTL_END;
 
     // PEImage is always unique on CoreCLR so a simple pointer check is sufficient
-    _ASSERTE(m_bInHashMap || GetPath().IsEmpty());
-    _ASSERTE(pImage->m_bInHashMap || pImage->GetPath().IsEmpty());
+    _ASSERTE(CheckUniqueInstance());
+    _ASSERTE(pImage->CheckUniqueInstance());
 
     return dac_cast<TADDR>(pImage) == dac_cast<TADDR>(this);
 }
@@ -1037,7 +1043,7 @@ PTR_PEImage PEImage::LoadImage(HMODULE hMod)
 
     StackSString path;
     GetPathFromDll(hMod, path);
-    PEImageHolder pImage(PEImage::OpenImage(path,(MDInternalImportFlags)(0)));
+    PEImageHolder pImage(PEImage::OpenImage(path, MDInternalImport_Default));
     if (pImage->HasLoadedLayout())
         RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 

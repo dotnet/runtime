@@ -116,7 +116,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
     {
         PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
-        // Make sure that the IL image can be opened if the native image is not available.
+        // Make sure that the IL image can be opened.
         hr=pImage->TryOpenFile();
         if (FAILED(hr))
         {

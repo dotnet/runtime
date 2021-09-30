@@ -233,11 +233,6 @@ BOOL PEAssembly::Equals(PEAssembly *pPEAssembly)
             return FALSE;
     }
 
-    // Same identity is equal
-    if (m_identity != NULL && pPEAssembly->m_identity != NULL
-        && m_identity->Equals(pPEAssembly->m_identity))
-        return TRUE;
-
     // Same image is equal
     if (m_openedILimage != NULL && pPEAssembly->m_openedILimage != NULL
         && m_openedILimage->Equals(pPEAssembly->m_openedILimage))
@@ -258,20 +253,14 @@ BOOL PEAssembly::Equals(PEImage *pImage)
     }
     CONTRACTL_END;
 
-    // Same object is equal
-    if (pImage == m_identity || pImage == m_openedILimage)
+    // Same image ==> equal
+    if (pImage == m_openedILimage)
         return TRUE;
 
-    // Same identity is equal
-    if (m_identity != NULL
-        && m_identity->Equals(pImage))
-        return TRUE;
-
-    // Same image is equal
+    // Equal image ==> equal
     if (m_openedILimage != NULL
         && m_openedILimage->Equals(pImage))
         return TRUE;
-
 
     return FALSE;
 }
@@ -292,9 +281,9 @@ void PEAssembly::GetCodeBaseOrName(SString &result)
     }
     CONTRACTL_END;
 
-    if (m_identity != NULL && !m_identity->GetPath().IsEmpty())
+    if (m_openedILimage != NULL && !m_openedILimage->GetPath().IsEmpty())
     {
-        result.Set(m_identity->GetPath());
+        result.Set(m_openedILimage->GetPath());
     }
     else if (IsAssembly())
     {
@@ -855,7 +844,7 @@ PEAssembly::PEAssembly(
                 IMetaDataEmit* pEmit,
                 PEAssembly *creator,
                 BOOL isSystem,
-                PEImage * pPEImageIL /*= NULL*/,
+                PEImage * pPEImage /*= NULL*/,
                 BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 {
     CONTRACTL
@@ -863,7 +852,7 @@ PEAssembly::PEAssembly(
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
         PRECONDITION(CheckPointer(creator, NULL_OK));
-        PRECONDITION(pBindResultInfo == NULL || pPEImageIL == NULL);
+        PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL);
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -872,7 +861,6 @@ PEAssembly::PEAssembly(
 #if _DEBUG
     m_pDebugName = NULL;
 #endif
-    m_identity = NULL;
     m_openedILimage = NULL;
     m_MDImportIsRW_Debugger_Use_Only = FALSE;
     m_bHasPersistentMDImport = FALSE;
@@ -885,24 +873,16 @@ PEAssembly::PEAssembly(
     m_pHostAssembly = nullptr;
     m_pFallbackBinder = nullptr;
 
-    PEImage* identity = pBindResultInfo ? pBindResultInfo->GetPEImage() :
-                                          pPEImageIL;
-
-    if (identity)
+    pPEImage = pBindResultInfo ? pBindResultInfo->GetPEImage() : pPEImage;
+    if (pPEImage)
     {
-        identity->AddRef();
-        m_identity = identity;
+        _ASSERTE(pPEImage->CheckUniqueInstance());
+        pPEImage->AddRef();
 
-        if (identity->IsOpened())
-        {
-            //already opened, prepopulate
-            identity->AddRef();
-            m_openedILimage = identity;
-        }
+        // We require a mapping for the file.
+        pPEImage->GetLayout(PEImageLayout::LAYOUT_ANY);
+        m_openedILimage = pPEImage;
     }
-
-    // We require a mapping for the file.
-    EnsureImageOpened();
 
     // Open metadata eagerly to minimize failure windows
     if (pEmit == NULL)
@@ -992,9 +972,6 @@ PEAssembly::~PEAssembly()
 
     if (m_openedILimage != NULL)
         m_openedILimage->Release();
-
-    if (m_identity != NULL)
-        m_identity->Release();
 
     if (m_pMetadataLock)
         delete m_pMetadataLock;
@@ -1098,8 +1075,8 @@ const SString &PEAssembly::GetEffectivePath()
 
     PEAssembly* pPEAssembly = this;
 
-    while (pPEAssembly->m_identity == NULL
-           || pPEAssembly->m_identity->GetPath().IsEmpty())
+    while (pPEAssembly->m_openedILimage == NULL
+        || pPEAssembly->m_openedILimage->GetPath().IsEmpty())
     {
         if (pPEAssembly->m_creator)
             pPEAssembly = pPEAssembly->m_creator->GetAssembly();
@@ -1107,7 +1084,7 @@ const SString &PEAssembly::GetEffectivePath()
             return SString::Empty();
     }
 
-    return pPEAssembly->m_identity->GetPath();
+    return pPEAssembly->m_openedILimage->GetPath();
 }
 
 
@@ -1309,9 +1286,9 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     m_debugName.EnumMemoryRegions(flags);
 #endif
 
-    if (m_identity.IsValid())
+    if (m_openedILimage.IsValid())
     {
-        m_identity->EnumMemoryRegions(flags);
+        m_openedILimage->EnumMemoryRegions(flags);
     }
     if (GetILimage().IsValid())
     {
@@ -1347,7 +1324,7 @@ LPCWSTR PEAssembly::GetPathForErrorMessages()
 
     if (!IsDynamic())
     {
-        return m_identity->GetPathForErrorMessages();
+        return m_openedILimage->GetPathForErrorMessages();
     }
     else
     {
