@@ -45,7 +45,7 @@ namespace Microsoft.Interop.Diagnostics
         [Event(StartSourceGenerationEventId, Level = EventLevel.Informational, Keywords = Keywords.SourceGeneration)]
         public void SourceGenerationStart(int methodCount)
         {
-            this.WriteEvent(StartSourceGenerationEventId, methodCount);
+            WriteEvent(StartSourceGenerationEventId, methodCount);
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace Microsoft.Interop.Diagnostics
         [Event(StopSourceGenerationEventId, Level = EventLevel.Informational, Keywords = Keywords.SourceGeneration)]
         public void SourceGenerationStop()
         {
-            this.WriteEvent(StopSourceGenerationEventId);
+            WriteEvent(StopSourceGenerationEventId);
         }
 
         private class StartStopEvent : IDisposable

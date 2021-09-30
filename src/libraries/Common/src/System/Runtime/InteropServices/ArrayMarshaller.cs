@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         private IntPtr _allocatedMemory;
 
         public ArrayMarshaller(int sizeOfNativeElement)
-            :this()
+            : this()
         {
             _sizeOfNativeElement = sizeOfNativeElement;
         }

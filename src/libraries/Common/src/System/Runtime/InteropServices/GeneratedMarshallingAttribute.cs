@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
         }
 
         public MarshalUsingAttribute(Type nativeType)
-            :this()
+            : this()
         {
             NativeType = nativeType;
         }

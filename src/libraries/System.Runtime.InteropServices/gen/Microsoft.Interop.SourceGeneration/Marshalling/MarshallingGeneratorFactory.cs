@@ -27,25 +27,25 @@ namespace Microsoft.Interop
 
     public sealed class DefaultMarshallingGeneratorFactory : IMarshallingGeneratorFactory
     {
-        private static readonly ByteBoolMarshaller ByteBool = new();
-        private static readonly WinBoolMarshaller WinBool = new();
-        private static readonly VariantBoolMarshaller VariantBool = new();
+        private static readonly ByteBoolMarshaller s_byteBool = new();
+        private static readonly WinBoolMarshaller s_winBool = new();
+        private static readonly VariantBoolMarshaller s_variantBool = new();
 
-        private static readonly Utf16CharMarshaller Utf16Char = new();
-        private static readonly Utf16StringMarshaller Utf16String = new();
-        private static readonly Utf8StringMarshaller Utf8String = new();
-        private static readonly AnsiStringMarshaller AnsiString = new AnsiStringMarshaller(Utf8String);
-        private static readonly PlatformDefinedStringMarshaller PlatformDefinedString = new PlatformDefinedStringMarshaller(Utf16String, Utf8String);
+        private static readonly Utf16CharMarshaller s_utf16Char = new();
+        private static readonly Utf16StringMarshaller s_utf16String = new();
+        private static readonly Utf8StringMarshaller s_utf8String = new();
+        private static readonly AnsiStringMarshaller s_ansiString = new AnsiStringMarshaller(s_utf8String);
+        private static readonly PlatformDefinedStringMarshaller s_platformDefinedString = new PlatformDefinedStringMarshaller(s_utf16String, s_utf8String);
 
-        private static readonly Forwarder Forwarder = new();
-        private static readonly BlittableMarshaller Blittable = new();
-        private static readonly DelegateMarshaller Delegate = new();
-        private static readonly SafeHandleMarshaller SafeHandle = new();
+        private static readonly Forwarder s_forwarder = new();
+        private static readonly BlittableMarshaller s_blittable = new();
+        private static readonly DelegateMarshaller s_delegate = new();
+        private static readonly SafeHandleMarshaller s_safeHandle = new();
         private InteropGenerationOptions Options { get; }
 
         public DefaultMarshallingGeneratorFactory(InteropGenerationOptions options)
         {
-            this.Options = options;
+            Options = options;
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Microsoft.Interop
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysUInt, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R4, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
-                    return Blittable;
+                    return s_blittable;
 
                 // Enum with no marshalling info
                 case { ManagedType: EnumTypeInfo enumType, MarshallingAttributeInfo: NoMarshallingInfo }:
@@ -83,27 +83,27 @@ namespace Microsoft.Interop
                     {
                         throw new MarshallingNotSupportedException(info, context);
                     }
-                    return Blittable;
+                    return s_blittable;
 
                 // Pointer with no marshalling info
                 case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer: false), MarshallingAttributeInfo: NoMarshallingInfo }:
-                    return Blittable;
+                    return s_blittable;
 
                 // Function pointer with no marshalling info
                 case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer: true), MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
-                    return Blittable;
+                    return s_blittable;
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
-                    return WinBool; // [Compat] Matching the default for the built-in runtime marshallers.
+                    return s_winBool; // [Compat] Matching the default for the built-in runtime marshallers.
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
-                    return ByteBool;
+                    return s_byteBool;
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:
-                    return WinBool;
+                    return s_winBool;
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
-                    return VariantBool;
+                    return s_variantBool;
 
                 case { ManagedType: DelegateTypeInfo, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
-                    return Delegate;
+                    return s_delegate;
 
                 case { MarshallingAttributeInfo: SafeHandleMarshallingInfo(_, bool isAbstract) }:
                     if (!context.AdditionalTemporaryStateLivesAcrossStages)
@@ -117,7 +117,7 @@ namespace Microsoft.Interop
                             NotSupportedDetails = Resources.SafeHandleByRefMustBeConcrete
                         };
                     }
-                    return SafeHandle;
+                    return s_safeHandle;
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Char } }:
                     return CreateCharMarshaller(info, context);
@@ -126,7 +126,7 @@ namespace Microsoft.Interop
                     return CreateStringMarshaller(info, context);
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Void } }:
-                    return Forwarder;
+                    return s_forwarder;
 
                 default:
                     throw new MarshallingNotSupportedException(info, context);
@@ -152,7 +152,7 @@ namespace Microsoft.Interop
                 {
                     case UnmanagedType.I2:
                     case UnmanagedType.U2:
-                        return Utf16Char;
+                        return s_utf16Char;
                 }
             }
             else if (marshalInfo is MarshallingInfoStringSupport marshalStringInfo)
@@ -160,7 +160,7 @@ namespace Microsoft.Interop
                 switch (marshalStringInfo.CharEncoding)
                 {
                     case CharEncoding.Utf16:
-                        return Utf16Char;
+                        return s_utf16Char;
                     case CharEncoding.Ansi:
                         throw new MarshallingNotSupportedException(info, context) // [Compat] ANSI is not supported for char
                         {
@@ -195,12 +195,12 @@ namespace Microsoft.Interop
                 switch (marshalAsInfo.UnmanagedType)
                 {
                     case UnmanagedType.LPStr:
-                        return AnsiString;
+                        return s_ansiString;
                     case UnmanagedType.LPTStr:
                     case UnmanagedType.LPWStr:
-                        return Utf16String;
+                        return s_utf16String;
                     case (UnmanagedType)0x30:// UnmanagedType.LPUTF8Str
-                        return Utf8String;
+                        return s_utf8String;
                 }
             }
             else if (marshalInfo is MarshallingInfoStringSupport marshalStringInfo)
@@ -208,13 +208,13 @@ namespace Microsoft.Interop
                 switch (marshalStringInfo.CharEncoding)
                 {
                     case CharEncoding.Ansi:
-                        return AnsiString;
+                        return s_ansiString;
                     case CharEncoding.Utf16:
-                        return Utf16String;
+                        return s_utf16String;
                     case CharEncoding.Utf8:
-                        return Utf8String;
+                        return s_utf8String;
                     case CharEncoding.PlatformDefined:
-                        return PlatformDefinedString;
+                        return s_platformDefinedString;
                 }
             }
 

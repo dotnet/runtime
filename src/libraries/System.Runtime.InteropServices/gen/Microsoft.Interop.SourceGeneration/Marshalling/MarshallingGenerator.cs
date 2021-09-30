@@ -97,8 +97,8 @@ namespace Microsoft.Interop
         /// <param name="context"><see cref="Microsoft.Interop.StubCodeContext"/> instance</param>
         public MarshallingNotSupportedException(TypePositionInfo info, StubCodeContext context)
         {
-            this.TypePositionInfo = info;
-            this.StubCodeContext = context;
+            TypePositionInfo = info;
+            StubCodeContext = context;
         }
 
         /// <summary>

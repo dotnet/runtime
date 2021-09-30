@@ -192,12 +192,12 @@ namespace Microsoft.Interop
 
         private struct EdgeMap
         {
-            private readonly bool[] edgeMap;
+            private readonly bool[] _edgeMap;
 
             public EdgeMap(int numNodes)
             {
                 NodeCount = numNodes;
-                edgeMap = new bool[NodeCount * NodeCount];
+                _edgeMap = new bool[NodeCount * NodeCount];
             }
 
             /// <summary>
@@ -209,17 +209,17 @@ namespace Microsoft.Interop
             /// <returns>If there exists an edge that starts at <paramref name="from"/> and ends at <paramref name="to"/></returns>
             public bool this[int to, int from]
             {
-                get => edgeMap[to * NodeCount + from];
-                set => edgeMap[to * NodeCount + from] = value;
+                get => _edgeMap[to * NodeCount + from];
+                set => _edgeMap[to * NodeCount + from] = value;
             }
 
-            public bool AnyEdges => Array.IndexOf(edgeMap, true) != -1;
+            public bool AnyEdges => Array.IndexOf(_edgeMap, true) != -1;
 
             public int NodeCount { get; }
 
             public bool AnyIncomingEdge(int to)
             {
-                return Array.IndexOf(edgeMap, true, to * NodeCount, NodeCount) != -1;
+                return Array.IndexOf(_edgeMap, true, to * NodeCount, NodeCount) != -1;
             }
         }
 

@@ -55,8 +55,7 @@ namespace Microsoft.Interop.Analyzers
                 return;
 
             // Make sure the method has the DllImportAttribute
-            AttributeData? dllImportAttr;
-            if (!TryGetAttribute(methodSymbol, dllImportAttrType, out dllImportAttr))
+            if (!TryGetAttribute(methodSymbol, dllImportAttrType, out AttributeData? dllImportAttr))
                 return;
 
             // Register code fixes with two options for the fix - using preprocessor or not.

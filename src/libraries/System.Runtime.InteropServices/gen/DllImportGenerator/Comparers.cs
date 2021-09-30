@@ -39,7 +39,7 @@ namespace Microsoft.Interop
     /// <typeparam name="T">The type of immutable array element.</typeparam>
     internal class ImmutableArraySequenceEqualComparer<T> : IEqualityComparer<ImmutableArray<T>>
     {
-        private readonly IEqualityComparer<T> elementComparer;
+        private readonly IEqualityComparer<T> _elementComparer;
 
         /// <summary>
         /// Creates an <see cref="ImmutableArraySequenceEqualComparer{T}"/> with a custom comparer for the elements of the collection.
@@ -47,12 +47,12 @@ namespace Microsoft.Interop
         /// <param name="elementComparer">The comparer instance for the collection elements.</param>
         public ImmutableArraySequenceEqualComparer(IEqualityComparer<T> elementComparer)
         {
-            this.elementComparer = elementComparer;
+            _elementComparer = elementComparer;
         }
 
         public bool Equals(ImmutableArray<T> x, ImmutableArray<T> y)
         {
-            return x.SequenceEqual(y, elementComparer);
+            return x.SequenceEqual(y, _elementComparer);
         }
 
         public int GetHashCode(ImmutableArray<T> obj)
@@ -76,18 +76,18 @@ namespace Microsoft.Interop
 
     internal class CustomValueTupleElementComparer<T, U> : IEqualityComparer<(T, U)>
     {
-        private readonly IEqualityComparer<T> item1Comparer;
-        private readonly IEqualityComparer<U> item2Comparer;
+        private readonly IEqualityComparer<T> _item1Comparer;
+        private readonly IEqualityComparer<U> _item2Comparer;
 
         public CustomValueTupleElementComparer(IEqualityComparer<T> item1Comparer, IEqualityComparer<U> item2Comparer)
         {
-            this.item1Comparer = item1Comparer;
-            this.item2Comparer = item2Comparer;
+            _item1Comparer = item1Comparer;
+            _item2Comparer = item2Comparer;
         }
 
         public bool Equals((T, U) x, (T, U) y)
         {
-            return item1Comparer.Equals(x.Item1, y.Item1) && item2Comparer.Equals(x.Item2, y.Item2);
+            return _item1Comparer.Equals(x.Item1, y.Item1) && _item2Comparer.Equals(x.Item2, y.Item2);
         }
 
         public int GetHashCode((T, U) obj)

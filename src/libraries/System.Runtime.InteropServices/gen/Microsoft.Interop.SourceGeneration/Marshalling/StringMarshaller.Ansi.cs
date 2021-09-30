@@ -14,13 +14,13 @@ namespace Microsoft.Interop
 {
     public sealed class AnsiStringMarshaller : ConditionalStackallocMarshallingGenerator
     {
-        private static readonly TypeSyntax NativeType = PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword)));
+        private static readonly TypeSyntax s_nativeType = PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword)));
 
-        private readonly Utf8StringMarshaller utf8StringMarshaller;
+        private readonly Utf8StringMarshaller _utf8StringMarshaller;
 
         public AnsiStringMarshaller(Utf8StringMarshaller utf8StringMarshaller)
         {
-            this.utf8StringMarshaller = utf8StringMarshaller;
+            _utf8StringMarshaller = utf8StringMarshaller;
         }
 
         public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -42,7 +42,7 @@ namespace Microsoft.Interop
         public override TypeSyntax AsNativeType(TypePositionInfo info)
         {
             // byte*
-            return NativeType;
+            return s_nativeType;
         }
 
         public override ParameterSyntax AsParameter(TypePositionInfo info)
@@ -105,7 +105,7 @@ namespace Microsoft.Interop
                         yield return IfStatement(IsWindows,
                             windowsBlock,
                             ElseClause(
-                                Block(this.utf8StringMarshaller.Generate(info, context))));
+                                Block(_utf8StringMarshaller.Generate(info, context))));
                     }
                     break;
                 case StubCodeContext.Stage.Unmarshal:
@@ -140,7 +140,7 @@ namespace Microsoft.Interop
                                                             IdentifierName(nativeIdentifier))))),
                                                 initializer: null))))),
                             ElseClause(
-                                Block(this.utf8StringMarshaller.Generate(info, context))));
+                                Block(_utf8StringMarshaller.Generate(info, context))));
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:

@@ -18,7 +18,7 @@ namespace Microsoft.Interop
         // so the threshold for optimized allocation is based on that length.
         private const int StackAllocBytesThreshold = 260 * sizeof(ushort);
 
-        private static readonly TypeSyntax NativeType = PointerType(PredefinedType(Token(SyntaxKind.UShortKeyword)));
+        private static readonly TypeSyntax s_nativeType = PointerType(PredefinedType(Token(SyntaxKind.UShortKeyword)));
 
         private static string PinnedIdentifier(string nativeIdentifier) => $"{nativeIdentifier}__pinned";
 
@@ -49,7 +49,7 @@ namespace Microsoft.Interop
         public override TypeSyntax AsNativeType(TypePositionInfo info)
         {
             // ushort*
-            return NativeType;
+            return s_nativeType;
         }
 
         public override ParameterSyntax AsParameter(TypePositionInfo info)

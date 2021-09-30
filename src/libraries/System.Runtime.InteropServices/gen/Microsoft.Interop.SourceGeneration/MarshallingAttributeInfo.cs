@@ -28,7 +28,7 @@ namespace Microsoft.Interop
         // Add a constructor that can only be called by derived types in the same assembly
         // to enforce that this type cannot be extended by users of this library.
         private protected MarshallingInfo()
-        {}
+        { }
     }
 
     public sealed record NoMarshallingInfo : MarshallingInfo
@@ -87,7 +87,7 @@ namespace Microsoft.Interop
 
     public abstract record CountInfo
     {
-        private protected CountInfo() {}
+        private protected CountInfo() { }
     }
 
     public sealed record NoCountInfo : CountInfo
@@ -449,8 +449,8 @@ namespace Microsoft.Interop
             ref int maxIndirectionLevelUsed)
         {
             object unmanagedTypeObj = attrData.ConstructorArguments[0].Value!;
-            UnmanagedType unmanagedType = unmanagedTypeObj is short
-                ? (UnmanagedType)(short)unmanagedTypeObj
+            UnmanagedType unmanagedType = unmanagedTypeObj is short unmanagedTypeAsShort
+                ? (UnmanagedType)unmanagedTypeAsShort
                 : (UnmanagedType)unmanagedTypeObj;
             if (!Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
                 || unmanagedType == UnmanagedType.CustomMarshaler

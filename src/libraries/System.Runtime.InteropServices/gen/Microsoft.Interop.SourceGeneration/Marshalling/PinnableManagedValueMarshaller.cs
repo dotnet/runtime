@@ -10,11 +10,11 @@ namespace Microsoft.Interop
 {
     public sealed class PinnableManagedValueMarshaller : IMarshallingGenerator
     {
-        private readonly IMarshallingGenerator manualMarshallingGenerator;
+        private readonly IMarshallingGenerator _manualMarshallingGenerator;
 
         public PinnableManagedValueMarshaller(IMarshallingGenerator manualMarshallingGenerator)
         {
-            this.manualMarshallingGenerator = manualMarshallingGenerator;
+            _manualMarshallingGenerator = manualMarshallingGenerator;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -24,17 +24,17 @@ namespace Microsoft.Interop
                 string identifier = context.GetIdentifiers(info).native;
                 return Argument(CastExpression(AsNativeType(info), IdentifierName(identifier)));
             }
-            return manualMarshallingGenerator.AsArgument(info, context);
+            return _manualMarshallingGenerator.AsArgument(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            return manualMarshallingGenerator.AsNativeType(info);
+            return _manualMarshallingGenerator.AsNativeType(info);
         }
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
         {
-            return manualMarshallingGenerator.AsParameter(info);
+            return _manualMarshallingGenerator.AsParameter(info);
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -43,12 +43,12 @@ namespace Microsoft.Interop
             {
                 return GeneratePinningPath(info, context);
             }
-            return manualMarshallingGenerator.Generate(info, context);
+            return _manualMarshallingGenerator.Generate(info, context);
         }
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
-            return manualMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
+            return _manualMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
@@ -57,7 +57,7 @@ namespace Microsoft.Interop
             {
                 return false;
             }
-            return manualMarshallingGenerator.UsesNativeIdentifier(info, context);
+            return _manualMarshallingGenerator.UsesNativeIdentifier(info, context);
         }
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {

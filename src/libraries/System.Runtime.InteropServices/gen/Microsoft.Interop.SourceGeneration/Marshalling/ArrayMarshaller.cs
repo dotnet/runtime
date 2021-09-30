@@ -11,17 +11,17 @@ namespace Microsoft.Interop
 {
     public sealed class ArrayMarshaller : IMarshallingGenerator
     {
-        private readonly IMarshallingGenerator manualMarshallingGenerator;
-        private readonly TypeSyntax elementType;
-        private readonly bool enablePinning;
-        private readonly InteropGenerationOptions options;
+        private readonly IMarshallingGenerator _manualMarshallingGenerator;
+        private readonly TypeSyntax _elementType;
+        private readonly bool _enablePinning;
+        private readonly InteropGenerationOptions _options;
 
         public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning, InteropGenerationOptions options)
         {
-            this.manualMarshallingGenerator = manualMarshallingGenerator;
-            this.elementType = elementType;
-            this.enablePinning = enablePinning;
-            this.options = options;
+            _manualMarshallingGenerator = manualMarshallingGenerator;
+            _elementType = elementType;
+            _enablePinning = enablePinning;
+            _options = options;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
@@ -31,17 +31,17 @@ namespace Microsoft.Interop
                 string identifier = context.GetIdentifiers(info).native;
                 return Argument(CastExpression(AsNativeType(info), IdentifierName(identifier)));
             }
-            return manualMarshallingGenerator.AsArgument(info, context);
+            return _manualMarshallingGenerator.AsArgument(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            return manualMarshallingGenerator.AsNativeType(info);
+            return _manualMarshallingGenerator.AsNativeType(info);
         }
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
         {
-            return manualMarshallingGenerator.AsParameter(info);
+            return _manualMarshallingGenerator.AsParameter(info);
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -50,12 +50,12 @@ namespace Microsoft.Interop
             {
                 return GeneratePinningPath(info, context);
             }
-            return manualMarshallingGenerator.Generate(info, context);
+            return _manualMarshallingGenerator.Generate(info, context);
         }
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
-            if (context.SingleFrameSpansNativeContext && enablePinning)
+            if (context.SingleFrameSpansNativeContext && _enablePinning)
             {
                 return false;
             }
@@ -68,19 +68,19 @@ namespace Microsoft.Interop
             {
                 return false;
             }
-            return manualMarshallingGenerator.UsesNativeIdentifier(info, context);
+            return _manualMarshallingGenerator.UsesNativeIdentifier(info, context);
         }
 
         private bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
-            return context.SingleFrameSpansNativeContext && enablePinning && !info.IsByRef && !info.IsManagedReturnPosition;
+            return context.SingleFrameSpansNativeContext && _enablePinning && !info.IsByRef && !info.IsManagedReturnPosition;
         }
 
         private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
         {
             var (managedIdentifer, nativeIdentifier) = context.GetIdentifiers(info);
             string byRefIdentifier = $"__byref_{managedIdentifer}";
-            TypeSyntax arrayElementType = elementType;
+            TypeSyntax arrayElementType = _elementType;
             if (context.CurrentStage == StubCodeContext.Stage.Marshal)
             {
                 // [COMPAT] We use explicit byref calculations here instead of just using a fixed statement
@@ -133,7 +133,7 @@ namespace Microsoft.Interop
                                 PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseTypeName(TypeNames.Unsafe(options)),
+                                        ParseTypeName(TypeNames.Unsafe(_options)),
                                         GenericName("As").AddTypeArgumentListArguments(
                                             arrayElementType,
                                             PredefinedType(Token(SyntaxKind.ByteKeyword)))))

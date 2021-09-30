@@ -9,8 +9,8 @@ namespace Microsoft.Interop
 {
     internal class ForwarderMarshallingGeneratorFactory : IMarshallingGeneratorFactory
     {
-        private static readonly Forwarder Forwarder = new Forwarder();
+        private static readonly Forwarder s_forwarder = new Forwarder();
 
-        public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => Forwarder;
+        public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => s_forwarder;
     }
 }

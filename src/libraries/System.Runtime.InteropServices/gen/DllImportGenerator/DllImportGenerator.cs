@@ -25,7 +25,7 @@ namespace Microsoft.Interop
         private const string GeneratedDllImport = nameof(GeneratedDllImport);
         private const string GeneratedDllImportAttribute = nameof(GeneratedDllImportAttribute);
 
-        private static readonly Version MinimumSupportedFrameworkVersion = new Version(5, 0);
+        private static readonly Version s_minimumSupportedFrameworkVersion = new Version(5, 0);
 
         internal sealed record IncrementalStubGenerationContext(DllImportStubContext StubContext, ImmutableArray<AttributeSyntax> ForwardedAttributes, GeneratedDllImportData DllImportData, ImmutableArray<Diagnostic> Diagnostics)
         {
@@ -57,10 +57,10 @@ namespace Microsoft.Interop
 
             public record ExecutedStepInfo(StepName Step, object Input);
 
-            private List<ExecutedStepInfo> executedSteps = new();
-            public IEnumerable<ExecutedStepInfo> ExecutedSteps => executedSteps;
+            private readonly List<ExecutedStepInfo> _executedSteps = new();
+            public IEnumerable<ExecutedStepInfo> ExecutedSteps => _executedSteps;
 
-            internal void RecordExecutedStep(ExecutedStepInfo step) => executedSteps.Add(step);
+            internal void RecordExecutedStep(ExecutedStepInfo step) => _executedSteps.Add(step);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace Microsoft.Interop
                             Diagnostic.Create(
                                 GeneratorDiagnostics.TargetFrameworkNotSupported,
                                 Location.None,
-                                MinimumSupportedFrameworkVersion.ToString(2)));
+                                s_minimumSupportedFrameworkVersion.ToString(2)));
                     }
                 });
 
@@ -294,7 +294,7 @@ namespace Microsoft.Interop
                 // .NET Standard
                 "netstandard" => false,
                 // .NET Core (when version < 5.0) or .NET
-                "System.Runtime" or "System.Private.CoreLib" => version >= MinimumSupportedFrameworkVersion,
+                "System.Runtime" or "System.Private.CoreLib" => version >= s_minimumSupportedFrameworkVersion,
                 _ => false,
             };
         }
