@@ -589,8 +589,8 @@ var MonoSupportLib = {
 					Module._free (this._debugger_buffer);
 				this._debugger_buffer_len = Math.max(command_parameters.length, this._debugger_buffer_len, 256);
 				this._debugger_buffer = Module._malloc (this._debugger_buffer_len);
-				this._debugger_heap_bytes = new Uint8Array (Module.HEAPU8.buffer, this._debugger_buffer, this._debugger_buffer_len);
 			}
+			this._debugger_heap_bytes = new Uint8Array (Module.HEAPU8.buffer, this._debugger_buffer, this._debugger_buffer_len);
 			this._debugger_heap_bytes.set(this._base64_to_uint8 (command_parameters));
 		},
 
