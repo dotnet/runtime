@@ -61,9 +61,11 @@ steps:
   - script: rm -r -f ./bin
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
     displayName: Clean bindir
+    condition: succeededOrFailed()
 
   - script: |
       ../dotnet.sh build -bl:MauiAndroid.binlog -f net6.0-android -o AndroidBuildOutput
+    condition: succeededOrFailed()
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
   - task: PublishBuildArtifacts@1 #
@@ -84,9 +86,11 @@ steps:
   - script: rm -r -f ./bin
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
     displayName: Clean bindir
+    condition: succeededOrFailed()
 
   - script: |
       ../dotnet.sh build -bl:MauiiOS.binlog -f net6.0-ios -o iOSBuildOutput
+    condition: succeededOrFailed()
     displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
   - task: PublishBuildArtifacts@1 #
@@ -107,9 +111,7 @@ steps:
   - script: rm -r -f ./bin
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
     displayName: Clean bindir
-
-
-
+    condition: succeededOrFailed()
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
