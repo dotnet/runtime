@@ -1945,6 +1945,8 @@ public:
     template <typename T>
     void BashToConst(T value, var_types type = TYP_UNDEF);
 
+    void BashToZeroConst(var_types type);
+
 #if NODEBASH_STATS
     static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);
     static void ReportOperBashing(FILE* fp);

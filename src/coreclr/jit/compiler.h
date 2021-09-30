@@ -6213,7 +6213,7 @@ private:
 
 #endif // FEATURE_SIMD
     GenTree* fgMorphArrayIndex(GenTree* tree);
-    GenTree* fgMorphCast(GenTree* tree);
+    GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
@@ -6284,8 +6284,10 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgOptimizeCast(GenTree* tree);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);

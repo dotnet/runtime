@@ -15837,6 +15837,7 @@ GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
         // Set the flags in the comma node
         result->gtFlags |= (list->gtFlags & GTF_ALL_EFFECT);
         result->gtFlags |= (expr->gtFlags & GTF_ALL_EFFECT);
+        DBEXEC(fgGlobalMorph, result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
         // 'list' and 'expr' should have valuenumbers defined for both or for neither one (unless we are remorphing,
         // in which case a prior transform involving either node may have discarded or otherwise invalidated the value
